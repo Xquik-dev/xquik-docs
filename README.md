@@ -4,12 +4,6 @@ Documentation for [Xquik](https://xquik.com) - X (Twitter) real-time data platfo
 
 **Live:** [docs.xquik.com](https://docs.xquik.com)
 
-## Stack
-
-- [Mintlify](https://mintlify.com) (Maple theme)
-- Custom CSS (Instrument Serif headings, Outfit body)
-- AI-ready: [llms.txt](https://docs.xquik.com/llms.txt) + auto-generated [llms-full.txt](https://docs.xquik.com/llms-full.txt)
-
 ## Structure
 
 ```
@@ -19,14 +13,12 @@ webhooks/          Overview + signature verification
 mcp/               MCP server overview + 9 tools reference
 introduction.mdx   Platform overview
 quickstart.mdx     2-minute quickstart
-docs.json          Navigation, theme, API playground config
-custom.css         Heading font + sidebar title sizing
-llms.txt           AI-readable site index (llmstxt.org spec)
+docs.json          Navigation + theme config
+custom.css         Custom styling
+llms.txt           AI-readable site index
 ```
 
 ## Development
-
-Install the [Mintlify CLI](https://www.npmjs.com/package/mintlify) for local preview:
 
 ```bash
 npx mintlify dev
@@ -34,4 +26,4 @@ npx mintlify dev
 
 ## Deployment
 
-Pushes to `main` auto-deploy via Mintlify GitHub integration. Deployment status is visible in commit check runs.
+Pushes to `main` auto-deploy. Deployment status is visible in commit check runs.
