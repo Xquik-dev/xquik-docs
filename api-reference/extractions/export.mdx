@@ -1,0 +1,163 @@
+---
+title: "Export Extraction"
+description: "Export extraction results as CSV, XLSX, or Markdown. 50,000 row limit."
+---
+
+<CodeGroup>
+  ```bash cURL
+  curl -X GET "https://xquik.com/api/v1/extractions/77777/export?format=csv" \
+    -H "x-api-key: xq_a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2" \
+    -o extraction-reply_extractor-77777.csv
+  ```
+
+  ```javascript Node.js
+  const extractionId = "77777";
+  const response = await fetch(
+    `https://xquik.com/api/v1/extractions/${extractionId}/export?format=csv`,
+    {
+      method: "GET",
+      headers: {
+        "x-api-key": "xq_a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+      },
+    },
+  );
+
+  const blob = await response.blob();
+  // Save to file or process as needed
+  ```
+
+  ```python Python
+  import requests
+
+  extraction_id = "77777"
+  response = requests.get(
+      f"https://xquik.com/api/v1/extractions/{extraction_id}/export",
+      headers={"x-api-key": "xq_a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"},
+      params={"format": "csv"},
+  )
+
+  with open("extraction-reply_extractor-77777.csv", "wb") as f:
+      f.write(response.content)
+  ```
+
+  ```go Go
+  package main
+
+  import (
+      "io"
+      "net/http"
+      "os"
+  )
+
+  func main() {
+      req, err := http.NewRequest("GET", "https://xquik.com/api/v1/extractions/77777/export?format=csv", nil)
+      if err != nil {
+          panic(err)
+      }
+      req.Header.Set("x-api-key", "xq_a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2")
+
+      resp, err := http.DefaultClient.Do(req)
+      if err != nil {
+          panic(err)
+      }
+      defer resp.Body.Close()
+
+      file, err := os.Create("extraction-reply_extractor-77777.csv")
+      if err != nil {
+          panic(err)
+      }
+      defer file.Close()
+
+      if _, err := io.Copy(file, resp.Body); err != nil {
+          panic(err)
+      }
+  }
+  ```
+</CodeGroup>
+
+## Headers
+
+<ParamField header="x-api-key" type="string" required>
+  Your API key. Session cookie authentication is also supported. Generate a key from the [dashboard](https://xquik.com/dashboard).
+</ParamField>
+
+## Path parameters
+
+<ParamField path="id" type="string" required>
+  Extraction job ID returned from [Create Extraction](/api-reference/extractions/create) or [List Extractions](/api-reference/extractions/list).
+</ParamField>
+
+## Query parameters
+
+<ParamField query="format" type="string" required>
+  Export file format. One of: `csv`, `xlsx`, `md`.
+</ParamField>
+
+## Export columns
+
+All export formats include the same columns in this order:
+
+| Column | Description |
+|--------|-------------|
+| User ID | X user ID |
+| Username | X handle |
+| Display Name | Profile display name |
+| Followers | Follower count at time of extraction |
+| Following | Following count (requires `enrichData`) |
+| Posts | Total post count (requires `enrichData`) |
+| Verified | Whether the user has a verified badge |
+| Description | Profile bio text (requires `enrichData`) |
+| Location | Profile location (requires `enrichData`) |
+| Profile Image | URL to the profile image |
+| Tweet ID | Associated tweet ID (tweet-based tools only) |
+| Tweet Text | Tweet content (tweet-based tools only) |
+| Tweet Created At | ISO 8601 timestamp of the tweet (tweet-based tools only) |
+
+Columns that depend on `enrichData` will be empty if the extraction was not run with `enrichData: true`.
+
+## Response
+
+<Tabs>
+  <Tab title="200 OK">
+    Returns a file download. The response includes a `Content-Disposition` header with the filename.
+
+    | Format | Content-Type | Filename Example |
+    |--------|-------------|-----------------|
+    | `csv` | `text/csv; charset=utf-8` | `extraction-reply_extractor-77777.csv` |
+    | `xlsx` | `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet` | `extraction-reply_extractor-77777.xlsx` |
+    | `md` | `text/markdown; charset=utf-8` | `extraction-reply_extractor-77777.md` |
+
+    Results are capped at 50,000 rows. For extractions with more results, the export includes the first 50,000 rows ordered by result ID.
+  </Tab>
+  <Tab title="400 Invalid ID">
+    ```json
+    { "error": "invalid_id" }
+    ```
+    The `id` path parameter is not a valid extraction job ID.
+  </Tab>
+  <Tab title="400 Invalid Format">
+    ```json
+    {
+      "error": "invalid_format",
+      "validFormats": ["csv", "xlsx", "md"]
+    }
+    ```
+    The `format` query parameter is missing or not one of the supported values.
+  </Tab>
+  <Tab title="401 Unauthenticated">
+    ```json
+    { "error": "unauthenticated" }
+    ```
+    Missing or invalid API key.
+  </Tab>
+  <Tab title="404 Not Found">
+    ```json
+    { "error": "not_found" }
+    ```
+    No extraction job exists with this ID, or it belongs to a different account.
+  </Tab>
+</Tabs>
+
+<Note>
+  **Next steps:** [Get Extraction](/api-reference/extractions/get) to access results via the API with pagination, or [List Extractions](/api-reference/extractions/list) to find other extraction jobs to export.
+</Note>

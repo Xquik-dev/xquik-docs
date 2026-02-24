@@ -1,0 +1,239 @@
+---
+title: "Create Extraction"
+description: "Run an extraction job using one of 8 available tools."
+---
+
+<CodeGroup>
+  ```bash cURL
+  curl -X POST https://xquik.com/api/v1/extractions \
+    -H "x-api-key: xq_a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "toolType": "reply_extractor",
+      "targetTweetId": "1893704267862470862",
+      "filters": {
+        "minFollowers": 100,
+        "languages": ["en"]
+      },
+      "enrichData": true,
+      "deduplicateBy": "username"
+    }' | jq
+  ```
+
+  ```javascript Node.js
+  const response = await fetch("https://xquik.com/api/v1/extractions", {
+    method: "POST",
+    headers: {
+      "x-api-key": "xq_a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      toolType: "reply_extractor",
+      targetTweetId: "1893704267862470862",
+      filters: {
+        minFollowers: 100,
+        languages: ["en"],
+      },
+      enrichData: true,
+      deduplicateBy: "username",
+    }),
+  });
+  const data = await response.json();
+  ```
+
+  ```python Python
+  import requests
+
+  response = requests.post(
+      "https://xquik.com/api/v1/extractions",
+      headers={"x-api-key": "xq_a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"},
+      json={
+          "toolType": "reply_extractor",
+          "targetTweetId": "1893704267862470862",
+          "filters": {
+              "minFollowers": 100,
+              "languages": ["en"],
+          },
+          "enrichData": True,
+          "deduplicateBy": "username",
+      },
+  )
+  data = response.json()
+  ```
+
+  ```go Go
+  package main
+
+  import (
+      "bytes"
+      "encoding/json"
+      "fmt"
+      "net/http"
+  )
+
+  func main() {
+      body, _ := json.Marshal(map[string]interface{}{
+          "toolType":      "reply_extractor",
+          "targetTweetId": "1893704267862470862",
+          "filters": map[string]interface{}{
+              "minFollowers": 100,
+              "languages":    []string{"en"},
+          },
+          "enrichData":    true,
+          "deduplicateBy": "username",
+      })
+
+      req, err := http.NewRequest("POST", "https://xquik.com/api/v1/extractions", bytes.NewReader(body))
+      if err != nil {
+          panic(err)
+      }
+      req.Header.Set("x-api-key", "xq_a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2")
+      req.Header.Set("Content-Type", "application/json")
+
+      resp, err := http.DefaultClient.Do(req)
+      if err != nil {
+          panic(err)
+      }
+      defer resp.Body.Close()
+
+      var data map[string]interface{}
+      if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+          panic(err)
+      }
+      fmt.Println(data)
+  }
+  ```
+</CodeGroup>
+
+## Headers
+
+<ParamField header="x-api-key" type="string" required>
+  Your API key. Session cookie authentication is also supported. Generate a key from the [dashboard](https://xquik.com/dashboard).
+</ParamField>
+
+<ParamField header="Content-Type" type="string" required>
+  Must be `application/json`.
+</ParamField>
+
+## Body
+
+<ParamField body="toolType" type="string" required>
+  Extraction tool to run. See [tool types](#tool-types) below.
+</ParamField>
+
+<ParamField body="targetTweetId" type="string">
+  Tweet ID to extract from. Required for `reply_extractor`, `like_extractor`, `retweet_extractor`.
+</ParamField>
+
+<ParamField body="targetUsername" type="string">
+  X username to extract from. The `@` prefix is automatically stripped if included. Required for `mention_tracker`, `follower_extractor`, `following_extractor`.
+</ParamField>
+
+<ParamField body="targetCommunityId" type="string">
+  Community ID to extract members from. Required for `community_explorer`.
+</ParamField>
+
+<ParamField body="searchQuery" type="string">
+  Search query string. Required for `search_results`.
+</ParamField>
+
+<ParamField body="filters" type="object">
+  Optional filtering criteria applied before deduplication.
+  <Expandable title="Filter properties">
+    <ParamField body="filters.excludeReplies" type="boolean">
+      Exclude reply tweets from results.
+    </ParamField>
+    <ParamField body="filters.languages" type="string[]">
+      Filter by tweet language codes (e.g., `["en", "tr", "es"]`).
+    </ParamField>
+    <ParamField body="filters.minFollowers" type="number">
+      Minimum follower count threshold.
+    </ParamField>
+    <ParamField body="filters.maxFollowers" type="number | null">
+      Maximum follower count threshold. Set to `null` for no upper limit.
+    </ParamField>
+    <ParamField body="filters.followsTarget" type="boolean">
+      Only include users who follow the target account.
+    </ParamField>
+    <ParamField body="filters.customKeywords" type="string[]">
+      Filter results to tweets containing any of these keywords.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ParamField body="enrichData" type="boolean">
+  Enrich results with additional user profile data (following count, post count, bio, location). Increases processing time and usage cost.
+</ParamField>
+
+<ParamField body="deduplicateBy" type="string">
+  Deduplication strategy. `none` keeps all results, `username` removes duplicate users (keeps first occurrence). Default: `none`.
+</ParamField>
+
+## Tool types
+
+Each tool type requires a specific target field.
+
+| Tool Type | Required Field | Description |
+|-----------|---------------|-------------|
+| `reply_extractor` | `targetTweetId` | Extract users who replied to a tweet |
+| `like_extractor` | `targetTweetId` | Extract users who liked a tweet |
+| `retweet_extractor` | `targetTweetId` | Extract users who retweeted a tweet |
+| `community_explorer` | `targetCommunityId` | Extract members of a community |
+| `mention_tracker` | `targetUsername` | Extract users who mentioned an account |
+| `follower_extractor` | `targetUsername` | Extract followers of an account |
+| `following_extractor` | `targetUsername` | Extract accounts followed by a user |
+| `search_results` | `searchQuery` | Extract users matching a search query |
+
+## Response
+
+<Tabs>
+  <Tab title="201 Created">
+    <ResponseField name="id" type="string">Unique extraction job ID.</ResponseField>
+    <ResponseField name="toolType" type="string">Tool type used for this extraction.</ResponseField>
+    <ResponseField name="status" type="string">Job status. `completed` on success.</ResponseField>
+    <ResponseField name="totalResults" type="number">Total number of extracted results.</ResponseField>
+
+    ```json
+    {
+      "id": "77777",
+      "toolType": "reply_extractor",
+      "status": "completed",
+      "totalResults": 150
+    }
+    ```
+  </Tab>
+  <Tab title="400 Invalid Input">
+    ```json
+    { "error": "invalid_input" }
+    ```
+    Request body is missing or malformed. Ensure all required fields are present.
+  </Tab>
+  <Tab title="400 Invalid Tool Type">
+    ```json
+    { "error": "invalid_tool_type" }
+    ```
+    The `toolType` value is not one of the 8 supported tools. See [tool types](#tool-types).
+  </Tab>
+  <Tab title="401 Unauthenticated">
+    ```json
+    { "error": "unauthenticated" }
+    ```
+    Missing or invalid API key.
+  </Tab>
+  <Tab title="402 Insufficient Credits">
+    ```json
+    { "error": "insufficient_credits" }
+    ```
+    Usage cap reached for the current billing period. Check your usage on the [dashboard](https://xquik.com/dashboard).
+  </Tab>
+  <Tab title="502 X API Unavailable">
+    ```json
+    { "error": "x_api_unavailable" }
+    ```
+    The upstream X API is temporarily unavailable. Retry with exponential backoff.
+  </Tab>
+</Tabs>
+
+<Note>
+  **Next steps:** [Get Extraction](/api-reference/extractions/get) to retrieve results with pagination, [Export Extraction](/api-reference/extractions/export) to download as CSV/XLSX/Markdown, or [Estimate Extraction](/api-reference/extractions/estimate) to check costs before running.
+</Note>

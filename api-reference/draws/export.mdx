@@ -1,0 +1,143 @@
+---
+title: "Export Draw"
+description: "Export draw data as CSV, XLSX, or Markdown."
+---
+
+<CodeGroup>
+  ```bash cURL
+  curl "https://xquik.com/api/v1/draws/66666/export?format=csv&type=winners" \
+    -H "x-api-key: xq_a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2" \
+    -o draw-winners-66666.csv
+  ```
+
+  ```javascript Node.js
+  const drawId = "66666";
+  const response = await fetch(
+    `https://xquik.com/api/v1/draws/${drawId}/export?format=csv&type=winners`,
+    {
+      headers: { "x-api-key": "xq_a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2" },
+    }
+  );
+  const blob = await response.blob();
+  // Save to file or process as needed
+  ```
+
+  ```python Python
+  import requests
+
+  draw_id = "66666"
+  response = requests.get(
+      f"https://xquik.com/api/v1/draws/{draw_id}/export",
+      headers={"x-api-key": "xq_a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"},
+      params={"format": "csv", "type": "winners"},
+  )
+  with open(f"draw-winners-{draw_id}.csv", "wb") as f:
+      f.write(response.content)
+  ```
+
+  ```go Go
+  package main
+
+  import (
+  	"io"
+  	"log"
+  	"net/http"
+  	"os"
+  )
+
+  func main() {
+  	drawID := "66666"
+  	req, err := http.NewRequest("GET", "https://xquik.com/api/v1/draws/"+drawID+"/export?format=csv&type=winners", nil)
+  	if err != nil {
+  		log.Fatal(err)
+  	}
+  	req.Header.Set("x-api-key", "xq_a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2")
+
+  	resp, err := http.DefaultClient.Do(req)
+  	if err != nil {
+  		log.Fatal(err)
+  	}
+  	defer resp.Body.Close()
+
+  	file, err := os.Create("draw-winners-" + drawID + ".csv")
+  	if err != nil {
+  		log.Fatal(err)
+  	}
+  	defer file.Close()
+
+  	if _, err := io.Copy(file, resp.Body); err != nil {
+  		log.Fatal(err)
+  	}
+  }
+  ```
+</CodeGroup>
+
+## Path Parameters
+
+<ParamField path="id" type="string" required>
+  The unique draw ID. Returned when you [create a draw](/api-reference/draws/create) or [list draws](/api-reference/draws/list).
+</ParamField>
+
+## Query Parameters
+
+<ParamField query="format" type="string" required>
+  Export file format. Must be one of `csv`, `xlsx`, or `md`.
+</ParamField>
+
+<ParamField query="type" type="string">
+  Data to export. `winners` exports the selected winners, `entries` exports all collected replies. Default `winners`.
+</ParamField>
+
+## Headers
+
+<ParamField header="x-api-key" type="string" required>
+  Your API key. This endpoint also accepts session cookie authentication.
+</ParamField>
+
+## Response
+
+<Tabs>
+  <Tab title="200 OK">
+    Returns a file download with the appropriate `Content-Type` and `Content-Disposition` headers.
+
+    | Format | Content-Type | Filename |
+    |--------|-------------|----------|
+    | `csv` | `text/csv; charset=utf-8` | `draw-winners-{id}.csv` |
+    | `xlsx` | `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet` | `draw-winners-{id}.xlsx` |
+    | `md` | `text/markdown; charset=utf-8` | `draw-winners-{id}.md` |
+
+    **Winner export columns:** Position, Username, Text, Backup
+
+    **Entry export columns:** Username, Text, Passed Filter, Language
+
+    Entry exports are capped at 50,000 rows.
+  </Tab>
+  <Tab title="400 Invalid ID">
+    ```json
+    { "error": "invalid_id" }
+    ```
+    The provided draw ID is not a valid format.
+  </Tab>
+  <Tab title="400 Invalid Params">
+    ```json
+    { "error": "invalid_params" }
+    ```
+    Missing or invalid `format` value, or invalid `type` value. Format must be `csv`, `xlsx`, or `md`. Type must be `winners` or `entries`.
+  </Tab>
+  <Tab title="401 Unauthenticated">
+    ```json
+    { "error": "unauthenticated" }
+    ```
+    Missing or invalid API key / session cookie.
+  </Tab>
+  <Tab title="404 Not Found">
+    ```json
+    { "error": "not_found" }
+    ```
+    No draw exists with this ID, or it belongs to a different account.
+  </Tab>
+</Tabs>
+
+<Note>
+  **Related:** [Get Draw](/api-reference/draws/get) to retrieve draw details and winners as JSON &middot; [List Draws](/api-reference/draws/list) to find draw IDs.
+</Note>
