@@ -1,6 +1,7 @@
 ---
 title: "Create Extraction"
 description: "Run an extraction job using one of 8 available tools."
+keywords: ["extraction", "followers", "replies", "quotes", "retweets", "data"]
 ---
 
 <CodeGroup>
@@ -10,13 +11,7 @@ description: "Run an extraction job using one of 8 available tools."
     -H "Content-Type: application/json" \
     -d '{
       "toolType": "reply_extractor",
-      "targetTweetId": "1893704267862470862",
-      "filters": {
-        "minFollowers": 100,
-        "languages": ["en"]
-      },
-      "enrichData": true,
-      "deduplicateBy": "username"
+      "targetTweetId": "1893704267862470862"
     }' | jq
   ```
 
@@ -30,12 +25,6 @@ description: "Run an extraction job using one of 8 available tools."
     body: JSON.stringify({
       toolType: "reply_extractor",
       targetTweetId: "1893704267862470862",
-      filters: {
-        minFollowers: 100,
-        languages: ["en"],
-      },
-      enrichData: true,
-      deduplicateBy: "username",
     }),
   });
   const data = await response.json();
@@ -50,12 +39,6 @@ description: "Run an extraction job using one of 8 available tools."
       json={
           "toolType": "reply_extractor",
           "targetTweetId": "1893704267862470862",
-          "filters": {
-              "minFollowers": 100,
-              "languages": ["en"],
-          },
-          "enrichData": True,
-          "deduplicateBy": "username",
       },
   )
   data = response.json()
@@ -75,12 +58,6 @@ description: "Run an extraction job using one of 8 available tools."
       body, _ := json.Marshal(map[string]interface{}{
           "toolType":      "reply_extractor",
           "targetTweetId": "1893704267862470862",
-          "filters": map[string]interface{}{
-              "minFollowers": 100,
-              "languages":    []string{"en"},
-          },
-          "enrichData":    true,
-          "deduplicateBy": "username",
       })
 
       req, err := http.NewRequest("POST", "https://xquik.com/api/v1/extractions", bytes.NewReader(body))
@@ -108,7 +85,7 @@ description: "Run an extraction job using one of 8 available tools."
 ## Headers
 
 <ParamField header="x-api-key" type="string" required>
-  Your API key. Session cookie authentication is also supported. Generate a key from the [dashboard](https://xquik.com/dashboard).
+  Your API key. Session cookie authentication is also supported.
 </ParamField>
 
 <ParamField header="Content-Type" type="string" required>
@@ -122,51 +99,19 @@ description: "Run an extraction job using one of 8 available tools."
 </ParamField>
 
 <ParamField body="targetTweetId" type="string">
-  Tweet ID to extract from. Required for `reply_extractor`, `like_extractor`, `retweet_extractor`.
+  Tweet ID to extract from. Required for `reply_extractor`, `retweet_extractor`, `quote_extractor`.
 </ParamField>
 
 <ParamField body="targetUsername" type="string">
-  X username to extract from. The `@` prefix is automatically stripped if included. Required for `mention_tracker`, `follower_extractor`, `following_extractor`.
+  X username to extract from. The `@` prefix is automatically stripped if included. Required for `follower_explorer`, `verified_follower_explorer`, `mention_tracker`.
 </ParamField>
 
 <ParamField body="targetCommunityId" type="string">
-  Community ID to extract members from. Required for `community_explorer`.
+  Community ID to extract members from. Required for `community_extractor`.
 </ParamField>
 
 <ParamField body="searchQuery" type="string">
-  Search query string. Required for `search_results`.
-</ParamField>
-
-<ParamField body="filters" type="object">
-  Optional filtering criteria applied before deduplication.
-  <Expandable title="Filter properties">
-    <ParamField body="filters.excludeReplies" type="boolean">
-      Exclude reply tweets from results.
-    </ParamField>
-    <ParamField body="filters.languages" type="string[]">
-      Filter by tweet language codes (e.g., `["en", "tr", "es"]`).
-    </ParamField>
-    <ParamField body="filters.minFollowers" type="number">
-      Minimum follower count threshold.
-    </ParamField>
-    <ParamField body="filters.maxFollowers" type="number | null">
-      Maximum follower count threshold. Set to `null` for no upper limit.
-    </ParamField>
-    <ParamField body="filters.followsTarget" type="boolean">
-      Only include users who follow the target account.
-    </ParamField>
-    <ParamField body="filters.customKeywords" type="string[]">
-      Filter results to tweets containing any of these keywords.
-    </ParamField>
-  </Expandable>
-</ParamField>
-
-<ParamField body="enrichData" type="boolean">
-  Enrich results with additional user profile data (following count, post count, bio, location). Increases processing time and usage cost.
-</ParamField>
-
-<ParamField body="deduplicateBy" type="string">
-  Deduplication strategy. `none` keeps all results, `username` removes duplicate users (keeps first occurrence). Default: `none`.
+  Search query string. Required for `user_search`.
 </ParamField>
 
 ## Tool types
@@ -176,13 +121,13 @@ Each tool type requires a specific target field.
 | Tool Type | Required Field | Description |
 |-----------|---------------|-------------|
 | `reply_extractor` | `targetTweetId` | Extract users who replied to a tweet |
-| `like_extractor` | `targetTweetId` | Extract users who liked a tweet |
 | `retweet_extractor` | `targetTweetId` | Extract users who retweeted a tweet |
-| `community_explorer` | `targetCommunityId` | Extract members of a community |
+| `quote_extractor` | `targetTweetId` | Extract users who quote-tweeted a tweet |
+| `follower_explorer` | `targetUsername` | Extract followers of an account |
+| `verified_follower_explorer` | `targetUsername` | Extract verified followers of an account |
+| `community_extractor` | `targetCommunityId` | Extract members of a community |
 | `mention_tracker` | `targetUsername` | Extract users who mentioned an account |
-| `follower_extractor` | `targetUsername` | Extract followers of an account |
-| `following_extractor` | `targetUsername` | Extract accounts followed by a user |
-| `search_results` | `searchQuery` | Extract users matching a search query |
+| `user_search` | `searchQuery` | Extract users matching a search query |
 
 ## Response
 
@@ -202,13 +147,13 @@ Each tool type requires a specific target field.
     }
     ```
   </Tab>
-  <Tab title="400 Invalid Input">
+  <Tab title="400 Invalid input">
     ```json
     { "error": "invalid_input" }
     ```
     Request body is missing or malformed. Ensure all required fields are present.
   </Tab>
-  <Tab title="400 Invalid Tool Type">
+  <Tab title="400 Invalid tool type">
     ```json
     { "error": "invalid_tool_type" }
     ```
@@ -220,13 +165,13 @@ Each tool type requires a specific target field.
     ```
     Missing or invalid API key.
   </Tab>
-  <Tab title="402 Insufficient Credits">
+  <Tab title="402 Subscription required">
     ```json
-    { "error": "insufficient_credits" }
+    { "error": "no_subscription" }
     ```
-    Usage cap reached for the current billing period. Check your usage on the [dashboard](https://xquik.com/dashboard).
+    No active subscription or usage cap reached. Possible error values: `no_subscription`, `subscription_inactive`, `usage_limit_reached`.
   </Tab>
-  <Tab title="502 X API Unavailable">
+  <Tab title="502 X API unavailable">
     ```json
     { "error": "x_api_unavailable" }
     ```
