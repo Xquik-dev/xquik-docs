@@ -89,7 +89,6 @@ interface WebhookCreated {
   id: string;
   url: string;
   eventTypes: EventType[];
-  isActive: boolean;
   secret: string;
   createdAt: string;
 }
@@ -174,7 +173,7 @@ interface Draw {
   tweetRetweetCount: number;
   tweetReplyCount: number;
   tweetQuoteCount: number;
-  status: "completed";
+  status: "pending" | "running" | "completed" | "failed";
   totalEntries: number;
   validEntries: number;
   createdAt: string;
@@ -184,7 +183,7 @@ interface Draw {
 interface DrawListItem {
   id: string;
   tweetUrl: string;
-  status: "completed";
+  status: "pending" | "running" | "completed" | "failed";
   totalEntries: number;
   validEntries: number;
   createdAt: string;
@@ -206,20 +205,17 @@ interface DrawList {
 
 interface CreateDrawRequest {
   tweetUrl: string;
-  winnerCount: number;
-  backupWinnerCount?: number;
-  filters?: DrawFilters;
-}
-
-interface DrawFilters {
-  excludeReplies?: boolean;
-  excludeRetweets?: boolean;
-  excludeQuotes?: boolean;
-  minFollowers?: number;
-  maxFollowers?: number | null;
-  followsAuthor?: boolean;
-  languages?: string[];
-  customKeywords?: string[];
+  winnerCount?: number;
+  backupCount?: number;
+  uniqueAuthorsOnly?: boolean;
+  mustRetweet?: boolean;
+  mustFollowUsername?: string;
+  filterMinFollowers?: number;
+  filterAccountAgeDays?: number;
+  filterLanguage?: string;
+  requiredKeywords?: string[];
+  requiredHashtags?: string[];
+  requiredMentions?: string[];
 }
 
 // ─── Extractions ────────────────────────────────────────
@@ -237,7 +233,7 @@ type ExtractionToolType =
 interface ExtractionJob {
   id: string;
   toolType: ExtractionToolType;
-  status: "completed" | "failed";
+  status: "pending" | "running" | "completed" | "failed";
   totalResults: number;
   targetTweetId?: string;
   targetUsername?: string;
@@ -374,7 +370,7 @@ The `WebhookPayload` type describes the JSON body your endpoint receives on each
 
 ### Draws
 
-`Draw` is the full draw object returned by `GET /api/v1/draws/:id` with tweet metadata and engagement counts. `DrawListItem` is the compact shape returned in list responses. `DrawWinner` contains the position, username, tweet ID, and backup flag for each winner. `DrawFilters` controls which entries qualify for the draw.
+`Draw` is the full draw object returned by `GET /api/v1/draws/:id` with tweet metadata and engagement counts. `DrawListItem` is the compact shape returned in list responses. `DrawWinner` contains the position, username, tweet ID, and backup flag for each winner. Filter fields on `CreateDrawRequest` control which entries qualify for the draw.
 
 ### Extractions
 
