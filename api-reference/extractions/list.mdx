@@ -1,0 +1,182 @@
+---
+title: "List Extractions"
+description: "Retrieve extraction job history with filtering and cursor-based pagination."
+---
+
+<CodeGroup>
+  ```bash cURL
+  curl -X GET "https://xquik.com/api/v1/extractions?limit=20&toolType=reply_extractor" \
+    -H "x-api-key: xq_a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2" | jq
+  ```
+
+  ```javascript Node.js
+  const params = new URLSearchParams({
+    limit: "20",
+    toolType: "reply_extractor",
+  });
+
+  const response = await fetch(`https://xquik.com/api/v1/extractions?${params}`, {
+    method: "GET",
+    headers: {
+      "x-api-key": "xq_a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+    },
+  });
+  const data = await response.json();
+  ```
+
+  ```python Python
+  import requests
+
+  response = requests.get(
+      "https://xquik.com/api/v1/extractions",
+      headers={"x-api-key": "xq_a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"},
+      params={
+          "limit": 20,
+          "toolType": "reply_extractor",
+      },
+  )
+  data = response.json()
+  ```
+
+  ```go Go
+  package main
+
+  import (
+      "encoding/json"
+      "fmt"
+      "net/http"
+  )
+
+  func main() {
+      req, err := http.NewRequest("GET", "https://xquik.com/api/v1/extractions?limit=20&toolType=reply_extractor", nil)
+      if err != nil {
+          panic(err)
+      }
+      req.Header.Set("x-api-key", "xq_a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2")
+
+      resp, err := http.DefaultClient.Do(req)
+      if err != nil {
+          panic(err)
+      }
+      defer resp.Body.Close()
+
+      var data map[string]interface{}
+      if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+          panic(err)
+      }
+      fmt.Println(data)
+  }
+  ```
+</CodeGroup>
+
+## Headers
+
+<ParamField header="x-api-key" type="string" required>
+  Your API key. Session cookie authentication is also supported. Generate a key from the [dashboard](https://xquik.com/dashboard).
+</ParamField>
+
+## Query parameters
+
+<ParamField query="limit" type="number">
+  Number of extractions to return per page. Default: `50`. Maximum: `100`.
+</ParamField>
+
+<ParamField query="toolType" type="string">
+  Filter by tool type. One of: `reply_extractor`, `like_extractor`, `retweet_extractor`, `community_explorer`, `mention_tracker`, `follower_extractor`, `following_extractor`, `search_results`.
+</ParamField>
+
+<ParamField query="status" type="string">
+  Filter by job status. One of: `completed`, `failed`, `running`.
+</ParamField>
+
+<ParamField query="after" type="string">
+  Cursor for pagination. Use the `nextCursor` value from the previous response to fetch the next page.
+</ParamField>
+
+## Response
+
+<Tabs>
+  <Tab title="200 OK">
+    <ResponseField name="extractions" type="object[]">
+      Array of extraction job summaries.
+      <Expandable title="Extraction object properties">
+        <ResponseField name="id" type="string">Unique extraction job ID.</ResponseField>
+        <ResponseField name="toolType" type="string">Tool type used for this extraction.</ResponseField>
+        <ResponseField name="status" type="string">Job status: `completed`, `failed`, or `running`.</ResponseField>
+        <ResponseField name="totalResults" type="number">Total number of extracted results.</ResponseField>
+        <ResponseField name="createdAt" type="string">ISO 8601 timestamp of when the job was created.</ResponseField>
+        <ResponseField name="completedAt" type="string">ISO 8601 timestamp of when the job finished. Only present for completed jobs.</ResponseField>
+      </Expandable>
+    </ResponseField>
+    <ResponseField name="hasMore" type="boolean">Whether more results exist beyond this page.</ResponseField>
+    <ResponseField name="nextCursor" type="string">Cursor to pass as the `after` parameter for the next page. Only present when `hasMore` is `true`.</ResponseField>
+
+    ```json
+    {
+      "extractions": [
+        {
+          "id": "77777",
+          "toolType": "reply_extractor",
+          "status": "completed",
+          "totalResults": 150,
+          "createdAt": "2026-02-24T10:00:00.000Z",
+          "completedAt": "2026-02-24T10:00:12.000Z"
+        },
+        {
+          "id": "77770",
+          "toolType": "follower_extractor",
+          "status": "completed",
+          "totalResults": 4832,
+          "createdAt": "2026-02-23T18:30:00.000Z",
+          "completedAt": "2026-02-23T18:31:45.000Z"
+        },
+        {
+          "id": "77768",
+          "toolType": "retweet_extractor",
+          "status": "failed",
+          "totalResults": 0,
+          "createdAt": "2026-02-23T12:00:00.000Z"
+        }
+      ],
+      "hasMore": true,
+      "nextCursor": "eyJjIjoiMjAyNi0wMi0yM1QxMjowMDowMC4wMDBaIiwiaSI6Ijc3NzY4In0"
+    }
+    ```
+  </Tab>
+  <Tab title="401 Unauthenticated">
+    ```json
+    { "error": "unauthenticated" }
+    ```
+    Missing or invalid API key.
+  </Tab>
+</Tabs>
+
+## Pagination
+
+Results are ordered by creation date (newest first). To iterate through all extractions:
+
+1. Make the initial request without the `after` parameter.
+2. Check `hasMore` in the response. If `true`, use `nextCursor` as the `after` value in the next request.
+3. Repeat until `hasMore` is `false`.
+
+```javascript
+let cursor = undefined;
+const allExtractions = [];
+
+do {
+  const params = new URLSearchParams({ limit: "100" });
+  if (cursor) params.set("after", cursor);
+
+  const response = await fetch(`https://xquik.com/api/v1/extractions?${params}`, {
+    headers: { "x-api-key": "xq_a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2" },
+  });
+  const data = await response.json();
+
+  allExtractions.push(...data.extractions);
+  cursor = data.hasMore ? data.nextCursor : undefined;
+} while (cursor);
+```
+
+<Note>
+  **Next steps:** [Get Extraction](/api-reference/extractions/get) to retrieve full results for a specific job, or [Create Extraction](/api-reference/extractions/create) to run a new extraction.
+</Note>

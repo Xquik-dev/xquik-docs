@@ -1,0 +1,122 @@
+---
+title: "Update Account"
+description: "Update your account locale preference."
+---
+
+<CodeGroup>
+  ```bash cURL
+  curl -X PATCH https://xquik.com/api/v1/account \
+    -H "Cookie: session=YOUR_SESSION_COOKIE" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "locale": "tr"
+    }' | jq
+  ```
+
+  ```javascript Node.js
+  const response = await fetch("https://xquik.com/api/v1/account", {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      "Cookie": "session=YOUR_SESSION_COOKIE",
+    },
+    body: JSON.stringify({ locale: "tr" }),
+  });
+  const data = await response.json();
+  console.log(data);
+  ```
+
+  ```python Python
+  import requests
+
+  response = requests.patch(
+      "https://xquik.com/api/v1/account",
+      cookies={"session": "YOUR_SESSION_COOKIE"},
+      json={"locale": "tr"},
+  )
+  data = response.json()
+  print(data)
+  ```
+
+  ```go Go
+  package main
+
+  import (
+      "bytes"
+      "encoding/json"
+      "fmt"
+      "net/http"
+  )
+
+  func main() {
+      body, _ := json.Marshal(map[string]string{
+          "locale": "tr",
+      })
+
+      req, err := http.NewRequest("PATCH", "https://xquik.com/api/v1/account", bytes.NewReader(body))
+      if err != nil {
+          panic(err)
+      }
+      req.Header.Set("Content-Type", "application/json")
+      req.AddCookie(&http.Cookie{Name: "session", Value: "YOUR_SESSION_COOKIE"})
+
+      resp, err := http.DefaultClient.Do(req)
+      if err != nil {
+          panic(err)
+      }
+      defer resp.Body.Close()
+
+      var data map[string]interface{}
+      if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+          panic(err)
+      }
+      fmt.Println(data)
+  }
+  ```
+</CodeGroup>
+
+## Headers
+
+<ParamField header="Cookie" type="string" required>
+  Session cookie obtained from dashboard authentication. API key auth is not supported for this endpoint.
+</ParamField>
+
+<ParamField header="Content-Type" type="string" required>
+  Must be `application/json`.
+</ParamField>
+
+## Body
+
+<ParamField body="locale" type="string" required>
+  Locale preference for the account. Must be one of `en`, `tr`, or `es`.
+</ParamField>
+
+## Response
+
+<Tabs>
+  <Tab title="200 OK">
+    <ResponseField name="success" type="boolean">
+      Always `true` on successful update.
+    </ResponseField>
+
+    ```json
+    { "success": true }
+    ```
+  </Tab>
+  <Tab title="400 Invalid Input">
+    ```json
+    { "error": "invalid_input" }
+    ```
+    Missing `locale` field or value is not one of `en`, `tr`, `es`.
+  </Tab>
+  <Tab title="401 Unauthenticated">
+    ```json
+    { "error": "unauthenticated" }
+    ```
+    Missing or invalid session cookie.
+  </Tab>
+</Tabs>
+
+<Note>
+  This endpoint requires session authentication. API key auth (`x-api-key` header) is not supported. Use [Get Account](/api-reference/account/get) to verify the current locale setting.
+</Note>

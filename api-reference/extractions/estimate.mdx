@@ -1,0 +1,186 @@
+---
+title: "Estimate Extraction"
+description: "Get a cost estimate before running an extraction job."
+---
+
+<CodeGroup>
+  ```bash cURL
+  curl -X POST https://xquik.com/api/v1/extractions/estimate \
+    -H "x-api-key: xq_a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "toolType": "reply_extractor",
+      "targetTweetId": "1893704267862470862"
+    }' | jq
+  ```
+
+  ```javascript Node.js
+  const response = await fetch("https://xquik.com/api/v1/extractions/estimate", {
+    method: "POST",
+    headers: {
+      "x-api-key": "xq_a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      toolType: "reply_extractor",
+      targetTweetId: "1893704267862470862",
+    }),
+  });
+  const data = await response.json();
+
+  if (data.allowed) {
+    // Safe to proceed with extraction
+  }
+  ```
+
+  ```python Python
+  import requests
+
+  response = requests.post(
+      "https://xquik.com/api/v1/extractions/estimate",
+      headers={"x-api-key": "xq_a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"},
+      json={
+          "toolType": "reply_extractor",
+          "targetTweetId": "1893704267862470862",
+      },
+  )
+  data = response.json()
+
+  if data.get("allowed"):
+      # Safe to proceed with extraction
+      pass
+  ```
+
+  ```go Go
+  package main
+
+  import (
+      "bytes"
+      "encoding/json"
+      "fmt"
+      "net/http"
+  )
+
+  func main() {
+      body, _ := json.Marshal(map[string]interface{}{
+          "toolType":      "reply_extractor",
+          "targetTweetId": "1893704267862470862",
+      })
+
+      req, err := http.NewRequest("POST", "https://xquik.com/api/v1/extractions/estimate", bytes.NewReader(body))
+      if err != nil {
+          panic(err)
+      }
+      req.Header.Set("x-api-key", "xq_a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2")
+      req.Header.Set("Content-Type", "application/json")
+
+      resp, err := http.DefaultClient.Do(req)
+      if err != nil {
+          panic(err)
+      }
+      defer resp.Body.Close()
+
+      var data map[string]interface{}
+      if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+          panic(err)
+      }
+      fmt.Println(data)
+  }
+  ```
+</CodeGroup>
+
+## Headers
+
+<ParamField header="x-api-key" type="string" required>
+  Your API key. Session cookie authentication is also supported. Generate a key from the [dashboard](https://xquik.com/dashboard).
+</ParamField>
+
+<ParamField header="Content-Type" type="string" required>
+  Must be `application/json`.
+</ParamField>
+
+## Body
+
+The request body accepts the same fields as [Create Extraction](/api-reference/extractions/create). Only `toolType` and the corresponding target field are required for the estimate.
+
+<ParamField body="toolType" type="string" required>
+  Extraction tool to estimate. One of: `reply_extractor`, `like_extractor`, `retweet_extractor`, `community_explorer`, `mention_tracker`, `follower_extractor`, `following_extractor`, `search_results`.
+</ParamField>
+
+<ParamField body="targetTweetId" type="string">
+  Tweet ID to estimate. Required for `reply_extractor`, `like_extractor`, `retweet_extractor`.
+</ParamField>
+
+<ParamField body="targetUsername" type="string">
+  X username to estimate. Required for `mention_tracker`, `follower_extractor`, `following_extractor`.
+</ParamField>
+
+<ParamField body="targetCommunityId" type="string">
+  Community ID to estimate. Required for `community_explorer`.
+</ParamField>
+
+<ParamField body="searchQuery" type="string">
+  Search query to estimate. Required for `search_results`.
+</ParamField>
+
+## Response
+
+<Tabs>
+  <Tab title="200 OK">
+    <ResponseField name="allowed" type="boolean">Whether the extraction can proceed without exceeding the usage cap.</ResponseField>
+    <ResponseField name="source" type="string">Data source used for the estimate. One of: `replyCount`, `retweetCount`, `quoteCount`, `followers`, `unknown`.</ResponseField>
+    <ResponseField name="estimatedResults" type="number">Estimated number of results the extraction will return.</ResponseField>
+    <ResponseField name="usagePercent" type="number">Current usage as a percentage of the monthly cap (0-100).</ResponseField>
+    <ResponseField name="projectedPercent" type="number">Projected usage percentage after this extraction completes (0-100+).</ResponseField>
+
+    ```json
+    {
+      "allowed": true,
+      "source": "replyCount",
+      "estimatedResults": 150,
+      "usagePercent": 45,
+      "projectedPercent": 78
+    }
+    ```
+
+    When `allowed` is `false`, the projected usage would exceed the monthly cap:
+
+    ```json
+    {
+      "allowed": false,
+      "source": "followers",
+      "estimatedResults": 250000,
+      "usagePercent": 82,
+      "projectedPercent": 340
+    }
+    ```
+  </Tab>
+  <Tab title="400 Invalid Input">
+    ```json
+    { "error": "invalid_input" }
+    ```
+    Request body is missing or malformed. Ensure `toolType` and the corresponding target field are present.
+  </Tab>
+  <Tab title="400 Invalid Tool Type">
+    ```json
+    { "error": "invalid_tool_type" }
+    ```
+    The `toolType` value is not one of the 8 supported tools.
+  </Tab>
+  <Tab title="401 Unauthenticated">
+    ```json
+    { "error": "unauthenticated" }
+    ```
+    Missing or invalid API key.
+  </Tab>
+  <Tab title="402 Insufficient Credits">
+    ```json
+    { "error": "no_subscription" }
+    ```
+    No active subscription, or the monthly usage cap has been reached. Possible error values: `no_subscription`, `subscription_inactive`, `usage_limit_reached`.
+  </Tab>
+</Tabs>
+
+<Note>
+  **Always call this endpoint before running an extraction** to avoid hitting usage limits. If `allowed` is `false`, the corresponding [Create Extraction](/api-reference/extractions/create) request will return a `402` error. Check your current usage on the [dashboard](https://xquik.com/dashboard).
+</Note>

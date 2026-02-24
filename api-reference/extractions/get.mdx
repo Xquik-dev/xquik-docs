@@ -1,0 +1,220 @@
+---
+title: "Get Extraction"
+description: "Retrieve extraction job details with paginated results."
+---
+
+<CodeGroup>
+  ```bash cURL
+  curl -X GET "https://xquik.com/api/v1/extractions/77777?limit=100" \
+    -H "x-api-key: xq_a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2" | jq
+  ```
+
+  ```javascript Node.js
+  const extractionId = "77777";
+  const params = new URLSearchParams({ limit: "100" });
+
+  const response = await fetch(`https://xquik.com/api/v1/extractions/${extractionId}?${params}`, {
+    method: "GET",
+    headers: {
+      "x-api-key": "xq_a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+    },
+  });
+  const data = await response.json();
+  ```
+
+  ```python Python
+  import requests
+
+  extraction_id = "77777"
+  response = requests.get(
+      f"https://xquik.com/api/v1/extractions/{extraction_id}",
+      headers={"x-api-key": "xq_a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"},
+      params={"limit": 100},
+  )
+  data = response.json()
+  ```
+
+  ```go Go
+  package main
+
+  import (
+      "encoding/json"
+      "fmt"
+      "net/http"
+  )
+
+  func main() {
+      req, err := http.NewRequest("GET", "https://xquik.com/api/v1/extractions/77777?limit=100", nil)
+      if err != nil {
+          panic(err)
+      }
+      req.Header.Set("x-api-key", "xq_a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2")
+
+      resp, err := http.DefaultClient.Do(req)
+      if err != nil {
+          panic(err)
+      }
+      defer resp.Body.Close()
+
+      var data map[string]interface{}
+      if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+          panic(err)
+      }
+      fmt.Println(data)
+  }
+  ```
+</CodeGroup>
+
+## Headers
+
+<ParamField header="x-api-key" type="string" required>
+  Your API key. Session cookie authentication is also supported. Generate a key from the [dashboard](https://xquik.com/dashboard).
+</ParamField>
+
+## Path parameters
+
+<ParamField path="id" type="string" required>
+  Extraction job ID returned from [Create Extraction](/api-reference/extractions/create) or [List Extractions](/api-reference/extractions/list).
+</ParamField>
+
+## Query parameters
+
+<ParamField query="limit" type="number">
+  Number of results to return per page. Default: `100`. Maximum: `1000`.
+</ParamField>
+
+<ParamField query="after" type="string">
+  Result ID cursor for pagination. Use the `nextCursor` value from the previous response to fetch the next page.
+</ParamField>
+
+## Response
+
+<Tabs>
+  <Tab title="200 OK">
+    <ResponseField name="job" type="object">
+      Extraction job metadata.
+      <Expandable title="Job object properties">
+        <ResponseField name="id" type="string">Unique extraction job ID.</ResponseField>
+        <ResponseField name="toolType" type="string">Tool type used for this extraction.</ResponseField>
+        <ResponseField name="status" type="string">Job status: `completed`, `failed`, or `running`.</ResponseField>
+        <ResponseField name="totalResults" type="number">Total number of extracted results.</ResponseField>
+        <ResponseField name="targetTweetId" type="string">Target tweet ID. Present for tweet-based tools.</ResponseField>
+        <ResponseField name="targetUsername" type="string">Target username. Present for user-based tools.</ResponseField>
+        <ResponseField name="targetCommunityId" type="string">Target community ID. Present for `community_explorer`.</ResponseField>
+        <ResponseField name="searchQuery" type="string">Search query. Present for `search_results`.</ResponseField>
+        <ResponseField name="errorMessage" type="string">Error description. Only present for failed jobs.</ResponseField>
+        <ResponseField name="createdAt" type="string">ISO 8601 timestamp of when the job was created.</ResponseField>
+        <ResponseField name="completedAt" type="string">ISO 8601 timestamp of when the job finished. Only present for completed jobs.</ResponseField>
+      </Expandable>
+    </ResponseField>
+    <ResponseField name="results" type="object[]">
+      Array of extracted user/tweet records for the current page.
+      <Expandable title="Result object properties">
+        <ResponseField name="id" type="string">Unique result ID.</ResponseField>
+        <ResponseField name="xUserId" type="string">X user ID.</ResponseField>
+        <ResponseField name="xUsername" type="string">X username (handle).</ResponseField>
+        <ResponseField name="xDisplayName" type="string">X display name.</ResponseField>
+        <ResponseField name="xFollowersCount" type="number">Follower count at time of extraction.</ResponseField>
+        <ResponseField name="xVerified" type="boolean">Whether the user has a verified badge.</ResponseField>
+        <ResponseField name="xProfileImageUrl" type="string">URL to the user's profile image.</ResponseField>
+        <ResponseField name="tweetId" type="string">Tweet ID. Present for tweet-based extractions.</ResponseField>
+        <ResponseField name="tweetText" type="string">Tweet text content. Present for tweet-based extractions.</ResponseField>
+        <ResponseField name="tweetCreatedAt" type="string">ISO 8601 timestamp of the tweet. Present for tweet-based extractions.</ResponseField>
+      </Expandable>
+    </ResponseField>
+    <ResponseField name="hasMore" type="boolean">Whether more results exist beyond this page.</ResponseField>
+    <ResponseField name="nextCursor" type="string">Cursor to pass as the `after` parameter for the next page. Only present when `hasMore` is `true`.</ResponseField>
+
+    ```json
+    {
+      "job": {
+        "id": "77777",
+        "toolType": "reply_extractor",
+        "status": "completed",
+        "totalResults": 150,
+        "targetTweetId": "1893704267862470862",
+        "createdAt": "2026-02-24T10:00:00.000Z",
+        "completedAt": "2026-02-24T10:00:12.000Z"
+      },
+      "results": [
+        {
+          "id": "990001",
+          "xUserId": "44196397",
+          "xUsername": "elonmusk",
+          "xDisplayName": "Elon Musk",
+          "xFollowersCount": 210500000,
+          "xVerified": true,
+          "xProfileImageUrl": "https://pbs.twimg.com/profile_images/el0n.jpg",
+          "tweetId": "1893710452812718080",
+          "tweetText": "This is a great thread, thanks for sharing.",
+          "tweetCreatedAt": "2026-02-24T10:05:00.000Z"
+        },
+        {
+          "id": "990002",
+          "xUserId": "1849726401547751424",
+          "xUsername": "xquik_",
+          "xDisplayName": "Xquik",
+          "xFollowersCount": 2400,
+          "xVerified": false,
+          "xProfileImageUrl": "https://pbs.twimg.com/profile_images/xquik.jpg",
+          "tweetId": "1893712000288563200",
+          "tweetText": "Agreed, very useful tool.",
+          "tweetCreatedAt": "2026-02-24T10:08:30.000Z"
+        }
+      ],
+      "hasMore": true,
+      "nextCursor": "990002"
+    }
+    ```
+  </Tab>
+  <Tab title="400 Invalid ID">
+    ```json
+    { "error": "invalid_id" }
+    ```
+    The `id` path parameter is not a valid extraction job ID.
+  </Tab>
+  <Tab title="401 Unauthenticated">
+    ```json
+    { "error": "unauthenticated" }
+    ```
+    Missing or invalid API key.
+  </Tab>
+  <Tab title="404 Not Found">
+    ```json
+    { "error": "not_found" }
+    ```
+    No extraction job exists with this ID, or it belongs to a different account.
+  </Tab>
+</Tabs>
+
+## Paginating results
+
+Results are ordered by ID ascending. To iterate through all results for a large extraction:
+
+1. Make the initial request without the `after` parameter.
+2. Check `hasMore` in the response. If `true`, use `nextCursor` as the `after` value in the next request.
+3. Repeat until `hasMore` is `false`.
+
+```javascript
+const extractionId = "77777";
+let cursor = undefined;
+const allResults = [];
+
+do {
+  const params = new URLSearchParams({ limit: "1000" });
+  if (cursor) params.set("after", cursor);
+
+  const response = await fetch(
+    `https://xquik.com/api/v1/extractions/${extractionId}?${params}`,
+    { headers: { "x-api-key": "xq_a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2" } },
+  );
+  const data = await response.json();
+
+  allResults.push(...data.results);
+  cursor = data.hasMore ? data.nextCursor : undefined;
+} while (cursor);
+```
+
+<Note>
+  **Next steps:** [Export Extraction](/api-reference/extractions/export) to download all results as CSV, XLSX, or Markdown, or [List Extractions](/api-reference/extractions/list) to browse your job history.
+</Note>
