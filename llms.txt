@@ -1,99 +1,65 @@
 # Xquik
 
-> X (Twitter) real-time data platform - xquik.com
+> X (Twitter) real-time data platform. Real-time account monitoring, data extraction, giveaway draws, and a developer API with REST endpoints, HMAC webhooks, and an MCP server for AI agents.
 
-Xquik provides real-time monitoring of X (Twitter) accounts, extraction tools for pulling followers/following/engagement data, transparent giveaway draws, and a developer API for programmatic integration. The platform tracks tweets, quotes, replies, and retweets from monitored accounts and delivers events via REST API polling, HMAC-signed webhooks, or an MCP server for AI agent integration.
+Xquik tracks tweets, quotes, replies, and retweets from monitored X accounts and delivers events via REST API polling, HMAC-signed webhooks, or an MCP server (Model Context Protocol) for AI agent integration. The platform also provides 8 extraction tools for pulling followers, following, retweeters, likers, quoters, replies, list members, and verified followers from any public account or tweet.
 
-Developers authenticate with API keys (format: `xqk_` + 32 hex characters) passed via the `x-api-key` header. All endpoints are served over HTTPS at `https://xquik.com/api/v1`. The platform requires an active subscription ($20/month) which includes 1 account monitor and a generous monthly usage quota. Additional monitors cost $10/month each.
+Authentication: API key passed via the `x-api-key` header. Key format: `xqk_` + 32 hex characters. Base URL: `https://xquik.com/api/v1`. MCP server: `https://xquik.com:3100/mcp` (StreamableHTTP transport, same API key auth). Event types: `tweet.new`, `tweet.quote`, `tweet.reply`, `tweet.retweet`. Rate limits: 10 req/s sustained with 20 burst for API endpoints.
 
-## API Endpoints
+## Docs
 
-- GET /api/v1/account - Retrieve account info, subscription status, and usage
-- POST /api/v1/api-keys - Create a new API key (session auth only)
-- GET /api/v1/api-keys - List all API keys (session auth only)
-- DELETE /api/v1/api-keys/{id} - Revoke an API key (session auth only)
-- POST /api/v1/monitors - Create a monitor for an X account
-- GET /api/v1/monitors - List all monitors
-- GET /api/v1/monitors/{id} - Get a monitor by ID
-- PATCH /api/v1/monitors/{id} - Update monitor event types or active state
-- DELETE /api/v1/monitors/{id} - Delete a monitor
-- GET /api/v1/events - List events with filtering and cursor-based pagination
-- GET /api/v1/events/{id} - Get a single event by ID
-- POST /api/v1/webhooks - Create a webhook endpoint
-- GET /api/v1/webhooks - List all webhooks
-- PATCH /api/v1/webhooks/{id} - Update a webhook
-- DELETE /api/v1/webhooks/{id} - Delete a webhook
-- GET /api/v1/webhooks/{id}/deliveries - List delivery attempts for a webhook
+- [Introduction](https://docs.xquik.com/introduction): Platform overview, capabilities, and integration methods.
+- [Quickstart](https://docs.xquik.com/quickstart): Get your API key and make your first request in 2 minutes.
+- [API Overview](https://docs.xquik.com/api-reference/overview): REST API v1 base URL, authentication, rate limits, and conventions.
+- [Authentication](https://docs.xquik.com/api-reference/authentication): API key format, dual auth endpoints, key management, and security best practices.
 
-## Authentication
+## API Reference - Account & Keys
 
-All API endpoints require authentication via the `x-api-key` header containing a valid API key. API key management endpoints (create, list, revoke) require session cookie authentication instead. Monitor and webhook endpoints support dual authentication (API key or session cookie).
+- [Get Account](https://docs.xquik.com/api-reference/account/get): Retrieve account info, subscription status, and current period usage.
+- [Create API Key](https://docs.xquik.com/api-reference/api-keys/create): Generate a new API key for programmatic access (session auth only).
+- [List API Keys](https://docs.xquik.com/api-reference/api-keys/list): Retrieve all API keys with status and usage timestamps (session auth only).
+- [Revoke API Key](https://docs.xquik.com/api-reference/api-keys/revoke): Permanently deactivate an API key. Immediate and irreversible.
 
-## Event Types
+## API Reference - Monitors
 
-- tweet.new - New tweet posted by monitored account
-- tweet.quote - Quote tweet posted by monitored account
-- tweet.reply - Reply posted by monitored account
-- tweet.retweet - Retweet posted by monitored account
+- [Create Monitor](https://docs.xquik.com/api-reference/monitors/create): Start monitoring an X account for real-time tweet events.
+- [List Monitors](https://docs.xquik.com/api-reference/monitors/list): Retrieve all monitors for your account.
+- [Get Monitor](https://docs.xquik.com/api-reference/monitors/get): Retrieve details for a specific monitor by ID.
+- [Update Monitor](https://docs.xquik.com/api-reference/monitors/update): Change event types or toggle active status for a monitor.
+- [Delete Monitor](https://docs.xquik.com/api-reference/monitors/delete): Remove a monitor and stop tracking the X account.
 
-## Rate Limits
+## API Reference - Events
 
-- API endpoints: 10 requests/second sustained, 20 burst
-- General requests: 20 requests/second sustained, 40 burst
-- Exceeding limits returns 429 with Retry-After header
+- [List Events](https://docs.xquik.com/api-reference/events/list): Query events from monitored accounts with filtering and cursor-based pagination.
+- [Get Event](https://docs.xquik.com/api-reference/events/get): Retrieve a single event by ID with full details.
 
-## Monthly Operation Limits (approximate)
+## API Reference - Webhooks
 
-- Tweet searches: ~66,000/month
-- User lookups: ~55,000/month
-- Follower fetches: ~66,000/month
-- Verified follower fetches: ~33,000/month
-- Follow checks: ~66,000/month
-- Limits represent single-operation maximums; mixed usage shares a common quota pool
-
-## MCP Server
-
-The MCP server runs at `https://xquik.com:3100/mcp` using StreamableHTTP transport. Authenticate with the same API keys via the `x-api-key` header.
-
-### MCP Tools
-
-- list-monitors - List all monitored X accounts
-- add-monitor - Start monitoring an X account (params: username, eventTypes)
-- remove-monitor - Stop monitoring an account (params: monitorId)
-- get-events - Query events with filters (params: limit?, monitorId?, eventType?, afterCursor?)
-- get-event - Get event by ID (params: eventId)
-- search-tweets - Search tweets (params: query) - metered, counts toward monthly quota
-- get-user-info - Get X user profile (params: username) - metered, counts toward monthly quota
-- list-webhooks - List all webhook endpoints
-- add-webhook - Register webhook endpoint (params: url, eventTypes)
+- [Create Webhook](https://docs.xquik.com/api-reference/webhooks/create): Register an HTTPS endpoint to receive real-time event notifications.
+- [List Webhooks](https://docs.xquik.com/api-reference/webhooks/list): Retrieve all webhook endpoints registered to your account.
+- [Update Webhook](https://docs.xquik.com/api-reference/webhooks/update): Update the URL, event types, or active state of an existing webhook.
+- [Delete Webhook](https://docs.xquik.com/api-reference/webhooks/delete): Permanently remove a webhook endpoint and stop all future deliveries.
+- [List Deliveries](https://docs.xquik.com/api-reference/webhooks/deliveries): View delivery attempts and their statuses for a specific webhook.
 
 ## Webhooks
 
-Webhook deliveries are HTTPS POST requests signed with HMAC-SHA256. The signature is sent in the `X-Signature` header as `sha256=` + hex digest. Verify by computing HMAC-SHA256(webhook_secret, raw_body) and comparing with constant-time comparison. Failed deliveries retry 3 times with exponential backoff.
+- [Webhooks Overview](https://docs.xquik.com/webhooks/overview): Real-time event delivery to your HTTPS endpoints with HMAC-SHA256 signatures.
+- [Signature Verification](https://docs.xquik.com/webhooks/verification): Verify HMAC-SHA256 signatures on incoming webhook deliveries.
 
-## Error Codes
+## MCP Server
 
-- 400 invalid_input - Request body validation failed
-- 400 invalid_id - Path parameter is not a valid ID
-- 401 unauthenticated - Missing or invalid API key
-- 403 monitor_limit_reached - Plan monitor limit exceeded
-- 404 not_found - Resource does not exist
-- 409 monitor_already_exists - Duplicate monitor for same X account
-- 429 - Rate limited (retry with backoff)
-- 500 internal_error - Server error
+- [MCP Server Overview](https://docs.xquik.com/mcp/overview): Connect AI agents (Claude, ChatGPT, Grok) to Xquik via Model Context Protocol.
+- [MCP Tools Reference](https://docs.xquik.com/mcp/tools): All 9 MCP tools with input/output schemas and usage examples.
 
-## Common Use Cases
+## Guides
 
-1. Monitor & Poll: Create a monitor for an X account, then poll GET /api/v1/events periodically to retrieve new activity
-2. Real-Time Webhooks: Create a monitor and webhook, receive instant HTTPS POST notifications when events occur
-3. AI Agent: Configure the MCP server in Claude Desktop/Code to let AI agents search tweets, monitor accounts, and retrieve events conversationally
-4. Data Extraction: Use the dashboard extraction tools to pull followers, following, retweeters, likers, quoters, replies, list members, and verified followers
-5. Giveaway Draws: Run transparent random draws with archived tweet snapshots and public result pages
+- [Workflows](https://docs.xquik.com/guides/workflows): End-to-end integration patterns with complete code examples.
+- [Error Handling](https://docs.xquik.com/guides/error-handling): Error recovery patterns, retry strategies, and rate limit handling.
+- [Rate Limits](https://docs.xquik.com/guides/rate-limits): Rate limit tiers, burst allowances, and client-side rate limiting.
+- [Webhook Testing](https://docs.xquik.com/guides/webhook-testing): Test webhook integrations locally with ngrok, RequestBin, and CLI tools.
+- [Billing & Usage](https://docs.xquik.com/guides/billing): Subscription pricing, usage quotas, and monthly operation limits.
 
-## Documentation
+## Optional
 
-- Full docs: https://docs.xquik.com
-- API Reference: https://docs.xquik.com/api-reference/overview
-- Quickstart: https://docs.xquik.com/quickstart
-- Webhooks: https://docs.xquik.com/webhooks/overview
-- MCP Server: https://docs.xquik.com/mcp/overview
+- [Troubleshooting](https://docs.xquik.com/guides/troubleshooting): Common issues and solutions for the Xquik API.
+- [Type Definitions](https://docs.xquik.com/guides/types): TypeScript type definitions for all API request and response objects.
