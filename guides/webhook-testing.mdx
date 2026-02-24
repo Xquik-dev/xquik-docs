@@ -1,0 +1,216 @@
+---
+title: Webhook Testing
+description: Test webhook integrations locally with ngrok, RequestBin, and CLI tools
+---
+
+# Webhook Testing
+
+Test your webhook integration before deploying to production. Use these tools to receive real deliveries locally, inspect payloads, and debug failures.
+
+## Local Testing with ngrok
+
+[ngrok](https://ngrok.com) creates a public HTTPS tunnel to your local server, letting Xquik deliver webhooks to your development machine.
+
+<Steps>
+  <Step title="Install ngrok">
+    ```bash
+    # macOS
+    brew install ngrok
+
+    # Linux
+    curl -sSL https://ngrok-agent.s3.amazonaws.com/ngrok-v3-stable-linux-amd64.tgz \
+      | tar -xz -C /usr/local/bin
+
+    # Authenticate (free account required)
+    ngrok config add-authtoken YOUR_NGROK_TOKEN
+    ```
+  </Step>
+  <Step title="Start your local server">
+    Run your webhook handler on a local port (e.g. `:3000`):
+
+    ```bash
+    node server.js
+    # or: python app.py
+    # or: go run main.go
+    ```
+  </Step>
+  <Step title="Start the ngrok tunnel">
+    ```bash
+    ngrok http 3000
+    ```
+
+    ngrok outputs a public HTTPS URL:
+
+    ```
+    Forwarding  https://a1b2c3d4.ngrok-free.app → http://localhost:3000
+    ```
+
+    Copy the `https://` URL.
+  </Step>
+  <Step title="Create a webhook with the ngrok URL">
+    ```bash
+    curl -X POST https://xquik.com/api/v1/webhooks \
+      -H "x-api-key: xqk_YOUR_KEY_HERE" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "url": "https://a1b2c3d4.ngrok-free.app/webhook",
+        "eventTypes": ["tweet.new", "tweet.reply"]
+      }' | jq
+    ```
+
+    Save the `secret` from the response for signature verification.
+  </Step>
+  <Step title="Trigger events">
+    When a monitored account posts a tweet, Xquik delivers the event through ngrok to your local server. Check your server logs and the ngrok web inspector at `http://localhost:4040`.
+  </Step>
+</Steps>
+
+<Warning>
+  ngrok URLs change every time you restart the tunnel (free plan). Update your webhook URL after each restart, or use a paid ngrok plan for stable subdomains.
+</Warning>
+
+## Testing with RequestBin
+
+Use [webhook.site](https://webhook.site) to inspect webhook payloads without running a local server.
+
+<Steps>
+  <Step title="Get a RequestBin URL">
+    Visit [webhook.site](https://webhook.site). A unique HTTPS URL is generated automatically:
+
+    ```
+    https://webhook.site/a1b2c3d4-e5f6-7890-abcd-ef1234567890
+    ```
+  </Step>
+  <Step title="Create a webhook with the RequestBin URL">
+    ```bash
+    curl -X POST https://xquik.com/api/v1/webhooks \
+      -H "x-api-key: xqk_YOUR_KEY_HERE" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "url": "https://webhook.site/a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        "eventTypes": ["tweet.new"]
+      }' | jq
+    ```
+  </Step>
+  <Step title="View incoming payloads">
+    When events arrive, they appear in the webhook.site dashboard in real time. Inspect headers (`X-Signature`, `Content-Type`) and the JSON body to verify the payload format matches your expectations.
+  </Step>
+</Steps>
+
+<Note>
+  RequestBin is useful for inspecting payload structure. For testing signature verification and handler logic, use [ngrok with a local server](#local-testing-with-ngrok) instead.
+</Note>
+
+## Sending Test Payloads
+
+Simulate a webhook delivery to your local handler without waiting for real events. This is useful for testing signature verification and event processing logic.
+
+```bash
+# Generate a test signature
+SECRET="your_webhook_secret_here"
+PAYLOAD='{"id":"9001","type":"tweet.new","monitorId":"7","username":"elonmusk","occurredAt":"2026-02-24T14:22:00.000Z","data":{"tweetId":"1893456789012345678","text":"The future is now.","metrics":{"likes":42000,"retweets":8500,"replies":3200}}}'
+
+SIGNATURE="sha256=$(echo -n "$PAYLOAD" | openssl dgst -sha256 -hmac "$SECRET" | cut -d' ' -f2)"
+
+# Send to your local server
+curl -X POST http://localhost:3000/webhook \
+  -H "Content-Type: application/json" \
+  -H "X-Signature: $SIGNATURE" \
+  -d "$PAYLOAD"
+```
+
+**Test payload structure:**
+
+```json
+{
+  "id": "9001",
+  "type": "tweet.new",
+  "monitorId": "7",
+  "username": "elonmusk",
+  "occurredAt": "2026-02-24T14:22:00.000Z",
+  "data": {
+    "tweetId": "1893456789012345678",
+    "text": "The future is now.",
+    "metrics": {
+      "likes": 42000,
+      "retweets": 8500,
+      "replies": 3200
+    }
+  }
+}
+```
+
+Test all event types by changing the `type` field: `tweet.new`, `tweet.reply`, `tweet.quote`, `tweet.retweet`.
+
+## Debugging Delivery Failures
+
+### Check Delivery Status
+
+Query the [deliveries endpoint](/api-reference/webhooks/deliveries) to see delivery attempts and error details:
+
+```bash
+curl https://xquik.com/api/v1/webhooks/15/deliveries \
+  -H "x-api-key: xqk_YOUR_KEY_HERE" | jq
+```
+
+**Response:**
+
+```json
+{
+  "deliveries": [
+    {
+      "id": "502",
+      "streamEventId": "9002",
+      "status": "failed",
+      "attempts": 3,
+      "lastStatusCode": 500,
+      "lastError": "Internal Server Error",
+      "createdAt": "2026-02-24T14:25:00.000Z"
+    }
+  ]
+}
+```
+
+### Delivery Statuses
+
+| Status | Description |
+|--------|-------------|
+| `pending` | Queued, waiting for next attempt |
+| `delivered` | Your endpoint returned 2xx. Complete. |
+| `failed` | Most recent attempt failed. Retrying with backoff. |
+| `exhausted` | All retry attempts used. No further retries. |
+
+### Common Failure Reasons
+
+<AccordionGroup>
+  <Accordion title="Timeout (>10 seconds)">
+    Your endpoint must respond within 10 seconds. If your handler is slow, return `200` immediately and process the event asynchronously using a background job queue.
+  </Accordion>
+  <Accordion title="Non-2xx response">
+    Any response outside the 200--299 range counts as a failure. Check your server logs for unhandled exceptions or validation errors in your handler. Common culprits: missing middleware (e.g. `express.raw()`), JSON parse errors, or database connection failures.
+  </Accordion>
+  <Accordion title="DNS resolution failure">
+    The webhook URL hostname could not be resolved. Verify your domain DNS records are correct. If using ngrok, confirm the tunnel is still running.
+  </Accordion>
+  <Accordion title="TLS/SSL errors">
+    Webhook URLs must use HTTPS with a valid certificate. Self-signed certificates are rejected. Use a trusted CA (Let's Encrypt, Cloudflare) or ngrok for local development.
+  </Accordion>
+  <Accordion title="Connection refused">
+    The target server is not accepting connections. Verify your server is running and listening on the correct port. Check firewall rules if running on a cloud provider.
+  </Accordion>
+  <Accordion title="Signature verification failing">
+    Compute the HMAC over the **raw request body bytes**, not a re-serialized JSON object. Re-serialization can alter whitespace or key ordering. Use `express.raw()` in Node.js, `request.get_data()` in Flask, or `io.ReadAll(r.Body)` in Go.
+  </Accordion>
+</AccordionGroup>
+
+<CardGroup cols={3}>
+  <Card title="Webhooks Overview" icon="webhook" href="/webhooks/overview">
+    How webhooks work, delivery format, and retry policy.
+  </Card>
+  <Card title="Signature Verification" icon="shield-check" href="/webhooks/verification">
+    HMAC-SHA256 verification in Node.js, Python, and Go.
+  </Card>
+  <Card title="Deliveries API" icon="truck" href="/api-reference/webhooks/deliveries">
+    Query delivery attempts and statuses.
+  </Card>
+</CardGroup>

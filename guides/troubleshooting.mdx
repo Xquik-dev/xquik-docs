@@ -1,0 +1,145 @@
+---
+title: Troubleshooting
+description: Common issues and solutions for the Xquik API
+---
+
+# Troubleshooting
+
+Common issues, error codes, and solutions. If your problem isn't covered here, reach out on [X @xquikcom](https://x.com/xquikcom).
+
+<AccordionGroup>
+  <Accordion title='Why am I getting 401 Unauthenticated?'>
+    The API key is missing, invalid, or revoked. Check the following:
+
+    - **Header name:** Must be `x-api-key` (lowercase). `Authorization` or `X-Api-Key` won't work.
+    - **Key format:** Must start with `xqk_`. If it doesn't, you're using the wrong value.
+    - **Key revoked:** Revoked keys return 401 immediately. Generate a new key from the dashboard.
+    - **Session-only endpoint:** The API Keys endpoints (`/api/v1/api-keys/*`) require session authentication (browser login), not API key auth. You cannot manage API keys via API key.
+
+    ```bash
+    # Correct
+    curl https://xquik.com/api/v1/account \
+      -H "x-api-key: xqk_a1b2c3d4e5f6..."
+
+    # Wrong — missing header
+    curl https://xquik.com/api/v1/account
+    ```
+  </Accordion>
+
+  <Accordion title='Why am I getting 403 Monitor Limit Reached?'>
+    Your plan allows 1 monitor by default. Creating a second monitor returns:
+
+    ```json
+    { "error": "monitor_limit_reached", "limit": 1 }
+    ```
+
+    **Solutions:**
+    - Delete an unused monitor to free a slot: `DELETE /api/v1/monitors/{id}`
+    - Add more monitors from the dashboard billing page ($10/month each)
+    - Check your current usage: `GET /api/v1/account` shows `monitorsAllowed` and `monitorsUsed`
+  </Accordion>
+
+  <Accordion title='Webhooks not arriving?'>
+    Webhooks can fail silently. Walk through this checklist:
+
+    1. **Webhook is active:** Verify `isActive: true` via `GET /api/v1/webhooks`. Inactive webhooks don't receive deliveries.
+    2. **HTTPS required:** HTTP endpoints are rejected. Your URL must start with `https://`.
+    3. **Response time:** Your endpoint must respond with `2xx` within 10 seconds. Timeouts count as failures.
+    4. **Check deliveries:** Call `GET /api/v1/webhooks/{id}/deliveries` to see delivery status, attempt count, and error messages.
+    5. **Local testing:** If using ngrok or a tunnel, verify it's running and the URL is current. Ngrok URLs change on restart (free plan).
+    6. **Event type mismatch:** Your webhook must subscribe to the event types your monitors produce. A webhook listening for `tweet.new` won't receive `tweet.reply` events.
+
+    <Tip>
+      See the [Webhook Testing](/guides/webhook-testing) guide for a step-by-step local setup with ngrok.
+    </Tip>
+  </Accordion>
+
+  <Accordion title='Monitor not tracking events?'>
+    If your monitor is active but no events appear:
+
+    - **Check `isActive`:** Confirm via `GET /api/v1/monitors/{id}` that `isActive` is `true`. Paused monitors don't track.
+    - **Event propagation delay:** Events take seconds to minutes to appear depending on X API latency. This is normal.
+    - **Event types:** Verify your monitor's `eventTypes` array includes the type you expect. A monitor tracking only `["tweet.new"]` won't capture replies or retweets.
+    - **Account activity:** The monitored X account must actually post content matching your event types. No posts = no events.
+    - **Pagination:** If listing events, check `hasMore` in the response. Older events may be on subsequent pages.
+  </Accordion>
+
+  <Accordion title='Getting 429 Too Many Requests?'>
+    You've exceeded the API rate limit:
+
+    | Scope | Limit | Burst |
+    |-------|-------|-------|
+    | API endpoints (`/api/v1/*`) | 10 req/s | 20 |
+
+    **Solutions:**
+    - Implement exponential backoff. Start at 1 second, double on each retry, max 5 retries.
+    - Check the `Retry-After` header for the server-recommended wait time.
+    - Use webhooks instead of polling. Webhooks push events to you in real time, eliminating the need for repeated API calls.
+    - Batch your logic. Fetch events once per minute instead of once per second.
+
+    See the [Rate Limits](/guides/rate-limits) guide for backoff code examples.
+  </Accordion>
+
+  <Accordion title='How do I check my usage?'>
+    Call `GET /api/v1/account`. The `currentPeriod` object shows your usage:
+
+    ```json
+    {
+      "currentPeriod": {
+        "start": "2026-02-01T00:00:00.000Z",
+        "end": "2026-03-01T00:00:00.000Z",
+        "capMicrocents": "10000000000",
+        "usedMicrocents": "4500000"
+      }
+    }
+    ```
+
+    - `capMicrocents`: Your monthly cap ($10 = 10,000,000,000 microcents)
+    - `usedMicrocents`: How much you've consumed this period
+    - **Remaining budget:** `capMicrocents - usedMicrocents`
+
+    The dashboard also displays usage graphically on the billing page.
+
+    See [Billing & Usage](/guides/billing) for cost-per-operation details and usage scenarios.
+  </Accordion>
+
+  <Accordion title='Can I use the API without a subscription?'>
+    No. An active subscription ($20/month) is required for all API access. Without it:
+
+    - API key creation is blocked
+    - Existing API keys return `401`
+    - Monitors, events, and webhooks are inaccessible
+
+    Subscribe from the [dashboard](https://xquik.com) billing page. Access activates immediately after payment.
+  </Accordion>
+
+  <Accordion title='How do I connect an AI agent?'>
+    Xquik provides an MCP (Model Context Protocol) server for AI agent integration. 9 tools are available on port 3100.
+
+    **Setup:**
+    1. Get your API key from the dashboard
+    2. Configure your AI client with the MCP server URL and API key
+    3. The agent authenticates via the `x-api-key` header, same as the REST API
+
+    **Supported clients:**
+    - Claude Desktop
+    - Claude Code
+    - Any MCP-compatible AI agent
+
+    See the [MCP Server overview](/mcp/overview) for full setup instructions and the [MCP Tools](/mcp/tools) reference for all 9 available tools.
+  </Accordion>
+</AccordionGroup>
+
+## Still Stuck?
+
+<CardGroup cols={3}>
+  <Card title="Authentication" icon="key" href="/api-reference/authentication">
+    API key format, header requirements, and dual auth details.
+  </Card>
+  <Card title="Error Handling" icon="triangle-exclamation" href="/guides/error-handling">
+    Error codes, retry strategies, and graceful degradation.
+  </Card>
+  <Card title="Billing & Usage" icon="credit-card" href="/guides/billing">
+    Pricing, usage caps, and cost-per-operation breakdown.
+  </Card>
+</CardGroup>

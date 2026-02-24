@@ -1,42 +1,131 @@
 ---
-title: List API Keys
-description: Retrieve all API keys for your account
+title: "List API Keys"
+description: "Retrieve all API keys for your account with status and usage timestamps."
 ---
 
-<Note>
-  This endpoint requires **session cookie** authentication only (dashboard).
-</Note>
+<CodeGroup>
+  ```bash cURL
+  curl https://xquik.com/api/v1/api-keys \
+    -H "Cookie: session=YOUR_SESSION_TOKEN" | jq
+  ```
 
-## Request
+  ```javascript Node.js
+  const response = await fetch("https://xquik.com/api/v1/api-keys", {
+    headers: { "Cookie": "session=YOUR_SESSION_TOKEN" },
+  });
+  const data = await response.json();
+  console.log(data.keys);
+  ```
 
-```
-GET /api/v1/api-keys
-```
+  ```python Python
+  import requests
+
+  response = requests.get(
+      "https://xquik.com/api/v1/api-keys",
+      cookies={"session": "YOUR_SESSION_TOKEN"},
+  )
+  data = response.json()
+  print(data["keys"])
+  ```
+
+  ```go Go
+  package main
+
+  import (
+  	"fmt"
+  	"io"
+  	"log"
+  	"net/http"
+  )
+
+  func main() {
+  	req, err := http.NewRequest("GET", "https://xquik.com/api/v1/api-keys", nil)
+  	if err != nil {
+  		log.Fatal(err)
+  	}
+  	req.AddCookie(&http.Cookie{Name: "session", Value: "YOUR_SESSION_TOKEN"})
+
+  	resp, err := http.DefaultClient.Do(req)
+  	if err != nil {
+  		log.Fatal(err)
+  	}
+  	defer resp.Body.Close()
+
+  	body, err := io.ReadAll(resp.Body)
+  	if err != nil {
+  		log.Fatal(err)
+  	}
+  	fmt.Println(string(body))
+  }
+  ```
+</CodeGroup>
+
+## Headers
+
+<ParamField header="Cookie" type="string" required>
+  Session cookie from the dashboard. Format: `session=YOUR_SESSION_TOKEN`.
+</ParamField>
 
 ## Response
 
-```json
-{
-  "keys": [
+<Tabs>
+  <Tab title="200 OK">
+    <ResponseField name="keys" type="array">
+      Array of API key objects.
+      <Expandable title="key object">
+        <ResponseField name="id" type="string">
+          Unique identifier for the API key.
+        </ResponseField>
+        <ResponseField name="name" type="string">
+          Display name of the key.
+        </ResponseField>
+        <ResponseField name="prefix" type="string">
+          First 4 characters after `xqk_` for identification.
+        </ResponseField>
+        <ResponseField name="isActive" type="boolean">
+          Whether the key is currently active.
+        </ResponseField>
+        <ResponseField name="createdAt" type="string">
+          ISO 8601 creation timestamp.
+        </ResponseField>
+        <ResponseField name="lastUsedAt" type="string">
+          ISO 8601 timestamp of the last API call made with this key. Omitted if never used.
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+
+    ```json
     {
-      "id": "42",
-      "name": "Production",
-      "prefix": "a1b2",
-      "isActive": true,
-      "createdAt": "2026-02-24T10:30:00.000Z",
-      "lastUsedAt": "2026-02-24T14:00:00.000Z"
+      "keys": [
+        {
+          "id": "42",
+          "name": "Production",
+          "prefix": "a1b2",
+          "isActive": true,
+          "createdAt": "2026-02-24T10:30:00.000Z",
+          "lastUsedAt": "2026-02-24T18:45:12.000Z"
+        },
+        {
+          "id": "43",
+          "name": "Staging",
+          "prefix": "c3d4",
+          "isActive": true,
+          "createdAt": "2026-02-20T09:00:00.000Z"
+        }
+      ]
     }
-  ]
-}
-```
+    ```
+  </Tab>
+  <Tab title="401 Unauthenticated">
+    ```json
+    { "error": "unauthenticated" }
+    ```
+    Missing or invalid session cookie. Sign in to the dashboard first.
+  </Tab>
+</Tabs>
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `id` | string | Key ID |
-| `name` | string | Display name |
-| `prefix` | string | First 4 characters after `xqk_` |
-| `isActive` | boolean | Whether the key is active |
-| `createdAt` | string | ISO 8601 creation timestamp |
-| `lastUsedAt` | string | ISO 8601 last usage timestamp (omitted if never used) |
+<Note>
+  This endpoint requires **session cookie** authentication (dashboard sign-in). API keys cannot list other API keys.
 
-Returns up to 200 keys.
+  **Related:** [Create API Key](/api-reference/api-keys/create) &middot; [Revoke API Key](/api-reference/api-keys/revoke)
+</Note>

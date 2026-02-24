@@ -1,65 +1,168 @@
 ---
-title: Update Monitor
-description: Update event types or toggle a monitor's active state
+title: "Update Monitor"
+description: "Change event types or toggle active status for a monitor."
 ---
 
-## Request
+<CodeGroup>
+  ```bash cURL
+  curl -X PATCH https://xquik.com/api/v1/monitors/7 \
+    -H "x-api-key: xqk_YOUR_KEY_HERE" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "eventTypes": ["tweet.new", "tweet.quote", "tweet.reply", "tweet.retweet"],
+      "isActive": true
+    }' | jq
+  ```
 
-```
-PATCH /api/v1/monitors/{id}
-```
+  ```javascript Node.js
+  const monitorId = "7";
+  const response = await fetch(`https://xquik.com/api/v1/monitors/${monitorId}`, {
+    method: "PATCH",
+    headers: {
+      "x-api-key": "xqk_YOUR_KEY_HERE",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      eventTypes: ["tweet.new", "tweet.quote", "tweet.reply", "tweet.retweet"],
+      isActive: true,
+    }),
+  });
+  const data = await response.json();
+  ```
 
-### Path Parameters
+  ```python Python
+  import requests
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `id` | string | Monitor ID |
+  monitor_id = "7"
+  response = requests.patch(
+      f"https://xquik.com/api/v1/monitors/{monitor_id}",
+      headers={"x-api-key": "xqk_YOUR_KEY_HERE"},
+      json={
+          "eventTypes": ["tweet.new", "tweet.quote", "tweet.reply", "tweet.retweet"],
+          "isActive": True,
+      },
+  )
+  data = response.json()
+  ```
 
-### Headers
+  ```go Go
+  package main
 
-| Header | Required | Description |
-|--------|----------|-------------|
-| `x-api-key` | Yes | Your API key |
-| `Content-Type` | Yes | `application/json` |
+  import (
+      "bytes"
+      "encoding/json"
+      "fmt"
+      "net/http"
+  )
 
-### Body
+  func main() {
+      body, _ := json.Marshal(map[string]interface{}{
+          "eventTypes": []string{"tweet.new", "tweet.quote", "tweet.reply", "tweet.retweet"},
+          "isActive":   true,
+      })
 
-```json
-{
-  "eventTypes": ["tweet.new", "tweet.quote", "tweet.reply"],
-  "isActive": true
-}
-```
+      monitorID := "7"
+      req, err := http.NewRequest("PATCH", "https://xquik.com/api/v1/monitors/"+monitorID, bytes.NewReader(body))
+      if err != nil {
+          panic(err)
+      }
+      req.Header.Set("x-api-key", "xqk_YOUR_KEY_HERE")
+      req.Header.Set("Content-Type", "application/json")
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `eventTypes` | string[] | No | Updated event types (min 1) |
-| `isActive` | boolean | No | Enable or disable the monitor |
+      resp, err := http.DefaultClient.Do(req)
+      if err != nil {
+          panic(err)
+      }
+      defer resp.Body.Close()
 
-At least one field is required.
+      var data map[string]interface{}
+      if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+          panic(err)
+      }
+      fmt.Println(data)
+  }
+  ```
+</CodeGroup>
+
+## Path Parameters
+
+<ParamField path="id" type="string" required>
+  The unique monitor ID.
+</ParamField>
+
+## Headers
+
+<ParamField header="x-api-key" type="string" required>
+  Your API key. Generate one from the [dashboard](https://xquik.com/dashboard).
+</ParamField>
+
+<ParamField header="Content-Type" type="string" required>
+  Must be `application/json`.
+</ParamField>
+
+## Body
+
+At least 1 field is required.
+
+<ParamField body="eventTypes" type="string[]">
+  Updated array of event types. Must contain at least 1 valid type: `tweet.new`, `tweet.quote`, `tweet.reply`, `tweet.retweet`.
+</ParamField>
+
+<ParamField body="isActive" type="boolean">
+  Set to `false` to pause monitoring, or `true` to resume. Toggling this automatically registers or unregisters the account with the real-time stream.
+</ParamField>
 
 ## Response
 
 <Tabs>
   <Tab title="200 OK">
+    <ResponseField name="id" type="string">Unique monitor ID.</ResponseField>
+    <ResponseField name="username" type="string">Normalized X username.</ResponseField>
+    <ResponseField name="xUserId" type="string">Resolved X user ID.</ResponseField>
+    <ResponseField name="eventTypes" type="string[]">Updated event types.</ResponseField>
+    <ResponseField name="isActive" type="boolean">Current active status after update.</ResponseField>
+    <ResponseField name="createdAt" type="string">ISO 8601 creation timestamp.</ResponseField>
+
     ```json
     {
       "id": "7",
       "username": "elonmusk",
       "xUserId": "44196397",
-      "eventTypes": ["tweet.new", "tweet.quote", "tweet.reply"],
+      "eventTypes": ["tweet.new", "tweet.quote", "tweet.reply", "tweet.retweet"],
       "isActive": true,
       "createdAt": "2026-02-24T10:30:00.000Z"
     }
     ```
   </Tab>
+  <Tab title="400 Invalid Input">
+    ```json
+    { "error": "invalid_input" }
+    ```
+    Empty body, invalid `eventTypes` values, or invalid `isActive` type.
+
+    ```json
+    { "error": "invalid_id" }
+    ```
+    The provided monitor ID is not a valid format.
+  </Tab>
+  <Tab title="401 Unauthenticated">
+    ```json
+    { "error": "unauthenticated" }
+    ```
+    Missing or invalid API key.
+  </Tab>
   <Tab title="404 Not Found">
     ```json
     { "error": "not_found" }
     ```
+    No monitor exists with this ID, or it belongs to a different account.
   </Tab>
 </Tabs>
 
 <Info>
-  Toggling `isActive` automatically registers or unregisters the account with the real-time stream.
+  Toggling `isActive` automatically registers or unregisters the X account with the real-time stream. When paused (`isActive: false`), no events are captured and no webhook deliveries are sent for this monitor.
 </Info>
+
+<Note>
+  **Related:** [Get Monitor](/api-reference/monitors/get) to verify the updated state, or [Delete Monitor](/api-reference/monitors/delete) to remove the monitor entirely.
+</Note>

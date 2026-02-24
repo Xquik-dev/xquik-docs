@@ -15,9 +15,9 @@ Keys follow this format:
 xqk_a1b2c3d4e5f6789012345678901234
 ```
 
-- Prefix: `xqk_`
-- Body: 32 hexadecimal characters
-- Storage: SHA-256 hashed in database (raw key never stored)
+- **Prefix:** `xqk_`
+- **Body:** 32 hexadecimal characters
+- **Storage:** SHA-256 hashed in database (raw key never stored)
 
 ## Using Your API Key
 
@@ -43,6 +43,30 @@ response = requests.get(
     "https://xquik.com/api/v1/account",
     headers={"x-api-key": "xqk_YOUR_KEY_HERE"},
 )
+```
+
+```go Go
+package main
+
+import (
+	"fmt"
+	"io"
+	"net/http"
+)
+
+func main() {
+	req, _ := http.NewRequest("GET", "https://xquik.com/api/v1/account", nil)
+	req.Header.Set("x-api-key", "xqk_YOUR_KEY_HERE")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		panic(err)
+	}
+	defer resp.Body.Close()
+
+	body, _ := io.ReadAll(resp.Body)
+	fmt.Println(string(body))
+}
 ```
 
 </CodeGroup>
@@ -101,3 +125,72 @@ Invalid or missing API key returns:
 ```
 
 **Status:** `401 Unauthorized`
+
+## Security Best Practices
+
+<AccordionGroup>
+  <Accordion title="Store keys in environment variables">
+    Never hardcode API keys in your source code. Use environment variables to keep keys separate from your codebase:
+
+    ```bash .env
+    XQUIK_API_KEY=xqk_a1b2c3d4e5f6789012345678901234
+    ```
+
+    Access the key in your application:
+
+    <CodeGroup>
+
+    ```javascript Node.js
+    const apiKey = process.env.XQUIK_API_KEY;
+    ```
+
+    ```python Python
+    import os
+
+    api_key = os.environ["XQUIK_API_KEY"]
+    ```
+
+    ```go Go
+    apiKey := os.Getenv("XQUIK_API_KEY")
+    ```
+
+    </CodeGroup>
+  </Accordion>
+  <Accordion title="Never commit keys to version control">
+    Add `.env` to your `.gitignore` to prevent accidental commits:
+
+    ```bash .gitignore
+    # Environment variables
+    .env
+    .env.local
+    .env.production
+    ```
+
+    If a key is accidentally committed, revoke it immediately from your dashboard and generate a new one. Consider the exposed key compromised even if you force-push to remove it from history.
+  </Accordion>
+  <Accordion title="Rotate keys regularly">
+    Rotate API keys periodically to limit the impact of a potential leak:
+
+    1. Create a new key from the dashboard
+    2. Update the key in all your environments
+    3. Verify all services work with the new key
+    4. Revoke the old key
+
+    Xquik supports multiple active keys, so you can rotate without downtime.
+  </Accordion>
+  <Accordion title="Use separate keys for development & production">
+    Create distinct API keys for each environment. This limits blast radius if a development key is compromised and makes it easier to track usage per environment:
+
+    ```bash .env.local
+    # Development
+    XQUIK_API_KEY=xqk_dev_key_here
+    ```
+
+    ```bash .env.production
+    # Production
+    XQUIK_API_KEY=xqk_prod_key_here
+    ```
+
+    Name your keys descriptively (e.g., "Production - Backend", "Staging", "Local Dev") so you can identify them in the dashboard.
+  </Accordion>
+</AccordionGroup>

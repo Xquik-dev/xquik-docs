@@ -1,0 +1,661 @@
+---
+title: Workflows
+description: End-to-end integration patterns with complete code examples
+---
+
+# Workflows
+
+3 complete integration patterns from zero to production. Each workflow includes full code in 4 languages.
+
+## 1. Monitor & Poll
+
+Create an API key, start monitoring an X account, then poll for events with pagination.
+
+### Step 1: Create a Monitor
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://xquik.com/api/v1/monitors \
+  -H "x-api-key: xqk_YOUR_KEY_HERE" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "elonmusk",
+    "eventTypes": ["tweet.new", "tweet.reply", "tweet.quote"]
+  }' | jq
+```
+
+```javascript Node.js
+const API_KEY = "xqk_YOUR_KEY_HERE";
+const BASE = "https://xquik.com/api/v1";
+
+const response = await fetch(`${BASE}/monitors`, {
+  method: "POST",
+  headers: {
+    "x-api-key": API_KEY,
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    username: "elonmusk",
+    eventTypes: ["tweet.new", "tweet.reply", "tweet.quote"],
+  }),
+});
+const monitor = await response.json();
+console.log("Monitor created:", monitor.id);
+```
+
+```python Python
+import requests
+
+API_KEY = "xqk_YOUR_KEY_HERE"
+BASE = "https://xquik.com/api/v1"
+
+response = requests.post(
+    f"{BASE}/monitors",
+    headers={"x-api-key": API_KEY},
+    json={
+        "username": "elonmusk",
+        "eventTypes": ["tweet.new", "tweet.reply", "tweet.quote"],
+    },
+)
+monitor = response.json()
+print("Monitor created:", monitor["id"])
+```
+
+```go Go
+package main
+
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"io"
+	"log"
+	"net/http"
+)
+
+const apiKey = "xqk_YOUR_KEY_HERE"
+const base = "https://xquik.com/api/v1"
+
+func createMonitor() map[string]interface{} {
+	payload, _ := json.Marshal(map[string]interface{}{
+		"username":   "elonmusk",
+		"eventTypes": []string{"tweet.new", "tweet.reply", "tweet.quote"},
+	})
+
+	req, err := http.NewRequest("POST", base+"/monitors", bytes.NewReader(payload))
+	if err != nil {
+		log.Fatal(err)
+	}
+	req.Header.Set("x-api-key", apiKey)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	body, _ := io.ReadAll(resp.Body)
+	var monitor map[string]interface{}
+	json.Unmarshal(body, &monitor)
+	fmt.Println("Monitor created:", monitor["id"])
+	return monitor
+}
+```
+
+</CodeGroup>
+
+**Response:**
+
+```json
+{
+  "id": "7",
+  "username": "elonmusk",
+  "xUserId": "44196397",
+  "eventTypes": ["tweet.new", "tweet.reply", "tweet.quote"],
+  "createdAt": "2026-02-24T10:30:00.000Z"
+}
+```
+
+### Step 2: Poll for Events
+
+Poll on an interval and paginate through all available events.
+
+<CodeGroup>
+
+```bash cURL
+# First page
+curl "https://xquik.com/api/v1/events?monitorId=7&limit=50" \
+  -H "x-api-key: xqk_YOUR_KEY_HERE" | jq
+
+# Next page (use nextCursor from previous response)
+curl "https://xquik.com/api/v1/events?monitorId=7&limit=50&after=MjAyNi0wMi0yNFQxNTowNTozMC4wMDBafDkwMDI=" \
+  -H "x-api-key: xqk_YOUR_KEY_HERE" | jq
+```
+
+```javascript Node.js
+async function pollEvents(monitorId) {
+  let cursor = undefined;
+
+  while (true) {
+    const url = new URL(`${BASE}/events`);
+    url.searchParams.set("monitorId", monitorId);
+    url.searchParams.set("limit", "50");
+    if (cursor) url.searchParams.set("after", cursor);
+
+    const response = await fetch(url, {
+      headers: { "x-api-key": API_KEY },
+    });
+    const { events, hasMore, nextCursor } = await response.json();
+
+    for (const event of events) {
+      console.log(`[${event.type}] ${event.data.text}`);
+    }
+
+    if (!hasMore) break;
+    cursor = nextCursor;
+  }
+}
+
+// Poll every 30 seconds
+const monitorId = "7";
+setInterval(() => pollEvents(monitorId), 30_000);
+pollEvents(monitorId);
+```
+
+```python Python
+import time
+
+def poll_events(monitor_id: str):
+    cursor = None
+
+    while True:
+        params = {"monitorId": monitor_id, "limit": 50}
+        if cursor:
+            params["after"] = cursor
+
+        response = requests.get(
+            f"{BASE}/events",
+            headers={"x-api-key": API_KEY},
+            params=params,
+        )
+        data = response.json()
+
+        for event in data["events"]:
+            print(f"[{event['type']}] {event['data']['text']}")
+
+        if not data["hasMore"]:
+            break
+        cursor = data["nextCursor"]
+
+# Poll every 30 seconds
+monitor_id = "7"
+while True:
+    poll_events(monitor_id)
+    time.sleep(30)
+```
+
+```go Go
+func pollEvents(monitorId string) {
+	cursor := ""
+
+	for {
+		url := fmt.Sprintf("%s/events?monitorId=%s&limit=50", base, monitorId)
+		if cursor != "" {
+			url += "&after=" + cursor
+		}
+
+		req, err := http.NewRequest("GET", url, nil)
+		if err != nil {
+			log.Fatal(err)
+		}
+		req.Header.Set("x-api-key", apiKey)
+
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		body, _ := io.ReadAll(resp.Body)
+		resp.Body.Close()
+
+		var result struct {
+			Events     []map[string]interface{} `json:"events"`
+			HasMore    bool                     `json:"hasMore"`
+			NextCursor string                   `json:"nextCursor"`
+		}
+		json.Unmarshal(body, &result)
+
+		for _, event := range result.Events {
+			data := event["data"].(map[string]interface{})
+			fmt.Printf("[%s] %s\n", event["type"], data["text"])
+		}
+
+		if !result.HasMore {
+			break
+		}
+		cursor = result.NextCursor
+	}
+}
+
+func main() {
+	monitor := createMonitor()
+	monitorId := monitor["id"].(string)
+
+	for {
+		pollEvents(monitorId)
+		time.Sleep(30 * time.Second)
+	}
+}
+```
+
+</CodeGroup>
+
+<Note>
+  For real-time delivery without polling, use [webhooks](#2-real-time-webhooks) instead.
+</Note>
+
+---
+
+## 2. Real-Time Webhooks
+
+Create a monitor, register a webhook endpoint, then verify signatures and process events as they arrive.
+
+### Step 1: Create a Monitor
+
+Same as [Step 1 above](#step-1-create-a-monitor). You need at least 1 active monitor before events can be delivered.
+
+### Step 2: Create a Webhook
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://xquik.com/api/v1/webhooks \
+  -H "x-api-key: xqk_YOUR_KEY_HERE" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://your-server.com/webhook",
+    "eventTypes": ["tweet.new", "tweet.reply"]
+  }' | jq
+```
+
+```javascript Node.js
+const webhookResponse = await fetch(`${BASE}/webhooks`, {
+  method: "POST",
+  headers: {
+    "x-api-key": API_KEY,
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    url: "https://your-server.com/webhook",
+    eventTypes: ["tweet.new", "tweet.reply"],
+  }),
+});
+const webhook = await webhookResponse.json();
+console.log("Webhook secret:", webhook.secret);
+// Store this secret securely -- it's only shown once
+```
+
+```python Python
+response = requests.post(
+    f"{BASE}/webhooks",
+    headers={"x-api-key": API_KEY},
+    json={
+        "url": "https://your-server.com/webhook",
+        "eventTypes": ["tweet.new", "tweet.reply"],
+    },
+)
+webhook = response.json()
+print("Webhook secret:", webhook["secret"])
+# Store this secret securely -- it's only shown once
+```
+
+```go Go
+func createWebhook() string {
+	payload, _ := json.Marshal(map[string]interface{}{
+		"url":        "https://your-server.com/webhook",
+		"eventTypes": []string{"tweet.new", "tweet.reply"},
+	})
+
+	req, _ := http.NewRequest("POST", base+"/webhooks", bytes.NewReader(payload))
+	req.Header.Set("x-api-key", apiKey)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	body, _ := io.ReadAll(resp.Body)
+	var webhook map[string]interface{}
+	json.Unmarshal(body, &webhook)
+	secret := webhook["secret"].(string)
+	fmt.Println("Webhook secret:", secret)
+	// Store this secret securely -- it's only shown once
+	return secret
+}
+```
+
+</CodeGroup>
+
+<Warning>
+  The `secret` is returned only once. Store it securely -- you need it to verify signatures on incoming deliveries.
+</Warning>
+
+### Step 3: Handle & Verify Events
+
+Build a webhook handler that verifies the HMAC signature before processing events.
+
+<CodeGroup>
+
+```javascript Node.js (Express)
+import express from "express";
+import { createHmac, timingSafeEqual } from "node:crypto";
+
+const app = express();
+const WEBHOOK_SECRET = "your_webhook_secret_here";
+
+function verifySignature(payload, signature, secret) {
+  const expected =
+    "sha256=" + createHmac("sha256", secret).update(payload).digest("hex");
+  return timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
+}
+
+app.post("/webhook", express.raw({ type: "application/json" }), (req, res) => {
+  const signature = req.headers["x-signature"];
+  const payload = req.body.toString();
+
+  if (!verifySignature(payload, signature, WEBHOOK_SECRET)) {
+    return res.status(401).send("Invalid signature");
+  }
+
+  const event = JSON.parse(payload);
+
+  switch (event.type) {
+    case "tweet.new":
+      console.log(`New tweet from @${event.username}: ${event.data.text}`);
+      break;
+    case "tweet.reply":
+      console.log(`Reply from @${event.username}: ${event.data.text}`);
+      break;
+  }
+
+  res.status(200).send("OK");
+});
+
+app.listen(3000, () => console.log("Webhook server running on :3000"));
+```
+
+```python Python (Flask)
+import hmac
+import hashlib
+from flask import Flask, request
+
+app = Flask(__name__)
+WEBHOOK_SECRET = "your_webhook_secret_here"
+
+def verify_signature(payload: bytes, signature: str, secret: str) -> bool:
+    expected = "sha256=" + hmac.new(
+        secret.encode(), payload, hashlib.sha256
+    ).hexdigest()
+    return hmac.compare_digest(expected, signature)
+
+@app.route("/webhook", methods=["POST"])
+def webhook():
+    signature = request.headers.get("X-Signature", "")
+    payload = request.get_data()
+
+    if not verify_signature(payload, signature, WEBHOOK_SECRET):
+        return "Invalid signature", 401
+
+    event = request.get_json()
+
+    if event["type"] == "tweet.new":
+        print(f"New tweet from @{event['username']}: {event['data']['text']}")
+    elif event["type"] == "tweet.reply":
+        print(f"Reply from @{event['username']}: {event['data']['text']}")
+
+    return "OK", 200
+
+if __name__ == "__main__":
+    app.run(port=3000)
+```
+
+```go Go (net/http)
+package main
+
+import (
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"fmt"
+	"io"
+	"log"
+	"net/http"
+)
+
+const webhookSecret = "your_webhook_secret_here"
+
+func verifySignature(payload []byte, signature, secret string) bool {
+	mac := hmac.New(sha256.New, []byte(secret))
+	mac.Write(payload)
+	expected := "sha256=" + hex.EncodeToString(mac.Sum(nil))
+	return hmac.Equal([]byte(expected), []byte(signature))
+}
+
+func webhookHandler(w http.ResponseWriter, r *http.Request) {
+	payload, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		return
+	}
+
+	signature := r.Header.Get("X-Signature")
+	if !verifySignature(payload, signature, webhookSecret) {
+		http.Error(w, "Invalid signature", http.StatusUnauthorized)
+		return
+	}
+
+	var event struct {
+		Type     string `json:"type"`
+		Username string `json:"username"`
+		Data     struct {
+			Text string `json:"text"`
+		} `json:"data"`
+	}
+	json.Unmarshal(payload, &event)
+
+	switch event.Type {
+	case "tweet.new":
+		fmt.Printf("New tweet from @%s: %s\n", event.Username, event.Data.Text)
+	case "tweet.reply":
+		fmt.Printf("Reply from @%s: %s\n", event.Username, event.Data.Text)
+	}
+
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprint(w, "OK")
+}
+
+func main() {
+	http.HandleFunc("/webhook", webhookHandler)
+	log.Println("Webhook server running on :3000")
+	log.Fatal(http.ListenAndServe(":3000", nil))
+}
+```
+
+</CodeGroup>
+
+<Note>
+  Respond within 10 seconds. If your handler is slow, acknowledge the delivery immediately and process the event asynchronously.
+</Note>
+
+---
+
+## 3. AI Agent Integration
+
+Connect an AI agent to Xquik via the MCP server, then use natural language to monitor accounts and retrieve events.
+
+### Step 1: Configure MCP
+
+<Tabs>
+  <Tab title="Claude Desktop">
+    Add to your `claude_desktop_config.json`:
+
+    ```json
+    {
+      "mcpServers": {
+        "xquik": {
+          "url": "https://xquik.com:3100/mcp",
+          "headers": {
+            "x-api-key": "xqk_YOUR_KEY_HERE"
+          }
+        }
+      }
+    }
+    ```
+  </Tab>
+  <Tab title="Claude Code">
+    Add to your `.mcp.json`:
+
+    ```json
+    {
+      "mcpServers": {
+        "xquik": {
+          "type": "url",
+          "url": "https://xquik.com:3100/mcp",
+          "headers": {
+            "x-api-key": "xqk_YOUR_KEY_HERE"
+          }
+        }
+      }
+    }
+    ```
+  </Tab>
+</Tabs>
+
+### Step 2: Search Tweets
+
+Ask your AI agent:
+
+> "Search for tweets about TypeScript performance"
+
+The agent calls the `search-tweets` tool:
+
+```json
+{
+  "tool": "search-tweets",
+  "input": { "query": "TypeScript performance" }
+}
+```
+
+**Result:**
+
+```json
+[
+  {
+    "id": "1893456789012345678",
+    "text": "TypeScript 6.0 compiler is 10x faster. The rewrite in Go was worth it.",
+    "author": "typescript",
+    "createdAt": "2026-02-24T14:22:00.000Z"
+  },
+  {
+    "id": "1893456789012345999",
+    "text": "Benchmarked our monorepo build: 45s down to 4s with the new TS compiler.",
+    "author": "webdevexpert",
+    "createdAt": "2026-02-24T13:10:00.000Z"
+  }
+]
+```
+
+### Step 3: Monitor a User
+
+Ask your AI agent:
+
+> "Monitor @typescript for new tweets and replies"
+
+The agent calls the `add-monitor` tool:
+
+```json
+{
+  "tool": "add-monitor",
+  "input": {
+    "username": "typescript",
+    "eventTypes": ["tweet.new", "tweet.reply"]
+  }
+}
+```
+
+**Result:**
+
+```json
+{
+  "id": "12",
+  "username": "typescript",
+  "xUserId": "809233214",
+  "eventTypes": ["tweet.new", "tweet.reply"],
+  "createdAt": "2026-02-24T15:00:00.000Z"
+}
+```
+
+### Step 4: Get Events
+
+Ask your AI agent:
+
+> "Show me the latest events from my monitors"
+
+The agent calls the `get-events` tool:
+
+```json
+{
+  "tool": "get-events",
+  "input": { "limit": 10 }
+}
+```
+
+**Result:**
+
+```json
+{
+  "events": [
+    {
+      "id": "9010",
+      "type": "tweet.new",
+      "monitorId": "12",
+      "username": "typescript",
+      "occurredAt": "2026-02-24T16:45:00.000Z",
+      "data": {
+        "tweetId": "1893556789012345678",
+        "text": "TypeScript 6.0.1 patch release is out. Fixes incremental build edge cases.",
+        "metrics": { "likes": 3200, "retweets": 890, "replies": 245 }
+      }
+    }
+  ],
+  "hasMore": false
+}
+```
+
+The agent summarizes the results in natural language, giving you a clear overview without writing any code.
+
+### Example Prompts
+
+Once connected, try these with your AI agent:
+
+- "Monitor @veraborovic for new tweets and quote tweets"
+- "How many followers does @elonmusk have?"
+- "Search for tweets mentioning xquik"
+- "Show me all tweet.reply events from the last page"
+- "Set up a webhook at https://my-server.com/events for new tweets"
+- "Remove the monitor for @oldaccount"
+- "List all my active webhooks"
+
+<CardGroup cols={2}>
+  <Card title="MCP Server" icon="robot" href="/mcp/overview">
+    Connection details and setup instructions.
+  </Card>
+  <Card title="MCP Tools" icon="wrench" href="/mcp/tools">
+    Full input/output schemas for all 9 tools.
+  </Card>
+</CardGroup>

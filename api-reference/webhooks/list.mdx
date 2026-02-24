@@ -1,42 +1,129 @@
 ---
-title: List Webhooks
-description: Retrieve all webhook endpoints for your account
+title: "List Webhooks"
+description: "Retrieve all webhook endpoints registered to your account."
 ---
 
-## Request
+<CodeGroup>
+  ```bash cURL
+  curl https://xquik.com/api/v1/webhooks \
+    -H "x-api-key: xqk_a1b2c3d4e5f6789012345678901234" | jq
+  ```
 
-```
-GET /api/v1/webhooks
-```
+  ```javascript Node.js
+  const response = await fetch("https://xquik.com/api/v1/webhooks", {
+    headers: { "x-api-key": "xqk_a1b2c3d4e5f6789012345678901234" },
+  });
+  const data = await response.json();
+  console.log(data);
+  ```
 
-### Headers
+  ```python Python
+  import requests
 
-| Header | Required | Description |
-|--------|----------|-------------|
-| `x-api-key` | Yes | Your API key |
+  response = requests.get(
+      "https://xquik.com/api/v1/webhooks",
+      headers={"x-api-key": "xqk_a1b2c3d4e5f6789012345678901234"},
+  )
+  data = response.json()
+  print(data)
+  ```
+
+  ```go Go
+  package main
+
+  import (
+  	"fmt"
+  	"io"
+  	"log"
+  	"net/http"
+  )
+
+  func main() {
+  	req, err := http.NewRequest("GET", "https://xquik.com/api/v1/webhooks", nil)
+  	if err != nil {
+  		log.Fatal(err)
+  	}
+  	req.Header.Set("x-api-key", "xqk_a1b2c3d4e5f6789012345678901234")
+
+  	resp, err := http.DefaultClient.Do(req)
+  	if err != nil {
+  		log.Fatal(err)
+  	}
+  	defer resp.Body.Close()
+
+  	body, err := io.ReadAll(resp.Body)
+  	if err != nil {
+  		log.Fatal(err)
+  	}
+  	fmt.Println(string(body))
+  }
+  ```
+</CodeGroup>
+
+## Headers
+
+<ParamField header="x-api-key" type="string" required>
+  Your API key. This endpoint also accepts session cookie authentication.
+</ParamField>
 
 ## Response
 
-```json
-{
-  "webhooks": [
+<Tabs>
+  <Tab title="200 OK">
+    <ResponseField name="webhooks" type="array">
+      List of webhook objects for your account. Returns up to 200 webhooks.
+      <Expandable title="webhook object">
+        <ResponseField name="id" type="string">
+          Unique webhook identifier.
+        </ResponseField>
+        <ResponseField name="url" type="string">
+          Delivery endpoint URL.
+        </ResponseField>
+        <ResponseField name="eventTypes" type="string[]">
+          Event types this webhook is subscribed to.
+        </ResponseField>
+        <ResponseField name="isActive" type="boolean">
+          Whether the webhook is currently active.
+        </ResponseField>
+        <ResponseField name="createdAt" type="string">
+          ISO 8601 creation timestamp.
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+
+    ```json
     {
-      "id": "15",
-      "url": "https://your-server.com/webhook",
-      "eventTypes": ["tweet.new", "tweet.reply"],
-      "isActive": true,
-      "createdAt": "2026-02-24T10:30:00.000Z"
+      "webhooks": [
+        {
+          "id": "15",
+          "url": "https://your-server.com/webhook",
+          "eventTypes": ["tweet.new", "tweet.reply"],
+          "isActive": true,
+          "createdAt": "2026-02-24T10:30:00.000Z"
+        },
+        {
+          "id": "16",
+          "url": "https://backup.example.com/xquik",
+          "eventTypes": ["tweet.new"],
+          "isActive": false,
+          "createdAt": "2026-02-20T08:15:00.000Z"
+        }
+      ]
     }
-  ]
-}
-```
+    ```
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `id` | string | Webhook ID |
-| `url` | string | Delivery endpoint |
-| `eventTypes` | string[] | Subscribed event types |
-| `isActive` | boolean | Whether the webhook is active |
-| `createdAt` | string | ISO 8601 creation timestamp |
+    The `secret` is **never** included in list responses. It is only returned once at creation time.
+  </Tab>
+  <Tab title="401 Unauthenticated">
+    ```json
+    { "error": "unauthenticated" }
+    ```
+    Missing or invalid API key / session cookie.
+  </Tab>
+</Tabs>
 
-Returns up to 200 webhooks. The `secret` is never included in list responses.
+<Note>
+  This endpoint supports **dual authentication** -- either API key (`x-api-key` header) or session cookie from the dashboard.
+
+  **Related:** [Create Webhook](/api-reference/webhooks/create) &middot; [Update Webhook](/api-reference/webhooks/update) &middot; [Delete Webhook](/api-reference/webhooks/delete)
+</Note>

@@ -1,43 +1,125 @@
 ---
-title: Create Monitor
-description: Start monitoring an X account for events
+title: "Create Monitor"
+description: "Start monitoring an X account for real-time tweet events."
 ---
 
-## Request
+<CodeGroup>
+  ```bash cURL
+  curl -X POST https://xquik.com/api/v1/monitors \
+    -H "x-api-key: xqk_YOUR_KEY_HERE" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "username": "elonmusk",
+      "eventTypes": ["tweet.new", "tweet.reply"]
+    }' | jq
+  ```
 
-```
-POST /api/v1/monitors
-```
+  ```javascript Node.js
+  const response = await fetch("https://xquik.com/api/v1/monitors", {
+    method: "POST",
+    headers: {
+      "x-api-key": "xqk_YOUR_KEY_HERE",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      username: "elonmusk",
+      eventTypes: ["tweet.new", "tweet.reply"],
+    }),
+  });
+  const data = await response.json();
+  ```
 
-### Headers
+  ```python Python
+  import requests
 
-| Header | Required | Description |
-|--------|----------|-------------|
-| `x-api-key` | Yes | Your API key |
-| `Content-Type` | Yes | `application/json` |
+  response = requests.post(
+      "https://xquik.com/api/v1/monitors",
+      headers={"x-api-key": "xqk_YOUR_KEY_HERE"},
+      json={
+          "username": "elonmusk",
+          "eventTypes": ["tweet.new", "tweet.reply"],
+      },
+  )
+  data = response.json()
+  ```
 
-### Body
+  ```go Go
+  package main
 
-```json
-{
-  "username": "elonmusk",
-  "eventTypes": ["tweet.new", "tweet.reply"]
-}
-```
+  import (
+      "bytes"
+      "encoding/json"
+      "fmt"
+      "net/http"
+  )
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `username` | string | Yes | X username (1-15 chars, `@` prefix stripped) |
-| `eventTypes` | string[] | Yes | At least 1 event type |
+  func main() {
+      body, _ := json.Marshal(map[string]interface{}{
+          "username":   "elonmusk",
+          "eventTypes": []string{"tweet.new", "tweet.reply"},
+      })
 
-### Valid Event Types
+      req, err := http.NewRequest("POST", "https://xquik.com/api/v1/monitors", bytes.NewReader(body))
+      if err != nil {
+          panic(err)
+      }
+      req.Header.Set("x-api-key", "xqk_YOUR_KEY_HERE")
+      req.Header.Set("Content-Type", "application/json")
 
-`tweet.new`, `tweet.quote`, `tweet.reply`, `tweet.retweet`
+      resp, err := http.DefaultClient.Do(req)
+      if err != nil {
+          panic(err)
+      }
+      defer resp.Body.Close()
+
+      var data map[string]interface{}
+      if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+          panic(err)
+      }
+      fmt.Println(data)
+  }
+  ```
+</CodeGroup>
+
+## Headers
+
+<ParamField header="x-api-key" type="string" required>
+  Your API key. Generate one from the [dashboard](https://xquik.com/dashboard).
+</ParamField>
+
+<ParamField header="Content-Type" type="string" required>
+  Must be `application/json`.
+</ParamField>
+
+## Body
+
+<ParamField body="username" type="string" required>
+  X username to monitor. 1--15 characters, alphanumeric and underscores only. The `@` prefix is automatically stripped if included.
+</ParamField>
+
+<ParamField body="eventTypes" type="string[]" required>
+  Array of event types to subscribe to. At least 1 required. See [Valid Event Types](#valid-event-types) below.
+</ParamField>
+
+## Valid Event Types
+
+| Event Type | Description |
+|------------|-------------|
+| `tweet.new` | New original tweet posted |
+| `tweet.quote` | Quote tweet posted |
+| `tweet.reply` | Reply to another tweet |
+| `tweet.retweet` | Retweet of another tweet |
 
 ## Response
 
 <Tabs>
   <Tab title="201 Created">
+    <ResponseField name="id" type="string">Unique monitor ID.</ResponseField>
+    <ResponseField name="username" type="string">Normalized X username (lowercase, no `@` prefix).</ResponseField>
+    <ResponseField name="xUserId" type="string">Resolved X user ID for the account.</ResponseField>
+    <ResponseField name="eventTypes" type="string[]">Event types this monitor is subscribed to.</ResponseField>
+    <ResponseField name="createdAt" type="string">ISO 8601 timestamp of when the monitor was created.</ResponseField>
+
     ```json
     {
       "id": "7",
@@ -48,6 +130,18 @@ POST /api/v1/monitors
     }
     ```
   </Tab>
+  <Tab title="400 Invalid Input">
+    ```json
+    { "error": "invalid_input" }
+    ```
+    Invalid username format or missing/invalid `eventTypes` array.
+  </Tab>
+  <Tab title="401 Unauthenticated">
+    ```json
+    { "error": "unauthenticated" }
+    ```
+    Missing or invalid API key.
+  </Tab>
   <Tab title="403 Limit Reached">
     ```json
     {
@@ -55,12 +149,16 @@ POST /api/v1/monitors
       "limit": 1
     }
     ```
-    Your plan allows 1 monitor by default. Add more for $10/month each from the dashboard.
+    Your plan allows 1 monitor by default. Add more for $10/month each from the [dashboard](https://xquik.com/dashboard).
   </Tab>
   <Tab title="409 Duplicate">
     ```json
     { "error": "monitor_already_exists" }
     ```
-    You already have a monitor for this X account.
+    A monitor already exists for this X account. Use [Update Monitor](/api-reference/monitors/update) to change event types instead.
   </Tab>
 </Tabs>
+
+<Note>
+  **Next steps:** [List Monitors](/api-reference/monitors/list) to see all your monitors, [Get Monitor](/api-reference/monitors/get) to fetch details, or [Create Webhook](/api-reference/webhooks/create) to start receiving events at your endpoint.
+</Note>

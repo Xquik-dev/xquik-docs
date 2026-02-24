@@ -1,66 +1,186 @@
 ---
-title: List Deliveries
-description: View delivery attempts for a specific webhook
+title: "List Deliveries"
+description: "View delivery attempts and their statuses for a specific webhook."
 ---
 
-<Note>
-  This endpoint requires **API key** authentication only.
-</Note>
+<CodeGroup>
+  ```bash cURL
+  curl https://xquik.com/api/v1/webhooks/15/deliveries \
+    -H "x-api-key: xqk_a1b2c3d4e5f6789012345678901234" | jq
+  ```
 
-## Request
+  ```javascript Node.js
+  const response = await fetch(
+    "https://xquik.com/api/v1/webhooks/15/deliveries",
+    {
+      headers: { "x-api-key": "xqk_a1b2c3d4e5f6789012345678901234" },
+    }
+  );
+  const data = await response.json();
+  console.log(data);
+  ```
 
-```
-GET /api/v1/webhooks/{id}/deliveries
-```
+  ```python Python
+  import requests
 
-### Path Parameters
+  response = requests.get(
+      "https://xquik.com/api/v1/webhooks/15/deliveries",
+      headers={"x-api-key": "xqk_a1b2c3d4e5f6789012345678901234"},
+  )
+  data = response.json()
+  print(data)
+  ```
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `id` | string | Webhook ID |
+  ```go Go
+  package main
 
-### Headers
+  import (
+  	"fmt"
+  	"io"
+  	"log"
+  	"net/http"
+  )
 
-| Header | Required | Description |
-|--------|----------|-------------|
-| `x-api-key` | Yes | Your API key |
+  func main() {
+  	req, err := http.NewRequest("GET", "https://xquik.com/api/v1/webhooks/15/deliveries", nil)
+  	if err != nil {
+  		log.Fatal(err)
+  	}
+  	req.Header.Set("x-api-key", "xqk_a1b2c3d4e5f6789012345678901234")
+
+  	resp, err := http.DefaultClient.Do(req)
+  	if err != nil {
+  		log.Fatal(err)
+  	}
+  	defer resp.Body.Close()
+
+  	body, err := io.ReadAll(resp.Body)
+  	if err != nil {
+  		log.Fatal(err)
+  	}
+  	fmt.Println(string(body))
+  }
+  ```
+</CodeGroup>
+
+## Path Parameters
+
+<ParamField path="id" type="string" required>
+  The webhook ID to retrieve deliveries for.
+</ParamField>
+
+## Headers
+
+<ParamField header="x-api-key" type="string" required>
+  Your API key.
+</ParamField>
 
 ## Response
 
-```json
-{
-  "deliveries": [
+<Tabs>
+  <Tab title="200 OK">
+    <ResponseField name="deliveries" type="array">
+      List of delivery attempts, most recent first. Returns up to 100 deliveries.
+      <Expandable title="delivery object">
+        <ResponseField name="id" type="string">
+          Unique delivery identifier.
+        </ResponseField>
+        <ResponseField name="streamEventId" type="string">
+          ID of the stream event that triggered this delivery.
+        </ResponseField>
+        <ResponseField name="status" type="string">
+          Current delivery status: `pending`, `delivered`, `failed`, or `exhausted`.
+        </ResponseField>
+        <ResponseField name="attempts" type="number">
+          Total number of delivery attempts made.
+        </ResponseField>
+        <ResponseField name="lastStatusCode" type="number">
+          HTTP status code returned by your endpoint on the most recent attempt. Omitted if no attempt has been made yet.
+        </ResponseField>
+        <ResponseField name="lastError" type="string">
+          Error message from the most recent failed attempt. Omitted on success.
+        </ResponseField>
+        <ResponseField name="createdAt" type="string">
+          ISO 8601 timestamp of when the delivery was queued.
+        </ResponseField>
+        <ResponseField name="deliveredAt" type="string">
+          ISO 8601 timestamp of successful delivery. Omitted if not yet delivered.
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+
+    ```json
     {
-      "id": "501",
-      "status": "success",
-      "streamEventId": "9001",
-      "attempts": 1,
-      "lastStatusCode": 200,
-      "createdAt": "2026-02-24T14:22:01.000Z",
-      "deliveredAt": "2026-02-24T14:22:02.000Z"
-    },
-    {
-      "id": "502",
-      "status": "failed",
-      "streamEventId": "9002",
-      "attempts": 3,
-      "lastStatusCode": 500,
-      "lastError": "Internal Server Error",
-      "createdAt": "2026-02-24T14:25:00.000Z"
+      "deliveries": [
+        {
+          "id": "501",
+          "streamEventId": "9001",
+          "status": "delivered",
+          "attempts": 1,
+          "lastStatusCode": 200,
+          "createdAt": "2026-02-24T14:22:01.000Z",
+          "deliveredAt": "2026-02-24T14:22:02.000Z"
+        },
+        {
+          "id": "502",
+          "streamEventId": "9002",
+          "status": "failed",
+          "attempts": 3,
+          "lastStatusCode": 500,
+          "lastError": "Internal Server Error",
+          "createdAt": "2026-02-24T14:25:00.000Z"
+        },
+        {
+          "id": "503",
+          "streamEventId": "9003",
+          "status": "exhausted",
+          "attempts": 5,
+          "lastStatusCode": 503,
+          "lastError": "Service Unavailable",
+          "createdAt": "2026-02-24T14:30:00.000Z"
+        },
+        {
+          "id": "504",
+          "streamEventId": "9004",
+          "status": "pending",
+          "attempts": 0,
+          "createdAt": "2026-02-24T14:35:00.000Z"
+        }
+      ]
     }
-  ]
-}
-```
+    ```
+  </Tab>
+  <Tab title="401 Unauthenticated">
+    ```json
+    { "error": "unauthenticated" }
+    ```
+    Missing or invalid API key. Check the `x-api-key` header value.
+  </Tab>
+  <Tab title="400 Invalid ID">
+    ```json
+    { "error": "invalid_id" }
+    ```
+    The provided webhook ID is not a valid format.
+  </Tab>
+  <Tab title="404 Not Found">
+    ```json
+    { "error": "not_found" }
+    ```
+    No webhook exists with this ID, or it belongs to a different account.
+  </Tab>
+</Tabs>
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `id` | string | Delivery ID |
-| `status` | string | `"pending"`, `"success"`, or `"failed"` |
-| `streamEventId` | string | Associated stream event ID |
-| `attempts` | number | Total delivery attempts |
-| `lastStatusCode` | number | HTTP status from your endpoint (optional) |
-| `lastError` | string | Error message from last attempt (optional) |
-| `createdAt` | string | ISO 8601 creation timestamp |
-| `deliveredAt` | string | ISO 8601 successful delivery timestamp (optional) |
+## Delivery Statuses
 
-Returns up to 100 deliveries, most recent first.
+| Status | Description |
+|--------|-------------|
+| `pending` | Delivery is queued and waiting for the next attempt. |
+| `delivered` | Your endpoint returned a 2xx status code. Delivery is complete. |
+| `failed` | The most recent attempt failed (non-2xx response or network error). The system will retry with exponential backoff. |
+| `exhausted` | All retry attempts have been used. The delivery will not be retried. Check your endpoint and create a new webhook if needed. |
+
+Deliveries follow an exponential backoff retry schedule. After each failed attempt, the wait time increases. Once all retries are exhausted, the status transitions to `exhausted` and no further attempts are made.
+
+<Note>
+  **Related:** [Webhooks Overview](/webhooks/overview) &middot; [Webhook Testing Guide](/webhooks/testing)
+</Note>

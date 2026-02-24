@@ -1,39 +1,114 @@
 ---
-title: Delete Webhook
-description: Remove a webhook endpoint
+title: "Delete Webhook"
+description: "Permanently remove a webhook endpoint and stop all future deliveries."
 ---
 
-## Request
+<CodeGroup>
+  ```bash cURL
+  curl -X DELETE https://xquik.com/api/v1/webhooks/15 \
+    -H "x-api-key: xqk_a1b2c3d4e5f6789012345678901234" | jq
+  ```
 
-```
-DELETE /api/v1/webhooks/{id}
-```
+  ```javascript Node.js
+  const response = await fetch("https://xquik.com/api/v1/webhooks/15", {
+    method: "DELETE",
+    headers: { "x-api-key": "xqk_a1b2c3d4e5f6789012345678901234" },
+  });
+  const result = await response.json();
+  console.log(result);
+  ```
 
-### Path Parameters
+  ```python Python
+  import requests
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `id` | string | Webhook ID |
+  response = requests.delete(
+      "https://xquik.com/api/v1/webhooks/15",
+      headers={"x-api-key": "xqk_a1b2c3d4e5f6789012345678901234"},
+  )
+  result = response.json()
+  print(result)
+  ```
 
-### Headers
+  ```go Go
+  package main
 
-| Header | Required | Description |
-|--------|----------|-------------|
-| `x-api-key` | Yes | Your API key |
+  import (
+  	"fmt"
+  	"io"
+  	"log"
+  	"net/http"
+  )
+
+  func main() {
+  	req, err := http.NewRequest("DELETE", "https://xquik.com/api/v1/webhooks/15", nil)
+  	if err != nil {
+  		log.Fatal(err)
+  	}
+  	req.Header.Set("x-api-key", "xqk_a1b2c3d4e5f6789012345678901234")
+
+  	resp, err := http.DefaultClient.Do(req)
+  	if err != nil {
+  		log.Fatal(err)
+  	}
+  	defer resp.Body.Close()
+
+  	body, err := io.ReadAll(resp.Body)
+  	if err != nil {
+  		log.Fatal(err)
+  	}
+  	fmt.Println(string(body))
+  }
+  ```
+</CodeGroup>
+
+## Path Parameters
+
+<ParamField path="id" type="string" required>
+  The webhook ID to delete.
+</ParamField>
+
+## Headers
+
+<ParamField header="x-api-key" type="string" required>
+  Your API key. This endpoint also accepts session cookie authentication.
+</ParamField>
 
 ## Response
 
 <Tabs>
   <Tab title="200 OK">
+    <ResponseField name="success" type="boolean">
+      Always `true` on successful deletion.
+    </ResponseField>
+
     ```json
     { "success": true }
     ```
+
+    The webhook is deactivated immediately. Pending deliveries that are already in-flight may still be attempted, but no new deliveries will be queued.
+  </Tab>
+  <Tab title="401 Unauthenticated">
+    ```json
+    { "error": "unauthenticated" }
+    ```
+    Missing or invalid API key / session cookie.
+  </Tab>
+  <Tab title="400 Invalid ID">
+    ```json
+    { "error": "invalid_id" }
+    ```
+    The provided webhook ID is not a valid format.
   </Tab>
   <Tab title="404 Not Found">
     ```json
     { "error": "not_found" }
     ```
+    No webhook exists with this ID, or it belongs to a different account.
   </Tab>
 </Tabs>
 
-The webhook is deactivated immediately. Pending deliveries may still be attempted.
+<Note>
+  This endpoint supports **dual authentication** -- either API key (`x-api-key` header) or session cookie from the dashboard.
+
+  **Related:** [List Webhooks](/api-reference/webhooks/list) &middot; [Create Webhook](/api-reference/webhooks/create)
+</Note>

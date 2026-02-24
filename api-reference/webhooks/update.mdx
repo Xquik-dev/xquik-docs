@@ -1,49 +1,150 @@
 ---
-title: Update Webhook
-description: Update URL, event types, or toggle a webhook's active state
+title: "Update Webhook"
+description: "Update the URL, event types, or active state of an existing webhook."
 ---
 
-## Request
+<CodeGroup>
+  ```bash cURL
+  curl -X PATCH https://xquik.com/api/v1/webhooks/15 \
+    -H "x-api-key: xqk_a1b2c3d4e5f6789012345678901234" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "url": "https://new-server.com/webhook",
+      "eventTypes": ["tweet.new"],
+      "isActive": false
+    }' | jq
+  ```
 
-```
-PATCH /api/v1/webhooks/{id}
-```
+  ```javascript Node.js
+  const response = await fetch("https://xquik.com/api/v1/webhooks/15", {
+    method: "PATCH",
+    headers: {
+      "x-api-key": "xqk_a1b2c3d4e5f6789012345678901234",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      url: "https://new-server.com/webhook",
+      eventTypes: ["tweet.new"],
+      isActive: false,
+    }),
+  });
+  const webhook = await response.json();
+  console.log(webhook);
+  ```
 
-### Path Parameters
+  ```python Python
+  import requests
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `id` | string | Webhook ID |
+  response = requests.patch(
+      "https://xquik.com/api/v1/webhooks/15",
+      headers={"x-api-key": "xqk_a1b2c3d4e5f6789012345678901234"},
+      json={
+          "url": "https://new-server.com/webhook",
+          "eventTypes": ["tweet.new"],
+          "isActive": False,
+      },
+  )
+  webhook = response.json()
+  print(webhook)
+  ```
 
-### Headers
+  ```go Go
+  package main
 
-| Header | Required | Description |
-|--------|----------|-------------|
-| `x-api-key` | Yes | Your API key |
-| `Content-Type` | Yes | `application/json` |
+  import (
+  	"bytes"
+  	"encoding/json"
+  	"fmt"
+  	"io"
+  	"log"
+  	"net/http"
+  )
 
-### Body
+  func main() {
+  	payload := map[string]interface{}{
+  		"url":        "https://new-server.com/webhook",
+  		"eventTypes": []string{"tweet.new"},
+  		"isActive":   false,
+  	}
+  	body, err := json.Marshal(payload)
+  	if err != nil {
+  		log.Fatal(err)
+  	}
 
-```json
-{
-  "url": "https://new-server.com/webhook",
-  "eventTypes": ["tweet.new"],
-  "isActive": false
-}
-```
+  	req, err := http.NewRequest("PATCH", "https://xquik.com/api/v1/webhooks/15", bytes.NewReader(body))
+  	if err != nil {
+  		log.Fatal(err)
+  	}
+  	req.Header.Set("x-api-key", "xqk_a1b2c3d4e5f6789012345678901234")
+  	req.Header.Set("Content-Type", "application/json")
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `url` | string | No | New HTTPS endpoint URL |
-| `eventTypes` | string[] | No | Updated event types (min 1) |
-| `isActive` | boolean | No | Enable or disable the webhook |
+  	resp, err := http.DefaultClient.Do(req)
+  	if err != nil {
+  		log.Fatal(err)
+  	}
+  	defer resp.Body.Close()
 
-At least one field is required.
+  	respBody, err := io.ReadAll(resp.Body)
+  	if err != nil {
+  		log.Fatal(err)
+  	}
+  	fmt.Println(string(respBody))
+  }
+  ```
+</CodeGroup>
+
+## Path Parameters
+
+<ParamField path="id" type="string" required>
+  The webhook ID to update.
+</ParamField>
+
+## Headers
+
+<ParamField header="x-api-key" type="string" required>
+  Your API key. This endpoint also accepts session cookie authentication.
+</ParamField>
+
+<ParamField header="Content-Type" type="string" required>
+  Must be `application/json`.
+</ParamField>
+
+## Body
+
+At least 1 field is required.
+
+<ParamField body="url" type="string" optional>
+  New HTTPS endpoint URL. HTTP URLs are rejected.
+</ParamField>
+
+<ParamField body="eventTypes" type="string[]" optional>
+  Updated event types to subscribe to. Replaces the existing list. At least 1 required when provided.
+</ParamField>
+
+<ParamField body="isActive" type="boolean" optional>
+  Set to `false` to pause deliveries or `true` to resume.
+</ParamField>
 
 ## Response
 
 <Tabs>
   <Tab title="200 OK">
+    <ResponseField name="id" type="string">
+      Unique webhook identifier.
+    </ResponseField>
+    <ResponseField name="url" type="string">
+      The current delivery endpoint URL.
+    </ResponseField>
+    <ResponseField name="eventTypes" type="string[]">
+      Event types this webhook is subscribed to.
+    </ResponseField>
+    <ResponseField name="isActive" type="boolean">
+      Whether the webhook is currently active.
+    </ResponseField>
+    <ResponseField name="createdAt" type="string">
+      ISO 8601 creation timestamp.
+    </ResponseField>
+
     ```json
     {
       "id": "15",
@@ -54,9 +155,33 @@ At least one field is required.
     }
     ```
   </Tab>
+  <Tab title="401 Unauthenticated">
+    ```json
+    { "error": "unauthenticated" }
+    ```
+    Missing or invalid API key / session cookie.
+  </Tab>
+  <Tab title="400 Invalid Input">
+    ```json
+    { "error": "invalid_input" }
+    ```
+    Invalid URL (must be HTTPS), empty `eventTypes`, or no fields provided.
+
+    ```json
+    { "error": "invalid_id" }
+    ```
+    The provided webhook ID is not a valid format.
+  </Tab>
   <Tab title="404 Not Found">
     ```json
     { "error": "not_found" }
     ```
+    No webhook exists with this ID, or it belongs to a different account.
   </Tab>
 </Tabs>
+
+<Note>
+  This endpoint supports **dual authentication** -- either API key (`x-api-key` header) or session cookie from the dashboard.
+
+  **Related:** [List Webhooks](/api-reference/webhooks/list) &middot; [Delete Webhook](/api-reference/webhooks/delete)
+</Note>

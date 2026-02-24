@@ -1,0 +1,128 @@
+---
+title: Billing & Usage
+description: Pricing breakdown, usage caps, and cost-per-operation details
+---
+
+# Billing & Usage
+
+Xquik uses a simple subscription model with metered usage. One flat monthly fee, one usage cap, no surprises.
+
+## Subscription
+
+| | |
+|---|---|
+| **Base plan** | $20/month |
+| **Included monitors** | 1 |
+| **Additional monitors** | $10/month each |
+| **Payment** | Stripe (credit/debit card) |
+
+Subscribe from the [dashboard](https://xquik.com). Your subscription activates immediately and renews monthly. An active subscription is required for all API access.
+
+## Usage Cap
+
+Every subscriber gets a **$10/month usage cap** that resets each billing period. Usage is tracked in microcents:
+
+| Unit | Value |
+|------|-------|
+| 1 microcent | $0.000001 |
+| $10 cap | 10,000,000,000 microcents |
+
+When the cap is reached, API calls that consume credits return `402 Payment Required`. Non-metered calls (list monitors, get account, manage webhooks) continue to work.
+
+<Warning>
+  The usage cap is a hard limit. There is no overage billing — calls are rejected once you hit $10. Monitor your usage via the account endpoint to avoid interruptions.
+</Warning>
+
+## Cost Per Operation
+
+| Operation | Microcents | Dollar Cost | Operations per $10 Cap |
+|-----------|-----------|-------------|----------------------|
+| Tweet search | 150 | $0.00015 | ~66,666 |
+| User lookup | 180 | $0.00018 | ~55,555 |
+| Follower fetch | 150 | $0.00015 | ~66,666 |
+| Verified follower fetch | 300 | $0.00030 | ~33,333 |
+| Follow check | 150 | $0.00015 | ~66,666 |
+
+Operations are metered automatically. Each API call that hits the X API deducts from your period balance.
+
+## Usage Scenarios
+
+Three realistic monthly estimates to help you plan:
+
+<AccordionGroup>
+  <Accordion title="Light usage — $20.45/month">
+    - 1 monitor (included)
+    - 100 tweet searches/day
+    - **Base:** $20
+    - **Usage:** 100 searches x 150 microcents x 30 days = 450,000 microcents = ~$0.45
+    - **Total:** ~$20.45/month
+  </Accordion>
+  <Accordion title="Moderate usage — $33.33/month">
+    - 2 monitors ($20 base + $10 for the extra monitor)
+    - 500 tweet searches/day + 200 user lookups/day
+    - **Base:** $30
+    - **Usage:** (500 x 150 + 200 x 180) x 30 = 3,330,000 microcents = ~$3.33
+    - **Total:** ~$33.33/month
+  </Accordion>
+  <Accordion title="Heavy usage — $69/month">
+    - 5 monitors ($20 base + $40 for 4 extra monitors)
+    - 2,000 tweet searches/day
+    - **Base:** $60
+    - **Usage:** 2,000 x 150 x 30 = 9,000,000 microcents = ~$9.00
+    - **Total:** ~$69/month
+  </Accordion>
+</AccordionGroup>
+
+## Checking Usage
+
+Call `GET /api/v1/account` to see your current period usage:
+
+```bash
+curl -s https://xquik.com/api/v1/account \
+  -H "x-api-key: xqk_YOUR_KEY_HERE" | jq
+```
+
+**Response:**
+
+```json
+{
+  "plan": "active",
+  "monitorsAllowed": 1,
+  "monitorsUsed": 1,
+  "currentPeriod": {
+    "start": "2026-02-01T00:00:00.000Z",
+    "end": "2026-03-01T00:00:00.000Z",
+    "capMicrocents": "10000000000",
+    "usedMicrocents": "4500000"
+  }
+}
+```
+
+**Calculate remaining budget:**
+
+```
+Remaining microcents = capMicrocents - usedMicrocents
+                     = 10,000,000,000 - 4,500,000
+                     = 9,995,500,000 microcents
+
+Remaining dollars    = 9,995,500,000 / 1,000,000,000
+                     = ~$9.995
+
+Remaining tweet searches = 9,995,500,000 / 150
+                         = ~66,636 searches
+```
+
+<Tip>
+  Poll the account endpoint periodically to track usage. Build alerts when `usedMicrocents` exceeds a threshold (e.g., 80% of `capMicrocents`) to avoid hitting the cap unexpectedly.
+</Tip>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Get Account" icon="user" href="/api-reference/account/get">
+    Full account endpoint reference with response schema.
+  </Card>
+  <Card title="API Overview" icon="book" href="/api-reference/overview">
+    Base URL, authentication, rate limits, and conventions.
+  </Card>
+</CardGroup>

@@ -1,89 +1,220 @@
 ---
-title: List Events
-description: Query events from monitored accounts with filtering and pagination
+title: "List Events"
+description: "Query events from monitored accounts with filtering and cursor-based pagination."
 ---
 
-<Note>
-  This endpoint requires **API key** authentication only.
-</Note>
+<CodeGroup>
+  ```bash cURL
+  curl "https://xquik.com/api/v1/events?limit=10&monitorId=7" \
+    -H "x-api-key: xqk_a1b2c3d4e5f6789012345678901234" | jq
+  ```
 
-## Request
+  ```javascript Node.js
+  const response = await fetch(
+    "https://xquik.com/api/v1/events?limit=10&monitorId=7",
+    {
+      headers: { "x-api-key": "xqk_a1b2c3d4e5f6789012345678901234" },
+    }
+  );
+  const data = await response.json();
+  console.log(data);
+  ```
 
-```
-GET /api/v1/events
-```
+  ```python Python
+  import requests
 
-### Headers
+  response = requests.get(
+      "https://xquik.com/api/v1/events",
+      headers={"x-api-key": "xqk_a1b2c3d4e5f6789012345678901234"},
+      params={"limit": 10, "monitorId": "7"},
+  )
+  data = response.json()
+  print(data)
+  ```
 
-| Header | Required | Description |
-|--------|----------|-------------|
-| `x-api-key` | Yes | Your API key |
+  ```go Go
+  package main
 
-### Query Parameters
+  import (
+  	"fmt"
+  	"io"
+  	"log"
+  	"net/http"
+  )
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `limit` | number | 50 | Results per page (1-100) |
-| `monitorId` | string | - | Filter by monitor ID |
-| `eventType` | string | - | Filter by event type |
-| `after` | string | - | Cursor for pagination |
+  func main() {
+  	req, err := http.NewRequest("GET", "https://xquik.com/api/v1/events?limit=10&monitorId=7", nil)
+  	if err != nil {
+  		log.Fatal(err)
+  	}
+  	req.Header.Set("x-api-key", "xqk_a1b2c3d4e5f6789012345678901234")
+
+  	resp, err := http.DefaultClient.Do(req)
+  	if err != nil {
+  		log.Fatal(err)
+  	}
+  	defer resp.Body.Close()
+
+  	body, err := io.ReadAll(resp.Body)
+  	if err != nil {
+  		log.Fatal(err)
+  	}
+  	fmt.Println(string(body))
+  }
+  ```
+</CodeGroup>
+
+## Query Parameters
+
+<ParamField query="limit" type="number" optional>
+  Results per page. Default `50`, max `100`.
+</ParamField>
+
+<ParamField query="monitorId" type="string" optional>
+  Filter events by monitor ID. Omit to return events from all monitors.
+</ParamField>
+
+<ParamField query="eventType" type="string" optional>
+  Filter by event type (e.g. `tweet.new`, `tweet.reply`). Omit to return all types.
+</ParamField>
+
+<ParamField query="after" type="string" optional>
+  Cursor for pagination. Pass the `nextCursor` value from a previous response to fetch the next page.
+</ParamField>
+
+## Headers
+
+<ParamField header="x-api-key" type="string" required>
+  Your API key.
+</ParamField>
 
 ## Response
 
-```json
-{
-  "events": [
+<Tabs>
+  <Tab title="200 OK">
+    <ResponseField name="events" type="array">
+      List of event objects matching the query.
+      <Expandable title="event object">
+        <ResponseField name="id" type="string">
+          Unique event identifier.
+        </ResponseField>
+        <ResponseField name="type" type="string">
+          Event type (e.g. `tweet.new`, `tweet.reply`, `tweet.delete`).
+        </ResponseField>
+        <ResponseField name="monitorId" type="string">
+          ID of the monitor that captured this event.
+        </ResponseField>
+        <ResponseField name="username" type="string">
+          X username that triggered the event.
+        </ResponseField>
+        <ResponseField name="occurredAt" type="string">
+          ISO 8601 timestamp of when the event occurred on X.
+        </ResponseField>
+        <ResponseField name="data" type="object">
+          Event-specific payload.
+          <Expandable title="data object">
+            <ResponseField name="tweetId" type="string">
+              X tweet ID.
+            </ResponseField>
+            <ResponseField name="text" type="string">
+              Tweet text content.
+            </ResponseField>
+            <ResponseField name="metrics" type="object">
+              Engagement metrics at capture time.
+              <Expandable title="metrics object">
+                <ResponseField name="likes" type="number">
+                  Like count.
+                </ResponseField>
+                <ResponseField name="retweets" type="number">
+                  Retweet count.
+                </ResponseField>
+                <ResponseField name="replies" type="number">
+                  Reply count.
+                </ResponseField>
+              </Expandable>
+            </ResponseField>
+          </Expandable>
+        </ResponseField>
+        <ResponseField name="xEventId" type="string">
+          X platform event ID. Present only for certain event types.
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+    <ResponseField name="hasMore" type="boolean">
+      `true` if additional pages exist beyond this result set.
+    </ResponseField>
+    <ResponseField name="nextCursor" type="string">
+      Pagination cursor. Pass as the `after` query parameter to fetch the next page. Present only when `hasMore` is `true`.
+    </ResponseField>
+
+    ```json
     {
-      "id": "9001",
-      "type": "tweet.new",
-      "monitorId": "7",
-      "username": "elonmusk",
-      "occurredAt": "2026-02-24T14:22:00.000Z",
-      "data": {
-        "tweetId": "1893456789012345678",
-        "text": "The future is now.",
-        "metrics": {
-          "likes": 42000,
-          "retweets": 8500,
-          "replies": 3200
+      "events": [
+        {
+          "id": "9001",
+          "type": "tweet.new",
+          "monitorId": "7",
+          "username": "elonmusk",
+          "occurredAt": "2026-02-24T14:22:00.000Z",
+          "data": {
+            "tweetId": "1893456789012345678",
+            "text": "The future is now.",
+            "metrics": {
+              "likes": 42000,
+              "retweets": 8500,
+              "replies": 3200
+            }
+          },
+          "xEventId": "evt_abc123"
+        },
+        {
+          "id": "9002",
+          "type": "tweet.reply",
+          "monitorId": "7",
+          "username": "elonmusk",
+          "occurredAt": "2026-02-24T15:05:30.000Z",
+          "data": {
+            "tweetId": "1893456789012345999",
+            "text": "Absolutely. Shipping next week.",
+            "metrics": {
+              "likes": 18700,
+              "retweets": 2100,
+              "replies": 950
+            }
+          }
         }
-      },
-      "xEventId": "evt_abc123"
+      ],
+      "hasMore": true,
+      "nextCursor": "MjAyNi0wMi0yNFQxNTowNTozMC4wMDBafDkwMDI="
     }
-  ],
-  "hasMore": true,
-  "nextCursor": "MjAyNi0wMi0yNFQxNDoyMjowMC4wMDBafDkwMDE="
-}
-```
+    ```
+  </Tab>
+  <Tab title="401 Unauthenticated">
+    ```json
+    { "error": "unauthenticated" }
+    ```
+    Missing or invalid API key. Check the `x-api-key` header value.
+  </Tab>
+</Tabs>
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `events` | array | List of event objects |
-| `hasMore` | boolean | Whether more results exist |
-| `nextCursor` | string | Pass as `after` to fetch next page (present only when `hasMore` is `true`) |
+## Pagination
 
-### Event Object
+Events use **cursor-based pagination**. Each response includes `hasMore` and (when `true`) a `nextCursor` value. Pass `nextCursor` as the `after` query parameter to retrieve the next page.
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `id` | string | Event ID |
-| `type` | string | Event type (`tweet.new`, etc.) |
-| `monitorId` | string | Associated monitor ID |
-| `username` | string | X username that triggered the event |
-| `occurredAt` | string | ISO 8601 timestamp of the event |
-| `data` | object | Event-specific payload |
-| `xEventId` | string | X platform event ID (optional) |
+<CodeGroup>
+  ```bash First page
+  curl "https://xquik.com/api/v1/events?limit=10&monitorId=7" \
+    -H "x-api-key: xqk_a1b2c3d4e5f6789012345678901234" | jq
+  ```
 
-### Pagination
+  ```bash Next page
+  curl "https://xquik.com/api/v1/events?limit=10&monitorId=7&after=MjAyNi0wMi0yNFQxNTowNTozMC4wMDBafDkwMDI=" \
+    -H "x-api-key: xqk_a1b2c3d4e5f6789012345678901234" | jq
+  ```
+</CodeGroup>
 
-Use cursor-based pagination to iterate through events:
+Continue fetching pages until `hasMore` is `false`. Cursors are opaque strings -- do not parse or construct them manually.
 
-```bash
-# First page
-curl "https://xquik.com/api/v1/events?limit=10" \
-  -H "x-api-key: xqk_YOUR_KEY"
-
-# Next page
-curl "https://xquik.com/api/v1/events?limit=10&after=MjAyNi0w..." \
-  -H "x-api-key: xqk_YOUR_KEY"
-```
+<Note>
+  **Related:** [Get Event](/api-reference/events/get) &middot; [List Monitors](/api-reference/monitors/list)
+</Note>

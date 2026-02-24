@@ -1,0 +1,347 @@
+---
+title: Error Handling
+description: Error recovery patterns, retry strategies, and rate limit handling
+---
+
+# Error Handling
+
+Every Xquik API error returns a consistent JSON body with an `error` code. Use these codes to build reliable integrations with automatic recovery.
+
+## Error Codes
+
+| Status | Code | Description | Recommended Action |
+|--------|------|-------------|-------------------|
+| 400 | `invalid_input` | Request body failed validation | Fix the request body. Check required fields and types. |
+| 400 | `invalid_id` | Path parameter is not a valid ID | Fix the path parameter. IDs are numeric strings. |
+| 401 | `unauthenticated` | Missing or invalid API key | Check the `x-api-key` header. Regenerate the key if revoked. |
+| 403 | `monitor_limit_reached` | Plan monitor limit exceeded | Delete an existing monitor or add capacity ($10/month per extra monitor). |
+| 404 | `not_found` | Resource does not exist | Verify the resource ID. It may belong to another account or have been deleted. |
+| 409 | `monitor_already_exists` | Duplicate monitor for this X account | Use the existing monitor. Call [Update Monitor](/api-reference/monitors/update) to change event types. |
+| 429 | -- | Rate limited | Retry with exponential backoff. Respect the `Retry-After` header. |
+| 500 | `internal_error` | Server error | Retry with backoff. [Contact support](mailto:support@xquik.com) if the error persists. |
+
+**Response format:**
+
+```json
+{ "error": "error_code" }
+```
+
+Some errors include additional context:
+
+```json
+{
+  "error": "monitor_limit_reached",
+  "limit": 1
+}
+```
+
+## Retry with Exponential Backoff
+
+Retry only on `429` and `5xx` responses. Use exponential backoff with random jitter to avoid thundering herds. Max 3 retries.
+
+**Formula:** `delay = baseDelay * 2^attempt + random(0, jitter)`
+
+<CodeGroup>
+
+```bash cURL
+#!/bin/bash
+# Retry wrapper for cURL requests
+retry_request() {
+  local url="$1"
+  local max_retries=3
+  local base_delay=1
+
+  for attempt in $(seq 0 $max_retries); do
+    response=$(curl -s -w "\n%{http_code}" "$url" \
+      -H "x-api-key: xqk_YOUR_KEY_HERE")
+
+    status=$(echo "$response" | tail -1)
+    body=$(echo "$response" | head -n -1)
+
+    if [ "$status" -lt 429 ]; then
+      echo "$body"
+      return 0
+    fi
+
+    if [ "$status" -eq 429 ] || [ "$status" -ge 500 ]; then
+      if [ "$attempt" -eq "$max_retries" ]; then
+        echo "Max retries reached. Last status: $status" >&2
+        return 1
+      fi
+
+      delay=$(echo "$base_delay * (2 ^ $attempt) + $RANDOM % 1000 / 1000" | bc -l)
+      echo "Retry $((attempt + 1)) in ${delay}s (status $status)" >&2
+      sleep "$delay"
+    else
+      echo "$body"
+      return 1
+    fi
+  done
+}
+
+retry_request "https://xquik.com/api/v1/events?limit=10"
+```
+
+```javascript Node.js
+async function fetchWithRetry(url, options = {}, maxRetries = 3) {
+  const baseDelay = 1000; // 1 second
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    const response = await fetch(url, {
+      ...options,
+      headers: {
+        "x-api-key": "xqk_YOUR_KEY_HERE",
+        ...options.headers,
+      },
+    });
+
+    if (response.ok) {
+      return response.json();
+    }
+
+    const retryable = response.status === 429 || response.status >= 500;
+    if (!retryable || attempt === maxRetries) {
+      const error = await response.json();
+      throw new Error(`API error ${response.status}: ${error.error}`);
+    }
+
+    // Respect Retry-After header if present
+    const retryAfter = response.headers.get("Retry-After");
+    const delay = retryAfter
+      ? parseInt(retryAfter, 10) * 1000
+      : baseDelay * Math.pow(2, attempt) + Math.random() * 1000;
+
+    console.log(`Retry ${attempt + 1} in ${Math.round(delay)}ms`);
+    await new Promise((resolve) => setTimeout(resolve, delay));
+  }
+}
+
+// Usage
+const events = await fetchWithRetry(
+  "https://xquik.com/api/v1/events?limit=10"
+);
+```
+
+```python Python
+import time
+import random
+import requests
+
+def fetch_with_retry(url: str, max_retries: int = 3, **kwargs) -> dict:
+    base_delay = 1.0  # 1 second
+    headers = {"x-api-key": "xqk_YOUR_KEY_HERE", **kwargs.pop("headers", {})}
+
+    for attempt in range(max_retries + 1):
+        response = requests.get(url, headers=headers, **kwargs)
+
+        if response.ok:
+            return response.json()
+
+        retryable = response.status_code == 429 or response.status_code >= 500
+        if not retryable or attempt == max_retries:
+            error = response.json()
+            raise Exception(f"API error {response.status_code}: {error['error']}")
+
+        # Respect Retry-After header if present
+        retry_after = response.headers.get("Retry-After")
+        if retry_after:
+            delay = int(retry_after)
+        else:
+            delay = base_delay * (2 ** attempt) + random.uniform(0, 1)
+
+        print(f"Retry {attempt + 1} in {delay:.1f}s")
+        time.sleep(delay)
+
+# Usage
+events = fetch_with_retry("https://xquik.com/api/v1/events?limit=10")
+```
+
+```go Go
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+	"io"
+	"math"
+	"math/rand"
+	"net/http"
+	"strconv"
+	"time"
+)
+
+func fetchWithRetry(url string, maxRetries int) (map[string]interface{}, error) {
+	baseDelay := 1.0 // 1 second
+
+	for attempt := 0; attempt <= maxRetries; attempt++ {
+		req, err := http.NewRequest("GET", url, nil)
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Set("x-api-key", "xqk_YOUR_KEY_HERE")
+
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			return nil, err
+		}
+
+		body, _ := io.ReadAll(resp.Body)
+		resp.Body.Close()
+
+		if resp.StatusCode >= 200 && resp.StatusCode < 300 {
+			var result map[string]interface{}
+			json.Unmarshal(body, &result)
+			return result, nil
+		}
+
+		retryable := resp.StatusCode == 429 || resp.StatusCode >= 500
+		if !retryable || attempt == maxRetries {
+			return nil, fmt.Errorf("API error %d: %s", resp.StatusCode, string(body))
+		}
+
+		// Respect Retry-After header if present
+		var delay float64
+		if retryAfter := resp.Header.Get("Retry-After"); retryAfter != "" {
+			seconds, _ := strconv.Atoi(retryAfter)
+			delay = float64(seconds)
+		} else {
+			delay = baseDelay*math.Pow(2, float64(attempt)) + rand.Float64()
+		}
+
+		fmt.Printf("Retry %d in %.1fs\n", attempt+1, delay)
+		time.Sleep(time.Duration(delay * float64(time.Second)))
+	}
+
+	return nil, fmt.Errorf("max retries reached")
+}
+
+func main() {
+	events, err := fetchWithRetry("https://xquik.com/api/v1/events?limit=10", 3)
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
+	}
+	fmt.Println(events)
+}
+```
+
+</CodeGroup>
+
+## Rate Limit Handling
+
+When you exceed the rate limit, Xquik returns a `429 Too Many Requests` response with a `Retry-After` header indicating how many seconds to wait.
+
+**Detecting rate limits:**
+
+| Signal | Value |
+|--------|-------|
+| HTTP status | `429` |
+| `Retry-After` header | Seconds until the limit resets (e.g. `2`) |
+
+**Recovery flow:**
+
+<Steps>
+  <Step title="Detect the 429 status">
+    Check the HTTP response status code before reading the body.
+  </Step>
+  <Step title="Read the Retry-After header">
+    Parse the header value as an integer (seconds).
+  </Step>
+  <Step title="Wait the specified duration">
+    Sleep for the full `Retry-After` duration before retrying.
+  </Step>
+  <Step title="Retry the request">
+    Send the same request again. If it returns another 429, apply exponential backoff.
+  </Step>
+</Steps>
+
+<CodeGroup>
+
+```javascript Node.js
+async function respectRateLimit(url, options = {}) {
+  const response = await fetch(url, options);
+
+  if (response.status === 429) {
+    const retryAfter = parseInt(
+      response.headers.get("Retry-After") || "1",
+      10
+    );
+    console.log(`Rate limited. Waiting ${retryAfter}s...`);
+    await new Promise((resolve) => setTimeout(resolve, retryAfter * 1000));
+    return fetch(url, options); // retry once
+  }
+
+  return response;
+}
+```
+
+```python Python
+def respect_rate_limit(url: str, headers: dict) -> requests.Response:
+    response = requests.get(url, headers=headers)
+
+    if response.status_code == 429:
+        retry_after = int(response.headers.get("Retry-After", "1"))
+        print(f"Rate limited. Waiting {retry_after}s...")
+        time.sleep(retry_after)
+        return requests.get(url, headers=headers)  # retry once
+
+    return response
+```
+
+```go Go
+func respectRateLimit(url string) (*http.Response, error) {
+	req, _ := http.NewRequest("GET", url, nil)
+	req.Header.Set("x-api-key", "xqk_YOUR_KEY_HERE")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode == 429 {
+		retryAfter, _ := strconv.Atoi(resp.Header.Get("Retry-After"))
+		if retryAfter == 0 {
+			retryAfter = 1
+		}
+		fmt.Printf("Rate limited. Waiting %ds...\n", retryAfter)
+		time.Sleep(time.Duration(retryAfter) * time.Second)
+
+		req, _ = http.NewRequest("GET", url, nil)
+		req.Header.Set("x-api-key", "xqk_YOUR_KEY_HERE")
+		return http.DefaultClient.Do(req)
+	}
+
+	return resp, nil
+}
+```
+
+</CodeGroup>
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Distinguish client errors from server errors">
+    **4xx errors** (except 429) indicate a problem with your request. Fix the request before retrying. **5xx errors** and **429** are transient -- retry with backoff.
+  </Accordion>
+  <Accordion title="Log error codes for debugging">
+    Always log the full error response including status code and error body. This makes it easy to diagnose issues in production.
+  </Accordion>
+  <Accordion title="Handle 409 gracefully">
+    `monitor_already_exists` is not a failure -- the monitor you need already exists. List monitors to find it instead of treating this as an error.
+  </Accordion>
+  <Accordion title="Set request timeouts">
+    Set a 30-second timeout on all API requests. If a request hangs, retry it rather than waiting indefinitely.
+  </Accordion>
+  <Accordion title="Use idempotent operations">
+    Creating a monitor for the same username returns `409`. Deleting a non-existent resource returns `404`. Both are safe to retry.
+  </Accordion>
+</AccordionGroup>
+
+<CardGroup cols={2}>
+  <Card title="Rate Limits" icon="gauge" href="/guides/rate-limits">
+    Detailed rate limit tiers and client-side rate limiting.
+  </Card>
+  <Card title="API Overview" icon="book" href="/api-reference/overview">
+    Base URL, authentication, and API conventions.
+  </Card>
+</CardGroup>

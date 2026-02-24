@@ -30,16 +30,17 @@ X Account Activity → Xquik Stream → Your Webhook Endpoint
 
 ## Delivery Format
 
-Webhook events are delivered as HTTPS POST requests:
+Webhook events are delivered as HTTPS POST requests.
 
-**Headers:**
+### Headers
 
-| Header | Value |
-|--------|-------|
-| `Content-Type` | `application/json` |
-| `X-Signature` | `sha256=HMAC_HEX_DIGEST` |
+| Header | Value | Description |
+|--------|-------|-------------|
+| `Content-Type` | `application/json` | Payload is always JSON |
+| `X-Signature` | `sha256=HMAC_HEX_DIGEST` | HMAC-SHA256 signature for verification |
+| `X-Delivery-Id` | `9001` | Unique delivery ID — use for idempotency |
 
-**Body:**
+### Payload Body
 
 ```json
 {
@@ -55,6 +56,116 @@ Webhook events are delivered as HTTPS POST requests:
       "likes": 42000,
       "retweets": 8500,
       "replies": 3200
+    }
+  }
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string | Unique delivery ID |
+| `type` | string | Event type (see below) |
+| `monitorId` | string | ID of the monitor that captured this event |
+| `username` | string | X username of the monitored account |
+| `occurredAt` | string | ISO 8601 UTC timestamp of when the event occurred |
+| `data` | object | Event-specific payload (varies by type) |
+
+## Event Data Shapes
+
+Each event type includes a `data` object with type-specific fields.
+
+### tweet.new
+
+A new original tweet posted by the monitored account.
+
+```json
+{
+  "id": "9001",
+  "type": "tweet.new",
+  "monitorId": "7",
+  "username": "elonmusk",
+  "occurredAt": "2026-02-24T14:22:00.000Z",
+  "data": {
+    "tweetId": "1893456789012345678",
+    "text": "The future is now.",
+    "metrics": {
+      "likes": 42000,
+      "retweets": 8500,
+      "replies": 3200
+    }
+  }
+}
+```
+
+### tweet.quote
+
+A quote tweet posted by the monitored account. Includes `quotedTweetId` and `quotedUsername` referencing the original tweet.
+
+```json
+{
+  "id": "9002",
+  "type": "tweet.quote",
+  "monitorId": "7",
+  "username": "elonmusk",
+  "occurredAt": "2026-02-24T15:10:00.000Z",
+  "data": {
+    "tweetId": "1893456789012345679",
+    "text": "Interesting take on this.",
+    "quotedTweetId": "1893400000000000000",
+    "quotedUsername": "SpaceX",
+    "metrics": {
+      "likes": 18000,
+      "retweets": 3200,
+      "replies": 1100
+    }
+  }
+}
+```
+
+### tweet.reply
+
+A reply posted by the monitored account. Includes `inReplyToTweetId` and `inReplyToUsername` referencing the parent tweet.
+
+```json
+{
+  "id": "9003",
+  "type": "tweet.reply",
+  "monitorId": "7",
+  "username": "elonmusk",
+  "occurredAt": "2026-02-24T16:45:00.000Z",
+  "data": {
+    "tweetId": "1893456789012345680",
+    "text": "Great question. Working on it.",
+    "inReplyToTweetId": "1893411111111111111",
+    "inReplyToUsername": "Tesla",
+    "metrics": {
+      "likes": 9500,
+      "retweets": 1200,
+      "replies": 800
+    }
+  }
+}
+```
+
+### tweet.retweet
+
+A retweet posted by the monitored account. Includes `retweetedTweetId` and `retweetedUsername` referencing the original tweet.
+
+```json
+{
+  "id": "9004",
+  "type": "tweet.retweet",
+  "monitorId": "7",
+  "username": "elonmusk",
+  "occurredAt": "2026-02-24T17:30:00.000Z",
+  "data": {
+    "tweetId": "1893456789012345681",
+    "retweetedTweetId": "1893422222222222222",
+    "retweetedUsername": "xai",
+    "metrics": {
+      "likes": 0,
+      "retweets": 0,
+      "replies": 0
     }
   }
 }
@@ -77,3 +188,14 @@ After 3 failed attempts, the delivery is marked as `failed`. Check delivery stat
 - Endpoint **must** use HTTPS
 - Endpoint **must** respond with `2xx` within 10 seconds
 - Non-2xx responses or timeouts count as failures
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Signature Verification" icon="shield-check" href="/webhooks/verification">
+    Verify HMAC-SHA256 signatures and implement idempotency.
+  </Card>
+  <Card title="Testing Webhooks" icon="flask-vial" href="/guides/webhook-testing">
+    Test webhook delivery locally with tunnels and mock payloads.
+  </Card>
+</CardGroup>

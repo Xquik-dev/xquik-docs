@@ -1,46 +1,120 @@
 ---
-title: List Monitors
-description: Retrieve all monitors for your account
+title: "List Monitors"
+description: "Retrieve all monitors for your account."
 ---
 
-## Request
+<CodeGroup>
+  ```bash cURL
+  curl -X GET https://xquik.com/api/v1/monitors \
+    -H "x-api-key: xqk_YOUR_KEY_HERE" | jq
+  ```
 
-```
-GET /api/v1/monitors
-```
+  ```javascript Node.js
+  const response = await fetch("https://xquik.com/api/v1/monitors", {
+    method: "GET",
+    headers: {
+      "x-api-key": "xqk_YOUR_KEY_HERE",
+    },
+  });
+  const data = await response.json();
+  ```
 
-### Headers
+  ```python Python
+  import requests
 
-| Header | Required | Description |
-|--------|----------|-------------|
-| `x-api-key` | Yes | Your API key |
+  response = requests.get(
+      "https://xquik.com/api/v1/monitors",
+      headers={"x-api-key": "xqk_YOUR_KEY_HERE"},
+  )
+  data = response.json()
+  ```
+
+  ```go Go
+  package main
+
+  import (
+      "encoding/json"
+      "fmt"
+      "net/http"
+  )
+
+  func main() {
+      req, err := http.NewRequest("GET", "https://xquik.com/api/v1/monitors", nil)
+      if err != nil {
+          panic(err)
+      }
+      req.Header.Set("x-api-key", "xqk_YOUR_KEY_HERE")
+
+      resp, err := http.DefaultClient.Do(req)
+      if err != nil {
+          panic(err)
+      }
+      defer resp.Body.Close()
+
+      var data map[string]interface{}
+      if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+          panic(err)
+      }
+      fmt.Println(data)
+  }
+  ```
+</CodeGroup>
+
+## Headers
+
+<ParamField header="x-api-key" type="string" required>
+  Your API key. Generate one from the [dashboard](https://xquik.com/dashboard).
+</ParamField>
 
 ## Response
 
-```json
-{
-  "monitors": [
+<Tabs>
+  <Tab title="200 OK">
+    <ResponseField name="monitors" type="object[]">Array of monitor objects.</ResponseField>
+    <ResponseField name="monitors[].id" type="string">Unique monitor ID.</ResponseField>
+    <ResponseField name="monitors[].username" type="string">Normalized X username.</ResponseField>
+    <ResponseField name="monitors[].xUserId" type="string">Resolved X user ID.</ResponseField>
+    <ResponseField name="monitors[].eventTypes" type="string[]">Subscribed event types.</ResponseField>
+    <ResponseField name="monitors[].isActive" type="boolean">Whether the monitor is currently active.</ResponseField>
+    <ResponseField name="monitors[].createdAt" type="string">ISO 8601 creation timestamp.</ResponseField>
+    <ResponseField name="total" type="number">Total number of monitors.</ResponseField>
+
+    ```json
     {
-      "id": "7",
-      "username": "elonmusk",
-      "xUserId": "44196397",
-      "eventTypes": ["tweet.new", "tweet.reply"],
-      "isActive": true,
-      "createdAt": "2026-02-24T10:30:00.000Z"
+      "monitors": [
+        {
+          "id": "7",
+          "username": "elonmusk",
+          "xUserId": "44196397",
+          "eventTypes": ["tweet.new", "tweet.reply"],
+          "isActive": true,
+          "createdAt": "2026-02-24T10:30:00.000Z"
+        },
+        {
+          "id": "12",
+          "username": "xquik_",
+          "xUserId": "1849726401547751424",
+          "eventTypes": ["tweet.new", "tweet.quote", "tweet.reply", "tweet.retweet"],
+          "isActive": true,
+          "createdAt": "2026-02-25T14:00:00.000Z"
+        }
+      ],
+      "total": 2
     }
-  ],
-  "total": 1
-}
-```
+    ```
+  </Tab>
+  <Tab title="401 Unauthenticated">
+    ```json
+    { "error": "unauthenticated" }
+    ```
+    Missing or invalid API key.
+  </Tab>
+</Tabs>
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `id` | string | Monitor ID |
-| `username` | string | Monitored X username |
-| `xUserId` | string | X user ID |
-| `eventTypes` | string[] | Subscribed event types |
-| `isActive` | boolean | Whether the monitor is active |
-| `createdAt` | string | ISO 8601 creation timestamp |
-| `total` | number | Total monitor count |
+<Info>
+  Returns up to 200 monitors. There is no pagination -- if you have more monitors, contact support.
+</Info>
 
-Returns up to 200 monitors.
+<Note>
+  **Related:** [Create Monitor](/api-reference/monitors/create) to add a new monitor, or [Get Monitor](/api-reference/monitors/get) to fetch details for a specific monitor.
+</Note>

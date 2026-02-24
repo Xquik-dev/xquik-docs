@@ -1,0 +1,200 @@
+---
+title: Type Definitions
+description: TypeScript type definitions for all API request and response objects
+---
+
+# Type Definitions
+
+Copy-pasteable TypeScript types for every Xquik API object. Use these in your client code for full type safety.
+
+```typescript
+// ─── Account ─────────────────────────────────────────────
+
+interface Account {
+  plan: "active" | "inactive";
+  monitorsAllowed: number;
+  monitorsUsed: number;
+  currentPeriod?: {
+    start: string;
+    end: string;
+    capMicrocents: string;
+    usedMicrocents: string;
+  };
+}
+
+// ─── API Keys ────────────────────────────────────────────
+
+// Returned when creating a new key (includes full key)
+interface ApiKeyCreated {
+  id: string;
+  fullKey: string;
+  prefix: string;
+  name: string;
+  createdAt: string;
+}
+
+// Returned when listing keys (full key is never exposed)
+interface ApiKey {
+  id: string;
+  name: string;
+  prefix: string;
+  isActive: boolean;
+  createdAt: string;
+  lastUsedAt?: string;
+}
+
+// ─── Monitors ────────────────────────────────────────────
+
+interface Monitor {
+  id: string;
+  username: string;
+  xUserId: string;
+  eventTypes: EventType[];
+  isActive: boolean;
+  createdAt: string;
+}
+
+type EventType = "tweet.new" | "tweet.quote" | "tweet.reply" | "tweet.retweet";
+
+// ─── Events ──────────────────────────────────────────────
+
+interface Event {
+  id: string;
+  type: EventType;
+  monitorId: string;
+  username: string;
+  occurredAt: string;
+  data: EventData;
+  xEventId?: string;
+}
+
+interface EventData {
+  tweetId: string;
+  text: string;
+  metrics: {
+    likes: number;
+    retweets: number;
+    replies: number;
+  };
+}
+
+interface EventList {
+  events: Event[];
+  hasMore: boolean;
+  nextCursor?: string;
+}
+
+// ─── Webhooks ────────────────────────────────────────────
+
+// Returned when creating a webhook (includes signing secret)
+interface WebhookCreated {
+  id: string;
+  url: string;
+  eventTypes: EventType[];
+  isActive: boolean;
+  secret: string;
+  createdAt: string;
+}
+
+// Returned when listing webhooks (secret is never exposed)
+interface Webhook {
+  id: string;
+  url: string;
+  eventTypes: EventType[];
+  isActive: boolean;
+  createdAt: string;
+}
+
+// ─── Deliveries ──────────────────────────────────────────
+
+interface Delivery {
+  id: string;
+  streamEventId: string;
+  status: "pending" | "delivered" | "failed" | "exhausted";
+  attempts: number;
+  lastStatusCode?: number;
+  lastError?: string;
+  createdAt: string;
+  deliveredAt?: string;
+}
+
+// ─── Webhook Payload ─────────────────────────────────────
+
+// What your webhook endpoint receives as the POST body
+interface WebhookPayload {
+  id: string;
+  type: EventType;
+  monitorId: string;
+  username: string;
+  occurredAt: string;
+  data: EventData;
+}
+
+// ─── Error Response ──────────────────────────────────────
+
+interface ApiError {
+  error: string;
+  limit?: number; // only present for monitor_limit_reached
+}
+
+// ─── Request Bodies ──────────────────────────────────────
+
+interface CreateMonitorRequest {
+  username: string;
+  eventTypes: EventType[];
+}
+
+interface UpdateMonitorRequest {
+  eventTypes?: EventType[];
+  isActive?: boolean;
+}
+
+interface CreateWebhookRequest {
+  url: string;
+  eventTypes: EventType[];
+}
+
+interface UpdateWebhookRequest {
+  url?: string;
+  eventTypes?: EventType[];
+  isActive?: boolean;
+}
+
+interface CreateApiKeyRequest {
+  name?: string;
+}
+```
+
+## Type Reference
+
+### Account
+
+Returned by `GET /api/v1/account`. The `currentPeriod` field is omitted when there is no active subscription. `capMicrocents` and `usedMicrocents` are strings representing bigint values — do not parse them as JavaScript numbers.
+
+### API Keys
+
+Two shapes exist: `ApiKeyCreated` is returned only from `POST /api/v1/api-keys` and includes the `fullKey` field. This is the only time the full key is exposed. `ApiKey` is returned by `GET /api/v1/api-keys` and shows only the `prefix` (first 8 characters) for identification.
+
+### Monitors
+
+Returned by all monitor endpoints. The `xUserId` is the X (Twitter) user ID resolved from the `username` at creation time. `eventTypes` controls which event types this monitor tracks.
+
+### Events
+
+`Event` represents a single tracked action from a monitored account. The `data` field contains tweet content and engagement metrics at the time of capture. `EventList` wraps paginated responses — use `nextCursor` with the `after` query parameter to fetch subsequent pages.
+
+### Webhooks
+
+Similar to API keys, webhooks have two shapes. `WebhookCreated` includes the `secret` field used for HMAC signature verification. `Webhook` (from list/get) never exposes the secret. If you lose the secret, delete and recreate the webhook.
+
+### Deliveries
+
+Each `Delivery` represents one attempt to send an event to a webhook endpoint. Status progresses from `pending` to `delivered` (success) or through `failed` to `exhausted` (all retries failed). `lastStatusCode` and `lastError` help diagnose delivery failures.
+
+### Webhook Payload
+
+The `WebhookPayload` type describes the JSON body your endpoint receives on each delivery. Verify its authenticity using the `X-Signature` header and your webhook secret. See [Webhook Verification](/webhooks/verification) for implementation details.
+
+### Request Bodies
+
+All request body types use optional fields for update operations (PATCH) and required fields for creation (POST). The API validates request bodies and returns `400 invalid_input` for missing or malformed fields.

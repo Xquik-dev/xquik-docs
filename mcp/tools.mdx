@@ -1,24 +1,334 @@
 ---
 title: MCP Tools Reference
-description: Detailed input/output schemas for all 9 MCP tools
+description: All 9 MCP tools with input/output schemas, usage examples, and costs
 ---
 
 # MCP Tools Reference
 
-## list-monitors
+The Xquik MCP server exposes 9 tools that AI agents can use to manage monitors, query events, search tweets, look up users, and configure webhooks. Connect to the MCP server on port 3100 with your API key.
+
+---
+
+### list-monitors
 
 List all monitored X accounts for the authenticated user.
 
 **Input:** None
 
-**Output:**
+**Example:**
 
-```json
+> **Prompt:** "Show me all my active monitors"
+
+```json Tool Call
+{
+  "name": "list-monitors",
+  "arguments": {}
+}
+```
+
+```json Result
 [
   {
     "id": "7",
     "username": "elonmusk",
     "xUserId": "44196397",
+    "eventTypes": ["tweet.new", "tweet.reply"],
+    "isActive": true,
+    "createdAt": "2026-02-24T10:30:00.000Z"
+  },
+  {
+    "id": "12",
+    "username": "OpenAI",
+    "xUserId": "1503518328",
+    "eventTypes": ["tweet.new"],
+    "isActive": true,
+    "createdAt": "2026-02-20T08:00:00.000Z"
+  }
+]
+```
+
+---
+
+### add-monitor
+
+Start monitoring an X account for specific event types.
+
+**Input:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `username` | string | Yes | X username to monitor (without @) |
+| `eventTypes` | string[] | Yes | Event types to subscribe to |
+
+**Example:**
+
+> **Prompt:** "Monitor @elonmusk for new tweets and replies"
+
+```json Tool Call
+{
+  "name": "add-monitor",
+  "arguments": {
+    "username": "elonmusk",
+    "eventTypes": ["tweet.new", "tweet.reply"]
+  }
+}
+```
+
+```json Result
+{
+  "id": "7",
+  "username": "elonmusk",
+  "xUserId": "44196397",
+  "eventTypes": ["tweet.new", "tweet.reply"],
+  "isActive": true,
+  "createdAt": "2026-02-24T10:30:00.000Z"
+}
+```
+
+---
+
+### remove-monitor
+
+Stop monitoring an X account.
+
+**Input:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `monitorId` | string | Yes | ID of the monitor to remove |
+
+**Example:**
+
+> **Prompt:** "Stop monitoring the account with monitor ID 7"
+
+```json Tool Call
+{
+  "name": "remove-monitor",
+  "arguments": {
+    "monitorId": "7"
+  }
+}
+```
+
+```json Result
+"Monitor removed"
+```
+
+If the monitor does not exist, returns `"Monitor not found"`.
+
+---
+
+### get-events
+
+Query events from monitored accounts with optional filters and cursor-based pagination.
+
+**Input:**
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `limit` | number | No | 50 | Results per page (1-100) |
+| `monitorId` | string | No | — | Filter by monitor ID |
+| `eventType` | string | No | — | Filter by event type |
+| `afterCursor` | string | No | — | Pagination cursor from previous response |
+
+**Example:**
+
+> **Prompt:** "Get the latest 10 tweets from monitor 7"
+
+```json Tool Call
+{
+  "name": "get-events",
+  "arguments": {
+    "limit": 10,
+    "monitorId": "7",
+    "eventType": "tweet.new"
+  }
+}
+```
+
+```json Result
+{
+  "events": [
+    {
+      "id": "9001",
+      "type": "tweet.new",
+      "monitorId": "7",
+      "username": "elonmusk",
+      "occurredAt": "2026-02-24T14:22:00.000Z",
+      "data": {
+        "tweetId": "1893456789012345678",
+        "text": "The future is now.",
+        "metrics": {
+          "likes": 42000,
+          "retweets": 8500,
+          "replies": 3200
+        }
+      }
+    }
+  ],
+  "hasMore": true,
+  "nextCursor": "MjAyNi0wMi0yNFQxNDoyMjowMC4wMDBa"
+}
+```
+
+To fetch the next page, pass `nextCursor` as `afterCursor` in the next call.
+
+---
+
+### get-event
+
+Retrieve a single event by ID with full details.
+
+**Input:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `eventId` | string | Yes | Event ID to retrieve |
+
+**Example:**
+
+> **Prompt:** "Show me the details of event 9001"
+
+```json Tool Call
+{
+  "name": "get-event",
+  "arguments": {
+    "eventId": "9001"
+  }
+}
+```
+
+```json Result
+{
+  "id": "9001",
+  "type": "tweet.new",
+  "monitorId": "7",
+  "username": "elonmusk",
+  "occurredAt": "2026-02-24T14:22:00.000Z",
+  "data": {
+    "tweetId": "1893456789012345678",
+    "text": "The future is now.",
+    "metrics": {
+      "likes": 42000,
+      "retweets": 8500,
+      "replies": 3200
+    }
+  }
+}
+```
+
+If the event does not exist, returns `"Event not found"`.
+
+---
+
+### search-tweets
+
+Search for tweets matching a query. **Consumes API usage credits.**
+
+**Input:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `query` | string | Yes | Search query (supports X search syntax) |
+
+**Cost:** 150 microcents per tweet returned ($0.0000015/tweet)
+
+**Example:**
+
+> **Prompt:** "Search for recent tweets about SpaceX Starship launch"
+
+```json Tool Call
+{
+  "name": "search-tweets",
+  "arguments": {
+    "query": "SpaceX Starship launch"
+  }
+}
+```
+
+```json Result
+[
+  {
+    "id": "1893456789012345678",
+    "text": "Starship Flight 8 is GO for launch tomorrow morning.",
+    "authorUsername": "elonmusk",
+    "authorName": "Elon Musk",
+    "createdAt": "2026-02-24T14:22:00.000Z"
+  },
+  {
+    "id": "1893456789012345679",
+    "text": "Watching the Starship launch live from Boca Chica!",
+    "authorUsername": "SpaceX",
+    "authorName": "SpaceX",
+    "createdAt": "2026-02-24T15:00:00.000Z"
+  }
+]
+```
+
+---
+
+### get-user-info
+
+Get profile information for an X user. **Consumes API usage credits.**
+
+**Input:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `username` | string | Yes | X username (without @) |
+
+**Cost:** 180 microcents per lookup ($0.0000018/lookup)
+
+**Example:**
+
+> **Prompt:** "Get profile info for @elonmusk"
+
+```json Tool Call
+{
+  "name": "get-user-info",
+  "arguments": {
+    "username": "elonmusk"
+  }
+}
+```
+
+```json Result
+{
+  "username": "elonmusk",
+  "name": "Elon Musk",
+  "description": "Mars & Cars, Chips & Dips",
+  "profilePicture": "https://pbs.twimg.com/profile_images/.../photo.jpg",
+  "followersCount": 200000000,
+  "followingCount": 800
+}
+```
+
+If the username does not exist, returns `"User not found"`.
+
+---
+
+### list-webhooks
+
+List all webhook endpoints for the authenticated user.
+
+**Input:** None
+
+**Example:**
+
+> **Prompt:** "Show all my webhook endpoints"
+
+```json Tool Call
+{
+  "name": "list-webhooks",
+  "arguments": {}
+}
+```
+
+```json Result
+[
+  {
+    "id": "15",
+    "url": "https://example.com/webhook",
     "eventTypes": ["tweet.new", "tweet.reply"],
     "isActive": true,
     "createdAt": "2026-02-24T10:30:00.000Z"
@@ -28,137 +338,7 @@ List all monitored X accounts for the authenticated user.
 
 ---
 
-## add-monitor
-
-Start monitoring an X account for specific event types.
-
-**Input:**
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `username` | string | Yes | X username to monitor |
-| `eventTypes` | string[] | Yes | Event types to subscribe to |
-
-**Output:** Monitor object with `id`, `username`, `xUserId`, `eventTypes`, `createdAt`.
-
----
-
-## remove-monitor
-
-Stop monitoring an X account.
-
-**Input:**
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `monitorId` | string | Yes | Monitor ID to remove |
-
-**Output:** `"Monitor removed"` or `"Monitor not found"`
-
----
-
-## get-events
-
-Query events from monitored accounts with optional filters.
-
-**Input:**
-
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `limit` | number | No | 50 | Results per page (1-100) |
-| `monitorId` | string | No | - | Filter by monitor ID |
-| `eventType` | string | No | - | Filter by event type |
-| `afterCursor` | string | No | - | Pagination cursor |
-
-**Output:**
-
-```json
-{
-  "events": [...],
-  "hasMore": true,
-  "nextCursor": "MjAyNi0wMi..."
-}
-```
-
----
-
-## get-event
-
-Retrieve a single event by ID with full details.
-
-**Input:**
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `eventId` | string | Yes | Event ID |
-
-**Output:** Full event object or `"Event not found"`
-
----
-
-## search-tweets
-
-Search for tweets matching a query. Consumes API usage credits.
-
-**Input:**
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `query` | string | Yes | Search query |
-
-**Output:**
-
-```json
-[
-  {
-    "id": "1893456789012345678",
-    "text": "The future is now.",
-    "author": "elonmusk",
-    "createdAt": "2026-02-24T14:22:00.000Z"
-  }
-]
-```
-
----
-
-## get-user-info
-
-Get profile information for an X user. Consumes API usage credits.
-
-**Input:**
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `username` | string | Yes | X username |
-
-**Output:**
-
-```json
-{
-  "name": "Elon Musk",
-  "username": "elonmusk",
-  "description": "Mars & Cars, Chips & Dips",
-  "followersCount": 200000000,
-  "followingCount": 800,
-  "profileImageUrl": "https://pbs.twimg.com/..."
-}
-```
-
-Returns `"User not found"` if the username doesn't exist.
-
----
-
-## list-webhooks
-
-List all webhook endpoints for the authenticated user.
-
-**Input:** None
-
-**Output:** Array of webhook objects with `id`, `url`, `eventTypes`, `isActive`, `createdAt`.
-
----
-
-## add-webhook
+### add-webhook
 
 Register a new webhook endpoint to receive event notifications.
 
@@ -169,8 +349,53 @@ Register a new webhook endpoint to receive event notifications.
 | `url` | string | Yes | HTTPS endpoint URL |
 | `eventTypes` | string[] | Yes | Event types to receive |
 
-**Output:** Webhook object with `id`, `url`, `eventTypes`, `secret`, `createdAt`.
+**Example:**
+
+> **Prompt:** "Set up a webhook at https://example.com/webhook for new tweets and retweets"
+
+```json Tool Call
+{
+  "name": "add-webhook",
+  "arguments": {
+    "url": "https://example.com/webhook",
+    "eventTypes": ["tweet.new", "tweet.retweet"]
+  }
+}
+```
+
+```json Result
+{
+  "id": "15",
+  "url": "https://example.com/webhook",
+  "eventTypes": ["tweet.new", "tweet.retweet"],
+  "secret": "whsec_a1b2c3d4e5f6789012345678901234567890abcdef",
+  "isActive": true,
+  "createdAt": "2026-02-24T10:30:00.000Z"
+}
+```
 
 <Warning>
   The `secret` is returned only during creation. Store it securely for [signature verification](/webhooks/verification).
 </Warning>
+
+---
+
+## Cost Summary
+
+Most MCP tools are free to use. The following tools consume API usage credits, which count toward your $10/month usage cap:
+
+| Tool | Cost | Unit |
+|------|------|------|
+| `search-tweets` | 150 microcents ($0.0000015) | Per tweet returned |
+| `get-user-info` | 180 microcents ($0.0000018) | Per lookup |
+| `list-monitors` | Free | — |
+| `add-monitor` | Free | — |
+| `remove-monitor` | Free | — |
+| `get-events` | Free | — |
+| `get-event` | Free | — |
+| `list-webhooks` | Free | — |
+| `add-webhook` | Free | — |
+
+<Info>
+  Usage is tracked per billing period. Monitor your current usage from the dashboard or via the `GET /account` API endpoint.
+</Info>

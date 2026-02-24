@@ -1,60 +1,168 @@
 ---
-title: Create Webhook
-description: Register an HTTPS endpoint to receive real-time event notifications
+title: "Create Webhook"
+description: "Register an HTTPS endpoint to receive real-time event notifications."
 ---
 
-## Request
+<CodeGroup>
+  ```bash cURL
+  curl -X POST https://xquik.com/api/v1/webhooks \
+    -H "x-api-key: xqk_a1b2c3d4e5f6789012345678901234" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "url": "https://your-server.com/webhook",
+      "eventTypes": ["tweet.new", "tweet.reply"]
+    }' | jq
+  ```
 
-```
-POST /api/v1/webhooks
-```
+  ```javascript Node.js
+  const response = await fetch("https://xquik.com/api/v1/webhooks", {
+    method: "POST",
+    headers: {
+      "x-api-key": "xqk_a1b2c3d4e5f6789012345678901234",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      url: "https://your-server.com/webhook",
+      eventTypes: ["tweet.new", "tweet.reply"],
+    }),
+  });
+  const webhook = await response.json();
+  console.log(webhook);
+  ```
 
-### Headers
+  ```python Python
+  import requests
 
-| Header | Required | Description |
-|--------|----------|-------------|
-| `x-api-key` | Yes | Your API key |
-| `Content-Type` | Yes | `application/json` |
+  response = requests.post(
+      "https://xquik.com/api/v1/webhooks",
+      headers={"x-api-key": "xqk_a1b2c3d4e5f6789012345678901234"},
+      json={
+          "url": "https://your-server.com/webhook",
+          "eventTypes": ["tweet.new", "tweet.reply"],
+      },
+  )
+  webhook = response.json()
+  print(webhook)
+  ```
 
-### Body
+  ```go Go
+  package main
 
-```json
-{
-  "url": "https://your-server.com/webhook",
-  "eventTypes": ["tweet.new", "tweet.reply"]
-}
-```
+  import (
+  	"bytes"
+  	"encoding/json"
+  	"fmt"
+  	"io"
+  	"log"
+  	"net/http"
+  )
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `url` | string | Yes | HTTPS endpoint URL |
-| `eventTypes` | string[] | Yes | At least 1 event type |
+  func main() {
+  	payload := map[string]interface{}{
+  		"url":        "https://your-server.com/webhook",
+  		"eventTypes": []string{"tweet.new", "tweet.reply"},
+  	}
+  	body, err := json.Marshal(payload)
+  	if err != nil {
+  		log.Fatal(err)
+  	}
 
-<Warning>
-  The URL **must** use HTTPS. HTTP endpoints are rejected.
-</Warning>
+  	req, err := http.NewRequest("POST", "https://xquik.com/api/v1/webhooks", bytes.NewReader(body))
+  	if err != nil {
+  		log.Fatal(err)
+  	}
+  	req.Header.Set("x-api-key", "xqk_a1b2c3d4e5f6789012345678901234")
+  	req.Header.Set("Content-Type", "application/json")
+
+  	resp, err := http.DefaultClient.Do(req)
+  	if err != nil {
+  		log.Fatal(err)
+  	}
+  	defer resp.Body.Close()
+
+  	respBody, err := io.ReadAll(resp.Body)
+  	if err != nil {
+  		log.Fatal(err)
+  	}
+  	fmt.Println(string(respBody))
+  }
+  ```
+</CodeGroup>
+
+## Headers
+
+<ParamField header="x-api-key" type="string" required>
+  Your API key. This endpoint also accepts session cookie authentication.
+</ParamField>
+
+<ParamField header="Content-Type" type="string" required>
+  Must be `application/json`.
+</ParamField>
+
+## Body
+
+<ParamField body="url" type="string" required>
+  HTTPS endpoint URL where events will be delivered. HTTP URLs are rejected.
+</ParamField>
+
+<ParamField body="eventTypes" type="string[]" required>
+  Array of event types to subscribe to. At least 1 required. Examples: `tweet.new`, `tweet.reply`, `tweet.delete`.
+</ParamField>
 
 ## Response
 
 <Tabs>
   <Tab title="201 Created">
+    <ResponseField name="id" type="string">
+      Unique webhook identifier.
+    </ResponseField>
+    <ResponseField name="url" type="string">
+      The registered delivery endpoint.
+    </ResponseField>
+    <ResponseField name="eventTypes" type="string[]">
+      Event types this webhook is subscribed to.
+    </ResponseField>
+    <ResponseField name="isActive" type="boolean">
+      Whether the webhook is active. Always `true` on creation.
+    </ResponseField>
+    <ResponseField name="secret" type="string">
+      32-byte hex signing secret for verifying webhook signatures.
+    </ResponseField>
+    <ResponseField name="createdAt" type="string">
+      ISO 8601 creation timestamp.
+    </ResponseField>
+
     ```json
     {
       "id": "15",
       "url": "https://your-server.com/webhook",
       "eventTypes": ["tweet.new", "tweet.reply"],
+      "isActive": true,
       "secret": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
       "createdAt": "2026-02-24T10:30:00.000Z"
     }
     ```
 
     <Warning>
-      The `secret` (32-byte hex) is returned **only once**. Store it securely. You need it to [verify signatures](/webhooks/verification).
+      The `secret` is returned **only once**. Store it securely -- you need it to [verify webhook signatures](/webhooks/verification). It cannot be retrieved again.
     </Warning>
+  </Tab>
+  <Tab title="401 Unauthenticated">
+    ```json
+    { "error": "unauthenticated" }
+    ```
+    Missing or invalid API key / session cookie.
   </Tab>
   <Tab title="400 Invalid Input">
     ```json
     { "error": "invalid_input" }
     ```
+    Invalid URL (must be HTTPS) or empty `eventTypes` array.
   </Tab>
 </Tabs>
+
+<Note>
+  This endpoint supports **dual authentication** -- either API key (`x-api-key` header) or session cookie from the dashboard.
+
+  **Related:** [List Webhooks](/api-reference/webhooks/list) &middot; [Signature Verification](/webhooks/verification) &middot; [Webhooks Overview](/webhooks/overview)
+</Note>

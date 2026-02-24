@@ -1,39 +1,114 @@
 ---
-title: Delete Monitor
-description: Remove a monitor and stop tracking the X account
+title: "Delete Monitor"
+description: "Remove a monitor and stop tracking the X account."
 ---
 
-## Request
+<CodeGroup>
+  ```bash cURL
+  curl -X DELETE https://xquik.com/api/v1/monitors/7 \
+    -H "x-api-key: xqk_YOUR_KEY_HERE" | jq
+  ```
 
-```
-DELETE /api/v1/monitors/{id}
-```
+  ```javascript Node.js
+  const monitorId = "7";
+  const response = await fetch(`https://xquik.com/api/v1/monitors/${monitorId}`, {
+    method: "DELETE",
+    headers: {
+      "x-api-key": "xqk_YOUR_KEY_HERE",
+    },
+  });
+  const data = await response.json();
+  ```
 
-### Path Parameters
+  ```python Python
+  import requests
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `id` | string | Monitor ID |
+  monitor_id = "7"
+  response = requests.delete(
+      f"https://xquik.com/api/v1/monitors/{monitor_id}",
+      headers={"x-api-key": "xqk_YOUR_KEY_HERE"},
+  )
+  data = response.json()
+  ```
 
-### Headers
+  ```go Go
+  package main
 
-| Header | Required | Description |
-|--------|----------|-------------|
-| `x-api-key` | Yes | Your API key |
+  import (
+      "encoding/json"
+      "fmt"
+      "net/http"
+  )
+
+  func main() {
+      monitorID := "7"
+      req, err := http.NewRequest("DELETE", "https://xquik.com/api/v1/monitors/"+monitorID, nil)
+      if err != nil {
+          panic(err)
+      }
+      req.Header.Set("x-api-key", "xqk_YOUR_KEY_HERE")
+
+      resp, err := http.DefaultClient.Do(req)
+      if err != nil {
+          panic(err)
+      }
+      defer resp.Body.Close()
+
+      var data map[string]interface{}
+      if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+          panic(err)
+      }
+      fmt.Println(data)
+  }
+  ```
+</CodeGroup>
+
+## Path Parameters
+
+<ParamField path="id" type="string" required>
+  The unique monitor ID.
+</ParamField>
+
+## Headers
+
+<ParamField header="x-api-key" type="string" required>
+  Your API key. Generate one from the [dashboard](https://xquik.com/dashboard).
+</ParamField>
 
 ## Response
 
 <Tabs>
   <Tab title="200 OK">
+    <ResponseField name="success" type="boolean">Always `true` on successful deletion.</ResponseField>
+
     ```json
     { "success": true }
     ```
+  </Tab>
+  <Tab title="400 Invalid ID">
+    ```json
+    { "error": "invalid_id" }
+    ```
+    The provided monitor ID is not a valid format.
+  </Tab>
+  <Tab title="401 Unauthenticated">
+    ```json
+    { "error": "unauthenticated" }
+    ```
+    Missing or invalid API key.
   </Tab>
   <Tab title="404 Not Found">
     ```json
     { "error": "not_found" }
     ```
+    No monitor exists with this ID, or it belongs to a different account.
   </Tab>
 </Tabs>
 
-The monitor is soft-deleted and the X account is automatically unregistered from the real-time stream.
+<Info>
+  This is a soft delete. The monitor is deactivated and the X account is unregistered from the real-time stream. Historical events are retained.
+</Info>
+
+<Note>
+  **Related:** [List Monitors](/api-reference/monitors/list) to verify the monitor was removed, or [Create Monitor](/api-reference/monitors/create) to set up a new one.
+</Note>

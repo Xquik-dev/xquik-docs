@@ -1,0 +1,255 @@
+---
+title: Rate Limits
+description: Rate limit tiers, burst allowances, and client-side rate limiting
+---
+
+# Rate Limits
+
+Xquik enforces rate limits to ensure fair usage and platform stability. Limits are applied per API key using a token bucket algorithm.
+
+## Rate Limit Tiers
+
+| Scope | Sustained Rate | Burst Allowance |
+|-------|---------------|-----------------|
+| API endpoints (`/api/v1/*`) | 10 req/s | 20 requests |
+| General requests | 20 req/s | 40 requests |
+
+## How Limits Work
+
+Xquik uses a **token bucket algorithm**:
+
+- Each API key has a bucket that fills at the sustained rate (e.g. 10 tokens/second for API endpoints)
+- The bucket holds a maximum of **burst** tokens (e.g. 20 for API endpoints)
+- Each request consumes 1 token
+- When the bucket is empty, requests return `429 Too Many Requests`
+
+This means you can send short bursts above the sustained rate as long as you stay within the burst allowance. For example, with the API tier:
+
+- You can send 20 requests instantly (burst)
+- After that, you can send 10 requests per second (sustained)
+- If you stop sending requests, the bucket refills at 10 tokens per second
+
+```
+Time 0s:  [20 tokens] → Send 20 requests → [0 tokens]
+Time 1s:  [10 tokens] → Send 10 requests → [0 tokens]
+Time 2s:  [10 tokens] → Send 5 requests  → [5 tokens]
+Time 3s:  [15 tokens] → Idle             → [20 tokens] (capped at burst)
+```
+
+## Response Headers
+
+When you exceed the rate limit, the response includes:
+
+| Header | Description |
+|--------|-------------|
+| `Retry-After` | Seconds to wait before retrying |
+
+**Example 429 response:**
+
+```
+HTTP/1.1 429 Too Many Requests
+Retry-After: 2
+Content-Type: text/plain
+
+Rate limit exceeded
+```
+
+Always respect the `Retry-After` header. Sending requests before the window resets may extend your cooldown.
+
+## Client-Side Rate Limiter
+
+Prevent hitting server-side limits by implementing a client-side token bucket. This is more efficient than relying on 429 responses and backoff.
+
+<CodeGroup>
+
+```javascript Node.js
+class RateLimiter {
+  constructor(ratePerSecond, burst) {
+    this.ratePerSecond = ratePerSecond;
+    this.burst = burst;
+    this.tokens = burst;
+    this.lastRefill = Date.now();
+  }
+
+  refill() {
+    const now = Date.now();
+    const elapsed = (now - this.lastRefill) / 1000;
+    this.tokens = Math.min(this.burst, this.tokens + elapsed * this.ratePerSecond);
+    this.lastRefill = now;
+  }
+
+  async acquire() {
+    this.refill();
+
+    if (this.tokens < 1) {
+      const waitMs = ((1 - this.tokens) / this.ratePerSecond) * 1000;
+      await new Promise((resolve) => setTimeout(resolve, waitMs));
+      this.refill();
+    }
+
+    this.tokens -= 1;
+  }
+}
+
+// Usage: 10 req/s sustained, 20 burst
+const limiter = new RateLimiter(10, 20);
+
+async function apiRequest(url) {
+  await limiter.acquire();
+  return fetch(url, {
+    headers: { "x-api-key": "xqk_YOUR_KEY_HERE" },
+  });
+}
+```
+
+```python Python
+import time
+import threading
+
+class RateLimiter:
+    def __init__(self, rate_per_second: float, burst: int):
+        self.rate_per_second = rate_per_second
+        self.burst = burst
+        self.tokens = float(burst)
+        self.last_refill = time.monotonic()
+        self.lock = threading.Lock()
+
+    def _refill(self):
+        now = time.monotonic()
+        elapsed = now - self.last_refill
+        self.tokens = min(self.burst, self.tokens + elapsed * self.rate_per_second)
+        self.last_refill = now
+
+    def acquire(self):
+        with self.lock:
+            self._refill()
+
+            if self.tokens < 1:
+                wait = (1 - self.tokens) / self.rate_per_second
+                time.sleep(wait)
+                self._refill()
+
+            self.tokens -= 1
+
+# Usage: 10 req/s sustained, 20 burst
+limiter = RateLimiter(10, 20)
+
+def api_request(url: str) -> requests.Response:
+    limiter.acquire()
+    return requests.get(url, headers={"x-api-key": "xqk_YOUR_KEY_HERE"})
+```
+
+```go Go
+package main
+
+import (
+	"net/http"
+	"sync"
+	"time"
+)
+
+type RateLimiter struct {
+	ratePerSecond float64
+	burst         float64
+	tokens        float64
+	lastRefill    time.Time
+	mu            sync.Mutex
+}
+
+func NewRateLimiter(ratePerSecond float64, burst int) *RateLimiter {
+	return &RateLimiter{
+		ratePerSecond: ratePerSecond,
+		burst:         float64(burst),
+		tokens:        float64(burst),
+		lastRefill:    time.Now(),
+	}
+}
+
+func (r *RateLimiter) refill() {
+	now := time.Now()
+	elapsed := now.Sub(r.lastRefill).Seconds()
+	r.tokens += elapsed * r.ratePerSecond
+	if r.tokens > r.burst {
+		r.tokens = r.burst
+	}
+	r.lastRefill = now
+}
+
+func (r *RateLimiter) Acquire() {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	r.refill()
+
+	if r.tokens < 1 {
+		wait := time.Duration((1 - r.tokens) / r.ratePerSecond * float64(time.Second))
+		r.mu.Unlock()
+		time.Sleep(wait)
+		r.mu.Lock()
+		r.refill()
+	}
+
+	r.tokens--
+}
+
+// Usage: 10 req/s sustained, 20 burst
+var limiter = NewRateLimiter(10, 20)
+
+func apiRequest(url string) (*http.Response, error) {
+	limiter.Acquire()
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("x-api-key", "xqk_YOUR_KEY_HERE")
+	return http.DefaultClient.Do(req)
+}
+```
+
+```bash cURL
+#!/bin/bash
+# Simple rate limiter using sleep between requests
+# 10 req/s = 100ms between requests
+
+URLS=(
+  "https://xquik.com/api/v1/events?monitorId=7"
+  "https://xquik.com/api/v1/events?monitorId=8"
+  "https://xquik.com/api/v1/events?monitorId=9"
+)
+
+for url in "${URLS[@]}"; do
+  curl -s "$url" -H "x-api-key: xqk_YOUR_KEY_HERE" | jq
+  sleep 0.1  # 100ms = 10 req/s
+done
+```
+
+</CodeGroup>
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Batch operations where possible">
+    Fetch events in larger pages (`limit=100`) instead of many small requests. 1 request for 100 events is better than 10 requests for 10 events each.
+  </Accordion>
+  <Accordion title="Use webhooks instead of polling">
+    Webhooks deliver events in real time with zero polling overhead. You only receive traffic when something happens. See the [webhooks overview](/webhooks/overview).
+  </Accordion>
+  <Accordion title="Cache responses client-side">
+    Monitor and webhook configurations change infrequently. Cache `GET` responses for list endpoints and invalidate only after mutations (create, update, delete).
+  </Accordion>
+  <Accordion title="Implement exponential backoff">
+    When you receive a 429, wait for the `Retry-After` duration. If the retry also fails, double the wait time. See the [error handling guide](/guides/error-handling) for complete retry implementations.
+  </Accordion>
+  <Accordion title="Spread requests evenly">
+    Avoid sending all requests in a burst at the start of each interval. Spread them evenly across the window to maintain a steady token refill rate.
+  </Accordion>
+</AccordionGroup>
+
+<CardGroup cols={2}>
+  <Card title="Error Handling" icon="triangle-exclamation" href="/guides/error-handling">
+    Retry strategies and error recovery patterns.
+  </Card>
+  <Card title="API Overview" icon="book" href="/api-reference/overview">
+    Base URL, authentication, and conventions.
+  </Card>
+</CardGroup>

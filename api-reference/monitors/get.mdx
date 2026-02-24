@@ -1,30 +1,91 @@
 ---
-title: Get Monitor
-description: Retrieve a single monitor by ID
+title: "Get Monitor"
+description: "Retrieve details for a specific monitor by ID."
 ---
 
-## Request
+<CodeGroup>
+  ```bash cURL
+  curl -X GET https://xquik.com/api/v1/monitors/7 \
+    -H "x-api-key: xqk_YOUR_KEY_HERE" | jq
+  ```
 
-```
-GET /api/v1/monitors/{id}
-```
+  ```javascript Node.js
+  const monitorId = "7";
+  const response = await fetch(`https://xquik.com/api/v1/monitors/${monitorId}`, {
+    method: "GET",
+    headers: {
+      "x-api-key": "xqk_YOUR_KEY_HERE",
+    },
+  });
+  const data = await response.json();
+  ```
 
-### Path Parameters
+  ```python Python
+  import requests
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `id` | string | Monitor ID |
+  monitor_id = "7"
+  response = requests.get(
+      f"https://xquik.com/api/v1/monitors/{monitor_id}",
+      headers={"x-api-key": "xqk_YOUR_KEY_HERE"},
+  )
+  data = response.json()
+  ```
 
-### Headers
+  ```go Go
+  package main
 
-| Header | Required | Description |
-|--------|----------|-------------|
-| `x-api-key` | Yes | Your API key |
+  import (
+      "encoding/json"
+      "fmt"
+      "net/http"
+  )
+
+  func main() {
+      monitorID := "7"
+      req, err := http.NewRequest("GET", "https://xquik.com/api/v1/monitors/"+monitorID, nil)
+      if err != nil {
+          panic(err)
+      }
+      req.Header.Set("x-api-key", "xqk_YOUR_KEY_HERE")
+
+      resp, err := http.DefaultClient.Do(req)
+      if err != nil {
+          panic(err)
+      }
+      defer resp.Body.Close()
+
+      var data map[string]interface{}
+      if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+          panic(err)
+      }
+      fmt.Println(data)
+  }
+  ```
+</CodeGroup>
+
+## Path Parameters
+
+<ParamField path="id" type="string" required>
+  The unique monitor ID. Returned when you [create a monitor](/api-reference/monitors/create) or [list monitors](/api-reference/monitors/list).
+</ParamField>
+
+## Headers
+
+<ParamField header="x-api-key" type="string" required>
+  Your API key. Generate one from the [dashboard](https://xquik.com/dashboard).
+</ParamField>
 
 ## Response
 
 <Tabs>
   <Tab title="200 OK">
+    <ResponseField name="id" type="string">Unique monitor ID.</ResponseField>
+    <ResponseField name="username" type="string">Normalized X username.</ResponseField>
+    <ResponseField name="xUserId" type="string">Resolved X user ID.</ResponseField>
+    <ResponseField name="eventTypes" type="string[]">Subscribed event types.</ResponseField>
+    <ResponseField name="isActive" type="boolean">Whether the monitor is currently active.</ResponseField>
+    <ResponseField name="createdAt" type="string">ISO 8601 creation timestamp.</ResponseField>
+
     ```json
     {
       "id": "7",
@@ -36,9 +97,26 @@ GET /api/v1/monitors/{id}
     }
     ```
   </Tab>
+  <Tab title="400 Invalid ID">
+    ```json
+    { "error": "invalid_id" }
+    ```
+    The provided monitor ID is not a valid format.
+  </Tab>
+  <Tab title="401 Unauthenticated">
+    ```json
+    { "error": "unauthenticated" }
+    ```
+    Missing or invalid API key.
+  </Tab>
   <Tab title="404 Not Found">
     ```json
     { "error": "not_found" }
     ```
+    No monitor exists with this ID, or it belongs to a different account.
   </Tab>
 </Tabs>
+
+<Note>
+  **Related:** [List Monitors](/api-reference/monitors/list) to see all monitors, [Update Monitor](/api-reference/monitors/update) to change event types or toggle active status, or [Delete Monitor](/api-reference/monitors/delete) to remove this monitor.
+</Note>

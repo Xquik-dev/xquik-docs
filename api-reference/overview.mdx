@@ -1,6 +1,6 @@
 ---
 title: API Overview
-description: Xquik REST API v1 - base URL, authentication, rate limits, conventions
+description: Xquik REST API v1 — base URL, authentication, rate limits, conventions
 ---
 
 The Xquik REST API v1 provides programmatic access to monitors, events, webhooks, and account management.
@@ -11,7 +11,7 @@ The Xquik REST API v1 provides programmatic access to monitors, events, webhooks
 https://xquik.com/api/v1
 ```
 
-All endpoints are served over HTTPS. HTTP requests are redirected.
+All endpoints are served over **HTTPS only**. Plain HTTP requests receive a `301` redirect to HTTPS. Always use the full base URL — there is no shorthand or versioned subdomain.
 
 ## Authentication
 
@@ -21,32 +21,176 @@ Pass your API key via the `x-api-key` header:
 x-api-key: xqk_YOUR_KEY_HERE
 ```
 
-Generate keys from your [dashboard](https://xquik.com). See [Authentication](/api-reference/authentication) for full details on auth methods per endpoint.
+Generate keys from your [dashboard](https://xquik.com). See [Authentication](/api-reference/authentication) for full details on key format, dual auth endpoints, and security best practices.
 
 ## Rate Limits
 
 | Scope | Limit | Burst |
 |-------|-------|-------|
-| API endpoints | 10 req/s | 20 |
+| API endpoints (`/api/v1/*`) | 10 req/s | 20 |
 | General requests | 20 req/s | 40 |
 
-Exceeding limits returns `429 Too Many Requests`.
+Exceeding limits returns `429 Too Many Requests` with a `Retry-After` header. Implement exponential backoff to handle rate limits gracefully:
+
+<CodeGroup>
+
+```bash cURL
+#!/bin/bash
+MAX_RETRIES=5
+RETRY_DELAY=1
+
+for i in $(seq 1 $MAX_RETRIES); do
+  RESPONSE=$(curl -s -w "\n%{http_code}" \
+    https://xquik.com/api/v1/account \
+    -H "x-api-key: xqk_YOUR_KEY_HERE")
+
+  HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+  BODY=$(echo "$RESPONSE" | sed '$d')
+
+  if [ "$HTTP_CODE" -ne 429 ]; then
+    echo "$BODY"
+    exit 0
+  fi
+
+  echo "Rate limited. Retrying in ${RETRY_DELAY}s..."
+  sleep $RETRY_DELAY
+  RETRY_DELAY=$((RETRY_DELAY * 2))
+done
+
+echo "Max retries exceeded."
+exit 1
+```
+
+```javascript Node.js
+async function fetchWithRetry(url, options, maxRetries = 5) {
+  let delay = 1000;
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    const response = await fetch(url, options);
+
+    if (response.status !== 429) {
+      return response;
+    }
+
+    const retryAfter = response.headers.get("retry-after");
+    const waitMs = retryAfter ? parseInt(retryAfter, 10) * 1000 : delay;
+
+    console.log(`Rate limited. Retrying in ${waitMs}ms...`);
+    await new Promise((resolve) => setTimeout(resolve, waitMs));
+    delay *= 2;
+  }
+
+  throw new Error("Max retries exceeded");
+}
+
+const response = await fetchWithRetry("https://xquik.com/api/v1/account", {
+  headers: { "x-api-key": "xqk_YOUR_KEY_HERE" },
+});
+```
+
+```python Python
+import time
+import requests
+
+def fetch_with_retry(url, headers, max_retries=5):
+    delay = 1
+
+    for attempt in range(1, max_retries + 1):
+        response = requests.get(url, headers=headers)
+
+        if response.status_code != 429:
+            return response
+
+        retry_after = response.headers.get("Retry-After")
+        wait = int(retry_after) if retry_after else delay
+
+        print(f"Rate limited. Retrying in {wait}s...")
+        time.sleep(wait)
+        delay *= 2
+
+    raise Exception("Max retries exceeded")
+
+response = fetch_with_retry(
+    "https://xquik.com/api/v1/account",
+    headers={"x-api-key": "xqk_YOUR_KEY_HERE"},
+)
+```
+
+```go Go
+package main
+
+import (
+	"fmt"
+	"net/http"
+	"strconv"
+	"time"
+)
+
+func fetchWithRetry(url string, apiKey string, maxRetries int) (*http.Response, error) {
+	delay := time.Second
+
+	for attempt := 1; attempt <= maxRetries; attempt++ {
+		req, _ := http.NewRequest("GET", url, nil)
+		req.Header.Set("x-api-key", apiKey)
+
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			return nil, err
+		}
+
+		if resp.StatusCode != 429 {
+			return resp, nil
+		}
+		resp.Body.Close()
+
+		if ra := resp.Header.Get("Retry-After"); ra != "" {
+			if secs, err := strconv.Atoi(ra); err == nil {
+				delay = time.Duration(secs) * time.Second
+			}
+		}
+
+		fmt.Printf("Rate limited. Retrying in %v...\n", delay)
+		time.Sleep(delay)
+		delay *= 2
+	}
+
+	return nil, fmt.Errorf("max retries exceeded")
+}
+
+func main() {
+	resp, err := fetchWithRetry(
+		"https://xquik.com/api/v1/account",
+		"xqk_YOUR_KEY_HERE",
+		5,
+	)
+	if err != nil {
+		panic(err)
+	}
+	defer resp.Body.Close()
+}
+```
+
+</CodeGroup>
+
+For a complete guide on handling rate limits, see [Rate Limits](/guides/rate-limits).
 
 ## Conventions
 
 <AccordionGroup>
   <Accordion title="IDs are strings">
-    All IDs are returned as strings representing bigint values:
+    All IDs are returned as strings representing bigint values. Always treat IDs as opaque strings — never parse them as numbers:
     ```json
     { "id": "123456789" }
     ```
   </Accordion>
   <Accordion title="Timestamps are ISO 8601 UTC">
+    All timestamps use ISO 8601 format in UTC. Store and compare timestamps as strings or parse them into proper date objects:
     ```json
     { "createdAt": "2026-02-24T10:30:00.000Z" }
     ```
   </Accordion>
   <Accordion title="Errors follow a consistent format">
+    All errors return a JSON body with an `error` field containing a machine-readable error code:
     ```json
     { "error": "error_code" }
     ```
@@ -58,12 +202,14 @@ Exceeding limits returns `429 Too Many Requests`.
     | 401 | `unauthenticated` | Missing or invalid API key |
     | 403 | `monitor_limit_reached` | Plan monitor limit exceeded |
     | 404 | `not_found` | Resource does not exist |
-    | 409 | `monitor_already_exists` | Duplicate monitor |
-    | 429 | - | Rate limited |
-    | 500 | `internal_error` | Server error |
+    | 409 | `monitor_already_exists` | Duplicate monitor for same username |
+    | 429 | — | Rate limited — retry with backoff |
+    | 500 | `internal_error` | Server error — contact support if persistent |
+
+    See [Error Handling](/guides/error-handling) for strategies on handling each error type.
   </Accordion>
   <Accordion title="Cursor-based pagination for events">
-    The events endpoint returns a `nextCursor` when more results exist:
+    The events endpoint uses cursor-based pagination. When more results exist, the response includes `hasMore: true` and a `nextCursor` value:
     ```json
     {
       "events": [],
@@ -71,7 +217,12 @@ Exceeding limits returns `429 Too Many Requests`.
       "nextCursor": "MjAyNi0wMi0yNFQxMDozMDowMC4wMDBa..."
     }
     ```
-    Pass `nextCursor` as the `after` query parameter to fetch the next page. All other list endpoints return up to 200 items.
+    Pass `nextCursor` as the `after` query parameter to fetch the next page:
+    ```bash
+    curl "https://xquik.com/api/v1/events?after=MjAyNi0wMi0yNFQxMDozMDowMC4wMDBa..." \
+      -H "x-api-key: xqk_YOUR_KEY_HERE"
+    ```
+    Cursors are opaque strings — do not decode or construct them manually. All other list endpoints return up to 200 items without pagination.
   </Accordion>
 </AccordionGroup>
 
@@ -81,7 +232,21 @@ Used across monitors, webhooks, and events:
 
 | Type | Description |
 |------|-------------|
-| `tweet.new` | New tweet posted |
-| `tweet.quote` | Quote tweet posted |
-| `tweet.reply` | Reply posted |
-| `tweet.retweet` | Retweet posted |
+| `tweet.new` | Original tweet posted by the monitored account |
+| `tweet.quote` | Quote tweet posted by the monitored account |
+| `tweet.reply` | Reply posted by the monitored account |
+| `tweet.retweet` | Retweet posted by the monitored account |
+
+## Next Steps
+
+<CardGroup cols={3}>
+  <Card title="Error Handling" icon="triangle-exclamation" href="/guides/error-handling">
+    Handle errors gracefully with retries and fallbacks.
+  </Card>
+  <Card title="Rate Limits" icon="gauge-high" href="/guides/rate-limits">
+    Understand limits and implement backoff strategies.
+  </Card>
+  <Card title="Workflows" icon="diagram-project" href="/guides/workflows">
+    End-to-end examples: monitors, events, and webhooks.
+  </Card>
+</CardGroup>

@@ -17,6 +17,11 @@ Every webhook delivery includes an `X-Signature` header containing an HMAC-SHA25
 
 <CodeGroup>
 
+```bash cURL (test)
+# Generate a test signature to verify your implementation
+echo -n '{"test":"payload"}' | openssl dgst -sha256 -hmac "your_webhook_secret" | sed 's/.*= /sha256=/'
+```
+
 ```javascript Node.js
 import { createHmac, timingSafeEqual } from "node:crypto";
 
@@ -121,3 +126,69 @@ func webhookHandler(w http.ResponseWriter, r *http.Request) {
     Return `200` within 10 seconds. Process events asynchronously if your handler is slow.
   </Accordion>
 </AccordionGroup>
+
+## Idempotency
+
+Webhook deliveries can be retried on failure, so your endpoint may receive the same event multiple times. Use the delivery `id` field to implement idempotency and avoid processing duplicate events.
+
+Each delivery includes a unique `id` in the payload body and in the `X-Delivery-Id` header. Track processed delivery IDs and skip any that have already been handled.
+
+<CodeGroup>
+
+```javascript Node.js
+const processedDeliveries = new Set();
+
+app.post("/webhook", express.raw({ type: "application/json" }), (req, res) => {
+  const signature = req.headers["x-signature"];
+  const payload = req.body.toString();
+
+  if (!verifyWebhookSignature(payload, signature, WEBHOOK_SECRET)) {
+    return res.status(401).send("Invalid signature");
+  }
+
+  const event = JSON.parse(payload);
+
+  // Skip already-processed deliveries
+  if (processedDeliveries.has(event.id)) {
+    return res.status(200).send("Already processed");
+  }
+
+  processedDeliveries.add(event.id);
+
+  // Process event...
+  handleEvent(event);
+
+  res.status(200).send("OK");
+});
+```
+
+```python Python
+processed_deliveries = set()
+
+@app.route("/webhook", methods=["POST"])
+def webhook():
+    signature = request.headers.get("X-Signature", "")
+    payload = request.get_data()
+
+    if not verify_webhook_signature(payload, signature, WEBHOOK_SECRET):
+        return "Invalid signature", 401
+
+    event = request.get_json()
+
+    # Skip already-processed deliveries
+    if event["id"] in processed_deliveries:
+        return "Already processed", 200
+
+    processed_deliveries.add(event["id"])
+
+    # Process event...
+    handle_event(event)
+
+    return "OK", 200
+```
+
+</CodeGroup>
+
+<Warning>
+  The in-memory examples above work for single-process servers. In production, use a persistent store (database, Redis) to track processed delivery IDs across restarts and multiple instances.
+</Warning>
