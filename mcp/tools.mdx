@@ -1,10 +1,10 @@
 ---
 title: MCP Tools Reference
-description: All 9 MCP tools with input/output schemas, usage examples, and costs
-keywords: ["MCP tools", "list-monitors", "search-tweets", "get-user-info", "add-webhook"]
+description: All 20 MCP tools with input/output schemas, usage examples, and costs
+keywords: ["MCP tools", "list-monitors", "add-monitor", "remove-monitor", "get-events", "get-event", "search-tweets", "get-user-info", "list-webhooks", "add-webhook", "remove-webhook", "lookup-tweet", "check-follow", "run-extraction", "list-extractions", "get-extraction", "estimate-extraction", "run-draw", "list-draws", "get-draw", "get-account"]
 ---
 
-The Xquik MCP server exposes 9 tools that AI agents can use to manage monitors, query events, search tweets, look up users, and configure webhooks. Connect to the MCP server on port 3100 with your API key.
+The Xquik MCP server exposes 20 tools that AI agents can use to manage monitors, query events, search tweets, look up users and tweets, check follow relationships, run extractions and draws, configure webhooks, and check account status. Connect to the MCP server on port 3100 with your API key.
 
 ---
 
@@ -26,22 +26,24 @@ List all monitored X accounts for the authenticated user.
 ```
 
 ```json Result
-[
-  {
-    "id": "7",
-    "xUsername": "elonmusk",
-    "eventTypes": ["tweet.new", "tweet.reply"],
-    "isActive": true,
-    "createdAt": "2026-02-24T10:30:00.000Z"
-  },
-  {
-    "id": "12",
-    "xUsername": "OpenAI",
-    "eventTypes": ["tweet.new"],
-    "isActive": true,
-    "createdAt": "2026-02-20T08:00:00.000Z"
-  }
-]
+{
+  "monitors": [
+    {
+      "id": "7",
+      "xUsername": "elonmusk",
+      "eventTypes": ["tweet.new", "tweet.reply"],
+      "isActive": true,
+      "createdAt": "2026-02-24T10:30:00.000Z"
+    },
+    {
+      "id": "12",
+      "xUsername": "OpenAI",
+      "eventTypes": ["tweet.new"],
+      "isActive": true,
+      "createdAt": "2026-02-20T08:00:00.000Z"
+    }
+  ]
+}
 ```
 
 ---
@@ -245,22 +247,24 @@ Search for tweets matching a query. **Consumes API usage credits.**
 ```
 
 ```json Result
-[
-  {
-    "id": "1893456789012345678",
-    "text": "Starship Flight 8 is GO for launch tomorrow morning.",
-    "authorUsername": "elonmusk",
-    "authorName": "Elon Musk",
-    "createdAt": "2026-02-24T14:22:00.000Z"
-  },
-  {
-    "id": "1893456789012345679",
-    "text": "Watching the Starship launch live from Boca Chica!",
-    "authorUsername": "SpaceX",
-    "authorName": "SpaceX",
-    "createdAt": "2026-02-24T15:00:00.000Z"
-  }
-]
+{
+  "tweets": [
+    {
+      "id": "1893456789012345678",
+      "text": "Starship Flight 8 is GO for launch tomorrow morning.",
+      "authorUsername": "elonmusk",
+      "authorName": "Elon Musk",
+      "createdAt": "2026-02-24T14:22:00.000Z"
+    },
+    {
+      "id": "1893456789012345679",
+      "text": "Watching the Starship launch live from Boca Chica!",
+      "authorUsername": "SpaceX",
+      "authorName": "SpaceX",
+      "createdAt": "2026-02-24T15:00:00.000Z"
+    }
+  ]
+}
 ```
 
 ---
@@ -323,15 +327,17 @@ List all webhook endpoints for the authenticated user.
 ```
 
 ```json Result
-[
-  {
-    "id": "15",
-    "url": "https://example.com/webhook",
-    "eventTypes": ["tweet.new", "tweet.reply"],
-    "isActive": true,
-    "createdAt": "2026-02-24T10:30:00.000Z"
-  }
-]
+{
+  "webhooks": [
+    {
+      "id": "15",
+      "url": "https://example.com/webhook",
+      "eventTypes": ["tweet.new", "tweet.reply"],
+      "isActive": true,
+      "createdAt": "2026-02-24T10:30:00.000Z"
+    }
+  ]
+}
 ```
 
 ---
@@ -378,22 +384,494 @@ Register a new webhook endpoint to receive event notifications.
 
 ---
 
+### remove-webhook
+
+Delete a webhook endpoint. This is permanent.
+
+**Input:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `webhookId` | string | Yes | The webhook ID to remove |
+
+**Example:**
+
+> **Prompt:** "Remove the webhook with ID 15"
+
+```json Tool Call
+{
+  "name": "remove-webhook",
+  "arguments": {
+    "webhookId": "15"
+  }
+}
+```
+
+```json Result
+"Webhook removed"
+```
+
+If the webhook does not exist, returns `"Webhook not found"`.
+
+---
+
+### lookup-tweet
+
+Get full details of a specific tweet by its ID or URL. Returns engagement metrics and author info. **Consumes API usage credits.**
+
+**Input:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `tweetId` | string | Yes | The numeric tweet ID or ID extracted from a tweet URL |
+
+**Quota:** Consumes usage credits (counts toward your monthly quota)
+
+**Example:**
+
+> **Prompt:** "Look up tweet 1893456789012345678"
+
+```json Tool Call
+{
+  "name": "lookup-tweet",
+  "arguments": {
+    "tweetId": "1893456789012345678"
+  }
+}
+```
+
+```json Result
+{
+  "tweet": {
+    "id": "1893456789012345678",
+    "text": "The future is now.",
+    "likeCount": 42000,
+    "retweetCount": 8500,
+    "replyCount": 3200,
+    "quoteCount": 1100,
+    "viewCount": 5000000,
+    "bookmarkCount": 2400
+  },
+  "author": {
+    "id": "44196397",
+    "username": "elonmusk",
+    "followers": 200000000,
+    "verified": true
+  }
+}
+```
+
+---
+
+### check-follow
+
+Check if one X account follows another. Returns both directions. **Consumes API usage credits.**
+
+**Input:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `sourceUsername` | string | Yes | Username of the account to check (without @) |
+| `targetUsername` | string | Yes | Username of the account that may be followed (without @) |
+
+**Quota:** Consumes usage credits (counts toward your monthly quota)
+
+**Example:**
+
+> **Prompt:** "Does @elonmusk follow @SpaceX?"
+
+```json Tool Call
+{
+  "name": "check-follow",
+  "arguments": {
+    "sourceUsername": "elonmusk",
+    "targetUsername": "SpaceX"
+  }
+}
+```
+
+```json Result
+{
+  "following": true,
+  "followedBy": true
+}
+```
+
+---
+
+### run-extraction
+
+Extract bulk data from X. Requires an active subscription. **Consumes API usage credits.**
+
+**Input:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `toolType` | string | Yes | Type of extraction to run. One of: `article_extractor`, `community_extractor`, `community_moderator_explorer`, `community_post_extractor`, `community_search`, `follower_explorer`, `following_explorer`, `list_follower_explorer`, `list_member_extractor`, `list_post_extractor`, `mention_extractor`, `people_search`, `post_extractor`, `quote_extractor`, `reply_extractor`, `repost_extractor`, `space_explorer`, `thread_extractor`, `verified_follower_explorer` |
+| `targetTweetId` | string | No | Tweet ID (for reply_extractor, repost_extractor, quote_extractor, thread_extractor, article_extractor) |
+| `targetUsername` | string | No | X username without @ (for follower_explorer, following_explorer, verified_follower_explorer, mention_extractor, post_extractor) |
+| `targetCommunityId` | string | No | Community ID (for community_extractor, community_moderator_explorer, community_post_extractor, community_search) |
+| `targetListId` | string | No | X List ID (for list_member_extractor, list_post_extractor, list_follower_explorer) |
+| `targetSpaceId` | string | No | X Space ID (for space_explorer) |
+| `searchQuery` | string | No | Search keywords (for people_search, community_search) |
+
+**Quota:** Consumes usage credits (counts toward your monthly quota)
+
+**Example:**
+
+> **Prompt:** "Extract all replies to tweet 1893704267862470862"
+
+```json Tool Call
+{
+  "name": "run-extraction",
+  "arguments": {
+    "toolType": "reply_extractor",
+    "targetTweetId": "1893704267862470862"
+  }
+}
+```
+
+```json Result
+{
+  "id": "77777",
+  "toolType": "reply_extractor",
+  "status": "completed",
+  "totalResults": 150
+}
+```
+
+---
+
+### list-extractions
+
+List past extraction jobs with optional filtering.
+
+**Input:**
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `limit` | number | No | 50 | Results per page (max 100) |
+| `status` | string | No | - | Filter by status: `running`, `completed`, `failed` |
+| `toolType` | string | No | - | Filter by extraction tool type |
+| `afterCursor` | string | No | - | Pagination cursor from previous response |
+
+**Example:**
+
+> **Prompt:** "Show my completed extraction jobs"
+
+```json Tool Call
+{
+  "name": "list-extractions",
+  "arguments": {
+    "status": "completed"
+  }
+}
+```
+
+```json Result
+{
+  "extractions": [
+    {
+      "id": "77777",
+      "toolType": "reply_extractor",
+      "status": "completed",
+      "totalResults": 150,
+      "createdAt": "2026-02-24T10:30:00.000Z",
+      "completedAt": "2026-02-24T10:31:15.000Z"
+    }
+  ],
+  "hasMore": false
+}
+```
+
+---
+
+### get-extraction
+
+Get results of a specific extraction job with pagination.
+
+**Input:**
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `id` | string | Yes | - | The extraction job ID |
+| `limit` | number | No | 100 | Results per page (max 1000) |
+| `afterCursor` | string | No | - | Pagination cursor for results |
+
+**Example:**
+
+> **Prompt:** "Show results from extraction 77777"
+
+```json Tool Call
+{
+  "name": "get-extraction",
+  "arguments": {
+    "id": "77777"
+  }
+}
+```
+
+```json Result
+{
+  "job": {
+    "id": "77777",
+    "toolType": "reply_extractor",
+    "status": "completed",
+    "totalResults": 150
+  },
+  "results": [
+    {
+      "xUsername": "user1",
+      "xDisplayName": "User One",
+      "xFollowersCount": 5000,
+      "xVerified": false,
+      "tweetText": "Great thread!"
+    }
+  ],
+  "hasMore": true,
+  "nextCursor": "eyJpZCI6Ijk5OTk5In0="
+}
+```
+
+---
+
+### estimate-extraction
+
+Preview the cost of a data extraction before running it.
+
+**Input:** Same parameters as `run-extraction`.
+
+**Example:**
+
+> **Prompt:** "Estimate the cost of extracting followers of @elonmusk"
+
+```json Tool Call
+{
+  "name": "estimate-extraction",
+  "arguments": {
+    "toolType": "follower_explorer",
+    "targetUsername": "elonmusk"
+  }
+}
+```
+
+```json Result
+{
+  "allowed": false,
+  "source": "followers",
+  "estimatedResults": 200000000,
+  "usagePercent": 45,
+  "projectedPercent": 99999
+}
+```
+
+---
+
+### run-draw
+
+Run a giveaway draw from a tweet with configurable filters. **Consumes API usage credits.**
+
+**Input:**
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `tweetUrl` | string | Yes | - | Full URL of the giveaway tweet |
+| `winnerCount` | number | No | 1 | Number of winners |
+| `backupCount` | number | No | - | Number of backup winners |
+| `uniqueAuthorsOnly` | boolean | No | - | Count only one entry per author |
+| `mustRetweet` | boolean | No | - | Require participants to have retweeted |
+| `mustFollowUsername` | string | No | - | Username participants must follow |
+| `filterMinFollowers` | number | No | - | Minimum follower count |
+| `filterAccountAgeDays` | number | No | - | Minimum account age in days |
+| `filterLanguage` | string | No | - | Filter by language code (e.g., "en") |
+| `requiredKeywords` | string[] | No | - | Keywords that must appear in replies |
+| `requiredHashtags` | string[] | No | - | Hashtags that must appear in replies |
+| `requiredMentions` | string[] | No | - | Usernames that must be mentioned |
+
+**Quota:** Consumes usage credits (counts toward your monthly quota)
+
+**Example:**
+
+> **Prompt:** "Run a giveaway draw on https://x.com/xquik/status/1893704267862470862 with 3 winners"
+
+```json Tool Call
+{
+  "name": "run-draw",
+  "arguments": {
+    "tweetUrl": "https://x.com/xquik/status/1893704267862470862",
+    "winnerCount": 3
+  }
+}
+```
+
+```json Result
+{
+  "id": "42",
+  "tweetId": "1893704267862470862",
+  "totalEntries": 500,
+  "validEntries": 487,
+  "winners": [
+    { "position": 1, "authorUsername": "winner1", "tweetId": "1893800000000000001", "isBackup": false },
+    { "position": 2, "authorUsername": "winner2", "tweetId": "1893800000000000002", "isBackup": false },
+    { "position": 3, "authorUsername": "winner3", "tweetId": "1893800000000000003", "isBackup": false }
+  ]
+}
+```
+
+---
+
+### list-draws
+
+List past giveaway draws.
+
+**Input:**
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `limit` | number | No | 50 | Results per page (max 100) |
+| `afterCursor` | string | No | - | Pagination cursor from previous response |
+
+**Example:**
+
+> **Prompt:** "Show my past giveaway draws"
+
+```json Tool Call
+{
+  "name": "list-draws",
+  "arguments": {}
+}
+```
+
+```json Result
+{
+  "draws": [
+    {
+      "id": "42",
+      "tweetUrl": "https://x.com/xquik/status/1893704267862470862",
+      "status": "completed",
+      "totalEntries": 500,
+      "validEntries": 487,
+      "createdAt": "2026-02-24T10:30:00.000Z",
+      "drawnAt": "2026-02-24T10:31:45.000Z"
+    }
+  ],
+  "hasMore": false
+}
+```
+
+---
+
+### get-draw
+
+Get details of a specific giveaway draw including winners.
+
+**Input:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `drawId` | string | Yes | The draw ID to look up |
+
+**Example:**
+
+> **Prompt:** "Show draw 42 details and winners"
+
+```json Tool Call
+{
+  "name": "get-draw",
+  "arguments": {
+    "drawId": "42"
+  }
+}
+```
+
+```json Result
+{
+  "draw": {
+    "id": "42",
+    "tweetUrl": "https://x.com/xquik/status/1893704267862470862",
+    "tweetId": "1893704267862470862",
+    "tweetText": "Giveaway! Reply to enter.",
+    "tweetAuthorUsername": "xquik",
+    "tweetLikeCount": 1200,
+    "tweetRetweetCount": 890,
+    "tweetReplyCount": 500,
+    "tweetQuoteCount": 45,
+    "status": "completed",
+    "totalEntries": 500,
+    "validEntries": 487,
+    "createdAt": "2026-02-24T10:30:00.000Z",
+    "drawnAt": "2026-02-24T10:31:45.000Z"
+  },
+  "winners": [
+    { "position": 1, "authorUsername": "winner1", "tweetId": "1893800000000000001", "isBackup": false },
+    { "position": 2, "authorUsername": "winner2", "tweetId": "1893800000000000002", "isBackup": false },
+    { "position": 3, "authorUsername": "winner3", "tweetId": "1893800000000000003", "isBackup": false }
+  ]
+}
+```
+
+---
+
+### get-account
+
+Check account status, subscription, and usage.
+
+**Input:** None
+
+**Example:**
+
+> **Prompt:** "What's my current usage and subscription status?"
+
+```json Tool Call
+{
+  "name": "get-account",
+  "arguments": {}
+}
+```
+
+```json Result
+{
+  "plan": "active",
+  "monitorsAllowed": 1,
+  "monitorsUsed": 1,
+  "currentPeriod": {
+    "start": "2026-02-01T00:00:00.000Z",
+    "end": "2026-03-01T00:00:00.000Z",
+    "usedMicrocents": "4500000",
+    "capMicrocents": "10000000"
+  }
+}
+```
+
+---
+
 ## Usage & Quotas
 
-Most MCP tools are free to use. Two tools consume usage credits that count toward your monthly quota:
+Most MCP tools are free to use. Tools that query the X API or run extractions/draws consume usage credits that count toward your monthly quota:
 
 | Tool | Metered | Notes |
 |------|---------|-------|
-| `search-tweets` | Yes | Per tweet returned |
-| `get-user-info` | Yes | Per lookup |
 | `list-monitors` | No | Unlimited |
 | `add-monitor` | No | Unlimited |
 | `remove-monitor` | No | Unlimited |
 | `get-events` | No | Unlimited |
 | `get-event` | No | Unlimited |
+| `search-tweets` | Yes | Per tweet returned |
+| `get-user-info` | Yes | Per lookup |
 | `list-webhooks` | No | Unlimited |
 | `add-webhook` | No | Unlimited |
+| `remove-webhook` | No | Unlimited |
+| `lookup-tweet` | Yes | Per lookup |
+| `check-follow` | Yes | Per check |
+| `run-extraction` | Yes | Per result extracted |
+| `list-extractions` | No | Unlimited |
+| `get-extraction` | No | Unlimited |
+| `estimate-extraction` | No | Unlimited |
+| `run-draw` | Yes | Per entry processed |
+| `list-draws` | No | Unlimited |
+| `get-draw` | No | Unlimited |
+| `get-account` | No | Unlimited |
 
 <Info>
-  Usage is tracked per billing period. Monitor your current usage from the dashboard or via the `GET /account` API endpoint. See [Billing & Usage](/guides/billing) for monthly operation limits.
+  Usage is tracked per billing period. Monitor your current usage from the dashboard, via the `GET /account` API endpoint, or with the `get-account` MCP tool. See [Billing & Usage](/guides/billing) for monthly operation limits.
 </Info>
