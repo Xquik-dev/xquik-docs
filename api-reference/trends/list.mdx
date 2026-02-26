@@ -1,0 +1,159 @@
+---
+title: "List Trends"
+description: "Get trending topics by region. Free, no usage cost."
+api: "GET /trends"
+keywords: ["trends", "trending", "woeid", "regions"]
+---
+
+<Info>
+  This endpoint does not count against your monthly usage quota.
+</Info>
+
+<CodeGroup>
+  ```bash cURL
+  curl "https://xquik.com/api/v1/trends?woeid=1&count=30" \
+    -H "x-api-key: xq_a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2" | jq
+  ```
+
+  ```javascript Node.js
+  const response = await fetch("https://xquik.com/api/v1/trends?woeid=1&count=30", {
+    headers: { "x-api-key": "xq_a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2" },
+  });
+  const data = await response.json();
+  console.log(data);
+  ```
+
+  ```python Python
+  import requests
+
+  response = requests.get(
+      "https://xquik.com/api/v1/trends",
+      params={"woeid": 1, "count": 30},
+      headers={"x-api-key": "xq_a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"},
+  )
+  data = response.json()
+  print(data)
+  ```
+
+  ```go Go
+  package main
+
+  import (
+  	"fmt"
+  	"io"
+  	"log"
+  	"net/http"
+  )
+
+  func main() {
+  	req, err := http.NewRequest("GET", "https://xquik.com/api/v1/trends?woeid=1&count=30", nil)
+  	if err != nil {
+  		log.Fatal(err)
+  	}
+  	req.Header.Set("x-api-key", "xq_a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2")
+
+  	resp, err := http.DefaultClient.Do(req)
+  	if err != nil {
+  		log.Fatal(err)
+  	}
+  	defer resp.Body.Close()
+
+  	body, err := io.ReadAll(resp.Body)
+  	if err != nil {
+  		log.Fatal(err)
+  	}
+  	fmt.Println(string(body))
+  }
+  ```
+</CodeGroup>
+
+## Headers
+
+<ParamField header="x-api-key" type="string" required>
+  Your API key. Generate one from the [dashboard](/api-reference/api-keys/create).
+</ParamField>
+
+## Query Parameters
+
+<ParamField query="woeid" type="number">
+  Region WOEID. See regions table below. Default: `1` (Worldwide).
+</ParamField>
+
+<ParamField query="count" type="number">
+  Number of trends to return. Max `50`, default `30`.
+</ParamField>
+
+## Response
+
+<Tabs>
+  <Tab title="200 OK">
+    <ResponseField name="trends" type="object[]">
+      Array of trending topics.
+      <Expandable title="trend object">
+        <ResponseField name="name" type="string">Trend name or hashtag.</ResponseField>
+        <ResponseField name="description" type="string">Short description. Omitted if unavailable.</ResponseField>
+        <ResponseField name="rank" type="number">Position in the trending list. Omitted if unavailable.</ResponseField>
+        <ResponseField name="query" type="string">Search query for this trend. Omitted if unavailable.</ResponseField>
+      </Expandable>
+    </ResponseField>
+    <ResponseField name="total" type="number">
+      Full count of available trends before slicing by `count`.
+    </ResponseField>
+    <ResponseField name="woeid" type="number">
+      Region WOEID used for this request.
+    </ResponseField>
+
+    ```json
+    {
+      "trends": [
+        {
+          "name": "#SuperBowl",
+          "description": "Trending in United States",
+          "rank": 1,
+          "query": "%23SuperBowl"
+        },
+        {
+          "name": "Taylor Swift",
+          "rank": 2,
+          "query": "%22Taylor%20Swift%22"
+        }
+      ],
+      "total": 50,
+      "woeid": 1
+    }
+    ```
+  </Tab>
+  <Tab title="400 Invalid Input">
+    ```json
+    { "error": "invalid_input" }
+    ```
+    Invalid `woeid` or `count` value. Verify the WOEID exists in the regions table and `count` is between 1 and 50.
+  </Tab>
+  <Tab title="401 Unauthenticated">
+    ```json
+    { "error": "unauthenticated" }
+    ```
+    Missing or invalid API key. Check the `x-api-key` header value.
+  </Tab>
+</Tabs>
+
+## Regions
+
+| WOEID | Region |
+|-------|--------|
+| `1` | Worldwide |
+| `23424977` | United States |
+| `23424975` | United Kingdom |
+| `23424969` | Turkey |
+| `23424950` | Spain |
+| `23424829` | Germany |
+| `23424819` | France |
+| `23424856` | Japan |
+| `23424848` | India |
+| `23424768` | Brazil |
+| `23424775` | Canada |
+| `23424900` | Mexico |
+
+<Note>
+  **Related:** [Billing & Usage](/guides/billing) &middot; [Search Tweets](/api-reference/x/search-tweets)
+</Note>
