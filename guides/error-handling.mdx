@@ -27,7 +27,7 @@ Every Xquik API error returns a consistent JSON body with an `error` code. Use t
 | 403 | `monitor_limit_reached` | Plan monitor limit exceeded | Delete an existing monitor or add capacity ($10/month per extra monitor). |
 | 404 | `not_found` | Resource does not exist | Verify the resource ID. It may belong to another account or have been deleted. |
 | 409 | `monitor_already_exists` | Duplicate monitor for this X account | Use the existing monitor. Call [Update Monitor](/api-reference/monitors/update) to change event types. |
-| 429 | -- | Rate limited | Retry with exponential backoff. Respect the `Retry-After` header. |
+| 429 | (none) | Rate limited | Retry with exponential backoff. Respect the `Retry-After` header. |
 | 500 | `internal_error` | Server error | Retry with backoff. [Contact support](mailto:support@xquik.com) if the error persists. |
 | 502 | `stream_registration_failed` | Upstream stream registration failed | Retry the request. |
 | 502 | `x_api_unavailable` | X API is temporarily unavailable | Retry with backoff. The upstream X API may be experiencing issues. |
@@ -333,13 +333,13 @@ func respectRateLimit(url string) (*http.Response, error) {
 
 <AccordionGroup>
   <Accordion title="Distinguish client errors from server errors">
-    **4xx errors** (except 429) indicate a problem with your request. Fix the request before retrying. **5xx errors** and **429** are transient -- retry with backoff.
+    **4xx errors** (except 429) indicate a problem with your request. Fix the request before retrying. **5xx errors** and **429** are transient. Retry with backoff.
   </Accordion>
   <Accordion title="Log error codes for debugging">
     Always log the full error response including status code and error body. This makes it easy to diagnose issues in production.
   </Accordion>
   <Accordion title="Handle 409 gracefully">
-    `monitor_already_exists` is not a failure -- the monitor you need already exists. List monitors to find it instead of treating this as an error.
+    `monitor_already_exists` is not a failure. The monitor you need already exists. List monitors to find it instead of treating this as an error.
   </Accordion>
   <Accordion title="Set request timeouts">
     Set a 30-second timeout on all API requests. If a request hangs, retry it rather than waiting indefinitely.
