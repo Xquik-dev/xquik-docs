@@ -1,0 +1,456 @@
+---
+title: OAuth 2.1
+description: OAuth 2.1 Authorization Code flow with PKCE for MCP server authentication
+keywords: ["OAuth", "OAuth 2.1", "PKCE", "MCP", "authorization", "token", "refresh token", "dynamic client registration"]
+---
+
+Xquik supports [OAuth 2.1](https://datatracker.ietf.org/doc/html/draft-ietf-oauth-v2-1) with PKCE for MCP server authentication. This is used by browser-based MCP clients that cannot store static API keys — currently **Claude.ai** (web) and **ChatGPT Developer Mode**.
+
+<Info>
+  Most MCP clients (Claude Code, Cursor, VS Code, Windsurf, Codex CLI, OpenCode, Claude Desktop) use [API key authentication](/api-reference/authentication) instead. OAuth is only needed for clients that initiate auth through a browser login flow.
+</Info>
+
+## How it works
+
+OAuth 2.1 Authorization Code with PKCE follows this sequence:
+
+```text
+MCP Client                         Xquik
+    │                                 │
+    │  1. Register client             │
+    │────────────────────────────────▶│
+    │◀────────────────────────────────│
+    │         client_id               │
+    │                                 │
+    │  2. Generate code_verifier      │
+    │     + code_challenge            │
+    │                                 │
+    │  3. Redirect to /authorize      │
+    │────────────────────────────────▶│
+    │                                 │  User logs in
+    │                                 │  + approves access
+    │  4. Redirect back with code     │
+    │◀────────────────────────────────│
+    │                                 │
+    │  5. Exchange code + verifier    │
+    │────────────────────────────────▶│
+    │◀────────────────────────────────│
+    │    access_token + refresh_token │
+    │                                 │
+    │  6. Call MCP with Bearer token  │
+    │────────────────────────────────▶│
+```
+
+## Discovery
+
+Xquik publishes standard OAuth discovery documents so MCP clients can auto-configure endpoints.
+
+### Authorization server metadata
+
+```bash
+curl https://xquik.com/.well-known/oauth-authorization-server
+```
+
+```json Response
+{
+  "issuer": "https://xquik.com",
+  "authorization_endpoint": "https://xquik.com/api/oauth/authorize",
+  "token_endpoint": "https://xquik.com/api/oauth/token",
+  "registration_endpoint": "https://xquik.com/api/oauth/register",
+  "scopes_supported": ["mcp:tools"],
+  "response_types_supported": ["code"],
+  "grant_types_supported": ["authorization_code", "refresh_token"],
+  "code_challenge_methods_supported": ["S256"],
+  "token_endpoint_auth_methods_supported": ["none", "client_secret_post"]
+}
+```
+
+### Protected resource metadata
+
+```bash
+curl https://xquik.com/.well-known/oauth-protected-resource
+```
+
+```json Response
+{
+  "resource": "https://xquik.com/mcp",
+  "authorization_servers": ["https://xquik.com"],
+  "bearer_methods_supported": ["header"],
+  "scopes_supported": ["mcp:tools"]
+}
+```
+
+## Complete flow
+
+<Steps>
+  <Step title="Register a client">
+    Register your MCP client to get a `client_id`. This is a one-time setup.
+
+    ```bash
+    curl -X POST https://xquik.com/api/oauth/register \
+      -H "Content-Type: application/json" \
+      -d '{
+        "client_name": "My MCP Client",
+        "redirect_uris": ["https://myapp.example.com/callback"]
+      }'
+    ```
+
+    ```json Response
+    {
+      "client_id": "550e8400-e29b-41d4-a716-446655440000",
+      "client_name": "My MCP Client",
+      "redirect_uris": ["https://myapp.example.com/callback"],
+      "grant_types": ["authorization_code", "refresh_token"],
+      "token_endpoint_auth_method": "none"
+    }
+    ```
+
+    **Redirect URI requirements:**
+    - Production: HTTPS only
+    - Development: `http://localhost` and `http://127.0.0.1` are allowed
+    - Exact match required — no wildcards or subpath matching
+
+    **Client types:**
+    - **Public** (`token_endpoint_auth_method: "none"`): Default. No client secret. Used by browser apps and MCP clients.
+    - **Confidential** (`token_endpoint_auth_method: "client_secret_post"`): Returns a `client_secret` in the registration response. Used by server-side apps.
+
+    <Warning>
+      If you register a confidential client, the `client_secret` is returned **once** in the registration response. Store it securely.
+    </Warning>
+  </Step>
+
+  <Step title="Generate PKCE parameters">
+    Generate a cryptographically random `code_verifier` and derive the `code_challenge` from it.
+
+    <CodeGroup>
+
+    ```javascript Node.js
+    import { randomBytes, createHash } from "node:crypto";
+
+    const codeVerifier = randomBytes(32).toString("hex");
+    const codeChallenge = createHash("sha256")
+      .update(codeVerifier)
+      .digest("hex");
+    ```
+
+    ```python Python
+    import hashlib
+    import secrets
+
+    code_verifier = secrets.token_hex(32)
+    code_challenge = hashlib.sha256(code_verifier.encode()).hexdigest()
+    ```
+
+    ```go Go
+    package main
+
+    import (
+    	"crypto/rand"
+    	"crypto/sha256"
+    	"encoding/hex"
+    )
+
+    func generatePKCE() (string, string) {
+    	b := make([]byte, 32)
+    	rand.Read(b)
+    	codeVerifier := hex.EncodeToString(b)
+
+    	hash := sha256.Sum256([]byte(codeVerifier))
+    	codeChallenge := hex.EncodeToString(hash[:])
+
+    	return codeVerifier, codeChallenge
+    }
+    ```
+
+    </CodeGroup>
+
+    <Warning>
+      The `code_verifier` must have sufficient entropy. Use at least 32 cryptographically random bytes (64 hex characters). Store the verifier securely on the client — you need it for the token exchange in step 5.
+    </Warning>
+  </Step>
+
+  <Step title="Redirect to authorization">
+    Redirect the user to the Xquik authorization endpoint with the required query parameters.
+
+    ```text
+    GET https://xquik.com/api/oauth/authorize
+      ?response_type=code
+      &client_id=550e8400-e29b-41d4-a716-446655440000
+      &redirect_uri=https://myapp.example.com/callback
+      &code_challenge=a1b2c3d4e5f6...
+      &code_challenge_method=S256
+      &scope=mcp:tools
+      &state=random_csrf_token
+    ```
+
+    **Required parameters:**
+
+    | Parameter | Value |
+    |-----------|-------|
+    | `response_type` | `code` |
+    | `client_id` | UUID from client registration |
+    | `redirect_uri` | Must match a registered URI exactly |
+    | `code_challenge` | SHA256 hex digest of the `code_verifier` |
+    | `code_challenge_method` | `S256` |
+
+    **Optional parameters:**
+
+    | Parameter | Default | Description |
+    |-----------|---------|-------------|
+    | `scope` | `mcp:tools` | Only `mcp:tools` is supported |
+    | `state` | — | Opaque value for CSRF protection |
+    | `resource` | `https://xquik.com/mcp` | Target resource identifier |
+
+    <Note>
+      The `scope` and `resource` parameters default to the only supported values (`mcp:tools` and `https://xquik.com/mcp`). You can omit them.
+    </Note>
+
+    The user sees a login page (email magic link) followed by a consent screen. After approval, Xquik redirects back to your `redirect_uri`.
+  </Step>
+
+  <Step title="Receive the authorization code">
+    After the user approves, Xquik redirects to your `redirect_uri` with a `code` parameter:
+
+    ```text
+    https://myapp.example.com/callback?code=AUTH_CODE_HERE&state=random_csrf_token
+    ```
+
+    Verify the `state` parameter matches the value you sent in step 3 to prevent CSRF attacks. The authorization code expires in **60 seconds** and is single-use.
+  </Step>
+
+  <Step title="Exchange code for tokens">
+    Exchange the authorization code and your `code_verifier` for an access token and refresh token.
+
+    ```bash
+    curl -X POST https://xquik.com/api/oauth/token \
+      -H "Content-Type: application/x-www-form-urlencoded" \
+      -d "grant_type=authorization_code\
+    &code=AUTH_CODE_HERE\
+    &code_verifier=YOUR_CODE_VERIFIER\
+    &client_id=550e8400-e29b-41d4-a716-446655440000\
+    &redirect_uri=https://myapp.example.com/callback"
+    ```
+
+    ```json Response
+    {
+      "access_token": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+      "token_type": "Bearer",
+      "expires_in": 3600,
+      "refresh_token": "f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1",
+      "scope": "mcp:tools"
+    }
+    ```
+  </Step>
+
+  <Step title="Use the access token">
+    Pass the access token as a Bearer token in the `Authorization` header when connecting to the MCP server.
+
+    ```bash
+    curl https://xquik.com/mcp \
+      -H "Authorization: Bearer a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"
+    ```
+  </Step>
+</Steps>
+
+## Token lifetimes
+
+| Token | Lifetime | Notes |
+|-------|----------|-------|
+| Access token | 1 hour | Use the refresh token to get a new one |
+| Refresh token | 30 days | Single-use — each refresh issues a new pair |
+| Authorization code | 60 seconds | Single-use — exchange immediately |
+
+## Refresh tokens
+
+Access tokens expire after 1 hour. Use the refresh token to get a new access token without requiring the user to log in again.
+
+```bash
+curl -X POST https://xquik.com/api/oauth/token \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "grant_type=refresh_token\
+&refresh_token=f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1\
+&client_id=550e8400-e29b-41d4-a716-446655440000"
+```
+
+```json Response
+{
+  "access_token": "NEW_ACCESS_TOKEN",
+  "token_type": "Bearer",
+  "expires_in": 3600,
+  "refresh_token": "NEW_REFRESH_TOKEN",
+  "scope": "mcp:tools"
+}
+```
+
+<Warning>
+  Refresh tokens are **single-use**. Each refresh request revokes the old refresh token and returns a new one. Always store the latest refresh token from each response.
+</Warning>
+
+## Scopes
+
+| Scope | Description |
+|-------|-------------|
+| `mcp:tools` | Full access to all 22 MCP tools (search tweets, manage monitors, run extractions, run draws, etc.) |
+
+Only `mcp:tools` is supported. No partial scopes or scope combinations are available.
+
+## Client registration
+
+### Request
+
+```
+POST /api/oauth/register
+Content-Type: application/json
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `client_name` | string | Yes | Display name shown on the consent screen |
+| `redirect_uris` | string[] | Yes | Allowed redirect URIs (1 or more) |
+| `token_endpoint_auth_method` | string | No | `none` (default) or `client_secret_post` |
+| `grant_types` | string[] | No | Defaults to `["authorization_code", "refresh_token"]` |
+
+### Response
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `client_id` | string | UUID — use this in all subsequent OAuth requests |
+| `client_name` | string | Echoed from request |
+| `redirect_uris` | string[] | Echoed from request |
+| `grant_types` | string[] | Resolved grant types |
+| `token_endpoint_auth_method` | string | Resolved auth method |
+| `client_secret` | string | Only present for confidential clients (`client_secret_post`) |
+
+## Error responses
+
+All errors follow the standard OAuth 2.0 error format:
+
+```json
+{
+  "error": "error_code",
+  "error_description": "Human-readable description."
+}
+```
+
+### Authorization errors
+
+| Error | When |
+|-------|------|
+| `unsupported_response_type` | `response_type` is not `code` |
+| `invalid_request` | Missing `client_id`, `code_challenge`, unknown `client_id`, or mismatched `redirect_uri` |
+| `invalid_scope` | Scope is not `mcp:tools` |
+| `invalid_target` | Resource is not `https://xquik.com/mcp` |
+| `access_denied` | User denied the authorization request |
+
+### Token errors
+
+| Error | When |
+|-------|------|
+| `invalid_request` | Missing `code`, `code_verifier`, `client_id`, or `refresh_token` |
+| `invalid_grant` | Code/token is invalid, expired, or already used. Also: `client_id` mismatch, `redirect_uri` mismatch, or PKCE verification failed |
+| `unsupported_grant_type` | Grant type is not `authorization_code` or `refresh_token` |
+| `invalid_target` | Resource is not `https://xquik.com/mcp` |
+
+### Registration errors
+
+| Error | When |
+|-------|------|
+| `client_name is required` | Missing or empty `client_name` |
+| `redirect_uris must be a non-empty array of strings` | Missing, empty, or malformed `redirect_uris` |
+| `Invalid redirect URI: {uri}. Must be HTTPS or localhost.` | URI is not HTTPS or localhost |
+| `Invalid token_endpoint_auth_method` | Value is not `none` or `client_secret_post` |
+| `grant_types must be an array of strings` | Malformed `grant_types` |
+
+## Full example
+
+A complete Node.js implementation of the OAuth 2.1 flow:
+
+```javascript Node.js
+import { randomBytes, createHash } from "node:crypto";
+import http from "node:http";
+
+const CLIENT_ID = "550e8400-e29b-41d4-a716-446655440000";
+const REDIRECT_URI = "http://localhost:8080/callback";
+
+// Step 1: Generate PKCE parameters
+const codeVerifier = randomBytes(32).toString("hex");
+const codeChallenge = createHash("sha256")
+  .update(codeVerifier)
+  .digest("hex");
+const state = randomBytes(16).toString("hex");
+
+// Step 2: Build the authorization URL
+const authUrl = new URL("https://xquik.com/api/oauth/authorize");
+authUrl.searchParams.set("response_type", "code");
+authUrl.searchParams.set("client_id", CLIENT_ID);
+authUrl.searchParams.set("redirect_uri", REDIRECT_URI);
+authUrl.searchParams.set("code_challenge", codeChallenge);
+authUrl.searchParams.set("code_challenge_method", "S256");
+authUrl.searchParams.set("scope", "mcp:tools");
+authUrl.searchParams.set("state", state);
+
+console.log("Open this URL in your browser:");
+console.log(authUrl.toString());
+
+// Step 3: Start a local server to receive the callback
+const server = http.createServer(async (req, res) => {
+  const url = new URL(req.url, "http://localhost:8080");
+
+  if (url.pathname !== "/callback") {
+    res.writeHead(404);
+    res.end();
+    return;
+  }
+
+  const code = url.searchParams.get("code");
+  const returnedState = url.searchParams.get("state");
+
+  // Verify state to prevent CSRF
+  if (returnedState !== state) {
+    res.writeHead(400);
+    res.end("State mismatch");
+    return;
+  }
+
+  // Step 4: Exchange the authorization code for tokens
+  const tokenResponse = await fetch("https://xquik.com/api/oauth/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      grant_type: "authorization_code",
+      code,
+      code_verifier: codeVerifier,
+      client_id: CLIENT_ID,
+      redirect_uri: REDIRECT_URI,
+    }),
+  });
+
+  const tokens = await tokenResponse.json();
+  console.log("Access token:", tokens.access_token);
+  console.log("Refresh token:", tokens.refresh_token);
+  console.log("Expires in:", tokens.expires_in, "seconds");
+
+  res.writeHead(200, { "Content-Type": "text/plain" });
+  res.end("Authorization complete. You can close this tab.");
+  server.close();
+});
+
+server.listen(8080);
+```
+
+## Where to go next
+
+<CardGroup cols={2}>
+  <Card title="MCP Server" icon="server" href="/mcp/overview">
+    Connect AI agents to Xquik via MCP.
+  </Card>
+  <Card title="MCP Tools Reference" icon="wrench" href="/mcp/tools">
+    All 22 MCP tools with input/output schemas.
+  </Card>
+  <Card title="API Key Auth" icon="key" href="/api-reference/authentication">
+    API key authentication for REST API and MCP.
+  </Card>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Get your API key and make your first request.
+  </Card>
+</CardGroup>
