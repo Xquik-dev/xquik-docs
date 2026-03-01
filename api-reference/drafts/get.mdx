@@ -1,0 +1,128 @@
+---
+title: "Get Draft"
+description: "Retrieve a specific tweet draft by ID"
+api: "GET /drafts/{id}"
+keywords: ["draft", "get", "details", "single"]
+---
+
+<Info>
+  This endpoint does not count against your monthly usage quota.
+</Info>
+
+<CodeGroup>
+  ```bash cURL
+  curl -X GET https://xquik.com/api/v1/drafts/42 \
+    -H "x-api-key: xq_YOUR_KEY_HERE" | jq
+  ```
+
+  ```javascript Node.js
+  const draftId = "42";
+  const response = await fetch(`https://xquik.com/api/v1/drafts/${draftId}`, {
+    method: "GET",
+    headers: {
+      "x-api-key": "xq_YOUR_KEY_HERE",
+    },
+  });
+  const data = await response.json();
+  ```
+
+  ```python Python
+  import requests
+
+  draft_id = "42"
+  response = requests.get(
+      f"https://xquik.com/api/v1/drafts/{draft_id}",
+      headers={"x-api-key": "xq_YOUR_KEY_HERE"},
+  )
+  data = response.json()
+  ```
+
+  ```go Go
+  package main
+
+  import (
+      "encoding/json"
+      "fmt"
+      "net/http"
+  )
+
+  func main() {
+      draftID := "42"
+      req, err := http.NewRequest("GET", "https://xquik.com/api/v1/drafts/"+draftID, nil)
+      if err != nil {
+          panic(err)
+      }
+      req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
+
+      resp, err := http.DefaultClient.Do(req)
+      if err != nil {
+          panic(err)
+      }
+      defer resp.Body.Close()
+
+      var data map[string]interface{}
+      if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+          panic(err)
+      }
+      fmt.Println(data)
+  }
+  ```
+</CodeGroup>
+
+## Path Parameters
+
+<ParamField path="id" type="string" required>
+  The unique draft ID. Returned when you [create a draft](/api-reference/drafts/create) or [list drafts](/api-reference/drafts/list).
+</ParamField>
+
+## Headers
+
+<ParamField header="x-api-key" type="string" required>
+  Your API key. Session cookie authentication is also supported. Generate a key from the [dashboard](https://xquik.com/dashboard).
+</ParamField>
+
+## Response
+
+<Tabs>
+  <Tab title="200 OK">
+    <ResponseField name="id" type="string">Unique draft ID.</ResponseField>
+    <ResponseField name="text" type="string">The draft tweet text.</ResponseField>
+    <ResponseField name="topic" type="string">Topic the tweet is about. Omitted if not set.</ResponseField>
+    <ResponseField name="goal" type="string">Optimization goal. Omitted if not set.</ResponseField>
+    <ResponseField name="createdAt" type="string">ISO 8601 creation timestamp.</ResponseField>
+    <ResponseField name="updatedAt" type="string">ISO 8601 last update timestamp.</ResponseField>
+
+    ```json
+    {
+      "id": "42",
+      "text": "Just shipped dark mode. What feature should we build next?",
+      "topic": "product update",
+      "goal": "conversation",
+      "createdAt": "2026-02-24T10:30:00.000Z",
+      "updatedAt": "2026-02-24T10:30:00.000Z"
+    }
+    ```
+  </Tab>
+  <Tab title="400 Invalid ID">
+    ```json
+    { "error": "invalid_id" }
+    ```
+    The provided draft ID is not a valid format.
+  </Tab>
+  <Tab title="401 Unauthenticated">
+    ```json
+    { "error": "unauthenticated" }
+    ```
+    Missing or invalid API key.
+  </Tab>
+  <Tab title="404 Not Found">
+    ```json
+    { "error": "draft_not_found" }
+    ```
+    No draft exists with this ID, or it belongs to a different account.
+  </Tab>
+</Tabs>
+
+<Note>
+  **Related:** [List Drafts](/api-reference/drafts/list) to see all your drafts, [Create Draft](/api-reference/drafts/create) to save a new one, or [Delete Draft](/api-reference/drafts/delete) to remove this draft.
+</Note>
