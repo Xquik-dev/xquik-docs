@@ -4,7 +4,182 @@
 
 Xquik tracks tweets, quotes, replies, retweets, and follower changes from monitored X accounts and delivers events via REST API polling, HMAC-signed webhooks, or an MCP server (Model Context Protocol) for AI agent integration. The platform provides 19 extraction tools for pulling replies, reposts, quotes, followers, following, verified followers, community members, community moderators, community posts, community search, list members, list posts, list followers, mentions, posts, threads, articles, Space participants, and people search results from any public account, tweet, list, community, or Space. It also offers giveaway draws with configurable filters and X data lookups (tweets, users, follower checks).
 
-Authentication: API key passed via the `x-api-key` header, or OAuth 2.1 Authorization Code with PKCE (for browser-based MCP clients like Claude.ai and ChatGPT Developer Mode). Key format: `xq_` + 64 hex characters. Base URL: `https://xquik.com/api/v1`. MCP server: `https://xquik.com/mcp` (StreamableHTTP transport, API key or OAuth Bearer token). Event types: `tweet.new`, `tweet.quote`, `tweet.reply`, `tweet.retweet`, `follower.gained`, `follower.lost`. Rate limits: 10 req/s sustained with 20 burst for API endpoints.
+## Authentication
+
+Two methods:
+
+1. **API Key**: Format `xq_` + 64 hex characters. Pass via `x-api-key` header. Generate keys from the dashboard or `POST /api/v1/api-keys`.
+2. **OAuth 2.1 Authorization Code with PKCE**: For browser-based MCP clients (Claude.ai, ChatGPT Developer Mode). Discovery at `https://xquik.com/.well-known/oauth-authorization-server`. Dynamic client registration at `https://xquik.com/api/oauth/register`.
+
+## Base URLs
+
+- REST API: `https://xquik.com/api/v1`
+- MCP Server: `https://xquik.com/mcp` (StreamableHTTP transport, API key or OAuth Bearer token)
+
+## Rate Limits
+
+- API endpoints (`/api/v1/*`): 10 req/s sustained, 20 req/s burst
+- General requests: 60 req/s, 100 req/s burst
+- Exceeding limits returns `429 Too Many Requests` with `Retry-After` header
+
+## Error Format
+
+All errors return JSON:
+
+```json
+{ "error": "error_code" }
+```
+
+Some errors include additional context:
+
+```json
+{ "error": "monitor_limit_reached", "limit": 1 }
+```
+
+HTTP status codes: `400` (validation), `401` (unauthenticated), `402` (no subscription / usage cap), `403` (limit reached), `404` (not found), `409` (conflict), `429` (rate limited), `500` (server error), `502` (upstream unavailable).
+
+Common error codes: `invalid_input`, `invalid_id`, `invalid_tweet_url`, `invalid_tweet_id`, `invalid_username`, `invalid_tool_type`, `invalid_format`, `missing_query`, `missing_params`, `unauthenticated`, `no_subscription`, `subscription_inactive`, `usage_limit_reached`, `monitor_limit_reached`, `not_found`, `monitor_already_exists`, `internal_error`, `stream_registration_failed`, `x_api_unavailable`.
+
+Retry strategy: retry only on `429` and `5xx`. Formula: `delay = baseDelay * 2^attempt + random(0, jitter)`. Max 3 retries. Respect `Retry-After` header.
+
+## Pagination
+
+Cursor-based. Responses include `hasMore` (boolean) and `nextCursor` (opaque string). Pass `nextCursor` as the `after` query parameter on the next request. Do not decode or construct cursors manually. Used for events, draws, extractions. Monitors, webhooks, and API keys return up to 200 items without pagination.
+
+## Event Types (6)
+
+- `tweet.new` - Original tweet posted
+- `tweet.quote` - Quote tweet posted
+- `tweet.reply` - Reply posted
+- `tweet.retweet` - Retweet posted
+- `follower.gained` - New follower gained
+- `follower.lost` - Follower lost
+
+## Giveaway Draw Filters
+
+`POST /api/v1/draws` accepts `tweetUrl` (required) plus these optional filters:
+
+- `winnerCount` (number) - Winners to select (default 1)
+- `backupCount` (number) - Backup winners to select
+- `uniqueAuthorsOnly` (boolean) - One entry per author
+- `mustRetweet` (boolean) - Require retweet of the original tweet
+- `mustFollowUsername` (string) - Username entrants must follow
+- `filterMinFollowers` (number) - Minimum follower count
+- `filterAccountAgeDays` (number) - Minimum account age in days
+- `filterLanguage` (string) - Language code filter (e.g., `en`, `tr`, `es`)
+- `requiredKeywords` (string[]) - Keywords that must appear in reply text
+- `requiredHashtags` (string[]) - Hashtags required in reply (with `#` prefix)
+- `requiredMentions` (string[]) - Usernames that must be mentioned (with `@` prefix)
+
+Tweet author is auto-excluded. Filters run before author deduplication. Winners selected via cryptographically secure randomness.
+
+## X Search Syntax
+
+The `q` parameter in `GET /api/v1/x/search-tweets` and `POST /api/v1/x/search-tweets` supports X search operators:
+
+- `from:username` - Tweets by a specific user
+- `to:username` - Tweets replying to a user
+- `#hashtag` - Tweets containing a hashtag
+- `"exact phrase"` - Exact phrase match
+- `OR` - Boolean OR between terms
+- `-exclude` - Exclude tweets matching a term
+
+## Export
+
+Draws and extractions support export via `GET /api/v1/draws/:id/export` and `GET /api/v1/extractions/:id/export`. Formats: `csv`, `xlsx`, `md` (Markdown). Query parameter: `format`. Extraction exports have a 50,000 row limit.
+
+## Webhook Delivery
+
+- Signature: HMAC-SHA256. Header: `X-Xquik-Signature: sha256=HMAC_HEX_DIGEST`. Secret returned once at webhook creation - store securely.
+- Headers: `Content-Type: application/json`, `X-Xquik-Signature`
+- Requirements: HTTPS endpoint, must respond `2xx` within 10 seconds
+- Retry: Exponential backoff (1s, 2s, 4s, 8s, 16s). 5 attempts max. After all fail: status `exhausted`.
+- Delivery statuses: `pending`, `delivered`, `failed`, `exhausted`
+
+Webhook payload structure:
+
+```json
+{
+  "eventType": "tweet.new",
+  "username": "elonmusk",
+  "data": { "tweetId": "1893456789012345678", "text": "...", "metrics": { "likes": 42000, "retweets": 8500, "replies": 3200 } }
+}
+```
+
+Event data shapes vary by type: `tweet.new` includes `tweetId`, `text`, `metrics`. `tweet.quote` adds `quotedTweetId`, `quotedUsername`. `tweet.reply` adds `inReplyToTweetId`, `inReplyToUsername`. `tweet.retweet` includes `retweetedTweetId`, `retweetedUsername`. `follower.gained` and `follower.lost` include `followerId`, `followerUsername`, `followerName`, `followerFollowersCount`, `followerVerified`.
+
+## Tweet Composition Workflow
+
+Three-step workflow for algorithm-optimized tweets. All free, no subscription needed:
+
+1. `compose-tweet` - Start composing. Returns X algorithm engagement signals and follow-up questions.
+2. `refine-tweet` - After answering follow-ups. Returns goal-specific tips, example patterns, media strategy, hashtag advice, CTA guidance.
+3. `score-tweet` - Evaluate a draft against X algorithm ranking factors. Returns pass/fail checklist.
+
+Goals: `engagement`, `followers`, `authority`, `conversation`.
+
+## MCP Tools (26 Total)
+
+**Monitoring (3)** - free:
+`list-monitors`, `add-monitor`, `remove-monitor`
+
+**Events (2)** - free:
+`get-events`, `get-event`
+
+**X Data (4)** - metered:
+`search-tweets`, `get-user-info`, `lookup-tweet`, `check-follow`
+
+**Webhooks (4)** - free:
+`list-webhooks`, `add-webhook`, `remove-webhook`, `test-webhook`
+
+**Extractions (4)** - metered (run-extraction); free (list/get/estimate):
+`run-extraction`, `list-extractions`, `get-extraction`, `estimate-extraction`
+
+**Giveaway Draws (3)** - metered (run-draw); free (list/get):
+`run-draw`, `list-draws`, `get-draw`
+
+**Account & Trends (3)** - free:
+`get-account`, `get-trends`, `subscribe`
+
+**Tweet Composition (3)** - free:
+`compose-tweet`, `refine-tweet`, `score-tweet`
+
+## Extraction Tool Types (19)
+
+By target type:
+
+**Tweet target** (`targetTweetId`): `reply_extractor`, `repost_extractor`, `quote_extractor`, `thread_extractor`, `article_extractor`
+
+**Username target** (`targetUsername`): `follower_explorer`, `following_explorer`, `verified_follower_explorer`, `mention_extractor`, `post_extractor`
+
+**Community target** (`targetCommunityId`): `community_extractor`, `community_moderator_explorer`, `community_post_extractor`, `community_search` (also requires `searchQuery`)
+
+**List target** (`targetListId`): `list_member_extractor`, `list_post_extractor`, `list_follower_explorer`
+
+**Space target** (`targetSpaceId`): `space_explorer`
+
+**Search** (`searchQuery`): `people_search`
+
+Always call `estimate-extraction` before `run-extraction` to check cost and feasibility. Requires active subscription.
+
+## Trending Regions (12)
+
+| WOEID | Region |
+|-------|--------|
+| 1 | Worldwide |
+| 23424977 | United States |
+| 23424975 | United Kingdom |
+| 23424969 | Turkey |
+| 23424950 | Spain |
+| 23424829 | Germany |
+| 23424819 | France |
+| 23424856 | Japan |
+| 23424848 | India |
+| 23424768 | Brazil |
+| 23424775 | Canada |
+| 23424900 | Mexico |
+
+Trends cached, auto-refresh every 15 minutes. Free, no usage cost.
 
 ## Docs
 
@@ -77,7 +252,7 @@ Authentication: API key passed via the `x-api-key` header, or OAuth 2.1 Authoriz
 ## MCP Server
 
 - [MCP Server Overview](https://docs.xquik.com/mcp/overview): Connect AI agents and IDEs (Claude Desktop, Claude Code, ChatGPT, Codex CLI, Cursor, VS Code, Windsurf, OpenCode) to Xquik via Model Context Protocol.
-- [MCP Tools Reference](https://docs.xquik.com/mcp/tools): All 26 MCP tools with input/output schemas and usage examples. Includes tweet composition tools (compose-tweet, refine-tweet, score-tweet) for algorithm-optimized tweet drafting — free for all users.
+- [MCP Tools Reference](https://docs.xquik.com/mcp/tools): All 26 MCP tools with input/output schemas and usage examples. Includes tweet composition tools (compose-tweet, refine-tweet, score-tweet) for algorithm-optimized tweet drafting - free for all users.
 
 ## OAuth
 
@@ -102,4 +277,3 @@ Authentication: API key passed via the `x-api-key` header, or OAuth 2.1 Authoriz
 - [Platform Architecture](https://docs.xquik.com/guides/architecture): Architecture overview, security model (API key auth, data isolation, authorization), rate limits, usage caps, monitoring architecture, and platform limitations.
 - [Troubleshooting](https://docs.xquik.com/guides/troubleshooting): Common issues and solutions for the Xquik API.
 - [Type Definitions](https://docs.xquik.com/guides/types): TypeScript type definitions for all API request and response objects.
-
