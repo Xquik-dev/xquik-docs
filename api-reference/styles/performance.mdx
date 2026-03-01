@@ -1,0 +1,145 @@
+---
+title: "Analyze Performance"
+description: "Get live engagement metrics for cached tweets"
+api: "GET /styles/{username}/performance"
+keywords: ["style", "performance", "engagement", "metrics", "likes", "retweets", "views"]
+---
+
+<Info>
+  This endpoint consumes usage credits.
+</Info>
+
+<CodeGroup>
+  ```bash cURL
+  curl -X GET https://xquik.com/api/v1/styles/elonmusk/performance \
+    -H "x-api-key: xq_YOUR_KEY_HERE" | jq
+  ```
+
+  ```javascript Node.js
+  const username = "elonmusk";
+  const response = await fetch(`https://xquik.com/api/v1/styles/${username}/performance`, {
+    method: "GET",
+    headers: {
+      "x-api-key": "xq_YOUR_KEY_HERE",
+    },
+  });
+  const data = await response.json();
+  ```
+
+  ```python Python
+  import requests
+
+  username = "elonmusk"
+  response = requests.get(
+      f"https://xquik.com/api/v1/styles/{username}/performance",
+      headers={"x-api-key": "xq_YOUR_KEY_HERE"},
+  )
+  data = response.json()
+  ```
+
+  ```go Go
+  package main
+
+  import (
+      "encoding/json"
+      "fmt"
+      "net/http"
+  )
+
+  func main() {
+      username := "elonmusk"
+      req, err := http.NewRequest("GET", "https://xquik.com/api/v1/styles/"+username+"/performance", nil)
+      if err != nil {
+          panic(err)
+      }
+      req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
+
+      resp, err := http.DefaultClient.Do(req)
+      if err != nil {
+          panic(err)
+      }
+      defer resp.Body.Close()
+
+      var data map[string]interface{}
+      if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+          panic(err)
+      }
+      fmt.Println(data)
+  }
+  ```
+</CodeGroup>
+
+## Path Parameters
+
+<ParamField path="username" type="string" required>
+  X username whose cached tweets to analyze. Must have been cached with [Analyze & Cache Style](/api-reference/styles/analyze) first.
+</ParamField>
+
+## Headers
+
+<ParamField header="x-api-key" type="string" required>
+  Your API key. Session cookie authentication is also supported. Generate a key from the [dashboard](https://xquik.com/dashboard).
+</ParamField>
+
+## Response
+
+<Tabs>
+  <Tab title="200 OK">
+    <ResponseField name="xUsername" type="string">Normalized X username (lowercase, no `@` prefix).</ResponseField>
+    <ResponseField name="tweetCount" type="number">Number of tweets with engagement data.</ResponseField>
+    <ResponseField name="tweets" type="object[]">
+      Array of tweets with engagement metrics.
+      <Expandable title="tweet object">
+        <ResponseField name="id" type="string">Tweet ID.</ResponseField>
+        <ResponseField name="text" type="string">Tweet text content.</ResponseField>
+        <ResponseField name="likeCount" type="number">Number of likes.</ResponseField>
+        <ResponseField name="retweetCount" type="number">Number of retweets.</ResponseField>
+        <ResponseField name="replyCount" type="number">Number of replies.</ResponseField>
+        <ResponseField name="viewCount" type="number">Number of views.</ResponseField>
+      </Expandable>
+    </ResponseField>
+
+    ```json
+    {
+      "xUsername": "elonmusk",
+      "tweetCount": 20,
+      "tweets": [
+        {
+          "id": "1893456789012345678",
+          "text": "The future is now.",
+          "likeCount": 15420,
+          "retweetCount": 3210,
+          "replyCount": 890,
+          "viewCount": 1250000
+        }
+      ]
+    }
+    ```
+  </Tab>
+  <Tab title="401 Unauthenticated">
+    ```json
+    { "error": "unauthenticated" }
+    ```
+    Missing or invalid API key.
+  </Tab>
+  <Tab title="403 Subscription Required">
+    ```json
+    { "error": "no_subscription" }
+    ```
+    No active subscription. Subscribe from the [dashboard](https://xquik.com/dashboard).
+  </Tab>
+  <Tab title="404 Not Found">
+    ```json
+    { "error": "style_not_found" }
+    ```
+    No cached style exists for this username. Use [Analyze & Cache Style](/api-reference/styles/analyze) to fetch and cache tweets first.
+  </Tab>
+</Tabs>
+
+<Info>
+  Engagement metrics are fetched live from X at request time. Results may vary between calls as tweets gain interactions.
+</Info>
+
+<Note>
+  **Related:** [Analyze & Cache Style](/api-reference/styles/analyze) to cache tweets before fetching metrics, [Get Style](/api-reference/styles/get) to view the cached tweet text, or [Compare Styles](/api-reference/styles/compare) to compare two accounts.
+</Note>

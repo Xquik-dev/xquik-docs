@@ -1,10 +1,10 @@
 ---
 title: MCP Tools Reference
-description: All 26 MCP tools with input/output schemas, usage examples, and costs
-keywords: ["MCP tools", "list-monitors", "add-monitor", "remove-monitor", "get-events", "get-event", "search-tweets", "get-user-info", "list-webhooks", "add-webhook", "remove-webhook", "test-webhook", "lookup-tweet", "check-follow", "run-extraction", "list-extractions", "get-extraction", "estimate-extraction", "run-draw", "list-draws", "get-draw", "get-account", "get-trends", "subscribe", "compose-tweet", "refine-tweet", "score-tweet"]
+description: All 37 MCP tools with input/output schemas, usage examples, and costs
+keywords: ["MCP tools", "list-monitors", "add-monitor", "remove-monitor", "get-events", "get-event", "search-tweets", "get-user-info", "list-webhooks", "add-webhook", "remove-webhook", "test-webhook", "lookup-tweet", "check-follow", "run-extraction", "list-extractions", "get-extraction", "estimate-extraction", "run-draw", "list-draws", "get-draw", "get-account", "get-trends", "subscribe", "compose-tweet", "refine-tweet", "score-tweet", "set-x-identity", "analyze-style", "get-style", "list-styles", "delete-style", "compare-styles", "analyze-performance", "save-draft", "list-drafts", "get-draft", "delete-draft"]
 ---
 
-The Xquik MCP server exposes 26 tools that AI agents can use to manage monitors, query events, search tweets, look up users and tweets, check follow relationships, run extractions and draws, configure webhooks, check account status, get trending topics, manage subscriptions, and compose algorithm-optimized tweets. Connect to the MCP server at `https://xquik.com/mcp` with your API key.
+The Xquik MCP server exposes 37 tools that AI agents can use to manage monitors, query events, search tweets, look up users and tweets, check follow relationships, run extractions and draws, configure webhooks, check account status, get trending topics, manage subscriptions, and compose algorithm-optimized tweets. Connect to the MCP server at `https://xquik.com/mcp` with your API key.
 
 ---
 
@@ -1028,6 +1028,7 @@ Start composing an algorithm-optimized tweet. Returns X algorithm engagement sig
 |-----------|------|----------|---------|-------------|
 | `topic` | string | Yes | - | What the tweet is about |
 | `goal` | string | No | `engagement` | Optimization goal: `engagement`, `followers`, `authority`, or `conversation` |
+| `styleUsername` | string | No | - | X username whose cached style tweets to include for reference (must have been analyzed with `analyze-style` first) |
 
 **Example:**
 
@@ -1191,6 +1192,428 @@ Iterate on the draft and re-score until all checks pass.
 
 ---
 
+## Identity
+
+### set-x-identity
+
+Link your X (Twitter) username to your Xquik account. Required for own-account detection in style analysis. **Subscription required, does not consume usage quota.**
+
+**Input:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `username` | string | Yes | Your X username (without the @ prefix) |
+
+**Example:**
+
+> **Prompt:** "My X account is @burakbayir"
+
+```json Tool Call
+{
+  "name": "set-x-identity",
+  "arguments": {
+    "username": "burakbayir"
+  }
+}
+```
+
+```json Result
+{
+  "success": true
+}
+```
+
+---
+
+## Style Analysis
+
+### analyze-style
+
+Fetch and cache recent tweets from an X account for style analysis. Use `get-style` to check if already cached. **Consumes API usage credits.**
+
+**Input:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `username` | string | Yes | X username to analyze (without the @ prefix) |
+
+**Quota:** Consumes usage credits (counts toward your monthly quota)
+
+**Example:**
+
+> **Prompt:** "Analyze how @elonmusk tweets"
+
+```json Tool Call
+{
+  "name": "analyze-style",
+  "arguments": {
+    "username": "elonmusk"
+  }
+}
+```
+
+```json Result
+{
+  "xUsername": "elonmusk",
+  "tweetCount": 20,
+  "isOwnAccount": false,
+  "fetchedAt": "2026-02-24T10:30:00.000Z",
+  "tweets": [
+    {
+      "id": "1893456789012345678",
+      "text": "The future is now.",
+      "authorUsername": "elonmusk",
+      "createdAt": "2026-02-24T14:22:00.000Z"
+    }
+  ]
+}
+```
+
+---
+
+### get-style
+
+Get a previously cached tweet style profile. Use to check if a style is already cached before calling `analyze-style`. **Subscription required, does not consume usage quota.**
+
+**Input:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `username` | string | Yes | X username to look up (without the @ prefix) |
+
+**Example:**
+
+> **Prompt:** "Do I already have @elonmusk's style cached?"
+
+```json Tool Call
+{
+  "name": "get-style",
+  "arguments": {
+    "username": "elonmusk"
+  }
+}
+```
+
+```json Result
+{
+  "xUsername": "elonmusk",
+  "tweetCount": 20,
+  "isOwnAccount": false,
+  "fetchedAt": "2026-02-24T10:30:00.000Z",
+  "tweets": [...]
+}
+```
+
+If no cached style exists, returns `"Style not found for @elonmusk"`.
+
+---
+
+### list-styles
+
+List all cached tweet style profiles. **Subscription required, does not consume usage quota.**
+
+**Input:** None
+
+**Example:**
+
+> **Prompt:** "What styles have I cached?"
+
+```json Tool Call
+{
+  "name": "list-styles",
+  "arguments": {}
+}
+```
+
+```json Result
+{
+  "styles": [
+    {
+      "xUsername": "elonmusk",
+      "tweetCount": 20,
+      "isOwnAccount": false,
+      "fetchedAt": "2026-02-24T10:30:00.000Z"
+    }
+  ]
+}
+```
+
+---
+
+### delete-style
+
+Delete a cached tweet style profile. **Subscription required, does not consume usage quota.**
+
+**Input:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `username` | string | Yes | X username whose cached style to delete (without the @ prefix) |
+
+**Example:**
+
+> **Prompt:** "Remove the cached style for @elonmusk"
+
+```json Tool Call
+{
+  "name": "delete-style",
+  "arguments": {
+    "username": "elonmusk"
+  }
+}
+```
+
+```json Result
+{
+  "deleted": true
+}
+```
+
+---
+
+### compare-styles
+
+Compare two cached tweet style profiles side by side. Both accounts must have been analyzed with `analyze-style` first. **Subscription required, does not consume usage quota.**
+
+**Input:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `username1` | string | Yes | First X username to compare (without @) |
+| `username2` | string | Yes | Second X username to compare (without @) |
+
+**Example:**
+
+> **Prompt:** "Compare @vercel and @nextjs tweeting styles"
+
+```json Tool Call
+{
+  "name": "compare-styles",
+  "arguments": {
+    "username1": "vercel",
+    "username2": "nextjs"
+  }
+}
+```
+
+```json Result
+{
+  "style1": {
+    "xUsername": "vercel",
+    "tweetCount": 20,
+    "isOwnAccount": false,
+    "fetchedAt": "2026-02-24T10:30:00.000Z",
+    "tweets": [...]
+  },
+  "style2": {
+    "xUsername": "nextjs",
+    "tweetCount": 18,
+    "isOwnAccount": false,
+    "fetchedAt": "2026-02-24T11:00:00.000Z",
+    "tweets": [...]
+  }
+}
+```
+
+---
+
+### analyze-performance
+
+Get engagement metrics for cached tweets. Requires cached style from `analyze-style`. **Consumes API usage credits.**
+
+**Input:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `username` | string | Yes | X username whose cached tweets to analyze (without the @ prefix) |
+
+**Quota:** Consumes usage credits (counts toward your monthly quota)
+
+**Example:**
+
+> **Prompt:** "How are @elonmusk's cached tweets performing?"
+
+```json Tool Call
+{
+  "name": "analyze-performance",
+  "arguments": {
+    "username": "elonmusk"
+  }
+}
+```
+
+```json Result
+{
+  "xUsername": "elonmusk",
+  "tweetCount": 20,
+  "tweets": [
+    {
+      "id": "1893456789012345678",
+      "text": "The future is now.",
+      "likeCount": 42000,
+      "retweetCount": 8500,
+      "replyCount": 3200,
+      "quoteCount": 1100,
+      "viewCount": 5000000,
+      "bookmarkCount": 2400
+    }
+  ]
+}
+```
+
+---
+
+## Drafts
+
+### save-draft
+
+Save a tweet draft for later. **Subscription required, does not consume usage quota.**
+
+**Input:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `text` | string | Yes | The draft tweet text |
+| `topic` | string | No | Topic the tweet is about |
+| `goal` | string | No | Optimization goal: `engagement`, `followers`, `authority`, `conversation` |
+
+**Example:**
+
+> **Prompt:** "Save this draft: Just shipped dark mode for our app. What feature should we build next?"
+
+```json Tool Call
+{
+  "name": "save-draft",
+  "arguments": {
+    "text": "Just shipped dark mode for our app. What feature should we build next?",
+    "topic": "product update",
+    "goal": "conversation"
+  }
+}
+```
+
+```json Result
+{
+  "id": "456",
+  "text": "Just shipped dark mode for our app. What feature should we build next?",
+  "topic": "product update",
+  "goal": "conversation",
+  "createdAt": "2026-02-24T10:30:00.000Z",
+  "updatedAt": "2026-02-24T10:30:00.000Z"
+}
+```
+
+---
+
+### list-drafts
+
+List saved tweet drafts. **Subscription required, does not consume usage quota.**
+
+**Input:**
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `limit` | number | No | 50 | Drafts per page (max 50) |
+| `afterCursor` | string | No | - | Pagination cursor from previous response |
+
+**Example:**
+
+> **Prompt:** "Show my saved drafts"
+
+```json Tool Call
+{
+  "name": "list-drafts",
+  "arguments": {}
+}
+```
+
+```json Result
+{
+  "drafts": [
+    {
+      "id": "456",
+      "text": "Just shipped dark mode for our app. What feature should we build next?",
+      "topic": "product update",
+      "goal": "conversation",
+      "createdAt": "2026-02-24T10:30:00.000Z",
+      "updatedAt": "2026-02-24T10:30:00.000Z"
+    }
+  ],
+  "hasMore": false
+}
+```
+
+---
+
+### get-draft
+
+Get a specific saved tweet draft by its ID. **Subscription required, does not consume usage quota.**
+
+**Input:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `draftId` | string | Yes | Draft ID (from `list-drafts` or `save-draft`) |
+
+**Example:**
+
+> **Prompt:** "Show me draft 456"
+
+```json Tool Call
+{
+  "name": "get-draft",
+  "arguments": {
+    "draftId": "456"
+  }
+}
+```
+
+```json Result
+{
+  "id": "456",
+  "text": "Just shipped dark mode for our app. What feature should we build next?",
+  "topic": "product update",
+  "goal": "conversation",
+  "createdAt": "2026-02-24T10:30:00.000Z",
+  "updatedAt": "2026-02-24T10:30:00.000Z"
+}
+```
+
+If the draft does not exist, returns `"Draft not found"`.
+
+---
+
+### delete-draft
+
+Delete a saved tweet draft. **Subscription required, does not consume usage quota.**
+
+**Input:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `draftId` | string | Yes | Draft ID to delete (from `list-drafts`) |
+
+**Example:**
+
+> **Prompt:** "Delete draft 456"
+
+```json Tool Call
+{
+  "name": "delete-draft",
+  "arguments": {
+    "draftId": "456"
+  }
+}
+```
+
+```json Result
+{
+  "deleted": true
+}
+```
+
+---
+
 ## Usage & Quotas
 
 Most MCP tools are free to use. Tools that query the X API or run extractions/draws consume usage credits that count toward your monthly quota:
@@ -1223,6 +1646,17 @@ Most MCP tools are free to use. Tools that query the X API or run extractions/dr
 | `compose-tweet` | No | Free, unlimited |
 | `refine-tweet` | No | Free, unlimited |
 | `score-tweet` | No | Free, unlimited |
+| `set-x-identity` | No | Subscription required |
+| `analyze-style` | Yes | Per tweet fetched |
+| `get-style` | No | Subscription required |
+| `list-styles` | No | Subscription required |
+| `delete-style` | No | Subscription required |
+| `compare-styles` | No | Subscription required |
+| `analyze-performance` | Yes | Per tweet looked up |
+| `save-draft` | No | Subscription required |
+| `list-drafts` | No | Subscription required |
+| `get-draft` | No | Subscription required |
+| `delete-draft` | No | Subscription required |
 
 <Info>
   Usage is tracked per billing period. Monitor your current usage from the dashboard, via the `GET /account` API endpoint, or with the `get-account` MCP tool. See [Billing & Usage](/guides/billing) for monthly operation limits.
