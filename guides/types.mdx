@@ -402,6 +402,80 @@ interface TrendList {
   total: number;
   woeid: number;
 }
+
+// ─── Styles ─────────────────────────────────────────────
+
+interface StyleTweet {
+  id: string;
+  authorUsername: string;
+  text: string;
+  createdAt: string;
+  media?: TweetMediaItem[];
+}
+
+interface StyleProfile {
+  xUsername: string;
+  isOwnAccount: boolean;
+  tweetCount: number;
+  fetchedAt: string;
+  tweets: StyleTweet[];
+}
+
+interface StyleListItem {
+  xUsername: string;
+  isOwnAccount: boolean;
+  tweetCount: number;
+  fetchedAt: string;
+}
+
+interface StyleList {
+  styles: StyleListItem[];
+}
+
+interface StyleComparison {
+  style1: StyleProfile;
+  style2: StyleProfile;
+}
+
+interface PerformanceTweet {
+  id: string;
+  text: string;
+  likeCount: number;
+  retweetCount: number;
+  replyCount: number;
+  quoteCount: number;
+  viewCount: number;
+  bookmarkCount: number;
+}
+
+interface PerformanceAnalysis {
+  xUsername: string;
+  tweetCount: number;
+  tweets: PerformanceTweet[];
+}
+
+// ─── Drafts ─────────────────────────────────────────────
+
+interface Draft {
+  id: string;
+  text: string;
+  topic?: string;
+  goal?: "engagement" | "followers" | "authority" | "conversation";
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface DraftList {
+  drafts: Draft[];
+  hasMore: boolean;
+  nextCursor?: string;
+}
+
+interface CreateDraftRequest {
+  text: string;
+  topic?: string;
+  goal?: "engagement" | "followers" | "authority" | "conversation";
+}
 ```
 
 ## REST API vs MCP Field Naming
@@ -469,6 +543,14 @@ Direct X data lookup types. `Tweet` and `TweetAuthor` are returned by the tweet 
 ### Trends
 
 `Trend` represents a single trending topic on X. The `description`, `rank`, and `query` fields are omitted when unavailable. `TrendList` wraps the `GET /api/v1/trends` response. `total` is the full count of available trends before slicing, `woeid` is the region ID.
+
+### Styles
+
+`StyleProfile` is returned by the analyze style (`POST /api/v1/styles`) and get style (`GET /api/v1/styles/:username`) endpoints. It includes the cached tweets array with text, media, and timestamps. `StyleListItem` is the compact shape returned by `GET /api/v1/styles` (no tweets). `StyleComparison` wraps two full profiles for side-by-side comparison. `PerformanceAnalysis` adds engagement metrics (likes, retweets, replies, quotes, views, bookmarks) to each cached tweet. `isOwnAccount` is `true` when the analyzed username matches the authenticated user's linked X identity.
+
+### Drafts
+
+`Draft` represents a saved tweet draft. Optional `topic` and `goal` fields are omitted (not null) when not set. `DraftList` wraps paginated responses. Use `nextCursor` with the `afterCursor` query parameter to fetch subsequent pages. Maximum 50 drafts per page.
 
 ### Request Bodies
 
