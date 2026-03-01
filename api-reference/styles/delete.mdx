@@ -12,7 +12,7 @@ keywords: ["style", "delete", "remove", "cached"]
 <CodeGroup>
   ```bash cURL
   curl -X DELETE https://xquik.com/api/v1/styles/elonmusk \
-    -H "x-api-key: xq_YOUR_KEY_HERE" | jq
+    -H "x-api-key: xq_YOUR_KEY_HERE" -w "\n%{http_code}"
   ```
 
   ```javascript Node.js
@@ -23,7 +23,7 @@ keywords: ["style", "delete", "remove", "cached"]
       "x-api-key": "xq_YOUR_KEY_HERE",
     },
   });
-  const data = await response.json();
+  console.log(response.ok); // true on success (204 No Content)
   ```
 
   ```python Python
@@ -34,14 +34,13 @@ keywords: ["style", "delete", "remove", "cached"]
       f"https://xquik.com/api/v1/styles/{username}",
       headers={"x-api-key": "xq_YOUR_KEY_HERE"},
   )
-  data = response.json()
+  response.raise_for_status()  # 204 No Content on success
   ```
 
   ```go Go
   package main
 
   import (
-      "encoding/json"
       "fmt"
       "net/http"
   )
@@ -60,11 +59,7 @@ keywords: ["style", "delete", "remove", "cached"]
       }
       defer resp.Body.Close()
 
-      var data map[string]interface{}
-      if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
-          panic(err)
-      }
-      fmt.Println(data)
+      fmt.Println(resp.StatusCode) // 204 on success
   }
   ```
 </CodeGroup>
@@ -84,12 +79,8 @@ keywords: ["style", "delete", "remove", "cached"]
 ## Response
 
 <Tabs>
-  <Tab title="200 OK">
-    <ResponseField name="success" type="boolean">Always `true` on successful deletion.</ResponseField>
-
-    ```json
-    { "success": true }
-    ```
+  <Tab title="204 No Content">
+    Empty response body. The style was successfully deleted.
   </Tab>
   <Tab title="401 Unauthenticated">
     ```json
