@@ -1,0 +1,171 @@
+---
+title: Docs MCP Server
+description: Search Xquik documentation from AI tools via a Mintlify-hosted MCP server
+keywords: ["MCP", "documentation", "search", "AI", "Claude", "Cursor", "VS Code", "Claude Code", "docs"]
+---
+
+Xquik documentation is available as an MCP server at `https://docs.xquik.com/mcp`. AI tools can search the full docs site - API reference, guides, examples, and type definitions - during conversations.
+
+This is separate from the [Xquik API MCP server](/mcp/overview) at `xquik.com/mcp`, which interacts with your Xquik account (monitors, extractions, draws, X data lookups). The docs MCP server is read-only and requires no authentication.
+
+| | Docs MCP Server | API MCP Server |
+|---|---|---|
+| **URL** | `https://docs.xquik.com/mcp` | `https://xquik.com/mcp` |
+| **Purpose** | Search documentation | Interact with X data |
+| **Auth** | None | API key or OAuth 2.1 |
+| **Tools** | 1 (search) | 26 |
+| **Cost** | Free | Metered (some tools) |
+
+## Quick Connect
+
+Use the contextual menu at the top of any docs page to connect instantly:
+
+- **Copy MCP Server URL** - copies `https://docs.xquik.com/mcp` to your clipboard
+- **Copy MCP Install Command** - copies the `npx add-mcp` install command
+- **Connect to Cursor** - installs the docs MCP server in Cursor
+- **Connect to VS Code** - installs the docs MCP server in VS Code
+
+## Setup
+
+<Tabs>
+  <Tab title="Claude.ai (Web)">
+    1. Go to [Settings > Connectors](https://claude.ai/settings/connectors) in Claude.
+    2. Select **Add custom connector**.
+    3. Enter:
+       - Name: `Xquik Docs`
+       - URL: `https://docs.xquik.com/mcp`
+    4. Select **Add**.
+    5. In any chat, click the attachments button (plus icon) and select **Xquik Docs**.
+  </Tab>
+  <Tab title="Claude Code">
+    ```bash
+    claude mcp add --transport http xquik-docs https://docs.xquik.com/mcp
+    ```
+
+    Verify with:
+
+    ```bash
+    claude mcp list
+    ```
+  </Tab>
+  <Tab title="Cursor">
+    Add to `~/.cursor/mcp.json` (global) or `.cursor/mcp.json` (project):
+
+    ```json
+    {
+      "mcpServers": {
+        "xquik-docs": {
+          "url": "https://docs.xquik.com/mcp"
+        }
+      }
+    }
+    ```
+  </Tab>
+  <Tab title="VS Code">
+    Add to `.vscode/mcp.json` (project) or use **MCP: Open User Configuration** (global):
+
+    ```json
+    {
+      "servers": {
+        "xquik-docs": {
+          "type": "http",
+          "url": "https://docs.xquik.com/mcp"
+        }
+      }
+    }
+    ```
+  </Tab>
+  <Tab title="Windsurf">
+    Add to `~/.codeium/windsurf/mcp_config.json`:
+
+    ```json
+    {
+      "mcpServers": {
+        "xquik-docs": {
+          "serverUrl": "https://docs.xquik.com/mcp"
+        }
+      }
+    }
+    ```
+  </Tab>
+  <Tab title="OpenCode">
+    Add to `opencode.json`:
+
+    ```json
+    {
+      "mcp": {
+        "xquik-docs": {
+          "type": "remote",
+          "url": "https://docs.xquik.com/mcp"
+        }
+      }
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## Using Both MCP Servers
+
+For the best experience, connect both:
+
+1. **Docs MCP** (`docs.xquik.com/mcp`) - the AI searches documentation to understand API parameters, error codes, and usage patterns.
+2. **API MCP** (`xquik.com/mcp`) - the AI executes actions: searches tweets, runs extractions, sets up monitors.
+
+The AI decides which server to query based on context. A question about how draw filters work hits the docs server. A request to run a draw hits the API server.
+
+<Tabs>
+  <Tab title="Claude Code">
+    ```bash
+    claude mcp add --transport http xquik-docs https://docs.xquik.com/mcp
+    claude mcp add --transport http xquik https://xquik.com/mcp --header "x-api-key:xq_YOUR_KEY_HERE"
+    ```
+  </Tab>
+  <Tab title="Cursor">
+    ```json
+    {
+      "mcpServers": {
+        "xquik-docs": {
+          "url": "https://docs.xquik.com/mcp"
+        },
+        "xquik": {
+          "url": "https://xquik.com/mcp",
+          "headers": {
+            "x-api-key": "xq_YOUR_KEY_HERE"
+          }
+        }
+      }
+    }
+    ```
+  </Tab>
+  <Tab title="VS Code">
+    ```json
+    {
+      "servers": {
+        "xquik-docs": {
+          "type": "http",
+          "url": "https://docs.xquik.com/mcp"
+        },
+        "xquik": {
+          "type": "http",
+          "url": "https://xquik.com/mcp",
+          "headers": {
+            "x-api-key": "xq_YOUR_KEY_HERE"
+          }
+        }
+      }
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## What Gets Searched
+
+The docs MCP server indexes all public pages:
+
+- API reference (37 endpoint pages)
+- Guides (workflows, error handling, rate limits, billing, extraction workflow, trends, webhook testing)
+- Webhook documentation (overview, signature verification)
+- MCP server setup and tools reference
+- OAuth 2.1 documentation
+- Architecture, troubleshooting, and type definitions
+- `llms.txt` (complete API technical reference)
