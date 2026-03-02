@@ -36,7 +36,7 @@ Some errors include additional context:
 { "error": "monitor_limit_reached", "limit": 1 }
 ```
 
-HTTP status codes: `400` (validation), `401` (unauthenticated), `402` (no subscription / usage cap), `403` (limit reached), `404` (not found), `409` (conflict), `429` (rate limited), `500` (server error), `502` (temporarily unavailable).
+HTTP status codes: `400` (validation), `401` (unauthenticated), `402` (no subscription / usage limit), `403` (limit reached), `404` (not found), `409` (conflict), `429` (rate limited), `500` (server error), `502` (temporarily unavailable).
 
 Common error codes: `invalid_input`, `invalid_id`, `invalid_tweet_url`, `invalid_tweet_id`, `invalid_username`, `invalid_tool_type`, `invalid_format`, `invalid_params`, `missing_query`, `missing_params`, `webhook_inactive`, `api_key_limit_reached`, `unauthenticated`, `no_subscription`, `subscription_inactive`, `usage_limit_reached`, `no_addon`, `monitor_limit_reached`, `not_found`, `user_not_found`, `tweet_not_found`, `monitor_already_exists`, `x_api_rate_limited`, `internal_error`, `stream_registration_failed`, `x_api_unavailable`, `x_api_unauthorized`.
 
@@ -46,8 +46,10 @@ Retry strategy: retry only on `429` and `5xx`. Formula: `delay = baseDelay * 2^a
 
 Cursor-based. Responses include `hasMore` (boolean) and `nextCursor` (opaque string). Pass `nextCursor` as the `after` query parameter on the next request. Do not decode or construct cursors manually. Used for events, draws, extractions. Monitors, webhooks, and API keys return up to 200 items without pagination.
 
-## Event Types (4)
+## Event Types (6)
 
+- `follower.gained` - New follower gained
+- `follower.lost` - Existing follower lost
 - `tweet.new` - Original tweet posted
 - `tweet.quote` - Quote tweet posted
 - `tweet.reply` - Reply posted
@@ -104,7 +106,7 @@ Webhook payload structure:
 }
 ```
 
-The `data` field contains the raw tweet object from the X real-time stream. Fields vary by tweet type. Common fields: `id`, `text`, `author`, `isRetweet`, `isReply`, `isQuote`, `createdAt`. Reply tweets include `inReplyToId`. Quote tweets include `quoted_tweet`.
+The `data` field contains the raw tweet object from the X real-time stream. Fields vary by tweet type. Common fields: `id`, `text`, `author`, `isRetweet`, `isReply`, `isQuote`, `createdAt`. Reply tweets include `inReplyToId`. Quote tweets include `quoted_tweet`. Follower events (follower.gained, follower.lost) contain: followerId, followerUsername, followerName, followerFollowersCount, followerVerified.
 
 ## Tweet Composition Workflow
 
@@ -116,7 +118,7 @@ Three-step workflow for algorithm-optimized tweets. Subscription required, no us
 
 Goals: `engagement`, `followers`, `authority`, `conversation`.
 
-## MCP Tools (38 Total)
+## MCP Tools (39 Total)
 
 **Monitoring (3)** - subscription required, no usage cost:
 `list-monitors`, `add-monitor`, `remove-monitor`
@@ -124,8 +126,8 @@ Goals: `engagement`, `followers`, `authority`, `conversation`.
 **Events (2)** - subscription required, no usage cost:
 `get-events`, `get-event`
 
-**X Data (5)** - metered:
-`search-tweets`, `get-user-info`, `lookup-tweet`, `download-media`, `check-follow`
+**X Data (6)** - metered:
+`search-tweets`, `get-user-info`, `lookup-tweet`, `download-media`, `download-media-bulk`, `check-follow`
 
 **Webhooks (4)** - subscription required, no usage cost:
 `list-webhooks`, `add-webhook`, `remove-webhook`, `test-webhook`
@@ -278,7 +280,7 @@ Trends cached, auto-refresh every 15 minutes. Subscription required, no usage co
 ## MCP Server
 
 - [MCP Server Overview](https://docs.xquik.com/mcp/overview): Connect AI agents and IDEs (Claude Desktop, Claude Code, ChatGPT, Codex CLI, Cursor, VS Code, Windsurf, OpenCode) to Xquik via Model Context Protocol.
-- [MCP Tools Reference](https://docs.xquik.com/mcp/tools): All 38 MCP tools with input/output schemas and usage examples. Includes tweet composition tools (compose-tweet, refine-tweet, score-tweet) for algorithm-optimized tweet drafting. Included with subscription, no usage cost.
+- [MCP Tools Reference](https://docs.xquik.com/mcp/tools): All 39 MCP tools with input/output schemas and usage examples. Includes tweet composition tools (compose-tweet, refine-tweet, score-tweet) for algorithm-optimized tweet drafting. Included with subscription, no usage cost.
 - [Docs MCP Server](https://docs.xquik.com/mcp/docs-mcp): Search Xquik documentation from AI tools via a Mintlify-hosted MCP server at `https://docs.xquik.com/mcp`. No auth required. Separate from the API MCP server.
 
 ## OAuth
@@ -301,6 +303,6 @@ Trends cached, auto-refresh every 15 minutes. Subscription required, no usage co
 
 ## Resources
 
-- [Platform Architecture](https://docs.xquik.com/guides/architecture): Architecture overview, security model (API key auth, data isolation, authorization), rate limits, usage caps, monitoring architecture, and platform limitations.
+- [Platform Architecture](https://docs.xquik.com/guides/architecture): Architecture overview, security model (API key auth, data isolation, authorization), rate limits, usage limits, monitoring architecture, and platform limitations.
 - [Troubleshooting](https://docs.xquik.com/guides/troubleshooting): Common issues and solutions for the Xquik API.
 - [Type Definitions](https://docs.xquik.com/guides/types): TypeScript type definitions for all API request and response objects.
