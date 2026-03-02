@@ -1,10 +1,10 @@
 ---
 title: MCP Tools Reference
-description: All 37 MCP tools with input/output schemas, usage examples, and costs
-keywords: ["MCP tools", "list-monitors", "add-monitor", "remove-monitor", "get-events", "get-event", "search-tweets", "get-user-info", "list-webhooks", "add-webhook", "remove-webhook", "test-webhook", "lookup-tweet", "check-follow", "run-extraction", "list-extractions", "get-extraction", "estimate-extraction", "run-draw", "list-draws", "get-draw", "get-account", "get-trends", "subscribe", "compose-tweet", "refine-tweet", "score-tweet", "set-x-identity", "analyze-style", "get-style", "list-styles", "delete-style", "compare-styles", "analyze-performance", "save-draft", "list-drafts", "get-draft", "delete-draft"]
+description: All 38 MCP tools with input/output schemas, usage examples, and costs
+keywords: ["MCP tools", "list-monitors", "add-monitor", "remove-monitor", "get-events", "get-event", "search-tweets", "get-user-info", "list-webhooks", "add-webhook", "remove-webhook", "test-webhook", "lookup-tweet", "download-media", "check-follow", "run-extraction", "list-extractions", "get-extraction", "estimate-extraction", "run-draw", "list-draws", "get-draw", "get-account", "get-trends", "subscribe", "compose-tweet", "refine-tweet", "score-tweet", "set-x-identity", "analyze-style", "get-style", "list-styles", "delete-style", "compare-styles", "analyze-performance", "save-draft", "list-drafts", "get-draft", "delete-draft"]
 ---
 
-The Xquik MCP server exposes 37 tools that AI agents can use to manage monitors, query events, search tweets, look up users and tweets, check follow relationships, run extractions and draws, configure webhooks, check account status, get trending topics, manage subscriptions, and compose algorithm-optimized tweets. Connect to the MCP server at `https://xquik.com/mcp` with your API key.
+The Xquik MCP server exposes 38 tools that AI agents can use to manage monitors, query events, search tweets, look up users and tweets, download media, check follow relationships, run extractions and draws, configure webhooks, check account status, get trending topics, manage subscriptions, and compose algorithm-optimized tweets. Connect to the MCP server at `https://xquik.com/mcp` with your API key.
 
 ---
 
@@ -158,13 +158,17 @@ Query events from monitored accounts with optional filters and cursor-based pagi
       "xUsername": "elonmusk",
       "occurredAt": "2026-02-24T14:22:00.000Z",
       "eventData": {
-        "tweetId": "1893456789012345678",
+        "id": "1893456789012345678",
         "text": "The future is now.",
-        "metrics": {
-          "likes": 42000,
-          "retweets": 8500,
-          "replies": 3200
-        }
+        "author": {
+          "id": "44196397",
+          "userName": "elonmusk",
+          "name": "Elon Musk"
+        },
+        "isRetweet": false,
+        "isReply": false,
+        "isQuote": false,
+        "createdAt": "2026-02-24T14:22:00.000Z"
       },
       "createdAt": "2026-02-24T14:22:01.000Z"
     }
@@ -209,13 +213,17 @@ Retrieve a single event by ID with full details.
   "xUsername": "elonmusk",
   "occurredAt": "2026-02-24T14:22:00.000Z",
   "eventData": {
-    "tweetId": "1893456789012345678",
+    "id": "1893456789012345678",
     "text": "The future is now.",
-    "metrics": {
-      "likes": 42000,
-      "retweets": 8500,
-      "replies": 3200
-    }
+    "author": {
+      "id": "44196397",
+      "userName": "elonmusk",
+      "name": "Elon Musk"
+    },
+    "isRetweet": false,
+    "isReply": false,
+    "isQuote": false,
+    "createdAt": "2026-02-24T14:22:00.000Z"
   },
   "createdAt": "2026-02-24T14:22:01.000Z"
 }
@@ -528,6 +536,49 @@ Get full details of a specific tweet by its ID or URL. Returns engagement metric
 ```
 
 **Output fields:** `media` is an optional array of attached media items. Each item contains `mediaUrl` (direct pbs.twimg.com URL), `type` (`photo`, `video`, or `animated_gif`), and `url` (shortened t.co URL). Omitted when the tweet has no attachments.
+
+---
+
+### download-media
+
+Download images, videos, and GIFs from a tweet. Returns permanent download URLs hosted on media.xquik.com. **Consumes API usage credits on first download; cached requests are free.**
+
+**Input:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `tweetId` | string | Yes | Tweet ID or full tweet URL (x.com or twitter.com) |
+
+**Quota:** First download is metered (counts toward your monthly quota). Subsequent requests for the same tweet return cached URLs at no cost.
+
+**Example:**
+
+> **Prompt:** "Download the video from this tweet: https://x.com/elonmusk/status/1893456789012345678"
+
+```json Tool Call
+{
+  "name": "download-media",
+  "arguments": {
+    "tweetId": "1893456789012345678"
+  }
+}
+```
+
+```json Result
+{
+  "tweetId": "1893456789012345678",
+  "media": [
+    {
+      "url": "https://media.xquik.com/dl/abc123/video.mp4",
+      "type": "video",
+      "index": 0,
+      "fileSize": "4821000"
+    }
+  ]
+}
+```
+
+**Output fields:** `media` is an array of downloaded media items. Each item contains `url` (permanent hosted download URL), `type` (`photo`, `video`, or `animated_gif`), `index` (position in the tweet's media attachments), and `fileSize` (file size in bytes as a string, omitted if unavailable). Downloads are saved to the user's gallery at `https://xquik.com/gallery`.
 
 ---
 
@@ -921,7 +972,7 @@ Check account status, subscription, and usage.
 
 ### get-trends
 
-Get trending topics on X for a specific region. **Free, does not consume usage quota.**
+Get trending topics on X for a specific region. **Subscription required. Does not consume usage quota.**
 
 **Input:**
 
@@ -1630,6 +1681,7 @@ Most MCP tools are free to use. Tools that query the X API or run extractions/dr
 | `test-webhook` | No | Unlimited |
 | `lookup-tweet` | Yes | Per lookup |
 | `check-follow` | Yes | Per check |
+| `download-media` | Yes | First download metered, cached requests free |
 | `run-extraction` | Yes | Per result extracted |
 | `list-extractions` | No | Unlimited |
 | `get-extraction` | No | Unlimited |
@@ -1638,7 +1690,7 @@ Most MCP tools are free to use. Tools that query the X API or run extractions/dr
 | `list-draws` | No | Unlimited |
 | `get-draw` | No | Unlimited |
 | `get-account` | No | Unlimited |
-| `get-trends` | No | Free, unlimited |
+| `get-trends` | No | Subscription required, not metered |
 | `subscribe` | No | Free, unlimited |
 | `compose-tweet` | No | Free, unlimited |
 | `refine-tweet` | No | Free, unlimited |
