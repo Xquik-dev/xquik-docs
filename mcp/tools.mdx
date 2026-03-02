@@ -1,10 +1,10 @@
 ---
 title: MCP Tools Reference
-description: All 38 MCP tools with input/output schemas, usage examples, and costs
-keywords: ["MCP tools", "list-monitors", "add-monitor", "remove-monitor", "get-events", "get-event", "search-tweets", "get-user-info", "list-webhooks", "add-webhook", "remove-webhook", "test-webhook", "lookup-tweet", "download-media", "check-follow", "run-extraction", "list-extractions", "get-extraction", "estimate-extraction", "run-draw", "list-draws", "get-draw", "get-account", "get-trends", "subscribe", "compose-tweet", "refine-tweet", "score-tweet", "set-x-identity", "analyze-style", "get-style", "list-styles", "delete-style", "compare-styles", "analyze-performance", "save-draft", "list-drafts", "get-draft", "delete-draft"]
+description: All 39 MCP tools with input/output schemas, usage examples, and costs
+keywords: ["MCP tools", "list-monitors", "add-monitor", "remove-monitor", "get-events", "get-event", "search-tweets", "get-user-info", "list-webhooks", "add-webhook", "remove-webhook", "test-webhook", "lookup-tweet", "download-media", "download-media-bulk", "check-follow", "run-extraction", "list-extractions", "get-extraction", "estimate-extraction", "run-draw", "list-draws", "get-draw", "get-account", "get-trends", "subscribe", "compose-tweet", "refine-tweet", "score-tweet", "set-x-identity", "analyze-style", "get-style", "list-styles", "delete-style", "compare-styles", "analyze-performance", "save-draft", "list-drafts", "get-draft", "delete-draft"]
 ---
 
-The Xquik MCP server exposes 38 tools that AI agents can use to manage monitors, query events, search tweets, look up users and tweets, download media, check follow relationships, run extractions and draws, configure webhooks, check account status, get trending topics, manage subscriptions, and compose algorithm-optimized tweets. Connect to the MCP server at `https://xquik.com/mcp` with your API key.
+The Xquik MCP server exposes 39 tools that AI agents can use to manage monitors, query events, search tweets, look up users and tweets, download media, check follow relationships, run extractions and draws, configure webhooks, check account status, get trending topics, manage subscriptions, and compose algorithm-optimized tweets. Connect to the MCP server at `https://xquik.com/mcp` with your API key.
 
 ---
 
@@ -59,7 +59,7 @@ Start monitoring an X account for specific event types.
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `username` | string | Yes | X username to monitor (without @) |
-| `eventTypes` | string[] | Yes | Event types to subscribe to |
+| `eventTypes` | string[] | Yes | Event types to subscribe to: `tweet.new`, `tweet.reply`, `tweet.quote`, `tweet.retweet`, `follower.gained`, `follower.lost` |
 
 **Example:**
 
@@ -130,7 +130,7 @@ Query events from monitored accounts with optional filters and cursor-based pagi
 |-----------|------|----------|---------|-------------|
 | `limit` | number | No | 50 | Results per page (max 50) |
 | `monitorId` | string | No | - | Filter by monitor ID |
-| `eventType` | string | No | - | Filter by event type |
+| `eventType` | string | No | - | Filter by event type: `tweet.new`, `tweet.reply`, `tweet.quote`, `tweet.retweet`, `follower.gained`, `follower.lost` |
 | `afterCursor` | string | No | - | Pagination cursor from previous response |
 
 **Example:**
@@ -376,7 +376,7 @@ Register a new webhook endpoint to receive event notifications.
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `url` | string | Yes | HTTPS endpoint URL |
-| `eventTypes` | string[] | Yes | Event types to receive |
+| `eventTypes` | string[] | Yes | Event types to receive: `tweet.new`, `tweet.reply`, `tweet.quote`, `tweet.retweet`, `follower.gained`, `follower.lost` |
 
 **Example:**
 
@@ -579,6 +579,49 @@ Download images, videos, and GIFs from a tweet. Returns permanent download URLs 
 ```
 
 **Output fields:** `media` is an array of downloaded media items. Each item contains `url` (permanent hosted download URL), `type` (`photo`, `video`, or `animated_gif`), `index` (position in the tweet's media attachments), and `fileSize` (file size in bytes as a string, omitted if unavailable). Downloads are saved to the user's gallery at `https://xquik.com/gallery`.
+
+---
+
+### download-media-bulk
+
+Download media from multiple tweets at once. Returns a single gallery link with all downloaded media. Use instead of calling `download-media` in a loop. **Charged per fresh tweet; cached tweets are free.**
+
+**Input:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `tweetIds` | string[] | Yes | Array of tweet IDs or URLs (max 50) |
+
+**Quota:** Charged per fresh tweet downloaded. Previously downloaded tweets return cached results at no cost.
+
+**Example:**
+
+> **Prompt:** "Download all the media from these 3 tweets"
+
+```json Tool Call
+{
+  "name": "download-media-bulk",
+  "arguments": {
+    "tweetIds": [
+      "1893456789012345678",
+      "1893456789012345679",
+      "1893456789012345680"
+    ]
+  }
+}
+```
+
+```json Result
+{
+  "totalTweets": 3,
+  "totalMedia": 7,
+  "freshDownloads": 2,
+  "cachedDownloads": 1,
+  "galleryUrl": "https://xquik.com/gallery/abc123"
+}
+```
+
+**Output fields:** `totalTweets` is the number of tweets processed. `totalMedia` is the total media files downloaded. `freshDownloads` is metered tweets (newly downloaded). `cachedDownloads` is tweets that were already in the gallery (free). `galleryUrl` is a shareable gallery link.
 
 ---
 
@@ -1682,6 +1725,7 @@ Most MCP tools are free to use. Tools that query the X API or run extractions/dr
 | `lookup-tweet` | Yes | Per lookup |
 | `check-follow` | Yes | Per check |
 | `download-media` | Yes | First download metered, cached requests free |
+| `download-media-bulk` | Yes | Per fresh tweet, cached tweets free |
 | `run-extraction` | Yes | Per result extracted |
 | `list-extractions` | No | Unlimited |
 | `get-extraction` | No | Unlimited |
