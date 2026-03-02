@@ -78,13 +78,17 @@ Webhook events are delivered as HTTPS POST requests.
   "eventType": "tweet.new",
   "username": "elonmusk",
   "data": {
-    "tweetId": "1893456789012345678",
+    "id": "1893456789012345678",
     "text": "The future is now.",
-    "metrics": {
-      "likes": 42000,
-      "retweets": 8500,
-      "replies": 3200
-    }
+    "author": {
+      "id": "44196397",
+      "userName": "elonmusk",
+      "name": "Elon Musk"
+    },
+    "isRetweet": false,
+    "isReply": false,
+    "isQuote": false,
+    "createdAt": "2026-02-24T14:22:00.000Z"
   }
 }
 ```
@@ -93,11 +97,15 @@ Webhook events are delivered as HTTPS POST requests.
 |-------|------|-------------|
 | `eventType` | string | Event type (see below) |
 | `username` | string | X username of the monitored account |
-| `data` | object | Event-specific payload (varies by type) |
+| `data` | object | Raw tweet object from the X real-time stream |
+
+<Note>
+  The `data` field contains the raw tweet object as received from the X real-time stream. Fields may vary by tweet type.
+</Note>
 
 ## Event Data Shapes
 
-Each event type includes a `data` object with type-specific fields.
+Each event type includes a `data` object containing the raw tweet. The examples below show the most common fields.
 
 ### tweet.new
 
@@ -108,115 +116,112 @@ A new original tweet posted by the monitored account.
   "eventType": "tweet.new",
   "username": "elonmusk",
   "data": {
-    "tweetId": "1893456789012345678",
+    "id": "1893456789012345678",
     "text": "The future is now.",
-    "metrics": {
-      "likes": 42000,
-      "retweets": 8500,
-      "replies": 3200
-    }
+    "author": {
+      "id": "44196397",
+      "userName": "elonmusk",
+      "name": "Elon Musk"
+    },
+    "isRetweet": false,
+    "isReply": false,
+    "isQuote": false,
+    "createdAt": "2026-02-24T14:22:00.000Z"
   }
 }
 ```
 
 ### tweet.quote
 
-A quote tweet posted by the monitored account. Includes `quotedTweetId` and `quotedUsername` referencing the original tweet.
+A quote tweet posted by the monitored account.
 
 ```json
 {
   "eventType": "tweet.quote",
   "username": "elonmusk",
   "data": {
-    "tweetId": "1893456789012345679",
+    "id": "1893456789012345679",
     "text": "Interesting take on this.",
-    "quotedTweetId": "1893400000000000000",
-    "quotedUsername": "SpaceX",
-    "metrics": {
-      "likes": 18000,
-      "retweets": 3200,
-      "replies": 1100
-    }
+    "author": {
+      "id": "44196397",
+      "userName": "elonmusk",
+      "name": "Elon Musk"
+    },
+    "isRetweet": false,
+    "isReply": false,
+    "isQuote": true,
+    "quoted_tweet": {
+      "id": "1893400000000000000",
+      "text": "Our latest launch was a success.",
+      "author": {
+        "userName": "SpaceX"
+      }
+    },
+    "createdAt": "2026-02-24T15:10:00.000Z"
   }
 }
 ```
 
 ### tweet.reply
 
-A reply posted by the monitored account. Includes `inReplyToTweetId` and `inReplyToUsername` referencing the parent tweet.
+A reply posted by the monitored account.
 
 ```json
 {
   "eventType": "tweet.reply",
   "username": "elonmusk",
   "data": {
-    "tweetId": "1893456789012345680",
+    "id": "1893456789012345680",
     "text": "Great question. Working on it.",
-    "inReplyToTweetId": "1893411111111111111",
-    "inReplyToUsername": "Tesla",
-    "metrics": {
-      "likes": 9500,
-      "retweets": 1200,
-      "replies": 800
-    }
+    "author": {
+      "id": "44196397",
+      "userName": "elonmusk",
+      "name": "Elon Musk"
+    },
+    "isRetweet": false,
+    "isReply": true,
+    "isQuote": false,
+    "inReplyToId": "1893411111111111111",
+    "createdAt": "2026-02-24T16:30:00.000Z"
   }
 }
 ```
 
 ### tweet.retweet
 
-A retweet posted by the monitored account. Includes `retweetedTweetId` and `retweetedUsername` referencing the original tweet.
+A retweet posted by the monitored account.
 
 ```json
 {
   "eventType": "tweet.retweet",
   "username": "elonmusk",
   "data": {
-    "tweetId": "1893456789012345681",
-    "retweetedTweetId": "1893422222222222222",
-    "retweetedUsername": "xai",
-    "metrics": {
-      "likes": 0,
-      "retweets": 0,
-      "replies": 0
-    }
+    "id": "1893456789012345681",
+    "text": "RT @xai: Exciting news today.",
+    "author": {
+      "id": "44196397",
+      "userName": "elonmusk",
+      "name": "Elon Musk"
+    },
+    "isRetweet": true,
+    "isReply": false,
+    "isQuote": false,
+    "createdAt": "2026-02-24T17:00:00.000Z"
   }
 }
 ```
 
-### follower.gained
+### webhook.test
 
-A new follower gained by the monitored account.
-
-```json
-{
-  "eventType": "follower.gained",
-  "username": "elonmusk",
-  "data": {
-    "followerId": "44196398",
-    "followerUsername": "newFollower",
-    "followerName": "New Follower",
-    "followerFollowersCount": 500,
-    "followerVerified": false
-  }
-}
-```
-
-### follower.lost
-
-A follower lost by the monitored account.
+A test payload sent via the [Test Webhook](/api-reference/webhooks/test) endpoint to verify your endpoint is reachable.
 
 ```json
 {
-  "eventType": "follower.lost",
-  "username": "elonmusk",
+  "eventType": "webhook.test",
   "data": {
-    "followerId": "44196398",
-    "followerUsername": "lostFollower",
-    "followerName": "Lost Follower",
-    "followerFollowersCount": 500,
-    "followerVerified": false
-  }
+    "message": "Test delivery from Xquik"
+  },
+  "timestamp": "2026-02-27T12:00:00.000Z"
 }
 ```
 
@@ -233,6 +238,10 @@ Failed deliveries are retried with exponential backoff (base 1s, multiplier 2x):
 | 5 | 16 seconds |
 
 After 5 failed attempts, the delivery is marked as `exhausted`. Check delivery status via the [deliveries endpoint](/api-reference/webhooks/deliveries).
+
+<Note>
+  Retries are processed in batches, so actual delay may be slightly longer than shown.
+</Note>
 
 ## Requirements
 

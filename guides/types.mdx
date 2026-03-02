@@ -56,9 +56,7 @@ type EventType =
   | "tweet.new"
   | "tweet.quote"
   | "tweet.reply"
-  | "tweet.retweet"
-  | "follower.gained"
-  | "follower.lost";
+  | "tweet.retweet";
 
 // ─── Events ──────────────────────────────────────────────
 
@@ -72,36 +70,31 @@ interface Event {
   xEventId?: string;
 }
 
-// Tweet events (tweet.new, tweet.reply, tweet.quote, tweet.retweet)
+// The data field contains the raw tweet object from the X real-time stream.
+// Fields vary by event type. Common fields shown below.
 interface TweetEventData {
-  tweetId: string;
+  id: string;
   text: string;
-  metrics: {
-    likes: number;
-    retweets: number;
-    replies: number;
+  author: {
+    id: string;
+    userName: string;
+    name: string;
   };
-  // tweet.quote only
-  quotedTweetId?: string;
-  quotedUsername?: string;
+  isRetweet: boolean;
+  isReply: boolean;
+  isQuote: boolean;
+  createdAt: string;
   // tweet.reply only
-  inReplyToTweetId?: string;
-  inReplyToUsername?: string;
-  // tweet.retweet only
-  retweetedTweetId?: string;
-  retweetedUsername?: string;
+  inReplyToId?: string;
+  // tweet.quote only
+  quoted_tweet?: {
+    id: string;
+    text: string;
+    author: { userName: string };
+  };
 }
 
-// Follower events (follower.gained, follower.lost)
-interface FollowerEventData {
-  followerId: string;
-  followerUsername: string;
-  followerName: string;
-  followerFollowersCount: number;
-  followerVerified: boolean;
-}
-
-type EventData = TweetEventData | FollowerEventData;
+type EventData = TweetEventData;
 
 interface EventList {
   events: Event[];

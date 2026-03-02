@@ -46,14 +46,12 @@ Retry strategy: retry only on `429` and `5xx`. Formula: `delay = baseDelay * 2^a
 
 Cursor-based. Responses include `hasMore` (boolean) and `nextCursor` (opaque string). Pass `nextCursor` as the `after` query parameter on the next request. Do not decode or construct cursors manually. Used for events, draws, extractions. Monitors, webhooks, and API keys return up to 200 items without pagination.
 
-## Event Types (6)
+## Event Types (4)
 
 - `tweet.new` - Original tweet posted
 - `tweet.quote` - Quote tweet posted
 - `tweet.reply` - Reply posted
 - `tweet.retweet` - Retweet posted
-- `follower.gained` - New follower gained
-- `follower.lost` - Follower lost
 
 ## Giveaway Draw Filters
 
@@ -102,11 +100,11 @@ Webhook payload structure:
 {
   "eventType": "tweet.new",
   "username": "elonmusk",
-  "data": { "tweetId": "1893456789012345678", "text": "...", "metrics": { "likes": 42000, "retweets": 8500, "replies": 3200 } }
+  "data": { "id": "1893456789012345678", "text": "...", "author": { "id": "44196397", "userName": "elonmusk", "name": "Elon Musk" }, "isRetweet": false, "isReply": false, "isQuote": false, "createdAt": "2026-02-24T14:22:00.000Z" }
 }
 ```
 
-Event data shapes vary by type: `tweet.new` includes `tweetId`, `text`, `metrics`. `tweet.quote` adds `quotedTweetId`, `quotedUsername`. `tweet.reply` adds `inReplyToTweetId`, `inReplyToUsername`. `tweet.retweet` includes `retweetedTweetId`, `retweetedUsername`. `follower.gained` and `follower.lost` include `followerId`, `followerUsername`, `followerName`, `followerFollowersCount`, `followerVerified`.
+The `data` field contains the raw tweet object from the X real-time stream. Fields vary by tweet type. Common fields: `id`, `text`, `author`, `isRetweet`, `isReply`, `isQuote`, `createdAt`. Reply tweets include `inReplyToId`. Quote tweets include `quoted_tweet`.
 
 ## Tweet Composition Workflow
 
@@ -118,7 +116,7 @@ Three-step workflow for algorithm-optimized tweets. Subscription required, no us
 
 Goals: `engagement`, `followers`, `authority`, `conversation`.
 
-## MCP Tools (37 Total)
+## MCP Tools (38 Total)
 
 **Monitoring (3)** - subscription required, no usage cost:
 `list-monitors`, `add-monitor`, `remove-monitor`
@@ -126,8 +124,8 @@ Goals: `engagement`, `followers`, `authority`, `conversation`.
 **Events (2)** - subscription required, no usage cost:
 `get-events`, `get-event`
 
-**X Data (4)** - metered:
-`search-tweets`, `get-user-info`, `lookup-tweet`, `check-follow`
+**X Data (5)** - metered:
+`search-tweets`, `get-user-info`, `lookup-tweet`, `download-media`, `check-follow`
 
 **Webhooks (4)** - subscription required, no usage cost:
 `list-webhooks`, `add-webhook`, `remove-webhook`, `test-webhook`
@@ -280,7 +278,7 @@ Trends cached, auto-refresh every 15 minutes. Subscription required, no usage co
 ## MCP Server
 
 - [MCP Server Overview](https://docs.xquik.com/mcp/overview): Connect AI agents and IDEs (Claude Desktop, Claude Code, ChatGPT, Codex CLI, Cursor, VS Code, Windsurf, OpenCode) to Xquik via Model Context Protocol.
-- [MCP Tools Reference](https://docs.xquik.com/mcp/tools): All 37 MCP tools with input/output schemas and usage examples. Includes tweet composition tools (compose-tweet, refine-tweet, score-tweet) for algorithm-optimized tweet drafting. Included with subscription, no usage cost.
+- [MCP Tools Reference](https://docs.xquik.com/mcp/tools): All 38 MCP tools with input/output schemas and usage examples. Includes tweet composition tools (compose-tweet, refine-tweet, score-tweet) for algorithm-optimized tweet drafting. Included with subscription, no usage cost.
 - [Docs MCP Server](https://docs.xquik.com/mcp/docs-mcp): Search Xquik documentation from AI tools via a Mintlify-hosted MCP server at `https://docs.xquik.com/mcp`. No auth required. Separate from the API MCP server.
 
 ## OAuth
