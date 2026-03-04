@@ -1,0 +1,200 @@
+---
+title: "Save Custom Style"
+description: "Save a custom style profile from tweet texts"
+api: "PUT /styles/{username}"
+keywords: ["style", "save", "custom", "tweets", "writing style", "profile"]
+---
+
+This endpoint does not consume usage credits. No subscription required.
+
+<CodeGroup>
+  ```bash cURL
+  curl -X PUT https://xquik.com/api/v1/styles/casual \
+    -H "x-api-key: xq_YOUR_KEY_HERE" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "label": "casual",
+      "tweets": [
+        { "text": "just shipped a new feature, feels good" },
+        { "text": "hot take: tabs > spaces and I will die on this hill" },
+        { "text": "debugging at 2am hits different when the fix is a missing comma" }
+      ]
+    }' | jq
+  ```
+
+  ```javascript Node.js
+  const response = await fetch("https://xquik.com/api/v1/styles/casual", {
+    method: "PUT",
+    headers: {
+      "x-api-key": "xq_YOUR_KEY_HERE",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      label: "casual",
+      tweets: [
+        { text: "just shipped a new feature, feels good" },
+        { text: "hot take: tabs > spaces and I will die on this hill" },
+        { text: "debugging at 2am hits different when the fix is a missing comma" },
+      ],
+    }),
+  });
+  const data = await response.json();
+  ```
+
+  ```python Python
+  import requests
+
+  response = requests.put(
+      "https://xquik.com/api/v1/styles/casual",
+      headers={"x-api-key": "xq_YOUR_KEY_HERE"},
+      json={
+          "label": "casual",
+          "tweets": [
+              {"text": "just shipped a new feature, feels good"},
+              {"text": "hot take: tabs > spaces and I will die on this hill"},
+              {"text": "debugging at 2am hits different when the fix is a missing comma"},
+          ],
+      },
+  )
+  data = response.json()
+  ```
+
+  ```go Go
+  package main
+
+  import (
+      "bytes"
+      "encoding/json"
+      "fmt"
+      "net/http"
+  )
+
+  func main() {
+      body, _ := json.Marshal(map[string]interface{}{
+          "label": "casual",
+          "tweets": []map[string]string{
+              {"text": "just shipped a new feature, feels good"},
+              {"text": "hot take: tabs > spaces and I will die on this hill"},
+              {"text": "debugging at 2am hits different when the fix is a missing comma"},
+          },
+      })
+
+      req, err := http.NewRequest("PUT", "https://xquik.com/api/v1/styles/casual", bytes.NewReader(body))
+      if err != nil {
+          panic(err)
+      }
+      req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
+      req.Header.Set("Content-Type", "application/json")
+
+      resp, err := http.DefaultClient.Do(req)
+      if err != nil {
+          panic(err)
+      }
+      defer resp.Body.Close()
+
+      var data map[string]interface{}
+      if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+          panic(err)
+      }
+      fmt.Println(data)
+  }
+  ```
+</CodeGroup>
+
+## Path parameters
+
+<ParamField path="username" type="string" required>
+  Style label used as the identifier. 1-30 characters. This becomes the key for retrieving the style later.
+</ParamField>
+
+## Headers
+
+<ParamField header="x-api-key" type="string" required>
+  Your API key. Session cookie authentication is also supported. Generate a key from the [dashboard](https://xquik.com/dashboard).
+</ParamField>
+
+<ParamField header="Content-Type" type="string" required>
+  Must be `application/json`.
+</ParamField>
+
+## Body
+
+<ParamField body="label" type="string" required>
+  Style label (e.g. "Professional", "Casual", "My Style"). Used to identify the style profile.
+</ParamField>
+
+<ParamField body="tweets" type="object[]" required>
+  Array of tweet objects (1-100) that define the writing style. Each object must have a `text` field.
+  <Expandable title="Tweet object">
+    <ParamField body="text" type="string" required>
+      The tweet text content.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+## Response
+
+<Tabs>
+  <Tab title="200 OK">
+    <ResponseField name="xUsername" type="string">Style label (normalized to lowercase).</ResponseField>
+    <ResponseField name="tweetCount" type="number">Number of tweets saved in the style profile.</ResponseField>
+    <ResponseField name="isOwnAccount" type="boolean">Always `false` for custom styles.</ResponseField>
+    <ResponseField name="fetchedAt" type="string">ISO 8601 timestamp when the style was saved.</ResponseField>
+    <ResponseField name="tweets" type="object[]">Array of saved tweets.</ResponseField>
+
+    ```json
+    {
+      "xUsername": "casual",
+      "tweetCount": 3,
+      "isOwnAccount": false,
+      "fetchedAt": "2026-02-24T10:30:00.000Z",
+      "tweets": [
+        {
+          "id": "0",
+          "text": "just shipped a new feature, feels good",
+          "authorUsername": "casual",
+          "createdAt": "2026-02-24T10:30:00.000Z"
+        },
+        {
+          "id": "1",
+          "text": "hot take: tabs > spaces and I will die on this hill",
+          "authorUsername": "casual",
+          "createdAt": "2026-02-24T10:30:00.000Z"
+        },
+        {
+          "id": "2",
+          "text": "debugging at 2am hits different when the fix is a missing comma",
+          "authorUsername": "casual",
+          "createdAt": "2026-02-24T10:30:00.000Z"
+        }
+      ]
+    }
+    ```
+  </Tab>
+  <Tab title="400 Invalid Input">
+    ```json
+    { "error": "invalid_input" }
+    ```
+    Invalid or missing label/tweets. Provide a valid label and 1-100 tweet objects with non-empty `text` fields.
+  </Tab>
+  <Tab title="401 Unauthenticated">
+    ```json
+    { "error": "unauthenticated" }
+    ```
+    Missing or invalid API key.
+  </Tab>
+  <Tab title="429 Rate Limited">
+    ```json
+    { "error": "rate_limited" }
+    ```
+    Too many requests. Wait before retrying.
+  </Tab>
+</Tabs>
+
+<Info>
+  If a style with this label already exists, it will be replaced with the new data.
+</Info>
+
+<Note>
+  **Next steps:** [List Styles](/api-reference/styles/list) to see all saved styles, [Get Style](/api-reference/styles/get) to retrieve a specific style, or [Compare Styles](/api-reference/styles/compare) to compare two styles side by side.
+</Note>
