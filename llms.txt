@@ -110,48 +110,60 @@ The `data` field contains the raw tweet object from the X real-time stream. Fiel
 
 ## Tweet Composition Workflow
 
-Three-step workflow for algorithm-optimized tweets. Subscription required, no usage cost:
+Three-step workflow for algorithm-optimized tweets via the `compose-tweet` MCP tool. Free, no usage cost:
 
-1. `compose-tweet` - Start composing. Returns X algorithm engagement signals and follow-up questions.
-2. `refine-tweet` - After answering follow-ups. Returns goal-specific tips, example patterns, media strategy, hashtag advice, CTA guidance.
-3. `score-tweet` - Evaluate a draft against X algorithm ranking factors. Returns pass/fail checklist.
+1. `compose-tweet` with `step="compose"` - Start composing. Returns X algorithm engagement signals and follow-up questions.
+2. `compose-tweet` with `step="refine"` - After answering follow-ups. Returns goal-specific tips, example patterns, media strategy, hashtag advice, CTA guidance.
+3. `compose-tweet` with `step="score"` - Evaluate a draft against X algorithm ranking factors. Returns pass/fail checklist.
 
 Goals: `engagement`, `followers`, `authority`, `conversation`.
 
-## MCP Tools (40 Total)
+## MCP Tools (18 Total)
 
-**Monitoring (3)** - subscription required, no usage cost:
-`list-monitors`, `add-monitor`, `remove-monitor`
+**Monitoring & Events (3)** - free:
+`monitors` (actions: list, add, remove), `events` (list with filters, or get single by id), `webhooks` (actions: list, add, remove, test)
 
-**Events (2)** - subscription required, no usage cost:
-`get-events`, `get-event`
+**X Data (4)** - metered:
+`search-tweets`, `get-user-info`, `lookup-tweet`, `check-follow`, `download-media` (single or bulk via tweetIds array)
 
-**X Data (6)** - metered:
-`search-tweets`, `get-user-info`, `lookup-tweet`, `download-media`, `download-media-bulk`, `check-follow`
+**Extractions & Draws (2)** - metered (run only); free (list/get/estimate):
+`extractions` (actions: estimate, run, list, get), `draws` (actions: run, list, get)
 
-**Webhooks (4)** - subscription required, no usage cost:
-`list-webhooks`, `add-webhook`, `remove-webhook`, `test-webhook`
+**Trends & Radar (2)** - free:
+`get-trends` (subscription required), `get-radar` (FREE, 6 sources: Google Trends, Hacker News, TrustMRR, Wikipedia, GitHub Trending, Reddit)
 
-**Extractions (4)** - metered (run-extraction); subscription required, no usage cost (list/get/estimate):
-`run-extraction`, `list-extractions`, `get-extraction`, `estimate-extraction`
+**Tweet Composition (1)** - free:
+`compose-tweet` (steps: compose, refine, score)
 
-**Giveaway Draws (3)** - metered (run-draw); subscription required, no usage cost (list/get):
-`run-draw`, `list-draws`, `get-draw`
+**Styles & Drafts (2)** - mixed:
+`styles` (actions: analyze, get, list, delete, save, compare, analyze-performance), `drafts` (actions: save, list, get, delete)
 
-**Account & Trends (3)** - free (get-account, subscribe); subscription required, no usage cost (get-trends):
-`get-account`, `get-trends`, `subscribe`
+**Account (3)** - free:
+`get-account`, `subscribe`, `set-x-identity`
 
-**Tweet Composition (3)** - subscription required, no usage cost:
-`compose-tweet`, `refine-tweet`, `score-tweet`
+## Radar
 
-**Identity (1)** - subscription required, no usage cost:
-`set-x-identity`
+Trending topics and news aggregated from 6 sources. Free for all subscribers, no usage cost.
 
-**Style Analysis (7)** - metered (analyze-style, analyze-performance); free (save-style); subscription required, no usage cost (get/list/delete/compare):
-`analyze-style`, `get-style`, `list-styles`, `delete-style`, `save-style`, `compare-styles`, `analyze-performance`
+**Sources:** `github`, `google_trends`, `hacker_news`, `reddit`, `trustmrr`, `wikipedia`
 
-**Drafts (4)** - subscription required, no usage cost:
-`save-draft`, `list-drafts`, `get-draft`, `delete-draft`
+**Categories:** `general`, `tech`, `dev`, `science`, `culture`, `politics`, `business`, `entertainment`
+
+**REST API:** `GET /api/v1/radar` with query parameters: `source`, `category`, `hours` (1-72, default 6), `limit` (1-100, default 50), `region` (US, GB, TR, ES, DE, FR, JP, IN, BR, CA, MX, global), `after` (cursor).
+
+**MCP Tool:** `get-radar` with parameters: `source`, `category`, `count` (1-50, default 20), `hours` (1-72, default 6), `region` (default "global").
+
+**Response:** `{ items: RadarItem[], hasMore: boolean, nextCursor?: string }`
+
+**RadarItem fields:** `id`, `title`, `description?`, `url?`, `imageUrl?`, `source`, `sourceId`, `category`, `region`, `language`, `score` (0-10000), `metadata` (source-specific), `publishedAt`, `createdAt`.
+
+**Source-specific metadata:**
+- GitHub: `starsToday`, `language` (programming language)
+- Hacker News: `points`, `numberComments`, `author`
+- Reddit: `subreddit`, `author`
+- Google Trends: `approxTraffic`
+- Wikipedia: `views`
+- TrustMRR: `mrr`, `growthPercent`, `last30Days`, `customers`, `activeSubscriptions`, `onSale`, `category`, `xHandle`
 
 ## Extraction Tool Types (20)
 
@@ -171,7 +183,7 @@ By target type:
 
 All extraction tools accept an optional `resultsLimit` parameter to cap the number of results. When set, the extraction stops early instead of fetching all available data. The estimate endpoint also accepts `resultsLimit` to preview capped costs.
 
-Always call `estimate-extraction` before `run-extraction` to check cost and feasibility. Requires active subscription.
+Always call the `extractions` tool with `action="estimate"` before `action="run"` to check cost and feasibility. Requires active subscription.
 
 ## Trending Regions (12)
 
@@ -273,6 +285,10 @@ Trends cached, auto-refresh every 15 minutes. Subscription required, no usage co
 
 - [List Trends](https://docs.xquik.com/api-reference/trends/list): Get trending topics by region. Subscription required, no usage cost. 12 regions, cached, auto-refreshes every 15 minutes.
 
+## API Reference - Radar
+
+- [List Radar Items](https://docs.xquik.com/api-reference/radar/list): Trending topics and news from 6 sources (Google Trends, Hacker News, TrustMRR, Wikipedia, GitHub Trending, Reddit). Filter by source, category, region, and time window. Free for all subscribers, no usage cost.
+
 ## Webhooks
 
 - [Webhooks Overview](https://docs.xquik.com/webhooks/overview): Real-time event delivery to your HTTPS endpoints with HMAC-SHA256 signatures.
@@ -281,7 +297,7 @@ Trends cached, auto-refresh every 15 minutes. Subscription required, no usage co
 ## MCP Server
 
 - [MCP Server Overview](https://docs.xquik.com/mcp/overview): Connect AI agents and IDEs (Claude Desktop, Claude Code, ChatGPT, Codex CLI, Cursor, VS Code, Windsurf, OpenCode) to Xquik via Model Context Protocol.
-- [MCP Tools Reference](https://docs.xquik.com/mcp/tools): All 40 MCP tools with input/output schemas and usage examples. Includes tweet composition tools (compose-tweet, refine-tweet, score-tweet) for algorithm-optimized tweet drafting. Included with subscription, no usage cost.
+- [MCP Tools Reference](https://docs.xquik.com/mcp/tools): All 18 MCP tools with input/output schemas and usage examples. Includes the `compose-tweet` tool (steps: compose, refine, score) for algorithm-optimized tweet drafting and the `get-radar` tool for free trending topics from 6 sources.
 - [Docs MCP Server](https://docs.xquik.com/mcp/docs-mcp): Search Xquik documentation from AI tools via a Mintlify-hosted MCP server at `https://docs.xquik.com/mcp`. No auth required. Separate from the API MCP server.
 
 ## OAuth
@@ -290,7 +306,7 @@ Trends cached, auto-refresh every 15 minutes. Subscription required, no usage co
 
 ## AI Agent Skill
 
-- [Xquik Skill](https://github.com/Xquik-dev/x-twitter-scraper): AI agent skill that gives 40+ coding agents (Claude Code, Cursor, GitHub Copilot, Codex, Windsurf, VS Code, Gemini CLI, and more) deep knowledge of the Xquik API. Agents can write API integrations, set up webhook handlers with HMAC verification, configure MCP connections, and use all 20 extraction tools with correct parameters. Install via `npx skills add Xquik-dev/x-twitter-scraper`.
+- [Xquik Skill](https://github.com/Xquik-dev/x-twitter-scraper): AI agent skill that gives 40+ coding agents (Claude Code, Cursor, GitHub Copilot, Codex, Windsurf, VS Code, Gemini CLI, and more) deep knowledge of the Xquik API. Agents can write API integrations, set up webhook handlers with HMAC verification, configure MCP connections, and use all 18 MCP tools and 20 extraction tool types with correct parameters. Install via `npx skills add Xquik-dev/x-twitter-scraper`.
 
 ## Guides
 
