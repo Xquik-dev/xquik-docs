@@ -1,0 +1,209 @@
+---
+title: "Compose Tweet"
+description: "Compose, refine, and score tweets using X algorithm data. 3-step workflow, free"
+api: "POST /compose"
+keywords: ["compose", "tweet", "algorithm", "score", "refine", "draft", "free"]
+---
+
+<Info>
+  This endpoint is free and does not consume usage. No subscription required.
+</Info>
+
+<CodeGroup>
+  ```bash cURL
+  curl -X POST https://xquik.com/api/v1/compose \
+    -H "x-api-key: xq_YOUR_KEY_HERE" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "step": "compose",
+      "topic": "launching my new SaaS product",
+      "goal": "engagement"
+    }' | jq
+  ```
+
+  ```javascript Node.js
+  const response = await fetch("https://xquik.com/api/v1/compose", {
+    method: "POST",
+    headers: {
+      "x-api-key": "xq_YOUR_KEY_HERE",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      step: "compose",
+      topic: "launching my new SaaS product",
+      goal: "engagement",
+    }),
+  });
+  const data = await response.json();
+  ```
+
+  ```python Python
+  import requests
+
+  response = requests.post(
+      "https://xquik.com/api/v1/compose",
+      headers={"x-api-key": "xq_YOUR_KEY_HERE"},
+      json={
+          "step": "compose",
+          "topic": "launching my new SaaS product",
+          "goal": "engagement",
+      },
+  )
+  data = response.json()
+  ```
+
+  ```go Go
+  package main
+
+  import (
+      "bytes"
+      "encoding/json"
+      "fmt"
+      "io"
+      "net/http"
+  )
+
+  func main() {
+      body, _ := json.Marshal(map[string]interface{}{
+          "step":  "compose",
+          "topic": "launching my new SaaS product",
+          "goal":  "engagement",
+      })
+
+      req, _ := http.NewRequest("POST", "https://xquik.com/api/v1/compose", bytes.NewReader(body))
+      req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
+      req.Header.Set("Content-Type", "application/json")
+
+      resp, err := http.DefaultClient.Do(req)
+      if err != nil {
+          panic(err)
+      }
+      defer resp.Body.Close()
+
+      respBody, _ := io.ReadAll(resp.Body)
+      fmt.Println(string(respBody))
+  }
+  ```
+</CodeGroup>
+
+## Headers
+
+<ParamField header="x-api-key" type="string" required>
+  Your API key. Session cookie authentication is also supported.
+</ParamField>
+
+<ParamField header="Content-Type" type="string" required>
+  Must be `application/json`.
+</ParamField>
+
+## Body
+
+<ParamField body="step" type="string" required>
+  Workflow step. One of `compose`, `refine`, or `score`.
+</ParamField>
+
+<ParamField body="topic" type="string">
+  Tweet topic. Used in `compose` and `refine` steps.
+</ParamField>
+
+<ParamField body="goal" type="string">
+  Optimization goal: `engagement`, `followers`, `authority`, or `conversation`.
+</ParamField>
+
+<ParamField body="styleUsername" type="string">
+  Cached style username for voice matching. Used in `compose` step.
+</ParamField>
+
+<ParamField body="tone" type="string">
+  Desired tone for the tweet. Used in `refine` step.
+</ParamField>
+
+<ParamField body="additionalContext" type="string">
+  Extra context or URLs. Used in `refine` step.
+</ParamField>
+
+<ParamField body="callToAction" type="string">
+  Desired call to action. Used in `refine` step.
+</ParamField>
+
+<ParamField body="mediaType" type="string">
+  Media type: `photo`, `video`, or `none`. Used in `refine` step.
+</ParamField>
+
+<ParamField body="draft" type="string">
+  Tweet text to evaluate. Used in `score` step.
+</ParamField>
+
+<ParamField body="hasLink" type="boolean">
+  Whether a link is attached. Used in `score` step.
+</ParamField>
+
+<ParamField body="hasMedia" type="boolean">
+  Whether media is attached. Used in `score` step.
+</ParamField>
+
+## Workflow
+
+The compose API follows a 3-step workflow:
+
+1. **`compose`**: Returns algorithm weights, content rules, penalties, and follow-up questions
+2. **`refine`**: Returns composition guidance, example patterns, media strategy, and CTA advice
+3. **`score`**: Evaluates a draft against algorithm checks with pass/fail results
+
+## Response
+
+<Tabs>
+  <Tab title="200 OK (compose)">
+    ```json
+    {
+      "contentRules": ["Keep under 280 characters", "Front-load the hook"],
+      "scorerWeights": { "hook": 2, "cta": 1.5, "media": 1.3 },
+      "followUpQuestions": [
+        "What tone do you want? (casual, professional, bold)",
+        "Will you attach media (photo, video, none)?",
+        "What call-to-action do you prefer?"
+      ]
+    }
+    ```
+  </Tab>
+  <Tab title="200 OK (refine)">
+    ```json
+    {
+      "guidance": "Lead with a personal story or metric. End with an open question.",
+      "examplePatterns": [
+        "Hook: surprising metric -> Context: 1-2 sentences -> CTA: open question"
+      ]
+    }
+    ```
+  </Tab>
+  <Tab title="200 OK (score)">
+    ```json
+    {
+      "totalChecks": 8,
+      "passedCount": 6,
+      "topSuggestion": "Add a specific detail or metric to the first line.",
+      "checklist": [
+        { "check": "Hook in first line", "passed": false },
+        { "check": "Under 280 characters", "passed": true },
+        { "check": "Has media", "passed": true },
+        { "check": "Reply-worthy CTA", "passed": true }
+      ]
+    }
+    ```
+  </Tab>
+  <Tab title="400 Invalid Input">
+    ```json
+    { "error": "invalid_input", "message": "step is required. Must be \"compose\", \"refine\", or \"score\"." }
+    ```
+  </Tab>
+  <Tab title="401 Unauthenticated">
+    ```json
+    { "error": "unauthenticated" }
+    ```
+    Missing or invalid API key.
+  </Tab>
+</Tabs>
+
+<Note>
+  **Next steps:** [Save Draft](/api-reference/drafts/create) to save a composed tweet for later, or [Analyze Style](/api-reference/styles/analyze) to match another account's voice.
+</Note>
