@@ -21,6 +21,52 @@ The MCP server supports 2 authentication methods:
 - **API key** (`x-api-key` header): Used by Claude Code, Cursor, VS Code, Windsurf, Codex CLI, OpenCode, and Claude Desktop. Pass your key during the MCP handshake.
 - **OAuth 2.1** (Bearer token): Used by Claude.ai (web) and ChatGPT Developer Mode. OAuth handles authentication automatically via browser login. No API key needed. See [OAuth 2.1 documentation](/oauth/overview) for the complete authorization flow, token lifetimes, and implementation details.
 
+## How It Works
+
+The MCP server uses a **code-execution sandbox model**. Instead of 18+ discrete tools with fixed input schemas, the server exposes 2 tools:
+
+| Tool | Description | Cost |
+|------|-------------|------|
+| `explore` | Search the API spec (read-only, no network calls) | Free |
+| `xquik` | Execute API calls against your account | Varies by endpoint |
+
+The AI agent writes async JavaScript arrow functions that run in a sandboxed environment. Auth is injected automatically.
+
+### `explore` tool
+
+Searches the in-memory API endpoint catalog. The sandbox provides:
+
+```typescript
+interface EndpointInfo {
+  method: string;
+  path: string;
+  summary: string;
+  category: string; // account, composition, extraction, media, monitoring, twitter
+  free: boolean;
+  parameters?: Array<{ name: string; in: 'query' | 'path' | 'body'; required: boolean; type: string; description: string }>;
+  responseShape?: string;
+}
+
+declare const spec: { endpoints: EndpointInfo[] };
+```
+
+### `xquik` tool
+
+Executes API calls. The sandbox provides:
+
+```typescript
+declare const xquik: {
+  request(path: string, options?: {
+    method?: string;  // default: 'GET'
+    body?: unknown;
+    query?: Record<string, string>;
+  }): Promise<unknown>;
+};
+declare const spec: { endpoints: EndpointInfo[] };
+```
+
+The agent writes code like `async () => xquik.request('/api/v1/radar')` and the server executes it with auth injected.
+
 ## MCP vs REST API
 
 Both the MCP server and REST API connect to the same backend, use the same data, and share the same billing.
@@ -31,9 +77,9 @@ Both the MCP server and REST API connect to the same backend, use the same data,
 | **Protocol** | StreamableHTTP (MCP protocol) | Standard REST (JSON over HTTPS) |
 | **Auth** | `x-api-key` header or OAuth 2.1 (Bearer token) | `x-api-key` header per request |
 | **Endpoint** | `https://xquik.com/mcp` | `https://xquik.com/api/v1/*` |
-| **Capabilities** | 18 tools (same core capabilities) | 38+ endpoints (finer control) |
+| **Model** | 2 tools (`explore` + `xquik`) with code-execution sandbox | 41+ individual endpoints |
 | **Unique to REST** | - | API key management, webhook PATCH/deliveries, extraction export (file download), account locale update, save-style PUT endpoint |
-| **Unique to MCP** | AI agent tool descriptions, natural language prompts | - |
+| **Unique to MCP** | AI agent tool descriptions, natural language prompts, server instructions | - |
 
 **When to use MCP:** You're building an AI agent or working in an IDE (Claude Code, Cursor, VS Code, Windsurf) and want the agent to interact with X data through natural language.
 
@@ -185,33 +231,6 @@ Both the MCP server and REST API connect to the same backend, use the same data,
   </Tab>
 </Tabs>
 
-## Available Tools
-
-The MCP server exposes **18 tools**:
-
-| Tool | Description | Cost |
-|------|-------------|------|
-| `monitors` | Manage monitored X accounts (actions: list, add, remove) | Free |
-| `events` | Retrieve activity from monitored accounts (list with filters, or get single by ID) | Free |
-| `webhooks` | Manage webhook endpoints (actions: list, add, remove, test) | Free |
-| `search-tweets` | Search X for real-time tweets by keyword, hashtag, or user | Metered |
-| `get-user-info` | Get X user profile: name, bio, follower/following count | Metered |
-| `lookup-tweet` | Get full tweet details and engagement metrics | Metered |
-| `check-follow` | Check follow relationship between two X accounts | Metered |
-| `download-media` | Download images, videos, GIFs from one or more tweets | Metered |
-| `extractions` | Bulk data extraction with 20 tool types (actions: estimate, run, list, get) | Metered (run) |
-| `draws` | Giveaway draws from tweet replies (actions: run, list, get) | Metered (run) |
-| `get-trends` | Trending topics across 12 regions | Free |
-| `get-radar` | Trending topics & news from 6 sources (FREE for all subscribers) | Free |
-| `compose-tweet` | Compose, refine, and score tweets using X algorithm data (steps: compose, refine, score) | Free |
-| `styles` | Manage tweet style profiles (actions: analyze, get, list, delete, save, compare, analyze-performance) | Mixed |
-| `drafts` | Manage tweet drafts (actions: save, list, get, delete) | Free |
-| `get-account` | Check subscription status and usage | Free |
-| `subscribe` | Get subscription checkout or management link | Free |
-| `set-x-identity` | Link your X username to your Xquik account | Free |
-
-See the [tools reference](/mcp/tools) for detailed input/output schemas.
-
 ## Example Prompts
 
 Once connected, you can ask your AI agent things like:
@@ -283,11 +302,17 @@ Once connected, you can ask your AI agent things like:
 - "What plan am I on and how much have I used this month?"
 - "Do I have enough budget left to run a large extraction?"
 
+## Legacy v1 Server
+
+The previous MCP server (v1) with 18 discrete tools is still available at `https://xquik.com/mcp/v1`. It uses a traditional tool-call model with structured input schemas instead of the code-execution sandbox.
+
+If your integration depends on v1 tool names (`search-tweets`, `monitors`, `events`, etc.), point your MCP client to `/mcp/v1`. All new integrations should use the default v2 server at `/mcp`.
+
 ## AI Agent Skill
 
 The [Xquik Skill](https://github.com/Xquik-dev/x-twitter-scraper) gives AI coding agents deep knowledge of the Xquik API without requiring an MCP connection. Install it to let your agent write API integrations, set up webhooks, and configure MCP connections using Xquik best practices.
 
-Works with 40+ AI coding agents including Claude Code, Cursor, GitHub Copilot, Codex, Windsurf, VS Code, Gemini CLI, and more. The skill covers all 18 MCP tools and 38+ REST API endpoints.
+Works with 40+ AI coding agents including Claude Code, Cursor, GitHub Copilot, Codex, Windsurf, VS Code, Gemini CLI, and more. The skill covers MCP tools and 41+ REST API endpoints.
 
 ```bash
 npx skills add Xquik-dev/x-twitter-scraper

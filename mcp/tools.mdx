@@ -1,1002 +1,288 @@
 ---
 title: MCP Tools Reference
-description: All 18 MCP tools with input/output schemas, usage examples, and costs
-keywords: ["MCP tools", "monitors", "events", "webhooks", "search-tweets", "get-user-info", "lookup-tweet", "download-media", "check-follow", "extractions", "draws", "get-trends", "get-radar", "compose-tweet", "styles", "drafts", "get-account", "subscribe", "set-x-identity"]
+description: MCP v2 tools (explore + xquik) with sandbox API, workflows, and cost breakdown
+keywords: ["MCP tools", "explore", "xquik", "sandbox", "code execution", "API spec", "v2"]
 ---
 
-The Xquik MCP server exposes 18 tools that AI agents can use to manage monitors, query events, search tweets, look up users and tweets, download media, check follow relationships, run extractions and draws, configure webhooks, check account status, get trending topics and radar news, manage subscriptions, and compose algorithm-optimized tweets. Connect to the MCP server at `https://xquik.com/mcp` with your API key.
+The Xquik MCP server exposes 2 tools that AI agents use to search the API spec and execute API calls. The agent writes async JavaScript arrow functions that run in a sandboxed environment. Connect to the MCP server at `https://xquik.com/mcp` with your API key.
 
 ---
 
-## Monitoring
+## explore
 
-### monitors
-
-Manage monitored X accounts. Use the `action` parameter to list, add, or remove monitors. Subscription required for `add`.
+Search the API endpoint catalog. Read-only, no network calls, always free. Use this to discover available endpoints, check parameters, and find the right API path before executing calls.
 
 **Input:**
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `action` | `list` \| `add` \| `remove` | Yes | Action to perform |
-| `username` | string | For `add` | X username without @ |
-| `eventTypes` | string[] | For `add` | Event types: `tweet.new`, `tweet.reply`, `tweet.retweet`, `tweet.quote`, `follower.gained`, `follower.lost` |
-| `monitorId` | string | For `remove` | Monitor ID to remove |
+| `code` | string | Yes | Async arrow function to execute against the API spec |
+
+**Sandbox API:**
+
+```typescript
+interface EndpointInfo {
+  method: string;
+  path: string;
+  summary: string;
+  category: string; // account, composition, extraction, media, monitoring, twitter
+  free: boolean;
+  parameters?: Array<{
+    name: string;
+    in: 'query' | 'path' | 'body';
+    required: boolean;
+    type: string;
+    description: string;
+  }>;
+  responseShape?: string;
+}
+
+declare const spec: { endpoints: EndpointInfo[] };
+```
 
 **Examples:**
 
-> **Prompt:** "Show me all my active monitors"
+> Find all free endpoints
 
-```json Tool Call
-{
-  "name": "monitors",
-  "arguments": { "action": "list" }
+```javascript
+async () => {
+  return spec.endpoints.filter(e => e.free);
 }
 ```
 
-```json Result
-{
-  "monitors": [
-    {
-      "id": "7",
-      "xUsername": "elonmusk",
-      "eventTypes": ["tweet.new", "tweet.reply"],
-      "isActive": true,
-      "createdAt": "2026-02-24T10:30:00.000Z"
-    }
-  ]
+> Find endpoints by category
+
+```javascript
+async () => {
+  return spec.endpoints.filter(e => e.category === 'composition');
 }
 ```
 
-> **Prompt:** "Start monitoring @vercel for new tweets"
+> Search by keyword
 
-```json Tool Call
-{
-  "name": "monitors",
-  "arguments": {
-    "action": "add",
-    "username": "vercel",
-    "eventTypes": ["tweet.new", "tweet.reply", "tweet.quote"]
-  }
-}
-```
-
-> **Prompt:** "Stop monitoring the account with ID 7"
-
-```json Tool Call
-{
-  "name": "monitors",
-  "arguments": { "action": "remove", "monitorId": "7" }
+```javascript
+async () => {
+  return spec.endpoints.filter(e => e.summary.toLowerCase().includes('tweet'));
 }
 ```
 
 ---
 
-### events
+## xquik
 
-Retrieve activity from monitored X accounts. Provide `id` for a single event, omit for a paginated list. Only returns events from your monitors, not all of X.
+Execute API calls against your Xquik account. The agent writes code using `xquik.request()` with auth injected automatically.
 
 **Input:**
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `id` | string | No | Event ID for single event details |
-| `monitorId` | string | No | Filter by monitor ID |
-| `eventType` | string | No | Filter by event type |
-| `limit` | number | No | Results per page (1-50, default 50) |
-| `afterCursor` | string | No | Pagination cursor |
+| `code` | string | Yes | Async arrow function to execute |
 
-**Examples:**
+**Sandbox API:**
 
-> **Prompt:** "Show me the latest events from my monitors"
+```typescript
+declare const xquik: {
+  request(path: string, options?: {
+    method?: string;  // default: 'GET'
+    body?: unknown;
+    query?: Record<string, string>;
+  }): Promise<unknown>;
+};
+declare const spec: { endpoints: EndpointInfo[] };
+```
 
-```json Tool Call
-{
-  "name": "events",
-  "arguments": { "limit": 10 }
+**Workflow Examples:**
+
+> Compose a tweet (3-step, free)
+
+```javascript
+async () => {
+  const compose = await xquik.request('/api/v1/compose', {
+    method: 'POST',
+    body: { step: 'compose', topic: 'AI agents' }
+  });
+  return compose;
+  // Returns contentRules, followUpQuestions, scorerWeights
+  // After user answers: { step: 'refine', goal, tone, topic }
+  // After drafting: { step: 'score', draft }
 }
 ```
 
-```json Result
-{
-  "events": [
-    {
-      "id": "9010",
-      "eventType": "tweet.new",
-      "monitoredAccountId": "7",
-      "xUsername": "elonmusk",
-      "occurredAt": "2026-02-24T16:45:00.000Z",
-      "eventData": {
-        "id": "1893556789012345678",
-        "text": "Just launched a new feature!",
-        "author": {
-          "id": "44196397",
-          "userName": "elonmusk",
-          "name": "Elon Musk"
-        },
-        "isRetweet": false,
-        "isReply": false,
-        "isQuote": false,
-        "createdAt": "2026-02-24T16:45:00.000Z"
-      }
-    }
-  ],
-  "hasMore": false
+> Browse trending topics (free)
+
+```javascript
+async () => {
+  return xquik.request('/api/v1/radar');
 }
 ```
 
-> **Prompt:** "Show me event 9010"
+> Radar + Style + Compose combined (free)
 
-```json Tool Call
-{
-  "name": "events",
-  "arguments": { "id": "9010" }
+```javascript
+async () => {
+  const [radar, styles] = await Promise.all([
+    xquik.request('/api/v1/radar'),
+    xquik.request('/api/v1/styles'),
+  ]);
+  return { radar, styles };
 }
 ```
 
----
+> Analyze a user's writing style
 
-### webhooks
-
-Manage webhook endpoints for real-time event push. Use the `action` parameter to list, add, remove, or test webhooks.
-
-**Input:**
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `action` | `list` \| `add` \| `remove` \| `test` | Yes | Action to perform |
-| `url` | string | For `add` | HTTPS endpoint URL |
-| `eventTypes` | string[] | For `add` | Event types to subscribe to |
-| `webhookId` | string | For `remove`, `test` | Webhook ID |
-
-**Examples:**
-
-> **Prompt:** "Set up a webhook at https://my-server.com/events for new tweets"
-
-```json Tool Call
-{
-  "name": "webhooks",
-  "arguments": {
-    "action": "add",
-    "url": "https://my-server.com/events",
-    "eventTypes": ["tweet.new", "tweet.reply"]
-  }
+```javascript
+async () => {
+  // Returns cached style if available (free)
+  // Auto-refreshes from X if cache older than 7 days (subscription required)
+  return xquik.request('/api/v1/styles', {
+    method: 'POST',
+    body: { username: 'elonmusk' }
+  });
 }
 ```
 
-```json Result
-{
-  "id": "15",
-  "url": "https://my-server.com/events",
-  "eventTypes": ["tweet.new", "tweet.reply"],
-  "secret": "whsec_a1b2c3d4e5f6...",
-  "createdAt": "2026-02-24T12:00:00.000Z"
+> Search tweets with limit (subscription required)
+
+```javascript
+async () => {
+  return xquik.request('/api/v1/x/tweets/search', {
+    query: { q: 'from:elonmusk', limit: '50' }
+  });
 }
 ```
 
-<Warning>
-  The `secret` is returned only once. Store it securely for HMAC signature verification.
-</Warning>
+> Download media and get gallery link (subscription required)
 
-> **Prompt:** "Send a test payload to webhook 15"
-
-```json Tool Call
-{
-  "name": "webhooks",
-  "arguments": { "action": "test", "webhookId": "15" }
+```javascript
+async () => {
+  return xquik.request('/api/v1/x/media/download', {
+    method: 'POST',
+    body: { tweetInput: '1234567890' }
+  });
 }
 ```
 
----
+> Bulk download: search + download combined
 
-## X Data
-
-### search-tweets
-
-Search X for real-time tweets by keyword, hashtag, user, or boolean query. Returns approximately 20 results. For bulk results (50+), use the `extractions` tool with `tweet_search_extractor`. Subscription required. Metered.
-
-**Input:**
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `query` | string | Yes | X search query. Supports keywords, hashtags, `from:username`, `to:username`, `"exact phrases"`, and boolean operators (`OR`, `-exclude`) |
-
-**Example:**
-
-> **Prompt:** "What are people saying about TypeScript on X right now?"
-
-```json Tool Call
-{
-  "name": "search-tweets",
-  "arguments": { "query": "TypeScript performance" }
+```javascript
+async () => {
+  const search = await xquik.request('/api/v1/x/tweets/search', {
+    query: { q: 'from:berktavsan has:videos', limit: '10' }
+  });
+  if (!search.tweets?.length) return { error: 'No video tweets found' };
+  const tweetIds = search.tweets.map(t => t.id);
+  return xquik.request('/api/v1/x/media/download', {
+    method: 'POST',
+    body: { tweetIds }
+  });
 }
 ```
 
-```json Result
-{
-  "tweets": [
-    {
-      "id": "1893456789012345678",
-      "text": "TypeScript 6.0 compiler is 10x faster.",
-      "authorUsername": "typescript",
-      "authorName": "TypeScript",
-      "createdAt": "2026-02-24T14:22:00.000Z"
-    }
-  ]
+> Monitor a user + create webhook (subscription required)
+
+```javascript
+async () => {
+  const monitor = await xquik.request('/api/v1/monitors', {
+    method: 'POST',
+    body: { username: 'elonmusk', eventTypes: ['tweet.new', 'tweet.reply'] }
+  });
+  const webhook = await xquik.request('/api/v1/webhooks', {
+    method: 'POST',
+    body: { url: 'https://example.com/hook', eventTypes: ['tweet.new', 'tweet.reply'] }
+  });
+  return { monitor, webhook };
+}
+```
+
+> Run an extraction (subscription required)
+
+```javascript
+async () => {
+  const estimate = await xquik.request('/api/v1/extractions/estimate', {
+    method: 'POST',
+    body: { toolType: 'follower_explorer', targetUsername: 'elonmusk' }
+  });
+  return estimate;
+  // If acceptable, call POST /api/v1/extractions with same params
+}
+```
+
+> Subscribe (free, returns Stripe checkout URL)
+
+```javascript
+async () => {
+  return xquik.request('/api/v1/subscribe', { method: 'POST' });
 }
 ```
 
 ---
 
-### get-user-info
-
-Get real-time X user profile: name, bio, follower/following count, profile picture. Subscription required. Metered.
-
-**Input:**
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `username` | string | Yes | X username without @ |
-
-**Example:**
-
-> **Prompt:** "How many followers does @xquikcom have?"
-
-```json Tool Call
-{
-  "name": "get-user-info",
-  "arguments": { "username": "xquikcom" }
-}
-```
-
-```json Result
-{
-  "id": "1234567890",
-  "username": "xquikcom",
-  "name": "Xquik",
-  "bio": "X real-time data platform",
-  "followersCount": 1250,
-  "followingCount": 42,
-  "profilePicture": "https://pbs.twimg.com/profile_images/..."
-}
-```
-
----
-
-### lookup-tweet
-
-Get full tweet details by ID or URL: text, likes, retweets, replies, quotes, views, bookmarks, author, media. Subscription required. Metered.
-
-**Input:**
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `tweetId` | string | Yes | Numeric tweet ID or ID extracted from a tweet URL |
-
-**Example:**
-
-> **Prompt:** "What does this tweet say? https://x.com/elonmusk/status/1893456789012345678"
-
-```json Tool Call
-{
-  "name": "lookup-tweet",
-  "arguments": { "tweetId": "1893456789012345678" }
-}
-```
-
-```json Result
-{
-  "id": "1893456789012345678",
-  "text": "Just shipped dark mode for our app.",
-  "likeCount": 5200,
-  "retweetCount": 1100,
-  "replyCount": 340,
-  "quoteCount": 89,
-  "viewCount": 250000,
-  "bookmarkCount": 420,
-  "author": {
-    "id": "44196397",
-    "username": "elonmusk",
-    "followers": 210500000,
-    "verified": true
-  }
-}
-```
-
----
-
-### check-follow
-
-Check follow relationship between two X accounts. Returns both directions (A follows B, B follows A). Subscription required. Metered.
-
-**Input:**
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `sourceUsername` | string | Yes | Username to check (without @) |
-| `targetUsername` | string | Yes | Username that may be followed (without @) |
-
-**Example:**
-
-> **Prompt:** "Does @elonmusk follow @SpaceX back?"
-
-```json Tool Call
-{
-  "name": "check-follow",
-  "arguments": {
-    "sourceUsername": "elonmusk",
-    "targetUsername": "SpaceX"
-  }
-}
-```
-
-```json Result
-{
-  "following": true,
-  "followedBy": true
-}
-```
-
----
-
-### download-media
-
-Download images, videos, and GIFs from tweets. Pass a single ID for one tweet or multiple IDs for bulk download. Returns permanent URLs. Subscription required. Metered.
-
-**Input:**
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `tweetIds` | string[] | Yes | Tweet IDs or URLs. Single item = one tweet, multiple = bulk download (max 50) |
-
-**Examples:**
-
-> **Prompt:** "Download the media from this tweet"
-
-```json Tool Call
-{
-  "name": "download-media",
-  "arguments": { "tweetIds": ["1893456789012345678"] }
-}
-```
-
-```json Result
-{
-  "downloads": [
-    {
-      "tweetId": "1893456789012345678",
-      "media": [
-        {
-          "type": "photo",
-          "originalUrl": "https://pbs.twimg.com/media/...",
-          "permanentUrl": "https://media.xquik.com/..."
-        }
-      ]
-    }
-  ]
-}
-```
-
-> **Prompt:** "Download media from these 3 tweets"
-
-```json Tool Call
-{
-  "name": "download-media",
-  "arguments": {
-    "tweetIds": ["1893456789012345678", "1893456789012345999", "1893456789012346000"]
-  }
-}
-```
-
----
-
-## Extractions & Draws
-
-### extractions
-
-Bulk data extraction from X using 20 tool types. Use the `action` parameter to estimate costs, run jobs, list history, or get results. Always call `estimate` before `run` to preview costs. Subscription required for `run` and `estimate`. Metered (run only).
-
-**Input:**
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `action` | `estimate` \| `run` \| `list` \| `get` | Yes | Action to perform |
-| `toolType` | string | For `run`, `estimate` | One of the [20 extraction tool types](/guides/extraction-workflow#tool-types-reference) |
-| `id` | string | For `get` | Extraction job ID |
-| `targetTweetId` | string | When tool requires tweet target | Target tweet ID |
-| `targetUsername` | string | When tool requires username target | Target username |
-| `targetCommunityId` | string | When tool requires community target | Target community ID |
-| `targetListId` | string | When tool requires list target | Target list ID |
-| `targetSpaceId` | string | When tool requires Space target | Target Space ID |
-| `searchQuery` | string | For search-based tools | Search query |
-| `resultsLimit` | number | No | Max results to extract or estimate |
-| `status` | string | For `list` | Filter by status: `completed`, `failed`, `running` |
-| `limit` | number | For `list`, `get` | Results per page |
-| `afterCursor` | string | For `list`, `get` | Pagination cursor |
-
-**Examples:**
-
-> **Prompt:** "How much would it cost to extract all replies to this tweet?"
-
-```json Tool Call
-{
-  "name": "extractions",
-  "arguments": {
-    "action": "estimate",
-    "toolType": "reply_extractor",
-    "targetTweetId": "1893704267862470862"
-  }
-}
-```
-
-```json Result
-{
-  "allowed": true,
-  "source": "replyCount",
-  "estimatedResults": 150,
-  "usagePercent": 45,
-  "projectedPercent": 78
-}
-```
-
-> **Prompt:** "Extract all replies to this tweet"
-
-```json Tool Call
-{
-  "name": "extractions",
-  "arguments": {
-    "action": "run",
-    "toolType": "reply_extractor",
-    "targetTweetId": "1893704267862470862"
-  }
-}
-```
-
-```json Result
-{
-  "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-  "toolType": "reply_extractor",
-  "status": "running"
-}
-```
-
-> **Prompt:** "Show me my last 5 extractions"
-
-```json Tool Call
-{
-  "name": "extractions",
-  "arguments": { "action": "list", "limit": 5 }
-}
-```
-
-> **Prompt:** "Get the results of extraction a1b2c3d4"
-
-```json Tool Call
-{
-  "name": "extractions",
-  "arguments": {
-    "action": "get",
-    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
-  }
-}
-```
-
----
-
-### draws
-
-Giveaway draws from tweet replies. Use the `action` parameter to run a draw, list past draws, or get draw details. Subscription required for `run`. Metered (run only).
-
-**Input:**
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `action` | `run` \| `list` \| `get` | Yes | Action to perform |
-| `tweetUrl` | string | For `run` | Giveaway tweet URL |
-| `drawId` | string | For `get` | Draw ID |
-| `winnerCount` | number | No | Winners to select (default 1) |
-| `backupCount` | number | No | Backup winners |
-| `mustRetweet` | boolean | No | Require retweet |
-| `mustFollowUsername` | string | No | Must-follow username |
-| `filterMinFollowers` | number | No | Minimum follower count |
-| `filterAccountAgeDays` | number | No | Minimum account age in days |
-| `filterLanguage` | string | No | Language filter |
-| `uniqueAuthorsOnly` | boolean | No | One entry per author |
-| `requiredKeywords` | string[] | No | Required keywords in reply |
-| `requiredHashtags` | string[] | No | Required hashtags |
-| `requiredMentions` | string[] | No | Required mentions |
-| `limit` | number | For `list` | Results per page |
-| `afterCursor` | string | For `list` | Pagination cursor |
-
-**Examples:**
-
-> **Prompt:** "Pick 3 random winners from this tweet who retweeted"
-
-```json Tool Call
-{
-  "name": "draws",
-  "arguments": {
-    "action": "run",
-    "tweetUrl": "https://x.com/xquikcom/status/1893456789012345678",
-    "winnerCount": 3,
-    "mustRetweet": true
-  }
-}
-```
-
-```json Result
-{
-  "id": "500",
-  "tweetUrl": "https://x.com/xquikcom/status/1893456789012345678",
-  "status": "completed",
-  "totalEntries": 1250,
-  "validEntries": 890,
-  "winners": [
-    { "position": 1, "authorUsername": "winner1", "isBackup": false },
-    { "position": 2, "authorUsername": "winner2", "isBackup": false },
-    { "position": 3, "authorUsername": "winner3", "isBackup": false }
-  ]
-}
-```
-
-> **Prompt:** "Show me my last giveaway draw"
-
-```json Tool Call
-{
-  "name": "draws",
-  "arguments": { "action": "list", "limit": 1 }
-}
-```
-
----
-
-## Trends & Radar
-
-### get-trends
-
-Get current X trending topics by region. Returns trend names, ranks, and search queries. Subscription required. Not metered.
-
-**Input:**
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `woeid` | number | No | Region WOEID (default 1 = Worldwide). See [trending regions](/guides/trends) |
-| `count` | number | No | Number of trends (1-50, default 30) |
-
-**Example:**
-
-> **Prompt:** "What's trending on X in the US?"
-
-```json Tool Call
-{
-  "name": "get-trends",
-  "arguments": { "woeid": 23424977, "count": 10 }
-}
-```
-
-```json Result
-{
-  "trends": [
-    { "name": "#AI", "rank": 1, "query": "%23AI" },
-    { "name": "TypeScript", "rank": 2, "query": "TypeScript" }
-  ],
-  "total": 50,
-  "woeid": 23424977
-}
-```
-
----
-
-### get-radar
-
-**FREE.** Trending topics and news from 6 sources: Google Trends, Hacker News, TrustMRR, Wikipedia, GitHub Trending, and Reddit. Use a specific item title as a topic for `compose-tweet`. No subscription required. No usage cost.
-
-**Input:**
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `source` | string | No | Filter by source: `google_trends`, `hacker_news`, `trustmrr`, `wikipedia`, `github`, `reddit` |
-| `category` | string | No | Filter by category: `general`, `tech`, `dev`, `science`, `culture`, `politics`, `business`, `entertainment` |
-| `count` | number | No | Number of items (1-50, default 20) |
-| `hours` | number | No | Look-back window in hours (1-72, default 6) |
-| `region` | string | No | Region code: `US`, `GB`, `TR`, `ES`, `DE`, `FR`, `JP`, `IN`, `BR`, `CA`, `MX`, `global` (default) |
-
-**Examples:**
-
-> **Prompt:** "What's trending on Hacker News right now?"
-
-```json Tool Call
-{
-  "name": "get-radar",
-  "arguments": { "source": "hacker_news", "count": 10 }
-}
-```
-
-```json Result
-{
-  "items": [
-    {
-      "id": "12345",
-      "title": "Show HN: Open-source alternative to Vercel",
-      "url": "https://news.ycombinator.com/item?id=12345",
-      "source": "hacker_news",
-      "category": "tech",
-      "region": "global",
-      "language": "en",
-      "score": 450,
-      "metadata": {
-        "points": 450,
-        "numberComments": 132,
-        "author": "pgdev"
-      },
-      "publishedAt": "2026-03-04T08:30:00.000Z",
-      "createdAt": "2026-03-04T08:35:00.000Z"
-    }
-  ],
-  "hasMore": true,
-  "nextCursor": "NDUwfDIwMjYtMDMtMDR..."
-}
-```
-
-> **Prompt:** "Show me the top GitHub trending repos today"
-
-```json Tool Call
-{
-  "name": "get-radar",
-  "arguments": { "source": "github", "hours": 24, "count": 10 }
-}
-```
-
-> **Prompt:** "What's trending in Turkey?"
-
-```json Tool Call
-{
-  "name": "get-radar",
-  "arguments": { "region": "TR", "hours": 12 }
-}
-```
-
-<Info>
-  Source-specific metadata fields vary. GitHub includes `starsToday` and `language`. Hacker News includes `points`, `numberComments`, and `author`. Reddit includes `subreddit` and `author`. Google Trends includes `approxTraffic`. Wikipedia includes `views`. TrustMRR includes `mrr`, `growthPercent`, and more. See the [Radar API reference](/api-reference/radar/list) for full details.
-</Info>
-
----
-
-## Tweet Composition
-
-### compose-tweet
-
-Compose, refine, and score tweets using X algorithm data. Use the `step` parameter to progress through the workflow. Free. Not metered.
-
-**Steps:**
-1. `compose` (default): Returns algorithm weights, content rules, penalties, and follow-up questions
-2. `refine`: Returns composition guidance, example patterns, media strategy, and CTA advice
-3. `score`: Evaluates a draft against 15 algorithm checks with pass/fail results
-
-**Input:**
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `step` | `compose` \| `refine` \| `score` | No | Workflow step (default `compose`) |
-| `topic` | string | For `compose`, `refine` | What the tweet is about |
-| `goal` | string | No | Optimization goal: `engagement`, `followers`, `authority`, `conversation` |
-| `styleUsername` | string | No | Cached style username for voice reference (`compose`) |
-| `tone` | string | For `refine` | Desired tone |
-| `mediaType` | string | For `refine` | `photo`, `video`, or `none` |
-| `callToAction` | string | For `refine` | Desired CTA |
-| `additionalContext` | string | For `refine` | Target audience context |
-| `draft` | string | For `score` | Tweet text to evaluate |
-| `hasMedia` | boolean | For `score` | Whether media is attached |
-| `hasLink` | boolean | For `score` | Whether a link card is attached |
-
-**Examples:**
-
-> **Prompt:** "Help me write a tweet about launching my new product"
-
-```json Tool Call
-{
-  "name": "compose-tweet",
-  "arguments": {
-    "step": "compose",
-    "topic": "launching my new SaaS product",
-    "goal": "engagement"
-  }
-}
-```
-
-```json Result
-{
-  "signals": ["Reply-worthy content gets 2x algorithmic boost", "Tweets with media receive 35% more impressions"],
-  "rules": ["Keep under 280 characters", "Front-load the hook in the first line"],
-  "penalties": ["External links reduce reach by ~50%", "Hashtag stuffing (3+) triggers spam filters"],
-  "followUpQuestions": [
-    "What tone do you want? (casual, professional, bold)",
-    "Will you attach media (photo, video, none)?",
-    "What call-to-action do you prefer?"
-  ]
-}
-```
-
-> **Prompt:** "Score this tweet: Just shipped v2.0 of our API."
-
-```json Tool Call
-{
-  "name": "compose-tweet",
-  "arguments": {
-    "step": "score",
-    "draft": "Just shipped v2.0 of our API. What do you think?",
-    "hasMedia": true
-  }
-}
-```
-
-```json Result
-{
-  "totalChecks": 8,
-  "passedCount": 6,
-  "topSuggestion": "Add a specific detail or metric to the first line for a stronger hook.",
-  "checklist": [
-    { "check": "Hook in first line", "passed": false },
-    { "check": "Under 280 characters", "passed": true },
-    { "check": "Has media", "passed": true },
-    { "check": "Reply-worthy CTA", "passed": true },
-    { "check": "No external links", "passed": true },
-    { "check": "No hashtag stuffing", "passed": true },
-    { "check": "Conversational tone", "passed": true },
-    { "check": "Specific/concrete content", "passed": false }
-  ]
-}
-```
-
----
-
-## Style Analysis & Drafts
-
-### styles
-
-Manage tweet style profiles. Use the `action` parameter to analyze, get, list, save, delete, compare profiles, or analyze performance. `analyze` and `analyze-performance` are metered. All other actions are free.
-
-**Input:**
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `action` | `analyze` \| `get` \| `list` \| `save` \| `delete` \| `compare` \| `analyze-performance` | Yes | Action to perform |
-| `username` | string | For `analyze`, `get`, `delete`, `analyze-performance` | X username without @ |
-| `username1` | string | For `compare` | First username |
-| `username2` | string | For `compare` | Second username |
-| `label` | string | For `save` | Style profile label |
-| `tweets` | string[] | For `save` | Tweet texts defining the style (1-100) |
-
-**Examples:**
-
-> **Prompt:** "Analyze how @elonmusk tweets"
-
-```json Tool Call
-{
-  "name": "styles",
-  "arguments": { "action": "analyze", "username": "elonmusk" }
-}
-```
-
-```json Result
-{
-  "xUsername": "elonmusk",
-  "isOwnAccount": false,
-  "tweetCount": 20,
-  "fetchedAt": "2026-03-04T10:00:00.000Z",
-  "tweets": [
-    {
-      "id": "1893456789012345678",
-      "authorUsername": "elonmusk",
-      "text": "Just launched Starship v3.",
-      "createdAt": "2026-03-03T18:00:00.000Z"
-    }
-  ]
-}
-```
-
-> **Prompt:** "Compare @vercel and @nextjs tweeting styles"
-
-```json Tool Call
-{
-  "name": "styles",
-  "arguments": {
-    "action": "compare",
-    "username1": "vercel",
-    "username2": "nextjs"
-  }
-}
-```
-
-> **Prompt:** "How are my cached tweets performing?"
-
-```json Tool Call
-{
-  "name": "styles",
-  "arguments": { "action": "analyze-performance", "username": "elonmusk" }
-}
-```
-
-> **Prompt:** "Show me all my saved styles"
-
-```json Tool Call
-{
-  "name": "styles",
-  "arguments": { "action": "list" }
-}
-```
-
----
-
-### drafts
-
-Manage tweet drafts. Use the `action` parameter to save, list, get, or delete drafts. Free. Not metered.
-
-**Input:**
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `action` | `save` \| `list` \| `get` \| `delete` | Yes | Action to perform |
-| `text` | string | For `save` | Draft tweet text |
-| `topic` | string | No | Tweet topic (`save`) |
-| `goal` | string | No | Optimization goal: `engagement`, `followers`, `authority`, `conversation` (`save`) |
-| `draftId` | string | For `get`, `delete` | Draft ID |
-| `limit` | number | For `list` | Results per page |
-| `afterCursor` | string | For `list` | Pagination cursor |
-
-**Examples:**
-
-> **Prompt:** "Save this tweet draft for later"
-
-```json Tool Call
-{
-  "name": "drafts",
-  "arguments": {
-    "action": "save",
-    "text": "Just shipped dark mode. What do you think?",
-    "topic": "product launch",
-    "goal": "engagement"
-  }
-}
-```
-
-```json Result
-{
-  "id": "42",
-  "text": "Just shipped dark mode. What do you think?",
-  "topic": "product launch",
-  "goal": "engagement",
-  "createdAt": "2026-03-04T10:00:00.000Z"
-}
-```
-
-> **Prompt:** "Show me all my saved drafts"
-
-```json Tool Call
-{
-  "name": "drafts",
-  "arguments": { "action": "list" }
-}
-```
-
-> **Prompt:** "Delete draft 42"
-
-```json Tool Call
-{
-  "name": "drafts",
-  "arguments": { "action": "delete", "draftId": "42" }
-}
-```
-
----
-
-## Account
-
-### get-account
-
-Check Xquik account status: plan, usage percent, monitor quota, billing period. Free.
-
-**Input:** None
-
-**Example:**
-
-> **Prompt:** "What plan am I on and how much have I used?"
-
-```json Tool Call
-{
-  "name": "get-account",
-  "arguments": {}
-}
-```
-
-```json Result
-{
-  "plan": "active",
-  "monitorsAllowed": 1,
-  "monitorsUsed": 1,
-  "currentPeriod": {
-    "start": "2026-02-01T00:00:00.000Z",
-    "end": "2026-03-01T00:00:00.000Z",
-    "usagePercent": 45
-  }
-}
-```
-
----
-
-### subscribe
-
-Get a subscription checkout or billing management link. Returns a Stripe Checkout URL (new subscribers) or Customer Portal URL (existing subscribers). Free.
-
-**Input:** None
-
-**Example:**
-
-> **Prompt:** "I want to subscribe to Xquik"
-
-```json Tool Call
-{
-  "name": "subscribe",
-  "arguments": {}
-}
-```
-
-```json Result
-{
-  "url": "https://checkout.stripe.com/c/pay/cs_live_..."
-}
-```
-
----
-
-### set-x-identity
-
-Link your X username to your Xquik account for own-account detection in style analysis. Free.
-
-**Input:**
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `username` | string | Yes | Your X username without @ |
-
-**Example:**
-
-> **Prompt:** "Set my X account to @myusername"
-
-```json Tool Call
-{
-  "name": "set-x-identity",
-  "arguments": { "username": "myusername" }
-}
-```
-
-```json Result
-{
-  "xUsername": "myusername"
-}
-```
+## API Endpoints
+
+The server covers 41 endpoints across 5 categories:
+
+| Category | Endpoints | Examples |
+|----------|-----------|---------|
+| **account** | 7 | Account info, API keys, subscribe, X identity |
+| **composition** | 15 | Compose, styles, drafts, radar |
+| **extraction** | 9 | Draws, extractions, estimates, exports |
+| **monitoring** | 12 | Monitors, events, webhooks, deliveries |
+| **twitter/media** | 5 | Tweet search, user lookup, follow check, media download, trends |
+
+Use `explore` to browse the full catalog with parameters and response shapes.
 
 ---
 
 ## Cost Summary
 
-| Tool | Cost |
-|------|------|
-| `monitors` | Free (subscription required for `add`) |
-| `events` | Free |
-| `webhooks` | Free |
-| `search-tweets` | Metered |
-| `get-user-info` | Metered |
-| `lookup-tweet` | Metered |
-| `check-follow` | Metered |
-| `download-media` | Metered |
-| `extractions` | Metered (`run` only). `estimate`, `list`, `get` are free |
-| `draws` | Metered (`run` only). `list`, `get` are free |
-| `get-trends` | Free (subscription required) |
-| `get-radar` | Free |
-| `compose-tweet` | Free |
-| `styles` | Mixed: `analyze` and `analyze-performance` are metered. All others free |
-| `drafts` | Free |
-| `get-account` | Free |
-| `subscribe` | Free |
-| `set-x-identity` | Free |
+| Category | Cost |
+|----------|------|
+| `explore` tool | Always free |
+| Compose, styles (cached), drafts, radar, subscribe, account, API keys | Free |
+| Styles (X API refresh when cache >7 days) | Subscription required |
+| Tweet search, user lookup, follow check, media download | Metered |
+| Extractions, draws | Metered |
+| Monitors, events, webhooks, trends | Subscription required |
+
+<Warning>
+  Never combine free and paid endpoints in a single `Promise.all`. A 402 error on one call kills all results. Call free endpoints first, then paid ones separately.
+</Warning>
+
+---
+
+## Error Handling
+
+- **402 / "subscription is inactive"**: Call `POST /api/v1/subscribe` to get a checkout URL. Continue using free data already fetched.
+- **429**: Rate limited. Retry with exponential backoff.
+- **API errors**: Include status code and message in the response.
+
+---
+
+## Legacy v1 Tools
+
+<Accordion title="v1 MCP tools (18 tools at /mcp/v1)">
+  The legacy v1 server at `https://xquik.com/mcp/v1` exposes 18 discrete tools with traditional MCP tool-call input schemas:
+
+  | Tool | Description | Cost |
+  |------|-------------|------|
+  | `monitors` | Manage monitored X accounts (list, add, remove) | Free |
+  | `events` | Retrieve activity from monitored accounts | Free |
+  | `webhooks` | Manage webhook endpoints (list, add, remove, test) | Free |
+  | `search-tweets` | Search X for real-time tweets | Metered |
+  | `get-user-info` | Get X user profile | Metered |
+  | `lookup-tweet` | Get full tweet details and metrics | Metered |
+  | `check-follow` | Check follow relationship between users | Metered |
+  | `download-media` | Download media from tweets | Metered |
+  | `extractions` | Bulk data extraction (estimate, run, list, get) | Metered (run) |
+  | `draws` | Giveaway draws from tweet replies (run, list, get) | Metered (run) |
+  | `get-trends` | Trending topics across 12 regions | Free |
+  | `get-radar` | Trending topics from 6 sources | Free |
+  | `compose-tweet` | Compose, refine, and score tweets | Free |
+  | `styles` | Manage tweet style profiles | Mixed |
+  | `drafts` | Manage tweet drafts | Free |
+  | `get-account` | Check subscription status and usage | Free |
+  | `subscribe` | Get subscription checkout link | Free |
+  | `set-x-identity` | Link X username to account | Free |
+
+  Point your MCP client to `https://xquik.com/mcp/v1` to use the legacy tools. All new integrations should use the default v2 server at `/mcp`.
+</Accordion>

@@ -495,7 +495,7 @@ func main() {
 
 ## 3. AI Agent Integration
 
-Connect an AI agent to Xquik via the MCP server, then use natural language to monitor accounts and retrieve events.
+Connect an AI agent to Xquik via the MCP server, then use natural language to monitor accounts and retrieve events. The MCP server uses a code-execution sandbox model where the agent writes async JavaScript functions.
 
 ### Step 1: Configure MCP
 
@@ -507,12 +507,13 @@ Ask your AI agent:
 
 > "Search for tweets about TypeScript performance"
 
-The agent calls the `search-tweets` tool:
+The agent uses the `xquik` tool to execute an API call:
 
-```json
-{
-  "tool": "search-tweets",
-  "input": { "query": "TypeScript performance" }
+```javascript
+async () => {
+  return xquik.request('/api/v1/x/tweets/search', {
+    query: { q: 'TypeScript performance', limit: '20' }
+  });
 }
 ```
 
@@ -524,18 +525,14 @@ The agent calls the `search-tweets` tool:
     {
       "id": "1893456789012345678",
       "text": "TypeScript 6.0 compiler is 10x faster. The rewrite in Go was worth it.",
-      "authorUsername": "typescript",
-      "authorName": "TypeScript",
+      "author": {
+        "username": "typescript",
+        "name": "TypeScript"
+      },
       "createdAt": "2026-02-24T14:22:00.000Z"
-    },
-    {
-      "id": "1893456789012345999",
-      "text": "Benchmarked our monorepo build: 45s down to 4s with the new TS compiler.",
-      "authorUsername": "webdevexpert",
-      "authorName": "Web Dev Expert",
-      "createdAt": "2026-02-24T13:10:00.000Z"
     }
-  ]
+  ],
+  "total": 1
 }
 ```
 
@@ -545,16 +542,14 @@ Ask your AI agent:
 
 > "Monitor @typescript for new tweets and replies"
 
-The agent calls the `monitors` tool:
+The agent writes:
 
-```json
-{
-  "tool": "monitors",
-  "input": {
-    "action": "add",
-    "username": "typescript",
-    "eventTypes": ["tweet.new", "tweet.reply"]
-  }
+```javascript
+async () => {
+  return xquik.request('/api/v1/monitors', {
+    method: 'POST',
+    body: { username: 'typescript', eventTypes: ['tweet.new', 'tweet.reply'] }
+  });
 }
 ```
 
@@ -563,9 +558,8 @@ The agent calls the `monitors` tool:
 ```json
 {
   "id": "12",
-  "xUsername": "typescript",
+  "username": "typescript",
   "eventTypes": ["tweet.new", "tweet.reply"],
-  "isActive": true,
   "createdAt": "2026-02-24T15:00:00.000Z"
 }
 ```
@@ -576,12 +570,11 @@ Ask your AI agent:
 
 > "Show me the latest events from my monitors"
 
-The agent calls the `events` tool:
-
-```json
-{
-  "tool": "events",
-  "input": { "limit": 10 }
+```javascript
+async () => {
+  return xquik.request('/api/v1/events', {
+    query: { limit: '10' }
+  });
 }
 ```
 
@@ -593,31 +586,13 @@ The agent calls the `events` tool:
     {
       "id": "9010",
       "eventType": "tweet.new",
-      "monitoredAccountId": "12",
       "xUsername": "typescript",
-      "occurredAt": "2026-02-24T16:45:00.000Z",
-      "eventData": {
-        "id": "1893556789012345678",
-        "text": "TypeScript 6.0.1 patch release is out. Fixes incremental build edge cases.",
-        "author": {
-          "id": "809524971",
-          "userName": "typescript",
-          "name": "TypeScript"
-        },
-        "isRetweet": false,
-        "isReply": false,
-        "isQuote": false,
-        "createdAt": "2026-02-24T16:45:00.000Z"
-      }
+      "createdAt": "2026-02-24T16:45:00.000Z"
     }
   ],
   "hasMore": false
 }
 ```
-
-<Info>
-  The MCP `events` tool uses different field names than the REST API (`eventType` vs `type`, `eventData` vs `data`, `xUsername` vs `username`, `monitoredAccountId` vs `monitorId`). Both return the same underlying data.
-</Info>
 
 The agent summarizes the results in natural language, giving you a clear overview without writing any code.
 
@@ -637,10 +612,10 @@ Once connected, try these with your AI agent:
 
 ## 4. Tweet Composition
 
-Compose algorithm-optimized tweets using a 3-step MCP workflow: get algorithm knowledge, refine with preferences, then score the draft. All 3 tools are free and do not consume usage quota.
+Compose algorithm-optimized tweets using a 3-step workflow: get algorithm knowledge, refine with preferences, then score the draft. All 3 steps are free and do not consume usage quota.
 
 <Info>
-  Tweet composition is available exclusively through the [MCP server](/mcp/overview). There are no REST API endpoints for these tools. Connect your AI agent via MCP and use natural language to compose tweets.
+  Tweet composition is available through both the [MCP server](/mcp/overview) and the [REST API](/api-reference/compose/create) (`POST /api/v1/compose`). Use MCP for natural language workflows or the REST API for programmatic access.
 </Info>
 
 ### Step 1: Start Composing
@@ -649,16 +624,18 @@ Ask your AI agent:
 
 > "Help me compose a tweet about launching my new SaaS product, optimized for engagement"
 
-The agent calls the `compose-tweet` tool:
+The agent uses the `xquik` tool:
 
-```json
-{
-  "tool": "compose-tweet",
-  "input": {
-    "step": "compose",
-    "topic": "launching my new SaaS product",
-    "goal": "engagement"
-  }
+```javascript
+async () => {
+  return xquik.request('/api/v1/compose', {
+    method: 'POST',
+    body: {
+      step: 'compose',
+      topic: 'launching my new SaaS product',
+      goal: 'engagement'
+    }
+  });
 }
 ```
 
@@ -681,19 +658,21 @@ The agent presents the follow-up questions to you in natural language. Answer th
 
 ### Step 2: Refine with Preferences
 
-After you answer the follow-up questions, the agent calls the `compose-tweet` tool with `step="refine"`:
+After you answer the follow-up questions, the agent calls refine:
 
-```json
-{
-  "tool": "compose-tweet",
-  "input": {
-    "step": "refine",
-    "topic": "launching my new SaaS product",
-    "goal": "engagement",
-    "tone": "casual",
-    "mediaType": "photo",
-    "callToAction": "reply with your take"
-  }
+```javascript
+async () => {
+  return xquik.request('/api/v1/compose', {
+    method: 'POST',
+    body: {
+      step: 'refine',
+      topic: 'launching my new SaaS product',
+      goal: 'engagement',
+      tone: 'casual',
+      mediaType: 'photo',
+      callToAction: 'reply with your take'
+    }
+  });
 }
 ```
 
@@ -713,16 +692,18 @@ The agent uses this guidance to draft your tweet text.
 
 ### Step 3: Score the Draft
 
-Once the agent drafts a tweet, it evaluates the text by calling the `compose-tweet` tool with `step="score"`:
+Once the agent drafts a tweet, it scores the text:
 
-```json
-{
-  "tool": "compose-tweet",
-  "input": {
-    "step": "score",
-    "draft": "Just shipped dark mode for our app.\n\nWhat do you think?",
-    "hasMedia": true
-  }
+```javascript
+async () => {
+  return xquik.request('/api/v1/compose', {
+    method: 'POST',
+    body: {
+      step: 'score',
+      draft: 'Just shipped dark mode for our app.\n\nWhat do you think?',
+      hasMedia: true
+    }
+  });
 }
 ```
 
@@ -759,7 +740,7 @@ Once connected via MCP, try these with your AI agent:
 - "Analyze @username's style and compose a tweet matching their voice"
 
 <Note>
-  All 3 tweet composition steps are free and do not count toward your monthly usage quota. Iterate on your draft and re-score until all checks pass.
+  All 3 composition steps are free and do not count toward your monthly usage quota. Iterate on your draft and re-score until all checks pass.
 </Note>
 
 ---
@@ -773,6 +754,6 @@ Completed giveaway draws have a public results page at `https://xquik.com/result
     Connection details and setup instructions.
   </Card>
   <Card title="MCP Tools" icon="wrench" href="/mcp/tools">
-    Full input/output schemas for all 18 tools.
+    Sandbox API reference for explore + xquik tools.
   </Card>
 </CardGroup>
