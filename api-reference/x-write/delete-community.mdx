@@ -1,0 +1,169 @@
+---
+title: "Delete Community"
+description: "Permanently delete an X community you own"
+api: "DELETE /x/communities/{id}"
+keywords: ["community", "delete", "remove", "disband"]
+---
+
+<Info>
+  This is a metered endpoint. Each call deducts from your monthly usage quota.
+</Info>
+
+<CodeGroup>
+  ```bash cURL
+  curl -X DELETE https://xquik.com/api/v1/x/communities/1893726451023847424 \
+    -H "x-api-key: xq_YOUR_KEY_HERE" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "account": "myxhandle",
+      "community_name": "Crypto Traders Hub"
+    }' | jq
+  ```
+
+  ```javascript Node.js
+  const response = await fetch(
+    "https://xquik.com/api/v1/x/communities/1893726451023847424",
+    {
+      method: "DELETE",
+      headers: {
+        "x-api-key": "xq_YOUR_KEY_HERE",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        account: "myxhandle",
+        community_name: "Crypto Traders Hub",
+      }),
+    }
+  );
+  const data = await response.json();
+  ```
+
+  ```python Python
+  import requests
+
+  response = requests.delete(
+      "https://xquik.com/api/v1/x/communities/1893726451023847424",
+      headers={"x-api-key": "xq_YOUR_KEY_HERE"},
+      json={
+          "account": "myxhandle",
+          "community_name": "Crypto Traders Hub",
+      },
+  )
+  data = response.json()
+  ```
+
+  ```go Go
+  package main
+
+  import (
+      "bytes"
+      "encoding/json"
+      "fmt"
+      "net/http"
+  )
+
+  func main() {
+      body, _ := json.Marshal(map[string]interface{}{
+          "account":        "myxhandle",
+          "community_name": "Crypto Traders Hub",
+      })
+
+      req, err := http.NewRequest("DELETE", "https://xquik.com/api/v1/x/communities/1893726451023847424", bytes.NewReader(body))
+      if err != nil {
+          panic(err)
+      }
+      req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
+      req.Header.Set("Content-Type", "application/json")
+
+      resp, err := http.DefaultClient.Do(req)
+      if err != nil {
+          panic(err)
+      }
+      defer resp.Body.Close()
+
+      var data map[string]interface{}
+      if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+          panic(err)
+      }
+      fmt.Println(data)
+  }
+  ```
+</CodeGroup>
+
+## Headers
+
+<ParamField header="x-api-key" type="string" required>
+  Your API key. Session cookie authentication is also supported. Generate a key from the [dashboard](https://xquik.com/dashboard).
+</ParamField>
+
+<ParamField header="Content-Type" type="string" required>
+  Must be `application/json`.
+</ParamField>
+
+## Path Parameters
+
+<ParamField path="id" type="string" required>
+  The ID of the community to delete.
+</ParamField>
+
+## Body
+
+<ParamField body="account" type="string" required>
+  The connected X account that owns the community. Must be a username you have connected to your Xquik account.
+</ParamField>
+
+<ParamField body="community_name" type="string" required>
+  The name of the community. Required as a confirmation safeguard to prevent accidental deletion.
+</ParamField>
+
+## Response
+
+<Tabs>
+  <Tab title="200 OK">
+    <ResponseField name="success" type="boolean">Always `true` on success.</ResponseField>
+
+    ```json
+    {
+      "success": true
+    }
+    ```
+  </Tab>
+  <Tab title="400 Invalid Input">
+    ```json
+    { "error": "invalid_input", "message": "Missing account or community_name confirmation" }
+    ```
+    Missing `account` or `community_name`, or the community name does not match the actual community.
+  </Tab>
+  <Tab title="401 Unauthenticated">
+    ```json
+    { "error": "unauthenticated", "message": "Missing or invalid API key" }
+    ```
+    Missing or invalid API key.
+  </Tab>
+  <Tab title="402 Subscription Required">
+    ```json
+    { "error": "no_subscription", "message": "No active subscription" }
+    ```
+    An active subscription is required. Subscribe from the [dashboard](https://xquik.com/subscription).
+  </Tab>
+  <Tab title="403 Usage Limit">
+    ```json
+    { "error": "usage_limit_reached", "message": "Monthly usage quota exceeded" }
+    ```
+    Your monthly usage quota has been exhausted. Usage resets at the start of each billing cycle.
+  </Tab>
+  <Tab title="404 Not Found">
+    ```json
+    { "error": "not_found", "message": "Community not found or you do not own it" }
+    ```
+    The community does not exist, or the specified `account` is not its owner.
+  </Tab>
+</Tabs>
+
+<Warning>
+  This action is permanent. The community and all its members will be removed. This cannot be undone.
+</Warning>
+
+<Note>
+  **Related endpoints:** [Create Community](/api-reference/x-write/create-community) to create a new community, [Join Community](/api-reference/x-write/join-community) to join an existing community, [Leave Community](/api-reference/x-write/leave-community) to leave a community.
+</Note>

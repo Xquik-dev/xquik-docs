@@ -1,0 +1,180 @@
+---
+title: "Connect X Account"
+description: "Connect an X account to Xquik using credentials"
+api: "POST /x/accounts"
+keywords: ["x accounts", "connect", "add", "credentials", "2fa", "totp"]
+---
+
+<Info>
+  This endpoint does not count against your monthly usage quota.
+</Info>
+
+<Warning>
+  Credentials are encrypted at rest and used only for maintaining the connection. Xquik never stores plaintext passwords.
+</Warning>
+
+<CodeGroup>
+  ```bash cURL
+  curl -X POST https://xquik.com/api/v1/x/accounts \
+    -H "x-api-key: xq_YOUR_KEY_HERE" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "username": "elonmusk",
+      "email": "elon@example.com",
+      "password": "s3cureP@ss",
+      "totp_secret": "JBSWY3DPEHPK3PXP"
+    }' | jq
+  ```
+
+  ```javascript Node.js
+  const response = await fetch("https://xquik.com/api/v1/x/accounts", {
+    method: "POST",
+    headers: {
+      "x-api-key": "xq_YOUR_KEY_HERE",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      username: "elonmusk",
+      email: "elon@example.com",
+      password: "s3cureP@ss",
+      totp_secret: "JBSWY3DPEHPK3PXP",
+    }),
+  });
+  const data = await response.json();
+  ```
+
+  ```python Python
+  import requests
+
+  response = requests.post(
+      "https://xquik.com/api/v1/x/accounts",
+      headers={"x-api-key": "xq_YOUR_KEY_HERE"},
+      json={
+          "username": "elonmusk",
+          "email": "elon@example.com",
+          "password": "s3cureP@ss",
+          "totp_secret": "JBSWY3DPEHPK3PXP",
+      },
+  )
+  data = response.json()
+  ```
+
+  ```go Go
+  package main
+
+  import (
+      "bytes"
+      "encoding/json"
+      "fmt"
+      "net/http"
+  )
+
+  func main() {
+      body, _ := json.Marshal(map[string]interface{}{
+          "username":    "elonmusk",
+          "email":       "elon@example.com",
+          "password":    "s3cureP@ss",
+          "totp_secret": "JBSWY3DPEHPK3PXP",
+      })
+
+      req, err := http.NewRequest("POST", "https://xquik.com/api/v1/x/accounts", bytes.NewReader(body))
+      if err != nil {
+          panic(err)
+      }
+      req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
+      req.Header.Set("Content-Type", "application/json")
+
+      resp, err := http.DefaultClient.Do(req)
+      if err != nil {
+          panic(err)
+      }
+      defer resp.Body.Close()
+
+      var data map[string]interface{}
+      if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+          panic(err)
+      }
+      fmt.Println(data)
+  }
+  ```
+</CodeGroup>
+
+## Headers
+
+<ParamField header="x-api-key" type="string" required>
+  Your API key. Session cookie authentication is also supported. Generate a key from the [dashboard](https://xquik.com/dashboard).
+</ParamField>
+
+<ParamField header="Content-Type" type="string" required>
+  Must be `application/json`.
+</ParamField>
+
+## Body
+
+<ParamField body="username" type="string" required>
+  X username to connect. The `@` prefix is automatically stripped if included.
+</ParamField>
+
+<ParamField body="email" type="string" required>
+  Email address associated with the X account.
+</ParamField>
+
+<ParamField body="password" type="string" required>
+  Password for the X account. Encrypted at rest immediately upon receipt.
+</ParamField>
+
+<ParamField body="totp_secret" type="string">
+  TOTP secret key for accounts with 2FA enabled. This is the base32-encoded secret (not the 6-digit code).
+</ParamField>
+
+<ParamField body="proxy_country" type="string">
+  Preferred proxy region for the connection (e.g. `"US"`, `"TR"`).
+</ParamField>
+
+## Response
+
+<Tabs>
+  <Tab title="201 Created">
+    <ResponseField name="id" type="string">Unique account ID.</ResponseField>
+    <ResponseField name="username" type="string">Connected X username.</ResponseField>
+    <ResponseField name="isActive" type="boolean">Whether the account connection is active.</ResponseField>
+    <ResponseField name="createdAt" type="string">ISO 8601 timestamp of when the account was connected.</ResponseField>
+
+    ```json
+    {
+      "id": "3",
+      "username": "elonmusk",
+      "isActive": true,
+      "createdAt": "2026-02-20T08:15:00.000Z"
+    }
+    ```
+  </Tab>
+  <Tab title="400 Invalid Input">
+    ```json
+    { "error": "invalid_input", "message": "Missing required fields or invalid format" }
+    ```
+    Missing `username`, `email`, or `password`, or invalid field format.
+  </Tab>
+  <Tab title="401 Unauthenticated">
+    ```json
+    { "error": "unauthenticated", "message": "Missing or invalid API key" }
+    ```
+    Missing or invalid API key.
+  </Tab>
+  <Tab title="409 Duplicate">
+    ```json
+    { "error": "account_already_connected", "message": "This X account is already connected" }
+    ```
+    The specified X account is already connected to your Xquik account.
+  </Tab>
+  <Tab title="422 Connection Failed">
+    ```json
+    { "error": "connection_failed", "message": "Could not authenticate with X. Check credentials." }
+    ```
+    The provided credentials could not authenticate with X. Verify username, email, password, and TOTP secret.
+  </Tab>
+</Tabs>
+
+<Note>
+  **Related:** [List X Accounts](/api-reference/x-accounts/list) to see all connected accounts, or [Re-authenticate](/api-reference/x-accounts/reauth) if a session expires later.
+</Note>
