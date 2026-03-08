@@ -1,0 +1,196 @@
+---
+title: "Update Integration"
+description: "Change settings, event types, or toggle active status for an integration"
+api: "PATCH /integrations/{id}"
+keywords: ["integration", "update", "edit", "event types", "filters", "template"]
+---
+
+<Info>
+  This endpoint does not count against your monthly usage quota.
+</Info>
+
+<CodeGroup>
+  ```bash cURL
+  curl -X PATCH https://xquik.com/api/v1/integrations/4 \
+    -H "x-api-key: xq_YOUR_KEY_HERE" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "name": "Updated Bot Name",
+      "eventTypes": ["tweet.new", "tweet.quote", "tweet.reply"],
+      "isActive": true
+    }' | jq
+  ```
+
+  ```javascript Node.js
+  const integrationId = "4";
+  const response = await fetch(`https://xquik.com/api/v1/integrations/${integrationId}`, {
+    method: "PATCH",
+    headers: {
+      "x-api-key": "xq_YOUR_KEY_HERE",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      name: "Updated Bot Name",
+      eventTypes: ["tweet.new", "tweet.quote", "tweet.reply"],
+      isActive: true,
+    }),
+  });
+  const data = await response.json();
+  ```
+
+  ```python Python
+  import requests
+
+  integration_id = "4"
+  response = requests.patch(
+      f"https://xquik.com/api/v1/integrations/{integration_id}",
+      headers={"x-api-key": "xq_YOUR_KEY_HERE"},
+      json={
+          "name": "Updated Bot Name",
+          "eventTypes": ["tweet.new", "tweet.quote", "tweet.reply"],
+          "isActive": True,
+      },
+  )
+  data = response.json()
+  ```
+
+  ```go Go
+  package main
+
+  import (
+      "bytes"
+      "encoding/json"
+      "fmt"
+      "net/http"
+  )
+
+  func main() {
+      body, _ := json.Marshal(map[string]interface{}{
+          "name":       "Updated Bot Name",
+          "eventTypes": []string{"tweet.new", "tweet.quote", "tweet.reply"},
+          "isActive":   true,
+      })
+
+      integrationID := "4"
+      req, err := http.NewRequest("PATCH", "https://xquik.com/api/v1/integrations/"+integrationID, bytes.NewReader(body))
+      if err != nil {
+          panic(err)
+      }
+      req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
+      req.Header.Set("Content-Type", "application/json")
+
+      resp, err := http.DefaultClient.Do(req)
+      if err != nil {
+          panic(err)
+      }
+      defer resp.Body.Close()
+
+      var data map[string]interface{}
+      if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+          panic(err)
+      }
+      fmt.Println(data)
+  }
+  ```
+</CodeGroup>
+
+## Path Parameters
+
+<ParamField path="id" type="string" required>
+  The unique integration ID.
+</ParamField>
+
+## Headers
+
+<ParamField header="x-api-key" type="string" required>
+  Your API key. Session cookie authentication is also supported. Generate a key from the [dashboard](https://xquik.com/dashboard).
+</ParamField>
+
+<ParamField header="Content-Type" type="string" required>
+  Must be `application/json`.
+</ParamField>
+
+## Body
+
+All fields are optional, but at least 1 must be provided.
+
+<ParamField body="name" type="string">
+  Updated integration name.
+</ParamField>
+
+<ParamField body="eventTypes" type="string[]">
+  Updated array of event types. Must contain at least 1 valid type: `tweet.new`, `tweet.quote`, `tweet.reply`, `tweet.retweet`, `follower.gained`, `follower.lost`.
+</ParamField>
+
+<ParamField body="isActive" type="boolean">
+  Set to `false` to pause the integration, or `true` to resume.
+</ParamField>
+
+<ParamField body="silentPush" type="boolean">
+  When `true`, Telegram notifications are sent silently (no sound).
+</ParamField>
+
+<ParamField body="scopeAllMonitors" type="boolean">
+  When `true`, the integration receives events from all monitors. When `false`, use `filters` to scope to specific monitors.
+</ParamField>
+
+<ParamField body="filters" type="object">
+  Optional event filters to narrow which events trigger notifications.
+</ParamField>
+
+<ParamField body="messageTemplate" type="object">
+  Custom message template for notifications.
+</ParamField>
+
+## Response
+
+<Tabs>
+  <Tab title="200 OK">
+    <ResponseField name="id" type="string">Unique integration ID.</ResponseField>
+    <ResponseField name="type" type="string">Integration type.</ResponseField>
+    <ResponseField name="name" type="string">Updated integration name.</ResponseField>
+    <ResponseField name="config" type="object">Integration configuration.</ResponseField>
+    <ResponseField name="eventTypes" type="string[]">Updated event types.</ResponseField>
+    <ResponseField name="isActive" type="boolean">Current active status after update.</ResponseField>
+    <ResponseField name="createdAt" type="string">ISO 8601 creation timestamp.</ResponseField>
+
+    ```json
+    {
+      "id": "4",
+      "type": "telegram",
+      "name": "Updated Bot Name",
+      "config": { "chatId": "-1001234567890" },
+      "eventTypes": ["tweet.new", "tweet.quote", "tweet.reply"],
+      "isActive": true,
+      "createdAt": "2026-03-01T09:00:00.000Z"
+    }
+    ```
+  </Tab>
+  <Tab title="400 Invalid Input">
+    ```json
+    { "error": "invalid_input", "message": "Empty body or invalid field values" }
+    ```
+    Empty body, invalid `eventTypes` values, or invalid field types.
+
+    ```json
+    { "error": "invalid_id", "message": "Invalid integration ID format" }
+    ```
+    The provided integration ID is not a valid format.
+  </Tab>
+  <Tab title="401 Unauthenticated">
+    ```json
+    { "error": "unauthenticated", "message": "Missing or invalid API key" }
+    ```
+    Missing or invalid API key.
+  </Tab>
+  <Tab title="404 Not Found">
+    ```json
+    { "error": "not_found", "message": "Integration not found" }
+    ```
+    No integration exists with this ID, or it belongs to a different account.
+  </Tab>
+</Tabs>
+
+<Note>
+  **Related:** [Get Integration](/api-reference/integrations/get) to verify the updated state, or [Test Integration](/api-reference/integrations/test) to confirm notifications work after updating.
+</Note>

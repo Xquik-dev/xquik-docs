@@ -1,0 +1,166 @@
+---
+title: "Re-authenticate X Account"
+description: "Re-authenticate a connected X account when the session expires"
+api: "POST /x/accounts/{id}/reauth"
+keywords: ["x accounts", "re-authenticate", "reauth", "session expired", "2fa"]
+---
+
+<Info>
+  This endpoint does not count against your monthly usage quota.
+</Info>
+
+<Note>
+  Use this when an account session expires or X requires re-verification.
+</Note>
+
+<CodeGroup>
+  ```bash cURL
+  curl -X POST https://xquik.com/api/v1/x/accounts/3/reauth \
+    -H "x-api-key: xq_YOUR_KEY_HERE" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "password": "s3cureP@ss",
+      "totp_secret": "JBSWY3DPEHPK3PXP"
+    }' | jq
+  ```
+
+  ```javascript Node.js
+  const accountId = "3";
+  const response = await fetch(`https://xquik.com/api/v1/x/accounts/${accountId}/reauth`, {
+    method: "POST",
+    headers: {
+      "x-api-key": "xq_YOUR_KEY_HERE",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      password: "s3cureP@ss",
+      totp_secret: "JBSWY3DPEHPK3PXP",
+    }),
+  });
+  const data = await response.json();
+  ```
+
+  ```python Python
+  import requests
+
+  account_id = "3"
+  response = requests.post(
+      f"https://xquik.com/api/v1/x/accounts/{account_id}/reauth",
+      headers={"x-api-key": "xq_YOUR_KEY_HERE"},
+      json={
+          "password": "s3cureP@ss",
+          "totp_secret": "JBSWY3DPEHPK3PXP",
+      },
+  )
+  data = response.json()
+  ```
+
+  ```go Go
+  package main
+
+  import (
+      "bytes"
+      "encoding/json"
+      "fmt"
+      "net/http"
+  )
+
+  func main() {
+      body, _ := json.Marshal(map[string]interface{}{
+          "password":    "s3cureP@ss",
+          "totp_secret": "JBSWY3DPEHPK3PXP",
+      })
+
+      accountID := "3"
+      req, err := http.NewRequest("POST", "https://xquik.com/api/v1/x/accounts/"+accountID+"/reauth", bytes.NewReader(body))
+      if err != nil {
+          panic(err)
+      }
+      req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
+      req.Header.Set("Content-Type", "application/json")
+
+      resp, err := http.DefaultClient.Do(req)
+      if err != nil {
+          panic(err)
+      }
+      defer resp.Body.Close()
+
+      var data map[string]interface{}
+      if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+          panic(err)
+      }
+      fmt.Println(data)
+  }
+  ```
+</CodeGroup>
+
+## Path Parameters
+
+<ParamField path="id" type="string" required>
+  The unique account ID.
+</ParamField>
+
+## Headers
+
+<ParamField header="x-api-key" type="string" required>
+  Your API key. Session cookie authentication is also supported. Generate a key from the [dashboard](https://xquik.com/dashboard).
+</ParamField>
+
+<ParamField header="Content-Type" type="string" required>
+  Must be `application/json`.
+</ParamField>
+
+## Body
+
+<ParamField body="password" type="string" required>
+  Current password for the X account.
+</ParamField>
+
+<ParamField body="totp_secret" type="string">
+  TOTP secret key if the account has 2FA enabled. This is the base32-encoded secret (not the 6-digit code).
+</ParamField>
+
+## Response
+
+<Tabs>
+  <Tab title="200 OK">
+    <ResponseField name="success" type="boolean">Always `true` on successful re-authentication.</ResponseField>
+
+    ```json
+    { "success": true }
+    ```
+  </Tab>
+  <Tab title="400 Invalid Input">
+    ```json
+    { "error": "invalid_input", "message": "Missing required password field" }
+    ```
+    Missing `password` field or invalid format.
+
+    ```json
+    { "error": "invalid_id", "message": "Invalid account ID format" }
+    ```
+    The provided account ID is not a valid format.
+  </Tab>
+  <Tab title="401 Unauthenticated">
+    ```json
+    { "error": "unauthenticated", "message": "Missing or invalid API key" }
+    ```
+    Missing or invalid API key.
+  </Tab>
+  <Tab title="404 Not Found">
+    ```json
+    { "error": "not_found", "message": "X account not found" }
+    ```
+    No account exists with this ID, or it belongs to a different Xquik account.
+  </Tab>
+  <Tab title="422 Re-authentication Failed">
+    ```json
+    { "error": "reauth_failed", "message": "Could not re-authenticate with X. Check credentials." }
+    ```
+    The provided credentials could not authenticate with X. Verify the password and TOTP secret.
+  </Tab>
+</Tabs>
+
+<Note>
+  **Related:** [Get X Account](/api-reference/x-accounts/get) to check account status, or [Connect X Account](/api-reference/x-accounts/connect) if you need to add a new account instead.
+</Note>
