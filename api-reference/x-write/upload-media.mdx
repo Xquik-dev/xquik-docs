@@ -91,6 +91,49 @@ keywords: ["media", "upload", "image", "video", "gif", "tweet attachment"]
   ```
 </CodeGroup>
 
+**URL-based upload (for AI agents and MCP clients):**
+
+<CodeGroup>
+  ```bash cURL
+  curl -X POST https://xquik.com/api/v1/x/media \
+    -H "x-api-key: xq_YOUR_KEY_HERE" \
+    -H "Content-Type: application/json" \
+    -d '{"account": "myxhandle", "url": "https://example.com/image.png"}' | jq
+  ```
+
+  ```javascript Node.js
+  const response = await fetch("https://xquik.com/api/v1/x/media", {
+    method: "POST",
+    headers: {
+      "x-api-key": "xq_YOUR_KEY_HERE",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      account: "myxhandle",
+      url: "https://example.com/image.png",
+    }),
+  });
+  const data = await response.json();
+  ```
+
+  ```python Python
+  import requests
+
+  response = requests.post(
+      "https://xquik.com/api/v1/x/media",
+      headers={
+          "x-api-key": "xq_YOUR_KEY_HERE",
+          "Content-Type": "application/json",
+      },
+      json={
+          "account": "myxhandle",
+          "url": "https://example.com/image.png",
+      },
+  )
+  data = response.json()
+  ```
+</CodeGroup>
+
 ## Headers
 
 <ParamField header="x-api-key" type="string" required>
@@ -98,7 +141,7 @@ keywords: ["media", "upload", "image", "video", "gif", "tweet attachment"]
 </ParamField>
 
 <ParamField header="Content-Type" type="string" required>
-  Must be `multipart/form-data`. Set automatically by most HTTP clients when using FormData.
+  Use `multipart/form-data` when uploading a file. Use `application/json` when providing a URL.
 </ParamField>
 
 ## Body
@@ -107,8 +150,12 @@ keywords: ["media", "upload", "image", "video", "gif", "tweet attachment"]
   The connected X account to upload media as. Must be a username you have connected to your Xquik account.
 </ParamField>
 
-<ParamField body="file" type="binary" required>
-  The media file to upload. Supported formats: GIF, JPEG, PNG, MP4.
+<ParamField body="file" type="binary">
+  The media file to upload. Required if `url` is not provided. Supported formats: GIF, JPEG, PNG, MP4.
+</ParamField>
+
+<ParamField body="url" type="string">
+  HTTPS URL to download media from. Required if `file` is not provided. The server fetches the file from this URL. Useful for AI agents and MCP clients that work with URLs instead of binary file uploads.
 </ParamField>
 
 <ParamField body="is_long_video" type="boolean">
@@ -133,7 +180,7 @@ keywords: ["media", "upload", "image", "video", "gif", "tweet attachment"]
     ```json
     { "error": "invalid_input", "message": "Unsupported file format or missing required fields" }
     ```
-    Missing `account` or `file`, or the file is not a supported format (GIF, JPEG, PNG, MP4).
+    Missing `account`, or neither `file` nor `url` provided, or the media is not a supported format (GIF, JPEG, PNG, MP4).
   </Tab>
   <Tab title="401 Unauthenticated">
     ```json
