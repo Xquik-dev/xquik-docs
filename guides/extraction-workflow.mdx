@@ -512,6 +512,75 @@ All 20 extraction tools grouped by target type. Each requires a specific target 
 | `space_explorer` | `targetSpaceId` | Extract participants of a Space |
 | `tweet_search_extractor` | `searchQuery` | Search and extract tweets by keyword or hashtag |
 
+### Tweet Search Filters
+
+`tweet_search_extractor` supports 16 optional filter parameters that are converted to X search operators internally. These filters only apply to `tweet_search_extractor` and are ignored by all other tool types.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `fromUser` | string | Filter by author username |
+| `toUser` | string | Filter tweets directed to a user |
+| `mentioning` | string | Filter tweets mentioning a user |
+| `language` | string | Language code (e.g. `en`, `tr`, `es`) |
+| `sinceDate` | string | Start date `YYYY-MM-DD` |
+| `untilDate` | string | End date `YYYY-MM-DD` |
+| `mediaType` | string | `images`, `videos`, `gifs`, or `media` |
+| `minFaves` | number | Minimum likes |
+| `minRetweets` | number | Minimum retweets |
+| `minReplies` | number | Minimum replies |
+| `verifiedOnly` | boolean | Verified authors only |
+| `replies` | string | `include`, `exclude`, or `only` |
+| `retweets` | string | `include`, `exclude`, or `only` |
+| `exactPhrase` | string | Exact phrase match |
+| `excludeWords` | string | Comma-separated words to exclude |
+| `advancedQuery` | string | Raw X search operator syntax |
+
+**Example: Search for popular English tweets with images from the last week**
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://xquik.com/api/v1/extractions \
+  -H "x-api-key: xq_YOUR_KEY_HERE" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "toolType": "tweet_search_extractor",
+    "searchQuery": "artificial intelligence",
+    "language": "en",
+    "mediaType": "images",
+    "minFaves": 100,
+    "sinceDate": "2026-03-06",
+    "untilDate": "2026-03-13",
+    "retweets": "exclude"
+  }' | jq
+```
+
+```javascript Node.js
+const extraction = await fetch("https://xquik.com/api/v1/extractions", {
+  method: "POST",
+  headers: {
+    "x-api-key": "xq_YOUR_KEY_HERE",
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    toolType: "tweet_search_extractor",
+    searchQuery: "artificial intelligence",
+    language: "en",
+    mediaType: "images",
+    minFaves: 100,
+    sinceDate: "2026-03-06",
+    untilDate: "2026-03-13",
+    retweets: "exclude",
+  }),
+}).then((r) => r.json());
+
+console.log(`Job ${extraction.id}: ${extraction.status}`);
+```
+</CodeGroup>
+
+<Tip>
+  Combine filters with `resultsLimit` to run targeted, cost-efficient searches. For example, find the top 50 viral tweets about a topic from verified accounts in the last 24 hours.
+</Tip>
+
 ## MCP Equivalent
 
 The same workflow works through the MCP server using the `xquik` sandbox tool:
