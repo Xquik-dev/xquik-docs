@@ -1,0 +1,165 @@
+---
+title: "Inbound Webhook"
+description: "Trigger an automation flow via inbound webhook token"
+api: "POST /webhooks/inbound/{token}"
+keywords: ["automation", "flow", "webhook", "inbound", "trigger", "token"]
+---
+
+<Info>
+  No authentication header required. The URL token identifies the flow.
+</Info>
+
+<CodeGroup>
+  ```bash cURL
+  curl -X POST https://xquik.com/api/v1/webhooks/inbound/abc123def456 \
+    -H "Content-Type: application/json" \
+    -d '{
+      "event": "payment_received",
+      "amount": 49.99,
+      "customer": "user_789"
+    }'
+  ```
+
+  ```javascript Node.js
+  const token = "abc123def456";
+  const response = await fetch(
+    `https://xquik.com/api/v1/webhooks/inbound/${token}`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        event: "payment_received",
+        amount: 49.99,
+        customer: "user_789",
+      }),
+    }
+  );
+  const data = await response.json();
+  ```
+
+  ```python Python
+  import requests
+
+  token = "abc123def456"
+  response = requests.post(
+      f"https://xquik.com/api/v1/webhooks/inbound/{token}",
+      json={
+          "event": "payment_received",
+          "amount": 49.99,
+          "customer": "user_789",
+      },
+  )
+  data = response.json()
+  ```
+
+  ```go Go
+  package main
+
+  import (
+      "bytes"
+      "encoding/json"
+      "fmt"
+      "io"
+      "log"
+      "net/http"
+  )
+
+  func main() {
+      payload := map[string]interface{}{
+          "event":    "payment_received",
+          "amount":   49.99,
+          "customer": "user_789",
+      }
+      body, err := json.Marshal(payload)
+      if err != nil {
+          log.Fatal(err)
+      }
+
+      token := "abc123def456"
+      req, err := http.NewRequest("POST", "https://xquik.com/api/v1/webhooks/inbound/"+token, bytes.NewReader(body))
+      if err != nil {
+          log.Fatal(err)
+      }
+      req.Header.Set("Content-Type", "application/json")
+
+      resp, err := http.DefaultClient.Do(req)
+      if err != nil {
+          log.Fatal(err)
+      }
+      defer resp.Body.Close()
+
+      respBody, err := io.ReadAll(resp.Body)
+      if err != nil {
+          log.Fatal(err)
+      }
+      fmt.Println(string(respBody))
+  }
+  ```
+</CodeGroup>
+
+## Path Parameters
+
+<ParamField path="token" type="string" required>
+  The inbound webhook token. Generated when you create a flow with `triggerType: "webhook_inbound"`. Unique per flow.
+</ParamField>
+
+## Headers
+
+<ParamField header="Content-Type" type="string" required>
+  Must be `application/json`.
+</ParamField>
+
+## Body
+
+Any valid JSON object. The entire body is passed as trigger data to the flow. Maximum size: 100KB.
+
+## Rate Limits
+
+| Scope | Limit |
+|-------|-------|
+| Per flow | 60 requests/hour |
+| Per user | 300 requests/hour |
+
+## Response
+
+<Tabs>
+  <Tab title="202 Accepted">
+    <ResponseField name="accepted" type="boolean">Always `true` when the flow is queued.</ResponseField>
+    <ResponseField name="flowId" type="string">The flow ID that was triggered.</ResponseField>
+
+    ```json
+    {
+      "accepted": true,
+      "flowId": "42"
+    }
+    ```
+  </Tab>
+  <Tab title="404 Not Found">
+    ```json
+    { "error": "not_found", "message": "Invalid token or inactive flow" }
+    ```
+    The token does not match any flow, or the flow is inactive.
+  </Tab>
+  <Tab title="413 Payload Too Large">
+    ```json
+    { "error": "payload_too_large", "message": "Request body exceeds 100KB" }
+    ```
+    The JSON body exceeds the 100KB limit. Reduce the payload size.
+  </Tab>
+  <Tab title="429 Rate Limited">
+    ```json
+    { "error": "rate_limited", "message": "Too many requests" }
+    ```
+    You have exceeded the rate limit for this flow or user. Wait and retry.
+  </Tab>
+</Tabs>
+
+<Info>
+  The flow executes asynchronously. A 202 response confirms the run was queued, not completed. Check run status via [Get Automation](/api-reference/automations/get).
+</Info>
+
+<Note>
+  **Related:** [Create Automation](/api-reference/automations/create) with `triggerType: "webhook_inbound"` to generate an inbound token, or [Get Automation](/api-reference/automations/get) to check run history.
+</Note>
