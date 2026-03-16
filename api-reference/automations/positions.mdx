@@ -1,0 +1,176 @@
+---
+title: "Update Step Positions"
+description: "Batch update canvas positions for flow steps"
+api: "PATCH /automations/{slug}/steps/positions"
+keywords: ["automation", "flow", "step", "position", "canvas", "batch"]
+---
+
+<CodeGroup>
+  ```bash cURL
+  curl -X PATCH https://xquik.com/api/v1/automations/new-follower-welcome/steps/positions \
+    -H "x-api-key: xq_YOUR_KEY_HERE" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "positions": [
+        { "stepId": "101", "positionX": 250, "positionY": 100 },
+        { "stepId": "102", "positionX": 250, "positionY": 300 }
+      ]
+    }' | jq
+  ```
+
+  ```javascript Node.js
+  const slug = "new-follower-welcome";
+  const response = await fetch(
+    `https://xquik.com/api/v1/automations/${slug}/steps/positions`,
+    {
+      method: "PATCH",
+      headers: {
+        "x-api-key": "xq_YOUR_KEY_HERE",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        positions: [
+          { stepId: "101", positionX: 250, positionY: 100 },
+          { stepId: "102", positionX: 250, positionY: 300 },
+        ],
+      }),
+    }
+  );
+  const data = await response.json();
+  ```
+
+  ```python Python
+  import requests
+
+  slug = "new-follower-welcome"
+  response = requests.patch(
+      f"https://xquik.com/api/v1/automations/{slug}/steps/positions",
+      headers={"x-api-key": "xq_YOUR_KEY_HERE"},
+      json={
+          "positions": [
+              {"stepId": "101", "positionX": 250, "positionY": 100},
+              {"stepId": "102", "positionX": 250, "positionY": 300},
+          ]
+      },
+  )
+  data = response.json()
+  ```
+
+  ```go Go
+  package main
+
+  import (
+      "bytes"
+      "encoding/json"
+      "fmt"
+      "net/http"
+  )
+
+  func main() {
+      type pos struct {
+          StepID    string `json:"stepId"`
+          PositionX int    `json:"positionX"`
+          PositionY int    `json:"positionY"`
+      }
+      payload := map[string][]pos{
+          "positions": {
+              {StepID: "101", PositionX: 250, PositionY: 100},
+              {StepID: "102", PositionX: 250, PositionY: 300},
+          },
+      }
+      body, _ := json.Marshal(payload)
+
+      slug := "new-follower-welcome"
+      req, err := http.NewRequest("PATCH", "https://xquik.com/api/v1/automations/"+slug+"/steps/positions", bytes.NewReader(body))
+      if err != nil {
+          panic(err)
+      }
+      req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
+      req.Header.Set("Content-Type", "application/json")
+
+      resp, err := http.DefaultClient.Do(req)
+      if err != nil {
+          panic(err)
+      }
+      defer resp.Body.Close()
+
+      var data map[string]interface{}
+      if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+          panic(err)
+      }
+      fmt.Println(data)
+  }
+  ```
+</CodeGroup>
+
+## Path Parameters
+
+<ParamField path="slug" type="string" required>
+  The flow slug.
+</ParamField>
+
+## Headers
+
+<ParamField header="x-api-key" type="string" required>
+  Your API key. Session cookie authentication is also supported. Generate a key from the [dashboard](https://xquik.com/dashboard).
+</ParamField>
+
+<ParamField header="Content-Type" type="string" required>
+  Must be `application/json`.
+</ParamField>
+
+## Body
+
+<ParamField body="positions" type="object[]" required>
+  Array of position updates. Maximum 10 items per request.
+</ParamField>
+
+<ParamField body="positions[].stepId" type="string" required>
+  The step ID to reposition.
+</ParamField>
+
+<ParamField body="positions[].positionX" type="integer" required>
+  New canvas X coordinate.
+</ParamField>
+
+<ParamField body="positions[].positionY" type="integer" required>
+  New canvas Y coordinate.
+</ParamField>
+
+## Response
+
+<Tabs>
+  <Tab title="200 OK">
+    <ResponseField name="success" type="boolean">Always `true` on successful update.</ResponseField>
+
+    ```json
+    { "success": true }
+    ```
+  </Tab>
+  <Tab title="400 Invalid Input">
+    ```json
+    { "error": "invalid_input", "message": "Invalid positions array or exceeds 10 items" }
+    ```
+    Empty `positions` array, missing fields, or more than 10 items.
+  </Tab>
+  <Tab title="401 Unauthenticated">
+    ```json
+    { "error": "unauthenticated", "message": "Missing or invalid API key" }
+    ```
+    Missing or invalid API key.
+  </Tab>
+  <Tab title="404 Not Found">
+    ```json
+    { "error": "not_found", "message": "Flow not found" }
+    ```
+    No flow exists with this slug, or it belongs to a different account.
+  </Tab>
+</Tabs>
+
+<Info>
+  Position updates are cosmetic only. They affect the canvas layout but do not change execution order. Use the `position` field in [Add Step](/api-reference/automations/add-step) or [Update Step](/api-reference/automations/update-step) to control execution order.
+</Info>
+
+<Note>
+  **Related:** [Get Automation](/api-reference/automations/get) to see current positions, or [Update Automation](/api-reference/automations/update) to update trigger node positions.
+</Note>

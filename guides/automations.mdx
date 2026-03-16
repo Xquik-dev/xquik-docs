@@ -1,0 +1,686 @@
+---
+title: Automations (Flows)
+description: Build trigger-driven workflows with conditions, extractions, and actions. 4 trigger types, 9 action types, and full API examples
+keywords: ["automations", "flows", "triggers", "actions", "conditions", "webhook inbound", "schedule", "monitor", "search", "canvas"]
+---
+
+Automations connect triggers to actions through a visual flow editor. Each flow follows a pipeline: trigger fires, steps execute in order, actions run. Build anything from auto-replies to scheduled trend reports.
+
+## How Flows Work
+
+```text
+Trigger → Step 1 → Step 2 → ... → Step N
+```
+
+A flow has 1 trigger and up to 10 steps. Steps run sequentially. Each step is an action, condition, or extraction. Conditions branch into `if_true` / `if_false` paths. Extraction outputs are available to later steps as named variables.
+
+## Trigger Types
+
+| Trigger | Description | Config |
+|---------|-------------|--------|
+| `monitor_event` | Fires on monitor events (tweets, follows) | `eventType`, `monitoredAccountId` |
+| `schedule` | Cron-based scheduling | `cron`, `timezone` |
+| `search` | Fires on search results | `query` |
+| `webhook_inbound` | Fires on external HTTP POST | `token` (auto-generated) |
+
+<Note>
+  Schedule intervals: subscribers get 1-hour minimum, free accounts get 6-hour minimum.
+</Note>
+
+## Step Types
+
+| Step Type | Purpose | Key Fields |
+|-----------|---------|------------|
+| `action` | Execute an X write action or send a notification | `actionType`, `config` |
+| `condition` | Branch logic with `if_true` / `if_false` paths | `config.rules`, `config.logic` |
+| `extraction` | Run 1 of 20 extraction tools, store results in a named output | `extractionType`, `outputName` |
+
+### Condition Rules
+
+Conditions evaluate 1 or more rules combined with `and` / `or` logic. Each rule has a `field`, `operator`, and `value`.
+
+**Operators:** `eq`, `gt`, `gte`, `lt`, `lte`, `contains`, `not_contains`, `starts_with`, `ends_with`
+
+## Action Types
+
+| Action | Description | Config Fields |
+|--------|-------------|---------------|
+| `create_tweet` | Post a new tweet | `text` |
+| `reply_tweet` | Reply to the triggering tweet | `text` |
+| `like` | Like a tweet | (none) |
+| `retweet` | Retweet a tweet | (none) |
+| `follow` | Follow a user | (none) |
+| `unfollow` | Unfollow a user | (none) |
+| `send_dm` | Send a direct message | `username`, `text` |
+| `send_email` | Send an email notification | `to`, `subject`, `body` |
+| `send_telegram` | Send a Telegram message | `chatId`, `text` |
+
+## Limits
+
+| Resource | Free | Subscriber |
+|----------|------|------------|
+| Max flows | 2 | 10 |
+| Min schedule interval | 6 hours | 1 hour |
+| Max steps per flow | 10 | 10 |
+
+<Warning>
+  Activation requires an active subscription and at least 1 action step in the flow.
+</Warning>
+
+## Create a Flow
+
+### Example 1: Monitor Event Flow
+
+Create a flow that auto-replies when a monitored account tweets.
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://xquik.com/api/v1/automations \
+  -H "x-api-key: xq_YOUR_KEY_HERE" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Auto-reply to @elonmusk",
+    "triggerType": "monitor_event",
+    "triggerConfig": {
+      "eventType": "tweet.new",
+      "monitoredAccountId": 7
+    }
+  }' | jq
+```
+
+```javascript Node.js
+const API_KEY = "xq_YOUR_KEY_HERE";
+const BASE = "https://xquik.com/api/v1";
+
+const flow = await fetch(`${BASE}/automations`, {
+  method: "POST",
+  headers: {
+    "x-api-key": API_KEY,
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    name: "Auto-reply to @elonmusk",
+    triggerType: "monitor_event",
+    triggerConfig: {
+      eventType: "tweet.new",
+      monitoredAccountId: 7,
+    },
+  }),
+}).then((r) => r.json());
+
+console.log(`Flow created: ${flow.id} (${flow.slug})`);
+```
+
+```python Python
+import requests
+
+API_KEY = "xq_YOUR_KEY_HERE"
+BASE = "https://xquik.com/api/v1"
+
+flow = requests.post(
+    f"{BASE}/automations",
+    headers={"x-api-key": API_KEY},
+    json={
+        "name": "Auto-reply to @elonmusk",
+        "triggerType": "monitor_event",
+        "triggerConfig": {
+            "eventType": "tweet.new",
+            "monitoredAccountId": 7,
+        },
+    },
+).json()
+
+print(f"Flow created: {flow['id']} ({flow['slug']})")
+```
+
+```go Go
+package main
+
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"io"
+	"log"
+	"net/http"
+)
+
+const apiKey = "xq_YOUR_KEY_HERE"
+const base = "https://xquik.com/api/v1"
+
+func main() {
+	payload, _ := json.Marshal(map[string]interface{}{
+		"name":        "Auto-reply to @elonmusk",
+		"triggerType": "monitor_event",
+		"triggerConfig": map[string]interface{}{
+			"eventType":          "tweet.new",
+			"monitoredAccountId": 7,
+		},
+	})
+
+	req, _ := http.NewRequest("POST", base+"/automations", bytes.NewReader(payload))
+	req.Header.Set("x-api-key", apiKey)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	body, _ := io.ReadAll(resp.Body)
+	var flow map[string]interface{}
+	json.Unmarshal(body, &flow)
+	fmt.Printf("Flow created: %s (%s)\n", flow["id"], flow["slug"])
+}
+```
+
+</CodeGroup>
+
+**Response (201):**
+
+```json
+{
+  "id": "42",
+  "slug": "auto-reply-to-elonmusk-a1b2c3",
+  "name": "Auto-reply to @elonmusk",
+  "triggerType": "monitor_event",
+  "triggerConfig": {
+    "eventType": "tweet.new",
+    "monitoredAccountId": 7
+  },
+  "isActive": false,
+  "runCount": "0",
+  "lastRunAt": null,
+  "createdAt": "2026-03-17T10:00:00.000Z",
+  "updatedAt": "2026-03-17T10:00:00.000Z"
+}
+```
+
+Now add a reply action step:
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://xquik.com/api/v1/automations/auto-reply-to-elonmusk-a1b2c3/steps \
+  -H "x-api-key: xq_YOUR_KEY_HERE" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "stepType": "action",
+    "actionType": "reply_tweet",
+    "branch": "main",
+    "config": {
+      "text": "Great post! Keep it up."
+    }
+  }' | jq
+```
+
+```javascript Node.js
+const step = await fetch(
+  `${BASE}/automations/auto-reply-to-elonmusk-a1b2c3/steps`,
+  {
+    method: "POST",
+    headers: {
+      "x-api-key": API_KEY,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      stepType: "action",
+      actionType: "reply_tweet",
+      branch: "main",
+      config: { text: "Great post! Keep it up." },
+    }),
+  },
+).then((r) => r.json());
+
+console.log(`Step added: ${step.id}`);
+```
+
+```python Python
+step = requests.post(
+    f"{BASE}/automations/auto-reply-to-elonmusk-a1b2c3/steps",
+    headers={"x-api-key": API_KEY},
+    json={
+        "stepType": "action",
+        "actionType": "reply_tweet",
+        "branch": "main",
+        "config": {"text": "Great post! Keep it up."},
+    },
+).json()
+
+print(f"Step added: {step['id']}")
+```
+
+```go Go
+payload, _ := json.Marshal(map[string]interface{}{
+	"stepType":   "action",
+	"actionType": "reply_tweet",
+	"branch":     "main",
+	"config":     map[string]interface{}{"text": "Great post! Keep it up."},
+})
+
+req, _ := http.NewRequest("POST", base+"/automations/auto-reply-to-elonmusk-a1b2c3/steps", bytes.NewReader(payload))
+req.Header.Set("x-api-key", apiKey)
+req.Header.Set("Content-Type", "application/json")
+
+resp, _ := http.DefaultClient.Do(req)
+defer resp.Body.Close()
+
+body, _ := io.ReadAll(resp.Body)
+var step map[string]interface{}
+json.Unmarshal(body, &step)
+fmt.Printf("Step added: %s\n", step["id"])
+```
+
+</CodeGroup>
+
+### Example 2: Scheduled Trend Check
+
+Create a flow that runs every 6 hours on a cron schedule.
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://xquik.com/api/v1/automations \
+  -H "x-api-key: xq_YOUR_KEY_HERE" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Trend report every 6 hours",
+    "triggerType": "schedule",
+    "triggerConfig": {
+      "cron": "0 */6 * * *",
+      "timezone": "America/New_York"
+    }
+  }' | jq
+```
+
+```javascript Node.js
+const flow = await fetch(`${BASE}/automations`, {
+  method: "POST",
+  headers: {
+    "x-api-key": API_KEY,
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    name: "Trend report every 6 hours",
+    triggerType: "schedule",
+    triggerConfig: {
+      cron: "0 */6 * * *",
+      timezone: "America/New_York",
+    },
+  }),
+}).then((r) => r.json());
+
+console.log(`Scheduled flow: ${flow.id}`);
+```
+
+```python Python
+flow = requests.post(
+    f"{BASE}/automations",
+    headers={"x-api-key": API_KEY},
+    json={
+        "name": "Trend report every 6 hours",
+        "triggerType": "schedule",
+        "triggerConfig": {
+            "cron": "0 */6 * * *",
+            "timezone": "America/New_York",
+        },
+    },
+).json()
+
+print(f"Scheduled flow: {flow['id']}")
+```
+
+```go Go
+payload, _ := json.Marshal(map[string]interface{}{
+	"name":        "Trend report every 6 hours",
+	"triggerType": "schedule",
+	"triggerConfig": map[string]interface{}{
+		"cron":     "0 */6 * * *",
+		"timezone": "America/New_York",
+	},
+})
+
+req, _ := http.NewRequest("POST", base+"/automations", bytes.NewReader(payload))
+req.Header.Set("x-api-key", apiKey)
+req.Header.Set("Content-Type", "application/json")
+
+resp, _ := http.DefaultClient.Do(req)
+defer resp.Body.Close()
+
+body, _ := io.ReadAll(resp.Body)
+var flow map[string]interface{}
+json.Unmarshal(body, &flow)
+fmt.Printf("Scheduled flow: %s\n", flow["id"])
+```
+
+</CodeGroup>
+
+### Example 3: Inbound Webhook Flow
+
+Create a flow triggered by external HTTP requests.
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://xquik.com/api/v1/automations \
+  -H "x-api-key: xq_YOUR_KEY_HERE" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "External webhook handler",
+    "triggerType": "webhook_inbound",
+    "triggerConfig": {}
+  }' | jq
+```
+
+```javascript Node.js
+const flow = await fetch(`${BASE}/automations`, {
+  method: "POST",
+  headers: {
+    "x-api-key": API_KEY,
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    name: "External webhook handler",
+    triggerType: "webhook_inbound",
+    triggerConfig: {},
+  }),
+}).then((r) => r.json());
+
+// Token is auto-generated in triggerConfig
+const token = flow.triggerConfig.token;
+console.log(`Webhook URL: https://xquik.com/api/v1/webhooks/inbound/${token}`);
+```
+
+```python Python
+flow = requests.post(
+    f"{BASE}/automations",
+    headers={"x-api-key": API_KEY},
+    json={
+        "name": "External webhook handler",
+        "triggerType": "webhook_inbound",
+        "triggerConfig": {},
+    },
+).json()
+
+token = flow["triggerConfig"]["token"]
+print(f"Webhook URL: https://xquik.com/api/v1/webhooks/inbound/{token}")
+```
+
+```go Go
+payload, _ := json.Marshal(map[string]interface{}{
+	"name":          "External webhook handler",
+	"triggerType":   "webhook_inbound",
+	"triggerConfig": map[string]interface{}{},
+})
+
+req, _ := http.NewRequest("POST", base+"/automations", bytes.NewReader(payload))
+req.Header.Set("x-api-key", apiKey)
+req.Header.Set("Content-Type", "application/json")
+
+resp, _ := http.DefaultClient.Do(req)
+defer resp.Body.Close()
+
+body, _ := io.ReadAll(resp.Body)
+var flow map[string]interface{}
+json.Unmarshal(body, &flow)
+
+config := flow["triggerConfig"].(map[string]interface{})
+fmt.Printf("Webhook URL: https://xquik.com/api/v1/webhooks/inbound/%s\n", config["token"])
+```
+
+</CodeGroup>
+
+The response includes an auto-generated `token` in `triggerConfig`:
+
+```json
+{
+  "id": "44",
+  "slug": "external-webhook-handler-d4e5f6",
+  "triggerType": "webhook_inbound",
+  "triggerConfig": {
+    "token": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+  }
+}
+```
+
+## Activate a Flow
+
+Flows start inactive. Activate with a `PATCH` request. Include `expectedUpdatedAt` for optimistic concurrency control.
+
+<CodeGroup>
+
+```bash cURL
+curl -X PATCH https://xquik.com/api/v1/automations/auto-reply-to-elonmusk-a1b2c3 \
+  -H "x-api-key: xq_YOUR_KEY_HERE" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "isActive": true,
+    "expectedUpdatedAt": "2026-03-17T10:00:00.000Z"
+  }' | jq
+```
+
+```javascript Node.js
+const updated = await fetch(
+  `${BASE}/automations/auto-reply-to-elonmusk-a1b2c3`,
+  {
+    method: "PATCH",
+    headers: {
+      "x-api-key": API_KEY,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      isActive: true,
+      expectedUpdatedAt: "2026-03-17T10:00:00.000Z",
+    }),
+  },
+).then((r) => r.json());
+
+console.log(`Active: ${updated.isActive}`);
+```
+
+```python Python
+updated = requests.patch(
+    f"{BASE}/automations/auto-reply-to-elonmusk-a1b2c3",
+    headers={"x-api-key": API_KEY},
+    json={
+        "isActive": True,
+        "expectedUpdatedAt": "2026-03-17T10:00:00.000Z",
+    },
+).json()
+
+print(f"Active: {updated['isActive']}")
+```
+
+```go Go
+payload, _ := json.Marshal(map[string]interface{}{
+	"isActive":          true,
+	"expectedUpdatedAt": "2026-03-17T10:00:00.000Z",
+})
+
+req, _ := http.NewRequest("PATCH", base+"/automations/auto-reply-to-elonmusk-a1b2c3", bytes.NewReader(payload))
+req.Header.Set("x-api-key", apiKey)
+req.Header.Set("Content-Type", "application/json")
+
+resp, _ := http.DefaultClient.Do(req)
+defer resp.Body.Close()
+
+body, _ := io.ReadAll(resp.Body)
+var updated map[string]interface{}
+json.Unmarshal(body, &updated)
+fmt.Printf("Active: %v\n", updated["isActive"])
+```
+
+</CodeGroup>
+
+<Warning>
+  If another request modified the flow since you last fetched it, the server returns `409 Conflict`. Re-fetch the flow, get the latest `updatedAt`, and retry.
+</Warning>
+
+## Inbound Webhooks
+
+Inbound webhooks let external services trigger your flows via HTTP POST. The token in the URL acts as authentication.
+
+### URL Format
+
+```text
+POST https://xquik.com/api/v1/webhooks/inbound/{token}
+```
+
+### Triggering a Flow
+
+Send a JSON body to the webhook URL. The body is passed to your flow steps as trigger data.
+
+```bash
+curl -X POST https://xquik.com/api/v1/webhooks/inbound/a1b2c3d4-e5f6-7890-abcd-ef1234567890 \
+  -H "Content-Type: application/json" \
+  -d '{"event": "deploy", "repo": "my-app", "branch": "main"}'
+```
+
+**Response (202):**
+
+```json
+{
+  "accepted": true,
+  "flowId": "44"
+}
+```
+
+### Rate Limits
+
+| Scope | Limit |
+|-------|-------|
+| Per flow | 60 requests/hour |
+| Per user | 300 requests/hour |
+
+### Constraints
+
+- Max body size: 100KB JSON
+- Body must be a JSON object (not array or primitive)
+- No authentication header required (token in URL acts as auth)
+- Flow must be active to accept requests. Inactive flows return `404`
+
+## Canvas Positions
+
+Batch update step positions for the visual flow editor. Send up to 10 position updates per request.
+
+<CodeGroup>
+
+```bash cURL
+curl -X PATCH https://xquik.com/api/v1/automations/auto-reply-to-elonmusk-a1b2c3/steps/positions \
+  -H "x-api-key: xq_YOUR_KEY_HERE" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "positions": [
+      { "stepId": "101", "positionX": 250, "positionY": 100 },
+      { "stepId": "102", "positionX": 250, "positionY": 300 }
+    ]
+  }' | jq
+```
+
+```javascript Node.js
+const result = await fetch(
+  `${BASE}/automations/auto-reply-to-elonmusk-a1b2c3/steps/positions`,
+  {
+    method: "PATCH",
+    headers: {
+      "x-api-key": API_KEY,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      positions: [
+        { stepId: "101", positionX: 250, positionY: 100 },
+        { stepId: "102", positionX: 250, positionY: 300 },
+      ],
+    }),
+  },
+).then((r) => r.json());
+
+console.log(result.success);
+```
+
+```python Python
+result = requests.patch(
+    f"{BASE}/automations/auto-reply-to-elonmusk-a1b2c3/steps/positions",
+    headers={"x-api-key": API_KEY},
+    json={
+        "positions": [
+            {"stepId": "101", "positionX": 250, "positionY": 100},
+            {"stepId": "102", "positionX": 250, "positionY": 300},
+        ]
+    },
+).json()
+
+print(result["success"])
+```
+
+```go Go
+payload, _ := json.Marshal(map[string]interface{}{
+	"positions": []map[string]interface{}{
+		{"stepId": "101", "positionX": 250, "positionY": 100},
+		{"stepId": "102", "positionX": 250, "positionY": 300},
+	},
+})
+
+req, _ := http.NewRequest("PATCH", base+"/automations/auto-reply-to-elonmusk-a1b2c3/steps/positions", bytes.NewReader(payload))
+req.Header.Set("x-api-key", apiKey)
+req.Header.Set("Content-Type", "application/json")
+
+resp, _ := http.DefaultClient.Do(req)
+defer resp.Body.Close()
+
+body, _ := io.ReadAll(resp.Body)
+fmt.Println(string(body))
+```
+
+</CodeGroup>
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `stepId` | string | Numeric string ID of the step |
+| `positionX` | integer or null | X coordinate on canvas |
+| `positionY` | integer or null | Y coordinate on canvas |
+
+## Error Handling
+
+| Error | Status | Cause |
+|-------|--------|-------|
+| `flow_limit_reached` | 403 | Max flows exceeded for your plan |
+| `step_limit_reached` | 403 | Max 10 steps per flow |
+| `Subscription required` | 403 | Activation requires active subscription |
+| `conflict` | 409 | `expectedUpdatedAt` mismatch (stale data) |
+| `rate_limited` | 429 | Inbound webhook rate limit exceeded |
+| `payload_too_large` | 413 | Webhook body exceeds 100KB |
+
+## API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/v1/automations` | List all flows |
+| `POST` | `/api/v1/automations` | Create a flow |
+| `GET` | `/api/v1/automations/{slug}` | Get flow with steps & recent runs |
+| `PATCH` | `/api/v1/automations/{slug}` | Update flow (name, trigger, activate) |
+| `DELETE` | `/api/v1/automations/{slug}` | Delete a flow |
+| `POST` | `/api/v1/automations/{slug}/steps` | Add a step |
+| `PATCH` | `/api/v1/automations/{slug}/steps` | Update a step |
+| `DELETE` | `/api/v1/automations/{slug}/steps` | Delete a step |
+| `PATCH` | `/api/v1/automations/{slug}/steps/positions` | Batch update canvas positions |
+| `POST` | `/api/v1/webhooks/inbound/{token}` | Trigger an inbound webhook flow |
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Extraction Workflow" icon="pickaxe" href="/guides/extraction-workflow">
+    Run bulk extractions and export results.
+  </Card>
+  <Card title="Real-Time Webhooks" icon="bolt" href="/guides/workflows#2-real-time-webhooks">
+    Receive events via outbound webhooks.
+  </Card>
+  <Card title="Billing & Usage" icon="credit-card" href="/guides/billing">
+    Subscription plans and usage tracking.
+  </Card>
+  <Card title="Rate Limits" icon="gauge" href="/guides/rate-limits">
+    API and webhook rate limit details.
+  </Card>
+</CardGroup>

@@ -1,0 +1,135 @@
+---
+title: "Delete Step"
+description: "Remove a step from an automation flow"
+api: "DELETE /automations/{slug}/steps"
+keywords: ["automation", "flow", "step", "delete", "remove"]
+---
+
+<CodeGroup>
+  ```bash cURL
+  curl -X DELETE https://xquik.com/api/v1/automations/new-follower-welcome/steps \
+    -H "x-api-key: xq_YOUR_KEY_HERE" \
+    -H "Content-Type: application/json" \
+    -d '{ "stepId": "101" }' | jq
+  ```
+
+  ```javascript Node.js
+  const slug = "new-follower-welcome";
+  const response = await fetch(`https://xquik.com/api/v1/automations/${slug}/steps`, {
+    method: "DELETE",
+    headers: {
+      "x-api-key": "xq_YOUR_KEY_HERE",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ stepId: "101" }),
+  });
+  const data = await response.json();
+  ```
+
+  ```python Python
+  import requests
+
+  slug = "new-follower-welcome"
+  response = requests.delete(
+      f"https://xquik.com/api/v1/automations/{slug}/steps",
+      headers={"x-api-key": "xq_YOUR_KEY_HERE"},
+      json={"stepId": "101"},
+  )
+  data = response.json()
+  ```
+
+  ```go Go
+  package main
+
+  import (
+      "bytes"
+      "encoding/json"
+      "fmt"
+      "net/http"
+  )
+
+  func main() {
+      body, _ := json.Marshal(map[string]string{"stepId": "101"})
+
+      slug := "new-follower-welcome"
+      req, err := http.NewRequest("DELETE", "https://xquik.com/api/v1/automations/"+slug+"/steps", bytes.NewReader(body))
+      if err != nil {
+          panic(err)
+      }
+      req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
+      req.Header.Set("Content-Type", "application/json")
+
+      resp, err := http.DefaultClient.Do(req)
+      if err != nil {
+          panic(err)
+      }
+      defer resp.Body.Close()
+
+      var data map[string]interface{}
+      if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+          panic(err)
+      }
+      fmt.Println(data)
+  }
+  ```
+</CodeGroup>
+
+## Path Parameters
+
+<ParamField path="slug" type="string" required>
+  The flow slug.
+</ParamField>
+
+## Headers
+
+<ParamField header="x-api-key" type="string" required>
+  Your API key. Session cookie authentication is also supported. Generate a key from the [dashboard](https://xquik.com/dashboard).
+</ParamField>
+
+<ParamField header="Content-Type" type="string" required>
+  Must be `application/json`.
+</ParamField>
+
+## Body
+
+<ParamField body="stepId" type="string" required>
+  The unique step ID to delete.
+</ParamField>
+
+## Response
+
+<Tabs>
+  <Tab title="200 OK">
+    <ResponseField name="success" type="boolean">Always `true` on successful deletion.</ResponseField>
+
+    ```json
+    { "success": true }
+    ```
+  </Tab>
+  <Tab title="400 Invalid Input">
+    ```json
+    { "error": "invalid_input", "message": "Missing stepId" }
+    ```
+    Missing `stepId` in request body.
+  </Tab>
+  <Tab title="401 Unauthenticated">
+    ```json
+    { "error": "unauthenticated", "message": "Missing or invalid API key" }
+    ```
+    Missing or invalid API key.
+  </Tab>
+  <Tab title="404 Not Found">
+    ```json
+    { "error": "not_found", "message": "Flow or step not found" }
+    ```
+    No flow exists with this slug, or the step does not belong to this flow.
+  </Tab>
+</Tabs>
+
+<Info>
+  Deleting the last action step from an active flow will automatically deactivate it. Re-add a step and reactivate via [Update Automation](/api-reference/automations/update).
+</Info>
+
+<Note>
+  **Related:** [Add Step](/api-reference/automations/add-step) to add new steps, or [Get Automation](/api-reference/automations/get) to verify the current step list.
+</Note>
