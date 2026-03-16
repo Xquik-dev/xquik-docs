@@ -1,7 +1,7 @@
 ---
 title: Automations (Flows)
-description: Build trigger-driven workflows with conditions, extractions, and actions. 4 trigger types, 9 action types, and full API examples
-keywords: ["automations", "flows", "triggers", "actions", "conditions", "webhook inbound", "schedule", "monitor", "search", "canvas"]
+description: Build trigger-driven workflows with conditions, extractions, AI compose, and actions. 4 trigger types, 5 step types, 9 action types, 32 templates, and full API examples
+keywords: ["automations", "flows", "triggers", "actions", "conditions", "ai compose", "branch", "radar extraction", "templates", "webhook inbound", "schedule", "monitor", "search", "canvas"]
 ---
 
 Automations connect triggers to actions through a visual flow editor. Each flow follows a pipeline: trigger fires, steps execute in order, actions run. Build anything from auto-replies to scheduled trend reports.
@@ -12,7 +12,7 @@ Automations connect triggers to actions through a visual flow editor. Each flow 
 Trigger → Step 1 → Step 2 → ... → Step N
 ```
 
-A flow has 1 trigger and up to 10 steps. Steps run sequentially. Each step is an action, condition, or extraction. Conditions branch into `if_true` / `if_false` paths. Extraction outputs are available to later steps as named variables.
+A flow has 1 trigger and up to 10 steps. Steps run sequentially. Each step is an action, AI compose, branch, condition, or extraction. Conditions branch into `if_true` / `if_false` paths. AI compose steps generate tweet text with Claude. Extraction steps pull trending data from radar sources. Outputs from AI compose and extraction steps are available to later steps as template variables.
 
 ## Trigger Types
 
@@ -32,8 +32,50 @@ A flow has 1 trigger and up to 10 steps. Steps run sequentially. Each step is an
 | Step Type | Purpose | Key Fields |
 |-----------|---------|------------|
 | `action` | Execute an X write action or send a notification | `actionType`, `config` |
+| `ai_compose` | Generate tweet text with AI (Claude) using style profiles and algorithm data | `config.userPrompt`, `config.templateSlug` |
+| `branch` | Multi-path branching with nested condition + step pairs | `branches[]` (each with `condition` and `steps`) |
 | `condition` | Branch logic with `if_true` / `if_false` paths | `config.rules`, `config.logic` |
-| `extraction` | Run 1 of 20 extraction tools, store results in a named output | `extractionType`, `outputName` |
+| `extraction` | Pull trending data from 1 of 8 radar sources into a named output | `extractionType`, `config` |
+
+### AI Compose Config
+
+The `ai_compose` step generates tweet text using Claude with optional style injection and algorithm scoring.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `userPrompt` | string | The prompt for AI generation. Supports template variables like `{{trends}}`, `{{tweet.text}}` |
+| `systemPrompt` | string | Optional system prompt override |
+| `templateSlug` | string | Prompt template slug (e.g., `compose-tweet`, `compose-reply`, `summarize-data`) |
+| `includeStyle` | boolean | Inject cached writing style profile into the prompt |
+| `includeAlgorithmRules` | boolean | Inject X algorithm ranking factors |
+| `scoreOutput` | boolean | Score the generated tweet against algorithm checks |
+| `maxTokens` | number | Max tokens for AI generation |
+
+The AI output is available to later steps as `{{aiOutput}}`. Combine with a `create_tweet` or `reply_tweet` action to post the generated text.
+
+### Radar Extraction Types
+
+The `extraction` step pulls trending data from 1 of 8 sources. Results are available to later steps as template variables.
+
+| Extraction Type | Source | Data |
+|----------------|--------|------|
+| `radar_github` | GitHub Trending | Repos, stars, language |
+| `radar_google_trends` | Google Trends | Topics, traffic estimates |
+| `radar_hackernews` | Hacker News | Stories, points, comments |
+| `radar_polymarket` | Polymarket | Markets, volume, liquidity |
+| `radar_reddit` | Reddit | Posts, subreddit, author |
+| `radar_trustmrr` | TrustMRR | Startups, MRR, growth |
+| `radar_wikipedia` | Wikipedia | Articles, view counts |
+| `radar_x_trends` | X Trends | Trending topics by region |
+
+**Extraction config:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `hours` | number | Time window (1-72) |
+| `limit` | number | Max items to fetch |
+| `category` | string | Filter by category |
+| `region` | string | Filter by region |
 
 ### Condition Rules
 
@@ -641,6 +683,38 @@ fmt.Println(string(body))
 | `stepId` | string | Numeric string ID of the step |
 | `positionX` | integer or null | X coordinate on canvas |
 | `positionY` | integer or null | Y coordinate on canvas |
+
+## Flow Templates
+
+Xquik includes 32 pre-built flow templates to get started fast. Templates provide a trigger, pre-configured steps, and template variables. Select a template from the canvas gallery or use the API.
+
+### Template Categories
+
+| Category | Focus |
+|----------|-------|
+| `research` | Trending digests, competitor monitoring, search alerts |
+| `content` | AI-powered tweet composition, auto-retweets, viral tweet catchers |
+| `growth` | Follower welcomes, engagement auto-likers, growth reports |
+| `monitoring` | Tweet alerts, mention digests, quote trackers |
+
+### Gallery Segments
+
+Templates are grouped into 4 gallery segments for the canvas UI: **Getting Started**, **Power Users**, **Brands**, and **Developers**.
+
+### Featured Templates
+
+| Template | Trigger | Steps | Description |
+|----------|---------|-------|-------------|
+| `ai-reply-machine` | Monitor (reply) | AI compose + reply | AI-generated replies to mentions |
+| `trending-tweet-composer` | Schedule (daily) | AI compose + create tweet | Compose tweets from trending topics |
+| `daily-trending-digest` | Schedule (daily) | Email | Morning email with trending topics |
+| `github-trending-tweeter` | Schedule (daily) | AI compose + create tweet | Tweet about trending GitHub repos |
+| `webhook-to-tweet` | Inbound webhook | Create tweet | Post a tweet from external HTTP requests |
+| `viral-tweet-catcher` | Search (2h) | Condition + email | Alert when tweets exceed 1,000 likes |
+| `follower-welcome-dm` | Monitor (follower) | Send DM | Welcome DM to new followers |
+| `polymarket-alpha` | Schedule (8h) | Email | Polymarket market trend alerts |
+
+Templates that use AI compose or X write actions require a subscription. Radar-only templates (digests, alerts) are free.
 
 ## Error Handling
 
