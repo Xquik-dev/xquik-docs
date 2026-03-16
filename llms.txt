@@ -47,7 +47,7 @@ Retry strategy: retry only on `429` and `5xx`. Formula: `delay = baseDelay * 2^a
 
 Cursor-based. Responses include `hasMore` (boolean) and `nextCursor` (opaque string). Pass `nextCursor` as the `after` query parameter on the next request. Do not decode or construct cursors manually. Used for events, draws, extractions. Monitors, webhooks, and API keys return up to 200 items without pagination.
 
-## Event Types (6)
+## Monitor Event Types (6)
 
 - `follower.gained` - New follower gained
 - `follower.lost` - Existing follower lost
@@ -55,6 +55,18 @@ Cursor-based. Responses include `hasMore` (boolean) and `nextCursor` (opaque str
 - `tweet.quote` - Quote tweet posted
 - `tweet.reply` - Reply posted
 - `tweet.retweet` - Retweet posted
+
+## Integration Event Types (7)
+
+Integrations (Telegram push notifications) support 7 event types. The 4 tweet monitor events plus 3 job completion events:
+
+- `tweet.new` - Original tweet posted
+- `tweet.quote` - Quote tweet posted
+- `tweet.reply` - Reply posted
+- `tweet.retweet` - Retweet posted
+- `draw.completed` - Giveaway draw finished
+- `extraction.completed` - Extraction job completed
+- `extraction.failed` - Extraction job failed
 
 ## Giveaway Draw Filters
 
@@ -306,7 +318,7 @@ Subscription required, metered.
 
 ## API Reference - Integrations
 
-- [Create Integration](https://docs.xquik.com/api-reference/integrations/create): Create a Telegram or notification integration for monitor events. Free.
+- [Create Integration](https://docs.xquik.com/api-reference/integrations/create): Create a Telegram or notification integration. Supports 7 event types: 4 tweet events (`tweet.new`, `tweet.quote`, `tweet.reply`, `tweet.retweet`) plus `draw.completed`, `extraction.completed`, `extraction.failed`. Free.
 - [List Integrations](https://docs.xquik.com/api-reference/integrations/list): List all integrations. Free.
 - [Get Integration](https://docs.xquik.com/api-reference/integrations/get): Get integration details including filters and templates. Free.
 - [Update Integration](https://docs.xquik.com/api-reference/integrations/update): Update name, event types, filters, or active status. Free.
@@ -320,9 +332,15 @@ Visual automation builder. Flows consist of a trigger, optional conditions, and 
 
 **Trigger types (4):** `monitor_event` (fires on monitor events like tweet.new, follower.gained), `schedule` (cron-based recurring execution, min 1hr subscriber / 6hr free), `search` (periodic X search with new-result detection), `webhook_inbound` (inbound HTTP POST to a unique token URL).
 
-**Step types (3):** `action` (execute a write action or send notification), `condition` (if/else branching with `if_true` and `if_false` branches), `extraction` (run one of 20 extraction tools, store results in a named output variable).
+**Step types (5):** `action` (execute a write action or send notification), `ai_compose` (generate tweet text with Claude using style profiles and algorithm data; output available as `{{aiOutput}}`), `branch` (multi-path branching with nested condition + step pairs), `condition` (if/else branching with `if_true` and `if_false` branches), `extraction` (pull trending data from 1 of 8 radar sources into a named output variable).
 
 **Action types (9):** `create_tweet`, `like`, `retweet`, `reply_tweet`, `follow`, `unfollow`, `send_dm`, `send_email`, `send_telegram`.
+
+**Radar extraction types (8):** `radar_github`, `radar_google_trends`, `radar_hackernews`, `radar_polymarket`, `radar_reddit`, `radar_trustmrr`, `radar_wikipedia`, `radar_x_trends`. Config: `hours` (1-72), `limit`, `category`, `region`.
+
+**AI compose config:** `userPrompt` (supports `{{trends}}`, `{{tweet.text}}`, `{{username}}`), `systemPrompt`, `templateSlug` (`compose-tweet`, `compose-reply`, `summarize-data`), `includeStyle` (boolean), `includeAlgorithmRules` (boolean), `scoreOutput` (boolean), `maxTokens` (number).
+
+**32 pre-built templates** across 4 categories (research, content, growth, monitoring) and 4 gallery segments (getting_started, power_users, brands, developers). Templates include: `ai-reply-machine`, `trending-tweet-composer`, `daily-trending-digest`, `github-trending-tweeter`, `webhook-to-tweet`, `viral-tweet-catcher`, `follower-welcome-dm`, `polymarket-alpha`, and 24 more.
 
 **Limits:** 2 flows free, 10 with subscription. Max 10 steps per flow. Activation requires subscription and at least 1 action step. Flow update uses optimistic concurrency via `expectedUpdatedAt` (409 on conflict).
 
