@@ -1,0 +1,139 @@
+---
+title: "Update Ticket Status"
+description: "Update the status of a support ticket"
+api: "PATCH /support/tickets/{id}"
+keywords: ["support", "ticket", "update", "status"]
+---
+
+<Info>
+  Support tickets are free for all authenticated users.
+</Info>
+
+<CodeGroup>
+  ```bash cURL
+  curl -X PATCH https://xquik.com/api/v1/support/tickets/tkt_a1b2c3d4e5f6a1b2c3d4e5f6 \
+    -H "x-api-key: xq_YOUR_KEY_HERE" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "status": "resolved"
+    }' | jq
+  ```
+
+  ```javascript Node.js
+  const ticketId = "tkt_a1b2c3d4e5f6a1b2c3d4e5f6";
+  const response = await fetch(`https://xquik.com/api/v1/support/tickets/${ticketId}`, {
+    method: "PATCH",
+    headers: {
+      "x-api-key": "xq_YOUR_KEY_HERE",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      status: "resolved",
+    }),
+  });
+  const data = await response.json();
+  ```
+
+  ```python Python
+  import requests
+
+  ticket_id = "tkt_a1b2c3d4e5f6a1b2c3d4e5f6"
+  response = requests.patch(
+      f"https://xquik.com/api/v1/support/tickets/{ticket_id}",
+      headers={"x-api-key": "xq_YOUR_KEY_HERE"},
+      json={"status": "resolved"},
+  )
+  data = response.json()
+  ```
+
+  ```go Go
+  package main
+
+  import (
+      "bytes"
+      "encoding/json"
+      "fmt"
+      "net/http"
+  )
+
+  func main() {
+      ticketID := "tkt_a1b2c3d4e5f6a1b2c3d4e5f6"
+      body, _ := json.Marshal(map[string]interface{}{
+          "status": "resolved",
+      })
+
+      req, err := http.NewRequest("PATCH", "https://xquik.com/api/v1/support/tickets/"+ticketID, bytes.NewReader(body))
+      if err != nil {
+          panic(err)
+      }
+      req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
+      req.Header.Set("Content-Type", "application/json")
+
+      resp, err := http.DefaultClient.Do(req)
+      if err != nil {
+          panic(err)
+      }
+      defer resp.Body.Close()
+
+      var data map[string]interface{}
+      if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+          panic(err)
+      }
+      fmt.Println(data)
+  }
+  ```
+</CodeGroup>
+
+## Path Parameters
+
+<ParamField path="id" type="string" required>
+  The ticket public ID (e.g. `tkt_a1b2c3d4e5f6a1b2c3d4e5f6`). Returned when you [create a ticket](/api-reference/support/create) or [list tickets](/api-reference/support/list).
+</ParamField>
+
+## Headers
+
+<ParamField header="x-api-key" type="string" required>
+  Your API key. Session cookie authentication is also supported. Generate a key from the [dashboard](https://xquik.com/dashboard).
+</ParamField>
+
+<ParamField header="Content-Type" type="string" required>
+  Must be `application/json`.
+</ParamField>
+
+## Body
+
+<ParamField body="status" type="string" required>
+  New status. One of: `open`, `resolved`, `closed`. The `in_progress` status is set by support staff and cannot be set via the API.
+</ParamField>
+
+## Response
+
+<Tabs>
+  <Tab title="200 OK">
+    <ResponseField name="publicId" type="string">Unique ticket public ID.</ResponseField>
+    <ResponseField name="status" type="string">Updated ticket status.</ResponseField>
+
+    ```json
+    {
+      "publicId": "tkt_a1b2c3d4e5f6a1b2c3d4e5f6",
+      "status": "resolved"
+    }
+    ```
+  </Tab>
+  <Tab title="400 Invalid Input">
+    ```json
+    { "error": "invalid_input", "message": "Invalid input. Check the request body." }
+    ```
+    Missing or invalid `status` value.
+  </Tab>
+  <Tab title="401 Unauthenticated">
+    ```json
+    { "error": "unauthenticated", "message": "Authentication required. Provide a valid API key or bearer token." }
+    ```
+    Missing or invalid API key.
+  </Tab>
+</Tabs>
+
+<Note>
+  **Related:** [Get Ticket](/api-reference/support/get) to fetch ticket details and message history, or [Reply to Ticket](/api-reference/support/reply) to add a message.
+</Note>

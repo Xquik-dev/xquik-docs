@@ -1,6 +1,6 @@
 ---
 title: Automations (Flows)
-description: Build trigger-driven workflows with conditions, extractions, AI compose, and actions. 4 trigger types, 5 step types, 9 action types, 32 templates, and full API examples
+description: Build trigger-driven workflows with conditions, extractions, AI compose, and actions. 4 trigger types, 3 API step types, 9 action types, 32 templates, and full API examples
 keywords: ["automations", "flows", "triggers", "actions", "conditions", "ai compose", "branch", "radar extraction", "templates", "webhook inbound", "schedule", "monitor", "search", "canvas"]
 ---
 
@@ -12,7 +12,7 @@ Automations connect triggers to actions through a visual flow editor. Each flow 
 Trigger → Step 1 → Step 2 → ... → Step N
 ```
 
-A flow has 1 trigger and up to 10 steps. Steps run sequentially. Each step is an action, AI compose, branch, condition, or extraction. Conditions branch into `if_true` / `if_false` paths. AI compose steps generate tweet text with Claude. Extraction steps pull trending data from radar sources. Outputs from AI compose and extraction steps are available to later steps as template variables.
+A flow has 1 trigger and up to 10 steps. Steps run sequentially. Each step is an action, condition, or extraction. Conditions branch into `if_true` / `if_false` paths. Extraction steps pull data from X or radar sources. Outputs from extraction steps are available to later steps as template variables. The `ai_compose` and `branch` step types are available in pre-built templates but cannot be created via the API directly.
 
 ## Trigger Types
 
@@ -29,13 +29,13 @@ A flow has 1 trigger and up to 10 steps. Steps run sequentially. Each step is an
 
 ## Step Types
 
+The API accepts 3 step types. The `ai_compose` and `branch` types are available in pre-built templates but cannot be created via the API directly.
+
 | Step Type | Purpose | Key Fields |
 |-----------|---------|------------|
 | `action` | Execute an X write action or send a notification | `actionType`, `config` |
-| `ai_compose` | Generate tweet text with AI (Claude) using style profiles and algorithm data | `config.userPrompt`, `config.templateSlug` |
-| `branch` | Multi-path branching with nested condition + step pairs | `branches[]` (each with `condition` and `steps`) |
 | `condition` | Branch logic with `if_true` / `if_false` paths | `config.rules`, `config.logic` |
-| `extraction` | Pull trending data from 1 of 8 radar sources into a named output | `extractionType`, `config` |
+| `extraction` | Pull data from X or radar sources into a named output | `extractionType`, `outputName`, `config` |
 
 ### AI Compose Config
 
@@ -45,7 +45,7 @@ The `ai_compose` step generates tweet text using Claude with optional style inje
 |-------|------|-------------|
 | `userPrompt` | string | The prompt for AI generation. Supports template variables like `{{trends}}`, `{{tweet.text}}` |
 | `systemPrompt` | string | Optional system prompt override |
-| `templateSlug` | string | Prompt template slug (e.g., `compose-tweet`, `compose-reply`, `summarize-data`) |
+| `templateSlug` | string | Prompt template slug: `compose-tweet`, `compose-reply`, `summarize-data`, `classify-sentiment`, `generate-thread`, `custom` |
 | `includeStyle` | boolean | Inject cached writing style profile into the prompt |
 | `includeAlgorithmRules` | boolean | Inject X algorithm ranking factors |
 | `scoreOutput` | boolean | Score the generated tweet against algorithm checks |
@@ -53,9 +53,36 @@ The `ai_compose` step generates tweet text using Claude with optional style inje
 
 The AI output is available to later steps as `{{aiOutput}}`. Combine with a `create_tweet` or `reply_tweet` action to post the generated text.
 
-### Radar Extraction Types
+### Extraction Types
 
-The `extraction` step pulls trending data from 1 of 8 sources. Results are available to later steps as template variables.
+The `extraction` step pulls data from X tools or radar sources. Results are available to later steps as template variables.
+
+**X extraction types:**
+
+| Extraction Type | Data |
+|----------------|------|
+| `article-extractor` | Articles linked in tweets |
+| `community-explorer` | Community details |
+| `community-moderator-explorer` | Community moderators |
+| `community-post-extractor` | Community posts |
+| `community-searcher` | Community search results |
+| `follower-explorer` | Account followers |
+| `following-explorer` | Accounts followed |
+| `list-follower-explorer` | List followers |
+| `list-member-extractor` | List members |
+| `list-post-extractor` | List posts |
+| `mention-extractor` | Mentions of an account |
+| `people-searcher` | People search results |
+| `post-extractor` | User posts |
+| `quote-extractor` | Quote tweets |
+| `reply-extractor` | Replies to a tweet |
+| `repost-extractor` | Reposts of a tweet |
+| `space-explorer` | X Spaces |
+| `thread-extractor` | Tweet threads |
+| `tweet-searcher` | Tweet search results |
+| `verified-follower-explorer` | Verified followers |
+
+**Radar extraction types** (used in pre-built templates):
 
 | Extraction Type | Source | Data |
 |----------------|--------|------|
@@ -76,6 +103,7 @@ The `extraction` step pulls trending data from 1 of 8 sources. Results are avail
 | `limit` | number | Max items to fetch |
 | `category` | string | Filter by category |
 | `region` | string | Filter by region |
+| `woeid` | number | Optional. Region WOEID for `radar_x_trends` |
 
 ### Condition Rules
 

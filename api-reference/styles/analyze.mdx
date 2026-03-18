@@ -94,7 +94,7 @@ keywords: ["style", "analyze", "cache", "tweets", "x account", "writing style"]
 ## Body
 
 <ParamField body="username" type="string" required>
-  X username to analyze. 1-15 characters, alphanumeric and underscores only. The `@` prefix is automatically stripped if included.
+  X username to analyze. 1-15 characters, alphanumeric and underscores only.
 </ParamField>
 
 ## Response
@@ -106,6 +106,13 @@ keywords: ["style", "analyze", "cache", "tweets", "x account", "writing style"]
     <ResponseField name="isOwnAccount" type="boolean">`true` if the user has set their [X identity](/api-reference/account/x-identity) to this account.</ResponseField>
     <ResponseField name="fetchedAt" type="string">ISO 8601 timestamp when tweets were fetched from X.</ResponseField>
     <ResponseField name="tweets" type="object[]">Array of cached tweets.</ResponseField>
+
+    Each tweet object contains:
+    - `id` (string) — Tweet ID
+    - `text` (string) — Tweet text content
+    - `authorUsername` (string) — Author's X username
+    - `createdAt` (string) — ISO 8601 timestamp
+    - `media` (object[], optional) — Media objects attached to the tweet
 
     ```json
     {
@@ -126,29 +133,40 @@ keywords: ["style", "analyze", "cache", "tweets", "x account", "writing style"]
   </Tab>
   <Tab title="400 Invalid Input">
     ```json
-    { "error": "invalid_input" }
+    { "error": "invalid_input", "message": "Invalid or missing username" }
     ```
-    Invalid or missing username. Provide a valid X username without the `@` prefix.
+    Invalid or missing username. Provide a valid X username.
   </Tab>
   <Tab title="401 Unauthenticated">
     ```json
-    { "error": "unauthenticated" }
+    { "error": "unauthenticated", "message": "Missing or invalid API key" }
     ```
     Missing or invalid API key.
   </Tab>
   <Tab title="402 Subscription Required">
+    Possible error codes:
+
+    - `no_subscription` — No active subscription
+    - `no_cached_style` — No cached style available and subscription required to fetch new data
+    - `subscription_inactive` — Subscription is inactive or cancelled
+    - `usage_limit_reached` — Monthly usage limit exceeded
+
     ```json
-    { "error": "no_subscription" }
+    { "error": "no_subscription", "message": "No active subscription" }
     ```
-    No active subscription. Subscribe from the [dashboard](https://xquik.com/dashboard).
+    Subscribe from the [dashboard](https://xquik.com/dashboard).
   </Tab>
   <Tab title="429 Rate Limited">
     ```json
-    { "error": "rate_limited" }
+    { "error": "rate_limited", "message": "Too many requests" }
     ```
     Too many requests. Wait before retrying.
   </Tab>
 </Tabs>
+
+<Tip>
+  If a cached style exists but your subscription has lapsed, the cached data is returned with a 200 response instead of a 402 error.
+</Tip>
 
 <Info>
   If a cached style already exists for this username, it will be replaced with fresh data.
