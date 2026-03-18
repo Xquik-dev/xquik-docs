@@ -105,7 +105,7 @@ Draws and extractions support export via `GET /api/v1/draws/:id/export` and `GET
 
 - Signature: HMAC-SHA256. Header: `X-Xquik-Signature: sha256=HMAC_HEX_DIGEST`. Secret returned once at webhook creation - store securely.
 - Headers: `Content-Type: application/json`, `X-Xquik-Signature`
-- Requirements: HTTPS endpoint, must respond `2xx` within 10 seconds
+- Requirements: HTTPS endpoint, must respond promptly with `2xx`
 - Retry: Exponential backoff (1s, 2s, 4s, 8s, 16s). 5 attempts max. After all fail: status `exhausted`.
 - Delivery statuses: `pending`, `delivered`, `failed`, `exhausted`
 
@@ -134,7 +134,7 @@ Goals: `engagement`, `followers`, `authority`, `conversation`.
 ## MCP Server
 
 2 tools, code-execution sandbox model at `https://xquik.com/mcp`:
-`explore` — search the API spec for endpoints (free, no network calls, runs against in-memory catalog). `xquik` — execute any API call by writing a short async function that runs in a sandboxed environment with an authenticated `fetch`. Covers all 92 REST endpoints across 12 categories (account, automations, bot, composition, extraction, integrations, media, monitoring, trends, twitter, x-accounts, x-write).
+`explore` — search the API spec for endpoints (free, no network calls, runs against in-memory catalog). `xquik` — execute any API call by writing a short async function that runs in a sandboxed environment with an authenticated `fetch`. Covers all 97 REST endpoints across 13 categories (account, automations, bot, composition, extraction, integrations, media, monitoring, support, trends, twitter, x-accounts, x-write).
 
 ## Radar
 
@@ -158,7 +158,7 @@ Trending topics and news aggregated from 7 sources. Free for all subscribers, no
 - Reddit: `subreddit`, `author`
 - Google Trends: `approxTraffic`
 - Wikipedia: `views`
-- Polymarket: `volume`, `liquidity`, `outcomes`
+- Polymarket: `volume24hr`, `liquidity`, `outcomes`
 - TrustMRR: `mrr`, `growthPercent`, `last30Days`, `customers`, `activeSubscriptions`, `onSale`, `category`, `xHandle`
 
 ## Extraction Tool Types (20)
@@ -169,13 +169,13 @@ By target type:
 
 **Username target** (`targetUsername`): `follower_explorer`, `following_explorer`, `verified_follower_explorer`, `mention_extractor`, `post_extractor`
 
-**Community target** (`targetCommunityId`): `community_extractor`, `community_moderator_explorer`, `community_post_extractor`, `community_search` (also requires `searchQuery`)
+**Community target** (`targetCommunityId`): `community_extractor`, `community_moderator_explorer`, `community_post_extractor`
 
 **List target** (`targetListId`): `list_member_extractor`, `list_post_extractor`, `list_follower_explorer`
 
 **Space target** (`targetSpaceId`): `space_explorer`
 
-**Search** (`searchQuery`): `people_search`, `tweet_search_extractor`
+**Search** (`searchQuery`): `community_search`, `people_search`, `tweet_search_extractor`
 
 All extraction tools accept an optional `resultsLimit` parameter to cap the number of results. When set, the extraction stops early instead of fetching all available data. The estimate endpoint also accepts `resultsLimit` to preview capped costs.
 
@@ -316,6 +316,14 @@ Subscription required, metered.
 - [Join Community](https://docs.xquik.com/api-reference/x-write/join-community): Join an X community. Metered.
 - [Leave Community](https://docs.xquik.com/api-reference/x-write/leave-community): Leave an X community. Metered.
 
+## API Reference - Support Tickets
+
+- [Create Ticket](https://docs.xquik.com/api-reference/support/create): Open a new support ticket with subject and initial message. Free.
+- [List Tickets](https://docs.xquik.com/api-reference/support/list): List your support tickets with message counts. Returns up to 200 tickets. Free.
+- [Get Ticket](https://docs.xquik.com/api-reference/support/get): Get a support ticket with its full message history. Free.
+- [Update Ticket Status](https://docs.xquik.com/api-reference/support/update): Update ticket status to `open`, `resolved`, or `closed`. Free.
+- [Reply to Ticket](https://docs.xquik.com/api-reference/support/reply): Add a message to an existing support ticket. Free.
+
 ## API Reference - Integrations
 
 - [Create Integration](https://docs.xquik.com/api-reference/integrations/create): Create a Telegram or notification integration. Supports 7 event types: 4 tweet events (`tweet.new`, `tweet.quote`, `tweet.reply`, `tweet.retweet`) plus `draw.completed`, `extraction.completed`, `extraction.failed`. Free.
@@ -332,13 +340,13 @@ Visual automation builder. Flows consist of a trigger, optional conditions, and 
 
 **Trigger types (4):** `monitor_event` (fires on monitor events like tweet.new, follower.gained), `schedule` (cron-based recurring execution, min 1hr subscriber / 6hr free), `search` (periodic X search with new-result detection), `webhook_inbound` (inbound HTTP POST to a unique token URL).
 
-**Step types (5):** `action` (execute a write action or send notification), `ai_compose` (generate tweet text with Claude using style profiles and algorithm data; output available as `{{aiOutput}}`), `branch` (multi-path branching with nested condition + step pairs), `condition` (if/else branching with `if_true` and `if_false` branches), `extraction` (pull trending data from 1 of 8 radar sources into a named output variable).
+**API step types (3):** `action` (execute a write action or send notification), `condition` (if/else branching with `if_true` and `if_false` branches), `extraction` (pull data from X extraction tools or radar sources into a named output variable). Two additional types (`ai_compose`, `branch`) are available in pre-built templates but cannot be created via the API.
 
 **Action types (9):** `create_tweet`, `like`, `retweet`, `reply_tweet`, `follow`, `unfollow`, `send_dm`, `send_email`, `send_telegram`.
 
-**Radar extraction types (8):** `radar_github`, `radar_google_trends`, `radar_hackernews`, `radar_polymarket`, `radar_reddit`, `radar_trustmrr`, `radar_wikipedia`, `radar_x_trends`. Config: `hours` (1-72), `limit`, `category`, `region`.
+**Radar extraction types (8, template-only):** `radar_github`, `radar_google_trends`, `radar_hackernews`, `radar_polymarket`, `radar_reddit`, `radar_trustmrr`, `radar_wikipedia`, `radar_x_trends`. Config: `hours` (1-72), `limit`, `category`, `region`, `woeid` (optional, for `radar_x_trends`).
 
-**AI compose config:** `userPrompt` (supports `{{trends}}`, `{{tweet.text}}`, `{{username}}`), `systemPrompt`, `templateSlug` (`compose-tweet`, `compose-reply`, `summarize-data`), `includeStyle` (boolean), `includeAlgorithmRules` (boolean), `scoreOutput` (boolean), `maxTokens` (number).
+**AI compose config (template-only):** `userPrompt` (supports `{{trends}}`, `{{tweet.text}}`, `{{username}}`), `systemPrompt`, `templateSlug` (`compose-tweet`, `compose-reply`, `summarize-data`, `classify-sentiment`, `generate-thread`, `custom`), `includeStyle` (boolean), `includeAlgorithmRules` (boolean), `scoreOutput` (boolean), `maxTokens` (number).
 
 **32 pre-built templates** across 4 categories (research, content, growth, monitoring) and 4 gallery segments (getting_started, power_users, brands, developers). Templates include: `ai-reply-machine`, `trending-tweet-composer`, `daily-trending-digest`, `github-trending-tweeter`, `webhook-to-tweet`, `viral-tweet-catcher`, `follower-welcome-dm`, `polymarket-alpha`, and 24 more.
 
@@ -368,7 +376,7 @@ Visual automation builder. Flows consist of a trigger, optional conditions, and 
 ## MCP Server
 
 - [MCP Server Overview](https://docs.xquik.com/mcp/overview): Connect AI agents and IDEs (Claude Desktop, Claude Code, ChatGPT, Codex CLI, Cursor, VS Code, Windsurf, OpenCode) to Xquik via Model Context Protocol.
-- [MCP Tools Reference](https://docs.xquik.com/mcp/tools): 2 tools (`explore` + `xquik` sandbox) covering 92 endpoints across 12 categories with input/output schemas and usage examples. Code-execution sandbox model where agents write async JavaScript functions.
+- [MCP Tools Reference](https://docs.xquik.com/mcp/tools): 2 tools (`explore` + `xquik` sandbox) covering 97 endpoints across 13 categories with input/output schemas and usage examples. Code-execution sandbox model where agents write async JavaScript functions.
 - [Docs MCP Server](https://docs.xquik.com/mcp/docs-mcp): Search Xquik documentation from AI tools via a Mintlify-hosted MCP server at `https://docs.xquik.com/mcp`. No auth required. Separate from the API MCP server.
 
 ## OAuth
@@ -377,7 +385,7 @@ Visual automation builder. Flows consist of a trigger, optional conditions, and 
 
 ## AI Agent Skill
 
-- [Xquik Skill](https://github.com/Xquik-dev/x-twitter-scraper): AI agent skill that gives 40+ coding agents (Claude Code, Cursor, GitHub Copilot, Codex, Windsurf, VS Code, Gemini CLI, and more) deep knowledge of the Xquik API. Agents can write API integrations, set up webhook handlers with HMAC verification, configure MCP connections, and use the 2 MCP tools (explore + xquik sandbox) covering 92 endpoints and 20 extraction tool types with correct parameters. Install via `npx skills add Xquik-dev/x-twitter-scraper`.
+- [Xquik Skill](https://github.com/Xquik-dev/x-twitter-scraper): AI agent skill that gives 40+ coding agents (Claude Code, Cursor, GitHub Copilot, Codex, Windsurf, VS Code, Gemini CLI, and more) deep knowledge of the Xquik API. Agents can write API integrations, set up webhook handlers with HMAC verification, configure MCP connections, and use the 2 MCP tools (explore + xquik sandbox) covering 97 endpoints and 20 extraction tool types with correct parameters. Install via `npx skills add Xquik-dev/x-twitter-scraper`.
 
 ## Guides
 
@@ -388,7 +396,7 @@ Visual automation builder. Flows consist of a trigger, optional conditions, and 
 - [Billing & Usage](https://docs.xquik.com/guides/billing): Subscription pricing, usage quotas, and monthly operation limits.
 - [Trends](https://docs.xquik.com/guides/trends): Trending topics across 12 regions, caching behavior, and workflow examples combining trends with tweet search.
 - [Extraction Workflow](https://docs.xquik.com/guides/extraction-workflow): End-to-end extraction guide. Estimate costs, run jobs, paginate results, and export files. All 20 tool types with code examples in 4 languages.
-- [Automations](https://docs.xquik.com/guides/automations): Flow automation builder with 4 trigger types, 3 step types, 9 action types, and inbound webhooks.
+- [Automations](https://docs.xquik.com/guides/automations): Flow automation builder with 4 trigger types, 3 API step types (plus 2 template-only), 9 action types, and inbound webhooks.
 
 ## Resources
 

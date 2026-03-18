@@ -526,6 +526,127 @@ interface CreateDraftRequest {
   topic?: string;
   goal?: "engagement" | "followers" | "authority" | "conversation";
 }
+
+// ─── X Accounts ───────────────────────────────────────────
+
+interface XAccount {
+  id: string;
+  username: string;
+  displayName: string;
+  isActive: boolean;
+  createdAt: string;
+}
+
+// ─── Integrations ─────────────────────────────────────────
+
+interface Integration {
+  id: string;
+  type: string;
+  name: string;
+  config: Record<string, unknown>;
+  eventTypes: string[];
+  filters: EventFilters | null;
+  messageTemplate: string | null;
+  scopeAllMonitors: boolean;
+  silentPush: boolean;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface EventFilters {
+  keywords?: { include?: string[]; exclude?: string[] };
+  minLikes?: number;
+  minRetweets?: number;
+  verifiedOnly?: boolean;
+}
+
+// ─── Automations (Flows) ──────────────────────────────────
+
+interface Automation {
+  slug: string;
+  name: string;
+  description: string;
+  trigger: string;
+  triggerConfig: Record<string, unknown>;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface AutomationDetail extends Automation {
+  steps: AutomationStep[];
+  recentRuns: AutomationRun[];
+}
+
+interface AutomationStep {
+  id: string;
+  stepType: "action" | "condition" | "extraction";
+  actionType: string | null;
+  extractionType: string | null;
+  config: Record<string, unknown>;
+  outputName: string | null;
+  position: number;
+}
+
+interface AutomationRun {
+  id: string;
+  status: string;
+  startedAt: string;
+  completedAt: string | null;
+  errorMessage: string | null;
+  triggeredBy: string;
+}
+
+// ─── Compose ──────────────────────────────────────────────
+
+interface ComposeRequest {
+  step: "compose" | "refine" | "score";
+  style?: string;
+  goal?: string;
+  topic?: string;
+  draft?: string;
+  xAccountId?: string;
+}
+
+interface ComposeResponse {
+  tweet: string;
+  step: string;
+  intentUrl: string;
+}
+
+// ─── X Write ──────────────────────────────────────────────
+
+interface XWriteResponse {
+  success: boolean;
+  data?: Record<string, unknown>;
+}
+
+// ─── Support Tickets ──────────────────────────────────────
+
+interface SupportTicket {
+  publicId: string;
+  subject: string;
+  status: "open" | "in_progress" | "resolved" | "closed";
+  messageCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface SupportTicketDetail {
+  publicId: string;
+  subject: string;
+  status: "open" | "in_progress" | "resolved" | "closed";
+  createdAt: string;
+  updatedAt: string;
+  messages: SupportMessage[];
+}
+
+interface SupportMessage {
+  body: string;
+  sender: "user" | "support";
+  createdAt: string;
+}
 ```
 
 ## REST API vs MCP Field Naming
@@ -605,6 +726,30 @@ Direct X data lookup types. `Tweet` and `TweetAuthor` are returned by the tweet 
 ### Drafts
 
 `Draft` represents a saved tweet draft. Optional `topic` and `goal` fields are omitted (not null) when not set. `DraftList` wraps paginated responses. Use `nextCursor` with the `afterCursor` query parameter to fetch subsequent pages. Maximum 50 drafts per page.
+
+### X Accounts
+
+`XAccount` represents a linked X account. `displayName` is the user's display name on X. `isActive` indicates whether the account is currently connected and usable for API operations.
+
+### Integrations
+
+`Integration` represents a configured notification channel (e.g., Discord, Telegram, Slack). `eventTypes` controls which event types trigger notifications. `filters` optionally narrows events by keywords, engagement thresholds, or verification status. `scopeAllMonitors` sends events from all monitors when `true`; when `false`, the integration must be linked to specific monitors. `silentPush` suppresses notification sounds when supported by the platform.
+
+### Automations (Flows)
+
+`Automation` represents a flow automation with a trigger and one or more steps. `AutomationDetail` extends the base type with the full `steps` array and `recentRuns` history. Each `AutomationStep` has a `stepType` that determines whether `actionType` or `extractionType` is populated. `AutomationRun` tracks execution status, timing, and any error messages. The `triggeredBy` field indicates what initiated the run (e.g., a monitor event or manual trigger).
+
+### Compose
+
+`ComposeRequest` drives the 3-step tweet composition flow: `compose` generates a draft from a topic and goal, `refine` improves an existing draft, and `score` evaluates a draft's quality. `style` accepts a username whose writing style to emulate. `ComposeResponse` returns the generated tweet text and an `intentUrl` that opens the X compose dialog pre-filled with the tweet.
+
+### X Write
+
+`XWriteResponse` is returned by write operations (post, retweet, like, reply). `success` indicates whether the operation completed. The optional `data` field contains platform-specific response data when available.
+
+### Support Tickets
+
+`SupportTicket` is the compact shape returned in list responses. `SupportTicketDetail` includes the full `messages` array. Each `SupportMessage` has a `sender` field indicating whether the message is from the user or support team. Status progresses from `open` through `in_progress` to `resolved` or `closed`.
 
 ### Request Bodies
 

@@ -1,8 +1,8 @@
 ---
 title: "Add Step"
-description: "Add an action, AI compose, branch, condition, or extraction step to a flow"
+description: "Add an action, condition, or extraction step to a flow"
 api: "POST /automations/{slug}/steps"
-keywords: ["automation", "flow", "step", "action", "ai compose", "branch", "condition", "extraction", "radar", "add"]
+keywords: ["automation", "flow", "step", "action", "condition", "extraction", "add"]
 ---
 
 <Info>
@@ -121,7 +121,7 @@ keywords: ["automation", "flow", "step", "action", "ai compose", "branch", "cond
 ## Body
 
 <ParamField body="stepType" type="string" required>
-  One of: `action`, `ai_compose`, `branch`, `condition`, `extraction`.
+  One of: `action`, `condition`, `extraction`.
 </ParamField>
 
 <ParamField body="branch" type="string" required>
@@ -145,38 +145,15 @@ keywords: ["automation", "flow", "step", "action", "ai compose", "branch", "cond
 </ParamField>
 
 <ParamField body="extractionType" type="string">
-  Required when `stepType` is `extraction`. One of the 8 radar extraction types: `radar_github`, `radar_google_trends`, `radar_hackernews`, `radar_polymarket`, `radar_reddit`, `radar_trustmrr`, `radar_wikipedia`, `radar_x_trends`.
+  Required when `stepType` is `extraction`. One of: `article-extractor`, `community-explorer`, `community-moderator-explorer`, `community-post-extractor`, `community-searcher`, `follower-explorer`, `following-explorer`, `list-follower-explorer`, `list-member-extractor`, `list-post-extractor`, `mention-extractor`, `people-searcher`, `post-extractor`, `quote-extractor`, `reply-extractor`, `repost-extractor`, `space-explorer`, `thread-extractor`, `tweet-searcher`, `verified-follower-explorer`.
 </ParamField>
 
 <ParamField body="outputName" type="string">
-  Required when `stepType` is `extraction`. Variable name for the extraction output. Alphanumeric characters only, max 64 characters. Reference this in later steps.
-</ParamField>
+  Required when `stepType` is `extraction`. Variable name for the extraction output. Must start with a letter, then letters, digits, or underscores. Max 64 characters. Reference this in later steps.
 
-<ParamField body="aiComposeConfig" type="object">
-  Required when `stepType` is `ai_compose`. AI tweet generation configuration.
-  <Expandable title="aiComposeConfig fields">
-    <ParamField body="aiComposeConfig.userPrompt" type="string" required>
-      The prompt for AI generation. Supports template variables: `{{trends}}`, `{{tweet.text}}`, `{{tweet.url}}`, `{{username}}`.
-    </ParamField>
-    <ParamField body="aiComposeConfig.systemPrompt" type="string">
-      Optional system prompt override.
-    </ParamField>
-    <ParamField body="aiComposeConfig.templateSlug" type="string">
-      Prompt template slug. Available templates: `compose-tweet`, `compose-reply`, `summarize-data`.
-    </ParamField>
-    <ParamField body="aiComposeConfig.includeStyle" type="boolean">
-      Inject cached writing style profile into the AI prompt.
-    </ParamField>
-    <ParamField body="aiComposeConfig.includeAlgorithmRules" type="boolean">
-      Inject X algorithm ranking factors into the AI prompt.
-    </ParamField>
-    <ParamField body="aiComposeConfig.scoreOutput" type="boolean">
-      Score the generated tweet against algorithm checks.
-    </ParamField>
-    <ParamField body="aiComposeConfig.maxTokens" type="number">
-      Max tokens for AI generation.
-    </ParamField>
-  </Expandable>
+  <Warning>
+    Reserved names that cannot be used as `outputName`: `previous`, `username`, `tweetId`, `tweet`, `userId`, `cron`, `trends`, `query`, `results`.
+  </Warning>
 </ParamField>
 
 ## Response
@@ -219,9 +196,15 @@ keywords: ["automation", "flow", "step", "action", "ai compose", "branch", "cond
   </Tab>
   <Tab title="400 Invalid Input">
     ```json
-    { "error": "invalid_input", "message": "Invalid step type, missing required fields, or step limit reached" }
+    { "error": "invalid_input", "message": "Invalid step type or missing required fields" }
     ```
-    Invalid `stepType`, missing `actionType`/`extractionType`/`outputName` for the given step type, or the flow already has 10 steps.
+    Invalid `stepType`, or missing `actionType`/`extractionType`/`outputName` for the given step type.
+  </Tab>
+  <Tab title="403 Step Limit">
+    ```json
+    { "error": "step_limit_reached", "message": "Step limit reached" }
+    ```
+    The flow already has the maximum of 10 steps.
   </Tab>
   <Tab title="401 Unauthenticated">
     ```json

@@ -1,0 +1,136 @@
+---
+title: "Get Ticket"
+description: "Get a support ticket with its message history"
+api: "GET /support/tickets/{id}"
+keywords: ["support", "ticket", "get", "messages"]
+---
+
+<Info>
+  Support tickets are free for all authenticated users.
+</Info>
+
+<CodeGroup>
+  ```bash cURL
+  curl -X GET https://xquik.com/api/v1/support/tickets/tkt_a1b2c3d4e5f6a1b2c3d4e5f6 \
+    -H "x-api-key: xq_YOUR_KEY_HERE" | jq
+  ```
+
+  ```javascript Node.js
+  const ticketId = "tkt_a1b2c3d4e5f6a1b2c3d4e5f6";
+  const response = await fetch(`https://xquik.com/api/v1/support/tickets/${ticketId}`, {
+    method: "GET",
+    headers: {
+      "x-api-key": "xq_YOUR_KEY_HERE",
+    },
+  });
+  const data = await response.json();
+  ```
+
+  ```python Python
+  import requests
+
+  ticket_id = "tkt_a1b2c3d4e5f6a1b2c3d4e5f6"
+  response = requests.get(
+      f"https://xquik.com/api/v1/support/tickets/{ticket_id}",
+      headers={"x-api-key": "xq_YOUR_KEY_HERE"},
+  )
+  data = response.json()
+  ```
+
+  ```go Go
+  package main
+
+  import (
+      "encoding/json"
+      "fmt"
+      "net/http"
+  )
+
+  func main() {
+      ticketID := "tkt_a1b2c3d4e5f6a1b2c3d4e5f6"
+      req, err := http.NewRequest("GET", "https://xquik.com/api/v1/support/tickets/"+ticketID, nil)
+      if err != nil {
+          panic(err)
+      }
+      req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
+
+      resp, err := http.DefaultClient.Do(req)
+      if err != nil {
+          panic(err)
+      }
+      defer resp.Body.Close()
+
+      var data map[string]interface{}
+      if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+          panic(err)
+      }
+      fmt.Println(data)
+  }
+  ```
+</CodeGroup>
+
+## Path Parameters
+
+<ParamField path="id" type="string" required>
+  The ticket public ID (e.g. `tkt_a1b2c3d4e5f6a1b2c3d4e5f6`). Returned when you [create a ticket](/api-reference/support/create) or [list tickets](/api-reference/support/list).
+</ParamField>
+
+## Headers
+
+<ParamField header="x-api-key" type="string" required>
+  Your API key. Session cookie authentication is also supported. Generate a key from the [dashboard](https://xquik.com/dashboard).
+</ParamField>
+
+## Response
+
+<Tabs>
+  <Tab title="200 OK">
+    <ResponseField name="publicId" type="string">Unique ticket public ID.</ResponseField>
+    <ResponseField name="subject" type="string">Ticket subject.</ResponseField>
+    <ResponseField name="status" type="string">Current status: `open`, `in_progress`, `resolved`, or `closed`.</ResponseField>
+    <ResponseField name="createdAt" type="string">ISO 8601 creation timestamp.</ResponseField>
+    <ResponseField name="updatedAt" type="string">ISO 8601 last update timestamp.</ResponseField>
+    <ResponseField name="messages" type="object[]">Array of message objects, ordered chronologically.</ResponseField>
+    <ResponseField name="messages[].body" type="string">Message content.</ResponseField>
+    <ResponseField name="messages[].sender" type="string">Who sent the message: `user` or `support`.</ResponseField>
+    <ResponseField name="messages[].createdAt" type="string">ISO 8601 timestamp of when the message was sent.</ResponseField>
+
+    ```json
+    {
+      "publicId": "tkt_a1b2c3d4e5f6a1b2c3d4e5f6",
+      "subject": "Cannot connect X account",
+      "status": "open",
+      "createdAt": "2026-03-18T10:00:00Z",
+      "updatedAt": "2026-03-18T12:30:00Z",
+      "messages": [
+        {
+          "body": "I keep getting a connection error when trying to link my account.",
+          "sender": "user",
+          "createdAt": "2026-03-18T10:00:00Z"
+        },
+        {
+          "body": "Could you try disconnecting and reconnecting your account from the dashboard?",
+          "sender": "support",
+          "createdAt": "2026-03-18T11:15:00Z"
+        }
+      ]
+    }
+    ```
+  </Tab>
+  <Tab title="401 Unauthenticated">
+    ```json
+    { "error": "unauthenticated", "message": "Authentication required. Provide a valid API key or bearer token." }
+    ```
+    Missing or invalid API key.
+  </Tab>
+  <Tab title="404 Not Found">
+    ```json
+    { "error": "not_found", "message": "Ticket not found" }
+    ```
+    No ticket exists with this ID, or it belongs to a different account.
+  </Tab>
+</Tabs>
+
+<Note>
+  **Related:** [Reply to Ticket](/api-reference/support/reply) to add a message, or [Update Ticket Status](/api-reference/support/update) to change the ticket status.
+</Note>
