@@ -130,15 +130,18 @@ curl https://xquik.com/.well-known/oauth-protected-resource
     const codeVerifier = randomBytes(32).toString("hex");
     const codeChallenge = createHash("sha256")
       .update(codeVerifier)
-      .digest("hex");
+      .digest("base64url");
     ```
 
     ```python Python
+    import base64
     import hashlib
     import secrets
 
     code_verifier = secrets.token_hex(32)
-    code_challenge = hashlib.sha256(code_verifier.encode()).hexdigest()
+    code_challenge = base64.urlsafe_b64encode(
+        hashlib.sha256(code_verifier.encode()).digest()
+    ).rstrip(b"=").decode()
     ```
 
     ```go Go
@@ -147,6 +150,7 @@ curl https://xquik.com/.well-known/oauth-protected-resource
     import (
     	"crypto/rand"
     	"crypto/sha256"
+    	"encoding/base64"
     	"encoding/hex"
     )
 
@@ -156,7 +160,7 @@ curl https://xquik.com/.well-known/oauth-protected-resource
     	codeVerifier := hex.EncodeToString(b)
 
     	hash := sha256.Sum256([]byte(codeVerifier))
-    	codeChallenge := hex.EncodeToString(hash[:])
+    	codeChallenge := base64.RawURLEncoding.EncodeToString(hash[:])
 
     	return codeVerifier, codeChallenge
     }
@@ -190,7 +194,7 @@ curl https://xquik.com/.well-known/oauth-protected-resource
     | `response_type` | `code` |
     | `client_id` | UUID from client registration |
     | `redirect_uri` | Must match a registered URI exactly |
-    | `code_challenge` | SHA256 hex digest of the `code_verifier` |
+    | `code_challenge` | Base64url-encoded SHA256 digest of the `code_verifier` |
     | `code_challenge_method` | `S256` |
 
     **Optional parameters:**
@@ -376,7 +380,7 @@ const REDIRECT_URI = "http://localhost:8080/callback";
 const codeVerifier = randomBytes(32).toString("hex");
 const codeChallenge = createHash("sha256")
   .update(codeVerifier)
-  .digest("hex");
+  .digest("base64url");
 const state = randomBytes(16).toString("hex");
 
 // Step 2: Build the authorization URL
