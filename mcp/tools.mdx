@@ -1,10 +1,10 @@
 ---
 title: MCP Tools Reference
-description: MCP tools (explore + xquik + 7 radar source tools) with sandbox API, workflows, and cost breakdown
-keywords: ["MCP tools", "explore", "xquik", "radar", "sandbox", "code execution", "API spec"]
+description: MCP tools (explore + xquik) with sandbox API, workflows, and cost breakdown
+keywords: ["MCP tools", "explore", "xquik", "sandbox", "code execution", "API spec"]
 ---
 
-The Xquik MCP server exposes 9 tools: 2 code-execution sandbox tools (`explore` + `xquik`) and 7 radar source tools with structured inputs. Connect to the MCP server at `https://xquik.com/mcp` with your API key.
+The Xquik MCP server exposes 2 tools: `explore` (search the API spec) and `xquik` (execute API calls). Connect to the MCP server at `https://xquik.com/mcp` with your API key.
 
 ---
 
@@ -25,7 +25,7 @@ interface EndpointInfo {
   method: string;
   path: string;
   summary: string;
-  category: string; // account, automations, bot, composition, extraction, integrations, media, monitoring, support, trends, twitter, x-accounts, x-write
+  category: string; // account, automations, bot, composition, extraction, integrations, media, monitoring, support, twitter, x-accounts, x-write
   free: boolean;
   parameters?: Array<{
     name: string;
@@ -93,18 +93,41 @@ declare const spec: { endpoints: EndpointInfo[] };
 
 **Workflow Examples:**
 
-> Compose a tweet (3-step, free)
+> Compose an algorithm-optimized tweet (3-step, free)
 
 ```javascript
 async () => {
+  // Step 1: Get algorithm data and follow-up questions
   const compose = await xquik.request('/api/v1/compose', {
     method: 'POST',
     body: { step: 'compose', topic: 'AI agents' }
   });
   return compose;
   // Returns contentRules, followUpQuestions, scorerWeights
-  // After user answers: { step: 'refine', goal, tone, topic }
-  // After drafting: { step: 'score', draft }
+  // Step 2: After user answers: { step: 'refine', goal, tone, topic }
+  // Step 3: After drafting: { step: 'score', draft }
+  // The score step runs 16 algorithm checks. The draft must pass
+  // all 16 before presenting to the user with an intent URL.
+}
+```
+
+> Save a writing style from screenshots (free)
+
+```javascript
+async () => {
+  // When a user shares tweet screenshots, extract the texts and save as a style.
+  // This lets free users clone any writing voice without a subscription.
+  return xquik.request('/api/v1/styles/elonmusk', {
+    method: 'PUT',
+    body: {
+      label: 'Elon Musk style',
+      tweets: [
+        { text: 'The most entertaining outcome is the most likely' },
+        { text: 'Mars, here we come!!' }
+      ]
+    }
+  });
+  // Then compose with: POST /api/v1/compose { step: 'compose', topic: '...', styleUsername: 'elonmusk' }
 }
 ```
 
@@ -217,54 +240,9 @@ async () => {
 
 ---
 
-## Radar Source Tools
-
-7 free, read-only tools with structured inputs for querying trending data from each radar source directly. Unlike `explore` and `xquik`, these tools accept named parameters instead of code.
-
-### github-trending
-
-Trending repositories on GitHub with stars-today counts.
-
-### google-trends
-
-Trending search topics from Google Trends with traffic volume.
-
-### hacker-news-trending
-
-Trending stories on Hacker News with points and comments.
-
-### polymarket-trending
-
-Trending prediction markets from Polymarket with trading volume.
-
-### reddit-trending
-
-Trending posts on Reddit with subreddit info.
-
-### startup-trending
-
-Trending startups with MRR and growth data.
-
-### wikipedia-trending
-
-Most viewed Wikipedia articles with page view counts.
-
-### Shared Parameters
-
-All 7 radar source tools accept the same structured inputs:
-
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `limit` | number | No | 20 | Items to return (1-100) |
-| `hours` | number | No | 6 | Look-back window in hours (1-72) |
-| `category` | string | No | — | Filter by category: `general`, `tech`, `dev`, `science`, `culture`, `politics`, `business`, `entertainment` |
-| `region` | string | No | `global` | Region filter: `US`, `GB`, `TR`, `ES`, `DE`, `FR`, `JP`, `IN`, `BR`, `CA`, `MX`, `global` |
-
----
-
 ## API Endpoints
 
-The server covers 97 endpoints across 13 categories:
+The server covers 97 endpoints across 12 categories:
 
 | Category | Endpoints | Examples |
 |----------|-----------|---------|
@@ -275,8 +253,7 @@ The server covers 97 endpoints across 13 categories:
 | **media** | 1 | Media download |
 | **monitoring** | 14 | Monitors, events, webhooks, deliveries |
 | **support** | 5 | Support tickets |
-| **trends** | 1 | Trending topics by region |
-| **twitter** | 6 | Tweet search, get tweet, user lookup, follow check, followers list |
+| **twitter** | 7 | Tweet search, get tweet, get article, user lookup, follow check, followers list, trending topics |
 | **x-accounts** | 5 | Connect, list, get, disconnect, reauth |
 | **x-write** | 16 | Tweet, like, retweet, follow, DM, profile, media upload, communities |
 | **automations** | 10 | Flows CRUD, steps CRUD (action, AI compose, branch, condition, extraction), positions, test |
