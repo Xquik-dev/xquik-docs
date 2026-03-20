@@ -1,13 +1,11 @@
 ---
-title: "Test Automation"
-description: "Test run an automation flow (not yet implemented)"
+title: "Test automation"
+description: "Trigger a test run of an automation flow with synthetic trigger data"
 api: "POST /automations/{slug}/test"
 keywords: ["automation", "flow", "test", "dry run", "preview"]
 ---
 
-<Warning>
-  This endpoint is not yet implemented. It returns a `not_implemented` status.
-</Warning>
+Trigger a test run of an automation flow. The test uses synthetic trigger data based on the flow's trigger type and executes all steps.
 
 <CodeGroup>
   ```bash cURL
@@ -24,6 +22,7 @@ keywords: ["automation", "flow", "test", "dry run", "preview"]
     },
   });
   const data = await response.json();
+  console.log(`Run ${data.runId}: ${data.result}`);
   ```
 
   ```python Python
@@ -35,6 +34,7 @@ keywords: ["automation", "flow", "test", "dry run", "preview"]
       headers={"x-api-key": "xq_YOUR_KEY_HERE"},
   )
   data = response.json()
+  print(f"Run {data['runId']}: {data['result']}")
   ```
 
   ```go Go
@@ -64,12 +64,12 @@ keywords: ["automation", "flow", "test", "dry run", "preview"]
       if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
           panic(err)
       }
-      fmt.Println(data)
+      fmt.Printf("Run %s: %s\n", data["runId"], data["result"])
   }
   ```
 </CodeGroup>
 
-## Path Parameters
+## Path parameters
 
 <ParamField path="slug" type="string" required>
   The flow slug.
@@ -85,11 +85,24 @@ keywords: ["automation", "flow", "test", "dry run", "preview"]
 
 <Tabs>
   <Tab title="200 OK">
-    <ResponseField name="status" type="string">Always `"not_implemented"`.</ResponseField>
+    <ResponseField name="status" type="string">Always `"ok"`.</ResponseField>
+    <ResponseField name="result" type="string">`"completed"` if all steps succeeded, `"failed"` if any step failed.</ResponseField>
+    <ResponseField name="runId" type="string">The ID of the test run. Use [Get Automation](/api-reference/automations/get) to see run details.</ResponseField>
+    <ResponseField name="error" type="string">Error message when `result` is `"failed"`. Omitted on success.</ResponseField>
 
     ```json
-    { "status": "not_implemented" }
+    {
+      "status": "ok",
+      "result": "completed",
+      "runId": "42"
+    }
     ```
+  </Tab>
+  <Tab title="400 No steps">
+    ```json
+    { "error": "Flow has no steps." }
+    ```
+    The flow has no steps configured. Add at least one step before testing.
   </Tab>
   <Tab title="401 Unauthenticated">
     ```json
@@ -97,13 +110,23 @@ keywords: ["automation", "flow", "test", "dry run", "preview"]
     ```
     Missing or invalid API key.
   </Tab>
-  <Tab title="404 Not Found">
+  <Tab title="404 Not found">
     ```json
     { "error": "not_found", "message": "Flow not found" }
     ```
     No flow exists with this slug, or it belongs to a different account.
   </Tab>
+  <Tab title="429 Rate limited">
+    ```json
+    Rate limit exceeded
+    ```
+    Test runs are limited to 5 per minute per user. Wait and retry.
+  </Tab>
 </Tabs>
+
+<Note>
+  Test runs use synthetic trigger data based on the flow's trigger type. For `monitor_event` triggers, the test searches for a recent tweet to use as trigger data. For `schedule` and `webhook_inbound` triggers, the test uses placeholder data.
+</Note>
 
 <Note>
   **Related:** [Get Automation](/api-reference/automations/get) to check run history, or [Update Automation](/api-reference/automations/update) to activate the flow for live execution.
