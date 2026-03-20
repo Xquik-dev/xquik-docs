@@ -97,6 +97,7 @@ Add "Machine Payments Protocol" section documenting:
 Add "Pay-per-use (MPP)" section after "Extra Usage":
 - No subscription required. Pay per call via Tempo (USDC).
 - Eligible endpoints table (same 7 routes with prices).
+- Clearly label this as "MPP per-call pricing" to distinguish from the subscription "Per-Operation Costs" table above it. Note: MPP prices are lower than subscription metered costs because MPP has no included monthly allowance — you pay for every call. Subscription metered costs apply only after the included allowance is consumed.
 - Link to MPP overview and quickstart.
 
 #### 7 X-API endpoint pages
@@ -110,6 +111,8 @@ Add `<Info>` callout to each:
 - `api-reference/x/get-article.mdx`: "This endpoint accepts MPP payments ($0.002 per call). No subscription needed. See MPP overview."
 - `api-reference/x/download-media.mdx`: "This endpoint accepts MPP payments ($0.0003 per media item). No subscription needed. See MPP overview."
 - `api-reference/trends/list.mdx`: "This endpoint accepts MPP payments ($0.0009 per call). No subscription needed. See MPP overview."
+
+Additionally, update the 402 response tab on each of these 7 endpoint pages to distinguish between subscription 402 (`{ "error": "no_subscription" }`) and MPP 402 (payment challenge with `WWW-Authenticate: Payment` header). Add a note: "For MPP requests, 402 returns a payment challenge instead. See [MPP overview](/mpp/overview)."
 
 #### `llms.txt`
 
