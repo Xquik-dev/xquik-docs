@@ -11,6 +11,29 @@ Two methods:
 1. **API Key**: Format `xq_` + 64 hex characters. Pass via `x-api-key` header. Generate keys from the dashboard or `POST /api/v1/api-keys`.
 2. **OAuth 2.1 Authorization Code with PKCE**: For browser-based MCP clients (Claude.ai, ChatGPT Developer Mode). Discovery at `https://xquik.com/.well-known/oauth-authorization-server`. Dynamic client registration at `https://xquik.com/api/oauth/register`.
 
+## Machine Payments Protocol (MPP)
+
+7 X-API read-only endpoints accept anonymous MPP payments via Tempo (USDC). No account or API key required.
+
+Protocol flow: Client requests endpoint → Server returns 402 with `WWW-Authenticate: Payment` challenge → Client pays via Tempo → Client retries with `Authorization: Payment` credential → Server returns 200 with `Payment-Receipt` header.
+
+Payment intents:
+- `charge`: Fixed cost per call (tweet lookup, user lookup, follower check, article, trends)
+- `session`: Pay per result returned (tweet search, media download)
+
+Eligible endpoints and pricing:
+- `GET /api/v1/x/tweets/{id}` — $0.0003/call (charge)
+- `GET /api/v1/x/tweets/search` — $0.0003/tweet (session)
+- `GET /api/v1/x/users/{id}` — $0.00036/call (charge)
+- `GET /api/v1/x/followers/check` — $0.002/call (charge)
+- `GET /api/v1/x/articles/{tweetId}` — $0.002/call (charge)
+- `POST /api/v1/x/media/download` — $0.0003/media (session)
+- `GET /api/v1/trends` — $0.0009/call (charge)
+
+All other endpoints require subscription authentication (API key or OAuth).
+
+SDK: `npm i mppx` (TypeScript). Handles 402 challenge/credential flow automatically.
+
 ## Base URLs
 
 - REST API: `https://xquik.com/api/v1`
