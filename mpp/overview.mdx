@@ -1,0 +1,94 @@
+---
+title: "Machine Payments Protocol"
+description: "Anonymous pay-per-use access to X data endpoints via HTTP 402 and Tempo (USDC)"
+keywords: ["MPP", "Machine Payments Protocol", "pay-per-use", "HTTP 402", "Tempo", "USDC", "anonymous"]
+---
+
+The [Machine Payments Protocol](https://mpp.dev) (MPP) is an open standard for machine-to-machine payments over HTTP. Xquik implements MPP on 7 X-API read-only endpoints, allowing you to pay per call without creating an account or subscribing.
+
+## How it works
+
+MPP uses HTTP 402 (Payment Required) as a payment challenge. When you call an eligible endpoint without a subscription or API key, the server returns a 402 with payment instructions. Your client pays via Tempo (USDC), then retries the request with a payment credential.
+
+```text
+Client                              Xquik
+  │                                   │
+  │  1. GET /api/v1/x/tweets/123      │
+  │──────────────────────────────────▶│
+  │                                   │
+  │  2. 402 Payment Required          │
+  │     WWW-Authenticate: Payment     │
+  │     (challenge with amount, etc.) │
+  │◀──────────────────────────────────│
+  │                                   │
+  │  3. Pay via Tempo (USDC)          │
+  │           (off-chain)             │
+  │                                   │
+  │  4. Retry with credential         │
+  │     Authorization: Payment ...    │
+  │──────────────────────────────────▶│
+  │                                   │
+  │  5. 200 OK + Payment-Receipt      │
+  │◀──────────────────────────────────│
+```
+
+No account, no API key, no subscription. The payment itself is your authentication.
+
+## Payment method
+
+MPP payments on Xquik use **Tempo** with USDC (a dollar-pegged stablecoin). Tempo provides near-zero transaction fees, making micropayments practical for per-call pricing.
+
+You need a funded Tempo USDC wallet. See the [MPP quickstart](/mpp/quickstart) for setup instructions.
+
+## Payment intents
+
+Xquik uses 2 payment intents depending on the endpoint:
+
+| Intent | How it works | Used by |
+|--------|-------------|---------|
+| `charge` | Fixed cost per call. Single on-chain settlement. | Tweet lookup, user lookup, follower check, article extraction, trends |
+| `session` | Pay per result returned. Client deposits funds, sends off-chain vouchers per item. | Tweet search, media download |
+
+With `charge`, you pay a flat amount per request. With `session`, you pay proportional to the number of results (tweets found, media items downloaded).
+
+## Eligible endpoints
+
+| Endpoint | Method | Price | Intent |
+|----------|--------|-------|--------|
+| `/api/v1/x/tweets/{id}` | GET | $0.0003 per call | charge |
+| `/api/v1/x/tweets/search` | GET | $0.0003 per tweet | session |
+| `/api/v1/x/users/{id}` | GET | $0.00036 per call | charge |
+| `/api/v1/x/followers/check` | GET | $0.002 per call | charge |
+| `/api/v1/x/articles/{tweetId}` | GET | $0.002 per call | charge |
+| `/api/v1/x/media/download` | POST | $0.0003 per media item | session |
+| `/api/v1/trends` | GET | $0.0009 per call | charge |
+
+All other endpoints (monitors, webhooks, extractions, draws, automations, write actions, etc.) require a [subscription](/guides/billing).
+
+## MPP vs subscription
+
+| | MPP (pay-per-use) | Subscription ($20/month) |
+|---|---|---|
+| **Account required** | No | Yes |
+| **API key required** | No | Yes |
+| **Payment** | Per call via Tempo (USDC) | Monthly credit/debit card |
+| **Available endpoints** | 7 X-API read-only | All 97 endpoints |
+| **Write actions** | Not available | Post tweets, like, retweet, follow, DM, profile updates |
+| **Monitors & webhooks** | Not available | Real-time account monitoring |
+| **Extractions & draws** | Not available | Bulk data extraction, giveaway draws |
+| **Automations** | Not available | Flow automation builder |
+| **Best for** | AI agents, one-off lookups, low-volume reads | Full platform access, production integrations |
+
+## Next steps
+
+<CardGroup cols={3}>
+  <Card title="MPP quickstart" icon="rocket" href="/mpp/quickstart">
+    Make your first pay-per-use API call.
+  </Card>
+  <Card title="Authentication" icon="key" href="/api-reference/authentication">
+    All authentication methods including MPP headers.
+  </Card>
+  <Card title="Billing & usage" icon="credit-card" href="/guides/billing">
+    Subscription pricing and MPP per-call costs.
+  </Card>
+</CardGroup>
