@@ -98,6 +98,9 @@ Most endpoints support **dual authentication**: either an API key or a session c
 | `POST /subscribe` | Yes | Yes |
 | `* /integrations/*` | Yes | Yes |
 | `* /automations/*` | Yes | Yes |
+| `* /x-accounts/*` | Yes | Yes |
+| `* /x-write/*` | Yes | Yes |
+| `* /support/*` | Yes | Yes |
 
 <Info>
   API key management endpoints (`/api-keys`) require session authentication to prevent key self-management loops.
@@ -105,6 +108,52 @@ Most endpoints support **dual authentication**: either an API key or a session c
 
 <Info>
   The MCP server also supports OAuth 2.1 with PKCE for browser-based clients (Claude.ai, ChatGPT Developer Mode). See [OAuth 2.1](/oauth/overview) for the complete flow.
+</Info>
+
+## Machine Payments Protocol
+
+7 X-API read-only endpoints also accept [MPP](/mpp/overview) payments instead of API key authentication. When you call an eligible endpoint without an API key or session cookie, the server returns a 402 payment challenge.
+
+### Challenge header
+
+```text
+WWW-Authenticate: Payment id="...", realm="xquik.com", method="tempo", intent="charge", request="..."
+```
+
+| Parameter | Description |
+|-----------|-------------|
+| `id` | Unique challenge identifier |
+| `realm` | Protection space (`xquik.com`) |
+| `method` | Payment method (`tempo`) |
+| `intent` | Payment intent (`charge` or `session`) |
+| `request` | Base64url-encoded JSON with amount, currency, and recipient |
+
+### Credential header
+
+After completing the payment, retry the request with a payment credential:
+
+```text
+Authorization: Payment <base64url-encoded JSON>
+```
+
+The credential contains the original challenge parameters and a method-specific payload proving payment.
+
+### Receipt header
+
+Successful responses include a receipt:
+
+```text
+Payment-Receipt: <base64url-encoded JSON>
+```
+
+The receipt confirms the payment was settled and includes a reference ID and timestamp.
+
+### Eligible endpoints
+
+See the [MPP overview](/mpp/overview#eligible-endpoints) for the full list of 7 endpoints, pricing, and intent types.
+
+<Info>
+  MPP only applies to X-API read-only endpoints. All other endpoints require an API key or session cookie.
 </Info>
 
 ## Key Management
