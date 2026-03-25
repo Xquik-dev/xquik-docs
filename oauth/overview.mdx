@@ -61,7 +61,9 @@ curl https://xquik.com/.well-known/oauth-authorization-server
   "response_types_supported": ["code"],
   "grant_types_supported": ["authorization_code", "refresh_token"],
   "code_challenge_methods_supported": ["S256"],
-  "token_endpoint_auth_methods_supported": ["none", "client_secret_post"]
+  "token_endpoint_auth_methods_supported": ["none", "client_secret_post"],
+  "revocation_endpoint": "https://xquik.com/api/oauth/revoke",
+  "client_id_metadata_document_supported": false
 }
 ```
 
@@ -290,6 +292,26 @@ curl -X POST https://xquik.com/api/oauth/token \
   Refresh tokens are **single-use**. Each refresh request revokes the old refresh token and returns a new one. Always store the latest refresh token from each response.
 </Warning>
 
+## Token revocation
+
+Revoke an access or refresh token when a user disconnects or your application no longer needs access.
+
+```bash
+curl -X POST https://xquik.com/api/oauth/revoke \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "token=ACCESS_OR_REFRESH_TOKEN\
+&client_id=550e8400-e29b-41d4-a716-446655440000\
+&token_type_hint=access_token"
+```
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `token` | Yes | The token to revoke |
+| `client_id` | Yes | The client ID that owns the token |
+| `token_type_hint` | No | `access_token` or `refresh_token`. Helps the server locate the token faster |
+
+Returns `200` with an empty body on success. If the token is already revoked or invalid, the server still returns `200` (per RFC 7009).
+
 ## Scopes
 
 | Scope | Description |
@@ -324,6 +346,8 @@ Content-Type: application/json
 | `grant_types` | string[] | Resolved grant types |
 | `token_endpoint_auth_method` | string | Resolved auth method |
 | `client_secret` | string | Only present for confidential clients (`client_secret_post`) |
+| `client_id_issued_at` | number | Unix timestamp when the client ID was issued |
+| `client_secret_expires_at` | number | Always `0` (non-expiring). Only present for confidential clients |
 
 ## Error responses
 
