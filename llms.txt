@@ -157,7 +157,7 @@ Goals: `engagement`, `followers`, `authority`, `conversation`.
 ## MCP Server
 
 2 tools at `https://xquik.com/mcp`:
-`explore` — search the API spec for endpoints (free, no network calls, runs against in-memory catalog). `xquik` — execute any API call by writing a short async function that runs in a sandboxed environment with an authenticated `fetch`. Covers all 97 REST endpoints across 12 categories (account, automations, bot, composition, extraction, integrations, media, monitoring, support, twitter, x-accounts, x-write). Use `xquik.request('/api/v1/radar')` for trending data from 7 sources (github, google_trends, hacker_news, polymarket, reddit, trustmrr, wikipedia).
+`explore` — search the API spec for endpoints (free, no network calls, runs against in-memory catalog). `xquik` — execute any API call by writing a short async function that runs in a sandboxed environment with an authenticated `fetch`. Covers all REST endpoints across categories including account, bot, composition, extraction, integrations, media, monitoring, support, twitter, x-accounts, and x-write. Use `xquik.request('/api/v1/radar')` for trending data from 7 sources (github, google_trends, hacker_news, polymarket, reddit, trustmrr, wikipedia).
 
 ## Radar
 
@@ -279,6 +279,11 @@ Subscription required, metered.
 - [Export Extraction](https://docs.xquik.com/api-reference/extractions/export): Export extraction results as CSV, XLSX, or Markdown. 50,000 row limit.
 - [Estimate Extraction](https://docs.xquik.com/api-reference/extractions/estimate): Get a cost estimate before running an extraction job.
 
+## API Reference - Credits
+
+- [Get Credits](https://docs.xquik.com/api-reference/credits/get): Retrieve credit balance, lifetime purchased and used totals, and auto top-up status.
+- [Top Up Credits](https://docs.xquik.com/api-reference/credits/topup): Get a Stripe checkout URL to purchase credits ($10 minimum).
+
 ## API Reference - X API
 
 - [Get Tweet](https://docs.xquik.com/api-reference/x/get-tweet): Look up a single tweet with author information and optional attached media. Metered.
@@ -287,6 +292,17 @@ Subscription required, metered.
 - [Get User](https://docs.xquik.com/api-reference/x/get-user): Look up an X user profile by username. Metered.
 - [Check Follower](https://docs.xquik.com/api-reference/x/check-follower): Check follow relationship between two X users. Metered.
 - [Download Media](https://docs.xquik.com/api-reference/x/download-media): Download media from tweets. Supports single tweet or bulk (up to 50). Returns gallery URL. Metered on first download, cached afterward.
+- [Get User Tweets](https://docs.xquik.com/api-reference/x/user-tweets): Retrieve recent tweets posted by an X user. Metered.
+- [Get User Likes](https://docs.xquik.com/api-reference/x/user-likes): Retrieve tweets liked by an X user. Metered.
+- [Get User Media](https://docs.xquik.com/api-reference/x/user-media): Retrieve tweets with media posted by an X user. Metered.
+- [Get Followers You Know](https://docs.xquik.com/api-reference/x/followers-you-know): Retrieve mutual followers between accounts. Metered.
+- [Get Tweet Favoriters](https://docs.xquik.com/api-reference/x/favoriters): Retrieve users who liked a specific tweet. Metered.
+- [Get X Trends](https://docs.xquik.com/api-reference/x/trends): Get trending topics on X by region with WOEID filtering. Metered.
+- [Get Bookmarks](https://docs.xquik.com/api-reference/x/bookmarks): Retrieve bookmarked tweets. Requires connected X account. Metered.
+- [Get Bookmark Folders](https://docs.xquik.com/api-reference/x/bookmark-folders): List bookmark folders. Requires connected X account. Metered.
+- [Get Notifications](https://docs.xquik.com/api-reference/x/notifications): Retrieve notifications with type filter. Requires connected X account. Metered.
+- [Get Timeline](https://docs.xquik.com/api-reference/x/timeline): Retrieve home timeline. Requires connected X account. Metered.
+- [Get DM History](https://docs.xquik.com/api-reference/x/dm-history): Retrieve DM conversation history. Requires connected X account. Metered.
 
 ## API Reference - Styles
 
@@ -358,39 +374,10 @@ Subscription required, metered.
 - [List Integration Deliveries](https://docs.xquik.com/api-reference/integrations/deliveries): View delivery history for an integration. Free.
 - [Test Integration](https://docs.xquik.com/api-reference/integrations/test): Send a test notification to verify the integration. Free.
 
-## Automations (Flows)
 
-Visual automation builder. Flows consist of a trigger, optional conditions, and one or more action steps executed in sequence.
+## API Reference - Compose
 
-**Trigger types (4):** `monitor_event` (fires on monitor events like tweet.new, follower.gained), `schedule` (cron-based recurring execution, min 1hr subscriber / 6hr free), `search` (periodic X search with new-result detection), `webhook_inbound` (inbound HTTP POST to a unique token URL).
-
-**API step types (3):** `action` (execute a write action or send notification), `condition` (if/else branching with `if_true` and `if_false` branches), `extraction` (pull data from X extraction tools or radar sources into a named output variable). Two additional types (`ai_compose`, `branch`) are available in pre-built templates but cannot be created via the API.
-
-**Action types (9):** `create_tweet`, `like`, `retweet`, `reply_tweet`, `follow`, `unfollow`, `send_dm`, `send_email`, `send_telegram`.
-
-**Radar extraction types (8, template-only):** `radar_github`, `radar_google_trends`, `radar_hackernews`, `radar_polymarket`, `radar_reddit`, `radar_trustmrr`, `radar_wikipedia`, `radar_x_trends`. Config: `hours` (1-72), `limit`, `category`, `region`, `woeid` (optional, for `radar_x_trends`).
-
-**AI compose config (template-only):** `userPrompt` (supports `{{trends}}`, `{{tweet.text}}`, `{{username}}`), `systemPrompt`, `templateSlug` (`compose-tweet`, `compose-reply`, `summarize-data`, `classify-sentiment`, `generate-thread`, `custom`), `includeStyle` (boolean), `includeAlgorithmRules` (boolean), `scoreOutput` (boolean), `maxTokens` (number).
-
-**32 pre-built templates** across 4 categories (research, content, growth, monitoring) and 4 gallery segments (getting_started, power_users, brands, developers). Templates include: `ai-reply-machine`, `trending-tweet-composer`, `daily-trending-digest`, `github-trending-tweeter`, `webhook-to-tweet`, `viral-tweet-catcher`, `follower-welcome-dm`, `polymarket-alpha`, and 24 more.
-
-**Limits:** 2 flows free, 10 with subscription. Max 10 steps per flow. Activation requires subscription and at least 1 action step. Flow update uses optimistic concurrency via `expectedUpdatedAt` (409 on conflict).
-
-**Inbound webhooks:** Each flow with `webhook_inbound` trigger gets a unique token URL at `https://xquik.com/api/v1/webhooks/inbound/{token}`. POST any JSON payload (max 100KB) to trigger the flow. No authentication required (token acts as auth). Rate limits: 60 requests/hour per flow, 300 requests/hour per user.
-
-## API Reference - Automations
-
-- [List Automations](https://docs.xquik.com/api-reference/automations/list): `GET /api/v1/automations` - List all automation flows. Free.
-- [Create Automation](https://docs.xquik.com/api-reference/automations/create): `POST /api/v1/automations` - Create a flow with trigger type and config. Free.
-- [Get Automation](https://docs.xquik.com/api-reference/automations/get): `GET /api/v1/automations/{slug}` - Get flow details with steps and 20 recent runs. Free.
-- [Update Automation](https://docs.xquik.com/api-reference/automations/update): `PATCH /api/v1/automations/{slug}` - Update name, trigger, or active status. Requires `expectedUpdatedAt` for concurrency. Free.
-- [Delete Automation](https://docs.xquik.com/api-reference/automations/delete): `DELETE /api/v1/automations/{slug}` - Delete a flow and all its steps. Free.
-- [Add Step](https://docs.xquik.com/api-reference/automations/add-step): `POST /api/v1/automations/{slug}/steps` - Add an action, condition, or extraction step. Free.
-- [Update Step](https://docs.xquik.com/api-reference/automations/update-step): `PATCH /api/v1/automations/{slug}/steps` - Update step config. Free.
-- [Delete Step](https://docs.xquik.com/api-reference/automations/delete-step): `DELETE /api/v1/automations/{slug}/steps` - Remove a step. Free.
-- [Batch Update Positions](https://docs.xquik.com/api-reference/automations/positions): `PATCH /api/v1/automations/{slug}/steps/positions` - Update canvas positions (max 10). Free.
-- [Test Automation](https://docs.xquik.com/api-reference/automations/test): `POST /api/v1/automations/{slug}/test` - Test run a flow (not yet implemented).
-- [Inbound Webhook](https://docs.xquik.com/api-reference/automations/inbound-webhook): `POST /api/v1/webhooks/inbound/{token}` - Trigger a flow via HTTP POST. No auth required.
+- [Create Composition](https://docs.xquik.com/api-reference/compose/create): Three-step tweet composition workflow (compose, refine, score) optimized for X algorithm ranking. Free, no usage cost.
 
 ## Webhooks
 
@@ -407,6 +394,11 @@ Visual automation builder. Flows consist of a trigger, optional conditions, and 
 
 - [OAuth 2.1 (PKCE)](https://docs.xquik.com/oauth/overview): OAuth 2.1 Authorization Code flow with PKCE for MCP server authentication. Discovery endpoints, dynamic client registration, authorization, token exchange, refresh tokens.
 
+## MPP
+
+- [MPP Overview](https://docs.xquik.com/mpp/overview): Machine Payments Protocol for anonymous pay-per-call API access via USDC. No account or API key required.
+- [MPP Quickstart](https://docs.xquik.com/mpp/quickstart): Get started with MPP payments using the mppx SDK in under 5 minutes.
+
 ## AI Agent Skill
 
 - [Xquik Skill](https://github.com/Xquik-dev/x-twitter-scraper): AI agent skill that gives 40+ coding agents (Claude Code, Cursor, GitHub Copilot, Codex, Windsurf, VS Code, Gemini CLI, and more) deep knowledge of the Xquik API. Agents can write API integrations, set up webhook handlers with HMAC verification, configure MCP connections, and use the 2 MCP tools (explore + xquik sandbox) covering 97 endpoints and 20 extraction tool types with correct parameters. Install via `npx skills add Xquik-dev/x-twitter-scraper`.
@@ -420,7 +412,7 @@ Visual automation builder. Flows consist of a trigger, optional conditions, and 
 - [Billing & Usage](https://docs.xquik.com/guides/billing): Subscription pricing, usage quotas, and monthly operation limits.
 - [Trends](https://docs.xquik.com/guides/trends): Trending topics across 12 regions, caching behavior, and workflow examples combining trends with tweet search.
 - [Extraction Workflow](https://docs.xquik.com/guides/extraction-workflow): End-to-end extraction guide. Estimate costs, run jobs, paginate results, and export files. All 20 tool types with code examples in 4 languages.
-- [Automations](https://docs.xquik.com/guides/automations): Flow automation builder with 4 trigger types, 3 API step types (plus 2 template-only), 9 action types, and inbound webhooks.
+
 
 ## Resources
 

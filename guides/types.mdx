@@ -1,5 +1,5 @@
 ---
-title: Type Definitions
+title: Type definitions
 description: TypeScript type definitions for all API request and response objects
 keywords: ["typescript", "type definitions", "interfaces", "request types", "response types"]
 ---
@@ -11,6 +11,7 @@ Copy-pasteable TypeScript types for every Xquik API object. Use these in your cl
 
 interface Account {
   plan: "active" | "inactive";
+  pricingVersion: number;
   monitorsAllowed: number;
   monitorsUsed: number;
   currentPeriod?: {
@@ -561,58 +562,55 @@ interface EventFilters {
   verifiedOnly?: boolean;
 }
 
-// ─── Automations (Flows) ──────────────────────────────────
-
-interface Automation {
-  slug: string;
-  name: string;
-  description: string;
-  trigger: string;
-  triggerConfig: Record<string, unknown>;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface AutomationDetail extends Automation {
-  steps: AutomationStep[];
-  recentRuns: AutomationRun[];
-}
-
-interface AutomationStep {
-  id: string;
-  stepType: "action" | "condition" | "extraction";
-  actionType: string | null;
-  extractionType: string | null;
-  config: Record<string, unknown>;
-  outputName: string | null;
-  position: number;
-}
-
-interface AutomationRun {
-  id: string;
-  status: string;
-  startedAt: string;
-  completedAt: string | null;
-  errorMessage: string | null;
-  triggeredBy: string;
-}
-
 // ─── Compose ──────────────────────────────────────────────
+
+type ComposeTweetGoal = "authority" | "conversation" | "engagement" | "followers";
+type MediaType = "none" | "photo" | "video";
 
 interface ComposeRequest {
   step: "compose" | "refine" | "score";
-  style?: string;
-  goal?: string;
   topic?: string;
+  goal?: ComposeTweetGoal;
+  styleUsername?: string;
+  tone?: string;
+  additionalContext?: string;
+  callToAction?: string;
+  hasLink?: boolean;
+  hasMedia?: boolean;
+  mediaType?: MediaType;
   draft?: string;
-  xAccountId?: string;
 }
 
-interface ComposeResponse {
-  tweet: string;
-  step: string;
+// step="compose" response
+interface ComposeTweetResult {
+  contentRules: { rule: string }[];
+  engagementMultipliers: { action: string; multiplier: string }[];
+  engagementVelocity: string;
+  followUpQuestions: string[];
   intentUrl: string;
+  nextStep: string;
+  scorerWeights: { signal: string; weight: number; context: string }[];
+  source: string;
+  topPenalties: string[];
+}
+
+// step="refine" response
+interface RefineTweetResult {
+  compositionGuidance: string[];
+  examplePatterns: { description: string; pattern: string }[];
+  intentUrl: string;
+  nextStep: string;
+}
+
+// step="score" response
+interface ScoreTweetResult {
+  passed: boolean;
+  passedCount: number;
+  totalChecks: number;
+  topSuggestion: string;
+  nextStep: string;
+  checklist: { factor: string; passed: boolean; suggestion?: string }[];
+  intentUrl?: string;
 }
 
 // ─── X Write ──────────────────────────────────────────────
