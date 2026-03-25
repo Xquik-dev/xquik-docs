@@ -96,7 +96,7 @@ Webhook events are delivered as HTTPS POST requests.
 | Field | Type | Description |
 |-------|------|-------------|
 | `eventType` | string | Event type (see below) |
-| `username` | string | X username of the monitored account |
+| `username` | string | X username of the monitored account. Present on all event types except `webhook.test`. |
 | `data` | object | Raw event object from the X real-time stream |
 
 <Note>
@@ -279,10 +279,18 @@ After 5 failed attempts, the delivery is marked as `exhausted`. Check delivery s
   Retries are processed in batches, so actual delay may be slightly longer than shown.
 </Note>
 
+<Warning>
+  **Permanent failures:** Client errors (400–499, except 429 Too Many Requests) are treated as permanent failures and are **not retried**. Ensure your webhook endpoint returns appropriate status codes.
+</Warning>
+
+<Warning>
+  **Auto-disable:** Endpoints are automatically disabled after 5 consecutive failed deliveries (across different events). Re-enable a disabled endpoint via the [Update Webhook](/api-reference/webhooks/update) endpoint by setting `isActive` to `true`.
+</Warning>
+
 ## Requirements
 
 - Endpoint **must** use HTTPS
-- Endpoints should respond promptly with a `2xx` status code. Non-`2xx` responses count as failures and trigger retries
+- Endpoints should respond promptly with a `2xx` status code. Non-`2xx` responses (except 429) count as failures and trigger retries
 
 ## Where to go next
 
