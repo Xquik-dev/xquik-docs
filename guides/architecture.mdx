@@ -38,7 +38,7 @@ Xquik is a hosted SaaS platform for X (Twitter) data. All data processing happen
 
 | Component | Role |
 |-----------|------|
-| **REST API** | 99 endpoints at `https://xquik.com/api/v1/*` for programmatic access |
+| **REST API** | 70+ endpoints at `https://xquik.com/api/v1/*` for programmatic access |
 | **MCP Server** | 2 tools (`explore` + `xquik`) at `https://xquik.com/mcp` for AI agent integration |
 | **Dashboard** | Web UI for managing monitors, running extractions, viewing results |
 | **Xquik Stream** | Background service that maintains WebSocket connections to X and delivers webhook events |
@@ -93,14 +93,15 @@ Xquik uses a flat permission model: no roles, no RBAC, no team workspaces.
 
 ## Rate limits
 
-Rate limits are enforced per API key using a **token bucket** algorithm.
+Rate limits are enforced per API key using a **fixed-window counter** algorithm. Each tier has an independent counter that resets every 60 seconds.
 
-| Scope | Sustained Rate | Burst Allowance |
-|-------|---------------|-----------------|
-| API endpoints (`/api/v1/*`) | 10 req/s | 20 requests |
-| General requests | 60 req/s | 100 requests |
+| Tier | Methods | Limit |
+|------|---------|-------|
+| **Read** | `GET`, `HEAD`, `OPTIONS` | 120 per 60s |
+| **Write** | `POST`, `PUT`, `PATCH` | 30 per 60s |
+| **Delete** | `DELETE` | 15 per 60s |
 
-When the bucket is empty, requests return `429 Too Many Requests` with a `Retry-After` header.
+When the limit is reached, requests return `429 Too Many Requests` with a `Retry-After: 60` header.
 
 See the [Rate Limits](/guides/rate-limits) guide for detailed explanations, backoff strategies, and client-side rate limiter code examples.
 
@@ -158,7 +159,7 @@ X Data Stream
 | **Event types** | `tweet.new`, `tweet.reply`, `tweet.quote`, `tweet.retweet`, `follower.gained`, `follower.lost` |
 | **Delivery** | HMAC-SHA256 signed HTTPS POST to registered webhook endpoints |
 | **Retries** | 5 attempts with exponential backoff (1s, 2s, 4s, 8s, 16s) |
-| **Timeout** | Webhook endpoints must respond with `2xx` within 10 seconds |
+| **Timeout** | We recommend webhook endpoints respond with `2xx` within 10 seconds |
 | **Propagation** | Events appear within seconds to minutes depending on X API latency |
 
 ## Platform limitations
@@ -166,7 +167,6 @@ X Data Stream
 | Limitation | Detail |
 |------------|--------|
 | **Single region** | All data is processed and stored in a single datacenter (no multi-region replication) |
-| **No liked/bookmarked tweets** | Cannot retrieve tweets a user liked or bookmarked |
 | **Export cap** | File exports (CSV/XLSX/Markdown) are capped at 50,000 rows per extraction |
 | **Webhook retries** | 5 attempts maximum. After exhaustion, the delivery is marked as `exhausted` |
 | **Monitor default** | 1 monitor included per subscription. Additional monitors cost $5/month each |
@@ -181,7 +181,7 @@ X Data Stream
     API key format, header requirements, and dual auth.
   </Card>
   <Card title="Rate Limits" icon="gauge" href="/guides/rate-limits">
-    Token bucket algorithm, backoff strategies, and code examples.
+    Fixed-window limits, backoff strategies, and code examples.
   </Card>
   <Card title="Billing & Usage" icon="credit-card" href="/guides/billing">
     Pricing, quotas, and monthly operation limits.
