@@ -8,91 +8,130 @@ Every Xquik API error returns a consistent JSON body with an `error` code. Use t
 
 ## Error codes
 
-| Status | Code | Description | Recommended Action |
-|--------|------|-------------|-------------------|
-| 400 | `invalid_input` | Request body failed validation | Fix the request body. Check required fields and types. |
-| 400 | `invalid_id` | Path parameter is not a valid ID | Fix the path parameter. IDs are numeric strings. |
-| 400 | `invalid_tweet_url` | Tweet URL format is invalid | Use the full URL format: `https://x.com/user/status/ID`. |
-| 400 | `invalid_tweet_id` | Tweet ID is empty or invalid | Provide a valid numeric tweet ID in the path. |
-| 400 | `invalid_username` | X username is empty or invalid | Provide a valid X username without the `@` prefix. |
-| 400 | `invalid_tool_type` | Extraction tool type not recognized | Use one of the 23 valid tool types. See [Create Extraction](/api-reference/extractions/create). |
-| 400 | `invalid_format` | Export format is not supported | Use `csv`, `xlsx`, or `md`. See [Export Draw](/api-reference/draws/export) or [Export Extraction](/api-reference/extractions/export). |
-| 400 | `invalid_params` | Export query parameters are invalid | Check the `format` and `type` values. See the export endpoint docs. |
-| 400 | `missing_query` | Required query parameter is missing | Include the required `q` parameter. |
-| 400 | `missing_params` | Required query parameters are missing | Check the endpoint docs for required parameters. |
-| 400 | `webhook_inactive` | Webhook is disabled | Reactivate the webhook via [Update Webhook](/api-reference/webhooks/update) before testing. |
-| 403 | `api_key_limit_reached` | API key limit reached (100 max) | Delete an existing key before creating a new one. |
-| 401 | `unauthenticated` | Missing or invalid API key | Check the `x-api-key` header. Regenerate the key if revoked. |
-| 402 | `no_subscription` | No active subscription | Subscribe to a plan from the [dashboard](https://xquik.com/dashboard). |
-| 402 | `subscription_inactive` | Subscription is not active | Reactivate your subscription from the [dashboard](https://xquik.com/dashboard). |
-| 402 | `usage_limit_reached` | Monthly usage limit exceeded | Wait for the next billing period or check your balance via [Get Account](/api-reference/account/get). |
-| 402 | `no_addon` | No monitor addon on subscription | Add a monitor addon from the [dashboard](https://xquik.com/dashboard). |
-| 402 | `extra_usage_disabled` | Extra usage not enabled | Enable extra usage from the [dashboard subscription page](https://xquik.com/subscription) to continue metered calls beyond the included allowance. |
-| 402 | `frozen` | Extra usage paused, outstanding payment required | Update your payment method from the [dashboard](https://xquik.com/subscription). Extra usage resumes after payment succeeds. |
-| 402 | `overage_limit_reached` | Overage spending limit reached | Wait for the current overage invoice to be processed. Once paid, your spending limit resets and may increase. See [Billing & Usage](/guides/billing#spending-limits). |
-| 403 | `monitor_limit_reached` | Plan monitor limit exceeded | Delete an existing monitor or add capacity ($5/month per extra monitor). |
-| 404 | `not_found` | Resource does not exist | Verify the resource ID. It may belong to another account or have been deleted. |
-| 404 | `user_not_found` | X user not found | Check the username. The account may not exist or may be suspended. |
-| 404 | `tweet_not_found` | Tweet not found | Check the tweet ID. The tweet may have been deleted or the ID is invalid. |
-| 409 | `monitor_already_exists` | Duplicate monitor for this X account | Use the existing monitor. Call [Update Monitor](/api-reference/monitors/update) to change event types. |
-| 429 | (none) | Rate limited | Retry with exponential backoff. Respect the `Retry-After` header. |
-| 429 | `x_api_rate_limited` | X data source rate limited | Retry in a few minutes. The data source is experiencing high traffic. |
-| 500 | `internal_error` | Server error | Retry with backoff. [Contact support](mailto:support@xquik.com) if the error persists. |
-| 502 | `stream_registration_failed` | Stream registration failed | Retry the request. |
-| 502 | `x_api_unavailable` | X data source temporarily unavailable | Retry with backoff. |
-| 502 | `x_api_unauthorized` | X data source authentication failed | Retry later. If persistent, [contact support](mailto:support@xquik.com). |
-| 400 | `invalid_json` | Request body contains invalid JSON | Fix the request body to contain valid JSON. |
-| 401 | `account_needs_reauth` | Connected X account needs re-authentication | Re-authenticate the X account from the [dashboard](https://xquik.com/dashboard). |
-| 402 | `payment_failed` | Payment processing failed | Update your payment method from the [dashboard](https://xquik.com/subscription). |
-| 404 | `no_media` | Tweet has no downloadable media | The tweet does not contain any media attachments. |
-| 409 | `x_write_ambiguous` | Write action completion could not be confirmed | Verify the action result manually. The write may have succeeded. |
-| 409 | `account_already_connected` | X account is already connected to your account | Use the existing connection. |
-| 422 | `shadow_account` | Account is shadow-banned | The X account may be restricted. Check account status on X. |
-| 502 | `media_download_failed` | Media download from source failed | Retry the request. The media source may be temporarily unavailable. |
-| 502 | `connection_failed` | Failed to connect X account | Retry the connection. |
-| 502 | `reauth_failed` | Failed to re-authenticate X account | Retry the re-authentication. |
-| 404 | `article_not_found` | Tweet has no linked article | The tweet does not contain a linked article. |
-| 404 | `draft_not_found` | Draft does not exist | Verify the draft ID. It may have been deleted. |
-| 404 | `style_not_found` | No cached writing style | Analyze the user's style first via `POST /api/v1/styles`. |
-| 404 | `no_cached_style` | No cached writing style for username lookup | Analyze the user's style first via `POST /api/v1/styles`. |
-| 402 | `extra_usage_requires_v2` | Extra usage requires updated pricing plan | Contact support to migrate to the current pricing version. |
-| 402 | `manual_subscription` | Extra usage unavailable for this subscription type | Extra usage is only available for Stripe-managed subscriptions. |
-| 402 | `no_credits` | No credits available | Purchase credits or subscribe to a plan from the [dashboard](https://xquik.com/dashboard). |
-| 402 | `insufficient_credits` | Not enough credits for this operation | Check your credit balance via [Get Account](/api-reference/account/get). Purchase more credits or wait for the next billing period. |
-| 502 | `x_write_failed` | Write action failed unexpectedly | Retry the request. If persistent, [contact support](mailto:support@xquik.com). |
-| 403 | `x_account_feature_required` | X Premium required for this action | Upgrade to X Premium on the target account to use this feature. |
-| 403 | `x_account_suspended` | X account suspended or restricted | Check the account status on X. The account may need to be unsuspended. |
-| 403 | `x_account_protected` | Target account is private | The target account has a protected profile. Request to follow them first. |
-| 409 | `x_duplicate_action` | Action already performed (liked, retweeted, etc.) | No action needed. The operation was already completed. |
-| 404 | `x_target_not_found` | Target tweet or user not found | Verify the tweet ID or username. The target may have been deleted. |
-| 400 | `x_content_too_long` | Tweet exceeds character limit | Shorten the tweet text to fit within X's character limit. |
-| 429 | `x_rate_limited` | Rate limited by X platform | Wait a few minutes before retrying. Respect X's rate limits. |
-| 401 | `x_auth_failure` | X session expired — re-add account | Re-authenticate the X account from the [dashboard](https://xquik.com/dashboard). |
-| 502 | `x_transient_error` | X temporarily unavailable | Retry with exponential backoff. |
-| 502 | `x_rejected` | X rejected the request | Check the request parameters. Retry if the issue seems transient. |
-| 502 | `x_login_auth_failed` | X login failed — check credentials | Verify the X account credentials and try again. |
-| 502 | `x_login_proxy_error` | Connection issue during login | Retry the login. If persistent, [contact support](mailto:support@xquik.com). |
-| 502 | `x_login_suspended` | X account suspended or locked | Check the account status on X. The account may be suspended or locked. |
-| 429 | `x_login_rate_limited` | Too many login attempts | Wait before retrying. Reduce the frequency of login attempts. |
-| 502 | `x_login_failed` | Failed to connect X account | Retry the connection. If persistent, [contact support](mailto:support@xquik.com). |
-| 502 | `x_login_challenge` | Security challenge required | Complete the security challenge on X, then retry. |
-| 502 | `x_login_denied` | X rejected the login | Verify your credentials and try again. |
-| 502 | `x_login_service_unavailable` | Write service temporarily unavailable | Retry later. The write service is temporarily down. |
-
 **Response format:**
 
 ```json
-{ "error": "error_code" }
+{ "error": "error_code", "message": "Human-readable description" }
 ```
 
-Some errors include additional context:
+Some errors include additional context fields (e.g. `limit`, `retryAfter`).
 
-```json
-{
-  "error": "monitor_limit_reached",
-  "limit": 1
-}
-```
+<AccordionGroup>
+  <Accordion title="Validation errors (400)">
+    Request body or parameters failed validation. Fix the request before retrying.
+
+    | Code | Description | Recommended Action |
+    |------|-------------|-------------------|
+    | `invalid_input` | Request body failed validation | Fix the request body. Check required fields and types. |
+    | `invalid_json` | Request body contains invalid JSON | Fix the request body to contain valid JSON. |
+    | `invalid_id` | Path parameter is not a valid ID | Fix the path parameter. IDs are numeric strings. |
+    | `invalid_tweet_url` | Tweet URL format is invalid | Use the full URL format: `https://x.com/user/status/ID`. |
+    | `invalid_tweet_id` | Tweet ID is empty or invalid | Provide a valid numeric tweet ID in the path. |
+    | `invalid_username` | X username is empty or invalid | Provide a valid X username without the `@` prefix. |
+    | `invalid_tool_type` | Extraction tool type not recognized | Use one of the 23 valid tool types. See [Create Extraction](/api-reference/extractions/create). |
+    | `invalid_format` | Export format is not supported | Use `csv`, `xlsx`, or `md`. |
+    | `invalid_params` | Export query parameters are invalid | Check the `format` and `type` values. |
+    | `missing_query` | Required query parameter is missing | Include the required `q` parameter. |
+    | `missing_params` | Required query parameters are missing | Check the endpoint docs for required parameters. |
+    | `webhook_inactive` | Webhook is disabled | Reactivate via [Update Webhook](/api-reference/webhooks/update) before testing. |
+  </Accordion>
+
+  <Accordion title="Authentication errors (401)">
+    Missing or invalid credentials. Check your API key or session.
+
+    | Code | Description | Recommended Action |
+    |------|-------------|-------------------|
+    | `unauthenticated` | Missing or invalid API key | Check the `x-api-key` header. Regenerate the key if revoked. |
+    | `account_needs_reauth` | Connected X account needs re-authentication | Re-authenticate the X account from the [dashboard](https://xquik.com/dashboard). |
+  </Accordion>
+
+  <Accordion title="Billing & subscription errors (402)">
+    Subscription or payment issue. See [Billing & Usage](/guides/billing) for plan details.
+
+    | Code | Description | Recommended Action |
+    |------|-------------|-------------------|
+    | `no_subscription` | No active subscription | Subscribe from the [dashboard](https://xquik.com/dashboard). |
+    | `subscription_inactive` | Subscription is not active | Reactivate from the [dashboard](https://xquik.com/dashboard). |
+    | `usage_limit_reached` | Monthly usage limit exceeded | Wait for the next billing period or check balance via [Get Account](/api-reference/account/get). |
+    | `no_addon` | No monitor addon on subscription | Add a monitor addon from the [dashboard](https://xquik.com/dashboard). |
+    | `extra_usage_disabled` | Extra usage not enabled | Enable extra usage from the [subscription page](https://xquik.com/subscription). |
+    | `extra_usage_requires_v2` | Extra usage requires updated pricing plan | Contact support to migrate to the current pricing version. |
+    | `manual_subscription` | Extra usage unavailable for this subscription type | Extra usage is only available for Stripe-managed subscriptions. |
+    | `frozen` | Extra usage paused, outstanding payment required | Update payment method from the [dashboard](https://xquik.com/subscription). |
+    | `overage_limit_reached` | Overage spending limit reached | Wait for the current overage invoice to be processed. See [Spending Limits](/guides/billing#spending-limits). |
+    | `payment_failed` | Payment processing failed | Update payment method from the [dashboard](https://xquik.com/subscription). |
+    | `no_credits` | No credits available | Purchase credits or subscribe from the [dashboard](https://xquik.com/dashboard). |
+    | `insufficient_credits` | Not enough credits for this operation | Check balance via [Get Account](/api-reference/account/get). Purchase more credits or wait for next billing period. |
+  </Accordion>
+
+  <Accordion title="Permission errors (403)">
+    Action not allowed under current plan or limits.
+
+    | Code | Description | Recommended Action |
+    |------|-------------|-------------------|
+    | `api_key_limit_reached` | API key limit reached (100 max) | Delete an existing key before creating a new one. |
+    | `monitor_limit_reached` | Plan monitor limit exceeded | Delete an existing monitor or add capacity ($5/month per extra monitor). |
+    | `x_account_feature_required` | X Premium required for this action | Upgrade to X Premium on the target account. |
+    | `x_account_suspended` | X account suspended or restricted | Check the account status on X. |
+    | `x_account_protected` | Target account is private | The target account has a protected profile. Request to follow them first. |
+  </Accordion>
+
+  <Accordion title="Not found errors (404)">
+    The requested resource does not exist or has been deleted.
+
+    | Code | Description | Recommended Action |
+    |------|-------------|-------------------|
+    | `not_found` | Resource does not exist | Verify the resource ID. It may belong to another account or have been deleted. |
+    | `user_not_found` | X user not found | Check the username. The account may not exist or may be suspended. |
+    | `tweet_not_found` | Tweet not found | Check the tweet ID. The tweet may have been deleted or the ID is invalid. |
+    | `no_media` | Tweet has no downloadable media | The tweet does not contain any media attachments. |
+    | `article_not_found` | Tweet has no linked article | The tweet does not contain a linked article. |
+    | `draft_not_found` | Draft does not exist | Verify the draft ID. It may have been deleted. |
+    | `style_not_found` | No cached writing style | Analyze the user's style first via `POST /api/v1/styles`. |
+    | `no_cached_style` | No cached writing style for username lookup | Analyze the user's style first via `POST /api/v1/styles`. |
+  </Accordion>
+
+  <Accordion title="Conflict errors (409)">
+    Resource already exists or action outcome is unclear.
+
+    | Code | Description | Recommended Action |
+    |------|-------------|-------------------|
+    | `monitor_already_exists` | Duplicate monitor for this X account | Use the existing monitor. Call [Update Monitor](/api-reference/monitors/update) to change event types. |
+    | `account_already_connected` | X account is already connected | Use the existing connection. |
+    | `x_write_ambiguous` | Write action completion could not be confirmed | Verify the action result manually. The write may have succeeded. |
+    | `x_duplicate_action` | Action already performed (liked, retweeted, etc.) | No action needed. The operation was already completed. |
+  </Accordion>
+
+  <Accordion title="Validation errors (422)">
+    | Code | Description | Recommended Action |
+    |------|-------------|-------------------|
+    | `shadow_account` | Account is shadow-banned | The X account may be restricted. Check account status on X. |
+  </Accordion>
+
+  <Accordion title="Rate limit errors (429)">
+    Request rate exceeded. See [Rate Limits](/guides/rate-limits) for tier details.
+
+    | Code | Description | Recommended Action |
+    |------|-------------|-------------------|
+    | `rate_limit_exceeded` | API rate limited | Retry with exponential backoff. Respect the `Retry-After` header. Response includes `retryAfter` (seconds). |
+    | `x_api_rate_limited` | X data source rate limited | Retry in a few minutes. The data source is experiencing high traffic. |
+  </Accordion>
+
+  <Accordion title="Server & upstream errors (500/502)">
+    Transient failures. Retry with exponential backoff (max 3 attempts).
+
+    | Code | Description | Recommended Action |
+    |------|-------------|-------------------|
+    | `internal_error` | Server error | Retry with backoff. [Contact support](mailto:support@xquik.com) if persistent. |
+    | `x_api_unavailable` | X data source temporarily unavailable | Retry with backoff. |
+    | `x_api_unauthorized` | X data source authentication failed | Retry later. [Contact support](mailto:support@xquik.com) if persistent. |
+    | `stream_registration_failed` | Stream registration failed | Retry the request. |
+    | `x_write_failed` | Write action failed unexpectedly | Retry the request. [Contact support](mailto:support@xquik.com) if persistent. |
+    | `media_download_failed` | Media download from source failed | Retry the request. |
+    | `connection_failed` | Failed to connect X account | Retry the connection. |
+    | `reauth_failed` | Failed to re-authenticate X account | Retry the re-authentication. |
+  </Accordion>
+</AccordionGroup>
 
 ## Retry with exponential backoff
 
