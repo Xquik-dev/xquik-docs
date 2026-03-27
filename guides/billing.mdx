@@ -4,7 +4,7 @@ description: Subscription pricing, usage quotas, and monthly operation limits
 keywords: ["pricing", "subscription", "usage quota", "billing period"]
 ---
 
-Xquik uses a flat subscription model with a monthly usage quota. One monthly fee, no surprises.
+Xquik uses a flat subscription model with a monthly credit allowance. Your monthly quota is measured in **credits** — each API call costs 1 or more credits. One monthly fee, no surprises.
 
 ## Subscription
 
@@ -18,14 +18,14 @@ All tiers include 1 monitor. Additional monitors are $5/month each. Payment via 
 
 Subscribe from the [dashboard](https://xquik.com). Your subscription activates immediately and renews monthly. An active subscription is required for all API access.
 
-## Monthly quota
+## Monthly credit allowance
 
-Every subscription includes a monthly usage quota that resets each billing period. All metered operations deduct from a single shared pool. There are no separate buckets per operation type.
+Every subscription includes a monthly credit allowance that resets each billing period. All metered operations deduct credits from a single shared pool. There are no separate buckets per operation type.
 
-When the quota is reached, metered API calls return `402 Payment Required`. Non-metered calls (monitors, webhooks, account, trends) continue to work normally.
+When the allowance is reached, metered API calls return `402 Payment Required`. Non-metered calls (monitors, webhooks, integrations, account) continue to work normally.
 
 <Warning>
-  Metered calls are rejected once the included allowance is consumed. Enable [extra usage](#extra-usage) from the dashboard to continue making metered calls beyond the included allowance.
+  Metered calls are rejected once credits are consumed. Enable [extra usage](#extra-usage) from the dashboard to continue making metered calls beyond the included allowance.
 </Warning>
 
 ## Per-operation costs
@@ -37,19 +37,30 @@ Each metered operation deducts credits from your shared pool. 1 credit = $0.0001
 | Endpoint | Unit |
 |----------|------|
 | [Get tweet](/api-reference/x/get-tweet) | per call |
-| [Get user](/api-reference/x/get-user) | per call |
 | [Search tweets](/api-reference/x/search-tweets) | per tweet returned |
 | [User tweets](/api-reference/x/user-tweets) | per tweet returned |
 | [User likes](/api-reference/x/user-likes) | per result |
 | [User media](/api-reference/x/user-media) | per result |
-| [Favoriters](/api-reference/x/favoriters) | per result |
-| [Followers you know](/api-reference/x/followers-you-know) | per result |
 | [Bookmarks](/api-reference/x/bookmarks) | per result |
 | [Bookmark folders](/api-reference/x/bookmark-folders) | per call |
 | [Notifications](/api-reference/x/notifications) | per result |
 | [Timeline](/api-reference/x/timeline) | per result |
 | [DM history](/api-reference/x/dm-history) | per result |
 | [Download media](/api-reference/x/download-media) | per media item |
+
+### Read operations (2 credits)
+
+| Endpoint | Unit |
+|----------|------|
+| [Get user](/api-reference/x/get-user) | per call |
+| [Favoriters](/api-reference/x/favoriters) | per result |
+| [Followers you know](/api-reference/x/followers-you-know) | per result |
+| [Verified followers](/api-reference/x/verified-followers) | per result |
+
+### Read operations (3 credits)
+
+| Endpoint | Unit |
+|----------|------|
 | [Trends](/api-reference/x/trends) | per call |
 
 ### Read operations (7 credits)
@@ -63,9 +74,9 @@ Each metered operation deducts credits from your shared pool. 1 credit = $0.0001
 
 All write actions cost 2 credits per call: create/delete tweet, like, unlike, retweet, follow, unfollow, send DM, update profile/avatar/banner, upload media, and community actions.
 
-### Extractions & draws (1 credit)
+### Extractions & draws
 
-Extractions consume 1 credit per result extracted. Draws consume 1 credit per participant. Use the [estimate endpoint](/api-reference/extractions/estimate) to preview costs before running large jobs.
+Extractions consume 1-7 credits per result depending on the extraction type. Most extractions (tweets, replies, quotes, mentions, posts, likes, media, search) cost 1 credit per result. User-returning extractions (favoriters, retweeters, community members, followers, following, verified followers, people search, list members, list followers) cost 2 credits per result. Article extractions cost 7 credits per result. Draws consume 1 credit per participant. Use the [estimate endpoint](/api-reference/extractions/estimate) to preview costs before running large jobs.
 
 ### Free operations
 
@@ -73,10 +84,10 @@ The following do not consume any credits: monitors, webhooks, integrations, acco
 
 ## Extra usage
 
-If you need more capacity beyond the included monthly allowance, enable extra usage from the [dashboard subscription page](https://xquik.com/subscription).
+If you need more credits beyond the included monthly allowance, enable extra usage from the [dashboard subscription page](https://xquik.com/subscription).
 
 When extra usage is enabled:
-- Metered calls continue beyond the included allowance instead of returning `402`
+- Metered calls continue beyond the included credit allowance instead of returning `402`
 - Overage is billed separately through Stripe
 - A spending limit caps how much overage you can accumulate before the next invoice
 
@@ -120,7 +131,7 @@ Each successful overage payment advances you to the next tier. The limit resets 
 | `GET /trends` | $0.00015 per call | charge |
 
 <Note>
-  MPP per-call prices match the PAYG credit costs listed above. With a subscription, you get a monthly allowance included in the base price — metered costs only apply after that allowance is consumed. With MPP, every call is billed individually with no monthly commitment.
+  With a subscription, you get a monthly allowance included in the base price — metered costs only apply after that allowance is consumed. With MPP, every call is billed individually with no monthly commitment.
 </Note>
 
 <CardGroup cols={2}>

@@ -13,6 +13,11 @@ keywords: ["user media", "photos", "videos", "x api"]
   ```bash cURL
   curl https://xquik.com/api/v1/x/users/44196397/media \
     -H "x-api-key: xq_YOUR_KEY_HERE" | jq
+
+  # Page 2
+  curl -G https://xquik.com/api/v1/x/users/44196397/media \
+    --data-urlencode "cursor=abc123" \
+    -H "x-api-key: xq_YOUR_KEY_HERE" | jq
   ```
 
   ```javascript Node.js
@@ -21,7 +26,16 @@ keywords: ["user media", "photos", "videos", "x api"]
     headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
   });
   const data = await response.json();
-  console.log(data);
+  console.log(data.tweets);
+
+  // Paginate
+  if (data.has_next_page) {
+    const next = await fetch(
+      `https://xquik.com/api/v1/x/users/${userId}/media?cursor=${data.next_cursor}`,
+      { headers: { "x-api-key": "xq_YOUR_KEY_HERE" } },
+    );
+    console.log((await next.json()).tweets);
+  }
   ```
 
   ```python Python
@@ -32,14 +46,29 @@ keywords: ["user media", "photos", "videos", "x api"]
       headers={"x-api-key": "xq_YOUR_KEY_HERE"},
   )
   data = response.json()
-  print(data)
+  print(data["tweets"])
+
+  # Paginate
+  while data["has_next_page"]:
+      data = requests.get(
+          "https://xquik.com/api/v1/x/users/44196397/media",
+          params={"cursor": data["next_cursor"]},
+          headers={"x-api-key": "xq_YOUR_KEY_HERE"},
+      ).json()
+      print(data["tweets"])
   ```
 </CodeGroup>
 
 ## Path parameters
 
 <ParamField path="id" type="string" required>
-  X user ID (numeric string).
+  X user ID (numeric string) or username.
+</ParamField>
+
+## Query parameters
+
+<ParamField query="cursor" type="string">
+  Pagination cursor. Pass the `next_cursor` value from the previous response to fetch the next page.
 </ParamField>
 
 ## Headers
@@ -57,6 +86,7 @@ keywords: ["user media", "photos", "videos", "x api"]
       <Expandable title="tweet object">
         <ResponseField name="id" type="string">Tweet ID.</ResponseField>
         <ResponseField name="text" type="string">Tweet text content.</ResponseField>
+        <ResponseField name="type" type="string">Tweet type. Omitted if unavailable.</ResponseField>
         <ResponseField name="createdAt" type="string">ISO 8601 creation timestamp. Omitted if unavailable.</ResponseField>
         <ResponseField name="likeCount" type="number">Like count. Omitted if unavailable.</ResponseField>
         <ResponseField name="retweetCount" type="number">Retweet count. Omitted if unavailable.</ResponseField>
@@ -64,10 +94,21 @@ keywords: ["user media", "photos", "videos", "x api"]
         <ResponseField name="quoteCount" type="number">Quote tweet count. Omitted if unavailable.</ResponseField>
         <ResponseField name="viewCount" type="number">View count. Omitted if unavailable.</ResponseField>
         <ResponseField name="bookmarkCount" type="number">Bookmark count. Omitted if unavailable.</ResponseField>
+        <ResponseField name="url" type="string">Permalink URL on X. Omitted if unavailable.</ResponseField>
+        <ResponseField name="lang" type="string">Tweet language code. Omitted if unavailable.</ResponseField>
+        <ResponseField name="entities" type="object">Parsed entities. Omitted if unavailable.</ResponseField>
+        <ResponseField name="author" type="object">Tweet author. Omitted if unavailable.</ResponseField>
         <ResponseField name="media" type="object[]">Media attachments (photos, videos, GIFs). Omitted if unavailable.</ResponseField>
+        <ResponseField name="quoted_tweet" type="object">Embedded quoted tweet. Omitted if not a quote tweet.</ResponseField>
+        <ResponseField name="retweeted_tweet" type="object">Original retweeted tweet. Omitted if not a retweet.</ResponseField>
       </Expandable>
     </ResponseField>
-    <ResponseField name="count" type="number">Number of tweets returned.</ResponseField>
+    <ResponseField name="has_next_page" type="boolean">
+      Whether more results are available.
+    </ResponseField>
+    <ResponseField name="next_cursor" type="string">
+      Opaque cursor for the next page. Empty string when no more results.
+    </ResponseField>
 
     ```json
     {
@@ -78,10 +119,12 @@ keywords: ["user media", "photos", "videos", "x api"]
           "createdAt": "2026-02-24T10:00:00.000Z",
           "likeCount": 200,
           "viewCount": 15000,
-          "media": [{ "type": "photo", "url": "https://pbs.twimg.com/media/example.jpg" }]
+          "url": "https://x.com/user/status/1893456789012345678",
+          "media": [{ "type": "photo", "mediaUrl": "https://pbs.twimg.com/media/example.jpg" }]
         }
       ],
-      "count": 1
+      "has_next_page": true,
+      "next_cursor": "DAADDAABCgABF..."
     }
     ```
   </Tab>

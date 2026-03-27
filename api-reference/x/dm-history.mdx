@@ -17,6 +17,11 @@ keywords: ["direct messages", "dm", "chat history", "x api"]
   ```bash cURL
   curl -G https://xquik.com/api/v1/x/dm/44196397/history \
     -H "x-api-key: xq_YOUR_KEY_HERE" | jq
+
+  # Page 2
+  curl -G https://xquik.com/api/v1/x/dm/44196397/history \
+    --data-urlencode "cursor=abc123" \
+    -H "x-api-key: xq_YOUR_KEY_HERE" | jq
   ```
 
   ```javascript Node.js
@@ -25,7 +30,16 @@ keywords: ["direct messages", "dm", "chat history", "x api"]
     headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
   });
   const data = await response.json();
-  console.log(data);
+  console.log(data.messages);
+
+  // Paginate
+  if (data.has_next_page) {
+    const next = await fetch(
+      `https://xquik.com/api/v1/x/dm/${userId}/history?cursor=${data.next_cursor}`,
+      { headers: { "x-api-key": "xq_YOUR_KEY_HERE" } },
+    );
+    console.log((await next.json()).messages);
+  }
   ```
 
   ```python Python
@@ -36,7 +50,16 @@ keywords: ["direct messages", "dm", "chat history", "x api"]
       headers={"x-api-key": "xq_YOUR_KEY_HERE"},
   )
   data = response.json()
-  print(data)
+  print(data["messages"])
+
+  # Paginate
+  while data["has_next_page"]:
+      data = requests.get(
+          "https://xquik.com/api/v1/x/dm/44196397/history",
+          params={"cursor": data["next_cursor"]},
+          headers={"x-api-key": "xq_YOUR_KEY_HERE"},
+      ).json()
+      print(data["messages"])
   ```
 </CodeGroup>
 
@@ -48,8 +71,8 @@ keywords: ["direct messages", "dm", "chat history", "x api"]
 
 ## Query parameters
 
-<ParamField query="maxId" type="string">
-  Pagination cursor. Pass the ID of the oldest message from the previous response to fetch older messages.
+<ParamField query="cursor" type="string">
+  Pagination cursor. Pass the `next_cursor` value from the previous response to fetch older messages.
 </ParamField>
 
 ## Headers
@@ -72,7 +95,12 @@ keywords: ["direct messages", "dm", "chat history", "x api"]
         <ResponseField name="createdAt" type="string">ISO 8601 timestamp. Omitted if unavailable.</ResponseField>
       </Expandable>
     </ResponseField>
-    <ResponseField name="count" type="number">Number of messages returned.</ResponseField>
+    <ResponseField name="has_next_page" type="boolean">
+      Whether older messages are available.
+    </ResponseField>
+    <ResponseField name="next_cursor" type="string">
+      Opaque cursor for the next page. Empty string when no more messages.
+    </ResponseField>
 
     ```json
     {
@@ -85,7 +113,8 @@ keywords: ["direct messages", "dm", "chat history", "x api"]
           "createdAt": "2026-02-24T10:00:00.000Z"
         }
       ],
-      "count": 1
+      "has_next_page": true,
+      "next_cursor": "1893456789012345677"
     }
     ```
   </Tab>

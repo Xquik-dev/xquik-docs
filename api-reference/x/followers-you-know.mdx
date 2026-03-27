@@ -6,12 +6,17 @@ keywords: ["followers", "mutual", "followers you know", "x api"]
 ---
 
 <Callout icon="coins" color="#5c3327">
-  **1 credit per result returned** · $0.00015 on [PAYG](/guides/billing#pay-per-use-mpp)
+  **2 credits per result returned** · $0.0003 on [PAYG](/guides/billing#pay-per-use-mpp)
 </Callout>
 
 <CodeGroup>
   ```bash cURL
   curl https://xquik.com/api/v1/x/users/44196397/followers-you-know \
+    -H "x-api-key: xq_YOUR_KEY_HERE" | jq
+
+  # Page 2
+  curl -G https://xquik.com/api/v1/x/users/44196397/followers-you-know \
+    --data-urlencode "cursor=abc123" \
     -H "x-api-key: xq_YOUR_KEY_HERE" | jq
   ```
 
@@ -21,7 +26,16 @@ keywords: ["followers", "mutual", "followers you know", "x api"]
     headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
   });
   const data = await response.json();
-  console.log(data);
+  console.log(data.users);
+
+  // Paginate
+  if (data.has_next_page) {
+    const next = await fetch(
+      `https://xquik.com/api/v1/x/users/${userId}/followers-you-know?cursor=${data.next_cursor}`,
+      { headers: { "x-api-key": "xq_YOUR_KEY_HERE" } },
+    );
+    console.log((await next.json()).users);
+  }
   ```
 
   ```python Python
@@ -32,7 +46,16 @@ keywords: ["followers", "mutual", "followers you know", "x api"]
       headers={"x-api-key": "xq_YOUR_KEY_HERE"},
   )
   data = response.json()
-  print(data)
+  print(data["users"])
+
+  # Paginate
+  while data["has_next_page"]:
+      data = requests.get(
+          "https://xquik.com/api/v1/x/users/44196397/followers-you-know",
+          params={"cursor": data["next_cursor"]},
+          headers={"x-api-key": "xq_YOUR_KEY_HERE"},
+      ).json()
+      print(data["users"])
   ```
 </CodeGroup>
 
@@ -40,6 +63,12 @@ keywords: ["followers", "mutual", "followers you know", "x api"]
 
 <ParamField path="id" type="string" required>
   X user ID (numeric string).
+</ParamField>
+
+## Query parameters
+
+<ParamField query="cursor" type="string">
+  Pagination cursor. Pass the `next_cursor` value from the previous response to fetch the next page.
 </ParamField>
 
 ## Headers
@@ -63,7 +92,12 @@ keywords: ["followers", "mutual", "followers you know", "x api"]
         <ResponseField name="profilePicture" type="string">Profile picture URL. Omitted if unavailable.</ResponseField>
       </Expandable>
     </ResponseField>
-    <ResponseField name="count" type="number">Number of users returned.</ResponseField>
+    <ResponseField name="has_next_page" type="boolean">
+      Whether more results are available.
+    </ResponseField>
+    <ResponseField name="next_cursor" type="string">
+      Opaque cursor for the next page. Empty string when no more results.
+    </ResponseField>
 
     ```json
     {
@@ -77,7 +111,8 @@ keywords: ["followers", "mutual", "followers you know", "x api"]
           "profilePicture": "https://pbs.twimg.com/profile_images/xquik/photo.jpg"
         }
       ],
-      "count": 1
+      "has_next_page": true,
+      "next_cursor": "DAADDAABCgABF..."
     }
     ```
   </Tab>

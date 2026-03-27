@@ -6,646 +6,659 @@ keywords: ["typescript", "type definitions", "interfaces", "request types", "res
 
 Copy-pasteable TypeScript types for every Xquik API object. Use these in your client code for full type safety.
 
-```typescript
-// ─── Account ─────────────────────────────────────────────
-
-interface Account {
-  plan: "active" | "inactive";
-  pricingVersion: number;
-  monitorsAllowed: number;
-  monitorsUsed: number;
-  currentPeriod?: {
-    start: string;
-    end: string;
-    usagePercent: number;
-  };
-}
-
-// ─── API Keys ────────────────────────────────────────────
-
-// Returned when creating a new key (includes full key)
-interface ApiKeyCreated {
-  id: string;
-  fullKey: string;
-  prefix: string;
-  name: string;
-  createdAt: string;
-}
-
-// Returned when listing keys (full key is never exposed)
-interface ApiKey {
-  id: string;
-  name: string;
-  prefix: string;
-  isActive: boolean;
-  createdAt: string;
-  lastUsedAt?: string;
-}
-
-// ─── Monitors ────────────────────────────────────────────
-
-interface Monitor {
-  id: string;
-  username: string;
-  xUserId: string;
-  eventTypes: EventType[];
-  isActive: boolean;
-  createdAt: string;
-}
-
-type EventType =
-  | "follower.gained"
-  | "follower.lost"
-  | "tweet.new"
-  | "tweet.quote"
-  | "tweet.reply"
-  | "tweet.retweet";
-
-// ─── Events ──────────────────────────────────────────────
-
-interface Event {
-  id: string;
-  type: EventType;
-  monitorId: string;
-  username: string;
-  occurredAt: string;
-  data: EventData;
-  xEventId?: string;
-}
-
-// The data field contains the raw tweet object from the X real-time stream.
-// Fields vary by event type. Common fields shown below.
-interface TweetEventData {
-  id: string;
-  text: string;
-  author: {
-    id: string;
-    userName: string;
-    name: string;
-  };
-  isRetweet: boolean;
-  isReply: boolean;
-  isQuote: boolean;
-  createdAt: string;
-  // tweet.reply only
-  inReplyToId?: string;
-  // tweet.quote only
-  quoted_tweet?: {
-    id: string;
-    text: string;
-    author: { userName: string };
-  };
-}
-
-// follower.gained and follower.lost events
-interface FollowerEventData {
-  followerId: string;
-  followerUsername: string;
-  followerName: string;
-  followerFollowersCount: number;
-  followerVerified: boolean;
-}
-
-type EventData = TweetEventData | FollowerEventData;
-
-interface EventList {
-  events: Event[];
-  hasMore: boolean;
-  nextCursor?: string;
-}
-
-// ─── Webhooks ────────────────────────────────────────────
-
-// Returned when creating a webhook (includes signing secret)
-interface WebhookCreated {
-  id: string;
-  url: string;
-  eventTypes: EventType[];
-  secret: string;
-  createdAt: string;
-}
-
-// Returned when listing webhooks (secret is never exposed)
-interface Webhook {
-  id: string;
-  url: string;
-  eventTypes: EventType[];
-  isActive: boolean;
-  createdAt: string;
-}
-
-// ─── Deliveries ──────────────────────────────────────────
-
-interface Delivery {
-  id: string;
-  streamEventId: string;
-  status: "pending" | "delivered" | "failed" | "exhausted";
-  attempts: number;
-  lastStatusCode?: number;
-  lastError?: string;
-  createdAt: string;
-  deliveredAt?: string;
-}
-
-// ─── Webhook Payload ─────────────────────────────────────
-
-// What your webhook endpoint receives as the POST body
-interface WebhookPayload {
-  eventType: EventType;
-  username: string;
-  data: EventData;
-}
-
-// ─── Error Response ──────────────────────────────────────
-
-interface ApiError {
-  error: string;
-  limit?: number; // only present for monitor_limit_reached
-}
-
-// ─── Request Bodies ──────────────────────────────────────
-
-interface CreateMonitorRequest {
-  username: string;
-  eventTypes: EventType[];
-}
-
-interface UpdateMonitorRequest {
-  eventTypes?: EventType[];
-  isActive?: boolean;
-}
-
-interface CreateWebhookRequest {
-  url: string;
-  eventTypes: EventType[];
-}
-
-interface UpdateWebhookRequest {
-  url?: string;
-  eventTypes?: EventType[];
-  isActive?: boolean;
-}
-
-interface CreateApiKeyRequest {
-  name?: string;
-}
-
-// ─── Draws ──────────────────────────────────────────────
-
-interface Draw {
-  id: string;
-  tweetId: string;
-  tweetUrl: string;
-  tweetText: string;
-  tweetAuthorUsername: string;
-  tweetLikeCount: number;
-  tweetRetweetCount: number;
-  tweetReplyCount: number;
-  tweetQuoteCount: number;
-  status: "pending" | "running" | "completed" | "failed";
-  totalEntries: number;
-  validEntries: number;
-  createdAt: string;
-  drawnAt?: string;
-}
-
-interface DrawListItem {
-  id: string;
-  tweetUrl: string;
-  status: "pending" | "running" | "completed" | "failed";
-  totalEntries: number;
-  validEntries: number;
-  createdAt: string;
-  drawnAt?: string;
-}
-
-interface DrawWinner {
-  position: number;
-  authorUsername: string;
-  tweetId: string;
-  isBackup: boolean;
-}
-
-interface DrawList {
-  draws: DrawListItem[];
-  hasMore: boolean;
-  nextCursor?: string;
-}
-
-interface CreateDrawRequest {
-  tweetUrl: string;
-  winnerCount?: number;
-  backupCount?: number;
-  uniqueAuthorsOnly?: boolean;
-  mustRetweet?: boolean;
-  mustFollowUsername?: string;
-  filterMinFollowers?: number;
-  filterAccountAgeDays?: number;
-  filterLanguage?: string;
-  requiredKeywords?: string[];
-  requiredHashtags?: string[];
-  requiredMentions?: string[];
-}
-
-// ─── Extractions ────────────────────────────────────────
-
-type ExtractionToolType =
-  | "article_extractor"
-  | "community_extractor"
-  | "community_moderator_explorer"
-  | "community_post_extractor"
-  | "community_search"
-  | "favoriters"
-  | "follower_explorer"
-  | "following_explorer"
-  | "list_follower_explorer"
-  | "list_member_extractor"
-  | "list_post_extractor"
-  | "mention_extractor"
-  | "people_search"
-  | "post_extractor"
-  | "quote_extractor"
-  | "reply_extractor"
-  | "repost_extractor"
-  | "space_explorer"
-  | "thread_extractor"
-  | "tweet_search_extractor"
-  | "user_likes"
-  | "user_media"
-  | "verified_follower_explorer";
-
-interface ExtractionJob {
-  id: string;
-  toolType: ExtractionToolType;
-  status: "pending" | "running" | "completed" | "failed";
-  totalResults: number;
-  targetTweetId?: string;
-  targetUsername?: string;
-  targetUserId?: string;
-  targetCommunityId?: string;
-  searchQuery?: string;
-  errorMessage?: string;
-  createdAt: string;
-  completedAt?: string;
-}
-
-interface ExtractionResult {
-  id: string;
-  xUserId: string;
-  xUsername?: string;
-  xDisplayName?: string;
-  xFollowersCount?: number;
-  xVerified?: boolean;
-  xProfileImageUrl?: string;
-  tweetId?: string;
-  tweetText?: string;
-  tweetCreatedAt?: string;
-  createdAt: string;
-}
-
-interface ExtractionList {
-  extractions: ExtractionJob[];
-  hasMore: boolean;
-  nextCursor?: string;
-}
-
-interface ExtractionEstimate {
-  allowed: boolean;
-  source: "replyCount" | "retweetCount" | "quoteCount" | "followers" | "unknown";
-  estimatedResults: number;
-  usagePercent: number;
-  projectedPercent: number;
-  error?: string;
-}
-
-interface CreateExtractionRequest {
-  toolType: ExtractionToolType;
-  targetTweetId?: string;
-  targetUsername?: string;
-  targetCommunityId?: string;
-  targetListId?: string;
-  targetSpaceId?: string;
-  searchQuery?: string;
-  resultsLimit?: number;
-}
-
-// ─── X API ──────────────────────────────────────────────
-
-interface TweetMediaItem {
-  mediaUrl: string;
-  type: string;
-  url: string;
-}
-
-interface Tweet {
-  id: string;
-  text: string;
-  createdAt?: string;
-  retweetCount: number;
-  replyCount: number;
-  likeCount: number;
-  quoteCount: number;
-  viewCount: number;
-  bookmarkCount: number;
-  media?: TweetMediaItem[];
-}
-
-interface TweetAuthor {
-  id: string;
-  username: string;
-  followers: number;
-  verified: boolean;
-  profilePicture?: string;
-}
-
-interface TweetSearchResult {
-  id: string;
-  text: string;
-  createdAt: string;
-  likeCount: number;
-  retweetCount: number;
-  replyCount: number;
-  author: {
-    id: string;
-    username: string;
-    name: string;
-    verified: boolean;
-  };
-  media?: TweetMediaItem[];
-}
-
-interface UserProfile {
-  id: string;
-  username: string;
-  name: string;
-  description?: string;
-  followers?: number;
-  following?: number;
-  verified?: boolean;
-  profilePicture?: string;
-  location?: string;
-  createdAt?: string;
-  statusesCount?: number;
-}
-
-interface FollowerCheck {
-  sourceUsername: string;
-  targetUsername: string;
-  isFollowing: boolean;
-  isFollowedBy: boolean;
-}
-
-// ─── Trends ─────────────────────────────────────────────
-
-interface Trend {
-  name: string;
-  description?: string;
-  rank?: number;
-  query?: string;
-}
-
-interface TrendList {
-  trends: Trend[];
-  total: number;
-  woeid: number;
-}
-
-// ─── Radar ──────────────────────────────────────────────
-
-type RadarSource =
-  | "github"
-  | "google_trends"
-  | "hacker_news"
-  | "polymarket"
-  | "reddit"
-  | "trustmrr"
-  | "wikipedia";
-
-type RadarCategory =
-  | "business"
-  | "culture"
-  | "dev"
-  | "entertainment"
-  | "general"
-  | "politics"
-  | "science"
-  | "tech";
-
-interface RadarItem {
-  id: string;
-  title: string;
-  description?: string;
-  url?: string;
-  imageUrl?: string;
-  source: RadarSource;
-  sourceId: string;
-  category: RadarCategory;
-  region: string;
-  language: string;
-  score: number;
-  metadata: Record<string, unknown>;
-  publishedAt: string;
-  createdAt: string;
-}
-
-interface RadarList {
-  items: RadarItem[];
-  hasMore: boolean;
-  nextCursor?: string;
-}
-
-// ─── Styles ─────────────────────────────────────────────
-
-interface StyleTweet {
-  id: string;
-  authorUsername: string;
-  text: string;
-  createdAt: string;
-  media?: TweetMediaItem[];
-}
-
-interface StyleProfile {
-  xUsername: string;
-  isOwnAccount: boolean;
-  tweetCount: number;
-  fetchedAt: string;
-  tweets: StyleTweet[];
-}
-
-interface StyleListItem {
-  xUsername: string;
-  isOwnAccount: boolean;
-  tweetCount: number;
-  fetchedAt: string;
-}
-
-interface StyleList {
-  styles: StyleListItem[];
-}
-
-interface StyleComparison {
-  style1: StyleProfile;
-  style2: StyleProfile;
-}
-
-interface PerformanceTweet {
-  id: string;
-  text: string;
-  likeCount: number;
-  retweetCount: number;
-  replyCount: number;
-  quoteCount: number;
-  viewCount: number;
-  bookmarkCount: number;
-}
-
-interface PerformanceAnalysis {
-  xUsername: string;
-  tweetCount: number;
-  tweets: PerformanceTweet[];
-}
-
-// ─── Drafts ─────────────────────────────────────────────
-
-interface Draft {
-  id: string;
-  text: string;
-  topic?: string;
-  goal?: "engagement" | "followers" | "authority" | "conversation";
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface DraftList {
-  drafts: Draft[];
-  hasMore: boolean;
-  nextCursor?: string;
-}
-
-interface CreateDraftRequest {
-  text: string;
-  topic?: string;
-  goal?: "engagement" | "followers" | "authority" | "conversation";
-}
-
-// ─── X Accounts ───────────────────────────────────────────
-
-interface XAccount {
-  id: string;
-  username: string;
-  displayName: string;
-  isActive: boolean;
-  createdAt: string;
-}
-
-// ─── Integrations ─────────────────────────────────────────
-
-interface Integration {
-  id: string;
-  type: string;
-  name: string;
-  config: Record<string, unknown>;
-  eventTypes: string[];
-  filters: EventFilters | null;
-  messageTemplate: string | null;
-  scopeAllMonitors: boolean;
-  silentPush: boolean;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface EventFilters {
-  keywords?: { include?: string[]; exclude?: string[] };
-  minLikes?: number;
-  minRetweets?: number;
-  verifiedOnly?: boolean;
-}
-
-// ─── Compose ──────────────────────────────────────────────
-
-type ComposeTweetGoal = "authority" | "conversation" | "engagement" | "followers";
-type MediaType = "none" | "photo" | "video";
-
-interface ComposeRequest {
-  step: "compose" | "refine" | "score";
-  topic?: string;
-  goal?: ComposeTweetGoal;
-  styleUsername?: string;
-  tone?: string;
-  additionalContext?: string;
-  callToAction?: string;
-  hasLink?: boolean;
-  hasMedia?: boolean;
-  mediaType?: MediaType;
-  draft?: string;
-}
-
-// step="compose" response
-interface ComposeTweetResult {
-  contentRules: { rule: string }[];
-  engagementMultipliers: { action: string; multiplier: string }[];
-  engagementVelocity: string;
-  followUpQuestions: string[];
-  intentUrl: string;
-  nextStep: string;
-  scorerWeights: { signal: string; weight: number; context: string }[];
-  source: string;
-  topPenalties: string[];
-}
-
-// step="refine" response
-interface RefineTweetResult {
-  compositionGuidance: string[];
-  examplePatterns: { description: string; pattern: string }[];
-  intentUrl: string;
-  nextStep: string;
-}
-
-// step="score" response
-interface ScoreTweetResult {
-  passed: boolean;
-  passedCount: number;
-  totalChecks: number;
-  topSuggestion: string;
-  nextStep: string;
-  checklist: { factor: string; passed: boolean; suggestion?: string }[];
-  intentUrl?: string;
-}
-
-// ─── X Write ──────────────────────────────────────────────
-
-interface XWriteResponse {
-  success: boolean;
-  data?: Record<string, unknown>;
-}
-
-// ─── Support Tickets ──────────────────────────────────────
-
-interface SupportTicket {
-  publicId: string;
-  subject: string;
-  status: "open" | "in_progress" | "resolved" | "closed";
-  messageCount: number;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface SupportTicketDetail {
-  publicId: string;
-  subject: string;
-  status: "open" | "in_progress" | "resolved" | "closed";
-  createdAt: string;
-  updatedAt: string;
-  messages: SupportMessage[];
-}
-
-interface SupportMessage {
-  body: string;
-  sender: "user" | "support";
-  createdAt: string;
-}
-```
+<Tip>
+  For large projects, copy the entire tab contents into a single `xquik-types.ts` file rather than copy-pasting individual interfaces.
+</Tip>
+
+<Tabs>
+  <Tab title="Response types">
+    Response objects returned by API endpoints.
+
+    ```typescript
+    // ─── Account ─────────────────────────────────────────────
+
+    interface Account {
+      plan: "active" | "inactive";
+      pricingVersion: number;
+      monitorsAllowed: number;
+      monitorsUsed: number;
+      currentPeriod?: {
+        start: string;
+        end: string;
+        usagePercent: number;
+      };
+    }
+
+    // ─── API Keys ────────────────────────────────────────────
+
+    // Returned when creating a new key (includes full key)
+    interface ApiKeyCreated {
+      id: string;
+      fullKey: string;
+      prefix: string;
+      name: string;
+      createdAt: string;
+    }
+
+    // Returned when listing keys (full key is never exposed)
+    interface ApiKey {
+      id: string;
+      name: string;
+      prefix: string;
+      isActive: boolean;
+      createdAt: string;
+      lastUsedAt?: string;
+    }
+
+    // ─── Monitors ────────────────────────────────────────────
+
+    interface Monitor {
+      id: string;
+      username: string;
+      xUserId: string;
+      eventTypes: EventType[];
+      isActive: boolean;
+      createdAt: string;
+    }
+
+    // ─── Events ──────────────────────────────────────────────
+
+    interface Event {
+      id: string;
+      type: EventType;
+      monitorId: string;
+      username: string;
+      occurredAt: string;
+      data: EventData;
+      xEventId?: string;
+    }
+
+    interface EventList {
+      events: Event[];
+      hasMore: boolean;
+      nextCursor?: string;
+    }
+
+    // ─── Webhooks ────────────────────────────────────────────
+
+    // Returned when creating a webhook (includes signing secret)
+    interface WebhookCreated {
+      id: string;
+      url: string;
+      eventTypes: EventType[];
+      secret: string;
+      createdAt: string;
+    }
+
+    // Returned when listing webhooks (secret is never exposed)
+    interface Webhook {
+      id: string;
+      url: string;
+      eventTypes: EventType[];
+      isActive: boolean;
+      createdAt: string;
+    }
+
+    // ─── Deliveries ──────────────────────────────────────────
+
+    interface Delivery {
+      id: string;
+      streamEventId: string;
+      status: "pending" | "delivered" | "failed" | "exhausted";
+      attempts: number;
+      lastStatusCode?: number;
+      lastError?: string;
+      createdAt: string;
+      deliveredAt?: string;
+    }
+
+    // ─── Webhook Payload ─────────────────────────────────────
+
+    interface WebhookPayload {
+      eventType: EventType;
+      username: string;
+      data: EventData;
+    }
+
+    // ─── Draws ──────────────────────────────────────────────
+
+    interface Draw {
+      id: string;
+      tweetId: string;
+      tweetUrl: string;
+      tweetText: string;
+      tweetAuthorUsername: string;
+      tweetLikeCount: number;
+      tweetRetweetCount: number;
+      tweetReplyCount: number;
+      tweetQuoteCount: number;
+      status: "pending" | "running" | "completed" | "failed";
+      totalEntries: number;
+      validEntries: number;
+      createdAt: string;
+      drawnAt?: string;
+    }
+
+    interface DrawListItem {
+      id: string;
+      tweetUrl: string;
+      status: "pending" | "running" | "completed" | "failed";
+      totalEntries: number;
+      validEntries: number;
+      createdAt: string;
+      drawnAt?: string;
+    }
+
+    interface DrawWinner {
+      position: number;
+      authorUsername: string;
+      tweetId: string;
+      isBackup: boolean;
+    }
+
+    interface DrawList {
+      draws: DrawListItem[];
+      hasMore: boolean;
+      nextCursor?: string;
+    }
+
+    // ─── Extractions ────────────────────────────────────────
+
+    interface ExtractionJob {
+      id: string;
+      toolType: ExtractionToolType;
+      status: "pending" | "running" | "completed" | "failed";
+      totalResults: number;
+      targetTweetId?: string;
+      targetUsername?: string;
+      targetUserId?: string;
+      targetCommunityId?: string;
+      searchQuery?: string;
+      errorMessage?: string;
+      createdAt: string;
+      completedAt?: string;
+    }
+
+    interface ExtractionResult {
+      id: string;
+      xUserId: string;
+      xUsername?: string;
+      xDisplayName?: string;
+      xFollowersCount?: number;
+      xVerified?: boolean;
+      xProfileImageUrl?: string;
+      tweetId?: string;
+      tweetText?: string;
+      tweetCreatedAt?: string;
+      createdAt: string;
+    }
+
+    interface ExtractionList {
+      extractions: ExtractionJob[];
+      hasMore: boolean;
+      nextCursor?: string;
+    }
+
+    interface ExtractionEstimate {
+      allowed: boolean;
+      source: "replyCount" | "retweetCount" | "quoteCount" | "followers" | "unknown";
+      estimatedResults: number;
+      usagePercent: number;
+      projectedPercent: number;
+      error?: string;
+    }
+
+    // ─── X API ──────────────────────────────────────────────
+
+    interface Tweet {
+      id: string;
+      text: string;
+      createdAt?: string;
+      retweetCount: number;
+      replyCount: number;
+      likeCount: number;
+      quoteCount: number;
+      viewCount: number;
+      bookmarkCount: number;
+      media?: TweetMediaItem[];
+    }
+
+    interface TweetAuthor {
+      id: string;
+      username: string;
+      followers: number;
+      verified: boolean;
+      profilePicture?: string;
+    }
+
+    interface TweetSearchResult {
+      id: string;
+      text: string;
+      createdAt: string;
+      likeCount: number;
+      retweetCount: number;
+      replyCount: number;
+      author: {
+        id: string;
+        username: string;
+        name: string;
+        verified: boolean;
+      };
+      media?: TweetMediaItem[];
+    }
+
+    interface UserProfile {
+      id: string;
+      username: string;
+      name: string;
+      description?: string;
+      followers?: number;
+      following?: number;
+      verified?: boolean;
+      profilePicture?: string;
+      location?: string;
+      createdAt?: string;
+      statusesCount?: number;
+    }
+
+    interface FollowerCheck {
+      sourceUsername: string;
+      targetUsername: string;
+      isFollowing: boolean;
+      isFollowedBy: boolean;
+    }
+
+    // ─── Trends ─────────────────────────────────────────────
+
+    interface Trend {
+      name: string;
+      description?: string;
+      rank?: number;
+      query?: string;
+    }
+
+    interface TrendList {
+      trends: Trend[];
+      total: number;
+      woeid: number;
+    }
+
+    // ─── Radar ──────────────────────────────────────────────
+
+    interface RadarItem {
+      id: string;
+      title: string;
+      description?: string;
+      url?: string;
+      imageUrl?: string;
+      source: RadarSource;
+      sourceId: string;
+      category: RadarCategory;
+      region: string;
+      language: string;
+      score: number;
+      metadata: Record<string, unknown>;
+      publishedAt: string;
+      createdAt: string;
+    }
+
+    interface RadarList {
+      items: RadarItem[];
+      hasMore: boolean;
+      nextCursor?: string;
+    }
+
+    // ─── Styles ─────────────────────────────────────────────
+
+    interface StyleProfile {
+      xUsername: string;
+      isOwnAccount: boolean;
+      tweetCount: number;
+      fetchedAt: string;
+      tweets: StyleTweet[];
+    }
+
+    interface StyleListItem {
+      xUsername: string;
+      isOwnAccount: boolean;
+      tweetCount: number;
+      fetchedAt: string;
+    }
+
+    interface StyleList {
+      styles: StyleListItem[];
+    }
+
+    interface StyleComparison {
+      style1: StyleProfile;
+      style2: StyleProfile;
+    }
+
+    interface PerformanceAnalysis {
+      xUsername: string;
+      tweetCount: number;
+      tweets: PerformanceTweet[];
+    }
+
+    // ─── Drafts ─────────────────────────────────────────────
+
+    interface Draft {
+      id: string;
+      text: string;
+      topic?: string;
+      goal?: "engagement" | "followers" | "authority" | "conversation";
+      createdAt: string;
+      updatedAt: string;
+    }
+
+    interface DraftList {
+      drafts: Draft[];
+      hasMore: boolean;
+      nextCursor?: string;
+    }
+
+    // ─── X Accounts ───────────────────────────────────────────
+
+    interface XAccount {
+      id: string;
+      username: string;
+      displayName: string;
+      isActive: boolean;
+      createdAt: string;
+    }
+
+    // ─── Integrations ─────────────────────────────────────────
+
+    interface Integration {
+      id: string;
+      type: string;
+      name: string;
+      config: Record<string, unknown>;
+      eventTypes: string[];
+      filters: EventFilters | null;
+      messageTemplate: string | null;
+      scopeAllMonitors: boolean;
+      silentPush: boolean;
+      isActive: boolean;
+      createdAt: string;
+      updatedAt: string;
+    }
+
+    // ─── Compose ──────────────────────────────────────────────
+
+    // step="compose" response
+    interface ComposeTweetResult {
+      contentRules: { rule: string }[];
+      engagementMultipliers: { action: string; multiplier: string }[];
+      engagementVelocity: string;
+      followUpQuestions: string[];
+      intentUrl: string;
+      nextStep: string;
+      scorerWeights: { signal: string; weight: number; context: string }[];
+      source: string;
+      topPenalties: string[];
+    }
+
+    // step="refine" response
+    interface RefineTweetResult {
+      compositionGuidance: string[];
+      examplePatterns: { description: string; pattern: string }[];
+      intentUrl: string;
+      nextStep: string;
+    }
+
+    // step="score" response
+    interface ScoreTweetResult {
+      passed: boolean;
+      passedCount: number;
+      totalChecks: number;
+      topSuggestion: string;
+      nextStep: string;
+      checklist: { factor: string; passed: boolean; suggestion?: string }[];
+      intentUrl?: string;
+    }
+
+    // ─── X Write ──────────────────────────────────────────────
+
+    interface XWriteResponse {
+      success: boolean;
+      data?: Record<string, unknown>;
+    }
+
+    // ─── Support Tickets ──────────────────────────────────────
+
+    interface SupportTicket {
+      publicId: string;
+      subject: string;
+      status: "open" | "in_progress" | "resolved" | "closed";
+      messageCount: number;
+      createdAt: string;
+      updatedAt: string;
+    }
+
+    interface SupportTicketDetail {
+      publicId: string;
+      subject: string;
+      status: "open" | "in_progress" | "resolved" | "closed";
+      createdAt: string;
+      updatedAt: string;
+      messages: SupportMessage[];
+    }
+
+    interface SupportMessage {
+      body: string;
+      sender: "user" | "support";
+      createdAt: string;
+    }
+
+    // ─── Error Response ──────────────────────────────────────
+
+    interface ApiError {
+      error: string;
+      limit?: number; // only present for monitor_limit_reached
+    }
+    ```
+  </Tab>
+  <Tab title="Request types">
+    Request body types for POST/PATCH endpoints.
+
+    ```typescript
+    interface CreateMonitorRequest {
+      username: string;
+      eventTypes: EventType[];
+    }
+
+    interface UpdateMonitorRequest {
+      eventTypes?: EventType[];
+      isActive?: boolean;
+    }
+
+    interface CreateWebhookRequest {
+      url: string;
+      eventTypes: EventType[];
+    }
+
+    interface UpdateWebhookRequest {
+      url?: string;
+      eventTypes?: EventType[];
+      isActive?: boolean;
+    }
+
+    interface CreateApiKeyRequest {
+      name?: string;
+    }
+
+    interface CreateDrawRequest {
+      tweetUrl: string;
+      winnerCount?: number;
+      backupCount?: number;
+      uniqueAuthorsOnly?: boolean;
+      mustRetweet?: boolean;
+      mustFollowUsername?: string;
+      filterMinFollowers?: number;
+      filterAccountAgeDays?: number;
+      filterLanguage?: string;
+      requiredKeywords?: string[];
+      requiredHashtags?: string[];
+      requiredMentions?: string[];
+    }
+
+    interface CreateExtractionRequest {
+      toolType: ExtractionToolType;
+      targetTweetId?: string;
+      targetUsername?: string;
+      targetCommunityId?: string;
+      targetListId?: string;
+      targetSpaceId?: string;
+      searchQuery?: string;
+      resultsLimit?: number;
+    }
+
+    interface CreateDraftRequest {
+      text: string;
+      topic?: string;
+      goal?: "engagement" | "followers" | "authority" | "conversation";
+    }
+
+    interface ComposeRequest {
+      step: "compose" | "refine" | "score";
+      topic?: string;
+      goal?: ComposeTweetGoal;
+      styleUsername?: string;
+      tone?: string;
+      additionalContext?: string;
+      callToAction?: string;
+      hasLink?: boolean;
+      hasMedia?: boolean;
+      mediaType?: MediaType;
+      draft?: string;
+    }
+    ```
+  </Tab>
+  <Tab title="Shared types">
+    Enums and shared types used across request and response objects.
+
+    ```typescript
+    type EventType =
+      | "follower.gained"
+      | "follower.lost"
+      | "tweet.new"
+      | "tweet.quote"
+      | "tweet.reply"
+      | "tweet.retweet";
+
+    // The data field contains the raw tweet object from the X real-time stream.
+    interface TweetEventData {
+      id: string;
+      text: string;
+      author: {
+        id: string;
+        userName: string;
+        name: string;
+      };
+      isRetweet: boolean;
+      isReply: boolean;
+      isQuote: boolean;
+      createdAt: string;
+      inReplyToId?: string;
+      quoted_tweet?: {
+        id: string;
+        text: string;
+        author: { userName: string };
+      };
+    }
+
+    interface FollowerEventData {
+      followerId: string;
+      followerUsername: string;
+      followerName: string;
+      followerFollowersCount: number;
+      followerVerified: boolean;
+    }
+
+    type EventData = TweetEventData | FollowerEventData;
+
+    interface EventFilters {
+      keywords?: { include?: string[]; exclude?: string[] };
+      minLikes?: number;
+      minRetweets?: number;
+      verifiedOnly?: boolean;
+    }
+
+    type ExtractionToolType =
+      | "article_extractor"
+      | "community_extractor"
+      | "community_moderator_explorer"
+      | "community_post_extractor"
+      | "community_search"
+      | "favoriters"
+      | "follower_explorer"
+      | "following_explorer"
+      | "list_follower_explorer"
+      | "list_member_extractor"
+      | "list_post_extractor"
+      | "mention_extractor"
+      | "people_search"
+      | "post_extractor"
+      | "quote_extractor"
+      | "reply_extractor"
+      | "repost_extractor"
+      | "space_explorer"
+      | "thread_extractor"
+      | "tweet_search_extractor"
+      | "user_likes"
+      | "user_media"
+      | "verified_follower_explorer";
+
+    type ComposeTweetGoal = "authority" | "conversation" | "engagement" | "followers";
+    type MediaType = "none" | "photo" | "video";
+
+    type RadarSource =
+      | "github"
+      | "google_trends"
+      | "hacker_news"
+      | "polymarket"
+      | "reddit"
+      | "trustmrr"
+      | "wikipedia";
+
+    type RadarCategory =
+      | "business"
+      | "culture"
+      | "dev"
+      | "entertainment"
+      | "general"
+      | "politics"
+      | "science"
+      | "tech";
+
+    interface TweetMediaItem {
+      mediaUrl: string;
+      type: string;
+      url: string;
+    }
+
+    interface StyleTweet {
+      id: string;
+      authorUsername: string;
+      text: string;
+      createdAt: string;
+      media?: TweetMediaItem[];
+    }
+
+    interface PerformanceTweet {
+      id: string;
+      text: string;
+      likeCount: number;
+      retweetCount: number;
+      replyCount: number;
+      quoteCount: number;
+      viewCount: number;
+      bookmarkCount: number;
+    }
+    ```
+  </Tab>
+</Tabs>
 
 ## REST API vs MCP Field Naming
 

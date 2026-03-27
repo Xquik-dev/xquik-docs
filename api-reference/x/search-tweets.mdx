@@ -13,17 +13,36 @@ keywords: ["search", "tweets", "query", "x api"]
   ```bash cURL
   curl -G https://xquik.com/api/v1/x/tweets/search \
     --data-urlencode "q=from:xquikcom giveaway" \
-    --data-urlencode "limit=50" \
-    -H "x-api-key: xq_a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2" | jq
+    --data-urlencode "queryType=Latest" \
+    -H "x-api-key: xq_YOUR_KEY_HERE" | jq
+
+  # Page 2 — pass next_cursor from the previous response
+  curl -G https://xquik.com/api/v1/x/tweets/search \
+    --data-urlencode "q=from:xquikcom giveaway" \
+    --data-urlencode "cursor=abc123" \
+    -H "x-api-key: xq_YOUR_KEY_HERE" | jq
   ```
 
   ```javascript Node.js
-  const params = new URLSearchParams({ q: "from:xquikcom giveaway", limit: "50" });
+  const params = new URLSearchParams({ q: "from:xquikcom giveaway" });
   const response = await fetch(`https://xquik.com/api/v1/x/tweets/search?${params}`, {
-    headers: { "x-api-key": "xq_a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2" },
+    headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
   });
   const data = await response.json();
-  console.log(data);
+  console.log(data.tweets);
+
+  // Paginate through all results
+  let cursor = data.next_cursor;
+  while (data.has_next_page) {
+    const next = await fetch(
+      `https://xquik.com/api/v1/x/tweets/search?${new URLSearchParams({ q: "from:xquikcom giveaway", cursor })}`,
+      { headers: { "x-api-key": "xq_YOUR_KEY_HERE" } },
+    );
+    const page = await next.json();
+    console.log(page.tweets);
+    if (!page.has_next_page) break;
+    cursor = page.next_cursor;
+  }
   ```
 
   ```python Python
@@ -31,11 +50,20 @@ keywords: ["search", "tweets", "query", "x api"]
 
   response = requests.get(
       "https://xquik.com/api/v1/x/tweets/search",
-      params={"q": "from:xquikcom giveaway", "limit": 50},
-      headers={"x-api-key": "xq_a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"},
+      params={"q": "from:xquikcom giveaway"},
+      headers={"x-api-key": "xq_YOUR_KEY_HERE"},
   )
   data = response.json()
-  print(data)
+  print(data["tweets"])
+
+  # Paginate through all results
+  while data["has_next_page"]:
+      data = requests.get(
+          "https://xquik.com/api/v1/x/tweets/search",
+          params={"q": "from:xquikcom giveaway", "cursor": data["next_cursor"]},
+          headers={"x-api-key": "xq_YOUR_KEY_HERE"},
+      ).json()
+      print(data["tweets"])
   ```
 
   ```go Go
@@ -53,13 +81,12 @@ keywords: ["search", "tweets", "query", "x api"]
   	baseURL := "https://xquik.com/api/v1/x/tweets/search"
   	params := url.Values{}
   	params.Set("q", "from:xquikcom giveaway")
-  	params.Set("limit", "50")
 
   	req, err := http.NewRequest("GET", baseURL+"?"+params.Encode(), nil)
   	if err != nil {
   		log.Fatal(err)
   	}
-  	req.Header.Set("x-api-key", "xq_a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2")
+  	req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
 
   	resp, err := http.DefaultClient.Do(req)
   	if err != nil {
@@ -82,12 +109,24 @@ keywords: ["search", "tweets", "query", "x api"]
   Search query. Supports X search operators such as `from:username`, `to:username`, `#hashtag`, and boolean operators.
 </ParamField>
 
-<ParamField query="limit" type="integer">
-  Maximum number of tweets to return. Default `20`, max `200`.
-</ParamField>
-
 <ParamField query="queryType" type="string">
   Sort order for search results. `Top` returns most relevant tweets, `Latest` returns most recent. Defaults to `Latest`.
+</ParamField>
+
+<ParamField query="cursor" type="string">
+  Pagination cursor. Pass the `next_cursor` value from the previous response to fetch the next page.
+</ParamField>
+
+<ParamField query="sinceTime" type="string">
+  Filter tweets published after this date. Uses X search `since:` operator format (e.g. `2026-03-01`).
+</ParamField>
+
+<ParamField query="untilTime" type="string">
+  Filter tweets published before this date. Uses X search `until:` operator format (e.g. `2026-03-27`).
+</ParamField>
+
+<ParamField query="limit" type="integer" deprecated>
+  Deprecated. Use cursor-based pagination instead. Previously set a maximum result count. The server now returns a `X-Deprecation` header when this parameter is present.
 </ParamField>
 
 ## Headers
@@ -105,6 +144,7 @@ keywords: ["search", "tweets", "query", "x api"]
       <Expandable title="tweet object">
         <ResponseField name="id" type="string">Tweet ID.</ResponseField>
         <ResponseField name="text" type="string">Tweet text content.</ResponseField>
+        <ResponseField name="type" type="string">Tweet type (e.g. `tweet`, `retweet`, `reply`). Omitted if unavailable.</ResponseField>
         <ResponseField name="createdAt" type="string">ISO 8601 creation timestamp. Omitted if unavailable.</ResponseField>
         <ResponseField name="likeCount" type="number">Like count. Omitted if unavailable.</ResponseField>
         <ResponseField name="retweetCount" type="number">Retweet count. Omitted if unavailable.</ResponseField>
@@ -112,13 +152,30 @@ keywords: ["search", "tweets", "query", "x api"]
         <ResponseField name="quoteCount" type="number">Quote tweet count. Omitted if unavailable.</ResponseField>
         <ResponseField name="viewCount" type="number">View count. Omitted if unavailable.</ResponseField>
         <ResponseField name="bookmarkCount" type="number">Bookmark count. Omitted if unavailable.</ResponseField>
+        <ResponseField name="url" type="string">Permalink URL on X. Omitted if unavailable.</ResponseField>
+        <ResponseField name="lang" type="string">Tweet language code (e.g. `en`). Omitted if unavailable.</ResponseField>
+        <ResponseField name="isReply" type="boolean">Whether the tweet is a reply. Omitted if unavailable.</ResponseField>
+        <ResponseField name="inReplyToId" type="string">Tweet ID being replied to. Omitted if not a reply.</ResponseField>
+        <ResponseField name="inReplyToUserId" type="string">User ID being replied to. Omitted if not a reply.</ResponseField>
+        <ResponseField name="inReplyToUsername" type="string">Username being replied to. Omitted if not a reply.</ResponseField>
+        <ResponseField name="conversationId" type="string">Conversation thread ID. Omitted if unavailable.</ResponseField>
+        <ResponseField name="source" type="string">Client used to post the tweet. Omitted if unavailable.</ResponseField>
+        <ResponseField name="entities" type="object">Parsed entities (URLs, hashtags, mentions, etc.). Omitted if unavailable.</ResponseField>
         <ResponseField name="author" type="object">
           Tweet author. Omitted if author data is unavailable.
           <Expandable title="author object">
             <ResponseField name="id" type="string">Author user ID.</ResponseField>
             <ResponseField name="username" type="string">Author X username.</ResponseField>
             <ResponseField name="name" type="string">Author display name.</ResponseField>
+            <ResponseField name="followers" type="number">Follower count. Omitted if unavailable.</ResponseField>
+            <ResponseField name="following" type="number">Following count. Omitted if unavailable.</ResponseField>
             <ResponseField name="verified" type="boolean">Whether the author is verified. Omitted if unavailable.</ResponseField>
+            <ResponseField name="profilePicture" type="string">Profile picture URL. Omitted if unavailable.</ResponseField>
+            <ResponseField name="coverPicture" type="string">Cover image URL. Omitted if unavailable.</ResponseField>
+            <ResponseField name="description" type="string">Profile bio. Omitted if unavailable.</ResponseField>
+            <ResponseField name="location" type="string">Profile location. Omitted if unavailable.</ResponseField>
+            <ResponseField name="createdAt" type="string">Account creation date. Omitted if unavailable.</ResponseField>
+            <ResponseField name="statusesCount" type="number">Total tweet count. Omitted if unavailable.</ResponseField>
           </Expandable>
         </ResponseField>
         <ResponseField name="media" type="object[]">
@@ -129,10 +186,15 @@ keywords: ["search", "tweets", "query", "x api"]
             <ResponseField name="url" type="string">Shortened t.co URL from the tweet text.</ResponseField>
           </Expandable>
         </ResponseField>
+        <ResponseField name="quoted_tweet" type="object">Embedded quoted tweet (same shape as tweet object). Omitted if not a quote tweet.</ResponseField>
+        <ResponseField name="retweeted_tweet" type="object">Original retweeted tweet (same shape as tweet object). Omitted if not a retweet.</ResponseField>
       </Expandable>
     </ResponseField>
-    <ResponseField name="total" type="number">
-      Number of tweets returned in this response.
+    <ResponseField name="has_next_page" type="boolean">
+      Whether more results are available. Pass `next_cursor` to fetch the next page.
+    </ResponseField>
+    <ResponseField name="next_cursor" type="string">
+      Opaque cursor for the next page. Empty string when no more results.
     </ResponseField>
 
     ```json
@@ -148,11 +210,15 @@ keywords: ["search", "tweets", "query", "x api"]
           "quoteCount": 5,
           "viewCount": 12400,
           "bookmarkCount": 8,
+          "url": "https://x.com/xquikcom/status/1893456789012345678",
+          "lang": "en",
           "author": {
             "id": "987654321",
             "username": "xquikcom",
             "name": "Xquik",
-            "verified": true
+            "followers": 10000,
+            "verified": true,
+            "profilePicture": "https://pbs.twimg.com/profile_images/xquik/photo.jpg"
           },
           "media": [
             {
@@ -163,7 +229,8 @@ keywords: ["search", "tweets", "query", "x api"]
           ]
         }
       ],
-      "total": 1
+      "has_next_page": true,
+      "next_cursor": "DAADDAABCgABF..."
     }
     ```
   </Tab>
