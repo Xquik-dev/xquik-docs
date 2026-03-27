@@ -157,40 +157,83 @@ The compose API follows a 3-step workflow:
 
 <Tabs>
   <Tab title="200 OK (compose)">
+    <ResponseField name="contentRules" type="object[]">Algorithm content rules. Each item has a `rule` string.</ResponseField>
+    <ResponseField name="scorerWeights" type="object[]">Algorithm scorer weights. Each item has `context`, `signal`, and `weight` fields.</ResponseField>
+    <ResponseField name="followUpQuestions" type="string[]">Follow-up questions to refine the composition.</ResponseField>
+    <ResponseField name="engagementMultipliers" type="object[]">Engagement multipliers. Each item has `action` and `multiplier` fields.</ResponseField>
+    <ResponseField name="engagementVelocity" type="string">Engagement velocity description.</ResponseField>
+    <ResponseField name="intentUrl" type="string">X intent URL for posting the tweet.</ResponseField>
+    <ResponseField name="nextStep" type="string">Instructions for the next API call in the workflow.</ResponseField>
+    <ResponseField name="source" type="string">Algorithm source attribution.</ResponseField>
+    <ResponseField name="topPenalties" type="string[]">Top algorithm penalties to avoid.</ResponseField>
+
     ```json
     {
-      "contentRules": ["Keep under 280 characters", "Front-load the hook"],
-      "scorerWeights": { "hook": 2, "cta": 1.5, "media": 1.3 },
+      "contentRules": [{ "rule": "Keep under 280 characters" }, { "rule": "Front-load the hook" }],
+      "scorerWeights": [{ "context": "tweet", "signal": "hook", "weight": 2 }],
+      "engagementMultipliers": [{ "action": "reply", "multiplier": "1.5x" }],
+      "engagementVelocity": "First 30 minutes are critical for algorithmic reach",
+      "topPenalties": ["External links reduce reach by ~50%"],
       "followUpQuestions": [
         "What tone do you want? (casual, professional, bold)",
         "Will you attach media (photo, video, none)?",
         "What call-to-action do you prefer?"
-      ]
+      ],
+      "intentUrl": "https://x.com/intent/tweet?text=...",
+      "nextStep": "Call with step: refine, providing tone, goal, and topic",
+      "source": "X algorithm analysis"
     }
     ```
   </Tab>
   <Tab title="200 OK (refine)">
+    <ResponseField name="compositionGuidance" type="string[]">Composition guidance tips.</ResponseField>
+    <ResponseField name="examplePatterns" type="object[]">Example tweet patterns. Each item has `pattern` and `description` fields.</ResponseField>
+    <ResponseField name="intentUrl" type="string">X intent URL for posting the tweet.</ResponseField>
+    <ResponseField name="nextStep" type="string">Instructions for the next API call in the workflow.</ResponseField>
+
     ```json
     {
-      "guidance": "Lead with a personal story or metric. End with an open question.",
+      "compositionGuidance": [
+        "Lead with a personal story or metric.",
+        "End with an open question."
+      ],
       "examplePatterns": [
-        "Hook: surprising metric -> Context: 1-2 sentences -> CTA: open question"
-      ]
+        { "pattern": "Hook -> Context -> CTA", "description": "Surprising metric, 1-2 sentences, open question" }
+      ],
+      "intentUrl": "https://x.com/intent/tweet?text=...",
+      "nextStep": "Write your draft and call with step: score"
     }
     ```
   </Tab>
   <Tab title="200 OK (score)">
+    <ResponseField name="totalChecks" type="number">Total number of algorithm checks evaluated.</ResponseField>
+    <ResponseField name="passedCount" type="number">Number of checks that passed.</ResponseField>
+    <ResponseField name="passed" type="boolean">Overall pass/fail result.</ResponseField>
+    <ResponseField name="topSuggestion" type="string">Top improvement suggestion.</ResponseField>
+    <ResponseField name="checklist" type="object[]">
+      Individual check results.
+      <Expandable title="check item">
+        <ResponseField name="factor" type="string">Check factor name.</ResponseField>
+        <ResponseField name="passed" type="boolean">Whether this check passed.</ResponseField>
+        <ResponseField name="suggestion" type="string">Improvement suggestion. Omitted if passed.</ResponseField>
+      </Expandable>
+    </ResponseField>
+    <ResponseField name="nextStep" type="string">Instructions for next steps.</ResponseField>
+    <ResponseField name="intentUrl" type="string">X intent URL. Present only when all checks pass.</ResponseField>
+
     ```json
     {
       "totalChecks": 8,
       "passedCount": 6,
+      "passed": false,
       "topSuggestion": "Add a specific detail or metric to the first line.",
       "checklist": [
-        { "check": "Hook in first line", "passed": false },
-        { "check": "Under 280 characters", "passed": true },
-        { "check": "Has media", "passed": true },
-        { "check": "Reply-worthy CTA", "passed": true }
-      ]
+        { "factor": "Hook in first line", "passed": false, "suggestion": "Add a compelling hook" },
+        { "factor": "Under 280 characters", "passed": true },
+        { "factor": "Has media", "passed": true },
+        { "factor": "Reply-worthy CTA", "passed": true }
+      ],
+      "nextStep": "Revise your draft and score again"
     }
     ```
   </Tab>
