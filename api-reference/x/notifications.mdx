@@ -18,6 +18,12 @@ keywords: ["notifications", "mentions", "verified", "x api"]
   curl -G https://xquik.com/api/v1/x/notifications \
     --data-urlencode "type=Mentions" \
     -H "x-api-key: xq_YOUR_KEY_HERE" | jq
+
+  # Page 2
+  curl -G https://xquik.com/api/v1/x/notifications \
+    --data-urlencode "type=Mentions" \
+    --data-urlencode "cursor=abc123" \
+    -H "x-api-key: xq_YOUR_KEY_HERE" | jq
   ```
 
   ```javascript Node.js
@@ -26,7 +32,16 @@ keywords: ["notifications", "mentions", "verified", "x api"]
     headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
   });
   const data = await response.json();
-  console.log(data);
+  console.log(data.notifications);
+
+  // Paginate
+  if (data.has_next_page) {
+    const next = await fetch(
+      `https://xquik.com/api/v1/x/notifications?type=Mentions&cursor=${data.next_cursor}`,
+      { headers: { "x-api-key": "xq_YOUR_KEY_HERE" } },
+    );
+    console.log((await next.json()).notifications);
+  }
   ```
 
   ```python Python
@@ -38,7 +53,16 @@ keywords: ["notifications", "mentions", "verified", "x api"]
       headers={"x-api-key": "xq_YOUR_KEY_HERE"},
   )
   data = response.json()
-  print(data)
+  print(data["notifications"])
+
+  # Paginate
+  while data["has_next_page"]:
+      data = requests.get(
+          "https://xquik.com/api/v1/x/notifications",
+          params={"type": "Mentions", "cursor": data["next_cursor"]},
+          headers={"x-api-key": "xq_YOUR_KEY_HERE"},
+      ).json()
+      print(data["notifications"])
   ```
 </CodeGroup>
 
@@ -46,6 +70,10 @@ keywords: ["notifications", "mentions", "verified", "x api"]
 
 <ParamField query="type" type="string">
   Notification filter. `All` (default), `Verified`, or `Mentions`.
+</ParamField>
+
+<ParamField query="cursor" type="string">
+  Pagination cursor. Pass the `next_cursor` value from the previous response to fetch the next page.
 </ParamField>
 
 ## Headers
@@ -67,7 +95,12 @@ keywords: ["notifications", "mentions", "verified", "x api"]
         <ResponseField name="timestamp" type="string">ISO 8601 timestamp. Omitted if unavailable.</ResponseField>
       </Expandable>
     </ResponseField>
-    <ResponseField name="count" type="number">Number of notifications returned.</ResponseField>
+    <ResponseField name="has_next_page" type="boolean">
+      Whether more notifications are available.
+    </ResponseField>
+    <ResponseField name="next_cursor" type="string">
+      Opaque cursor for the next page. Empty string when no more results.
+    </ResponseField>
 
     ```json
     {
@@ -79,7 +112,8 @@ keywords: ["notifications", "mentions", "verified", "x api"]
           "timestamp": "2026-02-24T10:00:00.000Z"
         }
       ],
-      "count": 1
+      "has_next_page": true,
+      "next_cursor": "DAADDAABCgABF..."
     }
     ```
   </Tab>

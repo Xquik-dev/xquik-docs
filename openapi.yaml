@@ -1,0 +1,4854 @@
+openapi: 3.1.0
+info:
+  title: Xquik API
+  version: "1.0"
+  description: X real-time data platform — extractions, giveaway draws, monitoring, webhooks.
+  guidance: >
+    Xquik provides real-time X (Twitter) data via 7 MPP pay-per-use endpoints.
+    No account or API key needed — pay per call via Tempo (USDC).
+    Tweet lookup: GET /x/tweets/{tweetId}.
+    Tweet search: GET /x/tweets/search?q={query}&limit={n}.
+    User lookup: GET /x/users/{username}.
+    Follower check: GET /x/followers/check?source={a}&target={b}.
+    Article extraction: GET /x/articles/{tweetId}.
+    Media download: POST /x/media/download with tweetInput or tweetIds body.
+    Trending topics: GET /trends?woeid={id}&count={n}.
+  contact:
+    name: Xquik
+    url: https://xquik.com
+
+servers:
+  - url: https://xquik.com/api/v1
+
+x-discovery:
+  ownershipProofs:
+    - "dns:xquik.com"
+
+security:
+  - apiKey: []
+  - sessionCookie: []
+  - oauthBearer: []
+
+tags:
+  - name: Account
+    description: Account info & settings
+  - name: API Keys
+    description: API key management (session auth only)
+  - name: Subscribe
+    description: Subscription & billing
+  - name: Composition
+    description: Tweet composition, drafts, writing styles & radar
+  - name: Monitors
+    description: Real-time X account monitoring
+  - name: Events
+    description: Activity events from monitored accounts
+  - name: Extractions
+    description: Bulk data extraction (20 tool types)
+  - name: Draws
+    description: Giveaway draws from tweet replies
+  - name: Webhooks
+    description: Webhook endpoint management & delivery
+  - name: Integrations
+    description: Push notification integrations (Telegram)
+  - name: X API
+    description: X data lookups (subscription required)
+  - name: X Accounts
+    description: Connected X account management
+  - name: X Write
+    description: X write actions (tweets, likes, follows, DMs)
+  - name: Media
+    description: Media upload & download
+  - name: Trends
+    description: Trending topics by region
+  - name: Bot
+    description: Telegram bot service endpoints
+  - name: Support
+    description: Support ticket management
+
+paths:
+  # ── Account ──────────────────────────────────────────────
+  /account:
+    get:
+      operationId: getAccount
+      summary: Get account info
+      tags: [Account]
+      security:
+        - apiKey: []
+      responses:
+        "200":
+          description: Account info
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [plan, monitorsUsed, monitorsAllowed]
+                properties:
+                  plan:
+                    type: string
+                    enum: [active, inactive]
+                  monitorsUsed:
+                    type: integer
+                  monitorsAllowed:
+                    type: integer
+                  currentPeriod:
+                    type: object
+                    required: [start, end, usagePercent]
+                    properties:
+                      start:
+                        type: string
+                        format: date-time
+                      end:
+                        type: string
+                        format: date-time
+                      usagePercent:
+                        type: number
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+    patch:
+      operationId: updateAccount
+      summary: Update account locale
+      tags: [Account]
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [locale]
+              properties:
+                locale:
+                  type: string
+                  enum: [en, tr, es]
+      responses:
+        "200":
+          $ref: "#/components/responses/Success"
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+
+  /account/x-identity:
+    put:
+      operationId: setXIdentity
+      summary: Set linked X username
+      tags: [Account]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username]
+              properties:
+                username:
+                  type: string
+                  description: X username without @
+      responses:
+        "200":
+          description: X identity linked
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [success, xUsername]
+                properties:
+                  success:
+                    type: boolean
+                    const: true
+                  xUsername:
+                    type: string
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+
+  # ── API Keys ─────────────────────────────────────────────
+  /api-keys:
+    get:
+      operationId: listApiKeys
+      summary: List API keys
+      tags: [API Keys]
+      security:
+        - sessionCookie: []
+      responses:
+        "200":
+          description: API key list
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [keys]
+                properties:
+                  keys:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ApiKey"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+    post:
+      operationId: createApiKey
+      summary: Create API key
+      tags: [API Keys]
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+      responses:
+        "201":
+          description: API key created
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [id, fullKey, name, prefix, createdAt]
+                properties:
+                  id:
+                    type: string
+                  fullKey:
+                    type: string
+                  name:
+                    type: string
+                  prefix:
+                    type: string
+                  createdAt:
+                    type: string
+                    format: date-time
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+
+  /api-keys/{id}:
+    delete:
+      operationId: revokeApiKey
+      summary: Revoke API key
+      tags: [API Keys]
+      security:
+        - sessionCookie: []
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      responses:
+        "200":
+          $ref: "#/components/responses/Success"
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ── Subscribe ────────────────────────────────────────────
+  /subscribe:
+    post:
+      operationId: subscribe
+      summary: Get checkout or billing URL
+      tags: [Subscribe]
+      responses:
+        "200":
+          description: Stripe checkout or billing portal URL
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [url]
+                properties:
+                  url:
+                    type: string
+                    format: uri
+                  status:
+                    type: string
+                    enum: [checkout_created, already_subscribed, payment_issue]
+                  message:
+                    type: string
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+
+  # ── Composition ──────────────────────────────────────────
+  /compose:
+    post:
+      operationId: compose
+      summary: Compose, refine, or score a tweet
+      tags: [Composition]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [step]
+              properties:
+                step:
+                  type: string
+                  enum: [compose, refine, score]
+                  description: Workflow step
+                topic:
+                  type: string
+                  description: Tweet topic (compose, refine)
+                goal:
+                  type: string
+                  enum: [engagement, followers, authority, conversation]
+                  description: Optimization goal
+                draft:
+                  type: string
+                  description: Tweet draft text to evaluate (score)
+                tone:
+                  type: string
+                  description: Desired tone (refine)
+                styleUsername:
+                  type: string
+                  description: Cached style username for voice matching (compose)
+                additionalContext:
+                  type: string
+                  description: Extra context or URLs (refine)
+                callToAction:
+                  type: string
+                  description: Desired call to action (refine)
+                mediaType:
+                  type: string
+                  enum: [photo, video, none]
+                  description: Media type (refine)
+                hasLink:
+                  type: boolean
+                  description: Whether a link is attached (score)
+                hasMedia:
+                  type: boolean
+                  description: Whether media is attached (score)
+      responses:
+        "200":
+          description: Composition result
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+
+  /drafts:
+    get:
+      operationId: listDrafts
+      summary: List saved drafts
+      tags: [Composition]
+      parameters:
+        - $ref: "#/components/parameters/Limit"
+        - name: afterCursor
+          in: query
+          schema:
+            type: string
+          description: Cursor for pagination
+      responses:
+        "200":
+          description: Draft list
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [drafts, hasMore]
+                properties:
+                  drafts:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Draft"
+                  hasMore:
+                    type: boolean
+                  nextCursor:
+                    type: string
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+    post:
+      operationId: createDraft
+      summary: Save a tweet draft
+      tags: [Composition]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [text]
+              properties:
+                text:
+                  type: string
+                topic:
+                  type: string
+                goal:
+                  type: string
+                  enum: [engagement, followers, authority, conversation]
+      responses:
+        "201":
+          description: Draft created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DraftDetail"
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+
+  /drafts/{id}:
+    get:
+      operationId: getDraft
+      summary: Get draft by ID
+      tags: [Composition]
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      responses:
+        "200":
+          description: Draft details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DraftDetail"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: deleteDraft
+      summary: Delete a draft
+      tags: [Composition]
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      responses:
+        "204":
+          $ref: "#/components/responses/NoContent"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /styles:
+    get:
+      operationId: listStyles
+      summary: List cached style profiles
+      tags: [Composition]
+      responses:
+        "200":
+          description: Style profile list
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [styles]
+                properties:
+                  styles:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/StyleProfileSummary"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+    post:
+      operationId: analyzeStyle
+      summary: Analyze writing style from recent tweets
+      tags: [Composition]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username]
+              properties:
+                username:
+                  type: string
+                  description: X username to analyze
+      responses:
+        "200":
+          description: Style profile created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StyleProfile"
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+
+  /styles/compare:
+    get:
+      operationId: compareStyles
+      summary: Compare two style profiles
+      tags: [Composition]
+      parameters:
+        - name: username1
+          in: query
+          required: true
+          schema:
+            type: string
+          description: First username to compare
+        - name: username2
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Second username to compare
+      responses:
+        "200":
+          description: Style comparison
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [style1, style2]
+                properties:
+                  style1:
+                    $ref: "#/components/schemas/StyleProfile"
+                  style2:
+                    $ref: "#/components/schemas/StyleProfile"
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /styles/{username}:
+    get:
+      operationId: getStyle
+      summary: Get cached style profile
+      tags: [Composition]
+      parameters:
+        - $ref: "#/components/parameters/StyleUsername"
+      responses:
+        "200":
+          description: Style profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StyleProfile"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    put:
+      operationId: saveStyle
+      summary: Save style profile with custom tweets
+      tags: [Composition]
+      parameters:
+        - $ref: "#/components/parameters/StyleUsername"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [label, tweets]
+              properties:
+                label:
+                  type: string
+                  description: Display label for the style
+                tweets:
+                  type: array
+                  items:
+                    type: object
+                    required: [text]
+                    properties:
+                      text:
+                        type: string
+                  description: Array of tweet objects
+      responses:
+        "200":
+          description: Style profile saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StyleProfile"
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+    delete:
+      operationId: deleteStyle
+      summary: Delete a style profile
+      tags: [Composition]
+      parameters:
+        - $ref: "#/components/parameters/StyleUsername"
+      responses:
+        "204":
+          $ref: "#/components/responses/NoContent"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /styles/{username}/performance:
+    get:
+      operationId: getStylePerformance
+      summary: Get engagement metrics for style tweets
+      tags: [Composition]
+      parameters:
+        - $ref: "#/components/parameters/StyleUsername"
+      responses:
+        "200":
+          description: Performance metrics
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [xUsername, tweetCount, tweets]
+                properties:
+                  xUsername:
+                    type: string
+                  tweetCount:
+                    type: integer
+                  tweets:
+                    type: array
+                    items:
+                      type: object
+                      required: [id, text]
+                      properties:
+                        id:
+                          type: string
+                        text:
+                          type: string
+                        likeCount:
+                          type: integer
+                        retweetCount:
+                          type: integer
+                        replyCount:
+                          type: integer
+                        viewCount:
+                          type: integer
+                        createdAt:
+                          type: string
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /radar:
+    get:
+      operationId: getRadar
+      summary: Get trending topics from curated sources
+      tags: [Composition]
+      parameters:
+        - name: category
+          in: query
+          schema:
+            type: string
+          description: "Filter by category (general, tech, dev, etc.)"
+        - name: count
+          in: query
+          schema:
+            type: integer
+          description: Number of items to return
+        - name: hours
+          in: query
+          schema:
+            type: integer
+          description: Lookback window in hours
+        - name: region
+          in: query
+          schema:
+            type: string
+          description: "Region filter (us, global, etc.)"
+        - name: source
+          in: query
+          schema:
+            type: string
+          description: "Source filter (google, hackernews, reddit, etc.)"
+      responses:
+        "200":
+          description: Radar items
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, total]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/RadarItem"
+                  total:
+                    type: integer
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+
+  # ── Monitors ─────────────────────────────────────────────
+  /monitors:
+    get:
+      operationId: listMonitors
+      summary: List monitors
+      tags: [Monitors]
+      responses:
+        "200":
+          description: Monitor list
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [monitors, total]
+                properties:
+                  monitors:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Monitor"
+                  total:
+                    type: integer
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+    post:
+      operationId: createMonitor
+      summary: Create monitor
+      tags: [Monitors]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, eventTypes]
+              properties:
+                username:
+                  type: string
+                  description: X username (without @)
+                eventTypes:
+                  $ref: "#/components/schemas/EventTypeArray"
+      responses:
+        "201":
+          description: Monitor created
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [id, username, xUserId, eventTypes, createdAt]
+                properties:
+                  id:
+                    type: string
+                  username:
+                    type: string
+                  xUserId:
+                    type: string
+                  eventTypes:
+                    $ref: "#/components/schemas/EventTypeArray"
+                  createdAt:
+                    type: string
+                    format: date-time
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          description: Monitor limit reached
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [error, limit]
+                properties:
+                  error:
+                    type: string
+                  limit:
+                    type: integer
+                    description: Current monitor quota
+        "404":
+          description: X user not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: Monitor already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Internal error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "502":
+          description: Stream registration failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /monitors/{id}:
+    get:
+      operationId: getMonitor
+      summary: Get monitor
+      tags: [Monitors]
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      responses:
+        "200":
+          description: Monitor details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Monitor"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      operationId: updateMonitor
+      summary: Update monitor
+      tags: [Monitors]
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                eventTypes:
+                  $ref: "#/components/schemas/EventTypeArray"
+                isActive:
+                  type: boolean
+      responses:
+        "200":
+          description: Monitor updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Monitor"
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: deleteMonitor
+      summary: Deactivate monitor
+      tags: [Monitors]
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      responses:
+        "200":
+          $ref: "#/components/responses/Success"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ── Events ───────────────────────────────────────────────
+  /events:
+    get:
+      operationId: listEvents
+      summary: List events
+      tags: [Events]
+      security:
+        - apiKey: []
+      parameters:
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/After"
+        - name: monitorId
+          in: query
+          schema:
+            type: string
+        - name: eventType
+          in: query
+          schema:
+            $ref: "#/components/schemas/EventType"
+      responses:
+        "200":
+          description: Event list
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [events, hasMore]
+                properties:
+                  events:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Event"
+                  hasMore:
+                    type: boolean
+                  nextCursor:
+                    type: string
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+
+  /events/{id}:
+    get:
+      operationId: getEvent
+      summary: Get event
+      tags: [Events]
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      responses:
+        "200":
+          description: Event details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventDetail"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ── Extractions ──────────────────────────────────────────
+  /extractions:
+    get:
+      operationId: listExtractions
+      summary: List extraction jobs
+      tags: [Extractions]
+      parameters:
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/After"
+        - name: toolType
+          in: query
+          schema:
+            $ref: "#/components/schemas/ExtractionToolType"
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [running, completed, failed]
+      responses:
+        "200":
+          description: Extraction job list
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [extractions, hasMore]
+                properties:
+                  extractions:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ExtractionJob"
+                  hasMore:
+                    type: boolean
+                  nextCursor:
+                    type: string
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+    post:
+      operationId: createExtraction
+      summary: Run extraction
+      tags: [Extractions]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [toolType]
+              properties:
+                toolType:
+                  $ref: "#/components/schemas/ExtractionToolType"
+                targetTweetId:
+                  type: string
+                targetUsername:
+                  type: string
+                targetCommunityId:
+                  type: string
+                targetListId:
+                  type: string
+                targetSpaceId:
+                  type: string
+                searchQuery:
+                  type: string
+                exactPhrase:
+                  type: string
+                  description: Exact phrase to match (tweet_search_extractor)
+                excludeWords:
+                  type: string
+                  description: Words to exclude from results (tweet_search_extractor)
+                advancedQuery:
+                  type: string
+                  description: Raw advanced search query appended as-is (tweet_search_extractor)
+      responses:
+        "202":
+          description: Extraction started
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [id, toolType, status]
+                properties:
+                  id:
+                    type: string
+                  toolType:
+                    $ref: "#/components/schemas/ExtractionToolType"
+                  status:
+                    type: string
+                    enum: [running]
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+        "502":
+          $ref: "#/components/responses/XApiError"
+
+  /extractions/estimate:
+    post:
+      operationId: estimateExtraction
+      summary: Estimate extraction cost
+      tags: [Extractions]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [toolType]
+              properties:
+                toolType:
+                  $ref: "#/components/schemas/ExtractionToolType"
+                targetTweetId:
+                  type: string
+                targetUsername:
+                  type: string
+                targetCommunityId:
+                  type: string
+                targetListId:
+                  type: string
+                targetSpaceId:
+                  type: string
+                searchQuery:
+                  type: string
+                exactPhrase:
+                  type: string
+                  description: Exact phrase to match (tweet_search_extractor)
+                excludeWords:
+                  type: string
+                  description: Words to exclude from results (tweet_search_extractor)
+                advancedQuery:
+                  type: string
+                  description: Raw advanced search query appended as-is (tweet_search_extractor)
+      responses:
+        "200":
+          description: Extraction estimate
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [estimatedResults, usagePercent, projectedPercent, allowed, source]
+                properties:
+                  estimatedResults:
+                    type: integer
+                  usagePercent:
+                    type: number
+                  projectedPercent:
+                    type: number
+                  allowed:
+                    type: boolean
+                  source:
+                    type: string
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+
+  /extractions/{id}:
+    get:
+      operationId: getExtraction
+      summary: Get extraction results
+      tags: [Extractions]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Extraction public ID (UUID)
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 100
+        - $ref: "#/components/parameters/After"
+      responses:
+        "200":
+          description: Extraction job with results
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [job, results, hasMore]
+                properties:
+                  job:
+                    type: object
+                    additionalProperties: true
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      additionalProperties: true
+                  hasMore:
+                    type: boolean
+                  nextCursor:
+                    type: string
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /extractions/{id}/export:
+    get:
+      operationId: exportExtraction
+      summary: Export extraction results
+      tags: [Extractions]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Extraction public ID
+        - name: format
+          in: query
+          schema:
+            type: string
+            enum: [csv, xlsx, md]
+            default: csv
+      responses:
+        "200":
+          description: Exported file
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ── Draws ────────────────────────────────────────────────
+  /draws:
+    get:
+      operationId: listDraws
+      summary: List draws
+      tags: [Draws]
+      parameters:
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/After"
+      responses:
+        "200":
+          description: Draw list
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [draws, hasMore]
+                properties:
+                  draws:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/DrawListItem"
+                  hasMore:
+                    type: boolean
+                  nextCursor:
+                    type: string
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+    post:
+      operationId: createDraw
+      summary: Run giveaway draw
+      tags: [Draws]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tweetUrl]
+              properties:
+                tweetUrl:
+                  type: string
+                  format: uri
+                winnerCount:
+                  type: integer
+                  default: 1
+                backupCount:
+                  type: integer
+                uniqueAuthorsOnly:
+                  type: boolean
+                mustRetweet:
+                  type: boolean
+                mustFollowUsername:
+                  type: string
+                filterMinFollowers:
+                  type: integer
+                filterAccountAgeDays:
+                  type: integer
+                filterLanguage:
+                  type: string
+                requiredHashtags:
+                  type: array
+                  items:
+                    type: string
+                requiredKeywords:
+                  type: array
+                  items:
+                    type: string
+                requiredMentions:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        "201":
+          description: Draw completed
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [id, tweetId, totalEntries, validEntries, winners]
+                properties:
+                  id:
+                    type: string
+                  tweetId:
+                    type: string
+                  totalEntries:
+                    type: integer
+                  validEntries:
+                    type: integer
+                  winners:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Winner"
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+        "502":
+          $ref: "#/components/responses/XApiError"
+
+  /draws/{id}:
+    get:
+      operationId: getDraw
+      summary: Get draw details
+      tags: [Draws]
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      responses:
+        "200":
+          description: Draw with winners
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [draw, winners]
+                properties:
+                  draw:
+                    $ref: "#/components/schemas/DrawDetail"
+                  winners:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Winner"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /draws/{id}/export:
+    get:
+      operationId: exportDraw
+      summary: Export draw data
+      tags: [Draws]
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+        - name: format
+          in: query
+          schema:
+            type: string
+            enum: [csv, xlsx, md]
+            default: csv
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [winners, entries]
+            default: winners
+          description: Export winners or all entries
+      responses:
+        "200":
+          description: Exported file
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ── Webhooks ─────────────────────────────────────────────
+  /webhooks:
+    get:
+      operationId: listWebhooks
+      summary: List webhooks
+      tags: [Webhooks]
+      responses:
+        "200":
+          description: Webhook list
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [webhooks]
+                properties:
+                  webhooks:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Webhook"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+    post:
+      operationId: createWebhook
+      summary: Create webhook
+      tags: [Webhooks]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [url, eventTypes]
+              properties:
+                url:
+                  type: string
+                  format: uri
+                  description: HTTPS URL
+                eventTypes:
+                  $ref: "#/components/schemas/EventTypeArray"
+      responses:
+        "201":
+          description: Webhook created
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [id, url, secret, eventTypes, createdAt]
+                properties:
+                  id:
+                    type: string
+                  url:
+                    type: string
+                    format: uri
+                  secret:
+                    type: string
+                  eventTypes:
+                    $ref: "#/components/schemas/EventTypeArray"
+                  createdAt:
+                    type: string
+                    format: date-time
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+
+  /webhooks/{id}:
+    patch:
+      operationId: updateWebhook
+      summary: Update webhook
+      tags: [Webhooks]
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                url:
+                  type: string
+                  format: uri
+                eventTypes:
+                  $ref: "#/components/schemas/EventTypeArray"
+                isActive:
+                  type: boolean
+      responses:
+        "200":
+          description: Webhook updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Webhook"
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: deleteWebhook
+      summary: Deactivate webhook
+      tags: [Webhooks]
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      responses:
+        "200":
+          $ref: "#/components/responses/Success"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /webhooks/{id}/deliveries:
+    get:
+      operationId: listWebhookDeliveries
+      summary: List webhook deliveries
+      tags: [Webhooks]
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      responses:
+        "200":
+          description: Delivery list
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [deliveries]
+                properties:
+                  deliveries:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Delivery"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /webhooks/{id}/test:
+    post:
+      operationId: testWebhook
+      summary: Test webhook endpoint
+      tags: [Webhooks]
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      responses:
+        "200":
+          description: Test result
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [success, statusCode]
+                properties:
+                  success:
+                    type: boolean
+                  statusCode:
+                    type: integer
+                  error:
+                    type: string
+        "400":
+          description: Webhook inactive
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ── Integrations ─────────────────────────────────────────
+  /integrations:
+    get:
+      operationId: listIntegrations
+      summary: List integrations
+      tags: [Integrations]
+      responses:
+        "200":
+          description: Integration list
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [integrations]
+                properties:
+                  integrations:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Integration"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+    post:
+      operationId: createIntegration
+      summary: Create integration
+      tags: [Integrations]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [type, name, config, eventTypes]
+              properties:
+                type:
+                  type: string
+                  enum: [telegram]
+                name:
+                  type: string
+                config:
+                  type: object
+                  required: [chatId]
+                  properties:
+                    chatId:
+                      type: string
+                  description: Integration config (e.g. Telegram chatId)
+                eventTypes:
+                  $ref: "#/components/schemas/EventTypeArray"
+      responses:
+        "201":
+          description: Integration created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Integration"
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+
+  /integrations/{id}:
+    get:
+      operationId: getIntegration
+      summary: Get integration details
+      tags: [Integrations]
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      responses:
+        "200":
+          description: Integration details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Integration"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      operationId: updateIntegration
+      summary: Update integration
+      tags: [Integrations]
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                eventTypes:
+                  $ref: "#/components/schemas/EventTypeArray"
+                isActive:
+                  type: boolean
+                silentPush:
+                  type: boolean
+                scopeAllMonitors:
+                  type: boolean
+                messageTemplate:
+                  type: object
+                  additionalProperties: true
+                filters:
+                  type: object
+                  additionalProperties: true
+      responses:
+        "200":
+          description: Integration updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Integration"
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: deleteIntegration
+      summary: Delete integration
+      tags: [Integrations]
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      responses:
+        "200":
+          $ref: "#/components/responses/Success"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /integrations/{id}/deliveries:
+    get:
+      operationId: listIntegrationDeliveries
+      summary: List integration delivery history
+      tags: [Integrations]
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Delivery list
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [deliveries]
+                properties:
+                  deliveries:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/IntegrationDelivery"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /integrations/{id}/test:
+    post:
+      operationId: testIntegration
+      summary: Send test delivery
+      tags: [Integrations]
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      responses:
+        "200":
+          $ref: "#/components/responses/Success"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ── X API (reads) ────────────────────────────────────────
+  /x/tweets:
+    get:
+      operationId: getBatchTweets
+      summary: Get multiple tweets by IDs
+      tags: [X API]
+      parameters:
+        - name: ids
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Comma-separated tweet IDs (max 100)
+      responses:
+        "200":
+          description: List of tweets
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+    post:
+      operationId: createTweet
+      summary: Create tweet
+      tags: [X Write]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [account, text]
+              properties:
+                account:
+                  type: string
+                  description: X account (@username or account ID)
+                text:
+                  type: string
+                reply_to_tweet_id:
+                  type: string
+                attachment_url:
+                  type: string
+                community_id:
+                  type: string
+                is_note_tweet:
+                  type: boolean
+                media_ids:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        "200":
+          description: Tweet created
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [tweetId, success]
+                properties:
+                  tweetId:
+                    type: string
+                  success:
+                    type: boolean
+                    const: true
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+        "502":
+          $ref: "#/components/responses/XApiError"
+
+  /x/trends:
+    get:
+      operationId: getTrends
+      summary: Get trending topics
+      tags: [X API]
+      responses:
+        "200":
+          description: List of trending topics
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+
+  /x/tweets/search:
+    get:
+      operationId: searchTweets
+      summary: Search tweets
+      tags: [X API]
+      x-payment-info:
+        protocols: [mpp]
+        pricingMode: range
+        minPrice: "300"
+        maxPrice: "60000"
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Search query (keywords, #hashtags, from:user, "exact phrases", since:YYYY-MM-DD, until:YYYY-MM-DD, min_faves:N)
+        - name: queryType
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [Latest, Top]
+            default: Latest
+          description: Sort order — Latest (chronological) or Top (engagement-ranked)
+        - name: cursor
+          in: query
+          schema:
+            type: string
+          description: Pagination cursor from previous response
+        - name: sinceTime
+          in: query
+          schema:
+            type: string
+          description: ISO 8601 timestamp — only return tweets after this time
+        - name: untilTime
+          in: query
+          schema:
+            type: string
+          description: ISO 8601 timestamp — only return tweets before this time
+        - name: limit
+          in: query
+          required: false
+          deprecated: true
+          schema:
+            type: integer
+            default: 20
+            maximum: 200
+          description: Deprecated — use cursor-based pagination instead
+      responses:
+        "200":
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedTweets"
+        "400":
+          description: Missing query
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+        "502":
+          $ref: "#/components/responses/XApiError"
+
+  /x/articles/{tweetId}:
+    get:
+      operationId: getArticle
+      summary: Get X Article
+      description: Retrieve the full content of an X Article (long-form post) by tweet ID.
+      tags: [X API]
+      x-payment-info:
+        protocols: [mpp]
+        pricingMode: fixed
+        price: "2000"
+      parameters:
+        - name: tweetId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Article with author
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [article]
+                properties:
+                  article:
+                    type: object
+                    properties:
+                      title:
+                        type: string
+                      previewText:
+                        type: string
+                      coverImageUrl:
+                        type: string
+                      contents:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            type:
+                              type: string
+                              description: "Block type: unstyled, header-one, header-two, header-three, unordered-list-item, ordered-list-item, image, gif, divider"
+                            text:
+                              type: string
+                            url:
+                              type: string
+                              description: Media URL for image/gif blocks
+                            width:
+                              type: integer
+                            height:
+                              type: integer
+                      createdAt:
+                        type: string
+                      likeCount:
+                        type: integer
+                      replyCount:
+                        type: integer
+                      quoteCount:
+                        type: integer
+                      viewCount:
+                        type: integer
+                  author:
+                    $ref: "#/components/schemas/TweetAuthor"
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+        "502":
+          $ref: "#/components/responses/XApiError"
+
+  /x/tweets/{tweetId}:
+    get:
+      operationId: lookupTweet
+      summary: Look up tweet
+      tags: [X API]
+      x-payment-info:
+        protocols: [mpp]
+        pricingMode: fixed
+        price: "300"
+      parameters:
+        - name: tweetId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Tweet with author
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [tweet]
+                properties:
+                  tweet:
+                    $ref: "#/components/schemas/TweetDetail"
+                  author:
+                    $ref: "#/components/schemas/TweetAuthor"
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+        "502":
+          $ref: "#/components/responses/XApiError"
+    delete:
+      operationId: deleteTweet
+      summary: Delete tweet
+      tags: [X Write]
+      parameters:
+        - name: tweetId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/XAccountBody"
+      responses:
+        "200":
+          $ref: "#/components/responses/Success"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "502":
+          $ref: "#/components/responses/XApiError"
+
+  /x/tweets/{tweetId}/like:
+    post:
+      operationId: likeTweet
+      summary: Like tweet
+      tags: [X Write]
+      parameters:
+        - name: tweetId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/XAccountBody"
+      responses:
+        "200":
+          $ref: "#/components/responses/Success"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+        "502":
+          $ref: "#/components/responses/XApiError"
+    delete:
+      operationId: unlikeTweet
+      summary: Unlike tweet
+      tags: [X Write]
+      parameters:
+        - name: tweetId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/XAccountBody"
+      responses:
+        "200":
+          $ref: "#/components/responses/Success"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+        "502":
+          $ref: "#/components/responses/XApiError"
+
+  /x/tweets/{tweetId}/retweet:
+    post:
+      operationId: retweet
+      summary: Retweet
+      tags: [X Write]
+      parameters:
+        - name: tweetId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/XAccountBody"
+      responses:
+        "200":
+          $ref: "#/components/responses/Success"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+        "502":
+          $ref: "#/components/responses/XApiError"
+
+  /x/users/{username}:
+    get:
+      operationId: getUser
+      summary: Look up X user
+      tags: [X API]
+      x-payment-info:
+        protocols: [mpp]
+        pricingMode: fixed
+        price: "360"
+      parameters:
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+          description: X username (without @)
+      responses:
+        "200":
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+        "404":
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "502":
+          $ref: "#/components/responses/XApiError"
+
+  /x/users/{userId}/follow:
+    post:
+      operationId: followUser
+      summary: Follow user
+      tags: [X Write]
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: User ID to follow
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/XAccountBody"
+      responses:
+        "200":
+          $ref: "#/components/responses/Success"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+        "502":
+          $ref: "#/components/responses/XApiError"
+    delete:
+      operationId: unfollowUser
+      summary: Unfollow user
+      tags: [X Write]
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: User ID to unfollow
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/XAccountBody"
+      responses:
+        "200":
+          $ref: "#/components/responses/Success"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+        "502":
+          $ref: "#/components/responses/XApiError"
+
+  /x/followers/check:
+    get:
+      operationId: checkFollow
+      summary: Check follow relationship
+      tags: [X API]
+      x-payment-info:
+        protocols: [mpp]
+        pricingMode: fixed
+        price: "2000"
+      parameters:
+        - name: source
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Username to check (without @)
+        - name: target
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Target username (without @)
+      responses:
+        "200":
+          description: Follow check result
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [isFollowing, isFollowedBy, sourceUsername, targetUsername]
+                properties:
+                  isFollowing:
+                    type: boolean
+                  isFollowedBy:
+                    type: boolean
+                  sourceUsername:
+                    type: string
+                  targetUsername:
+                    type: string
+        "400":
+          description: Missing params
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+        "502":
+          $ref: "#/components/responses/XApiError"
+
+  /x/dm/{userId}:
+    post:
+      operationId: sendDm
+      summary: Send direct message
+      tags: [X Write]
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Recipient user ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [account, text]
+              properties:
+                account:
+                  type: string
+                  description: X account (@username or account ID)
+                text:
+                  type: string
+                media_ids:
+                  type: array
+                  items:
+                    type: string
+                reply_to_message_id:
+                  type: string
+      responses:
+        "200":
+          description: DM sent
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [messageId, success]
+                properties:
+                  messageId:
+                    type: string
+                  success:
+                    type: boolean
+                    const: true
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+        "502":
+          $ref: "#/components/responses/XApiError"
+
+  /x/media:
+    post:
+      operationId: uploadMedia
+      summary: Upload media
+      tags: [Media]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [account, file]
+              properties:
+                account:
+                  type: string
+                  description: X account (@username or account ID)
+                file:
+                  type: string
+                  format: binary
+                  description: Media file to upload
+                is_long_video:
+                  type: boolean
+      responses:
+        "200":
+          description: Media uploaded
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [mediaId, success]
+                properties:
+                  mediaId:
+                    type: string
+                  success:
+                    type: boolean
+                    const: true
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+        "502":
+          $ref: "#/components/responses/XApiError"
+
+  /x/media/download:
+    post:
+      operationId: downloadMedia
+      summary: Download tweet media
+      tags: [Media]
+      x-payment-info:
+        protocols: [mpp]
+        pricingMode: range
+        minPrice: "300"
+        maxPrice: "60000"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                tweetInput:
+                  type: string
+                  description: Tweet URL or ID (single tweet)
+                tweetIds:
+                  type: array
+                  items:
+                    type: string
+                  maxItems: 50
+                  description: Array of tweet URLs or IDs (bulk, max 50)
+      responses:
+        "200":
+          description: "Media download result. Single: tweetId + galleryUrl + cacheHit. Bulk: galleryUrl + totalTweets + totalMedia."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tweetId:
+                    type: string
+                  galleryUrl:
+                    type: string
+                  cacheHit:
+                    type: boolean
+                  totalTweets:
+                    type: integer
+                  totalMedia:
+                    type: integer
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+
+  /x/profile:
+    patch:
+      operationId: updateProfile
+      summary: Update X profile
+      tags: [X Write]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [account]
+              properties:
+                account:
+                  type: string
+                  description: X account (@username or account ID)
+                name:
+                  type: string
+                  description: Display name
+                description:
+                  type: string
+                  description: Bio description
+                location:
+                  type: string
+                url:
+                  type: string
+                  description: Website URL
+      responses:
+        "200":
+          $ref: "#/components/responses/Success"
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+        "502":
+          $ref: "#/components/responses/XApiError"
+
+  /x/profile/avatar:
+    patch:
+      operationId: updateAvatar
+      summary: Update profile avatar
+      tags: [X Write]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [account, file]
+              properties:
+                account:
+                  type: string
+                  description: X account (@username or account ID)
+                file:
+                  type: string
+                  format: binary
+                  description: Avatar image (max 716KB)
+      responses:
+        "200":
+          $ref: "#/components/responses/Success"
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+        "502":
+          $ref: "#/components/responses/XApiError"
+
+  /x/profile/banner:
+    patch:
+      operationId: updateBanner
+      summary: Update profile banner
+      tags: [X Write]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [account, file]
+              properties:
+                account:
+                  type: string
+                  description: X account (@username or account ID)
+                file:
+                  type: string
+                  format: binary
+                  description: Banner image (max 2MB)
+      responses:
+        "200":
+          $ref: "#/components/responses/Success"
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+        "502":
+          $ref: "#/components/responses/XApiError"
+
+  /x/communities:
+    post:
+      operationId: createCommunity
+      summary: Create community
+      tags: [X Write]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [account, name]
+              properties:
+                account:
+                  type: string
+                  description: X account (@username or account ID)
+                name:
+                  type: string
+                  description: Community name
+                description:
+                  type: string
+                  description: Community description
+      responses:
+        "200":
+          description: Community created
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [communityId, success]
+                properties:
+                  communityId:
+                    type: string
+                  communityName:
+                    type: string
+                  success:
+                    type: boolean
+                    const: true
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+        "502":
+          $ref: "#/components/responses/XApiError"
+
+  /x/communities/{id}:
+    delete:
+      operationId: deleteCommunity
+      summary: Delete community
+      tags: [X Write]
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [account, community_name]
+              properties:
+                account:
+                  type: string
+                  description: X account (@username or account ID)
+                community_name:
+                  type: string
+                  description: Community name for confirmation
+      responses:
+        "200":
+          $ref: "#/components/responses/Success"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "502":
+          $ref: "#/components/responses/XApiError"
+
+  /x/communities/{id}/join:
+    post:
+      operationId: joinCommunity
+      summary: Join community
+      tags: [X Write]
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/XAccountBody"
+      responses:
+        "200":
+          description: Joined community
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommunityActionResult"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+        "502":
+          $ref: "#/components/responses/XApiError"
+    delete:
+      operationId: leaveCommunity
+      summary: Leave community
+      tags: [X Write]
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/XAccountBody"
+      responses:
+        "200":
+          description: Left community
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommunityActionResult"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+        "502":
+          $ref: "#/components/responses/XApiError"
+
+  # ── X Accounts ───────────────────────────────────────────
+  /x/accounts:
+    get:
+      operationId: listXAccounts
+      summary: List connected X accounts
+      tags: [X Accounts]
+      security:
+        - sessionCookie: []
+      responses:
+        "200":
+          description: X account list
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [accounts]
+                properties:
+                  accounts:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/XAccount"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+    post:
+      operationId: connectXAccount
+      summary: Connect X account
+      tags: [X Accounts]
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, email, password]
+              properties:
+                username:
+                  type: string
+                  description: X username
+                email:
+                  type: string
+                  description: Account email
+                password:
+                  type: string
+                  description: Account password
+                totp_secret:
+                  type: string
+                  description: TOTP secret for 2FA
+                proxy_country:
+                  type: string
+                  description: Proxy country code
+      responses:
+        "201":
+          description: X account connected
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [id, xUserId, xUsername, status]
+                properties:
+                  id:
+                    type: string
+                  xUserId:
+                    type: string
+                  xUsername:
+                    type: string
+                  status:
+                    type: string
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "502":
+          $ref: "#/components/responses/XApiError"
+
+  /x/accounts/{id}:
+    get:
+      operationId: getXAccount
+      summary: Get X account details
+      tags: [X Accounts]
+      security:
+        - sessionCookie: []
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      responses:
+        "200":
+          description: X account details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/XAccountDetail"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: disconnectXAccount
+      summary: Disconnect X account
+      tags: [X Accounts]
+      security:
+        - sessionCookie: []
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      responses:
+        "200":
+          $ref: "#/components/responses/Success"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /x/accounts/{id}/reauth:
+    post:
+      operationId: reauthXAccount
+      summary: Re-authenticate X account
+      tags: [X Accounts]
+      security:
+        - sessionCookie: []
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [password]
+              properties:
+                password:
+                  type: string
+                  description: Account password
+                totp_secret:
+                  type: string
+                  description: TOTP secret for 2FA
+      responses:
+        "200":
+          description: Re-authenticated
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [id, xUsername, status]
+                properties:
+                  id:
+                    type: string
+                  xUsername:
+                    type: string
+                  status:
+                    type: string
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "502":
+          $ref: "#/components/responses/XApiError"
+
+  # ── Trends ───────────────────────────────────────────────
+  /trends:
+    get:
+      operationId: getTrends
+      summary: Get trending topics
+      tags: [Trends]
+      x-payment-info:
+        protocols: [mpp]
+        pricingMode: fixed
+        price: "900"
+      parameters:
+        - name: woeid
+          in: query
+          schema:
+            type: integer
+            default: 1
+          description: "Region WOEID (1=Worldwide, 23424977=US, 23424975=UK, 23424969=Turkey)"
+        - name: count
+          in: query
+          schema:
+            type: integer
+            default: 30
+            minimum: 1
+            maximum: 50
+      responses:
+        "200":
+          description: Trending topics
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [trends, total, woeid]
+                properties:
+                  trends:
+                    type: array
+                    items:
+                      type: object
+                      required: [name]
+                      properties:
+                        name:
+                          type: string
+                        description:
+                          type: string
+                        query:
+                          type: string
+                        rank:
+                          type: integer
+                  total:
+                    type: integer
+                  woeid:
+                    type: integer
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+        "502":
+          $ref: "#/components/responses/XApiError"
+
+  # ── Bot ──────────────────────────────────────────────────
+  /bot/platform-links:
+    post:
+      operationId: createPlatformLink
+      summary: Link a platform user to an Xquik account
+      tags: [Bot]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [platform, platformUserId]
+              properties:
+                platform:
+                  type: string
+                  enum: [telegram]
+                platformUserId:
+                  type: string
+      responses:
+        "201":
+          description: Platform link created
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [id, platform, platformUserId, createdAt]
+                properties:
+                  id:
+                    type: string
+                  platform:
+                    type: string
+                  platformUserId:
+                    type: string
+                  createdAt:
+                    type: string
+                    format: date-time
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "409":
+          description: Platform link already exists
+    delete:
+      operationId: deletePlatformLink
+      summary: Unlink a platform user from an Xquik account
+      tags: [Bot]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [platform, platformUserId]
+              properties:
+                platform:
+                  type: string
+                  enum: [telegram]
+                platformUserId:
+                  type: string
+      responses:
+        "200":
+          description: Platform link deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /bot/platform-links/lookup:
+    get:
+      operationId: lookupPlatformLink
+      summary: Look up an Xquik user by platform identity
+      tags: [Bot]
+      parameters:
+        - name: platform
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: platformUserId
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: User found
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [userId]
+                properties:
+                  userId:
+                    type: string
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /bot/usage:
+    post:
+      operationId: trackBotUsage
+      summary: Track bot token usage
+      tags: [Bot]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [platformUserId, inputTokens, outputTokens]
+              properties:
+                platformUserId:
+                  type: string
+                inputTokens:
+                  type: integer
+                outputTokens:
+                  type: integer
+      responses:
+        "200":
+          description: Usage tracked
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+
+  # ── Support Tickets ─────────────────────────────────────
+  /support/tickets:
+    post:
+      operationId: createTicket
+      summary: Create a support ticket
+      tags: [Support]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [subject, body]
+              properties:
+                subject:
+                  type: string
+                  maxLength: 500
+                body:
+                  type: string
+                  maxLength: 10000
+      responses:
+        "201":
+          description: Ticket created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  publicId:
+                    type: string
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+    get:
+      operationId: listTickets
+      summary: List user's support tickets
+      tags: [Support]
+      responses:
+        "200":
+          description: List of tickets
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tickets:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        publicId:
+                          type: string
+                        subject:
+                          type: string
+                        status:
+                          type: string
+                        messageCount:
+                          type: integer
+                        createdAt:
+                          type: string
+                          format: date-time
+                        updatedAt:
+                          type: string
+                          format: date-time
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+
+  /support/tickets/{id}:
+    get:
+      operationId: getTicket
+      summary: Get ticket with all messages
+      tags: [Support]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Ticket detail
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  publicId:
+                    type: string
+                  subject:
+                    type: string
+                  status:
+                    type: string
+                  createdAt:
+                    type: string
+                    format: date-time
+                  updatedAt:
+                    type: string
+                    format: date-time
+                  messages:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        body:
+                          type: string
+                        sender:
+                          type: string
+                        createdAt:
+                          type: string
+                          format: date-time
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      operationId: updateTicketStatus
+      summary: Update ticket status
+      tags: [Support]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [open, resolved, closed]
+      responses:
+        "200":
+          description: Status updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  publicId:
+                    type: string
+                  status:
+                    type: string
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+
+  /support/tickets/{id}/messages:
+    post:
+      operationId: addTicketMessage
+      summary: Reply to a support ticket
+      tags: [Support]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [body]
+              properties:
+                body:
+                  type: string
+                  maxLength: 10000
+      responses:
+        "201":
+          description: Message added
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  publicId:
+                    type: string
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /credits:
+    get:
+      operationId: getCredits
+      summary: Get credits balance
+      tags: [Subscribe]
+      responses:
+        "200":
+          description: Credits balance and usage
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [auto_topup_enabled, balance, lifetime_purchased, lifetime_used]
+                properties:
+                  auto_topup_enabled:
+                    type: boolean
+                  balance:
+                    type: integer
+                  lifetime_purchased:
+                    type: integer
+                  lifetime_used:
+                    type: integer
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+
+  /credits/topup:
+    post:
+      operationId: topUpCredits
+      summary: Top up credits balance
+      tags: [Subscribe]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [amount]
+              properties:
+                amount:
+                  type: integer
+                  description: Amount to top up in credits
+      responses:
+        "200":
+          $ref: "#/components/responses/Success"
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+
+  /x/tweets/{id}/favoriters:
+    get:
+      operationId: getTweetFavoriters
+      summary: Get users who liked a tweet
+      tags: [X API]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Tweet ID
+        - name: cursor
+          in: query
+          schema:
+            type: string
+          description: Pagination cursor from previous response
+      responses:
+        "200":
+          description: List of users who liked the tweet
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedUsers"
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+        "502":
+          $ref: "#/components/responses/XApiError"
+
+  /x/users/{id}/tweets:
+    get:
+      operationId: getUserTweets
+      summary: Get recent tweets by a user
+      tags: [X API]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: cursor
+          in: query
+          schema:
+            type: string
+          description: Pagination cursor from previous response
+        - name: includeReplies
+          in: query
+          schema:
+            type: boolean
+            default: false
+          description: Include reply tweets
+        - name: includeParentTweet
+          in: query
+          schema:
+            type: boolean
+            default: false
+          description: Include parent tweet for replies
+      responses:
+        "200":
+          description: List of tweets
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedTweets"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+
+  /x/users/{id}/likes:
+    get:
+      operationId: getUserLikes
+      summary: Get tweets liked by a user
+      tags: [X API]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: User ID
+        - name: cursor
+          in: query
+          schema:
+            type: string
+          description: Pagination cursor from previous response
+      responses:
+        "200":
+          description: List of liked tweets
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedTweets"
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+        "502":
+          $ref: "#/components/responses/XApiError"
+
+  /x/users/{id}/media:
+    get:
+      operationId: getUserMedia
+      summary: Get media tweets by a user
+      tags: [X API]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: User ID
+        - name: cursor
+          in: query
+          schema:
+            type: string
+          description: Pagination cursor from previous response
+      responses:
+        "200":
+          description: List of media tweets
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedTweets"
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+        "502":
+          $ref: "#/components/responses/XApiError"
+
+  /x/users/{id}/followers-you-know:
+    get:
+      operationId: getFollowersYouKnow
+      summary: Get followers you know for a user
+      tags: [X API]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: User ID
+        - name: cursor
+          in: query
+          schema:
+            type: string
+          description: Pagination cursor from previous response
+      responses:
+        "200":
+          description: List of mutual followers
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedUsers"
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+        "502":
+          $ref: "#/components/responses/XApiError"
+
+  /x/bookmarks:
+    get:
+      operationId: getBookmarks
+      summary: Get bookmarked tweets
+      tags: [X API]
+      parameters:
+        - name: folderId
+          in: query
+          schema:
+            type: string
+          description: Optional bookmark folder ID
+        - name: cursor
+          in: query
+          schema:
+            type: string
+          description: Pagination cursor from previous response
+      responses:
+        "200":
+          description: List of bookmarked tweets
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedTweets"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+        "502":
+          $ref: "#/components/responses/XApiError"
+
+  /x/bookmarks/folders:
+    get:
+      operationId: getBookmarkFolders
+      summary: Get bookmark folders
+      tags: [X API]
+      responses:
+        "200":
+          description: List of bookmark folders
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [folders, has_next_page, next_cursor]
+                properties:
+                  folders:
+                    type: array
+                    items:
+                      type: object
+                      required: [id, name]
+                      properties:
+                        id:
+                          type: string
+                        name:
+                          type: string
+                  has_next_page:
+                    type: boolean
+                  next_cursor:
+                    type: string
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+        "502":
+          $ref: "#/components/responses/XApiError"
+
+  /x/notifications:
+    get:
+      operationId: getNotifications
+      summary: Get notifications
+      tags: [X API]
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [All, Verified, Mentions]
+            default: All
+          description: Notification type filter
+        - name: cursor
+          in: query
+          schema:
+            type: string
+          description: Pagination cursor from previous response
+      responses:
+        "200":
+          description: List of notifications
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [notifications, has_next_page, next_cursor]
+                properties:
+                  notifications:
+                    type: array
+                    items:
+                      type: object
+                      required: [id]
+                      properties:
+                        id:
+                          type: string
+                        type:
+                          type: string
+                        message:
+                          type: string
+                        timestamp:
+                          type: string
+                  has_next_page:
+                    type: boolean
+                  next_cursor:
+                    type: string
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+        "502":
+          $ref: "#/components/responses/XApiError"
+
+  /x/timeline:
+    get:
+      operationId: getTimeline
+      summary: Get home timeline
+      tags: [X API]
+      parameters:
+        - name: seenTweetIds
+          in: query
+          schema:
+            type: string
+          description: Comma-separated tweet IDs to exclude from results
+        - name: cursor
+          in: query
+          schema:
+            type: string
+          description: Pagination cursor from previous response
+      responses:
+        "200":
+          description: List of timeline tweets
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedTweets"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+        "502":
+          $ref: "#/components/responses/XApiError"
+
+  /x/dm/{userId}/history:
+    get:
+      operationId: getDmHistory
+      summary: Get DM conversation history
+      tags: [X API]
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Target user ID
+        - name: cursor
+          in: query
+          schema:
+            type: string
+          description: Pagination cursor from previous response
+        - name: maxId
+          in: query
+          schema:
+            type: string
+          description: Legacy pagination cursor (backward compat)
+      responses:
+        "200":
+          description: List of DM messages
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [messages, has_next_page, next_cursor]
+                properties:
+                  messages:
+                    type: array
+                    items:
+                      type: object
+                      required: [id]
+                      properties:
+                        id:
+                          type: string
+                        text:
+                          type: string
+                        senderId:
+                          type: string
+                        receiverId:
+                          type: string
+                        createdAt:
+                          type: string
+                  has_next_page:
+                    type: boolean
+                  next_cursor:
+                    type: string
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+        "502":
+          $ref: "#/components/responses/XApiError"
+
+  /x/communities/{id}/info:
+    get:
+      operationId: getCommunityInfo
+      summary: Get community details
+      tags: [X API]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Community ID
+      responses:
+        "200":
+          description: Community details
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [community]
+                properties:
+                  community:
+                    type: object
+                    description: Community info object
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+
+  /x/communities/{id}/members:
+    get:
+      operationId: getCommunityMembers
+      summary: Get community members
+      tags: [X API]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Community ID
+        - name: cursor
+          in: query
+          schema:
+            type: string
+          description: Pagination cursor
+      responses:
+        "200":
+          description: List of community members
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+
+  /x/communities/{id}/moderators:
+    get:
+      operationId: getCommunityModerators
+      summary: Get community moderators
+      tags: [X API]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Community ID
+        - name: cursor
+          in: query
+          schema:
+            type: string
+          description: Pagination cursor
+      responses:
+        "200":
+          description: List of community moderators
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+
+  /x/communities/{id}/tweets:
+    get:
+      operationId: getCommunityTweets
+      summary: Get community tweets
+      tags: [X API]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Community ID
+        - name: cursor
+          in: query
+          schema:
+            type: string
+          description: Pagination cursor
+      responses:
+        "200":
+          description: List of community tweets
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+
+  /x/communities/search:
+    get:
+      operationId: searchCommunities
+      summary: Search tweets across communities
+      tags: [X API]
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Search query
+        - name: queryType
+          in: query
+          schema:
+            type: string
+          description: Sort order (Latest or Top)
+        - name: cursor
+          in: query
+          schema:
+            type: string
+          description: Pagination cursor
+      responses:
+        "200":
+          description: Search results
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+
+  /x/communities/tweets:
+    get:
+      operationId: getAllCommunityTweets
+      summary: Search tweets across all communities
+      tags: [X API]
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Search query
+        - name: queryType
+          in: query
+          schema:
+            type: string
+          description: Sort order (Latest or Top)
+        - name: cursor
+          in: query
+          schema:
+            type: string
+          description: Pagination cursor
+      responses:
+        "200":
+          description: Paginated list of tweets from all communities
+        "400":
+          description: Missing query parameter
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+
+  /x/lists/{id}/followers:
+    get:
+      operationId: getListFollowers
+      summary: Get list followers
+      tags: [X API]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: List ID
+        - name: cursor
+          in: query
+          schema:
+            type: string
+          description: Pagination cursor
+      responses:
+        "200":
+          description: List of followers
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+
+  /x/lists/{id}/members:
+    get:
+      operationId: getListMembers
+      summary: Get list members
+      tags: [X API]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: List ID
+        - name: cursor
+          in: query
+          schema:
+            type: string
+          description: Pagination cursor
+      responses:
+        "200":
+          description: List of members
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+
+  /x/lists/{id}/tweets:
+    get:
+      operationId: getListTweets
+      summary: Get list tweets
+      tags: [X API]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: List ID
+        - name: cursor
+          in: query
+          schema:
+            type: string
+          description: Pagination cursor
+        - name: sinceTime
+          in: query
+          schema:
+            type: string
+          description: Unix timestamp - filter after
+        - name: untilTime
+          in: query
+          schema:
+            type: string
+          description: Unix timestamp - filter before
+        - name: includeReplies
+          in: query
+          schema:
+            type: boolean
+          description: Include replies (default false)
+      responses:
+        "200":
+          description: List of tweets
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+
+  /x/tweets/{id}/quotes:
+    get:
+      operationId: getTweetQuotes
+      summary: Get quote tweets of a tweet
+      tags: [X API]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Tweet ID
+        - name: cursor
+          in: query
+          schema:
+            type: string
+          description: Pagination cursor
+        - name: sinceTime
+          in: query
+          schema:
+            type: string
+          description: Unix timestamp - filter after
+        - name: untilTime
+          in: query
+          schema:
+            type: string
+          description: Unix timestamp - filter before
+        - name: includeReplies
+          in: query
+          schema:
+            type: boolean
+          description: Include replies (default false)
+      responses:
+        "200":
+          description: List of quote tweets
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedTweets"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+
+  /x/tweets/{id}/replies:
+    get:
+      operationId: getTweetReplies
+      summary: Get replies to a tweet
+      tags: [X API]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Tweet ID
+        - name: cursor
+          in: query
+          schema:
+            type: string
+          description: Pagination cursor
+        - name: sinceTime
+          in: query
+          schema:
+            type: string
+          description: Unix timestamp - filter after
+        - name: untilTime
+          in: query
+          schema:
+            type: string
+          description: Unix timestamp - filter before
+      responses:
+        "200":
+          description: List of replies
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedTweets"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+
+  /x/tweets/{id}/retweeters:
+    get:
+      operationId: getTweetRetweeters
+      summary: Get users who retweeted a tweet
+      tags: [X API]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Tweet ID
+        - name: cursor
+          in: query
+          schema:
+            type: string
+          description: Pagination cursor
+      responses:
+        "200":
+          description: List of retweeters
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedUsers"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+
+  /x/tweets/{id}/thread:
+    get:
+      operationId: getTweetThread
+      summary: Get thread context for a tweet
+      tags: [X API]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Tweet ID
+        - name: cursor
+          in: query
+          schema:
+            type: string
+          description: Pagination cursor
+      responses:
+        "200":
+          description: Thread tweets
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedTweets"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+
+  /x/users/batch:
+    get:
+      operationId: getBatchUsers
+      summary: Get multiple users by IDs
+      tags: [X API]
+      parameters:
+        - name: ids
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Comma-separated user IDs (max 100)
+      responses:
+        "200":
+          description: List of users
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+
+  /x/users/search:
+    get:
+      operationId: searchUsers
+      summary: Search users by name or username
+      tags: [X API]
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Search query
+        - name: cursor
+          in: query
+          schema:
+            type: string
+          description: Pagination cursor
+      responses:
+        "200":
+          description: Search results
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+
+  /x/users/{id}/followers:
+    get:
+      operationId: getUserFollowers
+      summary: Get user followers
+      tags: [X API]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: User ID or username
+        - name: cursor
+          in: query
+          schema:
+            type: string
+          description: Pagination cursor
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+          description: Items per page (20-200, default 200)
+      responses:
+        "200":
+          description: List of followers
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+
+  /x/users/{id}/following:
+    get:
+      operationId: getUserFollowing
+      summary: Get users this user follows
+      tags: [X API]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: User ID or username
+        - name: cursor
+          in: query
+          schema:
+            type: string
+          description: Pagination cursor
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+          description: Items per page (20-200, default 200)
+      responses:
+        "200":
+          description: List of following
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+
+  /x/users/{id}/mentions:
+    get:
+      operationId: getUserMentions
+      summary: Get tweets mentioning a user
+      tags: [X API]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: User ID or username
+        - name: cursor
+          in: query
+          schema:
+            type: string
+          description: Pagination cursor
+        - name: sinceTime
+          in: query
+          schema:
+            type: string
+          description: Unix timestamp - filter after
+        - name: untilTime
+          in: query
+          schema:
+            type: string
+          description: Unix timestamp - filter before
+      responses:
+        "200":
+          description: List of mentions
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+
+  /x/users/{id}/verified-followers:
+    get:
+      operationId: getUserVerifiedFollowers
+      summary: Get verified followers
+      tags: [X API]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: User ID or username
+        - name: cursor
+          in: query
+          schema:
+            type: string
+          description: Pagination cursor
+      responses:
+        "200":
+          description: List of verified followers
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "402":
+          $ref: "#/components/responses/PaymentRequired"
+
+components:
+  securitySchemes:
+    apiKey:
+      type: apiKey
+      in: header
+      name: X-Api-Key
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: session_token
+    oauthBearer:
+      type: http
+      scheme: bearer
+      description: OAuth 2.1 access token
+
+  parameters:
+    ResourceId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Resource ID (stringified bigint)
+    Limit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 50
+    After:
+      name: after
+      in: query
+      schema:
+        type: string
+      description: Cursor for pagination
+    StyleUsername:
+      name: username
+      in: path
+      required: true
+      schema:
+        type: string
+      description: X username of cached style
+
+  responses:
+    Success:
+      description: Success
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [success]
+            properties:
+              success:
+                type: boolean
+                const: true
+    NoContent:
+      description: Deleted
+    Unauthenticated:
+      description: Unauthenticated
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    InvalidInput:
+      description: Invalid input
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    PaymentRequired:
+      description: Subscription or usage issue
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    XApiError:
+      description: X API unavailable, unauthorized, or rate limited
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
+  schemas:
+    PaginatedTweets:
+      type: object
+      required: [tweets, has_next_page, next_cursor]
+      properties:
+        tweets:
+          type: array
+          items:
+            $ref: "#/components/schemas/SearchTweet"
+        has_next_page:
+          type: boolean
+        next_cursor:
+          type: string
+    PaginatedUsers:
+      type: object
+      required: [users, has_next_page, next_cursor]
+      properties:
+        users:
+          type: array
+          items:
+            $ref: "#/components/schemas/XUser"
+        has_next_page:
+          type: boolean
+        next_cursor:
+          type: string
+    Flow:
+      type: object
+      required: [id, name, slug, triggerType, isActive, runCount, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        slug:
+          type: string
+        triggerType:
+          type: string
+        triggerConfig:
+          type: object
+        isActive:
+          type: boolean
+        runCount:
+          type: string
+        lastRunAt:
+          type: string
+          format: date-time
+          nullable: true
+        pausedReason:
+          type: string
+          nullable: true
+        templateSlug:
+          type: string
+          nullable: true
+        xAccountId:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+          enum:
+            - internal_error
+            - invalid_format
+            - invalid_id
+            - invalid_input
+            - invalid_params
+            - invalid_tool_type
+            - invalid_tweet_id
+            - invalid_tweet_url
+            - invalid_username
+            - missing_params
+            - missing_query
+            - monitor_already_exists
+            - monitor_limit_reached
+            - no_subscription
+            - not_found
+            - stream_registration_failed
+            - subscription_inactive
+            - tweet_not_found
+            - unauthenticated
+            - usage_limit_reached
+            - user_not_found
+            - webhook_inactive
+            - x_api_rate_limited
+            - x_api_unavailable
+            - x_api_unauthorized
+
+    EventType:
+      type: string
+      enum:
+        - tweet.new
+        - tweet.reply
+        - tweet.retweet
+        - tweet.quote
+        - follower.gained
+        - follower.lost
+
+    EventTypeArray:
+      type: array
+      items:
+        $ref: "#/components/schemas/EventType"
+      minItems: 1
+
+    ExtractionToolType:
+      type: string
+      enum:
+        - article_extractor
+        - community_extractor
+        - community_moderator_explorer
+        - community_post_extractor
+        - community_search
+        - follower_explorer
+        - following_explorer
+        - list_follower_explorer
+        - list_member_extractor
+        - list_post_extractor
+        - mention_extractor
+        - people_search
+        - post_extractor
+        - quote_extractor
+        - reply_extractor
+        - repost_extractor
+        - space_explorer
+        - thread_extractor
+        - tweet_search_extractor
+        - verified_follower_explorer
+
+    ApiKey:
+      type: object
+      required: [id, name, prefix, isActive, createdAt]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        prefix:
+          type: string
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        lastUsedAt:
+          type: string
+          format: date-time
+
+    Monitor:
+      type: object
+      required: [id, username, xUserId, eventTypes, isActive, createdAt]
+      properties:
+        id:
+          type: string
+        username:
+          type: string
+        xUserId:
+          type: string
+        eventTypes:
+          $ref: "#/components/schemas/EventTypeArray"
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+    Event:
+      type: object
+      required: [id, type, username, monitorId, occurredAt, data]
+      properties:
+        id:
+          type: string
+        type:
+          $ref: "#/components/schemas/EventType"
+        username:
+          type: string
+        monitorId:
+          type: string
+        occurredAt:
+          type: string
+          format: date-time
+        data:
+          type: object
+          additionalProperties: true
+
+    EventDetail:
+      type: object
+      required: [id, type, username, monitorId, occurredAt, data]
+      properties:
+        id:
+          type: string
+        type:
+          $ref: "#/components/schemas/EventType"
+        username:
+          type: string
+        monitorId:
+          type: string
+        occurredAt:
+          type: string
+          format: date-time
+        data:
+          type: object
+          additionalProperties: true
+        xEventId:
+          type: string
+
+    ExtractionJob:
+      type: object
+      required: [id, toolType, status, totalResults, createdAt]
+      properties:
+        id:
+          type: string
+        toolType:
+          $ref: "#/components/schemas/ExtractionToolType"
+        status:
+          type: string
+          enum: [running, completed, failed]
+        totalResults:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: string
+          format: date-time
+
+    DrawListItem:
+      type: object
+      required: [id, tweetUrl, status, totalEntries, validEntries, createdAt]
+      properties:
+        id:
+          type: string
+        tweetUrl:
+          type: string
+          format: uri
+        status:
+          type: string
+        totalEntries:
+          type: integer
+        validEntries:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        drawnAt:
+          type: string
+          format: date-time
+
+    DrawDetail:
+      type: object
+      required:
+        - id
+        - tweetUrl
+        - tweetId
+        - tweetText
+        - tweetAuthorUsername
+        - status
+        - totalEntries
+        - validEntries
+        - tweetLikeCount
+        - tweetRetweetCount
+        - tweetReplyCount
+        - tweetQuoteCount
+        - createdAt
+      properties:
+        id:
+          type: string
+        tweetUrl:
+          type: string
+          format: uri
+        tweetId:
+          type: string
+        tweetText:
+          type: string
+        tweetAuthorUsername:
+          type: string
+        status:
+          type: string
+        totalEntries:
+          type: integer
+        validEntries:
+          type: integer
+        tweetLikeCount:
+          type: integer
+        tweetRetweetCount:
+          type: integer
+        tweetReplyCount:
+          type: integer
+        tweetQuoteCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        drawnAt:
+          type: string
+          format: date-time
+
+    Winner:
+      type: object
+      required: [authorUsername, tweetId, position, isBackup]
+      properties:
+        authorUsername:
+          type: string
+        tweetId:
+          type: string
+        position:
+          type: integer
+        isBackup:
+          type: boolean
+
+    Webhook:
+      type: object
+      required: [id, url, eventTypes, isActive, createdAt]
+      properties:
+        id:
+          type: string
+        url:
+          type: string
+          format: uri
+        eventTypes:
+          $ref: "#/components/schemas/EventTypeArray"
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+    Delivery:
+      type: object
+      required: [id, streamEventId, status, attempts, createdAt]
+      properties:
+        id:
+          type: string
+        streamEventId:
+          type: string
+        status:
+          type: string
+        attempts:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        deliveredAt:
+          type: string
+          format: date-time
+        lastStatusCode:
+          type: integer
+        lastError:
+          type: string
+
+    TweetDetail:
+      type: object
+      required: [id, text, retweetCount, replyCount, likeCount, quoteCount, viewCount, bookmarkCount]
+      properties:
+        id:
+          type: string
+        text:
+          type: string
+        createdAt:
+          type: string
+        retweetCount:
+          type: integer
+        replyCount:
+          type: integer
+        likeCount:
+          type: integer
+        quoteCount:
+          type: integer
+        viewCount:
+          type: integer
+        bookmarkCount:
+          type: integer
+
+    TweetAuthor:
+      type: object
+      required: [id, username, followers, verified]
+      properties:
+        id:
+          type: string
+        username:
+          type: string
+        followers:
+          type: integer
+        verified:
+          type: boolean
+        profilePicture:
+          type: string
+
+    SearchTweet:
+      type: object
+      required: [id, text]
+      properties:
+        id:
+          type: string
+        text:
+          type: string
+        createdAt:
+          type: string
+        likeCount:
+          type: integer
+        retweetCount:
+          type: integer
+        replyCount:
+          type: integer
+        quoteCount:
+          type: integer
+        viewCount:
+          type: integer
+        bookmarkCount:
+          type: integer
+        author:
+          type: object
+          required: [id, username, name]
+          properties:
+            id:
+              type: string
+            username:
+              type: string
+            name:
+              type: string
+            verified:
+              type: boolean
+
+    UserProfile:
+      type: object
+      required: [id, username, name]
+      properties:
+        id:
+          type: string
+        username:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        followers:
+          type: integer
+        following:
+          type: integer
+        verified:
+          type: boolean
+        profilePicture:
+          type: string
+        location:
+          type: string
+        createdAt:
+          type: string
+        statusesCount:
+          type: integer
+
+    # ── New schemas ──────────────────────────────────────────
+    Draft:
+      type: object
+      required: [id, text, createdAt]
+      properties:
+        id:
+          type: string
+        text:
+          type: string
+        topic:
+          type: string
+        goal:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    DraftDetail:
+      type: object
+      required: [id, text, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+        text:
+          type: string
+        topic:
+          type: string
+        goal:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    StyleProfileSummary:
+      type: object
+      required: [xUsername, tweetCount, isOwnAccount, fetchedAt]
+      properties:
+        xUsername:
+          type: string
+        tweetCount:
+          type: integer
+        isOwnAccount:
+          type: boolean
+        fetchedAt:
+          type: string
+          format: date-time
+
+    StyleProfile:
+      type: object
+      required: [xUsername, tweetCount, isOwnAccount, fetchedAt, tweets]
+      properties:
+        xUsername:
+          type: string
+        tweetCount:
+          type: integer
+        isOwnAccount:
+          type: boolean
+        fetchedAt:
+          type: string
+          format: date-time
+        tweets:
+          type: array
+          items:
+            type: object
+            required: [id, text]
+            properties:
+              id:
+                type: string
+              text:
+                type: string
+              createdAt:
+                type: string
+              authorUsername:
+                type: string
+
+    RadarItem:
+      type: object
+      required: [title, score, category, source, region, publishedAt]
+      properties:
+        title:
+          type: string
+        url:
+          type: string
+        score:
+          type: number
+        category:
+          type: string
+        source:
+          type: string
+        region:
+          type: string
+        publishedAt:
+          type: string
+          format: date-time
+        description:
+          type: string
+        imageUrl:
+          type: string
+
+    Integration:
+      type: object
+      required: [id, type, name, config, eventTypes, isActive, createdAt]
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum: [telegram]
+        name:
+          type: string
+        config:
+          type: object
+          additionalProperties: true
+        eventTypes:
+          $ref: "#/components/schemas/EventTypeArray"
+        isActive:
+          type: boolean
+        silentPush:
+          type: boolean
+        scopeAllMonitors:
+          type: boolean
+        messageTemplate:
+          type: string
+        filters:
+          type: object
+          additionalProperties: true
+        createdAt:
+          type: string
+          format: date-time
+
+    IntegrationDelivery:
+      type: object
+      required: [id, eventType, status, attempts, createdAt]
+      properties:
+        id:
+          type: string
+        eventType:
+          type: string
+        status:
+          type: string
+        attempts:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        deliveredAt:
+          type: string
+          format: date-time
+        lastError:
+          type: string
+        lastStatusCode:
+          type: integer
+        sourceId:
+          type: string
+        sourceType:
+          type: string
+
+    XAccount:
+      type: object
+      required: [id, xUserId, xUsername, status, createdAt]
+      properties:
+        id:
+          type: string
+        xUserId:
+          type: string
+        xUsername:
+          type: string
+        status:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    XAccountDetail:
+      type: object
+      required: [id, xUserId, xUsername, status, createdAt]
+      properties:
+        id:
+          type: string
+        xUserId:
+          type: string
+        xUsername:
+          type: string
+        status:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        proxyCountry:
+          type: string
+        cookiesObtainedAt:
+          type: string
+          format: date-time
+
+    XAccountBody:
+      type: object
+      required: [account]
+      properties:
+        account:
+          type: string
+          description: X account (@username or account ID)
+
+    CommunityActionResult:
+      type: object
+      required: [communityId, communityName, success]
+      properties:
+        communityId:
+          type: string
+        communityName:
+          type: string
+        success:
+          type: boolean
+          const: true
