@@ -1,38 +1,45 @@
 ---
 title: Rate limits
-description: Rate limit tiers, burst allowances, and client-side rate limiting
-keywords: ["rate limit", "token bucket", "burst", "throttling", "429"]
+description: Rate limit tiers, fixed window counter, and client-side rate limiting
+keywords: ["rate limit", "fixed window", "throttling", "429"]
 ---
 
-Xquik enforces rate limits to ensure fair usage and platform stability. Limits are applied per API key using a token bucket algorithm.
+Xquik enforces rate limits to ensure fair usage and platform stability. Limits are applied per API key using a fixed window counter.
 
 ## Rate limit tiers
 
-| Scope | Sustained Rate | Burst Allowance |
-|-------|---------------|-----------------|
-| API endpoints (`/api/v1/*`) | 10 req/s | 20 requests |
-| General requests | 60 req/s | 100 requests |
+| Tier | Methods | Limit |
+|------|---------|-------|
+| Read | GET, HEAD, OPTIONS | 120 per 60s |
+| Write | POST, PUT, PATCH | 30 per 60s |
+| Delete | DELETE | 15 per 60s |
 
 ## How limits work
 
-Xquik uses a **token bucket algorithm**:
+Xquik uses a **fixed window counter**:
 
-- Each API key has a bucket that fills at the sustained rate (e.g. 10 tokens/second for API endpoints)
-- The bucket holds a maximum of **burst** tokens (e.g. 20 for API endpoints)
-- Each request consumes 1 token
-- When the bucket is empty, requests return `429 Too Many Requests`
-
-This means you can send short bursts above the sustained rate as long as you stay within the burst allowance. For example, with the API tier:
-
-- You can send 20 requests instantly (burst)
-- After that, you can send 10 requests per second (sustained)
-- If you stop sending requests, the bucket refills at 10 tokens per second
+<Steps>
+  <Step title="Window starts on first request">
+    The first request from your API key starts a 60-second window for that tier.
+  </Step>
+  <Step title="Each request increments the counter">
+    Every request within the window increments the counter for its tier (read, write, or delete).
+  </Step>
+  <Step title="Counter resets after window expires">
+    After 60 seconds, the window resets and the counter returns to zero.
+  </Step>
+  <Step title="Requests rejected when limit is reached">
+    If the counter exceeds the tier limit within a window, subsequent requests return `429 Too Many Requests` until the window resets.
+  </Step>
+</Steps>
 
 ```text
-Time 0s:  [20 tokens] → Send 20 requests → [0 tokens]
-Time 1s:  [10 tokens] → Send 10 requests → [0 tokens]
-Time 2s:  [10 tokens] → Send 5 requests  → [5 tokens]
-Time 3s:  [15 tokens] → Idle             → [20 tokens] (capped at burst)
+Read tier (120 per 60s):
+
+Time 0s:   [0/120]  → Send 50 GET requests  → [50/120]
+Time 10s:  [50/120] → Send 70 GET requests  → [120/120] (limit reached)
+Time 30s:  [120/120] → GET request → 429 (rejected, window active)
+Time 60s:  [0/120]  → Window resets → requests allowed again
 ```
 
 ## Response headers
@@ -57,44 +64,43 @@ Always respect the `Retry-After` header. Sending requests before the window rese
 
 ## Client-side rate limiter
 
-Prevent hitting server-side limits by implementing a client-side token bucket. This is more efficient than relying on 429 responses and backoff.
+Prevent hitting server-side limits by implementing a client-side rate limiter. This is more efficient than relying on 429 responses and backoff.
 
 <CodeGroup>
 
 ```javascript Node.js
-class RateLimiter {
-  constructor(ratePerSecond, burst) {
-    this.ratePerSecond = ratePerSecond;
-    this.burst = burst;
-    this.tokens = burst;
-    this.lastRefill = Date.now();
-  }
-
-  refill() {
-    const now = Date.now();
-    const elapsed = (now - this.lastRefill) / 1000;
-    this.tokens = Math.min(this.burst, this.tokens + elapsed * this.ratePerSecond);
-    this.lastRefill = now;
+class WindowRateLimiter {
+  constructor(maxRequests, windowMs) {
+    this.maxRequests = maxRequests;
+    this.windowMs = windowMs;
+    this.count = 0;
+    this.windowStart = Date.now();
   }
 
   async acquire() {
-    this.refill();
+    const now = Date.now();
 
-    if (this.tokens < 1) {
-      const waitMs = ((1 - this.tokens) / this.ratePerSecond) * 1000;
-      await new Promise((resolve) => setTimeout(resolve, waitMs));
-      this.refill();
+    if (now - this.windowStart >= this.windowMs) {
+      this.count = 0;
+      this.windowStart = now;
     }
 
-    this.tokens -= 1;
+    if (this.count >= this.maxRequests) {
+      const waitMs = this.windowMs - (now - this.windowStart);
+      await new Promise((resolve) => setTimeout(resolve, waitMs));
+      this.count = 0;
+      this.windowStart = Date.now();
+    }
+
+    this.count += 1;
   }
 }
 
-// Usage: 10 req/s sustained, 20 burst
-const limiter = new RateLimiter(10, 20);
+// Read tier: 120 requests per 60s
+const readLimiter = new WindowRateLimiter(120, 60_000);
 
 async function apiRequest(url) {
-  await limiter.acquire();
+  await readLimiter.acquire();
   return fetch(url, {
     headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
   });
@@ -105,36 +111,35 @@ async function apiRequest(url) {
 import time
 import threading
 
-class RateLimiter:
-    def __init__(self, rate_per_second: float, burst: int):
-        self.rate_per_second = rate_per_second
-        self.burst = burst
-        self.tokens = float(burst)
-        self.last_refill = time.monotonic()
+class WindowRateLimiter:
+    def __init__(self, max_requests: int, window_seconds: float):
+        self.max_requests = max_requests
+        self.window_seconds = window_seconds
+        self.count = 0
+        self.window_start = time.monotonic()
         self.lock = threading.Lock()
-
-    def _refill(self):
-        now = time.monotonic()
-        elapsed = now - self.last_refill
-        self.tokens = min(self.burst, self.tokens + elapsed * self.rate_per_second)
-        self.last_refill = now
 
     def acquire(self):
         with self.lock:
-            self._refill()
+            now = time.monotonic()
 
-            if self.tokens < 1:
-                wait = (1 - self.tokens) / self.rate_per_second
+            if now - self.window_start >= self.window_seconds:
+                self.count = 0
+                self.window_start = now
+
+            if self.count >= self.max_requests:
+                wait = self.window_seconds - (now - self.window_start)
                 time.sleep(wait)
-                self._refill()
+                self.count = 0
+                self.window_start = time.monotonic()
 
-            self.tokens -= 1
+            self.count += 1
 
-# Usage: 10 req/s sustained, 20 burst
-limiter = RateLimiter(10, 20)
+# Read tier: 120 requests per 60s
+read_limiter = WindowRateLimiter(120, 60)
 
 def api_request(url: str) -> requests.Response:
-    limiter.acquire()
+    read_limiter.acquire()
     return requests.get(url, headers={"x-api-key": "xq_YOUR_KEY_HERE"})
 ```
 
@@ -147,55 +152,51 @@ import (
 	"time"
 )
 
-type RateLimiter struct {
-	ratePerSecond float64
-	burst         float64
-	tokens        float64
-	lastRefill    time.Time
-	mu            sync.Mutex
+type WindowRateLimiter struct {
+	maxRequests int
+	window      time.Duration
+	count       int
+	windowStart time.Time
+	mu          sync.Mutex
 }
 
-func NewRateLimiter(ratePerSecond float64, burst int) *RateLimiter {
-	return &RateLimiter{
-		ratePerSecond: ratePerSecond,
-		burst:         float64(burst),
-		tokens:        float64(burst),
-		lastRefill:    time.Now(),
+func NewWindowRateLimiter(maxRequests int, window time.Duration) *WindowRateLimiter {
+	return &WindowRateLimiter{
+		maxRequests: maxRequests,
+		window:      window,
+		count:       0,
+		windowStart: time.Now(),
 	}
 }
 
-func (r *RateLimiter) refill() {
-	now := time.Now()
-	elapsed := now.Sub(r.lastRefill).Seconds()
-	r.tokens += elapsed * r.ratePerSecond
-	if r.tokens > r.burst {
-		r.tokens = r.burst
-	}
-	r.lastRefill = now
-}
-
-func (r *RateLimiter) Acquire() {
+func (r *WindowRateLimiter) Acquire() {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	r.refill()
+	now := time.Now()
 
-	if r.tokens < 1 {
-		wait := time.Duration((1 - r.tokens) / r.ratePerSecond * float64(time.Second))
+	if now.Sub(r.windowStart) >= r.window {
+		r.count = 0
+		r.windowStart = now
+	}
+
+	if r.count >= r.maxRequests {
+		wait := r.window - now.Sub(r.windowStart)
 		r.mu.Unlock()
 		time.Sleep(wait)
 		r.mu.Lock()
-		r.refill()
+		r.count = 0
+		r.windowStart = time.Now()
 	}
 
-	r.tokens--
+	r.count++
 }
 
-// Usage: 10 req/s sustained, 20 burst
-var limiter = NewRateLimiter(10, 20)
+// Read tier: 120 requests per 60s
+var readLimiter = NewWindowRateLimiter(120, 60*time.Second)
 
 func apiRequest(url string) (*http.Response, error) {
-	limiter.Acquire()
+	readLimiter.Acquire()
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
@@ -208,7 +209,7 @@ func apiRequest(url string) (*http.Response, error) {
 ```bash cURL
 #!/bin/bash
 # Simple rate limiter using sleep between requests
-# 10 req/s = 100ms between requests
+# Read tier: 120 per 60s = ~500ms between requests
 
 URLS=(
   "https://xquik.com/api/v1/events?monitorId=7"
@@ -218,7 +219,7 @@ URLS=(
 
 for url in "${URLS[@]}"; do
   curl -s "$url" -H "x-api-key: xq_YOUR_KEY_HERE" | jq
-  sleep 0.1  # 100ms = 10 req/s
+  sleep 0.5  # 500ms = ~2 req/s (stays within 120 per 60s)
 done
 ```
 
@@ -240,7 +241,7 @@ done
     When you receive a 429, wait for the `Retry-After` duration. If the retry also fails, double the wait time. See the [error handling guide](/guides/error-handling) for complete retry implementations.
   </Accordion>
   <Accordion title="Spread requests evenly">
-    Avoid sending all requests in a burst at the start of each interval. Spread them evenly across the window to maintain a steady token refill rate.
+    Avoid sending all requests in a burst at the start of each window. Spread them evenly across the 60-second window to avoid hitting the limit early.
   </Accordion>
 </AccordionGroup>
 
