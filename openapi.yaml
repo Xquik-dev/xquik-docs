@@ -110,7 +110,7 @@ paths:
       summary: Update account locale
       tags: [Account]
       security:
-        - sessionCookie: []
+        - apiKey: []
       requestBody:
         required: true
         content:
@@ -172,7 +172,7 @@ paths:
       summary: List API keys
       tags: [API Keys]
       security:
-        - sessionCookie: []
+        - apiKey: []
       responses:
         '200':
           description: API key list
@@ -193,7 +193,7 @@ paths:
       summary: Create API key
       tags: [API Keys]
       security:
-        - sessionCookie: []
+        - apiKey: []
       requestBody:
         required: true
         content:
@@ -232,7 +232,7 @@ paths:
       summary: Revoke API key
       tags: [API Keys]
       security:
-        - sessionCookie: []
+        - apiKey: []
       parameters:
         - $ref: '#/components/parameters/ResourceId'
       responses:
@@ -329,6 +329,21 @@ paths:
             application/json:
               schema:
                 type: object
+                properties:
+                  text:
+                    type: string
+                    description: Generated or refined tweet text
+                  score:
+                    type: number
+                    description: Engagement score (0-100)
+                  feedback:
+                    type: string
+                    description: AI feedback on the draft
+                  suggestions:
+                    type: array
+                    items:
+                      type: string
+                    description: Improvement suggestions
                 additionalProperties: true
         '400':
           $ref: '#/components/responses/InvalidInput'
@@ -1118,6 +1133,9 @@ paths:
                     type: object
                     additionalProperties: true
                     x-stainless-any: true
+                    description:
+                      Extraction job metadata — shape varies by tool type (JSON)
+                    x-stainless-terraform-type: string
                   results:
                     type: array
                     items:
@@ -1600,10 +1618,14 @@ paths:
                   type: object
                   additionalProperties: true
                   x-stainless-any: true
+                  description: Custom message template (JSON)
+                  x-stainless-terraform-type: string
                 filters:
                   type: object
                   additionalProperties: true
                   x-stainless-any: true
+                  description: Event filter rules (JSON)
+                  x-stainless-terraform-type: string
       responses:
         '200':
           description: Integration updated
@@ -2614,7 +2636,7 @@ paths:
       summary: List connected X accounts
       tags: [X Accounts]
       security:
-        - sessionCookie: []
+        - apiKey: []
       responses:
         '200':
           description: X account list
@@ -2635,7 +2657,7 @@ paths:
       summary: Connect X account
       tags: [X Accounts]
       security:
-        - sessionCookie: []
+        - apiKey: []
       requestBody:
         required: true
         content:
@@ -2689,7 +2711,7 @@ paths:
       summary: Get X account details
       tags: [X Accounts]
       security:
-        - sessionCookie: []
+        - apiKey: []
       parameters:
         - $ref: '#/components/parameters/ResourceId'
       responses:
@@ -2708,7 +2730,7 @@ paths:
       summary: Disconnect X account
       tags: [X Accounts]
       security:
-        - sessionCookie: []
+        - apiKey: []
       parameters:
         - $ref: '#/components/parameters/ResourceId'
       responses:
@@ -2725,7 +2747,7 @@ paths:
       summary: Re-authenticate X account
       tags: [X Accounts]
       security:
-        - sessionCookie: []
+        - apiKey: []
       parameters:
         - $ref: '#/components/parameters/ResourceId'
       requestBody:
@@ -3643,6 +3665,52 @@ paths:
                   community:
                     type: object
                     description: Community info object
+                    properties:
+                      id:
+                        type: string
+                        description: Community ID
+                      name:
+                        type: string
+                        description: Community name
+                      description:
+                        type: string
+                        description: Community description
+                      banner_url:
+                        type: string
+                        description: Community banner image URL
+                      created_at:
+                        type: string
+                        description: Community creation timestamp
+                      join_policy:
+                        type: string
+                        description: Join policy (open or restricted)
+                      member_count:
+                        type: integer
+                        description: Total member count
+                      moderator_count:
+                        type: integer
+                        description: Total moderator count
+                      primary_topic:
+                        type: object
+                        description: Primary topic
+                        properties:
+                          id:
+                            type: string
+                          name:
+                            type: string
+                      rules:
+                        type: array
+                        description: Community rules
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                            name:
+                              type: string
+                            description:
+                              type: string
+                    required: [id]
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '402':
@@ -4207,10 +4275,6 @@ components:
       type: apiKey
       in: header
       name: X-Api-Key
-    sessionCookie:
-      type: apiKey
-      in: cookie
-      name: session_token
     oauthBearer:
       type: http
       scheme: bearer
@@ -4514,6 +4578,8 @@ components:
           type: object
           additionalProperties: true
           x-stainless-any: true
+          description: Event payload — shape varies by event type (JSON)
+          x-stainless-terraform-type: string
         xEventId:
           type: string
 
@@ -4888,6 +4954,8 @@ components:
           type: object
           additionalProperties: true
           x-stainless-any: true
+          description: Integration config — shape varies by type (JSON)
+          x-stainless-terraform-type: string
         eventTypes:
           $ref: '#/components/schemas/EventTypeArray'
         isActive:
@@ -4902,6 +4970,8 @@ components:
           type: object
           additionalProperties: true
           x-stainless-any: true
+          description: Event filter rules (JSON)
+          x-stainless-terraform-type: string
         createdAt:
           type: string
           format: date-time
