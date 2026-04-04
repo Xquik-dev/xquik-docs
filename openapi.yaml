@@ -11,7 +11,7 @@ info:
     GET /x/tweets/{id}. Tweet search: GET /x/tweets/search?q={query}&limit={n}.
     User lookup: GET /x/users/{id}. Follower check: GET
     /x/followers/check?source={a}&target={b}. Article extraction: GET
-    /x/articles/{id}. Media download: POST /x/media/download with
+    /x/articles/{tweetId}. Media download: POST /x/media/download with
     tweetInput or tweetIds body. User tweets: GET /x/users/{id}/tweets. Trending
     topics: GET /trends?woeid={id}&count={n} or GET /x/trends.
   contact:
@@ -1830,7 +1830,7 @@ paths:
             type: integer
             default: 20
             maximum: 200
-          description: Maximum number of tweets to return per page (1-200, default 20)
+          description: Max tweets to return (server paginates internally). Omit for single page (~20).
       responses:
         '200':
           description: Search results
@@ -1851,7 +1851,7 @@ paths:
         '502':
           $ref: '#/components/responses/XApiError'
 
-  /x/articles/{id}:
+  /x/articles/{tweetId}:
     get:
       operationId: getArticle
       summary: Get X Article
@@ -1863,12 +1863,11 @@ paths:
         pricingMode: fixed
         price: '2100'
       parameters:
-        - name: id
+        - name: tweetId
           in: path
           required: true
           schema:
             type: string
-          description: Tweet ID
       responses:
         '200':
           description: Article with author
@@ -2247,13 +2246,13 @@ paths:
         '502':
           $ref: '#/components/responses/XApiError'
 
-  /x/dm/{id}:
+  /x/dm/{userId}:
     post:
       operationId: sendDm
       summary: Send direct message
       tags: [X Write]
       parameters:
-        - name: id
+        - name: userId
           in: path
           required: true
           schema:
@@ -2798,8 +2797,9 @@ paths:
       operationId: bulkRetryXAccounts
       summary: Bulk retry temporarily failed X accounts
       description: >
-        Clears login failure state for all accounts with transient or automated
-        failure reasons, making them eligible for retry on next use.
+        Clears loginFailedAt and loginFailureReason for all accounts with
+        transient or automated failure reasons, making them eligible for retry
+        on next use.
       tags: [X Accounts]
       security:
         - apiKey: []
@@ -3611,13 +3611,13 @@ paths:
         '502':
           $ref: '#/components/responses/XApiError'
 
-  /x/dm/{id}/history:
+  /x/dm/{userId}/history:
     get:
       operationId: getDmHistory
       summary: Get DM conversation history
       tags: [X API]
       parameters:
-        - name: id
+        - name: userId
           in: path
           required: true
           schema:
