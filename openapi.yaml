@@ -2,21 +2,33 @@ openapi: 3.1.0
 info:
   title: Xquik API
   version: '1.0'
-  description:
-    X real-time data platform — extractions, giveaway draws, monitoring,
-    webhooks.
-  guidance: >
-    Xquik provides real-time X (Twitter) data via 16 MPP pay-per-use endpoints.
-    No account or API key needed — pay per call via Tempo (USDC). Tweet lookup:
-    GET /x/tweets/{id}. Tweet search: GET /x/tweets/search?q={query}&limit={n}.
-    User lookup: GET /x/users/{id}. Follower check: GET
-    /x/followers/check?source={a}&target={b}. Article extraction: GET
-    /x/articles/{tweetId}. Media download: POST /x/media/download with
-    tweetInput or tweetIds body. User tweets: GET /x/users/{id}/tweets. Trending
-    topics: GET /trends?woeid={id}&count={n} or GET /x/trends.
+  description: >
+    Xquik is an all-in-one X (Twitter) automation API with 40+ endpoints for
+    reading, writing, and monitoring X data. **Read endpoints** let you look up
+    tweets, search tweets, fetch user profiles, list followers & following,
+    browse timelines, bookmarks, notifications, communities, lists, trending
+    topics, and download media. **Write endpoints** let you post tweets, reply,
+    like, unlike, retweet, unretweet, follow, unfollow, send DMs, upload media,
+    update profiles, and manage communities. **Automation endpoints** power bulk
+    data extractions (20 tool types), giveaway draws from tweet replies,
+    real-time account monitoring with webhooks & Telegram integrations, tweet
+    composition with AI, and writing style analysis. Authenticate with an API
+    key or OAuth 2.1 bearer token. Pay-per-use endpoints are also available
+    without an account.
+  x-guidance: >
+    Quick start — Tweet lookup: GET /x/tweets/{id}. Tweet search: GET
+    /x/tweets/search?q={query}&limit={n}. User lookup: GET /x/users/{id}.
+    Follower check: GET /x/followers/check?source={a}&target={b}. Article
+    extraction: GET /x/articles/{tweetId}. Media download: POST
+    /x/media/download with tweetInput or tweetIds body. User tweets: GET
+    /x/users/{id}/tweets. Trending topics: GET /trends?woeid={id}&count={n} or
+    GET /x/trends. Post a tweet: POST /x/tweets with account & text. Like a
+    tweet: POST /x/tweets/{id}/like with account. Follow a user: POST
+    /x/users/{id}/follow with account.
   contact:
     name: Xquik
     url: https://xquik.com
+    email: support@xquik.com
 
 servers:
   - url: https://xquik.com/api/v1
@@ -30,40 +42,40 @@ security:
   - oauthBearer: []
 
 tags:
-  - name: Account
-    description: Account info & settings
   - name: API Keys
     description: API key management (session auth only)
-  - name: Subscribe
-    description: Subscription & billing
+  - name: Account
+    description: Account info & settings
+  - name: Bot
+    description: Telegram bot service endpoints
   - name: Composition
     description: Tweet composition, drafts, writing styles & radar
-  - name: Monitors
-    description: Real-time X account monitoring
+  - name: Draws
+    description: Giveaway draws from tweet replies
   - name: Events
     description: Activity events from monitored accounts
   - name: Extractions
     description: Bulk data extraction (20 tool types)
-  - name: Draws
-    description: Giveaway draws from tweet replies
-  - name: Webhooks
-    description: Webhook endpoint management & delivery
   - name: Integrations
     description: Push notification integrations (Telegram)
+  - name: Media
+    description: Media upload & download
+  - name: Monitors
+    description: Real-time X account monitoring
+  - name: Subscribe
+    description: Subscription & billing
+  - name: Support
+    description: Support ticket management
+  - name: Trends
+    description: Trending topics by region
+  - name: Webhooks
+    description: Webhook endpoint management & delivery
   - name: X API
     description: X data lookups (subscription required)
   - name: X Accounts
     description: Connected X account management
   - name: X Write
     description: X write actions (tweets, likes, follows, DMs)
-  - name: Media
-    description: Media upload & download
-  - name: Trends
-    description: Trending topics by region
-  - name: Bot
-    description: Telegram bot service endpoints
-  - name: Support
-    description: Support ticket management
 
 paths:
   # ── Account ──────────────────────────────────────────────
@@ -86,10 +98,13 @@ paths:
                   plan:
                     type: string
                     enum: [active, inactive]
+                    example: active
                   monitorsUsed:
                     type: integer
+                    example: 3
                   monitorsAllowed:
                     type: integer
+                    example: 10
                   currentPeriod:
                     type: object
                     required: [start, end, usagePercent]
@@ -97,11 +112,26 @@ paths:
                       start:
                         type: string
                         format: date-time
+                        example: "2025-01-01T00:00:00Z"
                       end:
                         type: string
                         format: date-time
+                        example: "2025-02-01T00:00:00Z"
                       usagePercent:
                         type: number
+                        example: 42.5
+                    example:
+                      start: "2025-01-01T00:00:00Z"
+                      end: "2025-02-01T00:00:00Z"
+                      usagePercent: 42.5
+              example:
+                plan: active
+                monitorsUsed: 3
+                monitorsAllowed: 10
+                currentPeriod:
+                  start: "2025-01-01T00:00:00Z"
+                  end: "2025-02-01T00:00:00Z"
+                  usagePercent: 42.5
         '401':
           $ref: '#/components/responses/Unauthenticated'
     patch:
@@ -112,6 +142,7 @@ paths:
         - apiKey: []
       requestBody:
         required: true
+        description: Locale preference for the account.
         content:
           application/json:
             schema:
@@ -121,6 +152,9 @@ paths:
                 locale:
                   type: string
                   enum: [en, tr, es]
+                  example: en
+            example:
+              locale: en
       responses:
         '200':
           $ref: '#/components/responses/Success'
@@ -136,6 +170,7 @@ paths:
       tags: [Account]
       requestBody:
         required: true
+        description: X username to link to this account.
         content:
           application/json:
             schema:
@@ -145,6 +180,9 @@ paths:
                 username:
                   type: string
                   description: X username without @
+                  example: elonmusk
+            example:
+              username: elonmusk
       responses:
         '200':
           description: X identity linked
@@ -159,6 +197,10 @@ paths:
                     const: true
                   xUsername:
                     type: string
+                    example: elonmusk
+              example:
+                success: true
+                xUsername: elonmusk
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401':
@@ -185,6 +227,9 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/ApiKey'
+                    example: []
+              example:
+                keys: []
         '401':
           $ref: '#/components/responses/Unauthenticated'
     post:
@@ -195,6 +240,7 @@ paths:
         - apiKey: []
       requestBody:
         required: true
+        description: Optional display name for the new API key.
         content:
           application/json:
             schema:
@@ -202,6 +248,9 @@ paths:
               properties:
                 name:
                   type: string
+                  example: My API Key
+            example:
+              name: My API Key
       responses:
         '201':
           description: API key created
@@ -213,15 +262,26 @@ paths:
                 properties:
                   id:
                     type: string
+                    example: "42"
                   fullKey:
                     type: string
+                    example: xq_live_abc123def456
                   name:
                     type: string
+                    example: My API Key
                   prefix:
                     type: string
+                    example: xq_live_abc1
                   createdAt:
                     type: string
                     format: date-time
+                    example: "2025-01-15T12:00:00Z"
+              example:
+                id: "42"
+                fullKey: xq_live_abc123def456
+                name: My API Key
+                prefix: xq_live_abc1
+                createdAt: "2025-01-15T12:00:00Z"
         '401':
           $ref: '#/components/responses/Unauthenticated'
 
@@ -262,11 +322,18 @@ paths:
                   url:
                     type: string
                     format: uri
+                    example: "https://checkout.stripe.com/c/pay/cs_test_123"
                   status:
                     type: string
                     enum: [checkout_created, already_subscribed, payment_issue]
+                    example: checkout_created
                   message:
                     type: string
+                    example: Checkout session created
+              example:
+                url: "https://checkout.stripe.com/c/pay/cs_test_123"
+                status: checkout_created
+                message: Checkout session created
         '401':
           $ref: '#/components/responses/Unauthenticated'
 
@@ -278,6 +345,7 @@ paths:
       tags: [Composition]
       requestBody:
         required: true
+        description: Workflow step, topic, goal, and optional style parameters.
         content:
           application/json:
             schema:
@@ -288,39 +356,54 @@ paths:
                   type: string
                   enum: [compose, refine, score]
                   description: Workflow step
+                  example: compose
                 topic:
                   type: string
                   description: Tweet topic (compose, refine)
+                  example: AI trends in 2025
                 goal:
                   type: string
                   enum: [engagement, followers, authority, conversation]
                   description: Optimization goal
+                  example: engagement
                 draft:
                   type: string
                   description: Tweet draft text to evaluate (score)
+                  example: "AI is changing everything. Here's why."
                 tone:
                   type: string
                   description: Desired tone (refine)
+                  example: professional
                 styleUsername:
                   type: string
                   description:
                     Cached style username for voice matching (compose)
+                  example: elonmusk
                 additionalContext:
                   type: string
                   description: Extra context or URLs (refine)
+                  example: "https://x.com/elonmusk/status/1234567890"
                 callToAction:
                   type: string
                   description: Desired call to action (refine)
+                  example: Follow for more
                 mediaType:
                   type: string
                   enum: [photo, video, none]
                   description: Media type (refine)
+                  example: none
                 hasLink:
                   type: boolean
                   description: Whether a link is attached (score)
+                  example: false
                 hasMedia:
                   type: boolean
                   description: Whether media is attached (score)
+                  example: false
+            example:
+              step: compose
+              topic: AI trends in 2025
+              goal: engagement
       responses:
         '200':
           description: Composition result
@@ -332,18 +415,27 @@ paths:
                   text:
                     type: string
                     description: Generated or refined tweet text
+                    example: "AI is reshaping every industry. Here are 5 trends to watch in 2025."
                   score:
                     type: number
                     description: Engagement score (0-100)
+                    example: 78
                   feedback:
                     type: string
                     description: AI feedback on the draft
+                    example: "Strong hook. Consider adding a call to action."
                   suggestions:
                     type: array
                     items:
                       type: string
                     description: Improvement suggestions
+                    example: ["Add a thread hook", "Include a relevant hashtag"]
                 additionalProperties: true
+              example:
+                text: "AI is reshaping every industry. Here are 5 trends to watch in 2025."
+                score: 78
+                feedback: "Strong hook. Consider adding a call to action."
+                suggestions: ["Add a thread hook", "Include a relevant hashtag"]
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401':
@@ -374,10 +466,16 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Draft'
+                    example: []
                   hasMore:
                     type: boolean
+                    example: false
                   nextCursor:
                     type: string
+                    example: "abc123"
+              example:
+                drafts: []
+                hasMore: false
         '401':
           $ref: '#/components/responses/Unauthenticated'
     post:
@@ -386,6 +484,7 @@ paths:
       tags: [Composition]
       requestBody:
         required: true
+        description: Draft text with optional topic and optimization goal.
         content:
           application/json:
             schema:
@@ -394,11 +493,18 @@ paths:
               properties:
                 text:
                   type: string
+                  example: "AI is the future of productivity"
                 topic:
                   type: string
+                  example: "AI trends"
                 goal:
                   type: string
                   enum: [engagement, followers, authority, conversation]
+                  example: engagement
+            example:
+              text: "AI is the future of productivity"
+              topic: "AI trends"
+              goal: engagement
       responses:
         '201':
           description: Draft created
@@ -406,6 +512,13 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DraftDetail'
+              example:
+                id: "42"
+                text: "AI is the future of productivity"
+                topic: "AI trends"
+                goal: engagement
+                createdAt: "2025-01-15T12:00:00Z"
+                updatedAt: "2025-01-16T09:30:00Z"
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401':
@@ -425,6 +538,13 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DraftDetail'
+              example:
+                id: "42"
+                text: "AI is the future of productivity"
+                topic: "AI trends"
+                goal: engagement
+                createdAt: "2025-01-15T12:00:00Z"
+                updatedAt: "2025-01-16T09:30:00Z"
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '404':
@@ -461,6 +581,9 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/StyleProfileSummary'
+                    example: []
+              example:
+                styles: []
         '401':
           $ref: '#/components/responses/Unauthenticated'
     post:
@@ -469,6 +592,7 @@ paths:
       tags: [Composition]
       requestBody:
         required: true
+        description: X username whose recent tweets define the style.
         content:
           application/json:
             schema:
@@ -478,6 +602,9 @@ paths:
                 username:
                   type: string
                   description: X username to analyze
+                  example: elonmusk
+            example:
+              username: elonmusk
       responses:
         '200':
           description: Style profile created
@@ -485,6 +612,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/StyleProfile'
+              example:
+                xUsername: "elonmusk"
+                tweetCount: 50
+                isOwnAccount: true
+                fetchedAt: "2025-01-15T12:00:00Z"
+                tweets:
+                  - id: "1234567890"
+                    text: "Just launched our new feature!"
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401':
@@ -521,6 +656,23 @@ paths:
                     $ref: '#/components/schemas/StyleProfile'
                   style2:
                     $ref: '#/components/schemas/StyleProfile'
+              example:
+                style1:
+                  xUsername: "elonmusk"
+                  tweetCount: 50
+                  isOwnAccount: true
+                  fetchedAt: "2025-01-15T12:00:00Z"
+                  tweets:
+                    - id: "1234567890"
+                      text: "Just launched our new feature!"
+                style2:
+                  xUsername: "BillGates"
+                  tweetCount: 40
+                  isOwnAccount: false
+                  fetchedAt: "2025-01-15T12:00:00Z"
+                  tweets:
+                    - id: "9876543210"
+                      text: "Climate change is a global challenge."
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401':
@@ -542,6 +694,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/StyleProfile'
+              example:
+                xUsername: "elonmusk"
+                tweetCount: 50
+                isOwnAccount: true
+                fetchedAt: "2025-01-15T12:00:00Z"
+                tweets:
+                  - id: "1234567890"
+                    text: "Just launched our new feature!"
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '404':
@@ -554,6 +714,7 @@ paths:
         - $ref: '#/components/parameters/StyleId'
       requestBody:
         required: true
+        description: Label and sample tweets that define the style profile.
         content:
           application/json:
             schema:
@@ -563,6 +724,7 @@ paths:
                 label:
                   type: string
                   description: Display label for the style
+                  example: "Professional Voice"
                 tweets:
                   type: array
                   items:
@@ -571,7 +733,14 @@ paths:
                     properties:
                       text:
                         type: string
+                        example: "Excited to share our latest research findings."
                   description: Array of tweet objects
+                  example:
+                    - text: "Excited to share our latest research findings."
+            example:
+              label: "Professional Voice"
+              tweets:
+                - text: "Excited to share our latest research findings."
       responses:
         '200':
           description: Style profile saved
@@ -579,6 +748,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/StyleProfile'
+              example:
+                xUsername: "elonmusk"
+                tweetCount: 1
+                isOwnAccount: true
+                fetchedAt: "2025-01-15T12:00:00Z"
+                tweets:
+                  - id: "1234567890"
+                    text: "Excited to share our latest research findings."
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401':
@@ -615,8 +792,10 @@ paths:
                 properties:
                   xUsername:
                     type: string
+                    example: elonmusk
                   tweetCount:
                     type: integer
+                    example: 5
                   tweets:
                     type: array
                     items:
@@ -625,18 +804,44 @@ paths:
                       properties:
                         id:
                           type: string
+                          example: "1234567890"
                         text:
                           type: string
+                          example: "Excited to share our latest research findings."
                         likeCount:
                           type: integer
+                          example: 120
                         retweetCount:
                           type: integer
+                          example: 15
                         replyCount:
                           type: integer
+                          example: 8
                         viewCount:
                           type: integer
+                          example: 5000
                         createdAt:
                           type: string
+                          example: "2025-01-15T12:00:00Z"
+                    example:
+                      - id: "1234567890"
+                        text: "Excited to share our latest research findings."
+                        likeCount: 120
+                        retweetCount: 15
+                        replyCount: 8
+                        viewCount: 5000
+                        createdAt: "2025-01-15T12:00:00Z"
+              example:
+                xUsername: elonmusk
+                tweetCount: 5
+                tweets:
+                  - id: "1234567890"
+                    text: "Excited to share our latest research findings."
+                    likeCount: 120
+                    retweetCount: 15
+                    replyCount: 8
+                    viewCount: 5000
+                    createdAt: "2025-01-15T12:00:00Z"
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '402':
@@ -700,8 +905,13 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/RadarItem'
+                    example: []
                   total:
                     type: integer
+                    example: 0
+              example:
+                items: []
+                total: 0
         '401':
           $ref: '#/components/responses/Unauthenticated'
 
@@ -724,8 +934,13 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Monitor'
+                    example: []
                   total:
                     type: integer
+                    example: 0
+              example:
+                monitors: []
+                total: 0
         '401':
           $ref: '#/components/responses/Unauthenticated'
     post:
@@ -734,6 +949,7 @@ paths:
       tags: [Monitors]
       requestBody:
         required: true
+        description: Target X username and event types to monitor.
         content:
           application/json:
             schema:
@@ -743,8 +959,13 @@ paths:
                 username:
                   type: string
                   description: X username (without @)
+                  example: elonmusk
                 eventTypes:
                   $ref: '#/components/schemas/EventTypeArray'
+                  example: [tweet.new, follower.gained]
+            example:
+              username: elonmusk
+              eventTypes: [tweet.new, follower.gained]
       responses:
         '201':
           description: Monitor created
@@ -756,15 +977,26 @@ paths:
                 properties:
                   id:
                     type: string
+                    example: "42"
                   username:
                     type: string
+                    example: elonmusk
                   xUserId:
                     type: string
+                    example: "1234567890"
                   eventTypes:
                     $ref: '#/components/schemas/EventTypeArray'
+                    example: [tweet.new, follower.gained]
                   createdAt:
                     type: string
                     format: date-time
+                    example: "2025-01-15T12:00:00Z"
+              example:
+                id: "42"
+                username: elonmusk
+                xUserId: "1234567890"
+                eventTypes: [tweet.new, follower.gained]
+                createdAt: "2025-01-15T12:00:00Z"
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401':
@@ -779,33 +1011,46 @@ paths:
                 properties:
                   error:
                     type: string
+                    example: "Monitor limit reached"
                   limit:
                     type: integer
                     description: Current monitor quota
+                    example: 10
+              example:
+                error: "Monitor limit reached"
+                limit: 10
         '404':
           description: X user not found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+              example:
+                error: "user_not_found"
         '409':
           description: Monitor already exists
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+              example:
+                error: "monitor_already_exists"
         '500':
           description: Internal error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+              example:
+                error: "internal_error"
         '502':
           description: Stream registration failed
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+              example:
+                error: "stream_registration_failed"
 
   /monitors/{id}:
     get:
@@ -821,6 +1066,13 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Monitor'
+              example:
+                id: "42"
+                username: elonmusk
+                xUserId: "1234567890"
+                eventTypes: [tweet.new, follower.gained]
+                isActive: true
+                createdAt: "2025-01-15T12:00:00Z"
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '404':
@@ -833,6 +1085,7 @@ paths:
         - $ref: '#/components/parameters/ResourceId'
       requestBody:
         required: true
+        description: Updated event types or active status.
         content:
           application/json:
             schema:
@@ -840,8 +1093,13 @@ paths:
               properties:
                 eventTypes:
                   $ref: '#/components/schemas/EventTypeArray'
+                  example: [tweet.new]
                 isActive:
                   type: boolean
+                  example: true
+            example:
+              eventTypes: [tweet.new]
+              isActive: true
       responses:
         '200':
           description: Monitor updated
@@ -849,6 +1107,13 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Monitor'
+              example:
+                id: "42"
+                username: elonmusk
+                xUserId: "1234567890"
+                eventTypes: [tweet.new]
+                isActive: true
+                createdAt: "2025-01-15T12:00:00Z"
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401':
@@ -882,10 +1147,12 @@ paths:
         - $ref: '#/components/parameters/After'
         - name: monitorId
           in: query
+          description: Filter events by monitor ID
           schema:
             type: string
         - name: eventType
           in: query
+          description: Filter events by type
           schema:
             $ref: '#/components/schemas/EventType'
       responses:
@@ -901,10 +1168,16 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Event'
+                    example: []
                   hasMore:
                     type: boolean
+                    example: false
                   nextCursor:
                     type: string
+                    example: "abc123"
+              example:
+                events: []
+                hasMore: false
         '401':
           $ref: '#/components/responses/Unauthenticated'
 
@@ -922,6 +1195,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/EventDetail'
+              example:
+                id: "42"
+                type: "tweet.new"
+                username: "elonmusk"
+                monitorId: "7"
+                occurredAt: "2025-01-15T12:00:00Z"
+                data:
+                  tweetId: "1234567890"
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '404':
@@ -938,10 +1219,12 @@ paths:
         - $ref: '#/components/parameters/After'
         - name: toolType
           in: query
+          description: Filter by extraction tool type
           schema:
             $ref: '#/components/schemas/ExtractionToolType'
         - name: status
           in: query
+          description: Filter by job status
           schema:
             type: string
             enum: [running, completed, failed]
@@ -958,10 +1241,16 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/ExtractionJob'
+                    example: []
                   hasMore:
                     type: boolean
+                    example: false
                   nextCursor:
                     type: string
+                    example: "abc123"
+              example:
+                extractions: []
+                hasMore: false
         '401':
           $ref: '#/components/responses/Unauthenticated'
     post:
@@ -970,6 +1259,7 @@ paths:
       tags: [Extractions]
       requestBody:
         required: true
+        description: Tool type and target identifier (tweet, user, community, list, or search query).
         content:
           application/json:
             schema:
@@ -978,30 +1268,43 @@ paths:
               properties:
                 toolType:
                   $ref: '#/components/schemas/ExtractionToolType'
+                  example: follower_explorer
                 targetTweetId:
                   type: string
+                  example: "1234567890"
                 targetUsername:
                   type: string
+                  example: elonmusk
                 targetCommunityId:
                   type: string
+                  example: "1500000000000000000"
                 targetListId:
                   type: string
+                  example: "1234567890"
                 targetSpaceId:
                   type: string
+                  example: "1vOGwMdBqpwGB"
                 searchQuery:
                   type: string
+                  example: "AI trends 2025"
                 exactPhrase:
                   type: string
                   description: Exact phrase to match (tweet_search_extractor)
+                  example: "artificial intelligence"
                 excludeWords:
                   type: string
                   description:
                     Words to exclude from results (tweet_search_extractor)
+                  example: "spam"
                 advancedQuery:
                   type: string
                   description:
                     Raw advanced search query appended as-is
                     (tweet_search_extractor)
+                  example: "min_faves:100"
+            example:
+              toolType: follower_explorer
+              targetUsername: elonmusk
       responses:
         '202':
           description: Extraction started
@@ -1013,11 +1316,18 @@ paths:
                 properties:
                   id:
                     type: string
+                    example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
                   toolType:
                     $ref: '#/components/schemas/ExtractionToolType'
+                    example: follower_explorer
                   status:
                     type: string
-                    enum: [running]
+                    const: running
+                    example: running
+              example:
+                id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                toolType: follower_explorer
+                status: running
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401':
@@ -1034,6 +1344,7 @@ paths:
       tags: [Extractions]
       requestBody:
         required: true
+        description: Same parameters as a real extraction; returns estimated credit cost without running the job.
         content:
           application/json:
             schema:
@@ -1042,30 +1353,43 @@ paths:
               properties:
                 toolType:
                   $ref: '#/components/schemas/ExtractionToolType'
+                  example: follower_explorer
                 targetTweetId:
                   type: string
+                  example: "1234567890"
                 targetUsername:
                   type: string
+                  example: elonmusk
                 targetCommunityId:
                   type: string
+                  example: "1500000000000000000"
                 targetListId:
                   type: string
+                  example: "1234567890"
                 targetSpaceId:
                   type: string
+                  example: "1vOGwMdBqpwGB"
                 searchQuery:
                   type: string
+                  example: "AI trends 2025"
                 exactPhrase:
                   type: string
-                  description: Exact phrase to match (tweet_search_extractor)
+                  description: Exact phrase filter for search estimation
+                  example: "artificial intelligence"
                 excludeWords:
                   type: string
                   description:
-                    Words to exclude from results (tweet_search_extractor)
+                    Words excluded from estimated search results
+                  example: "spam"
                 advancedQuery:
                   type: string
                   description:
-                    Raw advanced search query appended as-is
+                    Raw advanced query string appended to the estimate
                     (tweet_search_extractor)
+                  example: "min_faves:100"
+            example:
+              toolType: follower_explorer
+              targetUsername: elonmusk
       responses:
         '200':
           description: Extraction estimate
@@ -1084,14 +1408,25 @@ paths:
                 properties:
                   estimatedResults:
                     type: integer
+                    example: 500
                   usagePercent:
                     type: number
+                    example: 25.0
                   projectedPercent:
                     type: number
+                    example: 30.0
                   allowed:
                     type: boolean
+                    example: true
                   source:
                     type: string
+                    example: "api_count"
+              example:
+                estimatedResults: 500
+                usagePercent: 25.0
+                projectedPercent: 30.0
+                allowed: true
+                source: "api_count"
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401':
@@ -1113,6 +1448,7 @@ paths:
           description: Extraction public ID (UUID)
         - name: limit
           in: query
+          description: Maximum number of results to return (1-1000, default 100)
           schema:
             type: integer
             minimum: 1
@@ -1135,15 +1471,29 @@ paths:
                     description:
                       Extraction job metadata — shape varies by tool type (JSON)
                     x-stainless-terraform-type: string
+                    example:
+                      id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                      toolType: follower_explorer
+                      status: completed
                   results:
                     type: array
                     items:
                       type: object
                       additionalProperties: true
+                    example: []
                   hasMore:
                     type: boolean
+                    example: false
                   nextCursor:
                     type: string
+                    example: "abc123"
+              example:
+                job:
+                  id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                  toolType: follower_explorer
+                  status: completed
+                results: []
+                hasMore: false
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '404':
@@ -1163,6 +1513,7 @@ paths:
           description: Extraction public ID
         - name: format
           in: query
+          description: Export file format
           schema:
             type: string
             enum: [csv, json, md, md-document, pdf, txt, xlsx]
@@ -1202,10 +1553,16 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/DrawListItem'
+                    example: []
                   hasMore:
                     type: boolean
+                    example: false
                   nextCursor:
                     type: string
+                    example: "abc123"
+              example:
+                draws: []
+                hasMore: false
         '401':
           $ref: '#/components/responses/Unauthenticated'
     post:
@@ -1214,6 +1571,7 @@ paths:
       tags: [Draws]
       requestBody:
         required: true
+        description: Tweet URL, winner count, and optional eligibility filters (retweet, follow, keywords, hashtags, account age).
         content:
           application/json:
             schema:
@@ -1223,35 +1581,51 @@ paths:
                 tweetUrl:
                   type: string
                   format: uri
+                  example: "https://x.com/elonmusk/status/1234567890"
                 winnerCount:
                   type: integer
                   default: 1
+                  example: 3
                 backupCount:
                   type: integer
+                  example: 2
                 uniqueAuthorsOnly:
                   type: boolean
+                  example: true
                 mustRetweet:
                   type: boolean
+                  example: true
                 mustFollowUsername:
                   type: string
+                  example: elonmusk
                 filterMinFollowers:
                   type: integer
+                  example: 50
                 filterAccountAgeDays:
                   type: integer
+                  example: 30
                 filterLanguage:
                   type: string
+                  example: en
                 requiredHashtags:
                   type: array
                   items:
                     type: string
+                  example: ["#giveaway"]
                 requiredKeywords:
                   type: array
                   items:
                     type: string
+                  example: ["entered"]
                 requiredMentions:
                   type: array
                   items:
                     type: string
+                  example: ["@elonmusk"]
+            example:
+              tweetUrl: "https://x.com/elonmusk/status/1234567890"
+              winnerCount: 3
+              mustRetweet: true
       responses:
         '201':
           description: Draw completed
@@ -1263,16 +1637,27 @@ paths:
                 properties:
                   id:
                     type: string
+                    example: "42"
                   tweetId:
                     type: string
+                    example: "1234567890"
                   totalEntries:
                     type: integer
+                    example: 250
                   validEntries:
                     type: integer
+                    example: 200
                   winners:
                     type: array
                     items:
                       $ref: '#/components/schemas/Winner'
+                    example: []
+              example:
+                id: "42"
+                tweetId: "1234567890"
+                totalEntries: 250
+                validEntries: 200
+                winners: []
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401':
@@ -1300,10 +1685,41 @@ paths:
                 properties:
                   draw:
                     $ref: '#/components/schemas/DrawDetail'
+                    example:
+                      id: "42"
+                      tweetUrl: "https://x.com/elonmusk/status/1234567890"
+                      tweetId: "1234567890"
+                      tweetText: "Giving away 3 Tesla Model 3s!"
+                      tweetAuthorUsername: "elonmusk"
+                      status: "completed"
+                      totalEntries: 250
+                      validEntries: 200
+                      tweetLikeCount: 50000
+                      tweetRetweetCount: 25000
+                      tweetReplyCount: 10000
+                      tweetQuoteCount: 5000
+                      createdAt: "2025-01-15T12:00:00Z"
                   winners:
                     type: array
                     items:
                       $ref: '#/components/schemas/Winner'
+                    example: []
+              example:
+                draw:
+                  id: "42"
+                  tweetUrl: "https://x.com/elonmusk/status/1234567890"
+                  tweetId: "1234567890"
+                  tweetText: "Giving away 3 Tesla Model 3s!"
+                  tweetAuthorUsername: "elonmusk"
+                  status: "completed"
+                  totalEntries: 250
+                  validEntries: 200
+                  tweetLikeCount: 50000
+                  tweetRetweetCount: 25000
+                  tweetReplyCount: 10000
+                  tweetQuoteCount: 5000
+                  createdAt: "2025-01-15T12:00:00Z"
+                winners: []
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '404':
@@ -1318,6 +1734,7 @@ paths:
         - $ref: '#/components/parameters/ResourceId'
         - name: format
           in: query
+          description: Export output format
           schema:
             type: string
             enum: [csv, json, md, md-document, pdf, txt, xlsx]
@@ -1331,7 +1748,7 @@ paths:
           description: Export winners or all entries
       responses:
         '200':
-          description: Exported file
+          description: Exported draw file
           content:
             application/octet-stream:
               schema:
@@ -1361,6 +1778,9 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Webhook'
+                    example: []
+              example:
+                webhooks: []
         '401':
           $ref: '#/components/responses/Unauthenticated'
     post:
@@ -1369,6 +1789,7 @@ paths:
       tags: [Webhooks]
       requestBody:
         required: true
+        description: HTTPS callback URL and event types to subscribe to.
         content:
           application/json:
             schema:
@@ -1379,8 +1800,13 @@ paths:
                   type: string
                   format: uri
                   description: HTTPS URL
+                  example: "https://example.com/webhook"
                 eventTypes:
                   $ref: '#/components/schemas/EventTypeArray'
+                  example: [tweet.new, follower.gained]
+            example:
+              url: "https://example.com/webhook"
+              eventTypes: [tweet.new, follower.gained]
       responses:
         '201':
           description: Webhook created
@@ -1392,16 +1818,27 @@ paths:
                 properties:
                   id:
                     type: string
+                    example: "42"
                   url:
                     type: string
                     format: uri
+                    example: "https://example.com/webhook"
                   secret:
                     type: string
+                    example: "whsec_abc123def456"
                   eventTypes:
                     $ref: '#/components/schemas/EventTypeArray'
+                    example: [tweet.new, follower.gained]
                   createdAt:
                     type: string
                     format: date-time
+                    example: "2025-01-15T12:00:00Z"
+              example:
+                id: "42"
+                url: "https://example.com/webhook"
+                secret: "whsec_abc123def456"
+                eventTypes: [tweet.new, follower.gained]
+                createdAt: "2025-01-15T12:00:00Z"
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401':
@@ -1416,6 +1853,7 @@ paths:
         - $ref: '#/components/parameters/ResourceId'
       requestBody:
         required: true
+        description: Updated URL, event types, or active status.
         content:
           application/json:
             schema:
@@ -1424,10 +1862,16 @@ paths:
                 url:
                   type: string
                   format: uri
+                  example: "https://example.com/webhook"
                 eventTypes:
                   $ref: '#/components/schemas/EventTypeArray'
+                  example: [tweet.new]
                 isActive:
                   type: boolean
+                  example: true
+            example:
+              url: "https://example.com/webhook"
+              isActive: true
       responses:
         '200':
           description: Webhook updated
@@ -1435,6 +1879,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Webhook'
+              example:
+                id: "42"
+                url: "https://example.com/webhook"
+                eventTypes: [tweet.new]
+                isActive: true
+                createdAt: "2025-01-15T12:00:00Z"
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401':
@@ -1475,6 +1925,9 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Delivery'
+                    example: []
+              example:
+                deliveries: []
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '404':
@@ -1498,16 +1951,24 @@ paths:
                 properties:
                   success:
                     type: boolean
+                    example: true
                   statusCode:
                     type: integer
+                    example: 200
                   error:
                     type: string
+                    example: ""
+              example:
+                success: true
+                statusCode: 200
         '400':
           description: Webhook inactive
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+              example:
+                error: "webhook_inactive"
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '404':
@@ -1532,6 +1993,9 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Integration'
+                    example: []
+              example:
+                integrations: []
         '401':
           $ref: '#/components/responses/Unauthenticated'
     post:
@@ -1540,6 +2004,7 @@ paths:
       tags: [Integrations]
       requestBody:
         required: true
+        description: Integration type, display name, platform config, and subscribed event types.
         content:
           application/json:
             schema:
@@ -1549,17 +2014,30 @@ paths:
                 type:
                   type: string
                   enum: [telegram]
+                  x-stainless-const: true
+                  example: telegram
                 name:
                   type: string
+                  example: "My Telegram Bot"
                 config:
                   type: object
                   required: [chatId]
                   properties:
                     chatId:
                       type: string
+                      example: "-1001234567890"
                   description: Integration config (e.g. Telegram chatId)
+                  example:
+                    chatId: "-1001234567890"
                 eventTypes:
                   $ref: '#/components/schemas/EventTypeArray'
+                  example: [tweet.new, follower.gained]
+            example:
+              type: telegram
+              name: "My Telegram Bot"
+              config:
+                chatId: "-1001234567890"
+              eventTypes: [tweet.new, follower.gained]
       responses:
         '201':
           description: Integration created
@@ -1567,6 +2045,15 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Integration'
+              example:
+                id: "42"
+                type: telegram
+                name: "My Telegram Bot"
+                config:
+                  chatId: "-1001234567890"
+                eventTypes: ["tweet.new", "follower.gained"]
+                isActive: true
+                createdAt: "2025-01-15T12:00:00Z"
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401':
@@ -1586,6 +2073,15 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Integration'
+              example:
+                id: "42"
+                type: telegram
+                name: "My Telegram Bot"
+                config:
+                  chatId: "-1001234567890"
+                eventTypes: ["tweet.new", "follower.gained"]
+                isActive: true
+                createdAt: "2025-01-15T12:00:00Z"
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '404':
@@ -1598,6 +2094,7 @@ paths:
         - $ref: '#/components/parameters/ResourceId'
       requestBody:
         required: true
+        description: Updated name, event types, active status, or notification settings.
         content:
           application/json:
             schema:
@@ -1605,26 +2102,36 @@ paths:
               properties:
                 name:
                   type: string
+                  example: "My Telegram Bot"
                 eventTypes:
                   $ref: '#/components/schemas/EventTypeArray'
+                  example: [tweet.new]
                 isActive:
                   type: boolean
+                  example: true
                 silentPush:
                   type: boolean
+                  example: false
                 scopeAllMonitors:
                   type: boolean
+                  example: true
                 messageTemplate:
                   type: object
                   additionalProperties: true
                   x-stainless-any: true
                   description: Custom message template (JSON)
                   x-stainless-terraform-type: string
+                  example: {}
                 filters:
                   type: object
                   additionalProperties: true
                   x-stainless-any: true
                   description: Event filter rules (JSON)
                   x-stainless-terraform-type: string
+                  example: {}
+            example:
+              name: "My Telegram Bot"
+              isActive: true
       responses:
         '200':
           description: Integration updated
@@ -1632,6 +2139,15 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Integration'
+              example:
+                id: "42"
+                type: telegram
+                name: "My Telegram Bot"
+                config:
+                  chatId: "-1001234567890"
+                eventTypes: ["tweet.new", "follower.gained"]
+                isActive: true
+                createdAt: "2025-01-15T12:00:00Z"
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401':
@@ -1662,7 +2178,7 @@ paths:
         - $ref: '#/components/parameters/Limit'
       responses:
         '200':
-          description: Delivery list
+          description: Integration delivery list
           content:
             application/json:
               schema:
@@ -1673,6 +2189,9 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/IntegrationDelivery'
+                    example: []
+              example:
+                deliveries: []
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '404':
@@ -1709,6 +2228,28 @@ paths:
       responses:
         '200':
           description: List of tweets
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedTweets'
+              example:
+                tweets:
+                  - id: "1234567890"
+                    text: "Just launched our new feature!"
+                    createdAt: "2025-01-15T12:00:00Z"
+                    likeCount: 42
+                    retweetCount: 5
+                    replyCount: 3
+                    quoteCount: 1
+                    viewCount: 1500
+                    bookmarkCount: 2
+                    author:
+                      id: "9876543210"
+                      username: "elonmusk"
+                      name: "Elon Musk"
+                      verified: true
+                has_next_page: true
+                next_cursor: "DAACCgACGRElMJcAAA"
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '402':
@@ -1719,6 +2260,7 @@ paths:
       tags: [X Write]
       requestBody:
         required: true
+        description: Account, tweet text, and optional reply, attachment, community, or media parameters.
         content:
           application/json:
             schema:
@@ -1728,20 +2270,30 @@ paths:
                 account:
                   type: string
                   description: X account (@username or account ID)
+                  example: "@elonmusk"
                 text:
                   type: string
+                  example: "Just launched our new feature!"
                 reply_to_tweet_id:
                   type: string
+                  example: "1234567890"
                 attachment_url:
                   type: string
+                  example: "https://x.com/elonmusk/status/1234567890"
                 community_id:
                   type: string
+                  example: "1500000000000000000"
                 is_note_tweet:
                   type: boolean
+                  example: false
                 media_ids:
                   type: array
                   items:
                     type: string
+                  example: ["1234567890123456789"]
+            example:
+              account: "@elonmusk"
+              text: "Just launched our new feature!"
       responses:
         '200':
           description: Tweet created
@@ -1753,9 +2305,14 @@ paths:
                 properties:
                   tweetId:
                     type: string
+                    example: "1234567890"
                   success:
                     type: boolean
                     const: true
+                    example: true
+              example:
+                tweetId: "1234567890"
+                success: true
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401':
@@ -1777,6 +2334,49 @@ paths:
       responses:
         '200':
           description: List of trending topics
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [trends, count, woeid]
+                properties:
+                  trends:
+                    type: array
+                    items:
+                      type: object
+                      required: [name]
+                      properties:
+                        name:
+                          type: string
+                          example: "#AI"
+                        description:
+                          type: string
+                          example: "Artificial intelligence discussions"
+                        query:
+                          type: string
+                          example: "%23AI"
+                        rank:
+                          type: integer
+                          example: 1
+                    example:
+                      - name: "#AI"
+                        description: "Artificial intelligence discussions"
+                        query: "%23AI"
+                        rank: 1
+                  count:
+                    type: integer
+                    example: 30
+                  woeid:
+                    type: integer
+                    example: 1
+              example:
+                trends:
+                  - name: "#AI"
+                    description: "Artificial intelligence discussions"
+                    query: "%23AI"
+                    rank: 1
+                count: 30
+                woeid: 1
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '402':
@@ -1840,12 +2440,32 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedTweets'
+              example:
+                tweets:
+                  - id: "1234567890"
+                    text: "Just launched our new feature!"
+                    createdAt: "2025-01-15T12:00:00Z"
+                    likeCount: 42
+                    retweetCount: 5
+                    replyCount: 3
+                    quoteCount: 1
+                    viewCount: 1500
+                    bookmarkCount: 2
+                    author:
+                      id: "9876543210"
+                      username: "elonmusk"
+                      name: "Elon Musk"
+                      verified: true
+                has_next_page: true
+                next_cursor: "DAACCgACGRElMJcAAA"
         '400':
           description: Missing query
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+              example:
+                error: "missing_query"
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '402':
@@ -1870,6 +2490,7 @@ paths:
           required: true
           schema:
             type: string
+          description: Tweet ID of the article
       responses:
         '200':
           description: Article with author
@@ -1884,10 +2505,13 @@ paths:
                     properties:
                       title:
                         type: string
+                        example: "The Future of AI"
                       previewText:
                         type: string
+                        example: "A deep dive into the latest AI trends..."
                       coverImageUrl:
                         type: string
+                        example: "https://pbs.twimg.com/media/example.jpg"
                       contents:
                         type: array
                         items:
@@ -1899,27 +2523,55 @@ paths:
                                 'Block type: unstyled, header-one, header-two,
                                 header-three, unordered-list-item,
                                 ordered-list-item, image, gif, divider'
+                              example: "unstyled"
                             text:
                               type: string
+                              example: "This is the first paragraph of the article."
                             url:
                               type: string
                               description: Media URL for image/gif blocks
+                              example: "https://pbs.twimg.com/media/example.jpg"
                             width:
                               type: integer
+                              example: 1200
                             height:
                               type: integer
+                              example: 675
                       createdAt:
                         type: string
+                        example: "2025-01-15T12:00:00Z"
                       likeCount:
                         type: integer
+                        example: 150
                       replyCount:
                         type: integer
+                        example: 23
                       quoteCount:
                         type: integer
+                        example: 8
                       viewCount:
                         type: integer
+                        example: 5000
                   author:
                     $ref: '#/components/schemas/TweetAuthor'
+              example:
+                article:
+                  title: "The Future of AI"
+                  previewText: "A deep dive into the latest AI trends..."
+                  coverImageUrl: "https://pbs.twimg.com/media/example.jpg"
+                  contents:
+                    - type: "unstyled"
+                      text: "This is the first paragraph of the article."
+                  createdAt: "2025-01-15T12:00:00Z"
+                  likeCount: 150
+                  replyCount: 23
+                  quoteCount: 8
+                  viewCount: 5000
+                author:
+                  id: "9876543210"
+                  username: "elonmusk"
+                  followers: 150000000
+                  verified: true
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401':
@@ -1958,6 +2610,22 @@ paths:
                     $ref: '#/components/schemas/TweetDetail'
                   author:
                     $ref: '#/components/schemas/TweetAuthor'
+              example:
+                tweet:
+                  id: "1234567890"
+                  text: "Just launched our new feature!"
+                  createdAt: "2025-01-15T12:00:00Z"
+                  retweetCount: 5
+                  replyCount: 3
+                  likeCount: 42
+                  quoteCount: 1
+                  viewCount: 1500
+                  bookmarkCount: 2
+                author:
+                  id: "9876543210"
+                  username: "elonmusk"
+                  followers: 150000000
+                  verified: true
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401':
@@ -1976,13 +2644,16 @@ paths:
           required: true
           schema:
             type: string
-          description: Tweet ID
+          description: Tweet ID to delete
       requestBody:
         required: true
+        description: Account that owns the tweet.
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/XAccountBody'
+            example:
+              account: "@elonmusk"
       responses:
         '200':
           $ref: '#/components/responses/Success'
@@ -2006,13 +2677,16 @@ paths:
           required: true
           schema:
             type: string
-          description: Tweet ID
+          description: Tweet ID to like
       requestBody:
         required: true
+        description: Account to perform the like.
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/XAccountBody'
+            example:
+              account: "@elonmusk"
       responses:
         '200':
           $ref: '#/components/responses/Success'
@@ -2032,9 +2706,10 @@ paths:
           required: true
           schema:
             type: string
-          description: Tweet ID
+          description: Tweet ID to unlike
       requestBody:
         required: true
+        description: Account that liked the tweet.
         content:
           application/json:
             schema:
@@ -2060,9 +2735,10 @@ paths:
           required: true
           schema:
             type: string
-          description: Tweet ID
+          description: Tweet ID to retweet
       requestBody:
         required: true
+        description: Account to perform the retweet.
         content:
           application/json:
             schema:
@@ -2086,9 +2762,10 @@ paths:
           required: true
           schema:
             type: string
-          description: Tweet ID
+          description: Tweet ID to unretweet
       requestBody:
         required: true
+        description: Account that retweeted the tweet.
         content:
           application/json:
             schema:
@@ -2155,6 +2832,7 @@ paths:
           description: User ID to follow
       requestBody:
         required: true
+        description: Account to perform the follow.
         content:
           application/json:
             schema:
@@ -2181,6 +2859,7 @@ paths:
           description: User ID to unfollow
       requestBody:
         required: true
+        description: Account that follows the target user.
         content:
           application/json:
             schema:
@@ -2229,18 +2908,29 @@ paths:
                 properties:
                   isFollowing:
                     type: boolean
+                    example: true
                   isFollowedBy:
                     type: boolean
+                    example: false
                   sourceUsername:
                     type: string
+                    example: "elonmusk"
                   targetUsername:
                     type: string
+                    example: "jack"
+              example:
+                isFollowing: true
+                isFollowedBy: false
+                sourceUsername: "elonmusk"
+                targetUsername: "jack"
         '400':
           description: Missing params
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+              example:
+                error: "missing_params"
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '402':
@@ -2262,6 +2952,7 @@ paths:
           description: Recipient user ID
       requestBody:
         required: true
+        description: Account, message text, and optional media or reply-to parameters.
         content:
           application/json:
             schema:
@@ -2270,15 +2961,24 @@ paths:
               properties:
                 account:
                   type: string
-                  description: X account (@username or account ID)
+                  description: X account (@username or ID) sending the DM
+                  example: "@elonmusk"
                 text:
                   type: string
+                  example: "Example text"
                 media_ids:
                   type: array
                   items:
                     type: string
+                  example: ["1234567890123456789"]
                 reply_to_message_id:
                   type: string
+                  example: "1234567890123456789"
+            example:
+              account: "@elonmusk"
+              text: "Example text content"
+              media_ids: ["1234567890123456789"]
+              reply_to_message_id: "1234567890123456789"
       responses:
         '200':
           description: DM sent
@@ -2290,6 +2990,7 @@ paths:
                 properties:
                   messageId:
                     type: string
+                    example: "1234567890123456789"
                   success:
                     type: boolean
                     const: true
@@ -2309,6 +3010,7 @@ paths:
       tags: [Media]
       requestBody:
         required: true
+        description: Account, media file, and optional long-video flag.
         content:
           multipart/form-data:
             schema:
@@ -2317,13 +3019,20 @@ paths:
               properties:
                 account:
                   type: string
-                  description: X account (@username or account ID)
+                  description: X account (@username or ID) uploading media
+                  example: "@elonmusk"
                 file:
                   type: string
                   format: binary
                   description: Media file to upload
+                  example: "binary-content"
                 is_long_video:
                   type: boolean
+                  example: false
+            example:
+              account: "@elonmusk"
+              file: "file_value"
+              is_long_video: true
       responses:
         '200':
           description: Media uploaded
@@ -2335,6 +3044,7 @@ paths:
                 properties:
                   mediaId:
                     type: string
+                    example: "1234567890123456789"
                   success:
                     type: boolean
                     const: true
@@ -2359,6 +3069,7 @@ paths:
         maxPrice: '60000'
       requestBody:
         required: true
+        description: Single tweet URL/ID or array of up to 50 tweet URLs/IDs for bulk download.
         content:
           application/json:
             schema:
@@ -2367,12 +3078,16 @@ paths:
                 tweetInput:
                   type: string
                   description: Tweet URL or ID (single tweet)
+                  example: "https://x.com/elonmusk/status/1234567890"
                 tweetIds:
                   type: array
                   items:
                     type: string
                   maxItems: 50
                   description: Array of tweet URLs or IDs (bulk, max 50)
+                  example: ["1234567890", "1234567891"]
+            example:
+              tweetInput: "https://x.com/elonmusk/status/1234567890"
       responses:
         '200':
           description:
@@ -2385,14 +3100,23 @@ paths:
                 properties:
                   tweetId:
                     type: string
+                    example: "1234567890"
                   galleryUrl:
                     type: string
+                    example: "https://xquik.com/gallery/abc123"
                   cacheHit:
                     type: boolean
+                    example: false
                   totalTweets:
                     type: integer
+                    example: 2
                   totalMedia:
                     type: integer
+                    example: 5
+              example:
+                tweetId: "1234567890"
+                galleryUrl: "https://xquik.com/gallery/abc123"
+                cacheHit: false
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401':
@@ -2407,6 +3131,7 @@ paths:
       tags: [X Write]
       requestBody:
         required: true
+        description: Account and profile fields to update (name, bio, location, website).
         content:
           application/json:
             schema:
@@ -2415,18 +3140,29 @@ paths:
               properties:
                 account:
                   type: string
-                  description: X account (@username or account ID)
+                  description: X account (@username or ID) to update profile
+                  example: "@elonmusk"
                 name:
                   type: string
                   description: Display name
+                  example: "Example Name"
                 description:
                   type: string
                   description: Bio description
+                  example: "CEO of Tesla, SpaceX, and X"
                 location:
                   type: string
+                  example: "Austin, TX"
                 url:
                   type: string
                   description: Website URL
+                  example: "https://x.com"
+            example:
+              account: "@elonmusk"
+              name: "Example Name"
+              description: "description_value"
+              location: "location_value"
+              url: "https://xquik.com/example"
       responses:
         '200':
           $ref: '#/components/responses/Success'
@@ -2446,6 +3182,7 @@ paths:
       tags: [X Write]
       requestBody:
         required: true
+        description: Account and avatar image file (max 716 KB).
         content:
           multipart/form-data:
             schema:
@@ -2454,11 +3191,16 @@ paths:
               properties:
                 account:
                   type: string
-                  description: X account (@username or account ID)
+                  description: X account (@username or ID) for avatar update
+                  example: "@elonmusk"
                 file:
                   type: string
                   format: binary
                   description: Avatar image (max 716KB)
+                  example: "binary-content" 
+            example:
+              account: "@elonmusk"
+              file: "file_value"
       responses:
         '200':
           $ref: '#/components/responses/Success'
@@ -2478,6 +3220,7 @@ paths:
       tags: [X Write]
       requestBody:
         required: true
+        description: Account and banner image file (max 2 MB).
         content:
           multipart/form-data:
             schema:
@@ -2486,11 +3229,16 @@ paths:
               properties:
                 account:
                   type: string
-                  description: X account (@username or account ID)
+                  description: X account (@username or ID) for banner update
+                  example: "@elonmusk"
                 file:
                   type: string
                   format: binary
                   description: Banner image (max 2MB)
+                  example: "binary-content" 
+            example:
+              account: "@elonmusk"
+              file: "file_value"
       responses:
         '200':
           $ref: '#/components/responses/Success'
@@ -2510,6 +3258,7 @@ paths:
       tags: [X Write]
       requestBody:
         required: true
+        description: Account, community name, and optional description.
         content:
           application/json:
             schema:
@@ -2518,13 +3267,20 @@ paths:
               properties:
                 account:
                   type: string
-                  description: X account (@username or account ID)
+                  description: X account (@username or ID) creating the community
+                  example: "@elonmusk"
                 name:
                   type: string
                   description: Community name
+                  example: "Example Name"
                 description:
                   type: string
                   description: Community description
+                  example: "A community for Tesla enthusiasts"
+            example:
+              account: "@elonmusk"
+              name: "Example Name"
+              description: "A community for Tesla enthusiasts"
       responses:
         '200':
           description: Community created
@@ -2536,11 +3292,18 @@ paths:
                 properties:
                   communityId:
                     type: string
+                    example: "1500000000000000000"
                   communityName:
                     type: string
+                    example: "Tesla Fans"
                   success:
                     type: boolean
                     const: true
+                    example: true
+              example:
+                communityId: "1500000000000000000"
+                communityName: "Tesla Fans"
+                success: true
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401':
@@ -2559,6 +3322,7 @@ paths:
         - $ref: '#/components/parameters/ResourceId'
       requestBody:
         required: true
+        description: Account and community name for deletion confirmation.
         content:
           application/json:
             schema:
@@ -2567,10 +3331,15 @@ paths:
               properties:
                 account:
                   type: string
-                  description: X account (@username or account ID)
+                  description: X account (@username or ID) deleting the community
+                  example: "@elonmusk"
                 community_name:
                   type: string
                   description: Community name for confirmation
+                  example: "Tesla Fans"
+            example:
+              account: "@elonmusk"
+              community_name: "Tesla Fans"
       responses:
         '200':
           $ref: '#/components/responses/Success'
@@ -2592,6 +3361,7 @@ paths:
         - $ref: '#/components/parameters/ResourceId'
       requestBody:
         required: true
+        description: Account to join the community.
         content:
           application/json:
             schema:
@@ -2617,6 +3387,7 @@ paths:
         - $ref: '#/components/parameters/ResourceId'
       requestBody:
         required: true
+        description: Account to leave the community.
         content:
           application/json:
             schema:
@@ -2656,6 +3427,19 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/XAccount'
+                    example:
+                      - id: "42"
+                        xUserId: "9876543210"
+                        xUsername: "elonmusk"
+                        status: "active"
+                        createdAt: "2025-01-15T12:00:00Z"
+              example:
+                accounts:
+                  - id: "42"
+                    xUserId: "9876543210"
+                    xUsername: "elonmusk"
+                    status: "active"
+                    createdAt: "2025-01-15T12:00:00Z"
         '401':
           $ref: '#/components/responses/Unauthenticated'
     post:
@@ -2666,6 +3450,7 @@ paths:
         - apiKey: []
       requestBody:
         required: true
+        description: X credentials (username, email, password) and optional 2FA secret and proxy country.
         content:
           application/json:
             schema:
@@ -2675,18 +3460,27 @@ paths:
                 username:
                   type: string
                   description: X username
+                  example: "elonmusk"
                 email:
                   type: string
                   description: Account email
+                  example: "user@example.com"
                 password:
                   type: string
                   description: Account password
+                  example: "s3cur3Pa$$w0rd"
                 totp_secret:
                   type: string
                   description: TOTP secret for 2FA
+                  example: "JBSWY3DPEHPK3PXP"
                 proxy_country:
                   type: string
                   description: Proxy country code
+                  example: "US"
+            example:
+              username: "elonmusk"
+              email: "user@example.com"
+              password: "s3cur3Pa$$w0rd" 
       responses:
         '201':
           description: X account connected
@@ -2698,12 +3492,21 @@ paths:
                 properties:
                   id:
                     type: string
+                    example: "42"
                   xUserId:
                     type: string
+                    example: "9876543210"
                   xUsername:
                     type: string
+                    example: "elonmusk"
                   status:
                     type: string
+                    example: "active"
+              example:
+                id: "42"
+                xUserId: "9876543210"
+                xUsername: "elonmusk"
+                status: "active"
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401':
@@ -2758,6 +3561,7 @@ paths:
         - $ref: '#/components/parameters/ResourceId'
       requestBody:
         required: true
+        description: Updated password and optional 2FA secret for re-authentication.
         content:
           application/json:
             schema:
@@ -2766,10 +3570,15 @@ paths:
               properties:
                 password:
                   type: string
-                  description: Account password
+                  description: Updated account password
+                  example: "s3cur3Pa$$w0rd"
                 totp_secret:
                   type: string
-                  description: TOTP secret for 2FA
+                  description: TOTP secret for 2FA re-authentication
+                  example: "JBSWY3DPEHPK3PXP"
+            example:
+              password: "password_value"
+              totp_secret: "totp_secret_value"
       responses:
         '200':
           description: Re-authenticated
@@ -2781,10 +3590,17 @@ paths:
                 properties:
                   id:
                     type: string
+                    example: "42"
                   xUsername:
                     type: string
+                    example: "elonmusk"
                   status:
                     type: string
+                    example: "active"
+              example:
+                id: "42"
+                xUsername: "elonmusk"
+                status: "active"
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401':
@@ -2817,14 +3633,17 @@ paths:
                   cleared:
                     type: integer
                     description: Number of accounts cleared
+                    example: 3
+              example:
+                cleared: 3
         '401':
           $ref: '#/components/responses/Unauthenticated'
 
   # ── Trends ───────────────────────────────────────────────
   /trends:
     get:
-      operationId: getXTrends
-      summary: Get trending topics
+      operationId: getTrends
+      summary: Get regional trending topics
       tags: [Trends]
       x-payment-info:
         protocols: [mpp]
@@ -2841,6 +3660,7 @@ paths:
             23424969=Turkey)'
         - name: count
           in: query
+          description: Number of trending topics to return (1-50, default 30)
           schema:
             type: integer
             default: 30
@@ -2863,16 +3683,33 @@ paths:
                       properties:
                         name:
                           type: string
+                          example: "#AI"
                         description:
                           type: string
+                          example: "Artificial intelligence discussions"
                         query:
                           type: string
+                          example: "%23AI"
                         rank:
                           type: integer
+                          example: 1
+                    example:
+                      - name: "#AI"
+                        rank: 1
                   total:
                     type: integer
+                    example: 30
                   woeid:
                     type: integer
+                    example: 1
+              example:
+                trends:
+                  - name: "#AI"
+                    description: "Artificial intelligence discussions"
+                    query: "%23AI"
+                    rank: 1
+                total: 30
+                woeid: 1
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401':
@@ -2890,6 +3727,7 @@ paths:
       tags: [Bot]
       requestBody:
         required: true
+        description: Platform type and platform-specific user identifier.
         content:
           application/json:
             schema:
@@ -2899,8 +3737,13 @@ paths:
                 platform:
                   type: string
                   enum: [telegram]
+                  example: "telegram"
                 platformUserId:
                   type: string
+                  example: "123456789"
+            example:
+              platform: "telegram"
+              platformUserId: "123456789"
       responses:
         '201':
           description: Platform link created
@@ -2912,13 +3755,22 @@ paths:
                 properties:
                   id:
                     type: string
+                    example: "42"
                   platform:
                     type: string
+                    example: "telegram"
                   platformUserId:
                     type: string
+                    example: "123456789"
                   createdAt:
                     type: string
                     format: date-time
+                    example: "2025-01-15T12:00:00Z"
+              example:
+                id: "42"
+                platform: "telegram"
+                platformUserId: "123456789"
+                createdAt: "2025-01-15T12:00:00Z"
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401':
@@ -2931,6 +3783,7 @@ paths:
       tags: [Bot]
       requestBody:
         required: true
+        description: Platform type and platform-specific user identifier to unlink.
         content:
           application/json:
             schema:
@@ -2940,8 +3793,13 @@ paths:
                 platform:
                   type: string
                   enum: [telegram]
+                  example: "telegram"
                 platformUserId:
                   type: string
+                  example: "123456789"
+            example:
+              platform: "telegram"
+              platformUserId: "123456789"
       responses:
         '200':
           description: Platform link deleted
@@ -2952,6 +3810,9 @@ paths:
                 properties:
                   success:
                     type: boolean
+                    example: true
+              example:
+                success: true
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401':
@@ -2968,11 +3829,13 @@ paths:
         - name: platform
           in: query
           required: true
+          description: Platform identifier (e.g. telegram)
           schema:
             type: string
         - name: platformUserId
           in: query
           required: true
+          description: User ID on the specified platform
           schema:
             type: string
       responses:
@@ -2986,6 +3849,9 @@ paths:
                 properties:
                   userId:
                     type: string
+                    example: "42"
+              example:
+                userId: "42"
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401':
@@ -3000,6 +3866,7 @@ paths:
       tags: [Bot]
       requestBody:
         required: true
+        description: Platform user ID and token counts for the conversation turn.
         content:
           application/json:
             schema:
@@ -3008,10 +3875,17 @@ paths:
               properties:
                 platformUserId:
                   type: string
+                  example: "123456789"
                 inputTokens:
                   type: integer
+                  example: 1500
                 outputTokens:
                   type: integer
+                  example: 800
+            example:
+              platformUserId: "123456789"
+              inputTokens: 1500
+              outputTokens: 800
       responses:
         '200':
           description: Usage tracked
@@ -3022,6 +3896,9 @@ paths:
                 properties:
                   success:
                     type: boolean
+                    example: true
+              example:
+                success: true
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401':
@@ -3035,6 +3912,7 @@ paths:
       tags: [Support]
       requestBody:
         required: true
+        description: Ticket subject and message body.
         content:
           application/json:
             schema:
@@ -3044,9 +3922,15 @@ paths:
                 subject:
                   type: string
                   maxLength: 500
+                  example: "Cannot connect X account"
                 body:
                   type: string
                   maxLength: 10000
+                  title: TicketContent
+                  example: "I am unable to connect my X account. Please help."
+            example:
+              subject: "Cannot connect X account"
+              body: "I am unable to connect my X account. Please help."
       responses:
         '201':
           description: Ticket created
@@ -3057,6 +3941,9 @@ paths:
                 properties:
                   publicId:
                     type: string
+                    example: "tk_abc123"
+              example:
+                publicId: "tk_abc123" 
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401':
@@ -3080,18 +3967,36 @@ paths:
                       properties:
                         publicId:
                           type: string
+                          example: "tk_abc123"
                         subject:
                           type: string
+                          example: "Cannot connect X account"
                         status:
                           type: string
+                          example: "open"
                         messageCount:
                           type: integer
+                          example: 2
                         createdAt:
                           type: string
                           format: date-time
+                          example: "2025-01-15T12:00:00Z"
                         updatedAt:
                           type: string
                           format: date-time
+                          example: "2025-01-16T09:30:00Z"
+                    example:
+                      - publicId: "tk_abc123"
+                        subject: "Cannot connect X account"
+                        status: "open"
+              example:
+                tickets:
+                  - publicId: "tk_abc123"
+                    subject: "Cannot connect X account"
+                    status: "open"
+                    messageCount: 2
+                    createdAt: "2025-01-15T12:00:00Z"
+                    updatedAt: "2025-01-16T09:30:00Z" 
         '401':
           $ref: '#/components/responses/Unauthenticated'
 
@@ -3106,6 +4011,8 @@ paths:
           required: true
           schema:
             type: string
+          description: Support ticket ID
+          example: "messages_value"
       responses:
         '200':
           description: Ticket detail
@@ -3116,16 +4023,21 @@ paths:
                 properties:
                   publicId:
                     type: string
+                    example: "tk_abc123"
                   subject:
                     type: string
+                    example: "Cannot connect X account"
                   status:
                     type: string
+                    example: "open"
                   createdAt:
                     type: string
                     format: date-time
+                    example: "2025-01-15T12:00:00Z"
                   updatedAt:
                     type: string
                     format: date-time
+                    example: "2025-01-16T09:30:00Z"
                   messages:
                     type: array
                     items:
@@ -3133,11 +4045,26 @@ paths:
                       properties:
                         body:
                           type: string
+                          example: "I am unable to connect my X account."
                         sender:
                           type: string
+                          example: "user"
                         createdAt:
                           type: string
                           format: date-time
+                          example: "2025-01-15T12:00:00Z"
+                    example:
+                      - body: "I am unable to connect my X account."
+                        sender: "user"
+                        createdAt: "2025-01-15T12:00:00Z"
+              example:
+                publicId: "tk_abc123"
+                subject: "Cannot connect X account"
+                status: "open"
+                messages:
+                  - body: "I am unable to connect my X account."
+                    sender: "user"
+                    createdAt: "2025-01-15T12:00:00Z" 
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '404':
@@ -3152,8 +4079,10 @@ paths:
           required: true
           schema:
             type: string
+          description: Support ticket ID to update
       requestBody:
         required: true
+        description: New ticket status (open, resolved, or closed).
         content:
           application/json:
             schema:
@@ -3163,6 +4092,9 @@ paths:
                 status:
                   type: string
                   enum: [open, resolved, closed]
+                  example: "resolved"
+            example:
+              status: "resolved"
       responses:
         '200':
           description: Status updated
@@ -3173,8 +4105,13 @@ paths:
                 properties:
                   publicId:
                     type: string
+                    example: "tk_abc123"
                   status:
                     type: string
+                    example: "resolved"
+              example:
+                publicId: "tk_abc123"
+                status: "resolved" 
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401':
@@ -3191,8 +4128,10 @@ paths:
           required: true
           schema:
             type: string
+          description: Support ticket ID for the reply
       requestBody:
         required: true
+        description: Reply message body (max 10,000 characters).
         content:
           application/json:
             schema:
@@ -3202,6 +4141,10 @@ paths:
                 body:
                   type: string
                   maxLength: 10000
+                  title: MessageContent
+                  example: "Thank you for the update."
+            example:
+              body: "Thank you for the update."
       responses:
         '201':
           description: Message added
@@ -3212,6 +4155,9 @@ paths:
                 properties:
                   publicId:
                     type: string
+                    example: "tk_abc123"
+              example:
+                publicId: "tk_abc123" 
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401':
@@ -3241,12 +4187,21 @@ paths:
                 properties:
                   auto_topup_enabled:
                     type: boolean
+                    example: false
                   balance:
                     type: integer
+                    example: 50000
                   lifetime_purchased:
                     type: integer
+                    example: 200000
                   lifetime_used:
                     type: integer
+                    example: 150000
+              example:
+                auto_topup_enabled: false
+                balance: 50000
+                lifetime_purchased: 200000
+                lifetime_used: 150000
         '401':
           $ref: '#/components/responses/Unauthenticated'
 
@@ -3257,6 +4212,7 @@ paths:
       tags: [Subscribe]
       requestBody:
         required: true
+        description: Credit amount to add to the account balance.
         content:
           application/json:
             schema:
@@ -3266,6 +4222,9 @@ paths:
                 amount:
                   type: integer
                   description: Amount to top up in credits
+                  example: 10000
+            example:
+              amount: 10000
       responses:
         '200':
           $ref: '#/components/responses/Success'
@@ -3290,12 +4249,12 @@ paths:
           required: true
           schema:
             type: string
-          description: Tweet ID
+          description: Tweet ID to get favoriters
         - name: cursor
           in: query
           schema:
             type: string
-          description: Pagination cursor from previous response
+          description: Pagination cursor for favoriters
       responses:
         '200':
           description: List of users who liked the tweet
@@ -3328,11 +4287,12 @@ paths:
           required: true
           schema:
             type: string
+          description: X user ID or username
         - name: cursor
           in: query
           schema:
             type: string
-          description: Pagination cursor from previous response
+          description: Pagination cursor for user tweets
         - name: includeReplies
           in: query
           schema:
@@ -3347,7 +4307,7 @@ paths:
           description: Include parent tweet for replies
       responses:
         '200':
-          description: List of tweets
+          description: User tweets list
           content:
             application/json:
               schema:
@@ -3378,7 +4338,7 @@ paths:
           in: query
           schema:
             type: string
-          description: Pagination cursor from previous response
+          description: Pagination cursor for liked tweets
       responses:
         '200':
           description: List of liked tweets
@@ -3411,12 +4371,12 @@ paths:
           required: true
           schema:
             type: string
-          description: User ID
+          description: User ID for media lookup
         - name: cursor
           in: query
           schema:
             type: string
-          description: Pagination cursor from previous response
+          description: Pagination cursor for media tweets
       responses:
         '200':
           description: List of media tweets
@@ -3444,12 +4404,12 @@ paths:
           required: true
           schema:
             type: string
-          description: User ID
+          description: User ID for followers-you-know lookup
         - name: cursor
           in: query
           schema:
             type: string
-          description: Pagination cursor from previous response
+          description: Pagination cursor for followers-you-know
       responses:
         '200':
           description: List of mutual followers
@@ -3481,7 +4441,8 @@ paths:
           in: query
           schema:
             type: string
-          description: Pagination cursor from previous response
+            example: "folders_value"
+          description: Pagination cursor for bookmarks
       responses:
         '200':
           description: List of bookmarked tweets
@@ -3518,12 +4479,25 @@ paths:
                       properties:
                         id:
                           type: string
+                          example: "1234567890"
                         name:
                           type: string
+                          example: "Read Later"
+                    example:
+                      - id: "1234567890"
+                        name: "Read Later"
                   has_next_page:
                     type: boolean
+                    example: true
                   next_cursor:
                     type: string
+                    example: "DAACCgACGRElMJcAAA"
+              example:
+                folders:
+                  - id: "1234567890"
+                    name: "Read Later"
+                has_next_page: true
+                next_cursor: "DAACCgACGRElMJcAAA"
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '402':
@@ -3548,7 +4522,7 @@ paths:
           in: query
           schema:
             type: string
-          description: Pagination cursor from previous response
+          description: Pagination cursor for notifications
       responses:
         '200':
           description: List of notifications
@@ -3566,16 +4540,35 @@ paths:
                       properties:
                         id:
                           type: string
+                          example: "1234567890"
                         type:
                           type: string
+                          example: "like"
                         message:
                           type: string
+                          example: "elonmusk liked your tweet"
                         timestamp:
                           type: string
+                          example: "2025-01-15T12:00:00Z"
+                    example:
+                      - id: "1234567890"
+                        type: "like"
+                        message: "elonmusk liked your tweet"
                   has_next_page:
                     type: boolean
+                    example: true
                   next_cursor:
                     type: string
+                    example: "DAACCgACGRElMJcAAA"
+              example:
+                notifications:
+                  - id: "1234567890"
+                    type: "like"
+                    message: "elonmusk liked your tweet"
+                has_next_page: true
+                next_cursor: "DAACCgACGRElMJcAAA"
+                message: "message_value"
+                timestamp: "timestamp_value"
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '402':
@@ -3598,7 +4591,7 @@ paths:
           in: query
           schema:
             type: string
-          description: Pagination cursor from previous response
+          description: Pagination cursor for timeline
       responses:
         '200':
           description: List of timeline tweets
@@ -3629,7 +4622,7 @@ paths:
           in: query
           schema:
             type: string
-          description: Pagination cursor from previous response
+          description: Pagination cursor for DM history
         - name: maxId
           in: query
           schema:
@@ -3652,18 +4645,39 @@ paths:
                       properties:
                         id:
                           type: string
+                          example: "1234567890123456789"
                         text:
                           type: string
+                          example: "Hey, how are you?"
                         senderId:
                           type: string
+                          example: "9876543210"
                         receiverId:
                           type: string
+                          example: "1234567890"
                         createdAt:
                           type: string
+                          example: "2025-01-15T12:00:00Z"
+                    example:
+                      - id: "1234567890123456789"
+                        text: "Hey, how are you?"
+                        senderId: "9876543210"
                   has_next_page:
                     type: boolean
+                    example: true
                   next_cursor:
                     type: string
+                    example: "DAACCgACGRElMJcAAA"
+              example:
+                messages:
+                  - id: "1234567890123456789"
+                    text: "Hey, how are you?"
+                    senderId: "9876543210"
+                has_next_page: true
+                next_cursor: "DAACCgACGRElMJcAAA"
+                senderId: "42"
+                receiverId: "42"
+                createdAt: "createdAt_value"
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401':
@@ -3697,16 +4711,19 @@ paths:
                   community:
                     type: object
                     description: Community info object
+                    example:
+                      id: "1500000000000000000"
+                      name: "Tesla Fans"
                     properties:
                       id:
                         type: string
-                        description: Community ID
+                        description: Unique community identifier
                       name:
                         type: string
-                        description: Community name
+                        description: Display name of the community
                       description:
                         type: string
-                        description: Community description
+                        description: About text for the community
                       banner_url:
                         type: string
                         description: Community banner image URL
@@ -3743,6 +4760,16 @@ paths:
                             description:
                               type: string
                     required: [id]
+              example:
+                community:
+                  id: "1500000000000000000"
+                  name: "Tesla Fans"
+                  description: "A community for Tesla enthusiasts"
+                  banner_url: "https://xquik.com/example"
+                  created_at: "2025-01-15T12:00:00Z"
+                  join_policy: "open"
+                  member_count: 10000
+                  moderator_count: 5
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '402':
@@ -3759,7 +4786,7 @@ paths:
           required: true
           schema:
             type: string
-          description: Community ID
+          description: Community ID for member lookup
         - name: cursor
           in: query
           schema:
@@ -3768,6 +4795,10 @@ paths:
       responses:
         '200':
           description: List of community members
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedUsers'
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '402':
@@ -3784,15 +4815,19 @@ paths:
           required: true
           schema:
             type: string
-          description: Community ID
+          description: Community ID for moderator lookup
         - name: cursor
           in: query
           schema:
             type: string
-          description: Pagination cursor
+          description: Pagination cursor for community moderators
       responses:
         '200':
           description: List of community moderators
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedUsers'
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '402':
@@ -3809,15 +4844,19 @@ paths:
           required: true
           schema:
             type: string
-          description: Community ID
+          description: Community ID for tweet lookup
         - name: cursor
           in: query
           schema:
             type: string
-          description: Pagination cursor
+          description: Pagination cursor for community tweets
       responses:
         '200':
           description: List of community tweets
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedTweets'
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '402':
@@ -3844,10 +4883,14 @@ paths:
           in: query
           schema:
             type: string
-          description: Pagination cursor
+          description: Pagination cursor for community search
       responses:
         '200':
-          description: Search results
+          description: Community search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedTweets'
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '402':
@@ -3864,20 +4907,24 @@ paths:
           required: true
           schema:
             type: string
-          description: Search query
+          description: Search query for cross-community tweets
         - name: queryType
           in: query
           schema:
             type: string
-          description: Sort order (Latest or Top)
+          description: Sort order for cross-community results (Latest or Top)
         - name: cursor
           in: query
           schema:
             type: string
-          description: Pagination cursor
+          description: Pagination cursor for cross-community results
       responses:
         '200':
           description: Paginated list of tweets from all communities
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedTweets'
         '400':
           description: Missing query parameter
         '401':
@@ -3901,10 +4948,14 @@ paths:
           in: query
           schema:
             type: string
-          description: Pagination cursor
+          description: Pagination cursor for list followers
       responses:
         '200':
           description: List of followers
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedUsers'
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '402':
@@ -3921,15 +4972,19 @@ paths:
           required: true
           schema:
             type: string
-          description: List ID
+          description: List ID for member lookup
         - name: cursor
           in: query
           schema:
             type: string
-          description: Pagination cursor
+          description: Pagination cursor for list members
       responses:
         '200':
           description: List of members
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedUsers'
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '402':
@@ -3946,12 +5001,12 @@ paths:
           required: true
           schema:
             type: string
-          description: List ID
+          description: List ID for tweet lookup
         - name: cursor
           in: query
           schema:
             type: string
-          description: Pagination cursor
+          description: Pagination cursor for list tweets
         - name: sinceTime
           in: query
           schema:
@@ -3969,7 +5024,11 @@ paths:
           description: Include replies (default false)
       responses:
         '200':
-          description: List of tweets
+          description: List tweets
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedTweets'
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '402':
@@ -3991,27 +5050,27 @@ paths:
           required: true
           schema:
             type: string
-          description: Tweet ID
+          description: Tweet ID to get quotes
         - name: cursor
           in: query
           schema:
             type: string
-          description: Pagination cursor
+          description: Pagination cursor for quote tweets
         - name: sinceTime
           in: query
           schema:
             type: string
-          description: Unix timestamp - filter after
+          description: Unix timestamp - return quotes posted after this time
         - name: untilTime
           in: query
           schema:
             type: string
-          description: Unix timestamp - filter before
+          description: Unix timestamp - return quotes posted before this time
         - name: includeReplies
           in: query
           schema:
             type: boolean
-          description: Include replies (default false)
+          description: Include reply quotes (default false)
       responses:
         '200':
           description: List of quote tweets
@@ -4040,22 +5099,22 @@ paths:
           required: true
           schema:
             type: string
-          description: Tweet ID
+          description: Tweet ID to get replies
         - name: cursor
           in: query
           schema:
             type: string
-          description: Pagination cursor
+          description: Pagination cursor for tweet replies
         - name: sinceTime
           in: query
           schema:
             type: string
-          description: Unix timestamp - filter after
+          description: Unix timestamp - return replies posted after this time
         - name: untilTime
           in: query
           schema:
             type: string
-          description: Unix timestamp - filter before
+          description: Unix timestamp - return replies posted before this time
       responses:
         '200':
           description: List of replies
@@ -4084,12 +5143,12 @@ paths:
           required: true
           schema:
             type: string
-          description: Tweet ID
+          description: Tweet ID to get retweeters
         - name: cursor
           in: query
           schema:
             type: string
-          description: Pagination cursor
+          description: Pagination cursor for retweeters
       responses:
         '200':
           description: List of retweeters
@@ -4118,12 +5177,12 @@ paths:
           required: true
           schema:
             type: string
-          description: Tweet ID
+          description: Tweet ID to get thread context
         - name: cursor
           in: query
           schema:
             type: string
-          description: Pagination cursor
+          description: Pagination cursor for thread tweets
       responses:
         '200':
           description: Thread tweets
@@ -4151,6 +5210,10 @@ paths:
       responses:
         '200':
           description: List of users
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedUsers'
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '402':
@@ -4167,15 +5230,19 @@ paths:
           required: true
           schema:
             type: string
-          description: Search query
+          description: User search query
         - name: cursor
           in: query
           schema:
             type: string
-          description: Pagination cursor
+          description: Pagination cursor for user search
       responses:
         '200':
-          description: Search results
+          description: User search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedUsers'
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '402':
@@ -4197,7 +5264,7 @@ paths:
           in: query
           schema:
             type: string
-          description: Pagination cursor
+          description: Pagination cursor for followers list
         - name: pageSize
           in: query
           schema:
@@ -4205,7 +5272,11 @@ paths:
           description: Items per page (20-200, default 200)
       responses:
         '200':
-          description: List of followers
+          description: List of user followers
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedUsers'
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '402':
@@ -4222,20 +5293,24 @@ paths:
           required: true
           schema:
             type: string
-          description: User ID or username
+          description: User ID or username for following lookup
         - name: cursor
           in: query
           schema:
             type: string
-          description: Pagination cursor
+          description: Pagination cursor for following list
         - name: pageSize
           in: query
           schema:
             type: integer
-          description: Items per page (20-200, default 200)
+          description: Results per page (20-200, default 200)
       responses:
         '200':
           description: List of following
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedUsers'
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '402':
@@ -4252,25 +5327,29 @@ paths:
           required: true
           schema:
             type: string
-          description: User ID or username
+          description: User ID or username for mentions lookup
         - name: cursor
           in: query
           schema:
             type: string
-          description: Pagination cursor
+          description: Pagination cursor for mentions
         - name: sinceTime
           in: query
           schema:
             type: string
-          description: Unix timestamp - filter after
+          description: Unix timestamp - return mentions after this time
         - name: untilTime
           in: query
           schema:
             type: string
-          description: Unix timestamp - filter before
+          description: Unix timestamp - return mentions before this time
       responses:
         '200':
           description: List of mentions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedTweets'
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '402':
@@ -4287,15 +5366,19 @@ paths:
           required: true
           schema:
             type: string
-          description: User ID or username
+          description: User ID or username for verified followers
         - name: cursor
           in: query
           schema:
             type: string
-          description: Pagination cursor
+          description: Pagination cursor for verified followers
       responses:
         '200':
           description: List of verified followers
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedUsers'
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '402':
@@ -4307,6 +5390,7 @@ components:
       type: apiKey
       in: header
       name: X-Api-Key
+      description: API key passed via the X-Api-Key header
     oauthBearer:
       type: http
       scheme: bearer
@@ -4323,6 +5407,7 @@ components:
     Limit:
       name: limit
       in: query
+      description: Maximum number of items to return (1-100, default 50)
       schema:
         type: integer
         minimum: 1
@@ -4333,7 +5418,7 @@ components:
       in: query
       schema:
         type: string
-      description: Cursor for pagination
+      description: Cursor for keyset pagination
     StyleId:
       name: id
       in: path
@@ -4354,6 +5439,9 @@ components:
               success:
                 type: boolean
                 const: true
+                example: true
+          example:
+            success: true
     NoContent:
       description: Deleted
     Unauthenticated:
@@ -4400,6 +5488,7 @@ components:
 
   schemas:
     PaginatedTweets:
+      description: Paginated list of tweets with cursor-based navigation.
       type: object
       required: [tweets, has_next_page, next_cursor]
       properties:
@@ -4407,11 +5496,17 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/SearchTweet'
+          example:
+            - id: "1234567890"
+              text: "Just launched our new feature!"
         has_next_page:
           type: boolean
+          example: true
         next_cursor:
           type: string
+          example: "DAACCgACGRElMJcAAA"
     PaginatedUsers:
+      description: Paginated list of user profiles with cursor-based navigation.
       type: object
       required: [users, has_next_page, next_cursor]
       properties:
@@ -4419,16 +5514,24 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/UserProfile'
+          example:
+            - id: "9876543210"
+              username: "elonmusk"
+              name: "Elon Musk"
         has_next_page:
           type: boolean
+          example: true
         next_cursor:
           type: string
+          example: "DAACCgACGRElMJcAAA"
     Error:
+      description: Error response containing a machine-readable error code.
       type: object
       required: [error]
       properties:
         error:
           type: string
+          title: ErrorCode
           enum:
             - internal_error
             - invalid_format
@@ -4456,7 +5559,9 @@ components:
             - x_api_unavailable
             - x_api_unauthorized
 
+          example: "invalid_input"
     EventType:
+      description: Type of monitor event fired when account activity occurs.
       type: string
       enum:
         - tweet.new
@@ -4465,15 +5570,20 @@ components:
         - tweet.quote
         - follower.gained
         - follower.lost
+      example: "tweet.new"
 
     EventTypeArray:
+      description: Array of event types to subscribe to.
       type: array
       items:
         $ref: '#/components/schemas/EventType'
       minItems: 1
+      example: ["tweet.new", "follower.gained"]
 
     ExtractionToolType:
+      description: Identifier for the extraction tool used to run a job.
       type: string
+      example: "follower_explorer"
       enum:
         - article_extractor
         - community_extractor
@@ -4497,6 +5607,7 @@ components:
         - verified_follower_explorer
 
     ApiKey:
+      description: API key metadata returned when listing keys.
       type: object
       required: [id, name, prefix, isActive, createdAt]
       properties:
@@ -4516,24 +5627,32 @@ components:
           format: date-time
 
     Monitor:
+      description: Account monitor that tracks activity for a given X user.
       type: object
       required: [id, username, xUserId, eventTypes, isActive, createdAt]
       properties:
         id:
           type: string
+          example: "42"
         username:
           type: string
+          example: "elonmusk"
         xUserId:
           type: string
+          example: "9876543210"
         eventTypes:
           $ref: '#/components/schemas/EventTypeArray'
+          example: ["tweet.new", "follower.gained"]
         isActive:
           type: boolean
+          example: true
         createdAt:
           type: string
           format: date-time
+          example: "2025-01-15T12:00:00Z"
 
     Event:
+      description: Monitor event summary with type, username, and occurrence time.
       type: object
       required: [id, type, username, monitorId, occurredAt, data]
       properties:
@@ -4553,30 +5672,40 @@ components:
           additionalProperties: true
 
     EventDetail:
+      description: Full monitor event including payload data and optional X event ID.
       type: object
       required: [id, type, username, monitorId, occurredAt, data]
       properties:
         id:
           type: string
+          example: "42"
         type:
           $ref: '#/components/schemas/EventType'
+          example: "tweet.new"
         username:
           type: string
+          example: "elonmusk"
         monitorId:
           type: string
+          example: "10"
         occurredAt:
           type: string
           format: date-time
+          example: "2025-01-15T12:00:00Z"
         data:
           type: object
           additionalProperties: true
           x-stainless-any: true
           description: Event payload — shape varies by event type (JSON)
           x-stainless-terraform-type: string
+          example:
+            tweetId: "1234567890"
         xEventId:
           type: string
+          example: "1234567890"
 
     ExtractionJob:
+      description: Extraction job tracking status, tool type, and result count.
       type: object
       required: [id, toolType, status, totalResults, createdAt]
       properties:
@@ -4597,6 +5726,7 @@ components:
           format: date-time
 
     DrawListItem:
+      description: Giveaway draw summary with entry counts and status.
       type: object
       required: [id, tweetUrl, status, totalEntries, validEntries, createdAt]
       properties:
@@ -4619,6 +5749,7 @@ components:
           format: date-time
 
     DrawDetail:
+      description: Full giveaway draw with tweet metrics, entries, and timing.
       type: object
       required:
         - id
@@ -4637,6 +5768,7 @@ components:
       properties:
         id:
           type: string
+          example: "https://example.com/webhook"
         tweetUrl:
           type: string
           format: uri
@@ -4668,6 +5800,7 @@ components:
           format: date-time
 
     Winner:
+      description: Giveaway draw winner with position and backup flag.
       type: object
       required: [authorUsername, tweetId, position, isBackup]
       properties:
@@ -4681,23 +5814,30 @@ components:
           type: boolean
 
     Webhook:
+      description: Webhook endpoint registered to receive event deliveries.
       type: object
       required: [id, url, eventTypes, isActive, createdAt]
       properties:
         id:
           type: string
+          example: "42"
         url:
           type: string
           format: uri
+          example: "https://example.com/webhooks/xquik"
         eventTypes:
           $ref: '#/components/schemas/EventTypeArray'
+          example: ["tweet.new", "follower.gained"]
         isActive:
           type: boolean
+          example: true
         createdAt:
           type: string
           format: date-time
+          example: "2025-01-15T12:00:00Z"
 
     Delivery:
+      description: Webhook delivery attempt record with status and retry count.
       type: object
       required: [id, streamEventId, status, attempts, createdAt]
       properties:
@@ -4721,6 +5861,7 @@ components:
           type: string
 
     TweetDetail:
+      description: Full tweet with text, engagement metrics, media, and metadata.
       type: object
       required:
         [
@@ -4736,31 +5877,46 @@ components:
       properties:
         id:
           type: string
+          example: "1234567890"
         text:
           type: string
+          example: "Just launched our new feature!"
         createdAt:
           type: string
+          example: "2025-01-15T12:00:00Z"
         isNoteTweet:
           type: boolean
-          description: Whether this is a Note Tweet (long-form post, up to 25,000 characters)
+          description:
+            Whether this is a Note Tweet (long-form post, up to 25,000
+            characters)
+          example: false
         isReply:
           type: boolean
           description: Whether this tweet is a reply to another tweet
+          example: false
         isQuoteStatus:
           type: boolean
           description: Whether this tweet quotes another tweet
+          example: false
         conversationId:
           type: string
           description: ID of the root tweet in the conversation thread
+          example: "1234567890"
         source:
           type: string
           description: Client application used to post this tweet
+          example: "Twitter Web App"
         entities:
           type: object
-          description: Parsed entities from the tweet text (URLs, mentions, hashtags, media)
+          additionalProperties: true
+          description:
+            Parsed entities from the tweet text (URLs, mentions, hashtags,
+            media)
         quoted_tweet:
           type: object
-          description: The quoted tweet object, present when isQuoteStatus is true
+          additionalProperties: true
+          description:
+            The quoted tweet object, present when isQuoteStatus is true
         media:
           type: array
           items:
@@ -4768,168 +5924,235 @@ components:
             properties:
               mediaUrl:
                 type: string
+                example: "https://pbs.twimg.com/media/example.jpg"
               type:
                 type: string
                 enum: [photo, video, animated_gif]
+                example: "photo"
               url:
                 type: string
+                example: "https://t.co/abc123"
           description: Attached media items, omitted when the tweet has no media
         retweetCount:
           type: integer
+          example: 5
         replyCount:
           type: integer
+          example: 3
         likeCount:
           type: integer
+          example: 42
         quoteCount:
           type: integer
+          example: 1
         viewCount:
           type: integer
+          example: 1500
         bookmarkCount:
           type: integer
+          example: 2
 
     TweetAuthor:
+      description: Author of a tweet with follower count and verification status.
       type: object
       required: [id, username, followers, verified]
       properties:
         id:
           type: string
+          example: "9876543210"
         username:
           type: string
+          example: "elonmusk"
         followers:
           type: integer
+          example: 150000000
         verified:
           type: boolean
+          example: true
         profilePicture:
           type: string
+          example: "https://pbs.twimg.com/profile_images/example.jpg" 
 
     SearchTweet:
+      description: Tweet returned from search results with inline author info.
       type: object
       required: [id, text]
       properties:
         id:
           type: string
+          example: "1234567890"
         text:
           type: string
+          example: "Just launched our new feature!"
         createdAt:
           type: string
+          example: "2025-01-15T12:00:00Z"
         isNoteTweet:
           type: boolean
-          description: Whether this is a Note Tweet (long-form post, up to 25,000 characters)
+          description:
+            True for Note Tweets (long-form content, up to 25,000
+            characters)
+          example: false
         likeCount:
           type: integer
+          example: 42
         retweetCount:
           type: integer
+          example: 5
         replyCount:
           type: integer
+          example: 3
         quoteCount:
           type: integer
+          example: 1
         viewCount:
           type: integer
+          example: 1500
         bookmarkCount:
           type: integer
+          example: 2
         author:
           type: object
           required: [id, username, name]
           properties:
             id:
               type: string
+              example: "9876543210"
             username:
               type: string
+              example: "elonmusk"
             name:
               type: string
+              example: "Elon Musk"
             verified:
               type: boolean
+              example: true
 
     UserProfile:
+      description: X user profile with bio, follower counts, and verification status.
       type: object
       required: [id, username, name]
       properties:
         id:
           type: string
+          example: "9876543210"
         username:
           type: string
+          example: "elonmusk"
         name:
           type: string
+          example: "Elon Musk"
         description:
           type: string
+          example: "CEO of Tesla, SpaceX, and X"
         followers:
           type: integer
+          example: 150000000
         following:
           type: integer
+          example: 500
         verified:
           type: boolean
+          example: true
         profilePicture:
           type: string
+          example: "https://pbs.twimg.com/profile_images/example.jpg"
         location:
           type: string
+          example: "Austin, TX"
         createdAt:
           type: string
+          example: "2009-06-02T20:12:29Z"
         statusesCount:
           type: integer
+          example: 35000
 
     # ── New schemas ──────────────────────────────────────────
     Draft:
+      description: Saved tweet draft with optional topic and goal.
       type: object
       required: [id, text, createdAt]
       properties:
         id:
           type: string
+          example: "42"
         text:
           type: string
+          example: "Draft tweet about AI trends"
         topic:
           type: string
+          example: "Technology"
         goal:
           type: string
+          example: "Engagement"
         createdAt:
           type: string
           format: date-time
+          example: "2025-01-15T12:00:00Z" 
 
     DraftDetail:
+      description: Full tweet draft including update timestamp.
       type: object
       required: [id, text, createdAt, updatedAt]
       properties:
         id:
           type: string
+          example: "42"
         text:
           type: string
+          example: "Draft tweet about AI trends"
         topic:
           type: string
+          example: "Technology"
         goal:
           type: string
+          example: "Engagement"
         createdAt:
           type: string
           format: date-time
+          example: "2025-01-15T12:00:00Z"
         updatedAt:
           type: string
           format: date-time
+          example: "2025-01-16T09:30:00Z" 
 
     StyleProfileSummary:
+      description: Style profile summary with tweet count and ownership flag.
       type: object
       required: [xUsername, tweetCount, isOwnAccount, fetchedAt]
       properties:
         xUsername:
           type: string
+          example: "elonmusk"
         tweetCount:
           type: integer
+          example: 50
         isOwnAccount:
           type: boolean
+          example: true
         fetchedAt:
           type: string
           format: date-time
+          example: "2025-01-15T12:00:00Z" 
 
     StyleProfile:
+      description: Full style profile with sampled tweets used for tone analysis.
       type: object
       required: [xUsername, tweetCount, isOwnAccount, fetchedAt, tweets]
       properties:
         xUsername:
           type: string
+          example: "elonmusk"
         tweetCount:
           type: integer
+          example: 50
         isOwnAccount:
           type: boolean
+          example: true
         fetchedAt:
           type: string
           format: date-time
+          example: "2025-01-15T12:00:00Z"
         tweets:
           type: array
           items:
@@ -4938,157 +6161,221 @@ components:
             properties:
               id:
                 type: string
+                example: "1234567890"
               text:
                 type: string
+                example: "Just launched our new feature!"
               createdAt:
                 type: string
+                example: "2025-01-15T12:00:00Z"
               authorUsername:
                 type: string
+                example: "elonmusk"
+          example:
+            - id: "1234567890"
+              text: "Just launched our new feature!"
 
     RadarItem:
+      description: Trending topic with score, category, source, and region.
       type: object
       required: [title, score, category, source, region, publishedAt]
       properties:
         title:
           type: string
+          example: "AI Revolution in 2025"
         url:
           type: string
+          example: "https://example.com/article/ai-revolution"
         score:
           type: number
+          example: 95.5
         category:
           type: string
+          example: "Technology"
         source:
           type: string
+          example: "X"
         region:
           type: string
+          example: "US"
         publishedAt:
           type: string
           format: date-time
+          example: "2025-01-15T12:00:00Z"
         description:
           type: string
+          example: "AI is transforming every industry"
         imageUrl:
           type: string
+          example: "https://example.com/images/ai.jpg" 
 
     Integration:
+      description: Third-party integration (e.g. Telegram) subscribed to monitor events.
       type: object
       required: [id, type, name, config, eventTypes, isActive, createdAt]
       properties:
         id:
           type: string
+          example: "42"
         type:
           type: string
           enum: [telegram]
+          x-stainless-const: true
+          example: "telegram"
         name:
           type: string
+          example: "My Telegram Bot"
         config:
           type: object
           additionalProperties: true
           x-stainless-any: true
           description: Integration config — shape varies by type (JSON)
           x-stainless-terraform-type: string
+          example:
+            chatId: "-1001234567890"
         eventTypes:
           $ref: '#/components/schemas/EventTypeArray'
+          example: ["tweet.new", "follower.gained"]
         isActive:
           type: boolean
+          example: true
         silentPush:
           type: boolean
+          example: false
         scopeAllMonitors:
           type: boolean
+          example: true
         messageTemplate:
           type: string
+          example: "New event: {{event.type}}"
         filters:
           type: object
           additionalProperties: true
           x-stainless-any: true
           description: Event filter rules (JSON)
           x-stainless-terraform-type: string
+          example:
+            minFollowers: 100
         createdAt:
           type: string
           format: date-time
+          example: "2025-01-15T12:00:00Z" 
 
     IntegrationDelivery:
+      description: Integration delivery attempt record with status and retry count.
       type: object
       required: [id, eventType, status, attempts, createdAt]
       properties:
         id:
           type: string
+          example: "42"
         eventType:
           type: string
+          example: "tweet.new"
         status:
           type: string
+          example: "delivered"
         attempts:
           type: integer
+          example: 1
         createdAt:
           type: string
           format: date-time
+          example: "2025-01-15T12:00:00Z"
         deliveredAt:
           type: string
           format: date-time
+          example: "2025-01-15T12:00:01Z"
         lastError:
           type: string
+          example: ""
         lastStatusCode:
           type: integer
+          example: 200
         sourceId:
           type: string
+          example: "100"
         sourceType:
           type: string
+          example: "monitor" 
 
     XAccount:
+      description: Linked X account summary with username and connection status.
       type: object
       required: [id, xUserId, xUsername, status, createdAt]
       properties:
         id:
           type: string
+          example: "42"
         xUserId:
           type: string
+          example: "9876543210"
         xUsername:
           type: string
+          example: "elonmusk"
         status:
           type: string
+          example: "active"
         createdAt:
           type: string
           format: date-time
+          example: "2025-01-15T12:00:00Z" 
 
     XAccountDetail:
+      description: Full X account details including proxy, cookies, and update timestamp.
       type: object
       required: [id, xUserId, xUsername, status, createdAt]
       properties:
         id:
           type: string
+          example: "42"
         xUserId:
           type: string
+          example: "9876543210"
         xUsername:
           type: string
+          example: "elonmusk"
         status:
           type: string
+          example: "active"
         createdAt:
           type: string
           format: date-time
+          example: "2025-01-15T12:00:00Z"
         updatedAt:
           type: string
           format: date-time
+          example: "2025-03-10T08:30:00Z"
         proxyCountry:
           type: string
+          example: "US"
         cookiesObtainedAt:
           type: string
           format: date-time
+          example: "2025-03-10T08:30:00Z" 
 
     XAccountBody:
+      description: Request body identifying an X account by username or ID.
       type: object
       required: [account]
       properties:
         account:
           type: string
-          description: X account (@username or account ID)
+          description: X account identifier (@username or account ID)
+          example: "@elonmusk"
 
     CommunityActionResult:
+      description: Result of a community join or leave action.
       type: object
       required: [communityId, communityName, success]
       properties:
         communityId:
           type: string
+          example: "1500000000000000000"
         communityName:
           type: string
+          example: "Tesla Fans"
         success:
           type: boolean
           const: true
+          example: true
