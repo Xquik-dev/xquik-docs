@@ -1,0 +1,139 @@
+---
+title: Mastra
+description: Build a TypeScript Twitter agent with Mastra and Xquik's MCP tools
+keywords: ["mastra", "mcp", "agent", "twitter", "typescript", "node"]
+---
+
+Build a Mastra agent in TypeScript that can search tweets, look up users, post tweets, and run extractions — connected to Xquik's MCP server.
+
+## Prerequisites
+
+- Node.js 18+
+- [Xquik API key](/quickstart) (`xq_...`)
+- An LLM API key (OpenAI, Anthropic, or any Vercel AI SDK-supported provider)
+
+## Install
+
+```bash
+npm install @mastra/mcp @mastra/core
+```
+
+## Full Example
+
+```typescript
+import { MCPClient } from "@mastra/mcp";
+import { Agent } from "@mastra/core/agent";
+
+const mcp = new MCPClient({
+  servers: {
+    xquik: {
+      url: new URL("https://xquik.com/mcp"),
+      requestInit: {
+        headers: {
+          "x-api-key": process.env.XQUIK_API_KEY!,
+        },
+      },
+    },
+  },
+});
+
+const agent = new Agent({
+  id: "xquik-agent",
+  name: "Xquik Agent",
+  instructions:
+    "You help users interact with X (Twitter) via the Xquik API.",
+  model: "anthropic/claude-sonnet-4-20250514",
+  tools: await mcp.listTools(),
+});
+
+const result = await agent.generate(
+  "Search for tweets about AI agents"
+);
+console.log(result.text);
+
+await mcp.disconnect();
+```
+
+The `MCPClient` auto-detects StreamableHTTP transport from the URL and discovers all Xquik tools.
+
+## Streaming Responses
+
+```typescript
+const stream = await agent.stream(
+  "What are the trending topics right now?"
+);
+
+for await (const chunk of stream.textStream) {
+  process.stdout.write(chunk);
+}
+```
+
+## Dynamic Toolsets (Per-User API Keys)
+
+For multi-tenant apps, create an `MCPClient` per request with the user's API key:
+
+```typescript
+import { MCPClient } from "@mastra/mcp";
+import { Agent } from "@mastra/core/agent";
+
+const agent = new Agent({
+  id: "xquik-agent",
+  name: "Xquik Agent",
+  instructions: "You help users with X automation.",
+  model: "openai/gpt-4o",
+});
+
+async function handleRequest(prompt: string, userApiKey: string) {
+  const mcp = new MCPClient({
+    servers: {
+      xquik: {
+        url: new URL("https://xquik.com/mcp"),
+        requestInit: {
+          headers: { "x-api-key": userApiKey },
+        },
+      },
+    },
+  });
+
+  const response = await agent.generate(prompt, {
+    toolsets: await mcp.listToolsets(),
+  });
+
+  await mcp.disconnect();
+  return response.text;
+}
+```
+
+## Dynamic Headers with Custom Fetch
+
+For request-context-aware headers (e.g., forwarding cookies):
+
+```typescript
+const mcp = new MCPClient({
+  servers: {
+    xquik: {
+      url: new URL("https://xquik.com/mcp"),
+      fetch: async (url, init, requestContext) => {
+        const headers = new Headers(init?.headers);
+        headers.set("x-api-key", process.env.XQUIK_API_KEY!);
+        return fetch(url, { ...init, headers });
+      },
+    },
+  },
+});
+```
+
+## Environment Variables
+
+```bash .env
+XQUIK_API_KEY=xq_YOUR_KEY_HERE
+ANTHROPIC_API_KEY=sk-ant-...
+```
+
+## Package Versions
+
+| Package | Version |
+|---------|---------|
+| `@mastra/mcp` | 1.4.2+ |
+| `@mastra/core` | 1.24.1+ |
+| `@modelcontextprotocol/sdk` | 1.27.1+ |
