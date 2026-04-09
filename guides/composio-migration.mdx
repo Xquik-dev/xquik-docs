@@ -1,0 +1,192 @@
+---
+title: Migrate from Composio
+sidebarTitle: Composio Migration
+description: Replace Composio's deprecated Twitter MCP with Xquik — from 16 steps to 3
+keywords: ["composio", "migration", "twitter", "mcp", "alternative", "oauth"]
+---
+
+Composio's MCP endpoint (`mcp.composio.dev`) was decommissioned in March 2026, and managed Twitter credentials were removed in February 2026. This guide shows how to replace Composio's Twitter MCP integration with Xquik.
+
+## Why Migrate
+
+| | Composio | Xquik |
+|---|---|---|
+| **Accounts needed** | 3 (X Developer, Composio, AI tool) | 1 |
+| **Credentials** | 6 (API Key, API Secret, Bearer Token, OAuth Client ID, OAuth Client Secret, Composio API Key) | 1 (API key) |
+| **Setup steps** | 16 | 3 |
+| **OAuth dance** | Yes (browser redirect on first use) | No |
+| **X Developer Portal** | Required (create app, configure callbacks) | Not required |
+| **Dashboard config** | Required (create auth config, toggle custom creds) | Not required |
+| **Setup code** | ~20 lines + CLI commands | 0 lines (just config) |
+| **Twitter tools** | 79 | 121 endpoints + 23 extraction tools |
+
+## Before: Composio Setup (16 Steps)
+
+<Steps>
+  <Step title="Create X Developer account">
+    Go to `developer.x.com`, create a developer account, wait for approval.
+  </Step>
+  <Step title="Create X app">
+    Navigate to Apps, create a new app, fill out the application form.
+  </Step>
+  <Step title="Copy X credentials">
+    Copy Bearer Token, API Key, and API Secret.
+  </Step>
+  <Step title="Configure OAuth callback">
+    Set OAuth 2.0 callback URL to `https://backend.composio.dev/api/v1/auth-apps/add`.
+  </Step>
+  <Step title="Copy OAuth credentials">
+    Copy OAuth 2.0 Client ID and Client Secret.
+  </Step>
+  <Step title="Get Composio API key">
+    Sign up at Composio, get an API key from the dashboard.
+  </Step>
+  <Step title="Create .env file">
+    Add `COMPOSIO_API_KEY` and `USER_ID` to `.env`.
+  </Step>
+  <Step title="Install Composio SDK">
+    `pip install composio-core python-dotenv`
+  </Step>
+  <Step title="Configure custom auth in Composio dashboard">
+    Navigate to dashboard, create auth config for Twitter, toggle custom credentials, enter all 5 X credentials.
+  </Step>
+  <Step title="Write MCP URL generation script">
+    Write ~20 lines of Python to create a Composio session and extract the MCP URL.
+  </Step>
+  <Step title="Run the script">
+    `python generate_mcp_url.py`
+  </Step>
+  <Step title="Register MCP server">
+    Run the CLI command from the script output.
+  </Step>
+  <Step title="Restart your AI tool">
+    Exit and relaunch Claude Code, Cursor, etc.
+  </Step>
+  <Step title="Complete OAuth flow">
+    On first tool use, click the browser link and authorize.
+  </Step>
+</Steps>
+
+## After: Xquik Setup (3 Steps)
+
+<Steps>
+  <Step title="Get an API key">
+    Sign up at [xquik.com](https://xquik.com), subscribe, and generate an API key from the dashboard.
+  </Step>
+  <Step title="Add MCP config">
+    Add this to your MCP configuration:
+
+    <CodeGroup>
+
+    ```bash Claude Code
+    claude mcp add xquik \
+      --transport http \
+      "https://xquik.com/mcp" \
+      --header "x-api-key: xq_YOUR_KEY_HERE"
+    ```
+
+    ```json Cursor / VS Code
+    {
+      "mcpServers": {
+        "xquik": {
+          "url": "https://xquik.com/mcp",
+          "headers": {
+            "x-api-key": "xq_YOUR_KEY_HERE"
+          }
+        }
+      }
+    }
+    ```
+
+    </CodeGroup>
+  </Step>
+  <Step title="Use it">
+    Start using X tools immediately. No OAuth flow, no browser redirect.
+  </Step>
+</Steps>
+
+## Code Migration
+
+### Python (Pydantic AI)
+
+<CodeGroup>
+
+```python Before (Composio)
+import os
+from composio import Composio
+from dotenv import load_dotenv
+
+load_dotenv()
+
+composio_client = Composio(api_key=os.getenv("COMPOSIO_API_KEY"))
+composio_session = composio_client.create(
+    user_id=os.getenv("USER_ID"),
+    toolkits=["twitter"],
+)
+
+COMPOSIO_MCP_URL = composio_session.mcp.url
+
+# Then configure your agent with COMPOSIO_MCP_URL...
+# First use triggers OAuth browser flow
+```
+
+```python After (Xquik)
+from pydantic_ai import Agent
+from pydantic_ai.mcp import MCPServerStreamableHTTP
+
+server = MCPServerStreamableHTTP(
+    "https://xquik.com/mcp",
+    headers={"x-api-key": "xq_YOUR_KEY_HERE"},
+)
+
+agent = Agent("anthropic:claude-sonnet-4-20250514", toolsets=[server])
+# Ready to use immediately
+```
+
+</CodeGroup>
+
+### TypeScript (Mastra)
+
+<CodeGroup>
+
+```typescript Before (Composio)
+import { Composio } from "@composio/core";
+
+const composio = new Composio({ apiKey: process.env.COMPOSIO_API_KEY });
+const session = await composio.create({
+  userId: process.env.USER_ID,
+  toolkits: ["twitter"],
+});
+
+const mcpUrl = session.mcp.url;
+// Then configure MCP client with mcpUrl...
+// First use triggers OAuth browser flow
+```
+
+```typescript After (Xquik)
+import { MCPClient } from "@mastra/mcp";
+
+const mcp = new MCPClient({
+  servers: {
+    xquik: {
+      url: new URL("https://xquik.com/mcp"),
+      requestInit: {
+        headers: { "x-api-key": process.env.XQUIK_API_KEY! },
+      },
+    },
+  },
+});
+// Ready to use immediately
+```
+
+</CodeGroup>
+
+## Framework-Specific Guides
+
+For complete integration guides with your framework:
+
+- [LangChain](/guides/langchain)
+- [CrewAI](/guides/crewai)
+- [Pydantic AI](/guides/pydantic-ai)
+- [Google ADK](/guides/google-adk)
+- [Mastra](/guides/mastra)

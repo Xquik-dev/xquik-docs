@@ -1,0 +1,168 @@
+---
+title: CrewAI
+description: Build a Twitter research crew with Xquik's MCP tools and CrewAI
+keywords: ["crewai", "mcp", "agent", "twitter", "python", "crew", "multi-agent"]
+---
+
+Build a CrewAI crew that can search tweets, analyze users, and monitor accounts — all powered by Xquik's MCP server.
+
+## Prerequisites
+
+- Python 3.10+
+- [Xquik API key](/quickstart) (`xq_...`)
+- An LLM API key (OpenAI, Anthropic, or any CrewAI-supported provider)
+
+## Install
+
+```bash
+pip install crewai
+```
+
+MCP support is built into CrewAI core — no extra packages needed.
+
+## Full Example
+
+```python
+from crewai import Agent, Task, Crew, Process
+from crewai.mcp import MCPServerHTTP
+
+researcher = Agent(
+    role="X Research Analyst",
+    goal="Find and analyze trending conversations on X",
+    backstory="Expert social media analyst with deep experience in trend analysis",
+    mcps=[
+        MCPServerHTTP(
+            url="https://xquik.com/mcp",
+            headers={"x-api-key": "xq_YOUR_KEY_HERE"},
+        ),
+    ],
+)
+
+task = Task(
+    description="Search for the latest tweets about AI agents, summarize the top 5 most engaged tweets, and identify key influencers in the conversation.",
+    expected_output="A structured report with top tweets, engagement metrics, and influencer list",
+    agent=researcher,
+)
+
+crew = Crew(
+    agents=[researcher],
+    tasks=[task],
+    process=Process.sequential,
+    verbose=True,
+)
+
+result = crew.kickoff()
+print(result)
+```
+
+The `mcps` field on `Agent` auto-discovers all Xquik tools and makes them available to the agent. No manual tool wiring needed.
+
+## Multi-Agent Crew
+
+Use multiple agents with different roles sharing the same MCP server:
+
+```python
+from crewai import Agent, Task, Crew, Process
+from crewai.mcp import MCPServerHTTP
+
+xquik_mcp = MCPServerHTTP(
+    url="https://xquik.com/mcp",
+    headers={"x-api-key": "xq_YOUR_KEY_HERE"},
+)
+
+researcher = Agent(
+    role="X Researcher",
+    goal="Gather raw data from X about a given topic",
+    backstory="Data collection specialist who finds relevant tweets and profiles",
+    mcps=[xquik_mcp],
+)
+
+analyst = Agent(
+    role="Engagement Analyst",
+    goal="Analyze engagement patterns and identify trends",
+    backstory="Data analyst who turns raw social data into actionable insights",
+    mcps=[xquik_mcp],
+)
+
+writer = Agent(
+    role="Report Writer",
+    goal="Write a concise executive summary from the analysis",
+    backstory="Technical writer who creates clear, data-driven reports",
+)
+
+research_task = Task(
+    description="Search X for tweets about '{topic}' from the last 24 hours. Collect the top 20 by engagement.",
+    expected_output="Raw tweet data with engagement metrics",
+    agent=researcher,
+)
+
+analysis_task = Task(
+    description="Analyze the collected tweets. Identify sentiment distribution, peak posting times, and top contributors.",
+    expected_output="Structured analysis with charts-ready data",
+    agent=analyst,
+)
+
+report_task = Task(
+    description="Write a 3-paragraph executive summary of the findings.",
+    expected_output="Executive summary in markdown format",
+    agent=writer,
+)
+
+crew = Crew(
+    agents=[researcher, analyst, writer],
+    tasks=[research_task, analysis_task, report_task],
+    process=Process.sequential,
+    verbose=True,
+)
+
+result = crew.kickoff(inputs={"topic": "AI agents"})
+print(result)
+```
+
+## Tool Filtering
+
+Restrict which Xquik tools an agent can access:
+
+```python
+from crewai.mcp import MCPServerHTTP
+from crewai.mcp.filters import create_static_tool_filter
+
+# Only allow read operations — no posting, liking, or following
+researcher = Agent(
+    role="Read-Only Researcher",
+    goal="Gather data without modifying anything",
+    backstory="Researcher with read-only access",
+    mcps=[
+        MCPServerHTTP(
+            url="https://xquik.com/mcp",
+            headers={"x-api-key": "xq_YOUR_KEY_HERE"},
+            tool_filter=create_static_tool_filter(
+                allowed_tool_names=["explore"],
+            ),
+        ),
+    ],
+)
+```
+
+## Environment Variables
+
+```bash .env
+XQUIK_API_KEY=xq_YOUR_KEY_HERE
+OPENAI_API_KEY=sk-...
+```
+
+```python
+import os
+
+xquik_mcp = MCPServerHTTP(
+    url="https://xquik.com/mcp",
+    headers={"x-api-key": os.environ["XQUIK_API_KEY"]},
+)
+```
+
+## Package Versions
+
+| Package | Version |
+|---------|---------|
+| `crewai` | 1.14.1+ |
+| `mcp` | 1.26.0+ |

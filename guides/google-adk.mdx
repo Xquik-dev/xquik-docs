@@ -1,0 +1,169 @@
+---
+title: Google ADK
+description: Build a multi-agent Twitter assistant with Google ADK and Xquik's MCP tools
+keywords: ["google-adk", "adk", "gemini", "mcp", "agent", "twitter", "python", "multi-agent"]
+---
+
+Build a Google ADK agent that can search tweets, look up users, and monitor accounts — powered by Xquik's MCP server and Gemini.
+
+## Prerequisites
+
+- Python 3.10+
+- [Xquik API key](/quickstart) (`xq_...`)
+- A Google AI API key (for Gemini models)
+
+## Install
+
+```bash
+pip install google-adk
+```
+
+## Full Example
+
+```python
+import asyncio
+from google.adk.agents import LlmAgent
+from google.adk.runners import InMemoryRunner
+from google.adk.tools.mcp_tool import McpToolset, StreamableHTTPConnectionParams
+from google.genai import types
+
+
+async def main():
+    xquik_toolset = McpToolset(
+        connection_params=StreamableHTTPConnectionParams(
+            url="https://xquik.com/mcp",
+            headers={"x-api-key": "xq_YOUR_KEY_HERE"},
+        ),
+    )
+
+    agent = LlmAgent(
+        model="gemini-2.5-flash",
+        name="xquik_agent",
+        instruction="You help users interact with X (Twitter) via the Xquik API.",
+        tools=[xquik_toolset],
+    )
+
+    runner = InMemoryRunner(agent=agent, app_name="xquik_app")
+    session = await runner.session_service.create_session(
+        app_name="xquik_app",
+        user_id="user-1",
+    )
+
+    async for event in runner.run_async(
+        user_id="user-1",
+        session_id=session.id,
+        new_message=types.Content(
+            role="user",
+            parts=[types.Part(text="Search for tweets about AI agents")],
+        ),
+    ):
+        if event.content and event.content.parts:
+            for part in event.content.parts:
+                if part.text:
+                    print(part.text)
+
+    await xquik_toolset.close()
+
+
+asyncio.run(main())
+```
+
+## Multi-Agent Setup
+
+ADK supports hierarchical agents. Use a root agent that delegates to specialized sub-agents:
+
+```python
+from google.adk.agents import LlmAgent
+from google.adk.tools.mcp_tool import McpToolset, StreamableHTTPConnectionParams
+
+xquik_toolset = McpToolset(
+    connection_params=StreamableHTTPConnectionParams(
+        url="https://xquik.com/mcp",
+        headers={"x-api-key": "xq_YOUR_KEY_HERE"},
+    ),
+)
+
+researcher = LlmAgent(
+    model="gemini-2.5-flash",
+    name="researcher",
+    instruction="Search X for tweets and user profiles. Return raw data.",
+    tools=[xquik_toolset],
+)
+
+analyst = LlmAgent(
+    model="gemini-2.5-flash",
+    name="analyst",
+    instruction="Analyze tweet data and identify trends, sentiment, and key influencers.",
+)
+
+coordinator = LlmAgent(
+    model="gemini-2.5-flash",
+    name="coordinator",
+    instruction="""You coordinate research tasks about X (Twitter).
+    Delegate data collection to the researcher agent and analysis to the analyst agent.""",
+    sub_agents=[researcher, analyst],
+)
+```
+
+## Dynamic Headers
+
+Use `header_provider` for per-request headers (e.g., multi-tenant apps with per-user API keys):
+
+```python
+from google.adk.tools.mcp_tool import McpToolset, StreamableHTTPConnectionParams
+
+def get_headers(context):
+    # Access session state for per-user API keys
+    return {"x-api-key": context.state.get("xquik_api_key", "")}
+
+xquik_toolset = McpToolset(
+    connection_params=StreamableHTTPConnectionParams(
+        url="https://xquik.com/mcp",
+    ),
+    header_provider=get_headers,
+)
+```
+
+## Tool Filtering
+
+Expose only specific tools to the agent:
+
+```python
+xquik_toolset = McpToolset(
+    connection_params=StreamableHTTPConnectionParams(
+        url="https://xquik.com/mcp",
+        headers={"x-api-key": "xq_YOUR_KEY_HERE"},
+    ),
+    tool_filter=["explore"],  # Read-only: only the explore tool
+)
+```
+
+## Environment Variables
+
+```bash .env
+XQUIK_API_KEY=xq_YOUR_KEY_HERE
+GOOGLE_API_KEY=...
+```
+
+```python
+import os
+from google.adk.tools.mcp_tool import McpToolset, StreamableHTTPConnectionParams
+
+xquik_toolset = McpToolset(
+    connection_params=StreamableHTTPConnectionParams(
+        url="https://xquik.com/mcp",
+        headers={"x-api-key": os.environ["XQUIK_API_KEY"]},
+    ),
+)
+```
+
+<Warning>
+  Use `McpToolset` (lowercase 'c'), not `MCPToolset`. The uppercase version is deprecated and emits a warning.
+</Warning>
+
+## Package Versions
+
+| Package | Version |
+|---------|---------|
+| `google-adk` | 1.28.1+ |
+| `mcp` | 1.23.0+ |

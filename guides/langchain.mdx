@@ -1,0 +1,156 @@
+---
+title: LangChain
+description: Connect Xquik's X (Twitter) tools to LangChain agents via MCP
+keywords: ["langchain", "mcp", "agent", "twitter", "python", "langchain-mcp-adapters"]
+---
+
+Build a LangChain agent that can search tweets, look up users, post tweets, and run extractions — all through Xquik's MCP server.
+
+## Prerequisites
+
+- Python 3.10+
+- [Xquik API key](/quickstart) (`xq_...`)
+- An LLM API key (Anthropic, OpenAI, or any LangChain-supported provider)
+
+## Install
+
+```bash
+pip install langchain-mcp-adapters langchain langchain-anthropic
+```
+
+## Full Example
+
+```python
+import asyncio
+from langchain_mcp_adapters.client import MultiServerMCPClient
+from langchain.agents import create_agent
+
+
+async def main():
+    client = MultiServerMCPClient({
+        "xquik": {
+            "transport": "streamable_http",
+            "url": "https://xquik.com/mcp",
+            "headers": {
+                "x-api-key": "xq_YOUR_KEY_HERE",
+            },
+        },
+    })
+
+    tools = await client.get_tools()
+
+    agent = create_agent(
+        "anthropic:claude-sonnet-4-20250514",
+        tools,
+        system_prompt="You help users interact with X (Twitter) via the Xquik API.",
+    )
+
+    response = await agent.ainvoke(
+        {"messages": [{"role": "user", "content": "Search for tweets about AI agents"}]}
+    )
+
+    print(response["messages"][-1].content)
+
+
+asyncio.run(main())
+```
+
+That's it. The agent auto-discovers all Xquik tools (explore + xquik) and can call any of the 121 API endpoints.
+
+## Using LangGraph Directly
+
+If you prefer building the graph manually instead of using `create_agent`:
+
+```python
+import asyncio
+from langchain_mcp_adapters.client import MultiServerMCPClient
+from langchain.chat_models import init_chat_model
+from langgraph.graph import StateGraph, MessagesState, START
+from langgraph.prebuilt import ToolNode, tools_condition
+
+
+async def main():
+    model = init_chat_model("anthropic:claude-sonnet-4-20250514")
+
+    client = MultiServerMCPClient({
+        "xquik": {
+            "transport": "streamable_http",
+            "url": "https://xquik.com/mcp",
+            "headers": {"x-api-key": "xq_YOUR_KEY_HERE"},
+        },
+    })
+
+    tools = await client.get_tools()
+
+    def call_model(state: MessagesState):
+        return {"messages": model.bind_tools(tools).invoke(state["messages"])}
+
+    builder = StateGraph(MessagesState)
+    builder.add_node(call_model)
+    builder.add_node(ToolNode(tools))
+    builder.add_edge(START, "call_model")
+    builder.add_conditional_edges("call_model", tools_condition)
+    builder.add_edge("tools", "call_model")
+    graph = builder.compile()
+
+    result = await graph.ainvoke(
+        {"messages": [{"role": "user", "content": "Look up @elonmusk's profile"}]}
+    )
+    print(result["messages"][-1].content)
+
+
+asyncio.run(main())
+```
+
+## Environment Variables
+
+Store your API key in a `.env` file instead of hardcoding it:
+
+```bash .env
+XQUIK_API_KEY=xq_YOUR_KEY_HERE
+ANTHROPIC_API_KEY=sk-ant-...
+```
+
+```python
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+client = MultiServerMCPClient({
+    "xquik": {
+        "transport": "streamable_http",
+        "url": "https://xquik.com/mcp",
+        "headers": {"x-api-key": os.environ["XQUIK_API_KEY"]},
+    },
+})
+```
+
+## Multiple MCP Servers
+
+Prefix tool names when connecting multiple servers to avoid collisions:
+
+```python
+client = MultiServerMCPClient(
+    {
+        "xquik": {
+            "transport": "streamable_http",
+            "url": "https://xquik.com/mcp",
+            "headers": {"x-api-key": os.environ["XQUIK_API_KEY"]},
+        },
+        "other_server": {
+            "transport": "streamable_http",
+            "url": "https://other-server.com/mcp",
+        },
+    },
+    tool_name_prefix=True,
+)
+```
+
+## Package Versions
+
+| Package | Version |
+|---------|---------|
+| `langchain-mcp-adapters` | 0.2.2+ |
+| `langchain` | 1.0.8+ |
+| `mcp` | 1.9.2+ |
