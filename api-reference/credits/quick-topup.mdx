@@ -1,0 +1,156 @@
+---
+title: "Quick top-up credits"
+description: "Instantly charge your saved payment method to add credits without a Stripe checkout redirect"
+api: "POST /credits/quick-topup"
+keywords: ["credits", "quick top-up", "instant", "charge", "billing"]
+---
+
+<Callout icon="circle-check" color="#16a34a">
+  **Free** — does not consume credits
+</Callout>
+
+<CodeGroup>
+  ```bash cURL
+  curl -X POST https://xquik.com/api/v1/credits/quick-topup \
+    -H "x-api-key: xq_YOUR_KEY_HERE" \
+    -H "Content-Type: application/json" \
+    -d '{"dollars": 25}' | jq
+  ```
+
+  ```javascript Node.js
+  const response = await fetch("https://xquik.com/api/v1/credits/quick-topup", {
+    method: "POST",
+    headers: {
+      "x-api-key": "xq_YOUR_KEY_HERE",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ dollars: 25 }),
+  });
+  const data = await response.json();
+  console.log(data);
+  ```
+
+  ```python Python
+  import requests
+
+  response = requests.post(
+      "https://xquik.com/api/v1/credits/quick-topup",
+      headers={"x-api-key": "xq_YOUR_KEY_HERE"},
+      json={"dollars": 25},
+  )
+  data = response.json()
+  print(data)
+  ```
+
+  ```go Go
+  package main
+
+  import (
+      "bytes"
+      "encoding/json"
+      "fmt"
+      "net/http"
+  )
+
+  func main() {
+      body, _ := json.Marshal(map[string]interface{}{
+          "dollars": 25,
+      })
+
+      req, err := http.NewRequest("POST", "https://xquik.com/api/v1/credits/quick-topup", bytes.NewReader(body))
+      if err != nil {
+          panic(err)
+      }
+      req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
+      req.Header.Set("Content-Type", "application/json")
+
+      resp, err := http.DefaultClient.Do(req)
+      if err != nil {
+          panic(err)
+      }
+      defer resp.Body.Close()
+
+      var data map[string]interface{}
+      if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+          panic(err)
+      }
+      fmt.Println(data)
+  }
+  ```
+</CodeGroup>
+
+## Headers
+
+<ParamField header="x-api-key" type="string" required>
+  Your API key. Session cookie authentication is also supported.
+</ParamField>
+
+<ParamField header="Content-Type" type="string" required>
+  Must be `application/json`.
+</ParamField>
+
+## Body
+
+<ParamField body="dollars" type="number" required>
+  Amount in US dollars to charge. Minimum $10.
+</ParamField>
+
+## Response
+
+<Tabs>
+  <Tab title="200 Charged">
+    Payment succeeded immediately. Credits added to your balance.
+
+    <ResponseField name="outcome" type="string">Always `"charged"`.</ResponseField>
+    <ResponseField name="balance" type="number">Updated credit balance after top-up.</ResponseField>
+    <ResponseField name="credits" type="number">Number of credits added.</ResponseField>
+
+    ```json
+    {
+      "outcome": "charged",
+      "balance": 1450,
+      "credits": 1000
+    }
+    ```
+  </Tab>
+  <Tab title="200 Requires action">
+    Payment requires additional authentication (e.g., 3D Secure). Use the `clientSecret` with Stripe.js to complete the payment.
+
+    <ResponseField name="outcome" type="string">Always `"requires_action"`.</ResponseField>
+    <ResponseField name="clientSecret" type="string">Stripe PaymentIntent client secret for completing the payment.</ResponseField>
+
+    ```json
+    {
+      "outcome": "requires_action",
+      "clientSecret": "pi_3abc...secret_xyz"
+    }
+    ```
+  </Tab>
+  <Tab title="200 No payment method">
+    No saved payment method on file. Redirect the user to add one via the billing portal, or use the standard [top-up endpoint](/api-reference/credits/topup) instead.
+
+    <ResponseField name="outcome" type="string">Always `"no_payment_method"`.</ResponseField>
+
+    ```json
+    {
+      "outcome": "no_payment_method"
+    }
+    ```
+  </Tab>
+  <Tab title="400 Invalid input">
+    ```json
+    { "error": "Minimum top-up is $10" }
+    ```
+    The top-up amount is below the $10 minimum.
+  </Tab>
+  <Tab title="401 Unauthenticated">
+    ```json
+    { "error": "unauthenticated" }
+    ```
+    Missing or invalid API key.
+  </Tab>
+</Tabs>
+
+<Note>
+  **Related:** [Top Up Credits](/api-reference/credits/topup) · [Get Credits](/api-reference/credits/get) · [Billing Guide](/guides/billing)
+</Note>
