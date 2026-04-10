@@ -1,0 +1,208 @@
+---
+title: Microsoft Agent Framework
+description: Connect Xquik's X (Twitter) tools to Microsoft Agent Framework agents via MCP
+keywords: ["microsoft-agent-framework", "mcp", "agent", "twitter", "python", "streamable-http"]
+---
+
+Build a Microsoft Agent Framework agent that can search tweets, look up users, post tweets, and run extractions — all through Xquik's MCP server.
+
+## Prerequisites
+
+- Python 3.10+
+- [Xquik API key](/quickstart) (`xq_...`)
+- An LLM API key (OpenAI, Azure OpenAI, or any supported provider)
+
+## Install
+
+```bash
+pip install agent-framework mcp
+```
+
+The `agent-framework` meta-package installs all core and provider sub-packages. The `mcp` package enables `MCPStreamableHTTPTool` support.
+
+## Full Example
+
+```python
+import asyncio
+from agent_framework import ChatAgent, MCPStreamableHTTPTool
+from agent_framework.openai import OpenAIChatClient
+
+
+async def main():
+    mcp_tool = MCPStreamableHTTPTool(
+        name="xquik",
+        url="https://xquik.com/mcp",
+        headers={"x-api-key": "xq_YOUR_KEY_HERE"},
+        description="X (Twitter) data platform with 122 API endpoints",
+    )
+
+    async with mcp_tool:
+        agent = ChatAgent(
+            chat_client=OpenAIChatClient(model_id="gpt-4o"),
+            name="xquik_agent",
+            instructions="You help users interact with X (Twitter) via the Xquik API.",
+            tools=[mcp_tool],
+        )
+
+        response = await agent.run("Search for tweets about AI agents")
+        print(response)
+
+
+asyncio.run(main())
+```
+
+The agent auto-discovers all Xquik tools (`explore` + `xquik`) and can call any of the 122 API endpoints.
+
+## Streaming Responses
+
+Use `run_stream` for real-time token streaming:
+
+```python
+async with mcp_tool:
+    agent = ChatAgent(
+        chat_client=OpenAIChatClient(model_id="gpt-4o"),
+        name="xquik_agent",
+        instructions="You help users interact with X (Twitter) via the Xquik API.",
+        tools=[mcp_tool],
+    )
+
+    async for update in agent.run_stream("What are the trending topics on X right now?"):
+        if update.text:
+            print(update.text, end="")
+```
+
+## Multi-Agent Orchestration
+
+Use `GroupChatBuilder` to coordinate specialized agents sharing the same MCP tools:
+
+```python
+import asyncio
+from agent_framework import ChatAgent, MCPStreamableHTTPTool, GroupChatBuilder
+from agent_framework.openai import OpenAIChatClient
+
+
+async def main():
+    client = OpenAIChatClient(model_id="gpt-4o")
+
+    mcp_tool = MCPStreamableHTTPTool(
+        name="xquik",
+        url="https://xquik.com/mcp",
+        headers={"x-api-key": "xq_YOUR_KEY_HERE"},
+        description="X (Twitter) data platform",
+    )
+
+    async with mcp_tool:
+        researcher = ChatAgent(
+            chat_client=client,
+            name="researcher",
+            instructions="Search X for tweets and user profiles. Return raw data.",
+            tools=[mcp_tool],
+        )
+
+        analyst = ChatAgent(
+            chat_client=client,
+            name="analyst",
+            instructions="Analyze tweet data and identify trends, sentiment, and key influencers.",
+        )
+
+        workflow = (
+            GroupChatBuilder()
+            .with_orchestrator(
+                ChatAgent(
+                    chat_client=client,
+                    name="coordinator",
+                    instructions="Coordinate research tasks. Delegate data collection to the researcher and analysis to the analyst.",
+                )
+            )
+            .participants([researcher, analyst])
+            .build()
+        )
+
+        result = await workflow.run(
+            "Find the top 10 most engaged tweets about AI agents and analyze the sentiment."
+        )
+        print(result)
+
+
+asyncio.run(main())
+```
+
+## Per-Run Headers
+
+Pass API keys dynamically via `tool_resources` for multi-tenant apps where each user has their own Xquik API key:
+
+```python
+mcp_tool = MCPStreamableHTTPTool(
+    name="xquik",
+    url="https://xquik.com/mcp",
+    description="X (Twitter) data platform",
+)
+
+async with mcp_tool:
+    agent = ChatAgent(
+        chat_client=OpenAIChatClient(model_id="gpt-4o"),
+        name="xquik_agent",
+        instructions="You help users interact with X (Twitter) via the Xquik API.",
+        tools=[mcp_tool],
+    )
+
+    response = await agent.run(
+        "Search for tweets about AI agents",
+        tool_resources={"xquik": {"headers": {"x-api-key": user_api_key}}},
+    )
+```
+
+Headers passed via `tool_resources` are available only for the current run and are not persisted.
+
+## Azure OpenAI
+
+Swap `OpenAIChatClient` for `AzureOpenAIChatClient` to use Azure-hosted models:
+
+```python
+from agent_framework.azure import AzureOpenAIChatClient
+
+client = AzureOpenAIChatClient(
+    endpoint="https://your-resource.openai.azure.com",
+    deployment_name="gpt-4o",
+    api_key="your-azure-key",
+)
+
+agent = ChatAgent(
+    chat_client=client,
+    name="xquik_agent",
+    instructions="You help users interact with X (Twitter) via the Xquik API.",
+    tools=[mcp_tool],
+)
+```
+
+## Environment Variables
+
+Store your API keys in a `.env` file instead of hardcoding them:
+
+```bash .env
+XQUIK_API_KEY=xq_YOUR_KEY_HERE
+OPENAI_API_KEY=sk-...
+```
+
+```python
+import os
+from dotenv import load_dotenv
+from agent_framework import MCPStreamableHTTPTool
+
+load_dotenv()
+
+mcp_tool = MCPStreamableHTTPTool(
+    name="xquik",
+    url="https://xquik.com/mcp",
+    headers={"x-api-key": os.environ["XQUIK_API_KEY"]},
+    description="X (Twitter) data platform",
+)
+```
+
+## Package Versions
+
+| Package | Version |
+|---------|---------|
+| `agent-framework` | 1.0.0+ |
+| `agent-framework-core` | 1.0.0+ |
+| `mcp` | 1.9.2+ |
