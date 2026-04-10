@@ -2,29 +2,64 @@ openapi: 3.1.0
 info:
   title: Xquik API
   version: '1.0'
-  description: >
-    Xquik is an all-in-one X (Twitter) automation API with 40+ endpoints for
-    reading, writing, and monitoring X data. **Read endpoints** let you look up
-    tweets, search tweets, fetch user profiles, list followers & following,
-    browse timelines, bookmarks, notifications, communities, lists, trending
-    topics, and download media. **Write endpoints** let you post tweets, reply,
-    like, unlike, retweet, unretweet, follow, unfollow, send DMs, upload media,
-    update profiles, and manage communities. **Automation endpoints** power bulk
-    data extractions (20 tool types), giveaway draws from tweet replies,
-    real-time account monitoring with webhooks & Telegram integrations, tweet
-    composition with AI, and writing style analysis. Authenticate with an API
-    key or OAuth 2.1 bearer token. Pay-per-use endpoints are also available
-    without an account.
-  x-guidance: >
-    Quick start — Tweet lookup: GET /x/tweets/{id}. Tweet search: GET
-    /x/tweets/search?q={query}&limit={n}. User lookup: GET /x/users/{id}.
-    Follower check: GET /x/followers/check?source={a}&target={b}. Article
-    extraction: GET /x/articles/{tweetId}. Media download: POST
-    /x/media/download with tweetInput or tweetIds body. User tweets: GET
-    /x/users/{id}/tweets. Trending topics: GET /trends?woeid={id}&count={n} or
-    GET /x/trends. Post a tweet: POST /x/tweets with account & text. Like a
-    tweet: POST /x/tweets/{id}/like with account. Follow a user: POST
-    /x/users/{id}/follow with account.
+  description: >-
+    Look up any tweet, user, or trend on X. Search tweets, check follower
+    relationships, download media, and monitor accounts in real time. 32
+    pay-per-use read endpoints work without a subscription — just pay per call.
+    Write endpoints (post, like, retweet, follow, DM) and automation endpoints
+    (bulk extractions, giveaway draws, monitors, webhooks) require an API key or
+    OAuth 2.1 bearer token.
+  x-guidance: >-
+    ## Common tasks
+
+
+    **Find a tweet** — GET /x/tweets/{id} with a numeric tweet ID. Returns full
+    tweet data: text, author, metrics (likes, retweets, replies, views), media
+    URLs, and creation timestamp. Cost: $0.00015 per lookup.
+
+
+    **Search tweets** — GET /x/tweets/search?q={query}&limit={n}. Supports X
+    search operators (from:, to:, has:media, min_faves:, lang:). Returns up to
+    200 tweets per page with cursor-based pagination. Cost: $0.00015 per tweet
+    returned.
+
+
+    **Find a user** — GET /x/users/{id} where {id} is a numeric user ID or
+    @username. Returns profile data: name, bio, follower/following counts,
+    verification status, join date. Cost: $0.00015 per lookup.
+
+
+    **Check if A follows B** — GET /x/followers/check?source={a}&target={b}
+    where source and target are user IDs or @usernames. Cost: $0.00105.
+
+
+    **Get trending topics** — GET /trends?woeid={region}&count={n}. WOEID 1 =
+    worldwide, 23424977 = US, 23424975 = UK, 23424969 = Turkey. Cost: $0.00045.
+
+
+    **Download media** — POST /x/media/download with {"tweetIds": ["123",
+    "456"]} body. Returns download URLs for images and videos. Cost: $0.00015
+    per media item.
+
+
+    **Read an article** — GET /x/articles/{tweetId} for long-form X Articles.
+    Returns full article HTML, cover image, and metadata. Cost: $0.00105.
+
+
+    ## Pagination
+
+
+    All list endpoints return {items, cursor}. Pass cursor as ?after={cursor} to
+    fetch the next page. Dynamic-priced endpoints charge per item returned, not
+    per request.
+
+
+    ## Authentication
+
+
+    Read-only paid endpoints accept pay-per-use payments (no account needed).
+    Write endpoints and automation features require an X-Api-Key header or OAuth
+    2.1 bearer token.
   contact:
     name: Xquik
     url: https://xquik.com
@@ -42,41 +77,48 @@ security:
   - oauthBearer: []
 
 tags:
-  - name: API Keys
-    description: API key management (session auth only)
-  - name: Account
-    description: Account info & settings
-  - name: Bot
-    description: Telegram bot service endpoints
+  - name: Tweets
+    description: Look up, search, and analyze individual tweets
+  - name: Users
+    description: Look up, search, and explore user profiles and relationships
+  - name: Trends
+    description: Trending topics and hashtags by region
+  - name: Communities
+    description: X Community info, members, and tweets
+  - name: Lists
+    description: X List followers, members, and tweets
+  - name: Articles
+    description: Long-form X Article extraction
+  - name: Media
+    description: Media upload and download
   - name: Composition
-    description: Tweet composition, drafts, writing styles & radar
+    description: AI tweet composition, drafts, writing styles, and radar
   - name: Draws
     description: Giveaway draws from tweet replies
-  - name: Events
-    description: Activity events from monitored accounts
   - name: Extractions
     description: Bulk data extraction (20 tool types)
-  - name: Integrations
-    description: Push notification integrations (Telegram)
-  - name: Media
-    description: Media upload & download
   - name: Monitors
     description: Real-time X account monitoring
-  - name: Subscribe
-    description: Subscription & billing
-  - name: Support
-    description: Support ticket management
-  - name: Trends
-    description: Trending topics by region
+  - name: Events
+    description: Activity events from monitored accounts
   - name: Webhooks
-    description: Webhook endpoint management & delivery
-  - name: X API
-    description: X data lookups (subscription required)
+    description: Webhook endpoint management and delivery
+  - name: Integrations
+    description: Push notification integrations (Telegram)
+  - name: Account
+    description: Account info and settings
+  - name: API Keys
+    description: API key management (session auth only)
+  - name: Subscribe
+    description: Subscription, billing, and credits
   - name: X Accounts
     description: Connected X account management
   - name: X Write
     description: X write actions (tweets, likes, follows, DMs)
-
+  - name: Bot
+    description: Telegram bot service endpoints
+  - name: Support
+    description: Support ticket management
 paths:
   # ── Account ──────────────────────────────────────────────
   /account:
@@ -135,6 +177,8 @@ paths:
                   usagePercent: 42.5
         '401':
           $ref: '#/components/responses/Unauthenticated'
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
     patch:
       operationId: updateAccount
       summary: Update account locale
@@ -165,6 +209,8 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthenticated'
 
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
   /account/x-identity:
     put:
       operationId: setXIdentity
@@ -211,7 +257,9 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthenticated'
 
-  # ── API Keys ─────────────────────────────────────────────
+        # ── API Keys ─────────────────────────────────────────────
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
   /api-keys:
     get:
       operationId: listApiKeys
@@ -238,6 +286,8 @@ paths:
                 keys: []
         '401':
           $ref: '#/components/responses/Unauthenticated'
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
     post:
       operationId: createApiKey
       summary: Create API key
@@ -292,6 +342,8 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthenticated'
 
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
   /api-keys/{id}:
     delete:
       operationId: revokeApiKey
@@ -309,6 +361,8 @@ paths:
           $ref: '#/components/responses/InvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -348,7 +402,9 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthenticated'
 
-  # ── Composition ──────────────────────────────────────────
+        # ── Composition ──────────────────────────────────────────
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
   /compose:
     post:
       operationId: compose
@@ -459,6 +515,8 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthenticated'
 
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
   /drafts:
     get:
       operationId: listDrafts
@@ -499,6 +557,8 @@ paths:
                 hasMore: false
         '401':
           $ref: '#/components/responses/Unauthenticated'
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
     post:
       operationId: createDraft
       summary: Save a tweet draft
@@ -548,6 +608,8 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthenticated'
 
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
   /drafts/{id}:
     get:
       operationId: getDraft
@@ -574,6 +636,8 @@ paths:
                 updatedAt: '2025-01-16T09:30:00Z'
         '401':
           $ref: '#/components/responses/Unauthenticated'
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
         '404':
           $ref: '#/components/responses/NotFound'
     delete:
@@ -590,6 +654,8 @@ paths:
           $ref: '#/components/responses/NoContent'
         '401':
           $ref: '#/components/responses/Unauthenticated'
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -619,6 +685,8 @@ paths:
                 styles: []
         '401':
           $ref: '#/components/responses/Unauthenticated'
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
     post:
       operationId: analyzeStyle
       summary: Analyze writing style from recent tweets
@@ -661,6 +729,8 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthenticated'
 
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
   /styles/compare:
     get:
       operationId: compareStyles
@@ -716,6 +786,8 @@ paths:
           $ref: '#/components/responses/InvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -746,6 +818,8 @@ paths:
                     text: 'Just launched our new feature!'
         '401':
           $ref: '#/components/responses/Unauthenticated'
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
         '404':
           $ref: '#/components/responses/NotFound'
     put:
@@ -806,6 +880,8 @@ paths:
           $ref: '#/components/responses/InvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
     delete:
       operationId: deleteStyle
       summary: Delete a style profile
@@ -820,6 +896,8 @@ paths:
           $ref: '#/components/responses/NoContent'
         '401':
           $ref: '#/components/responses/Unauthenticated'
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -971,7 +1049,9 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthenticated'
 
-  # ── Monitors ─────────────────────────────────────────────
+        # ── Monitors ─────────────────────────────────────────────
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
   /monitors:
     get:
       operationId: listMonitors
@@ -1002,6 +1082,8 @@ paths:
                 total: 0
         '401':
           $ref: '#/components/responses/Unauthenticated'
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
     post:
       operationId: createMonitor
       summary: Create monitor
@@ -1063,6 +1145,8 @@ paths:
           $ref: '#/components/responses/InvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
         '403':
           description: Monitor limit reached
           content:
@@ -1140,6 +1224,8 @@ paths:
                 createdAt: '2025-01-15T12:00:00Z'
         '401':
           $ref: '#/components/responses/Unauthenticated'
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
         '404':
           $ref: '#/components/responses/NotFound'
     patch:
@@ -1186,6 +1272,8 @@ paths:
           $ref: '#/components/responses/InvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
         '404':
           $ref: '#/components/responses/NotFound'
     delete:
@@ -1202,6 +1290,8 @@ paths:
           $ref: '#/components/responses/Success'
         '401':
           $ref: '#/components/responses/Unauthenticated'
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -1253,6 +1343,8 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthenticated'
 
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
   /events/{id}:
     get:
       operationId: getEvent
@@ -1280,6 +1372,8 @@ paths:
                   tweetId: '1234567890'
         '401':
           $ref: '#/components/responses/Unauthenticated'
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -1331,6 +1425,8 @@ paths:
                 hasMore: false
         '401':
           $ref: '#/components/responses/Unauthenticated'
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
     post:
       operationId: createExtraction
       summary: Run extraction
@@ -1586,6 +1682,8 @@ paths:
                 hasMore: false
         '401':
           $ref: '#/components/responses/Unauthenticated'
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -1621,6 +1719,8 @@ paths:
                 format: binary
         '401':
           $ref: '#/components/responses/Unauthenticated'
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -1661,6 +1761,8 @@ paths:
                 hasMore: false
         '401':
           $ref: '#/components/responses/Unauthenticated'
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
     post:
       operationId: createDraw
       summary: Run giveaway draw
@@ -1826,6 +1928,8 @@ paths:
                 winners: []
         '401':
           $ref: '#/components/responses/Unauthenticated'
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -1863,6 +1967,8 @@ paths:
                 format: binary
         '401':
           $ref: '#/components/responses/Unauthenticated'
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -1893,6 +1999,8 @@ paths:
                 webhooks: []
         '401':
           $ref: '#/components/responses/Unauthenticated'
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
     post:
       operationId: createWebhook
       summary: Create webhook
@@ -1957,6 +2065,8 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthenticated'
 
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
   /webhooks/{id}:
     patch:
       operationId: updateWebhook
@@ -2005,6 +2115,8 @@ paths:
           $ref: '#/components/responses/InvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
         '404':
           $ref: '#/components/responses/NotFound'
     delete:
@@ -2021,6 +2133,8 @@ paths:
           $ref: '#/components/responses/Success'
         '401':
           $ref: '#/components/responses/Unauthenticated'
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -2052,6 +2166,8 @@ paths:
                 deliveries: []
         '401':
           $ref: '#/components/responses/Unauthenticated'
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -2096,6 +2212,8 @@ paths:
                 error: 'webhook_inactive'
         '401':
           $ref: '#/components/responses/Unauthenticated'
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -2126,6 +2244,8 @@ paths:
                 integrations: []
         '401':
           $ref: '#/components/responses/Unauthenticated'
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
     post:
       operationId: createIntegration
       summary: Create integration
@@ -2192,6 +2312,8 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthenticated'
 
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
   /integrations/{id}:
     get:
       operationId: getIntegration
@@ -2220,6 +2342,8 @@ paths:
                 createdAt: '2025-01-15T12:00:00Z'
         '401':
           $ref: '#/components/responses/Unauthenticated'
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
         '404':
           $ref: '#/components/responses/NotFound'
     patch:
@@ -2292,6 +2416,8 @@ paths:
           $ref: '#/components/responses/InvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
         '404':
           $ref: '#/components/responses/NotFound'
     delete:
@@ -2308,6 +2434,8 @@ paths:
           $ref: '#/components/responses/Success'
         '401':
           $ref: '#/components/responses/Unauthenticated'
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -2340,6 +2468,8 @@ paths:
                 deliveries: []
         '401':
           $ref: '#/components/responses/Unauthenticated'
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -2358,6 +2488,8 @@ paths:
           $ref: '#/components/responses/Success'
         '401':
           $ref: '#/components/responses/Unauthenticated'
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -2366,7 +2498,8 @@ paths:
     get:
       operationId: getBatchTweets
       summary: Get multiple tweets by IDs
-      tags: [X API]
+      tags:
+        - Tweets
       security:
         - apiKey: []
         - oauthBearer: []
@@ -2482,8 +2615,9 @@ paths:
   /x/trends:
     get:
       operationId: getXTrends
-      summary: Get trending topics
-      tags: [X API]
+      summary: Get trending hashtags & topics from X by region
+      tags:
+        - Trends
       security:
         - apiKey: []
         - oauthBearer: []
@@ -2570,8 +2704,9 @@ paths:
   /x/tweets/search:
     get:
       operationId: searchTweets
-      summary: Search tweets
-      tags: [X API]
+      summary: Search tweets with X query operators & pagination
+      tags:
+        - Tweets
       security:
         - apiKey: []
         - oauthBearer: []
@@ -2672,10 +2807,11 @@ paths:
   /x/articles/{tweetId}:
     get:
       operationId: getArticle
-      summary: Get X Article
+      summary: Get full X Article content with cover image & metadata
       description:
         Retrieve the full content of an X Article (long-form post) by tweet ID.
-      tags: [X API]
+      tags:
+        - Articles
       security:
         - apiKey: []
         - oauthBearer: []
@@ -2792,8 +2928,9 @@ paths:
   /x/tweets/{id}:
     get:
       operationId: lookupTweet
-      summary: Look up tweet
-      tags: [X API]
+      summary: Get tweet with full text, author, metrics & media
+      tags:
+        - Tweets
       security:
         - apiKey: []
         - oauthBearer: []
@@ -3017,8 +3154,9 @@ paths:
   /x/users/{id}:
     get:
       operationId: getUser
-      summary: Look up X user
-      tags: [X API]
+      summary: Get user profile with follower counts & verification
+      tags:
+        - Users
       security:
         - apiKey: []
         - oauthBearer: []
@@ -3128,8 +3266,9 @@ paths:
   /x/followers/check:
     get:
       operationId: checkFollow
-      summary: Check follow relationship
-      tags: [X API]
+      summary: Check if one user follows another
+      tags:
+        - Users
       security:
         - apiKey: []
         - oauthBearer: []
@@ -3329,8 +3468,9 @@ paths:
   /x/media/download:
     post:
       operationId: downloadMedia
-      summary: Download tweet media
-      tags: [Media]
+      summary: Download images & videos from tweets
+      tags:
+        - Media
       security:
         - apiKey: []
         - oauthBearer: []
@@ -3749,6 +3889,8 @@ paths:
                     createdAt: '2025-01-15T12:00:00Z'
         '401':
           $ref: '#/components/responses/Unauthenticated'
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
     post:
       operationId: connectXAccount
       summary: Connect X account
@@ -3821,6 +3963,8 @@ paths:
           $ref: '#/components/responses/InvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
         '502':
           $ref: '#/components/responses/XApiError'
 
@@ -3843,6 +3987,8 @@ paths:
                 $ref: '#/components/schemas/XAccountDetail'
         '401':
           $ref: '#/components/responses/Unauthenticated'
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
         '404':
           $ref: '#/components/responses/NotFound'
     delete:
@@ -3859,6 +4005,8 @@ paths:
           $ref: '#/components/responses/Success'
         '401':
           $ref: '#/components/responses/Unauthenticated'
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -3919,6 +4067,8 @@ paths:
           $ref: '#/components/responses/InvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
         '404':
           $ref: '#/components/responses/NotFound'
         '502':
@@ -3954,12 +4104,15 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthenticated'
 
-  # ── Trends ───────────────────────────────────────────────
+        # ── Trends ───────────────────────────────────────────────
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
   /trends:
     get:
       operationId: getTrends
-      summary: Get regional trending topics
-      tags: [Trends]
+      summary: Get trending hashtags & topics by region (alias)
+      tags:
+        - Trends
       security:
         - apiKey: []
         - oauthBearer: []
@@ -4104,6 +4257,8 @@ paths:
           $ref: '#/components/responses/InvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
         '409':
           description: Platform link already exists
     delete:
@@ -4150,6 +4305,8 @@ paths:
           $ref: '#/components/responses/InvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -4192,6 +4349,8 @@ paths:
           $ref: '#/components/responses/InvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -4244,7 +4403,9 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthenticated'
 
-  # ── Support Tickets ─────────────────────────────────────
+        # ── Support Tickets ─────────────────────────────────────
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
   /support/tickets:
     post:
       operationId: createTicket
@@ -4291,6 +4452,8 @@ paths:
           $ref: '#/components/responses/InvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
     get:
       operationId: listTickets
       summary: List user's support tickets
@@ -4346,6 +4509,8 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthenticated'
 
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
   /support/tickets/{id}:
     get:
       operationId: getTicket
@@ -4416,6 +4581,8 @@ paths:
                     createdAt: '2025-01-15T12:00:00Z'
         '401':
           $ref: '#/components/responses/Unauthenticated'
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
         '404':
           $ref: '#/components/responses/NotFound'
     patch:
@@ -4469,6 +4636,8 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthenticated'
 
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
   /support/tickets/{id}/messages:
     post:
       operationId: addTicketMessage
@@ -4517,6 +4686,8 @@ paths:
           $ref: '#/components/responses/InvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -4524,7 +4695,8 @@ paths:
     get:
       operationId: getCredits
       summary: Get credits balance
-      tags: [Subscribe]
+      tags:
+        - Subscribe
       security:
         - apiKey: []
         - oauthBearer: []
@@ -4563,11 +4735,14 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthenticated'
 
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
   /credits/topup:
     post:
       operationId: topUpCredits
       summary: Top up credits balance
-      tags: [Subscribe]
+      tags:
+        - Subscribe
       security:
         - apiKey: []
         - oauthBearer: []
@@ -4594,11 +4769,47 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthenticated'
 
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
+  /credits/quick-topup:
+    post:
+      operationId: quickTopUpCredits
+      summary: Instantly charge saved card for credits
+      tags:
+        - Subscribe
+      security:
+        - apiKey: []
+        - oauthBearer: []
+      requestBody:
+        required: true
+        description: Dollar amount to charge the saved payment method.
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [dollars]
+              properties:
+                dollars:
+                  type: number
+                  description: Dollar amount ($10 minimum)
+                  example: 25
+            example:
+              dollars: 25
+      responses:
+        '200':
+          $ref: '#/components/responses/Success'
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
   /x/tweets/{id}/favoriters:
     get:
       operationId: getTweetFavoriters
-      summary: Get users who liked a tweet
-      tags: [X API]
+      summary: List users who liked a tweet
+      tags:
+        - Tweets
       security:
         - apiKey: []
         - oauthBearer: []
@@ -4646,8 +4857,9 @@ paths:
   /x/users/{id}/tweets:
     get:
       operationId: getUserTweets
-      summary: Get recent tweets by a user
-      tags: [X API]
+      summary: List recent tweets posted by a user
+      tags:
+        - Users
       security:
         - apiKey: []
         - oauthBearer: []
@@ -4703,8 +4915,9 @@ paths:
   /x/users/{id}/likes:
     get:
       operationId: getUserLikes
-      summary: Get tweets liked by a user
-      tags: [X API]
+      summary: List tweets liked by a user
+      tags:
+        - Users
       security:
         - apiKey: []
         - oauthBearer: []
@@ -4752,8 +4965,9 @@ paths:
   /x/users/{id}/media:
     get:
       operationId: getUserMedia
-      summary: Get media tweets by a user
-      tags: [X API]
+      summary: List media tweets posted by a user
+      tags:
+        - Users
       security:
         - apiKey: []
         - oauthBearer: []
@@ -4801,8 +5015,9 @@ paths:
   /x/users/{id}/followers-you-know:
     get:
       operationId: getFollowersYouKnow
-      summary: Get followers you know for a user
-      tags: [X API]
+      summary: List mutual followers between you and a user
+      tags:
+        - Users
       security:
         - apiKey: []
         - oauthBearer: []
@@ -4851,7 +5066,8 @@ paths:
     get:
       operationId: getBookmarks
       summary: Get bookmarked tweets
-      tags: [X API]
+      tags:
+        - Tweets
       security:
         - apiKey: []
         - oauthBearer: []
@@ -4885,7 +5101,8 @@ paths:
     get:
       operationId: getBookmarkFolders
       summary: Get bookmark folders
-      tags: [X API]
+      tags:
+        - Tweets
       security:
         - apiKey: []
         - oauthBearer: []
@@ -4936,7 +5153,8 @@ paths:
     get:
       operationId: getNotifications
       summary: Get notifications
-      tags: [X API]
+      tags:
+        - Users
       security:
         - apiKey: []
         - oauthBearer: []
@@ -5010,7 +5228,8 @@ paths:
     get:
       operationId: getTimeline
       summary: Get home timeline
-      tags: [X API]
+      tags:
+        - Tweets
       security:
         - apiKey: []
         - oauthBearer: []
@@ -5043,7 +5262,8 @@ paths:
     get:
       operationId: getDmHistory
       summary: Get DM conversation history
-      tags: [X API]
+      tags:
+        - Users
       security:
         - apiKey: []
         - oauthBearer: []
@@ -5126,8 +5346,9 @@ paths:
   /x/communities/{id}/info:
     get:
       operationId: getCommunityInfo
-      summary: Get community details
-      tags: [X API]
+      summary: Get community name, description & member count
+      tags:
+        - Communities
       security:
         - apiKey: []
         - oauthBearer: []
@@ -5229,8 +5450,9 @@ paths:
   /x/communities/{id}/members:
     get:
       operationId: getCommunityMembers
-      summary: Get community members
-      tags: [X API]
+      summary: List members of a community
+      tags:
+        - Communities
       security:
         - apiKey: []
         - oauthBearer: []
@@ -5274,8 +5496,9 @@ paths:
   /x/communities/{id}/moderators:
     get:
       operationId: getCommunityModerators
-      summary: Get community moderators
-      tags: [X API]
+      summary: List moderators of a community
+      tags:
+        - Communities
       security:
         - apiKey: []
         - oauthBearer: []
@@ -5319,8 +5542,9 @@ paths:
   /x/communities/{id}/tweets:
     get:
       operationId: getCommunityTweets
-      summary: Get community tweets
-      tags: [X API]
+      summary: List tweets posted in a community
+      tags:
+        - Communities
       security:
         - apiKey: []
         - oauthBearer: []
@@ -5364,8 +5588,9 @@ paths:
   /x/communities/search:
     get:
       operationId: searchCommunities
-      summary: Search tweets across communities
-      tags: [X API]
+      summary: Search for communities by keyword
+      tags:
+        - Communities
       security:
         - apiKey: []
         - oauthBearer: []
@@ -5414,8 +5639,9 @@ paths:
   /x/communities/tweets:
     get:
       operationId: getAllCommunityTweets
-      summary: Search tweets across all communities
-      tags: [X API]
+      summary: List tweets across all communities
+      tags:
+        - Communities
       security:
         - apiKey: []
         - oauthBearer: []
@@ -5466,8 +5692,9 @@ paths:
   /x/lists/{id}/followers:
     get:
       operationId: getListFollowers
-      summary: Get list followers
-      tags: [X API]
+      summary: List followers of an X List
+      tags:
+        - Lists
       security:
         - apiKey: []
         - oauthBearer: []
@@ -5511,8 +5738,9 @@ paths:
   /x/lists/{id}/members:
     get:
       operationId: getListMembers
-      summary: Get list members
-      tags: [X API]
+      summary: List members of an X List
+      tags:
+        - Lists
       security:
         - apiKey: []
         - oauthBearer: []
@@ -5556,8 +5784,9 @@ paths:
   /x/lists/{id}/tweets:
     get:
       operationId: getListTweets
-      summary: Get list tweets
-      tags: [X API]
+      summary: List tweets from an X List
+      tags:
+        - Lists
       security:
         - apiKey: []
         - oauthBearer: []
@@ -5616,8 +5845,9 @@ paths:
   /x/tweets/{id}/quotes:
     get:
       operationId: getTweetQuotes
-      summary: Get quote tweets of a tweet
-      tags: [X API]
+      summary: List quote tweets of a tweet
+      tags:
+        - Tweets
       security:
         - apiKey: []
         - oauthBearer: []
@@ -5676,8 +5906,9 @@ paths:
   /x/tweets/{id}/replies:
     get:
       operationId: getTweetReplies
-      summary: Get replies to a tweet
-      tags: [X API]
+      summary: List replies to a tweet
+      tags:
+        - Tweets
       security:
         - apiKey: []
         - oauthBearer: []
@@ -5731,8 +5962,9 @@ paths:
   /x/tweets/{id}/retweeters:
     get:
       operationId: getTweetRetweeters
-      summary: Get users who retweeted a tweet
-      tags: [X API]
+      summary: List users who retweeted a tweet
+      tags:
+        - Tweets
       security:
         - apiKey: []
         - oauthBearer: []
@@ -5776,8 +6008,9 @@ paths:
   /x/tweets/{id}/thread:
     get:
       operationId: getTweetThread
-      summary: Get thread context for a tweet
-      tags: [X API]
+      summary: Get full conversation thread for a tweet
+      tags:
+        - Tweets
       security:
         - apiKey: []
         - oauthBearer: []
@@ -5821,8 +6054,9 @@ paths:
   /x/users/batch:
     get:
       operationId: getBatchUsers
-      summary: Get multiple users by IDs
-      tags: [X API]
+      summary: Look up multiple users by IDs in one call
+      tags:
+        - Users
       security:
         - apiKey: []
         - oauthBearer: []
@@ -5862,7 +6096,8 @@ paths:
     get:
       operationId: searchUsers
       summary: Search users by name or username
-      tags: [X API]
+      tags:
+        - Users
       security:
         - apiKey: []
         - oauthBearer: []
@@ -5906,8 +6141,9 @@ paths:
   /x/users/{id}/followers:
     get:
       operationId: getUserFollowers
-      summary: Get user followers
-      tags: [X API]
+      summary: List followers of a user
+      tags:
+        - Users
       security:
         - apiKey: []
         - oauthBearer: []
@@ -5956,8 +6192,9 @@ paths:
   /x/users/{id}/following:
     get:
       operationId: getUserFollowing
-      summary: Get users this user follows
-      tags: [X API]
+      summary: List accounts a user follows
+      tags:
+        - Users
       security:
         - apiKey: []
         - oauthBearer: []
@@ -6006,8 +6243,9 @@ paths:
   /x/users/{id}/mentions:
     get:
       operationId: getUserMentions
-      summary: Get tweets mentioning a user
-      tags: [X API]
+      summary: List tweets mentioning a user
+      tags:
+        - Users
       security:
         - apiKey: []
         - oauthBearer: []
@@ -6061,8 +6299,9 @@ paths:
   /x/users/{id}/verified-followers:
     get:
       operationId: getUserVerifiedFollowers
-      summary: Get verified followers
-      tags: [X API]
+      summary: List verified followers of a user
+      tags:
+        - Users
       security:
         - apiKey: []
         - oauthBearer: []
@@ -6182,7 +6421,10 @@ components:
           schema:
             $ref: '#/components/schemas/Error'
     PaymentRequired:
-      description: Subscription or usage issue
+      description:
+        Payment required. Returns a WWW-Authenticate header with an MPP
+        challenge for pay-per-use endpoints, or indicates a subscription/credit
+        issue for identity-authenticated endpoints.
       content:
         application/json:
           schema:
