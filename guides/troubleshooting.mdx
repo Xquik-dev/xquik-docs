@@ -6,8 +6,10 @@ keywords: ["troubleshooting", "common issues", "401", "403", "webhook delivery",
 
 Common issues, error codes, and solutions. If your problem isn't covered here, contact [support@xquik.com](mailto:support@xquik.com).
 
+## Error codes
+
 <AccordionGroup>
-  <Accordion title='Why am I getting 401 Unauthenticated?'>
+  <Accordion title='401 Unauthenticated'>
     The API key is missing, invalid, or revoked. Check the following:
 
     - **Header name:** Must be `x-api-key` (lowercase). `Authorization` or `X-Api-Key` won't work.
@@ -25,7 +27,50 @@ Common issues, error codes, and solutions. If your problem isn't covered here, c
     ```
   </Accordion>
 
-  <Accordion title='Why am I getting 403 Monitor Limit Reached?'>
+  <Accordion title='402 No Subscription / Usage Exhausted'>
+    No active subscription or monthly usage quota exhausted. Possible error codes: `no_subscription`, `subscription_inactive`, `usage_limit_reached`. This affects metered endpoints (draws, extractions, tweet lookups, user lookups, follower checks).
+
+    **Solutions:**
+    - Check your remaining balance via `GET /api/v1/account` (`usagePercent` field)
+    - Wait for the next billing period (quota resets automatically)
+    - Use [Estimate Extraction](/api-reference/extractions/estimate) before running extractions to avoid surprises
+
+    Management endpoints (monitors, events, webhooks, API keys, account) are not affected and continue to work normally.
+  </Accordion>
+
+  <Accordion title='402 extra_usage_disabled'>
+    Metered calls return `402` with `extra_usage_disabled` when your included monthly allowance is consumed and extra usage is not enabled.
+
+    **Fix:** Visit the [dashboard subscription page](https://xquik.com/subscription) and enable extra usage. Once enabled, metered calls continue beyond the included allowance instead of returning `402`.
+
+    <Tip>
+      See the [Extra Usage](/guides/billing#extra-usage) section for spending limits and tier details.
+    </Tip>
+  </Accordion>
+
+  <Accordion title='402 frozen (extra usage paused)'>
+    Metered calls return `402` with `frozen` even though extra usage was previously enabled.
+
+    **Cause:** An overage payment failed. Extra usage freezes until the outstanding balance is resolved.
+
+    **Fix:** Visit the [dashboard subscription page](https://xquik.com/subscription) to update your payment method. Once payment succeeds, extra usage resumes automatically.
+  </Accordion>
+
+  <Accordion title='402 overage_limit_reached'>
+    Metered calls return `402` with `overage_limit_reached` when your accumulated overage hits your current spending limit.
+
+    **Cause:** Each account has a spending limit that caps how much overage you can accumulate before the next invoice. Once the limit is reached, metered calls are rejected until the overage is paid.
+
+    **Fix:**
+    - Wait for the next overage invoice to be paid. Each successful payment raises your spending limit to the next tier.
+    - Check your current spending limit and overage on the [dashboard subscription page](https://xquik.com/subscription).
+
+    <Tip>
+      See the [Spending Limits](/guides/billing#spending-limits) table for tier progression details.
+    </Tip>
+  </Accordion>
+
+  <Accordion title='403 Monitor Limit Reached'>
     Your plan allows 1 monitor by default. Creating a second monitor returns:
 
     ```json
@@ -38,6 +83,39 @@ Common issues, error codes, and solutions. If your problem isn't covered here, c
     - Check your current usage: `GET /api/v1/account` shows `monitorsAllowed` and `monitorsUsed`
   </Accordion>
 
+  <Accordion title='429 Too Many Requests'>
+    You've exceeded the API rate limit. The API uses a 3-tier fixed window (60s):
+
+    | Tier | Methods | Limit |
+    |------|---------|-------|
+    | Read | GET, HEAD, OPTIONS | 120 per 60s |
+    | Write | POST, PUT, PATCH | 30 per 60s |
+    | Delete | DELETE | 15 per 60s |
+
+    **Solutions:**
+    - Implement exponential backoff. Start at 1 second, double on each retry, max 5 retries.
+    - Check the `Retry-After` header for the server-recommended wait time.
+    - Use webhooks instead of polling. Webhooks push events to you in real time, eliminating the need for repeated API calls.
+    - Batch your logic. Fetch events once per minute instead of once per second.
+
+    See the [Rate Limits](/guides/rate-limits) guide for backoff code examples.
+  </Accordion>
+
+  <Accordion title='502 Extraction Failing'>
+    The X data source is temporarily unavailable. This is usually transient.
+
+    **Solutions:**
+    - Retry the request after 5-10 seconds
+    - Use exponential backoff (see [Error Handling](/guides/error-handling))
+    - If the error persists for more than 5 minutes, the data source may be experiencing an outage
+
+    The same applies to draws and X data lookup endpoints (`/api/v1/x/*`).
+  </Accordion>
+</AccordionGroup>
+
+## Common questions
+
+<AccordionGroup>
   <Accordion title='Webhooks not arriving?'>
     Webhooks can fail silently. Walk through this checklist:
 
@@ -61,24 +139,6 @@ Common issues, error codes, and solutions. If your problem isn't covered here, c
     - **Event types:** Verify your monitor's `eventTypes` array includes the type you expect. A monitor tracking only `["tweet.new"]` won't capture replies or retweets.
     - **Account activity:** The monitored X account must actually post content matching your event types. No posts = no events.
     - **Pagination:** If listing events, check `hasMore` in the response. Older events may be on subsequent pages.
-  </Accordion>
-
-  <Accordion title='Getting 429 Too Many Requests?'>
-    You've exceeded the API rate limit. The API uses a 3-tier fixed window (60s):
-
-    | Tier | Methods | Limit |
-    |------|---------|-------|
-    | Read | GET, HEAD, OPTIONS | 120 per 60s |
-    | Write | POST, PUT, PATCH | 30 per 60s |
-    | Delete | DELETE | 15 per 60s |
-
-    **Solutions:**
-    - Implement exponential backoff. Start at 1 second, double on each retry, max 5 retries.
-    - Check the `Retry-After` header for the server-recommended wait time.
-    - Use webhooks instead of polling. Webhooks push events to you in real time, eliminating the need for repeated API calls.
-    - Batch your logic. Fetch events once per minute instead of once per second.
-
-    See the [Rate Limits](/guides/rate-limits) guide for backoff code examples.
   </Accordion>
 
   <Accordion title='How do I check my usage?'>
@@ -123,60 +183,6 @@ Common issues, error codes, and solutions. If your problem isn't covered here, c
     - Claude Desktop, Claude Code, ChatGPT (via Agents SDK), Codex CLI, Cursor, VS Code, Windsurf, OpenCode
 
     See the [MCP Server overview](/mcp/overview) for full setup instructions and the [MCP Tools](/mcp/tools) reference for tool details.
-  </Accordion>
-
-  <Accordion title='Getting 402 errors?'>
-    No active subscription or monthly usage quota exhausted. Possible error codes: `no_subscription`, `subscription_inactive`, `usage_limit_reached`. This affects metered endpoints (draws, extractions, tweet lookups, user lookups, follower checks).
-
-    **Solutions:**
-    - Check your remaining balance via `GET /api/v1/account` (`usagePercent` field)
-    - Wait for the next billing period (quota resets automatically)
-    - Use [Estimate Extraction](/api-reference/extractions/estimate) before running extractions to avoid surprises
-
-    Management endpoints (monitors, events, webhooks, API keys, account) are not affected and continue to work normally.
-  </Accordion>
-
-  <Accordion title='Getting extra_usage_disabled?'>
-    Metered calls return `402` with `extra_usage_disabled` when your included monthly allowance is consumed and extra usage is not enabled.
-
-    **Fix:** Visit the [dashboard subscription page](https://xquik.com/subscription) and enable extra usage. Once enabled, metered calls continue beyond the included allowance instead of returning `402`.
-
-    <Tip>
-      See the [Extra Usage](/guides/billing#extra-usage) section for spending limits and tier details.
-    </Tip>
-  </Accordion>
-
-  <Accordion title='Getting frozen (extra usage paused)?'>
-    Metered calls return `402` with `frozen` even though extra usage was previously enabled.
-
-    **Cause:** An overage payment failed. Extra usage freezes until the outstanding balance is resolved.
-
-    **Fix:** Visit the [dashboard subscription page](https://xquik.com/subscription) to update your payment method. Once payment succeeds, extra usage resumes automatically.
-  </Accordion>
-
-  <Accordion title='Getting overage_limit_reached?'>
-    Metered calls return `402` with `overage_limit_reached` when your accumulated overage hits your current spending limit.
-
-    **Cause:** Each account has a spending limit that caps how much overage you can accumulate before the next invoice. Once the limit is reached, metered calls are rejected until the overage is paid.
-
-    **Fix:**
-    - Wait for the next overage invoice to be paid. Each successful payment raises your spending limit to the next tier.
-    - Check your current spending limit and overage on the [dashboard subscription page](https://xquik.com/subscription).
-
-    <Tip>
-      See the [Spending Limits](/guides/billing#spending-limits) table for tier progression details.
-    </Tip>
-  </Accordion>
-
-  <Accordion title='Extraction failing with 502?'>
-    The X data source is temporarily unavailable. This is usually transient.
-
-    **Solutions:**
-    - Retry the request after 5-10 seconds
-    - Use exponential backoff (see [Error Handling](/guides/error-handling))
-    - If the error persists for more than 5 minutes, the data source may be experiencing an outage
-
-    The same applies to draws and X data lookup endpoints (`/api/v1/x/*`).
   </Accordion>
 
   <Accordion title='How do I export extraction results?'>
