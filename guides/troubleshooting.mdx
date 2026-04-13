@@ -27,47 +27,15 @@ Common issues, error codes, and solutions. If your problem isn't covered here, c
     ```
   </Accordion>
 
-  <Accordion title='402 No Subscription / Usage Exhausted'>
-    No active subscription or monthly usage quota exhausted. Possible error codes: `no_subscription`, `subscription_inactive`, `usage_limit_reached`. This affects metered endpoints (draws, extractions, tweet lookups, user lookups, follower checks).
+  <Accordion title='402 No Subscription / Insufficient Credits'>
+    No active subscription or insufficient credits. Possible error codes: `no_subscription`, `subscription_inactive`, `no_credits`, `insufficient_credits`. This affects metered endpoints (draws, extractions, tweet lookups, user lookups, follower checks).
 
     **Solutions:**
-    - Check your remaining balance via `GET /api/v1/account` (`usagePercent` field)
+    - Check your remaining balance via `GET /api/v1/account` (`creditInfo.balance` field)
     - Wait for the next billing period (quota resets automatically)
     - Use [Estimate Extraction](/api-reference/extractions/estimate) before running extractions to avoid surprises
 
     Management endpoints (monitors, events, webhooks, API keys, account) are not affected and continue to work normally.
-  </Accordion>
-
-  <Accordion title='402 extra_usage_disabled'>
-    Metered calls return `402` with `extra_usage_disabled` when your included monthly allowance is consumed and extra usage is not enabled.
-
-    **Fix:** Visit the [dashboard subscription page](https://xquik.com/subscription) and enable extra usage. Once enabled, metered calls continue beyond the included allowance instead of returning `402`.
-
-    <Tip>
-      See the [Extra Usage](/guides/billing#extra-usage) section for spending limits and tier details.
-    </Tip>
-  </Accordion>
-
-  <Accordion title='402 frozen (extra usage paused)'>
-    Metered calls return `402` with `frozen` even though extra usage was previously enabled.
-
-    **Cause:** An overage payment failed. Extra usage freezes until the outstanding balance is resolved.
-
-    **Fix:** Visit the [dashboard subscription page](https://xquik.com/subscription) to update your payment method. Once payment succeeds, extra usage resumes automatically.
-  </Accordion>
-
-  <Accordion title='402 overage_limit_reached'>
-    Metered calls return `402` with `overage_limit_reached` when your accumulated overage hits your current spending limit.
-
-    **Cause:** Each account has a spending limit that caps how much overage you can accumulate before the next invoice. Once the limit is reached, metered calls are rejected until the overage is paid.
-
-    **Fix:**
-    - Wait for the next overage invoice to be paid. Each successful payment raises your spending limit to the next tier.
-    - Check your current spending limit and overage on the [dashboard subscription page](https://xquik.com/subscription).
-
-    <Tip>
-      See the [Spending Limits](/guides/billing#spending-limits) table for tier progression details.
-    </Tip>
   </Accordion>
 
   <Accordion title='403 Monitor Limit Reached'>
@@ -142,20 +110,21 @@ Common issues, error codes, and solutions. If your problem isn't covered here, c
   </Accordion>
 
   <Accordion title='How do I check my usage?'>
-    Call `GET /api/v1/account`. The `currentPeriod` object shows your usage:
+    Call `GET /api/v1/account`. The `creditInfo` object shows your balance:
 
     ```json
     {
-      "currentPeriod": {
-        "start": "2026-02-01T00:00:00.000Z",
-        "end": "2026-03-01T00:00:00.000Z",
-        "usagePercent": 15
+      "creditInfo": {
+        "balance": 42500,
+        "lifetimePurchased": 140000,
+        "lifetimeUsed": 97500,
+        "autoTopupEnabled": false
       }
     }
     ```
 
-    - `usagePercent`: How much of your monthly quota has been consumed (0-100)
-    - At `100`, metered calls are rejected until the next billing period
+    - `creditInfo.balance`: Remaining credits available for metered calls
+    - When `balance` reaches `0`, metered calls are rejected until credits are topped up or auto top-up triggers
 
     The dashboard also displays usage graphically on the billing page.
 
