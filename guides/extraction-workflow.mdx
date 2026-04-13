@@ -47,7 +47,7 @@ if (account.plan !== "active") {
   throw new Error("Subscription required");
 }
 
-console.log(`Usage: ${account.currentPeriod.usagePercent}%`);
+console.log(`Credits remaining: ${account.creditInfo?.balance}`);
 ```
 
 ```python Python
@@ -62,7 +62,7 @@ account = response.json()
 if account["plan"] != "active":
     raise Exception("Subscription required")
 
-print(f"Usage: {account['currentPeriod']['usagePercent']}%")
+print(f"Credits remaining: {account.get('creditInfo', {}).get('balance')}")
 ```
 
 ```go Go
@@ -81,7 +81,7 @@ fmt.Printf("Plan: %s\n", account["plan"])
 ```
 </CodeGroup>
 
-The response includes your current billing period and usage percentage:
+The response includes your subscription status and credit balance:
 
 <Expandable title="Example response">
 ```json
@@ -89,16 +89,17 @@ The response includes your current billing period and usage percentage:
   "plan": "active",
   "monitorsAllowed": 1,
   "monitorsUsed": 1,
-  "currentPeriod": {
-    "start": "2026-02-01T00:00:00.000Z",
-    "end": "2026-03-01T00:00:00.000Z",
-    "usagePercent": 45
+  "creditInfo": {
+    "balance": 77000,
+    "lifetimePurchased": 140000,
+    "lifetimeUsed": 63000,
+    "autoTopupEnabled": false
   }
 }
 ```
 </Expandable>
 
-If `usagePercent` is near 100, consider waiting for the next billing period or running a smaller extraction.
+If `creditInfo.balance` is low, consider topping up or running a smaller extraction.
 
 ## Step 2: Estimate cost
 
@@ -129,7 +130,7 @@ const estimate = await fetch("https://xquik.com/api/v1/extractions/estimate", {
 }).then((r) => r.json());
 
 if (!estimate.allowed) {
-  throw new Error(`Would exceed quota: ${estimate.projectedPercent}%`);
+  throw new Error(`Insufficient credits: need ${estimate.creditsRequired}, have ${estimate.creditsAvailable}`);
 }
 
 console.log(`Estimated results: ${estimate.estimatedResults}`);
@@ -146,7 +147,7 @@ estimate = requests.post(
 ).json()
 
 if not estimate["allowed"]:
-    raise Exception(f"Would exceed quota: {estimate['projectedPercent']}%")
+    raise Exception(f"Insufficient credits: need {estimate['creditsRequired']}, have {estimate['creditsAvailable']}")
 
 print(f"Estimated results: {estimate['estimatedResults']}")
 ```
@@ -176,24 +177,24 @@ fmt.Printf("Allowed: %v, Estimated: %v\n", estimate["allowed"], estimate["estima
 ```json
 {
   "allowed": true,
-  "source": "replyCount",
+  "creditsRequired": "150",
+  "creditsAvailable": "77000",
   "estimatedResults": 150,
-  "usagePercent": 45,
-  "projectedPercent": 78
+  "source": "replyCount"
 }
 ```
 </Expandable>
 
 | Field | Description |
 |-------|-------------|
-| `allowed` | Whether the extraction fits within your monthly quota |
+| `allowed` | Whether the extraction can proceed with the current credit balance |
 | `source` | Data point used for the estimate (e.g. `replyCount`, `followers`) |
 | `estimatedResults` | Approximate number of results |
-| `usagePercent` | Current usage before this extraction |
-| `projectedPercent` | Projected usage after completion |
+| `creditsRequired` | Credits this extraction will consume |
+| `creditsAvailable` | Credits currently available in your balance |
 
 <Warning>
-  If `allowed` is `false`, the extraction will return `402`. Wait for the next billing period or run a smaller job.
+  If `allowed` is `false`, the extraction will return `402`. Top up credits or run a smaller job.
 </Warning>
 
 <Tip>

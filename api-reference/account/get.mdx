@@ -79,26 +79,26 @@ keywords: ["account", "subscription", "usage", "quota", "billing period"]
     <ResponseField name="plan" type="string">
       Subscription status. `"active"` or `"inactive"`.
     </ResponseField>
-    <ResponseField name="pricingVersion" type="number">
-      Pricing version for the subscription. Defaults to `1`.
-    </ResponseField>
     <ResponseField name="monitorsAllowed" type="number">
       Maximum monitors your plan allows.
     </ResponseField>
     <ResponseField name="monitorsUsed" type="number">
       Number of currently active monitors.
     </ResponseField>
-    <ResponseField name="currentPeriod" type="object">
-      Current billing period. Omitted if no active subscription.
-      <Expandable title="currentPeriod object">
-        <ResponseField name="start" type="string">
-          ISO 8601 period start timestamp.
+    <ResponseField name="creditInfo" type="object">
+      Credit balance details. Omitted if no credit balance row exists yet.
+      <Expandable title="creditInfo object">
+        <ResponseField name="balance" type="number">
+          Current credit balance.
         </ResponseField>
-        <ResponseField name="end" type="string">
-          ISO 8601 period end timestamp.
+        <ResponseField name="lifetimePurchased" type="number">
+          Total credits purchased across all time.
         </ResponseField>
-        <ResponseField name="usagePercent" type="number">
-          Percentage of monthly quota consumed (0-100).
+        <ResponseField name="lifetimeUsed" type="number">
+          Total credits consumed across all time.
+        </ResponseField>
+        <ResponseField name="autoTopupEnabled" type="boolean">
+          Whether automatic credit top-up is enabled.
         </ResponseField>
       </Expandable>
     </ResponseField>
@@ -106,13 +106,13 @@ keywords: ["account", "subscription", "usage", "quota", "billing period"]
     ```json
     {
       "plan": "active",
-      "pricingVersion": 1,
       "monitorsAllowed": 1,
       "monitorsUsed": 0,
-      "currentPeriod": {
-        "start": "2026-02-01T00:00:00.000Z",
-        "end": "2026-03-01T00:00:00.000Z",
-        "usagePercent": 15
+      "creditInfo": {
+        "balance": 50000,
+        "lifetimePurchased": 140000,
+        "lifetimeUsed": 90000,
+        "autoTopupEnabled": false
       }
     }
     ```
@@ -125,19 +125,9 @@ keywords: ["account", "subscription", "usage", "quota", "billing period"]
   </Tab>
 </Tabs>
 
-## Usage quota
+## Credit balance
 
-Every subscriber gets a monthly usage quota that resets each billing period. The quota covers operations that query the X API. Management operations are unlimited.
-
-| Operation | Monthly Limit (approx.) |
-|---|---|
-| Tweet searches | ~66,000 |
-| User lookups | ~55,000 |
-| Follower fetches | ~66,000 |
-| Verified follower fetches | ~33,000 |
-| Follow checks | ~66,000 |
-
-Check `usagePercent` to track remaining capacity. At 100%, metered API calls return `402`.
+Every subscriber gets a monthly credit allowance. Credits are deducted per API call (1-10 credits depending on the operation). Check `creditInfo.balance` to track remaining capacity. At 0, metered API calls return `402` unless extra usage is enabled.
 
 <Note>
   **Related:** [Authentication](/api-reference/authentication) &middot; [Billing & Usage](/guides/billing)
