@@ -81,7 +81,6 @@ Copy-pasteable TypeScript types for every Xquik API object. Use these in your cl
       username: string;
       occurredAt: string;
       data: EventData;
-      xEventId?: string;
     }
 
     interface EventList {
@@ -728,7 +727,7 @@ Returned by all monitor endpoints. The `xUserId` is the X (Twitter) user ID reso
 
 ### Events
 
-`Event` represents a single tracked action from a monitored account. The `data` field shape depends on the event type: tweet events contain `tweetId`, `text`, and `metrics`, while follower events contain `followerId`, `followerUsername`, `followerName`, `followerFollowersCount`, and `followerVerified`. Tweet subtypes include additional fields (`quotedTweetId` for quotes, `inReplyToTweetId` for replies, `retweetedTweetId` for retweets). `EventList` wraps paginated responses. Use `nextCursor` with the `after` query parameter to fetch subsequent pages.
+`Event` represents a single tracked action from a monitored account. The `data` field shape depends on the event type: tweet events contain `id`, `text`, `author`, `isRetweet`, `isReply`, `isQuote`, and `createdAt`, while follower events contain `followerId`, `followerUsername`, `followerName`, `followerFollowersCount`, and `followerVerified`. Replies include `inReplyToId`, quotes include a nested `quoted_tweet` object. Retweets are identified by `isRetweet: true`. See the `TweetEventData` and `FollowerEventData` interfaces in the Shared types tab for the full shape. `EventList` wraps paginated responses. Use `nextCursor` with the `after` query parameter to fetch subsequent pages.
 
 ### Webhooks
 
@@ -743,7 +742,7 @@ Each `Delivery` represents one attempt to send an event to a webhook endpoint. S
 The `WebhookPayload` type describes the JSON body your endpoint receives on each delivery. It contains the event type, the monitored username, and the event data. Verify its authenticity using the `X-Xquik-Signature` header and your webhook secret. See [Webhook Verification](/webhooks/verification) for implementation details.
 
 <Note>
-  `webhook.test` payloads omit `username` and `timestamp` since they are not tied to a real monitor event. Always treat these fields as optional.
+  `webhook.test` payloads include `timestamp` but omit `username` since they are not tied to a real monitor event. In normal event payloads, `username` is present and `timestamp` is omitted.
 </Note>
 
 ### Draws
