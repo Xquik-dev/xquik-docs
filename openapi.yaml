@@ -150,7 +150,13 @@ paths:
                     example: 10
                   creditInfo:
                     type: object
-                    required: [balance, lifetimePurchased, lifetimeUsed, autoTopupEnabled]
+                    required:
+                      [
+                        balance,
+                        lifetimePurchased,
+                        lifetimeUsed,
+                        autoTopupEnabled,
+                      ]
                     properties:
                       balance:
                         type: integer
@@ -2555,13 +2561,13 @@ paths:
       requestBody:
         required: true
         description:
-          Account, tweet text, and optional reply, attachment, community, or
-          media parameters.
+          Account and tweet content. Requires text, media, or both. media and
+          media_ids are mutually exclusive.
         content:
           application/json:
             schema:
               type: object
-              required: [account, text]
+              required: [account]
               properties:
                 account:
                   type: string
@@ -2569,6 +2575,7 @@ paths:
                   example: '@elonmusk'
                 text:
                   type: string
+                  description: Tweet text (optional when media is provided)
                   example: 'Just launched our new feature!'
                 reply_to_tweet_id:
                   type: string
@@ -2582,10 +2589,21 @@ paths:
                 is_note_tweet:
                   type: boolean
                   example: false
+                media:
+                  type: array
+                  items:
+                    type: string
+                  maxItems: 4
+                  description:
+                    Array of media URLs to attach (mutually exclusive with
+                    media_ids)
+                  example: ['https://example.com/image.jpg']
                 media_ids:
                   type: array
                   items:
                     type: string
+                  description:
+                    Array of media IDs to attach (mutually exclusive with media)
                   example: ['1234567890123456789']
             example:
               account: '@elonmusk'
@@ -4028,8 +4046,7 @@ paths:
         - $ref: '#/components/parameters/ResourceId'
       requestBody:
         required: true
-        description:
-          Updated password and optional 2FA secret for re-authentication.
+        description: Updated password and optional fields for re-authentication.
         content:
           application/json:
             schema:
@@ -4044,6 +4061,14 @@ paths:
                   type: string
                   description: TOTP secret for 2FA re-authentication
                   example: 'JBSWY3DPEHPK3PXP'
+                email:
+                  type: string
+                  description: Email for the X account (updates stored email)
+                  example: 'user@example.com'
+                proxy_country:
+                  type: string
+                  description: Two-letter country code for login proxy region
+                  example: 'US'
             example:
               password: 'password_value'
               totp_secret: 'totp_secret_value'
@@ -6535,18 +6560,18 @@ components:
             - invalid_tweet_id
             - invalid_tweet_url
             - invalid_username
+            - insufficient_credits
             - missing_params
             - missing_query
             - monitor_already_exists
             - monitor_limit_reached
+            - no_credits
             - no_subscription
             - not_found
             - stream_registration_failed
             - subscription_inactive
             - tweet_not_found
             - unauthenticated
-            - no_credits
-            - insufficient_credits
             - user_not_found
             - webhook_inactive
             - x_api_rate_limited
