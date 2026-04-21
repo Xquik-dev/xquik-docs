@@ -139,6 +139,7 @@ keywords: ["x accounts", "connect", "add", "credentials", "2fa", "totp"]
     <ResponseField name="xUsername" type="string">Connected X username.</ResponseField>
     <ResponseField name="xUserId" type="string">X user ID.</ResponseField>
     <ResponseField name="status" type="string">Account connection status (e.g. `"active"`).</ResponseField>
+    <ResponseField name="health" type="string">Derived login/cookie health. One of `healthy`, `locked`, `needsReauth`, `recovering`, `suspended`, `temporaryIssue`. See [Account health](/api-reference/x-accounts/list#account-health) for meanings.</ResponseField>
     <ResponseField name="createdAt" type="string">ISO 8601 timestamp of when the account was connected.</ResponseField>
 
     ```json
@@ -147,6 +148,7 @@ keywords: ["x accounts", "connect", "add", "credentials", "2fa", "totp"]
       "xUsername": "elonmusk",
       "xUserId": "44196397",
       "status": "active",
+      "health": "healthy",
       "createdAt": "2026-02-20T08:15:00.000Z"
     }
     ```
@@ -174,6 +176,12 @@ keywords: ["x accounts", "connect", "add", "credentials", "2fa", "totp"]
     { "error": "rate_limit_exceeded", "message": "Too many connection attempts. Try again in 15 minutes.", "retryAfter": 900 }
     ```
     You have exceeded the connection rate limit (3 per 15 minutes). The response includes a `Retry-After: 900` header indicating how many seconds to wait before retrying. See the [rate limits guide](/guides/rate-limits) for details.
+  </Tab>
+  <Tab title="429 Login Cooldown">
+    ```json
+    { "error": "login_cooldown", "message": "Account is on login cooldown. Retry after the cooldown ends.", "reason": "automated", "retryAfterMs": 3600000 }
+    ```
+    A prior login attempt triggered a cooldown (for example, X flagged the session). Wait for `retryAfterMs` before retrying. The response includes a `Retry-After` header in seconds.
   </Tab>
   <Tab title="422 Connection Failed">
     ```json
