@@ -4143,34 +4143,21 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                required: [id, xUserId, xUsername, status]
-                properties:
-                  id:
-                    type: string
-                    example: '42'
-                  xUserId:
-                    type: string
-                    example: '9876543210'
-                  xUsername:
-                    type: string
-                    example: 'elonmusk'
-                  status:
-                    type: string
-                    example: 'active'
-              example:
-                id: '42'
-                xUserId: '9876543210'
-                xUsername: 'elonmusk'
-                status: 'active'
+                $ref: '#/components/schemas/SanitizedXAccount'
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
+        '409':
+          $ref: '#/components/responses/ConnectAlreadyConnected'
+        '422':
+          $ref: '#/components/responses/ConnectLoginFailed'
+        '429':
+          $ref: '#/components/responses/ConnectRateLimitExceeded'
         '502':
-          $ref: '#/components/responses/XApiError'
+          $ref: '#/components/responses/ConnectUserLookupFailed'
+        '503':
+          $ref: '#/components/responses/ConnectServiceUnavailable'
 
   /x/accounts/{id}:
     get:
@@ -4258,32 +4245,19 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                required: [id, xUsername, status]
-                properties:
-                  id:
-                    type: string
-                    example: '42'
-                  xUsername:
-                    type: string
-                    example: 'elonmusk'
-                  status:
-                    type: string
-                    example: 'active'
-              example:
-                id: '42'
-                xUsername: 'elonmusk'
-                status: 'active'
+                $ref: '#/components/schemas/SanitizedXAccount'
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
         '404':
-          $ref: '#/components/responses/NotFound'
-        '502':
-          $ref: '#/components/responses/XApiError'
+          $ref: '#/components/responses/ReauthAccountNotFound'
+        '422':
+          $ref: '#/components/responses/ConnectLoginFailed'
+        '429':
+          $ref: '#/components/responses/ConnectLoginCooldown'
+        '503':
+          $ref: '#/components/responses/ConnectServiceUnavailable'
 
   /x/accounts/bulk-retry:
     post:
@@ -6687,8 +6661,8 @@ components:
             $ref: '#/components/schemas/Error'
     AccountRestricted:
       description: >
-        The connected X account is locked, suspended, recovering, or
-        temporarily restricted. Returns `{ "error": "account_restricted" }`.
+        The connected X account is locked, suspended, recovering, or temporarily
+        restricted. Returns `{ "error": "account_restricted" }`.
       content:
         application/json:
           schema:
@@ -6705,8 +6679,8 @@ components:
     RateLimitedByX:
       description: >
         X throttled the write. Possible codes: `x_rate_limited` (short-term
-        throttle) or `x_daily_limit` (daily cap hit). Back off and retry
-        later. Distinct from Xquik tier-based 429.
+        throttle) or `x_daily_limit` (daily cap hit). Back off and retry later.
+        Distinct from Xquik tier-based 429.
       content:
         application/json:
           schema:
@@ -6721,6 +6695,67 @@ components:
             $ref: '#/components/schemas/Error'
     XApiError:
       description: X API unavailable, unauthorized, or rate limited
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    ConnectAlreadyConnected:
+      description: >
+        The specified X account is already connected to this Xquik account.
+        Returns `{ "error": "account_already_connected" }`.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    ConnectLoginFailed:
+      description: >
+        Could not authenticate with X. The provided credentials (username,
+        password, or TOTP secret) were rejected. Returns
+        `{ "error": "login_failed" }`.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    ConnectLoginCooldown:
+      description: >
+        A prior login attempt triggered a cooldown. Response includes
+        `reason`, `retryAfterMs`, and a `Retry-After` header (seconds).
+        Returns `{ "error": "login_cooldown" }`.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    ConnectRateLimitExceeded:
+      description: >
+        Too many requests. Either the connection rate limit was exceeded
+        (`rate_limit_exceeded` - 3 attempts per 15 minutes, `retryAfter`
+        seconds, `Retry-After: 900` header) or a prior login attempt
+        triggered a cooldown (`login_cooldown`, `reason`, `retryAfterMs`,
+        `Retry-After` header in seconds).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    ConnectUserLookupFailed:
+      description: >
+        The X username could not be resolved. Verify the handle is correct
+        and the account exists. Returns `{ "error": "user_lookup_failed" }`.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    ConnectServiceUnavailable:
+      description: >
+        The X connection service is temporarily unavailable. Retry after a
+        short delay. Returns `{ "error": "service_unavailable" }`.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    ReauthAccountNotFound:
+      description: >
+        No X account with this ID belongs to the authenticated user.
+        Returns `{ "error": "account_not_found" }`.
       content:
         application/json:
           schema:
@@ -7632,6 +7667,54 @@ components:
           type: string
           format: date-time
           example: '2025-03-10T08:30:00Z'
+
+    SanitizedXAccount:
+      description: >
+        Sanitized X account summary returned by connect and reauth. Includes
+        an optional `loginCountry` field surfaced only when the declared
+        proxy region had no Driver capacity and the login fell back to a
+        single US consumer device for this one-time action. Future activity
+        continues to use the selected `proxy_country`; the field is omitted
+        on normal logins.
+      type: object
+      required: [id, xUserId, xUsername, status, health, createdAt]
+      properties:
+        id:
+          type: string
+          example: '42'
+        xUserId:
+          type: string
+          example: '9876543210'
+        xUsername:
+          type: string
+          example: 'elonmusk'
+        status:
+          type: string
+          example: 'active'
+        health:
+          type: string
+          enum:
+            [
+              healthy,
+              locked,
+              needsReauth,
+              recovering,
+              suspended,
+              temporaryIssue,
+            ]
+          example: 'healthy'
+        createdAt:
+          type: string
+          format: date-time
+          example: '2025-01-15T12:00:00Z'
+        loginCountry:
+          type: string
+          description: >
+            ISO-3166-1 alpha-2 country code of the Driver consumer device
+            used for this login. Present only when the US fallback was
+            triggered because Driver had no capacity in the declared region.
+            Omitted otherwise.
+          example: 'US'
 
     XAccountBody:
       description: Request body identifying an X account by username or ID.
