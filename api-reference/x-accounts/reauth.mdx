@@ -138,6 +138,7 @@ keywords: ["x accounts", "re-authenticate", "reauth", "session expired", "2fa"]
     <ResponseField name="status" type="string">Account status (e.g. `active`).</ResponseField>
     <ResponseField name="health" type="string">Derived login/cookie health. One of `healthy`, `locked`, `needsReauth`, `recovering`, `suspended`, `temporaryIssue`. See [Account health](/api-reference/x-accounts/list#account-health) for meanings.</ResponseField>
     <ResponseField name="createdAt" type="string">ISO 8601 creation timestamp.</ResponseField>
+    <ResponseField name="loginCountry" type="string">Optional ISO 3166-1 alpha-2 country code (for example `"US"`). Present only when the declared proxy region had no Driver capacity and the login fell back to a single US consumer device for this one-time action. Future activity continues to use the selected `proxy_country`. Omitted on normal logins.</ResponseField>
 
     ```json
     {
@@ -169,15 +170,27 @@ keywords: ["x accounts", "re-authenticate", "reauth", "session expired", "2fa"]
   </Tab>
   <Tab title="404 Not Found">
     ```json
-    { "error": "not_found", "message": "X account not found" }
+    { "error": "account_not_found", "message": "X account not found." }
     ```
     No account exists with this ID, or it belongs to a different Xquik account.
   </Tab>
-  <Tab title="422 Re-authentication Failed">
+  <Tab title="429 Login Cooldown">
     ```json
-    { "error": "reauth_failed", "message": "Could not re-authenticate with X. Check credentials." }
+    { "error": "login_cooldown", "message": "Login is temporarily paused", "reason": "automated", "retryAfterMs": 3600000 }
+    ```
+    A prior login attempt triggered a cooldown (for example, X flagged the session). Wait for `retryAfterMs` before retrying. The response includes a `Retry-After` header in seconds.
+  </Tab>
+  <Tab title="422 Login Failed">
+    ```json
+    { "error": "login_failed", "message": "Could not authenticate with X. Check credentials." }
     ```
     The provided credentials could not authenticate with X. Verify the password and TOTP secret.
+  </Tab>
+  <Tab title="503 Service Unavailable">
+    ```json
+    { "error": "service_unavailable", "message": "Service temporarily unavailable. Try again." }
+    ```
+    The X re-authentication service is temporarily unavailable. Retry after a short delay.
   </Tab>
 </Tabs>
 
