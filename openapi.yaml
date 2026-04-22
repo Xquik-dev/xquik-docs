@@ -103,8 +103,6 @@ tags:
     description: Activity events from monitored accounts
   - name: Webhooks
     description: Webhook endpoint management and delivery
-  - name: Integrations
-    description: Push notification integrations (Telegram)
   - name: Account
     description: Account info and settings
   - name: API Keys
@@ -115,8 +113,6 @@ tags:
     description: Connected X account management
   - name: X Write
     description: X write actions (tweets, likes, follows, DMs)
-  - name: Bot
-    description: Telegram bot service endpoints
   - name: Support
     description: Support ticket management
 paths:
@@ -998,21 +994,43 @@ paths:
         - apiKey: []
         - oauthBearer: []
       parameters:
+        - name: after
+          in: query
+          schema:
+            type: string
+          description: Cursor for pagination (from prior response nextCursor).
         - name: category
           in: query
           schema:
             type: string
-          description: 'Filter by category (general, tech, dev, etc.)'
-        - name: count
-          in: query
-          schema:
-            type: integer
-          description: Number of items to return
+            enum:
+              [
+                general,
+                tech,
+                dev,
+                science,
+                culture,
+                politics,
+                business,
+                entertainment,
+              ]
+          description: Filter by category.
         - name: hours
           in: query
           schema:
             type: integer
-          description: Lookback window in hours
+            minimum: 1
+            maximum: 168
+            default: 24
+          description: Lookback window in hours (1-168, default 24).
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+          description: Number of items to return (1-100, default 50).
         - name: region
           in: query
           schema:
@@ -1042,19 +1060,22 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [items, total]
+                required: [hasMore, items]
                 properties:
+                  hasMore:
+                    type: boolean
+                    example: false
                   items:
                     type: array
                     items:
                       $ref: '#/components/schemas/RadarItem'
                     example: []
-                  total:
-                    type: integer
-                    example: 0
+                  nextCursor:
+                    type: string
+                    description: Opaque cursor for the next page (present only when hasMore is true).
               example:
+                hasMore: false
                 items: []
-                total: 0
         '401':
           $ref: '#/components/responses/Unauthenticated'
 
@@ -1115,10 +1136,10 @@ paths:
                   example: elonmusk
                 eventTypes:
                   $ref: '#/components/schemas/EventTypeArray'
-                  example: [tweet.new, follower.gained]
+                  example: [tweet.new, tweet.reply]
             example:
               username: elonmusk
-              eventTypes: [tweet.new, follower.gained]
+              eventTypes: [tweet.new, tweet.reply]
       responses:
         '201':
           description: Monitor created
@@ -1139,7 +1160,7 @@ paths:
                     example: '1234567890'
                   eventTypes:
                     $ref: '#/components/schemas/EventTypeArray'
-                    example: [tweet.new, follower.gained]
+                    example: [tweet.new, tweet.reply]
                   createdAt:
                     type: string
                     format: date-time
@@ -1148,7 +1169,7 @@ paths:
                 id: '42'
                 username: elonmusk
                 xUserId: '1234567890'
-                eventTypes: [tweet.new, follower.gained]
+                eventTypes: [tweet.new, tweet.reply]
                 createdAt: '2025-01-15T12:00:00Z'
         '400':
           $ref: '#/components/responses/InvalidInput'
@@ -1220,7 +1241,7 @@ paths:
                 id: '42'
                 username: elonmusk
                 xUserId: '1234567890'
-                eventTypes: [tweet.new, follower.gained]
+                eventTypes: [tweet.new, tweet.reply]
                 isActive: true
                 createdAt: '2025-01-15T12:00:00Z'
         '401':
@@ -2028,10 +2049,10 @@ paths:
                   example: 'https://example.com/webhook'
                 eventTypes:
                   $ref: '#/components/schemas/EventTypeArray'
-                  example: [tweet.new, follower.gained]
+                  example: [tweet.new, tweet.reply]
             example:
               url: 'https://example.com/webhook'
-              eventTypes: [tweet.new, follower.gained]
+              eventTypes: [tweet.new, tweet.reply]
       responses:
         '201':
           description: Webhook created
@@ -2053,7 +2074,7 @@ paths:
                     example: 'whsec_abc123def456'
                   eventTypes:
                     $ref: '#/components/schemas/EventTypeArray'
-                    example: [tweet.new, follower.gained]
+                    example: [tweet.new, tweet.reply]
                   createdAt:
                     type: string
                     format: date-time
@@ -2062,7 +2083,7 @@ paths:
                 id: '42'
                 url: 'https://example.com/webhook'
                 secret: 'whsec_abc123def456'
-                eventTypes: [tweet.new, follower.gained]
+                eventTypes: [tweet.new, tweet.reply]
                 createdAt: '2025-01-15T12:00:00Z'
         '400':
           $ref: '#/components/responses/InvalidInput'
@@ -2214,282 +2235,6 @@ paths:
                 $ref: '#/components/schemas/Error'
               example:
                 error: 'webhook_inactive'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
-        '404':
-          $ref: '#/components/responses/NotFound'
-
-  # ── Integrations ─────────────────────────────────────────
-  /integrations:
-    get:
-      operationId: listIntegrations
-      summary: List integrations
-      tags: [Integrations]
-      security:
-        - apiKey: []
-        - oauthBearer: []
-      responses:
-        '200':
-          description: Integration list
-          content:
-            application/json:
-              schema:
-                type: object
-                required: [integrations]
-                properties:
-                  integrations:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Integration'
-                    example: []
-              example:
-                integrations: []
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
-    post:
-      operationId: createIntegration
-      summary: Create integration
-      tags: [Integrations]
-      security:
-        - apiKey: []
-        - oauthBearer: []
-      requestBody:
-        required: true
-        description:
-          Integration type, display name, platform config, and subscribed event
-          types.
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [type, name, config, eventTypes]
-              properties:
-                type:
-                  type: string
-                  enum: [telegram]
-                  x-stainless-const: true
-                  example: telegram
-                name:
-                  type: string
-                  example: 'My Telegram Bot'
-                config:
-                  type: object
-                  required: [chatId]
-                  properties:
-                    chatId:
-                      type: string
-                      example: '-1001234567890'
-                  description: Integration config (e.g. Telegram chatId)
-                  example:
-                    chatId: '-1001234567890'
-                eventTypes:
-                  $ref: '#/components/schemas/EventTypeArray'
-                  example: [tweet.new, follower.gained]
-            example:
-              type: telegram
-              name: 'My Telegram Bot'
-              config:
-                chatId: '-1001234567890'
-              eventTypes: [tweet.new, follower.gained]
-      responses:
-        '201':
-          description: Integration created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Integration'
-              example:
-                id: '42'
-                type: telegram
-                name: 'My Telegram Bot'
-                config:
-                  chatId: '-1001234567890'
-                eventTypes: ['tweet.new', 'follower.gained']
-                isActive: true
-                createdAt: '2025-01-15T12:00:00Z'
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
-  /integrations/{id}:
-    get:
-      operationId: getIntegration
-      summary: Get integration details
-      tags: [Integrations]
-      security:
-        - apiKey: []
-        - oauthBearer: []
-      parameters:
-        - $ref: '#/components/parameters/ResourceId'
-      responses:
-        '200':
-          description: Integration details
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Integration'
-              example:
-                id: '42'
-                type: telegram
-                name: 'My Telegram Bot'
-                config:
-                  chatId: '-1001234567890'
-                eventTypes: ['tweet.new', 'follower.gained']
-                isActive: true
-                createdAt: '2025-01-15T12:00:00Z'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
-        '404':
-          $ref: '#/components/responses/NotFound'
-    patch:
-      operationId: updateIntegration
-      summary: Update integration
-      tags: [Integrations]
-      security:
-        - apiKey: []
-        - oauthBearer: []
-      parameters:
-        - $ref: '#/components/parameters/ResourceId'
-      requestBody:
-        required: true
-        description:
-          Updated name, event types, active status, or notification settings.
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                name:
-                  type: string
-                  example: 'My Telegram Bot'
-                eventTypes:
-                  $ref: '#/components/schemas/EventTypeArray'
-                  example: [tweet.new]
-                isActive:
-                  type: boolean
-                  example: true
-                silentPush:
-                  type: boolean
-                  example: false
-                scopeAllMonitors:
-                  type: boolean
-                  example: true
-                messageTemplate:
-                  type: object
-                  additionalProperties: true
-                  x-stainless-any: true
-                  description: Custom message template (JSON)
-                  x-stainless-terraform-type: string
-                  example: {}
-                filters:
-                  type: object
-                  additionalProperties: true
-                  x-stainless-any: true
-                  description: Event filter rules (JSON)
-                  x-stainless-terraform-type: string
-                  example: {}
-            example:
-              name: 'My Telegram Bot'
-              isActive: true
-      responses:
-        '200':
-          description: Integration updated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Integration'
-              example:
-                id: '42'
-                type: telegram
-                name: 'My Telegram Bot'
-                config:
-                  chatId: '-1001234567890'
-                eventTypes: ['tweet.new', 'follower.gained']
-                isActive: true
-                createdAt: '2025-01-15T12:00:00Z'
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
-        '404':
-          $ref: '#/components/responses/NotFound'
-    delete:
-      operationId: deleteIntegration
-      summary: Delete integration
-      tags: [Integrations]
-      security:
-        - apiKey: []
-        - oauthBearer: []
-      parameters:
-        - $ref: '#/components/parameters/ResourceId'
-      responses:
-        '200':
-          $ref: '#/components/responses/Success'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
-        '404':
-          $ref: '#/components/responses/NotFound'
-
-  /integrations/{id}/deliveries:
-    get:
-      operationId: listIntegrationDeliveries
-      summary: List integration delivery history
-      tags: [Integrations]
-      security:
-        - apiKey: []
-        - oauthBearer: []
-      parameters:
-        - $ref: '#/components/parameters/ResourceId'
-        - $ref: '#/components/parameters/Limit'
-      responses:
-        '200':
-          description: Integration delivery list
-          content:
-            application/json:
-              schema:
-                type: object
-                required: [deliveries]
-                properties:
-                  deliveries:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/IntegrationDelivery'
-                    example: []
-              example:
-                deliveries: []
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
-        '404':
-          $ref: '#/components/responses/NotFound'
-
-  /integrations/{id}/test:
-    post:
-      operationId: testIntegration
-      summary: Send test delivery
-      tags: [Integrations]
-      security:
-        - apiKey: []
-        - oauthBearer: []
-      parameters:
-        - $ref: '#/components/parameters/ResourceId'
-      responses:
-        '200':
-          $ref: '#/components/responses/Success'
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '402':
@@ -4375,214 +4120,7 @@ paths:
         '502':
           $ref: '#/components/responses/XApiError'
 
-  # ── Bot ──────────────────────────────────────────────────
-  /bot/platform-links:
-    post:
-      operationId: createPlatformLink
-      summary: Link a platform user to an Xquik account
-      tags: [Bot]
-      security:
-        - apiKey: []
-        - oauthBearer: []
-      requestBody:
-        required: true
-        description: Platform type and platform-specific user identifier.
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [platform, platformUserId]
-              properties:
-                platform:
-                  type: string
-                  enum: [telegram]
-                  example: 'telegram'
-                platformUserId:
-                  type: string
-                  example: '123456789'
-            example:
-              platform: 'telegram'
-              platformUserId: '123456789'
-      responses:
-        '201':
-          description: Platform link created
-          content:
-            application/json:
-              schema:
-                type: object
-                required: [id, platform, platformUserId, createdAt]
-                properties:
-                  id:
-                    type: string
-                    example: '42'
-                  platform:
-                    type: string
-                    example: 'telegram'
-                  platformUserId:
-                    type: string
-                    example: '123456789'
-                  createdAt:
-                    type: string
-                    format: date-time
-                    example: '2025-01-15T12:00:00Z'
-              example:
-                id: '42'
-                platform: 'telegram'
-                platformUserId: '123456789'
-                createdAt: '2025-01-15T12:00:00Z'
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
-        '409':
-          description: Platform link already exists
-    delete:
-      operationId: deletePlatformLink
-      summary: Unlink a platform user from an Xquik account
-      tags: [Bot]
-      security:
-        - apiKey: []
-        - oauthBearer: []
-      requestBody:
-        required: true
-        description:
-          Platform type and platform-specific user identifier to unlink.
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [platform, platformUserId]
-              properties:
-                platform:
-                  type: string
-                  enum: [telegram]
-                  example: 'telegram'
-                platformUserId:
-                  type: string
-                  example: '123456789'
-            example:
-              platform: 'telegram'
-              platformUserId: '123456789'
-      responses:
-        '200':
-          description: Platform link deleted
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-              example:
-                success: true
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
-        '404':
-          $ref: '#/components/responses/NotFound'
-
-  /bot/platform-links/lookup:
-    get:
-      operationId: lookupPlatformLink
-      summary: Look up an Xquik user by platform identity
-      tags: [Bot]
-      security:
-        - apiKey: []
-        - oauthBearer: []
-      parameters:
-        - name: platform
-          in: query
-          required: true
-          description: Platform identifier (e.g. telegram)
-          schema:
-            type: string
-        - name: platformUserId
-          in: query
-          required: true
-          description: User ID on the specified platform
-          schema:
-            type: string
-      responses:
-        '200':
-          description: User found
-          content:
-            application/json:
-              schema:
-                type: object
-                required: [userId]
-                properties:
-                  userId:
-                    type: string
-                    example: '42'
-              example:
-                userId: '42'
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
-        '404':
-          $ref: '#/components/responses/NotFound'
-
-  /bot/usage:
-    post:
-      operationId: trackBotUsage
-      summary: Track bot token usage
-      tags: [Bot]
-      security:
-        - apiKey: []
-        - oauthBearer: []
-      requestBody:
-        required: true
-        description:
-          Platform user ID and token counts for the conversation turn.
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [platformUserId, inputTokens, outputTokens]
-              properties:
-                platformUserId:
-                  type: string
-                  example: '123456789'
-                inputTokens:
-                  type: integer
-                  example: 1500
-                outputTokens:
-                  type: integer
-                  example: 800
-            example:
-              platformUserId: '123456789'
-              inputTokens: 1500
-              outputTokens: 800
-      responses:
-        '200':
-          description: Usage tracked
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-              example:
-                success: true
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-
-        # ── Support Tickets ─────────────────────────────────────
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
+  # ── Support Tickets ─────────────────────────────────────
   /support/tickets:
     post:
       operationId: createTicket
@@ -6702,17 +6240,17 @@ components:
     ConnectLoginFailed:
       description: >
         Could not authenticate with X. The provided credentials (username,
-        password, or TOTP secret) were rejected. Returns
-        `{ "error": "login_failed" }`.
+        password, or TOTP secret) were rejected. Returns `{ "error":
+        "login_failed" }`.
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
     ConnectLoginCooldown:
       description: >
-        A prior login attempt triggered a cooldown. Response includes
-        `reason`, `retryAfterMs`, and a `Retry-After` header (seconds).
-        Returns `{ "error": "login_cooldown" }`.
+        A prior login attempt triggered a cooldown. Response includes `reason`,
+        `retryAfterMs`, and a `Retry-After` header (seconds). Returns `{
+        "error": "login_cooldown" }`.
       content:
         application/json:
           schema:
@@ -6721,33 +6259,33 @@ components:
       description: >
         Too many requests. Either the connection rate limit was exceeded
         (`rate_limit_exceeded` - 3 attempts per 15 minutes, `retryAfter`
-        seconds, `Retry-After: 900` header) or a prior login attempt
-        triggered a cooldown (`login_cooldown`, `reason`, `retryAfterMs`,
-        `Retry-After` header in seconds).
+        seconds, `Retry-After: 900` header) or a prior login attempt triggered a
+        cooldown (`login_cooldown`, `reason`, `retryAfterMs`, `Retry-After`
+        header in seconds).
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
     ConnectUserLookupFailed:
       description: >
-        The X username could not be resolved. Verify the handle is correct
-        and the account exists. Returns `{ "error": "user_lookup_failed" }`.
+        The X username could not be resolved. Verify the handle is correct and
+        the account exists. Returns `{ "error": "user_lookup_failed" }`.
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
     ConnectServiceUnavailable:
       description: >
-        The X connection service is temporarily unavailable. Retry after a
-        short delay. Returns `{ "error": "service_unavailable" }`.
+        The X connection service is temporarily unavailable. Retry after a short
+        delay. Returns `{ "error": "service_unavailable" }`.
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
     ReauthAccountNotFound:
       description: >
-        No X account with this ID belongs to the authenticated user.
-        Returns `{ "error": "account_not_found" }`.
+        No X account with this ID belongs to the authenticated user. Returns `{
+        "error": "account_not_found" }`.
       content:
         application/json:
           schema:
@@ -6835,8 +6373,6 @@ components:
         - tweet.reply
         - tweet.retweet
         - tweet.quote
-        - follower.gained
-        - follower.lost
       example: 'tweet.new'
 
     EventTypeArray:
@@ -6845,7 +6381,7 @@ components:
       items:
         $ref: '#/components/schemas/EventType'
       minItems: 1
-      example: ['tweet.new', 'follower.gained']
+      example: ['tweet.new', 'tweet.reply']
 
     ExtractionToolType:
       description: Identifier for the extraction tool used to run a job.
@@ -6909,7 +6445,7 @@ components:
           example: '9876543210'
         eventTypes:
           $ref: '#/components/schemas/EventTypeArray'
-          example: ['tweet.new', 'follower.gained']
+          example: ['tweet.new', 'tweet.reply']
         isActive:
           type: boolean
           example: true
@@ -7096,7 +6632,7 @@ components:
           example: 'https://example.com/webhooks/xquik'
         eventTypes:
           $ref: '#/components/schemas/EventTypeArray'
-          example: ['tweet.new', 'follower.gained']
+          example: ['tweet.new', 'tweet.reply']
         isActive:
           type: boolean
           example: true
@@ -7448,10 +6984,29 @@ components:
               text: 'Just launched our new feature!'
 
     RadarItem:
-      description: Trending topic with score, category, source, and region.
+      description: Trending topic with score, category, source, region, language, and source-specific metadata.
       type: object
-      required: [title, score, category, source, region, publishedAt]
+      required:
+        - id
+        - sourceId
+        - title
+        - score
+        - category
+        - source
+        - region
+        - language
+        - metadata
+        - publishedAt
+        - createdAt
       properties:
+        id:
+          type: string
+          description: Internal numeric identifier (stringified bigint).
+          example: '4712'
+        sourceId:
+          type: string
+          description: Source-specific identifier used for deduplication.
+          example: 'trustmrr_acme'
         title:
           type: string
           example: 'AI Revolution in 2025'
@@ -7463,115 +7018,63 @@ components:
           example: 95.5
         category:
           type: string
-          example: 'Technology'
+          enum:
+            [
+              general,
+              tech,
+              dev,
+              science,
+              culture,
+              politics,
+              business,
+              entertainment,
+            ]
+          example: 'tech'
         source:
           type: string
-          example: 'X'
+          enum:
+            [
+              github,
+              google_trends,
+              hacker_news,
+              polymarket,
+              reddit,
+              trustmrr,
+              wikipedia,
+            ]
+          example: 'trustmrr'
         region:
           type: string
-          example: 'US'
+          example: 'global'
+        language:
+          type: string
+          example: 'en'
+        metadata:
+          type: object
+          description: |
+            Source-specific fields. Shape varies per source:
+            - reddit: { subreddit: string, author: string }
+            - github: { starsToday: number }
+            - hacker_news: { points: number, numberComments: number }
+            - google_trends: { approxTraffic: number }
+            - polymarket: { volume24hr: number }
+            - wikipedia: { views: number }
+            - trustmrr: { mrr, growthPercent, last30Days, total, customers, activeSubscriptions, onSale, xHandle?, category?, askingPrice?, country?, growthMrrPercent?, multiple?, paymentProvider?, rank? }
+          additionalProperties: true
         publishedAt:
           type: string
           format: date-time
           example: '2025-01-15T12:00:00Z'
+        createdAt:
+          type: string
+          format: date-time
+          example: '2025-01-15T12:01:00Z'
         description:
           type: string
           example: 'AI is transforming every industry'
         imageUrl:
           type: string
           example: 'https://example.com/images/ai.jpg'
-
-    Integration:
-      description:
-        Third-party integration (e.g. Telegram) subscribed to monitor events.
-      type: object
-      required: [id, type, name, config, eventTypes, isActive, createdAt]
-      properties:
-        id:
-          type: string
-          example: '42'
-        type:
-          type: string
-          enum: [telegram]
-          x-stainless-const: true
-          example: 'telegram'
-        name:
-          type: string
-          example: 'My Telegram Bot'
-        config:
-          type: object
-          additionalProperties: true
-          x-stainless-any: true
-          description: Integration config — shape varies by type (JSON)
-          x-stainless-terraform-type: string
-          example:
-            chatId: '-1001234567890'
-        eventTypes:
-          $ref: '#/components/schemas/EventTypeArray'
-          example: ['tweet.new', 'follower.gained']
-        isActive:
-          type: boolean
-          example: true
-        silentPush:
-          type: boolean
-          example: false
-        scopeAllMonitors:
-          type: boolean
-          example: true
-        messageTemplate:
-          type: string
-          example: 'New event: {{event.type}}'
-        filters:
-          type: object
-          additionalProperties: true
-          x-stainless-any: true
-          description: Event filter rules (JSON)
-          x-stainless-terraform-type: string
-          example:
-            minFollowers: 100
-        createdAt:
-          type: string
-          format: date-time
-          example: '2025-01-15T12:00:00Z'
-
-    IntegrationDelivery:
-      description:
-        Integration delivery attempt record with status and retry count.
-      type: object
-      required: [id, eventType, status, attempts, createdAt]
-      properties:
-        id:
-          type: string
-          example: '42'
-        eventType:
-          type: string
-          example: 'tweet.new'
-        status:
-          type: string
-          example: 'delivered'
-        attempts:
-          type: integer
-          example: 1
-        createdAt:
-          type: string
-          format: date-time
-          example: '2025-01-15T12:00:00Z'
-        deliveredAt:
-          type: string
-          format: date-time
-          example: '2025-01-15T12:00:01Z'
-        lastError:
-          type: string
-          example: ''
-        lastStatusCode:
-          type: integer
-          example: 200
-        sourceId:
-          type: string
-          example: '100'
-        sourceType:
-          type: string
-          example: 'monitor'
 
     XAccount:
       description: Linked X account summary with username and connection status.
@@ -7661,12 +7164,11 @@ components:
 
     SanitizedXAccount:
       description: >
-        Sanitized X account summary returned by connect and reauth. Includes
-        an optional `loginCountry` field surfaced only when the declared
-        proxy region had no Driver capacity and the login fell back to a
-        single US consumer device for this one-time action. Future activity
-        continues to use the selected `proxy_country`; the field is omitted
-        on normal logins.
+        Sanitized X account summary returned by connect and reauth. Includes an
+        optional `loginCountry` field surfaced only when the declared proxy
+        region had no Driver capacity and the login fell back to a single US
+        consumer device for this one-time action. Future activity continues to
+        use the selected `proxy_country`; the field is omitted on normal logins.
       type: object
       required: [id, xUserId, xUsername, status, health, createdAt]
       properties:
@@ -7701,10 +7203,10 @@ components:
         loginCountry:
           type: string
           description: >
-            ISO-3166-1 alpha-2 country code of the Driver consumer device
-            used for this login. Present only when the US fallback was
-            triggered because Driver had no capacity in the declared region.
-            Omitted otherwise.
+            ISO-3166-1 alpha-2 country code of the Driver consumer device used
+            for this login. Present only when the US fallback was triggered
+            because Driver had no capacity in the declared region. Omitted
+            otherwise.
           example: 'US'
 
     XAccountBody:
