@@ -26,7 +26,7 @@ Two methods:
 
 32 X-API endpoints accept anonymous MPP payments via Tempo (USDC). No account or API key required.
 
-Protocol flow: Client requests endpoint → Server returns 402 with `WWW-Authenticate: Payment` challenge → Client pays via Tempo → Client retries with `Authorization: Payment` credential → Server returns 200 with `Payment-Receipt` header.
+Protocol flow: Client requests endpoint → Server returns 402 with `WWW-Authenticate: Payment` challenge → Client pays via Tempo → Client retries with `Authorization: Payment` credential → Server returns 200 (success) or 4xx/5xx (upstream failure) with `Payment-Receipt` header. Receipt is attached to every settled charge-intent response.
 
 Payment intents:
 - `charge`: Fixed cost per call (tweet lookup, user lookup, follower check, article, trends, community info)
@@ -75,7 +75,7 @@ MPP setup steps:
 2. Create a Tempo account funded with USDC via `mppx account create` then `mppx account export` to print the hex private key. The web wallet at [wallet.tempo.xyz/welcome](https://wallet.tempo.xyz/welcome) can be used as a USDC funding source (send USDC from it to the local account's address) but cannot be imported into `mppx`
 3. Set env var: `TEMPO_PRIVATE_KEY=<66-char hex private key>` (client-side wallet private key; distinct from Xquik's server-side `TEMPO_SIGNING_KEY`)
 4. Wrap fetch calls with `mppx`: the SDK intercepts 402 responses, pays, and retries automatically
-5. Check `Payment-Receipt` header on 200 responses for settlement confirmation
+5. Check `Payment-Receipt` header on every settled response (200 success or 4xx/5xx upstream failure) for settlement confirmation
 
 ## Base URLs
 
