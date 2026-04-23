@@ -77,44 +77,44 @@ security:
   - oauthBearer: []
 
 tags:
-  - name: Tweets
-    description: Look up, search, and analyze individual tweets
-  - name: Users
-    description: Look up, search, and explore user profiles and relationships
-  - name: Trends
-    description: Trending topics and hashtags by region
-  - name: Communities
-    description: X Community info, members, and tweets
-  - name: Lists
-    description: X List followers, members, and tweets
+  - name: API Keys
+    description: API key management (session auth only)
+  - name: Account
+    description: Account info and settings
   - name: Articles
     description: Long-form X Article extraction
-  - name: Media
-    description: Media upload and download
+  - name: Communities
+    description: X Community info, members, and tweets
   - name: Composition
     description: AI tweet composition, drafts, writing styles, and radar
   - name: Draws
     description: Giveaway draws from tweet replies
-  - name: Extractions
-    description: Bulk data extraction (20 tool types)
-  - name: Monitors
-    description: Real-time X account monitoring
   - name: Events
     description: Activity events from monitored accounts
-  - name: Webhooks
-    description: Webhook endpoint management and delivery
-  - name: Account
-    description: Account info and settings
-  - name: API Keys
-    description: API key management (session auth only)
+  - name: Extractions
+    description: Bulk data extraction (20 tool types)
+  - name: Lists
+    description: X List followers, members, and tweets
+  - name: Media
+    description: Media upload and download
+  - name: Monitors
+    description: Real-time X account monitoring
   - name: Subscribe
     description: Subscription, billing, and credits
+  - name: Support
+    description: Support ticket management
+  - name: Trends
+    description: Trending topics and hashtags by region
+  - name: Tweets
+    description: Look up, search, and analyze individual tweets
+  - name: Users
+    description: Look up, search, and explore user profiles and relationships
+  - name: Webhooks
+    description: Webhook endpoint management and delivery
   - name: X Accounts
     description: Connected X account management
   - name: X Write
     description: X write actions (tweets, likes, follows, DMs)
-  - name: Support
-    description: Support ticket management
 paths:
   # ── Account ──────────────────────────────────────────────
   /account:
@@ -173,7 +173,8 @@ paths:
                       autoTopupEnabled: false
                   xUsername:
                     type: string
-                    description: Linked X username, omitted when no X account is connected.
+                    description:
+                      Linked X username, omitted when no X account is connected.
                     example: elonmusk
               example:
                 plan: active
@@ -1077,7 +1078,10 @@ paths:
                     example: []
                   nextCursor:
                     type: string
-                    description: Opaque cursor for the next page (present only when hasMore is true).
+                    description:
+                      Opaque cursor for the next page (present only when hasMore
+                      is true).
+                    example: 'eyJ0IjoxNzM5OTcyODAwLCJpIjoiOTk5In0='
               example:
                 hasMore: false
                 items: []
@@ -2376,11 +2380,7 @@ paths:
         '402':
           $ref: '#/components/responses/PaymentRequired'
         '403':
-          description: Account needs reauth or is restricted
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+          $ref: '#/components/responses/AccountAuthError'
         '422':
           $ref: '#/components/responses/WriteRejected'
         '429':
@@ -2835,11 +2835,7 @@ paths:
         '402':
           $ref: '#/components/responses/PaymentRequired'
         '403':
-          description: Account needs reauth or is restricted
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+          $ref: '#/components/responses/AccountAuthError'
         '422':
           $ref: '#/components/responses/WriteRejected'
         '429':
@@ -2877,11 +2873,7 @@ paths:
         '402':
           $ref: '#/components/responses/PaymentRequired'
         '403':
-          description: Account needs reauth or is restricted
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+          $ref: '#/components/responses/AccountAuthError'
         '422':
           $ref: '#/components/responses/WriteRejected'
         '429':
@@ -2921,11 +2913,7 @@ paths:
         '402':
           $ref: '#/components/responses/PaymentRequired'
         '403':
-          description: Account needs reauth or is restricted
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+          $ref: '#/components/responses/AccountAuthError'
         '422':
           $ref: '#/components/responses/WriteRejected'
         '429':
@@ -2963,11 +2951,7 @@ paths:
         '402':
           $ref: '#/components/responses/PaymentRequired'
         '403':
-          description: Account needs reauth or is restricted
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+          $ref: '#/components/responses/AccountAuthError'
         '422':
           $ref: '#/components/responses/WriteRejected'
         '429':
@@ -2976,6 +2960,93 @@ paths:
           $ref: '#/components/responses/TransientError'
         '500':
           $ref: '#/components/responses/WriteError'
+
+  /x/users/batch:
+    get:
+      operationId: getBatchUsers
+      summary: Look up multiple users by IDs in one call
+      tags:
+        - Users
+      security:
+        - apiKey: []
+        - oauthBearer: []
+        - {}
+      x-payment-info:
+        protocols:
+          - x402: {}
+          - mpp:
+              method: ''
+              intent: session
+              currency: ''
+        price:
+          mode: dynamic
+          min: '0.00015'
+          max: '0.01500'
+          currency: USD
+      parameters:
+        - name: ids
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Comma-separated user IDs (max 100)
+      responses:
+        '200':
+          description: List of users
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedUsers'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
+
+  /x/users/search:
+    get:
+      operationId: searchUsers
+      summary: Search users by name or username
+      tags:
+        - Users
+      security:
+        - apiKey: []
+        - oauthBearer: []
+        - {}
+      x-payment-info:
+        protocols:
+          - x402: {}
+          - mpp:
+              method: ''
+              intent: session
+              currency: ''
+        price:
+          mode: dynamic
+          min: '0.00015'
+          max: '0.01500'
+          currency: USD
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+          description: User search query
+        - name: cursor
+          in: query
+          schema:
+            type: string
+          description: Pagination cursor for user search
+      responses:
+        '200':
+          description: User search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedUsers'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
 
   /x/users/{id}:
     get:
@@ -3057,11 +3128,7 @@ paths:
         '402':
           $ref: '#/components/responses/PaymentRequired'
         '403':
-          description: Account needs reauth or is restricted
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+          $ref: '#/components/responses/AccountAuthError'
         '422':
           $ref: '#/components/responses/WriteRejected'
         '429':
@@ -3099,11 +3166,7 @@ paths:
         '402':
           $ref: '#/components/responses/PaymentRequired'
         '403':
-          description: Account needs reauth or is restricted
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+          $ref: '#/components/responses/AccountAuthError'
         '422':
           $ref: '#/components/responses/WriteRejected'
         '429':
@@ -3256,11 +3319,7 @@ paths:
         '402':
           $ref: '#/components/responses/PaymentRequired'
         '403':
-          description: Account needs reauth or is restricted
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+          $ref: '#/components/responses/AccountAuthError'
         '422':
           $ref: '#/components/responses/WriteRejected'
         '429':
@@ -3325,11 +3384,7 @@ paths:
         '402':
           $ref: '#/components/responses/PaymentRequired'
         '403':
-          description: Account needs reauth or is restricted
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+          $ref: '#/components/responses/AccountAuthError'
         '422':
           $ref: '#/components/responses/WriteRejected'
         '429':
@@ -3473,11 +3528,7 @@ paths:
         '402':
           $ref: '#/components/responses/PaymentRequired'
         '403':
-          description: Account needs reauth or is restricted
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+          $ref: '#/components/responses/AccountAuthError'
         '422':
           $ref: '#/components/responses/WriteRejected'
         '429':
@@ -3526,11 +3577,7 @@ paths:
         '402':
           $ref: '#/components/responses/PaymentRequired'
         '403':
-          description: Account needs reauth or is restricted
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+          $ref: '#/components/responses/AccountAuthError'
         '422':
           $ref: '#/components/responses/WriteRejected'
         '429':
@@ -3579,11 +3626,7 @@ paths:
         '402':
           $ref: '#/components/responses/PaymentRequired'
         '403':
-          description: Account needs reauth or is restricted
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+          $ref: '#/components/responses/AccountAuthError'
         '422':
           $ref: '#/components/responses/WriteRejected'
         '429':
@@ -3657,11 +3700,7 @@ paths:
         '402':
           $ref: '#/components/responses/PaymentRequired'
         '403':
-          description: Account needs reauth or is restricted
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+          $ref: '#/components/responses/AccountAuthError'
         '422':
           $ref: '#/components/responses/WriteRejected'
         '429':
@@ -3743,11 +3782,7 @@ paths:
         '402':
           $ref: '#/components/responses/PaymentRequired'
         '403':
-          description: Account needs reauth or is restricted
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+          $ref: '#/components/responses/AccountAuthError'
         '422':
           $ref: '#/components/responses/WriteRejected'
         '429':
@@ -3784,11 +3819,7 @@ paths:
         '402':
           $ref: '#/components/responses/PaymentRequired'
         '403':
-          description: Account needs reauth or is restricted
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+          $ref: '#/components/responses/AccountAuthError'
         '422':
           $ref: '#/components/responses/WriteRejected'
         '429':
@@ -3825,6 +3856,7 @@ paths:
                         xUserId: '9876543210'
                         xUsername: 'elonmusk'
                         status: 'active'
+                        health: 'healthy'
                         createdAt: '2025-01-15T12:00:00Z'
               example:
                 accounts:
@@ -3832,6 +3864,7 @@ paths:
                     xUserId: '9876543210'
                     xUsername: 'elonmusk'
                     status: 'active'
+                    health: 'healthy'
                     createdAt: '2025-01-15T12:00:00Z'
         '401':
           $ref: '#/components/responses/Unauthenticated'
@@ -4062,11 +4095,11 @@ paths:
             type: integer
             default: 1
           description:
-            'Region WOEID (1=Worldwide, 23424977=US, 23424975=UK,
+            'Region Yahoo WOEID code (1=Worldwide, 23424977=US, 23424975=UK,
             23424969=Turkey)'
         - name: count
           in: query
-          description: Number of trending topics to return (1-50, default 30)
+          description: Number of trending topics returned (1-50, default 30)
           schema:
             type: integer
             default: 30
@@ -5791,93 +5824,6 @@ paths:
         '402':
           $ref: '#/components/responses/PaymentRequired'
 
-  /x/users/batch:
-    get:
-      operationId: getBatchUsers
-      summary: Look up multiple users by IDs in one call
-      tags:
-        - Users
-      security:
-        - apiKey: []
-        - oauthBearer: []
-        - {}
-      x-payment-info:
-        protocols:
-          - x402: {}
-          - mpp:
-              method: ''
-              intent: session
-              currency: ''
-        price:
-          mode: dynamic
-          min: '0.00015'
-          max: '0.01500'
-          currency: USD
-      parameters:
-        - name: ids
-          in: query
-          required: true
-          schema:
-            type: string
-          description: Comma-separated user IDs (max 100)
-      responses:
-        '200':
-          description: List of users
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PaginatedUsers'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
-
-  /x/users/search:
-    get:
-      operationId: searchUsers
-      summary: Search users by name or username
-      tags:
-        - Users
-      security:
-        - apiKey: []
-        - oauthBearer: []
-        - {}
-      x-payment-info:
-        protocols:
-          - x402: {}
-          - mpp:
-              method: ''
-              intent: session
-              currency: ''
-        price:
-          mode: dynamic
-          min: '0.00015'
-          max: '0.01500'
-          currency: USD
-      parameters:
-        - name: q
-          in: query
-          required: true
-          schema:
-            type: string
-          description: User search query
-        - name: cursor
-          in: query
-          schema:
-            type: string
-          description: Pagination cursor for user search
-      responses:
-        '200':
-          description: User search results
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PaginatedUsers'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
-
   /x/users/{id}/followers:
     get:
       operationId: getUserFollowers
@@ -6185,6 +6131,15 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
+    AccountAuthError:
+      description: >
+        The connected X account needs reauthentication or is currently
+        restricted (locked, suspended, or recovering). Returns an error code of
+        `account_needs_reauth` or `account_restricted`.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
     WriteError:
       description: >
         Write operation failed. Possible error codes include x_write_failed,
@@ -6192,22 +6147,6 @@ components:
         reached daily posting limit, wait 24 hours), and x_write_unconfirmed
         (202 - action may have completed but could not be confirmed, verify
         before retrying).
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-    AccountNeedsReauth:
-      description: >
-        The connected X account failed a recent login attempt and needs to be
-        reconnected. Returns `{ "error": "account_needs_reauth" }`.
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-    AccountRestricted:
-      description: >
-        The connected X account is locked, suspended, recovering, or temporarily
-        restricted. Returns `{ "error": "account_restricted" }`.
       content:
         application/json:
           schema:
@@ -6999,7 +6938,9 @@ components:
               text: 'Just launched our new feature!'
 
     RadarItem:
-      description: Trending topic with score, category, source, region, language, and source-specific metadata.
+      description:
+        Trending topic with score, category, source, region, language, and
+        source-specific metadata.
       type: object
       required:
         - id
