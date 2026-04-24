@@ -2306,9 +2306,7 @@ paths:
         - oauthBearer: []
       requestBody:
         required: true
-        description:
-          Account and tweet content. Requires text, media, or both. media and
-          media_ids are mutually exclusive.
+        description: Account and tweet content. Requires text, media, or both.
         content:
           application/json:
             schema:
@@ -2340,17 +2338,8 @@ paths:
                   items:
                     type: string
                   maxItems: 4
-                  description:
-                    Array of media URLs to attach (mutually exclusive with
-                    media_ids)
+                  description: Array of public image URLs to attach (max 4).
                   example: ['https://example.com/image.jpg']
-                media_ids:
-                  type: array
-                  items:
-                    type: string
-                  description:
-                    Array of media IDs to attach (mutually exclusive with media)
-                  example: ['1234567890123456789']
             example:
               account: '@elonmusk'
               text: 'Just launched our new feature!'
@@ -2374,7 +2363,26 @@ paths:
                 tweetId: '1234567890'
                 success: true
         '400':
-          $ref: '#/components/responses/InvalidInput'
+          description: Invalid input or unsupported field
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                InvalidInput:
+                  summary: Invalid input
+                  value:
+                    error: invalid_input
+                    message: Either text or media is required
+                UnsupportedField:
+                  summary: Unsupported field on POST /x/tweets
+                  value:
+                    error: unsupported_field
+                    message: media_ids is not supported on POST /x/tweets. Pass media as an array of public image URLs.
+                    retryable: false
+                    details:
+                      action: create_tweet
+                      suggestion: Use the media field with public image URLs instead of media_ids.
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '402':
