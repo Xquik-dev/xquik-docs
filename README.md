@@ -6,18 +6,18 @@ This repository powers the developer reference: REST API, webhooks, MCP server, 
 
 ## What's covered
 
-- **REST API** - 93 endpoint pages spanning account, api-keys, monitors, events, webhooks, draws, extractions, x, trends, radar, styles, drafts, compose, x-accounts, x-write, support, and integrations.
+- **REST API** - 111 endpoint pages spanning account, api-keys, monitors, events, webhooks, draws, extractions, x, trends, radar, styles, drafts, compose, x-accounts, x-write, support, and integrations.
 - **Webhooks** - HMAC SHA-256 signature verification, retry semantics, payload schemas.
 - **MCP server** - Model Context Protocol integration for Claude, ChatGPT, Cursor, and other AI agents. Tool reference + setup.
 - **OAuth 2.1** - Authorization Code + PKCE flow, scopes, token refresh.
 - **Guides** - Workflows, error handling, rate limits, billing, trends, extraction workflow, architecture, troubleshooting, types, webhook testing.
-- **SDKs** - 10 generated client libraries (Python, TypeScript, Go, Rust, Java, C#, Ruby, PHP, Kotlin, Swift) with auto-pagination, retry, and typed responses.
+- **SDKs** - 10 generated client libraries (TypeScript, Python, Go, Java, Kotlin, C#, Ruby, PHP, CLI as Go binary, Terraform provider) with auto-pagination, retry, and typed responses.
 - **OpenAPI 3.1** - Machine-readable spec at `openapi.yaml`, used by Mintlify for endpoint pages and by Stainless for SDK generation.
 
 ## Repository layout
 
 ```
-api-reference/      93 endpoint pages, grouped by resource
+api-reference/      111 endpoint pages, grouped by resource
 guides/             11 guides (workflows, errors, rate limits, billing, etc.)
 webhooks/           Overview + signature verification
 mcp/                MCP server overview + tool reference
