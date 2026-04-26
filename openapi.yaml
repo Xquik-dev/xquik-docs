@@ -5095,6 +5095,16 @@ paths:
           schema:
             type: string
           description: Target user ID
+        - name: account
+          in: query
+          required: true
+          schema:
+            type: string
+          description: >
+            X handle (without the `@` prefix) of the connected X account whose
+            session reads the conversation. The account must be a participant in
+            the conversation - DM history cannot be routed through the shared
+            read pool.
         - name: cursor
           in: query
           schema:
@@ -5135,6 +5145,12 @@ paths:
                         createdAt:
                           type: string
                           example: '2025-01-15T12:00:00Z'
+                        mediaUrl:
+                          type: string
+                          example: 'https://pbs.twimg.com/dm_media/abc.jpg'
+                          description: >
+                            URL of attached media (image, GIF, or video).
+                            Omitted when the message has no media attachment.
                     example:
                       - id: '1234567890123456789'
                         text: 'Hey, how are you?'
@@ -5156,11 +5172,58 @@ paths:
                 receiverId: '42'
                 createdAt: 'createdAt_value'
         '400':
-          $ref: '#/components/responses/InvalidInput'
+          description: >
+            Invalid input. Either `invalid_user_id` (path user ID is empty or
+            invalid) or `account_required` (the `account` query parameter was
+            missing or empty).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalidUserId:
+                  summary: Invalid user ID
+                  value:
+                    error: invalid_user_id
+                accountRequired:
+                  summary: Account query parameter missing
+                  value:
+                    error: account_required
+                    message: >-
+                      Provide an account query parameter naming a connected X
+                      account. DM history requires a participant session.
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '402':
           $ref: '#/components/responses/PaymentRequired'
+        '403':
+          description: >
+            DM read forbidden. Either the connected account is not a participant
+            in this conversation (`dm_not_permitted`), the account is suspended,
+            locked, or otherwise restricted (`account_restricted`), or the
+            account session needs to be re-authenticated
+            (`account_needs_reauth`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                dmNotPermitted:
+                  summary: Account is not a conversation participant
+                  value:
+                    error: dm_not_permitted
+                    message: >-
+                      X rejected the DM read. The connected account is not a
+                      participant in this conversation, or its session expired.
+                      Reconnect the account on the dashboard and try again.
+                accountRestricted:
+                  summary: Connected account is restricted
+                  value:
+                    error: account_restricted
+                accountNeedsReauth:
+                  summary: Connected account needs reauthentication
+                  value:
+                    error: account_needs_reauth
         '502':
           $ref: '#/components/responses/XApiError'
 
@@ -6281,7 +6344,7 @@ components:
     ConnectUserLookupFailed:
       description: >
         The X username could not be resolved. Verify the handle is correct and
-        the account exists. Returns `{ "error": "user_lookup_failed" }`.
+        the account exists. Returns `{ "error": "x_user_lookup_failed" }`.
       content:
         application/json:
           schema:
