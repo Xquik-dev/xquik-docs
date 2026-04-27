@@ -356,7 +356,10 @@ func createWebhook() string {
 
 ### Step 3: Handle & verify events
 
-Build a webhook handler that verifies the HMAC signature before processing events.
+Build a webhook handler that verifies the HMAC signature AND rejects stale or
+replayed requests before processing events. See
+[Signature verification](/webhooks/verification) for the full pattern (Node.js,
+Python, Go).
 
 <CodeGroup>
 
@@ -366,22 +369,39 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 
 const app = express();
 const WEBHOOK_SECRET = "your_webhook_secret_here";
+const FIVE_MINUTES_MS = 5 * 60 * 1000;
+const seenNonces = new Map();
 
-function verifySignature(payload, signature, secret) {
+function verifyWebhook(req, secret) {
+  const timestamp = req.headers["x-xquik-timestamp"];
+  const nonce = req.headers["x-xquik-nonce"];
+  const signature = req.headers["x-xquik-signature"];
+  const rawBody = req.body.toString();
+
+  if (!timestamp || !nonce || !signature) return false;
+
+  const ts = Number(timestamp);
+  if (!Number.isFinite(ts) || Math.abs(Date.now() - ts) > FIVE_MINUTES_MS) {
+    return false;
+  }
+
+  const now = Date.now();
+  for (const [n, exp] of seenNonces) if (exp <= now) seenNonces.delete(n);
+  if (seenNonces.has(nonce)) return false;
+  seenNonces.set(nonce, now + FIVE_MINUTES_MS);
+
+  const signingString = `${timestamp}.${nonce}.${rawBody}`;
   const expected =
-    "sha256=" + createHmac("sha256", secret).update(payload).digest("hex");
+    "sha256=" + createHmac("sha256", secret).update(signingString).digest("hex");
   return timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
 }
 
 app.post("/webhook", express.raw({ type: "application/json" }), (req, res) => {
-  const signature = req.headers["x-xquik-signature"];
-  const payload = req.body.toString();
-
-  if (!verifySignature(payload, signature, WEBHOOK_SECRET)) {
+  if (!verifyWebhook(req, WEBHOOK_SECRET)) {
     return res.status(401).send("Invalid signature");
   }
 
-  const event = JSON.parse(payload);
+  const event = JSON.parse(req.body.toString());
 
   switch (event.eventType) {
     case "tweet.new":

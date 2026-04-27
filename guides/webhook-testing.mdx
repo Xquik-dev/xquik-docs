@@ -108,12 +108,16 @@ Simulate a webhook delivery to your local handler without waiting for real event
 # Generate a test signature
 SECRET="your_webhook_secret_here"
 PAYLOAD='{"eventType":"tweet.new","username":"elonmusk","data":{"id":"1893456789012345678","text":"The future is now.","author":{"id":"44196397","userName":"elonmusk","name":"Elon Musk"},"isRetweet":false,"isReply":false,"isQuote":false,"createdAt":"2026-02-24T14:22:00.000Z"}}'
+TIMESTAMP=$(date +%s)000
+NONCE=$(openssl rand -hex 16)
 
-SIGNATURE="sha256=$(echo -n "$PAYLOAD" | openssl dgst -sha256 -hmac "$SECRET" | cut -d' ' -f2)"
+SIGNATURE="sha256=$(printf '%s.%s.%s' "$TIMESTAMP" "$NONCE" "$PAYLOAD" | openssl dgst -sha256 -hmac "$SECRET" | cut -d' ' -f2)"
 
 # Send to your local server
 curl -X POST http://localhost:3000/webhook \
   -H "Content-Type: application/json" \
+  -H "X-Xquik-Timestamp: $TIMESTAMP" \
+  -H "X-Xquik-Nonce: $NONCE" \
   -H "X-Xquik-Signature: $SIGNATURE" \
   -d "$PAYLOAD"
 ```
