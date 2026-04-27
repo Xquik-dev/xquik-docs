@@ -1,16 +1,31 @@
 ---
 title: Signature verification
 description: Verify HMAC-SHA256 signatures on incoming webhook deliveries
-keywords: ["signature verification", "HMAC-SHA256", "webhook security", "timingSafeEqual"]
+keywords: ["signature verification", "HMAC-SHA256", "webhook security", "timingSafeEqual", "replay protection"]
 ---
 
-Every webhook delivery includes an `X-Xquik-Signature` header containing an HMAC-SHA256 signature. Always verify this signature before processing events.
+Every webhook delivery is signed with HMAC-SHA256 over a string built from a
+timestamp, nonce, and the raw body. Always verify the signature AND reject
+stale or replayed requests before processing events.
+
+## Headers sent with every delivery
+
+| Header | Description |
+| --- | --- |
+| `X-Xquik-Timestamp` | Unix epoch milliseconds when Xquik signed the request. |
+| `X-Xquik-Nonce` | 16 random bytes (hex) unique per request. |
+| `X-Xquik-Signature` | `sha256=<hex>` HMAC of `<timestamp>.<nonce>.<rawBody>` keyed with the endpoint secret. |
+| `Content-Type` | Always `application/json`. |
+| `User-Agent` | `xquik-webhooks/1.0 (+https://xquik.com)`. |
 
 ## How it works
 
-1. Xquik computes `sha256=` + HMAC-SHA256(webhook secret, raw JSON body)
-2. The result is sent in the `X-Xquik-Signature` header
-3. Your server recomputes the signature and compares using constant-time comparison
+1. Xquik computes the signing string `<timestamp>.<nonce>.<rawBody>`.
+2. Xquik computes `sha256=` + HMAC-SHA256(webhook secret, signing string).
+3. Your server recomputes the signature with the same secret over the raw body.
+4. Reject the request if the signature does not match in constant time.
+5. Reject the request if the timestamp is older than 5 minutes (clock-skew tolerant).
+6. Reject the request if the nonce was already seen in the last 5 minutes (replay protection).
 
 ## Implementation
 
@@ -18,31 +33,54 @@ Every webhook delivery includes an `X-Xquik-Signature` header containing an HMAC
 
 ```bash cURL (test)
 # Generate a test signature to verify your implementation
-echo -n '{"test":"payload"}' | openssl dgst -sha256 -hmac "your_webhook_secret" | sed 's/.*= /sha256=/'
+TS=$(date +%s)000
+NONCE=$(openssl rand -hex 16)
+BODY='{"test":"payload"}'
+SIG=$(printf "%s.%s.%s" "$TS" "$NONCE" "$BODY" | openssl dgst -sha256 -hmac "your_webhook_secret" | sed 's/.*= /sha256=/')
+echo "X-Xquik-Timestamp: $TS"
+echo "X-Xquik-Nonce: $NONCE"
+echo "X-Xquik-Signature: $SIG"
 ```
 
 ```javascript Node.js
 import { createHmac, timingSafeEqual } from "node:crypto";
 
-function verifyWebhookSignature(payload, signature, secret) {
-  const expected =
-    "sha256=" + createHmac("sha256", secret).update(payload).digest("hex");
+const FIVE_MINUTES_MS = 5 * 60 * 1000;
+const seenNonces = new Map(); // nonce -> expiresAt
 
+function verifyWebhook(req, secret) {
+  const timestamp = req.headers["x-xquik-timestamp"];
+  const nonce = req.headers["x-xquik-nonce"];
+  const signature = req.headers["x-xquik-signature"];
+  const rawBody = req.body.toString();
+
+  if (!timestamp || !nonce || !signature) return false;
+
+  // Reject stale requests (clock-skew tolerant).
+  const ts = Number(timestamp);
+  if (!Number.isFinite(ts) || Math.abs(Date.now() - ts) > FIVE_MINUTES_MS) {
+    return false;
+  }
+
+  // Reject replays.
+  const now = Date.now();
+  for (const [n, exp] of seenNonces) if (exp <= now) seenNonces.delete(n);
+  if (seenNonces.has(nonce)) return false;
+  seenNonces.set(nonce, now + FIVE_MINUTES_MS);
+
+  const signingString = `${timestamp}.${nonce}.${rawBody}`;
+  const expected =
+    "sha256=" + createHmac("sha256", secret).update(signingString).digest("hex");
   return timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
 }
 
 // Express example
 app.post("/webhook", express.raw({ type: "application/json" }), (req, res) => {
-  const signature = req.headers["x-xquik-signature"];
-  const payload = req.body.toString();
-
-  if (!verifyWebhookSignature(payload, signature, WEBHOOK_SECRET)) {
+  if (!verifyWebhook(req, WEBHOOK_SECRET)) {
     return res.status(401).send("Invalid signature");
   }
-
-  const event = JSON.parse(payload);
+  const event = JSON.parse(req.body.toString());
   // Process event...
-
   res.status(200).send("OK");
 });
 ```
@@ -50,27 +88,49 @@ app.post("/webhook", express.raw({ type: "application/json" }), (req, res) => {
 ```python Python
 import hmac
 import hashlib
+import time
 from flask import Flask, request
 
 app = Flask(__name__)
+FIVE_MINUTES_MS = 5 * 60 * 1000
+_seen_nonces: dict[str, int] = {}
 
-def verify_webhook_signature(payload: bytes, signature: str, secret: str) -> bool:
+def verify_webhook(req, secret: str) -> bool:
+    timestamp = req.headers.get("X-Xquik-Timestamp", "")
+    nonce = req.headers.get("X-Xquik-Nonce", "")
+    signature = req.headers.get("X-Xquik-Signature", "")
+    raw_body = req.get_data()
+
+    if not (timestamp and nonce and signature):
+        return False
+
+    try:
+        ts = int(timestamp)
+    except ValueError:
+        return False
+    now_ms = int(time.time() * 1000)
+    if abs(now_ms - ts) > FIVE_MINUTES_MS:
+        return False
+
+    expired = [n for n, exp in _seen_nonces.items() if exp <= now_ms]
+    for n in expired:
+        _seen_nonces.pop(n, None)
+    if nonce in _seen_nonces:
+        return False
+    _seen_nonces[nonce] = now_ms + FIVE_MINUTES_MS
+
+    signing_string = f"{timestamp}.{nonce}.".encode() + raw_body
     expected = "sha256=" + hmac.new(
-        secret.encode(), payload, hashlib.sha256
+        secret.encode(), signing_string, hashlib.sha256
     ).hexdigest()
     return hmac.compare_digest(expected, signature)
 
 @app.route("/webhook", methods=["POST"])
 def webhook():
-    signature = request.headers.get("X-Xquik-Signature", "")
-    payload = request.get_data()
-
-    if not verify_webhook_signature(payload, signature, WEBHOOK_SECRET):
+    if not verify_webhook(request, WEBHOOK_SECRET):
         return "Invalid signature", 401
-
     event = request.get_json()
     # Process event...
-
     return "OK", 200
 ```
 
@@ -84,24 +144,56 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
+	"sync"
+	"time"
 )
 
-func verifySignature(payload []byte, signature, secret string) bool {
+const fiveMinutesMs = int64(5 * 60 * 1000)
+
+var (
+	seenNonces = sync.Map{}
+)
+
+func verifyWebhook(r *http.Request, secret string) bool {
+	timestamp := r.Header.Get("X-Xquik-Timestamp")
+	nonce := r.Header.Get("X-Xquik-Nonce")
+	signature := r.Header.Get("X-Xquik-Signature")
+	rawBody, _ := io.ReadAll(r.Body)
+
+	if timestamp == "" || nonce == "" || signature == "" {
+		return false
+	}
+
+	ts, err := strconv.ParseInt(timestamp, 10, 64)
+	if err != nil {
+		return false
+	}
+	nowMs := time.Now().UnixMilli()
+	diff := nowMs - ts
+	if diff < 0 {
+		diff = -diff
+	}
+	if diff > fiveMinutesMs {
+		return false
+	}
+
+	if _, replayed := seenNonces.LoadOrStore(nonce, nowMs+fiveMinutesMs); replayed {
+		return false
+	}
+
+	signingString := fmt.Sprintf("%s.%s.%s", timestamp, nonce, string(rawBody))
 	mac := hmac.New(sha256.New, []byte(secret))
-	mac.Write(payload)
+	mac.Write([]byte(signingString))
 	expected := "sha256=" + hex.EncodeToString(mac.Sum(nil))
 	return hmac.Equal([]byte(expected), []byte(signature))
 }
 
 func webhookHandler(w http.ResponseWriter, r *http.Request) {
-	payload, _ := io.ReadAll(r.Body)
-	signature := r.Header.Get("X-Xquik-Signature")
-
-	if !verifySignature(payload, signature, webhookSecret) {
+	if !verifyWebhook(r, webhookSecret) {
 		http.Error(w, "Invalid signature", http.StatusUnauthorized)
 		return
 	}
-
 	// Process event...
 	fmt.Fprint(w, "OK")
 }
