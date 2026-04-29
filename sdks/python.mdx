@@ -1,0 +1,108 @@
+---
+title: Python SDK
+sidebarTitle: Python
+description: Install and use the official Xquik Python SDK for sync and async X API workflows.
+keywords: ["Python SDK", "Twitter scraper Python", "X API Python", "async SDK"]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+<LlmsDirective />
+
+Use the Python SDK for typed sync or async access to Xquik from scripts, workers, notebooks, and backend services.
+
+## Install
+
+```bash
+pip install x_twitter_scraper
+```
+
+## Authenticate
+
+```bash
+export X_TWITTER_SCRAPER_API_KEY="xq_YOUR_KEY_HERE"
+```
+
+```python
+import os
+from x_twitter_scraper import XTwitterScraper
+
+client = XTwitterScraper(
+    api_key=os.environ.get("X_TWITTER_SCRAPER_API_KEY"),
+)
+```
+
+## Basic Example
+
+```python
+from x_twitter_scraper import XTwitterScraper
+
+client = XTwitterScraper()
+
+tweets = client.x.tweets.search(
+    q="from:elonmusk",
+    limit=10,
+)
+print(tweets.to_json())
+```
+
+Async clients use the same generated method names:
+
+```python
+import asyncio
+from x_twitter_scraper import AsyncXTwitterScraper
+
+client = AsyncXTwitterScraper()
+
+async def main() -> None:
+    tweets = await client.x.tweets.search(q="xquik", limit=10)
+    print(tweets.to_json())
+
+asyncio.run(main())
+```
+
+## Error Handling
+
+All SDK exceptions inherit from `x_twitter_scraper.APIError`.
+
+| Status | Error class |
+| --- | --- |
+| 400 | `BadRequestError` |
+| 401 | `AuthenticationError` |
+| 403 | `PermissionDeniedError` |
+| 404 | `NotFoundError` |
+| 422 | `UnprocessableEntityError` |
+| 429 | `RateLimitError` |
+| 5xx | `InternalServerError` |
+
+```python
+import x_twitter_scraper
+
+try:
+    account = client.account.retrieve()
+except x_twitter_scraper.APIConnectionError as exc:
+    print(f"Connection failed: {exc.__cause__}")
+except x_twitter_scraper.APIStatusError as exc:
+    print(f"HTTP {exc.status_code}")
+```
+
+The client retries connection errors, 408, 409, 429, and 5xx responses by default. Pass `max_retries` when constructing the client to change retry behavior.
+
+## Pagination
+
+List endpoints return page models with `has_next_page` and cursor fields.
+
+```python
+page = client.x.tweets.search(q="xquik", limit=20)
+
+if page.has_next_page:
+    print("More results are available")
+```
+
+## Webhooks & References
+
+- [Webhook Overview](/webhooks/overview)
+- [Verify HMAC Signatures](/webhooks/verification)
+- [REST API Overview](/api-reference/overview)
+- [OpenAPI JSON](https://xquik.com/openapi.json)
+- [Source Repository](https://github.com/Xquik-dev/x-twitter-scraper-python)

@@ -1,0 +1,85 @@
+---
+title: Ruby SDK
+sidebarTitle: Ruby
+description: Install and use the official Xquik Ruby SDK for typed X API calls.
+keywords: ["Ruby SDK", "Ruby Twitter scraper", "X API Ruby", "Ruby gem"]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+<LlmsDirective />
+
+Use the Ruby SDK for Ruby 3.2+ applications that need typed REST access, retries, Yard docs, RBS, RBI, and connection pooling.
+
+## Install
+
+```bash
+gem install x-twitter-scraper
+```
+
+Or add it to your Gemfile:
+
+```ruby
+gem "x-twitter-scraper", "~> 0.4.0"
+```
+
+## Authenticate
+
+```bash
+export X_TWITTER_SCRAPER_API_KEY="xq_YOUR_KEY_HERE"
+```
+
+## Basic Example
+
+```ruby
+require "x_twitter_scraper"
+
+client = XTwitterScraper::Client.new(
+  api_key: ENV["X_TWITTER_SCRAPER_API_KEY"]
+)
+
+tweets = client.x.tweets.search(q: "from:elonmusk", limit: 10)
+puts(tweets.has_next_page)
+```
+
+## Error Handling
+
+All SDK errors inherit from `XTwitterScraper::Errors::APIError`.
+
+| Status | Error class |
+| --- | --- |
+| 400 | `BadRequestError` |
+| 401 | `AuthenticationError` |
+| 403 | `PermissionDeniedError` |
+| 404 | `NotFoundError` |
+| 422 | `UnprocessableEntityError` |
+| 429 | `RateLimitError` |
+| 5xx | `InternalServerError` |
+
+```ruby
+begin
+  account = client.account.retrieve
+rescue XTwitterScraper::Errors::APIConnectionError => e
+  warn("Connection failed: #{e.cause}")
+rescue XTwitterScraper::Errors::APIStatusError => e
+  warn("HTTP #{e.status}")
+end
+```
+
+## Pagination
+
+Paginated responses expose fields such as `has_next_page`. Pass the endpoint's cursor fields when requesting more pages.
+
+```ruby
+page = client.x.tweets.search(q: "xquik", limit: 20)
+puts("More results are available") if page.has_next_page
+```
+
+## Webhooks & References
+
+- [Search Tweets](/api-reference/x/search-tweets)
+- [Create Monitor](/api-reference/monitors/create)
+- [Webhook Overview](/webhooks/overview)
+- [Verify HMAC Signatures](/webhooks/verification)
+- [REST API Overview](/api-reference/overview)
+- [Source Repository](https://github.com/Xquik-dev/x-twitter-scraper-ruby)

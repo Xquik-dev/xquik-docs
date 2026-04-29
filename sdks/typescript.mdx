@@ -1,0 +1,108 @@
+---
+title: TypeScript SDK
+sidebarTitle: TypeScript
+description: Install and use the official Xquik TypeScript SDK for typed X API calls from Node.js, Bun, and backend services.
+keywords: ["TypeScript SDK", "Node.js Twitter scraper SDK", "X API TypeScript", "Bun SDK"]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+<LlmsDirective />
+
+Use the TypeScript SDK when you want typed request parameters, response models, retries, and autocomplete for Xquik REST API workflows in Node.js, Bun, or server-side TypeScript.
+
+## Install
+
+```bash
+npm install x-twitter-scraper
+```
+
+## Authenticate
+
+```bash
+export X_TWITTER_SCRAPER_API_KEY="xq_YOUR_KEY_HERE"
+```
+
+```ts
+import XTwitterScraper from "x-twitter-scraper";
+
+const client = new XTwitterScraper({
+  apiKey: process.env["X_TWITTER_SCRAPER_API_KEY"],
+});
+```
+
+## Basic Example
+
+Search tweets and write the first page as JSON:
+
+```ts
+import XTwitterScraper from "x-twitter-scraper";
+
+const client = new XTwitterScraper();
+
+const tweets = await client.x.tweets.search({
+  q: "from:elonmusk",
+  limit: 10,
+});
+
+process.stdout.write(JSON.stringify(tweets, null, 2));
+```
+
+Useful endpoints:
+
+- [Search Tweets](/api-reference/x/search-tweets)
+- [Get User](/api-reference/x/get-user)
+- [Create Monitor](/api-reference/monitors/create)
+- [Create Webhook](/api-reference/webhooks/create)
+
+## Error Handling
+
+The SDK throws typed errors for API failures:
+
+| Status | Error class |
+| --- | --- |
+| 400 | `BadRequestError` |
+| 401 | `AuthenticationError` |
+| 403 | `PermissionDeniedError` |
+| 404 | `NotFoundError` |
+| 422 | `UnprocessableEntityError` |
+| 429 | `RateLimitError` |
+| 5xx | `InternalServerError` |
+
+```ts
+import XTwitterScraper from "x-twitter-scraper";
+
+const client = new XTwitterScraper();
+
+try {
+  await client.account.retrieve();
+} catch (error) {
+  if (error instanceof XTwitterScraper.APIError) {
+    process.stderr.write(`HTTP ${error.status}\n`);
+  } else {
+    process.stderr.write("Network or timeout error\n");
+  }
+}
+```
+
+The client retries connection errors, 408, 409, 429, and 5xx responses by default. Set `maxRetries` to tune retry behavior.
+
+## Pagination
+
+Search and list endpoints return page objects. Check `has_next_page` and pass the generated cursor fields documented on each endpoint when you need another page.
+
+```ts
+const firstPage = await client.x.tweets.search({ q: "xquik", limit: 20 });
+
+if (firstPage.has_next_page) {
+  process.stderr.write("More results are available\n");
+}
+```
+
+## Webhooks & References
+
+- [Webhook Overview](/webhooks/overview)
+- [Verify HMAC Signatures](/webhooks/verification)
+- [REST API Overview](/api-reference/overview)
+- [OpenAPI JSON](https://xquik.com/openapi.json)
+- [Source Repository](https://github.com/Xquik-dev/x-twitter-scraper-typescript)

@@ -1,0 +1,79 @@
+---
+title: C# SDK
+sidebarTitle: C# / .NET
+description: Install and use the official Xquik C# SDK from NuGet.
+keywords: ["C# SDK", ".NET Twitter scraper SDK", "NuGet X API", "X API C#"]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+<LlmsDirective />
+
+Use the C# SDK for typed .NET Standard 2.0+ access to Xquik from services, workers, console tools, and ASP.NET backends.
+
+## Install
+
+```bash
+dotnet add package XTwitterScraper
+```
+
+## Authenticate
+
+```bash
+export X_TWITTER_SCRAPER_API_KEY="xq_YOUR_KEY_HERE"
+```
+
+`new XTwitterScraperClient()` reads `X_TWITTER_SCRAPER_API_KEY`, `X_TWITTER_SCRAPER_BEARER_TOKEN`, and `X_TWITTER_SCRAPER_BASE_URL`.
+
+## Basic Example
+
+```csharp
+using XTwitterScraper;
+using XTwitterScraper.Models.X.Tweets;
+
+XTwitterScraperClient client = new();
+
+TweetSearchParams parameters = new()
+{
+    Q = "from:elonmusk",
+    Limit = 10,
+};
+
+var tweets = await client.X.Tweets.Search(parameters);
+```
+
+## Error Handling
+
+The C# SDK throws generated exception types for non-success responses and connection failures.
+
+| Status | Exception |
+| --- | --- |
+| 400 | `XTwitterScraperBadRequestException` |
+| 401 | `XTwitterScraperUnauthorizedException` |
+| 403 | `XTwitterScraperForbiddenException` |
+| 404 | `XTwitterScraperNotFoundException` |
+| 422 | `XTwitterScraperUnprocessableEntityException` |
+| 429 | `XTwitterScraperRateLimitException` |
+| 5xx | `XTwitterScraper5xxException` |
+
+Use the [error handling guide](/guides/error-handling) for response body fields and retry recommendations.
+
+## Pagination
+
+Paginated responses expose generated fields such as `HasNextPage`. Pass cursor parameters from the previous response when an endpoint supports cursor pagination.
+
+```csharp
+if (tweets.HasNextPage)
+{
+    await Console.Error.WriteLineAsync("More results are available");
+}
+```
+
+## Webhooks & References
+
+- [Search Tweets](/api-reference/x/search-tweets)
+- [Create Monitor](/api-reference/monitors/create)
+- [Webhook Overview](/webhooks/overview)
+- [Verify HMAC Signatures](/webhooks/verification)
+- [REST API Overview](/api-reference/overview)
+- [Source Repository](https://github.com/Xquik-dev/x-twitter-scraper-csharp)

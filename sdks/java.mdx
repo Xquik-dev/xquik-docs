@@ -1,0 +1,91 @@
+---
+title: Java SDK
+sidebarTitle: Java
+description: Install and use the official Xquik Java SDK with Maven or Gradle.
+keywords: ["Java SDK", "Maven Twitter scraper SDK", "X API Java", "JVM client"]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+<LlmsDirective />
+
+Use the Java SDK for generated JVM models, builders, sync calls, async calls, and typed exceptions in Java 8+ applications.
+
+## Install
+
+<CodeGroup>
+
+```kotlin Gradle
+implementation("com.x_twitter_scraper.api:x-twitter-scraper-java:0.3.0")
+```
+
+```xml Maven
+<dependency>
+  <groupId>com.x_twitter_scraper.api</groupId>
+  <artifactId>x-twitter-scraper-java</artifactId>
+  <version>0.3.0</version>
+</dependency>
+```
+
+</CodeGroup>
+
+## Authenticate
+
+```bash
+export X_TWITTER_SCRAPER_API_KEY="xq_YOUR_KEY_HERE"
+```
+
+`XTwitterScraperOkHttpClient.fromEnv()` reads `X_TWITTER_SCRAPER_API_KEY`, `X_TWITTER_SCRAPER_BEARER_TOKEN`, and `X_TWITTER_SCRAPER_BASE_URL`.
+
+## Basic Example
+
+```java
+import com.x_twitter_scraper.api.client.XTwitterScraperClient;
+import com.x_twitter_scraper.api.client.okhttp.XTwitterScraperOkHttpClient;
+import com.x_twitter_scraper.api.models.PaginatedTweets;
+import com.x_twitter_scraper.api.models.x.tweets.TweetSearchParams;
+
+XTwitterScraperClient client = XTwitterScraperOkHttpClient.fromEnv();
+
+TweetSearchParams params = TweetSearchParams.builder()
+    .q("from:elonmusk")
+    .limit(10L)
+    .build();
+
+PaginatedTweets tweets = client.x().tweets().search(params);
+```
+
+## Error Handling
+
+The Java SDK throws unchecked exceptions.
+
+| Status | Exception |
+| --- | --- |
+| 400 | `BadRequestException` |
+| 401 | `UnauthorizedException` |
+| 403 | `PermissionDeniedException` |
+| 404 | `NotFoundException` |
+| 422 | `UnprocessableEntityException` |
+| 429 | `RateLimitException` |
+| 5xx | `InternalServerException` |
+
+Connection and I/O failures use `XTwitterScraperIoException`. All SDK exceptions inherit from `XTwitterScraperException`.
+
+## Pagination
+
+Paginated responses expose generated fields such as `hasNextPage`. Use the endpoint cursor fields documented in the API reference when requesting additional pages.
+
+```java
+if (tweets.hasNextPage()) {
+    System.err.println("More results are available");
+}
+```
+
+## Webhooks & References
+
+- [Search Tweets](/api-reference/x/search-tweets)
+- [Create Monitor](/api-reference/monitors/create)
+- [Webhook Overview](/webhooks/overview)
+- [Verify HMAC Signatures](/webhooks/verification)
+- [REST API Overview](/api-reference/overview)
+- [Source Repository](https://github.com/Xquik-dev/x-twitter-scraper-java)

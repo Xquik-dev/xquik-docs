@@ -1,0 +1,94 @@
+---
+title: PHP SDK
+sidebarTitle: PHP
+description: Install and use the official Xquik PHP SDK with Composer.
+keywords: ["PHP SDK", "Composer Twitter scraper", "X API PHP", "PHP API client"]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+<LlmsDirective />
+
+Use the PHP SDK for PHP 8.1+ applications with named parameters, generated models, typed exceptions, retries, and file upload helpers.
+
+## Install
+
+```bash
+composer require xquik/x-twitter-scraper
+```
+
+If your project needs the GitHub source directly, add the repository in `composer.json` as described in the [source repository](https://github.com/Xquik-dev/x-twitter-scraper-php).
+
+## Authenticate
+
+```bash
+export X_TWITTER_SCRAPER_API_KEY="xq_YOUR_KEY_HERE"
+```
+
+## Basic Example
+
+```php
+<?php
+
+use XTwitterScraper\Client;
+
+$client = new Client(
+  apiKey: getenv('X_TWITTER_SCRAPER_API_KEY') ?: 'xq_YOUR_KEY_HERE'
+);
+
+$tweets = $client->x->tweets->search(q: 'from:elonmusk', limit: 10);
+
+var_export($tweets->has_next_page);
+```
+
+## Error Handling
+
+The SDK throws subclasses of `XTwitterScraper\Core\Exceptions\APIException`.
+
+| Status | Exception |
+| --- | --- |
+| 400 | `BadRequestException` |
+| 401 | `AuthenticationException` |
+| 403 | `PermissionDeniedException` |
+| 404 | `NotFoundException` |
+| 422 | `UnprocessableEntityException` |
+| 429 | `RateLimitException` |
+| 5xx | `InternalServerException` |
+
+```php
+<?php
+
+use XTwitterScraper\Core\Exceptions\APIConnectionException;
+use XTwitterScraper\Core\Exceptions\APIStatusException;
+
+try {
+  $account = $client->account->retrieve();
+} catch (APIConnectionException $e) {
+  fwrite(STDERR, "Connection failed\n");
+} catch (APIStatusException $e) {
+  fwrite(STDERR, $e->getMessage() . PHP_EOL);
+}
+```
+
+## Pagination
+
+Paginated responses expose fields such as `has_next_page`. Pass the endpoint's cursor fields when requesting more pages.
+
+```php
+<?php
+
+$page = $client->x->tweets->search(q: 'xquik', limit: 20);
+
+if ($page->has_next_page) {
+  fwrite(STDERR, "More results are available\n");
+}
+```
+
+## Webhooks & References
+
+- [Search Tweets](/api-reference/x/search-tweets)
+- [Create Monitor](/api-reference/monitors/create)
+- [Webhook Overview](/webhooks/overview)
+- [Verify HMAC Signatures](/webhooks/verification)
+- [REST API Overview](/api-reference/overview)
+- [Source Repository](https://github.com/Xquik-dev/x-twitter-scraper-php)
