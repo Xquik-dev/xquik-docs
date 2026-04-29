@@ -3,10 +3,10 @@
 ## Goal
 
 Comprehensive xquik-docs audit and update:
-1. Add Machine Payments Protocol (MPP) documentation — anonymous pay-per-use access to 7 X-API read-only endpoints via Tempo (USDC)
-2. Fix stale content — automation test endpoint marked "not yet implemented" but is live
-3. Fix missing content — authentication table missing endpoint groups (x-accounts, x-write, support)
-4. Fix discrepancies — score step algorithm check count mismatch
+1. Add Machine Payments Protocol (MPP) documentation - anonymous pay-per-use access to 7 X-API read-only endpoints via Tempo (USDC)
+2. Fix stale content - automation test endpoint marked "not yet implemented" but is live
+3. Fix missing content - authentication table missing endpoint groups (x-accounts, x-write, support)
+4. Fix discrepancies - score step algorithm check count mismatch
 5. Update llms.txt with MPP information
 
 ## Decision Log
@@ -18,7 +18,7 @@ Comprehensive xquik-docs audit and update:
 | Endpoint page updates | `<Info>` callout on each eligible endpoint | Minimal, discoverable, non-intrusive. |
 | Code examples in MPP quickstart | TypeScript only (mppx SDK) | MPP SDK is TypeScript-first. cURL examples in overview for raw HTTP flow. |
 | Bot endpoints | Not documented | Internal infrastructure, not public API. |
-| Sensitive terms | Never mention twitterapi.io, microcents, $10 usage cap | Confidentiality requirement. |
+| Sensitive terms | Never mention restricted vendor or internal billing terms | Confidentiality requirement. |
 
 ## Scope
 
@@ -97,7 +97,7 @@ Add "Machine Payments Protocol" section documenting:
 Add "Pay-per-use (MPP)" section after "Extra Usage":
 - No subscription required. Pay per call via Tempo (USDC).
 - Eligible endpoints table (same 7 routes with prices).
-- Clearly label this as "MPP per-call pricing" to distinguish from the subscription "Per-Operation Costs" table above it. Note: MPP prices are lower than subscription metered costs because MPP has no included monthly allowance — you pay for every call. Subscription metered costs apply only after the included allowance is consumed.
+- Clearly label this as "MPP per-call pricing" to distinguish from the subscription "Per-Operation Costs" table above it. Note: MPP prices are lower than subscription metered costs because MPP has no included monthly allowance - you pay for every call. Subscription metered costs apply only after the included allowance is consumed.
 - Link to MPP overview and quickstart.
 
 #### 7 X-API endpoint pages
@@ -150,9 +150,9 @@ Add these rows to the existing table.
 ## Confidentiality rules
 
 All content must:
-- Never mention "twitterapi.io" or any third-party API source
-- Never use the term "microcents"
-- Never reference "$10 usage cap" or internal pricing mechanics
+- Never mention restricted vendor or third-party API sources
+- Never use internal billing unit labels
+- Never reference internal usage caps or pricing mechanics
 - MPP per-call prices are public (derived from `lib/mpp/pricing.ts`) and safe to document
 
 ## Writing standards

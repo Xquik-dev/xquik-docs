@@ -10,7 +10,7 @@
 
 **Spec:** `docs/superpowers/specs/2026-03-20-xquik-docs-mpp-audit-design.md`
 
-**Confidentiality:** NEVER mention twitterapi.io, microcents, $10 usage cap, or third-party API sources in any file or commit message.
+**Confidentiality:** NEVER mention restricted vendor terms, internal billing units, internal usage caps, or third-party API sources in any file or commit message.
 
 ---
 
@@ -196,7 +196,7 @@ Look up a single tweet. The SDK intercepts 402 responses, pays via Tempo, and re
 import { Mppx, tempo } from "mppx/client";
 import { privateKeyToAccount } from "viem/accounts";
 
-// Configure the MPP client — this patches global fetch
+// Configure the MPP client - this patches global fetch
 // to automatically handle 402 Payment Required challenges
 Mppx.create({
   methods: [
@@ -463,7 +463,7 @@ After the Extra Usage `<Tip>` callout (around line 83), insert:
 ```mdx
 ## Pay-per-use (MPP)
 
-7 X-API read-only endpoints accept [Machine Payments Protocol](/mpp/overview) payments. No subscription required — pay per call with Tempo (USDC).
+7 X-API read-only endpoints accept [Machine Payments Protocol](/mpp/overview) payments. No subscription required - pay per call with Tempo (USDC).
 
 ### MPP per-call pricing
 
@@ -478,7 +478,7 @@ After the Extra Usage `<Tip>` callout (around line 83), insert:
 | `GET /trends` | $0.0009 per call | charge |
 
 <Note>
-  MPP per-call prices differ from the subscription per-operation costs listed above. With a subscription, you get a monthly allowance included in the base price — metered costs only apply after that allowance is consumed. With MPP, every call is billed individually with no monthly commitment.
+  MPP per-call prices differ from the subscription per-operation costs listed above. With a subscription, you get a monthly allowance included in the base price - metered costs only apply after that allowance is consumed. With MPP, every call is billed individually with no monthly commitment.
 </Note>
 
 <CardGroup cols={2}>
@@ -599,7 +599,7 @@ git commit -m "docs(mpp): add MPP callouts and 402 tab notes to eligible endpoin
 
 - [ ] **Step 1: Rewrite the automation test page**
 
-Replace the entire content of `api-reference/automations/test.mdx` with the actual implemented behavior. The endpoint IS live — it triggers a test run with synthetic trigger data and returns a run ID.
+Replace the entire content of `api-reference/automations/test.mdx` with the actual implemented behavior. The endpoint IS live - it triggers a test run with synthetic trigger data and returns a run ID.
 
 Key changes:
 - Remove the "not yet implemented" `<Warning>` callout
@@ -672,13 +672,13 @@ Payment intents:
 - `session`: Pay per result returned (tweet search, media download)
 
 Eligible endpoints and pricing:
-- `GET /api/v1/x/tweets/{id}` — $0.0003/call (charge)
-- `GET /api/v1/x/tweets/search` — $0.0003/tweet (session)
-- `GET /api/v1/x/users/{id}` — $0.00036/call (charge)
-- `GET /api/v1/x/followers/check` — $0.002/call (charge)
-- `GET /api/v1/x/articles/{tweetId}` — $0.002/call (charge)
-- `POST /api/v1/x/media/download` — $0.0003/media (session)
-- `GET /api/v1/trends` — $0.0009/call (charge)
+- `GET /api/v1/x/tweets/{id}` - $0.0003/call (charge)
+- `GET /api/v1/x/tweets/search` - $0.0003/tweet (session)
+- `GET /api/v1/x/users/{id}` - $0.00036/call (charge)
+- `GET /api/v1/x/followers/check` - $0.002/call (charge)
+- `GET /api/v1/x/articles/{tweetId}` - $0.002/call (charge)
+- `POST /api/v1/x/media/download` - $0.0003/media (session)
+- `GET /api/v1/trends` - $0.0009/call (charge)
 
 All other endpoints require subscription authentication (API key or OAuth).
 
@@ -718,7 +718,7 @@ Expected: No validation errors.
 grep -ri "twitterapi\.io\|microcent\|usage.cap" --include="*.mdx" --include="*.json" --include="*.txt" .
 ```
 
-Expected: No matches (the billing.mdx $10 in spending limits table is fine — it's not "usage cap").
+Expected: No matches (the billing.mdx $10 in spending limits table is fine - it's not "usage cap").
 
 - [ ] **Step 4: Verify all new pages are in docs.json**
 
