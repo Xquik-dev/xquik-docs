@@ -1,0 +1,236 @@
+---
+title: n8n
+description: Connect Xquik to n8n workflows with API-key auth, MCP tools, monitor webhooks, and extraction jobs
+keywords: ["n8n", "workflow automation", "mcp", "twitter", "x", "webhooks", "extractions"]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+<LlmsDirective />
+
+Use Xquik in n8n when a workflow needs X (Twitter) search, account lookups, trends, publishing, extraction jobs, monitors, webhooks, or MCP tools without an X Developer app.
+
+Xquik uses one API key and the REST base URL `https://xquik.com/api/v1`.
+
+## Prerequisites
+
+- [Xquik API key](/quickstart)
+- n8n Cloud or self-hosted n8n
+- An HTTPS n8n webhook URL for monitor recipes
+- Optional Slack and Google Sheets credentials for the recipes below
+
+## API Key Credential
+
+Create a reusable n8n credential for Xquik:
+
+| Field | Value |
+|-------|-------|
+| Authentication | Header Auth |
+| Name | `x-api-key` |
+| Value | Your Xquik API key |
+
+Use that credential in every HTTP Request node that calls `https://xquik.com/api/v1`.
+
+## Community Node Blueprint
+
+If you package Xquik as a community node, keep the first release narrow and reliable.
+
+| Surface | Initial scope |
+|---------|---------------|
+| Credential | `Xquik API Key`, injected as `x-api-key` |
+| Base URL | `https://xquik.com/api/v1` |
+| Request helper | `GET`, `POST`, `PATCH`, `DELETE`, JSON body handling, `Retry-After` backoff |
+| Resources | Tweet, User, Trends, Extraction, Monitor, Webhook |
+| Actions | Get Tweet, Search Tweets, Get User, Get Trends, Create Tweet, Create Extraction, Create Monitor, Create Webhook |
+| Sources | Monitor Event Webhook, Extraction Completed Polling |
+
+Handle these response classes explicitly:
+
+| Status | n8n behavior |
+|--------|--------------|
+| `400` | Surface `error` and `message` from the Xquik response |
+| `401` | Ask the user to check the API key credential |
+| `402` | Route to subscription or credit setup |
+| `429` | Respect the `Retry-After` header before retrying |
+| `5xx` | Retry with exponential backoff, then fail the item |
+
+## Recipe 1: AI Agent X Research With MCP
+
+Use this when an n8n AI Agent needs to research live X data, summarize trends, or compare account activity.
+
+<Steps>
+  <Step title="Add an AI Agent node">
+    Create an AI Agent workflow with your preferred chat model.
+  </Step>
+  <Step title="Add an MCP Client Tool">
+    Configure the MCP tool with URL `https://xquik.com/mcp` and header `x-api-key: <your key>`.
+  </Step>
+  <Step title="Prompt the agent">
+    Tell the agent to use Xquik for X search, trends, account lookups, and extraction planning.
+  </Step>
+</Steps>
+
+Suggested agent system prompt:
+
+```text
+Use Xquik for every X research request. Search tweets, inspect accounts, fetch trends, and cite the returned post URLs. Prefer small, targeted searches before broad extraction jobs.
+```
+
+Example user prompt:
+
+```text
+Find recent posts about AI agents in fintech, group them by theme, and list 5 accounts worth monitoring.
+```
+
+The MCP server exposes `explore` for endpoint discovery and `xquik` for authenticated calls, so the workflow can move from endpoint selection to live data in one agent loop.
+
+## Recipe 2: Monitor To Slack
+
+Use this when a Slack channel should receive new tweets, replies, quotes, or retweets from monitored accounts.
+
+### Workflow Shape
+
+| Step | n8n node | Purpose |
+|------|----------|---------|
+| 1 | Webhook Trigger | Receive Xquik monitor events |
+| 2 | HTTP Request | Create or confirm the Xquik webhook |
+| 3 | HTTP Request | Create the Xquik monitor |
+| 4 | Set | Format the Slack message |
+| 5 | Slack | Post the alert |
+
+### Create Webhook
+
+Call this once during setup, using the production URL from your n8n Webhook Trigger.
+
+```json
+{
+  "method": "POST",
+  "url": "https://xquik.com/api/v1/webhooks",
+  "headers": {
+    "x-api-key": "={{$credentials.xquikApi.apiKey}}"
+  },
+  "body": {
+    "url": "={{$node['Webhook Trigger'].webhookUrl}}",
+    "eventTypes": ["tweet.new", "tweet.reply", "tweet.quote", "tweet.retweet"]
+  }
+}
+```
+
+### Create Monitor
+
+```json
+{
+  "method": "POST",
+  "url": "https://xquik.com/api/v1/monitors",
+  "headers": {
+    "x-api-key": "={{$credentials.xquikApi.apiKey}}"
+  },
+  "body": {
+    "username": "xquikcom",
+    "eventTypes": ["tweet.new", "tweet.reply", "tweet.quote", "tweet.retweet"]
+  }
+}
+```
+
+### Slack Message
+
+Use a Set node before Slack:
+
+```text
+{{$json.type}} from @{{$json.tweet.author.username}}
+{{$json.tweet.text}}
+https://x.com/{{$json.tweet.author.username}}/status/{{$json.tweet.id}}
+```
+
+Keep the webhook secret returned by Xquik. If your n8n plan supports custom verification code before routing, verify the `x-xquik-signature` header with that secret before sending Slack messages.
+
+## Recipe 3: Extraction To Google Sheets
+
+Use this when a team needs bulk follower, reply, quote, media, list, community, or search results in a spreadsheet.
+
+### Workflow Shape
+
+| Step | n8n node | Purpose |
+|------|----------|---------|
+| 1 | Schedule Trigger | Run daily, hourly, or on demand |
+| 2 | HTTP Request | Create an extraction job |
+| 3 | Wait | Pause before polling |
+| 4 | HTTP Request | Fetch extraction results |
+| 5 | IF | Continue only when `status` is `completed` |
+| 6 | Google Sheets | Append rows |
+
+### Create Extraction
+
+```json
+{
+  "method": "POST",
+  "url": "https://xquik.com/api/v1/extractions",
+  "headers": {
+    "x-api-key": "={{$credentials.xquikApi.apiKey}}"
+  },
+  "body": {
+    "toolType": "tweet_search_extractor",
+    "searchQuery": "AI agents lang:en",
+    "resultsLimit": 500
+  }
+}
+```
+
+Store the returned `id` for the polling step.
+
+### Poll Results
+
+```json
+{
+  "method": "GET",
+  "url": "https://xquik.com/api/v1/extractions/{{$json.id}}",
+  "headers": {
+    "x-api-key": "={{$credentials.xquikApi.apiKey}}"
+  },
+  "query": {
+    "limit": "1000"
+  }
+}
+```
+
+Map these fields into Google Sheets:
+
+| Sheet column | Xquik field |
+|--------------|-------------|
+| Tweet ID | `id` |
+| Author | `author.username` |
+| Text | `text` |
+| Created At | `createdAt` |
+| Likes | `likeCount` |
+| Reposts | `retweetCount` |
+| URL | `https://x.com/{author.username}/status/{id}` |
+
+For jobs larger than 1,000 rows, loop while `hasMore` is `true` and pass `after` with the `nextCursor` value.
+
+## Useful REST Actions
+
+| Action | Method and path |
+|--------|-----------------|
+| Get tweet | `GET /x/tweets?ids=<id>` |
+| Search tweets | `GET /x/tweets/search?q=<query>` |
+| Get user | `GET /x/users/{id}` |
+| Get trends | `GET /x/trends` |
+| Create tweet | `POST /x/tweets` |
+| Create extraction | `POST /extractions` |
+| Create monitor | `POST /monitors` |
+| Create webhook | `POST /webhooks` |
+
+## Testing Checklist
+
+- Use the n8n Test Step action on each HTTP Request node.
+- Confirm every request includes `x-api-key`.
+- Confirm monitor webhooks use the production webhook URL, not the test URL.
+- Send a test event from [Test Webhook](/api-reference/webhooks/test).
+- For extraction jobs, poll until `completed` before writing to Sheets.
+- On `429`, wait for the `Retry-After` header before retrying.
+
+## Next Steps
+
+- Read [Webhooks](/webhooks/overview) for payload and retry behavior.
+- Read [Extraction Workflow](/guides/extraction-workflow) for pagination and export patterns.
+- Use [MCP Tools](/mcp/tools) when building AI Agent workflows.
