@@ -92,17 +92,33 @@ info:
     ## Pagination
 
 
-    All list endpoints return {items, cursor}. Pass cursor as ?after={cursor} to
-    fetch the next page. Dynamic-priced endpoints charge per item returned, not
-    per request.
+    Default v1 responses keep their existing pagination fields for
+    compatibility. Platform list endpoints return `hasMore` and `nextCursor`; X
+    data endpoints return `has_next_page` and `next_cursor`. Send
+    `xquik-api-contract: 2026-04-29` to receive the unified best-practice fields
+    `has_more` and `next_cursor`. Pass the cursor back as `?cursor={cursor}`;
+    legacy `?after={cursor}` still works. Dynamic-priced endpoints charge per
+    item returned, not per request.
 
 
     ## Authentication
 
 
     Read-only paid endpoints accept pay-per-use payments (no account needed).
-    Write endpoints and automation features require an X-Api-Key header or OAuth
-    2.1 bearer token.
+    Write endpoints and automation features require an `x-api-key` header or
+    OAuth 2.1 bearer token.
+
+
+    ## Best-Practice Response Contract
+
+
+    v1 keeps its original response contract by default so existing integrations
+    do not break. Send `xquik-api-contract: 2026-04-29` to opt in to the
+    best-practice contract: snake_case response fields, Unix timestamps in
+    seconds, structured error objects, `has_more` and `next_cursor` pagination
+    fields, `object` resource identifiers, and prefixed IDs where available.
+    Dependency failures that returned 502 in default v1 return 424 in the opt-in
+    contract. Future major API versions should make this contract the default.
   contact:
     name: Xquik
     url: https://xquik.com
@@ -1239,19 +1255,14 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                required: [error, limit]
-                properties:
-                  error:
-                    type: string
-                    example: 'Monitor limit reached'
-                  limit:
-                    type: integer
-                    description: Current monitor quota
-                    example: 10
+                $ref: '#/components/schemas/Error'
               example:
-                error: 'Monitor limit reached'
-                limit: 10
+                error:
+                  message:
+                    'Monitor limit reached. Remove an existing monitor first.'
+                  type: permission_error
+                  code: monitor_limit_reached
+                  limit: 10
         '404':
           description: X user not found
           content:
@@ -1593,6 +1604,8 @@ paths:
         '402':
           $ref: '#/components/responses/PaymentRequired'
         '502':
+          $ref: '#/components/responses/XApiError'
+        '424':
           $ref: '#/components/responses/XApiError'
 
   /extractions/estimate:
@@ -1950,6 +1963,8 @@ paths:
         '402':
           $ref: '#/components/responses/PaymentRequired'
         '502':
+          $ref: '#/components/responses/XApiError'
+        '424':
           $ref: '#/components/responses/XApiError'
 
   /draws/{id}:
@@ -2465,11 +2480,10 @@ paths:
         - {}
       x-payment-info:
         protocols:
-          - x402: {}
           - mpp:
-              method: ''
+              method: tempo
               intent: charge
-              currency: ''
+              currency: USDC
         price:
           mode: fixed
           amount: '0.00045'
@@ -2554,11 +2568,10 @@ paths:
         - {}
       x-payment-info:
         protocols:
-          - x402: {}
           - mpp:
-              method: ''
+              method: tempo
               intent: session
-              currency: ''
+              currency: USDC
         price:
           mode: dynamic
           min: '0.00015'
@@ -2644,6 +2657,8 @@ paths:
           $ref: '#/components/responses/PaymentRequired'
         '502':
           $ref: '#/components/responses/XApiError'
+        '424':
+          $ref: '#/components/responses/XApiError'
 
   /x/articles/{tweetId}:
     get:
@@ -2659,11 +2674,10 @@ paths:
         - {}
       x-payment-info:
         protocols:
-          - x402: {}
           - mpp:
-              method: ''
+              method: tempo
               intent: charge
-              currency: ''
+              currency: USDC
         price:
           mode: fixed
           amount: '0.00105'
@@ -2765,6 +2779,8 @@ paths:
           $ref: '#/components/responses/PaymentRequired'
         '502':
           $ref: '#/components/responses/XApiError'
+        '424':
+          $ref: '#/components/responses/XApiError'
 
   /x/tweets/{id}:
     get:
@@ -2778,11 +2794,10 @@ paths:
         - {}
       x-payment-info:
         protocols:
-          - x402: {}
           - mpp:
-              method: ''
+              method: tempo
               intent: charge
-              currency: ''
+              currency: USDC
         price:
           mode: fixed
           amount: '0.00015'
@@ -2830,6 +2845,8 @@ paths:
         '402':
           $ref: '#/components/responses/PaymentRequired'
         '502':
+          $ref: '#/components/responses/XApiError'
+        '424':
           $ref: '#/components/responses/XApiError'
     delete:
       operationId: deleteTweet
@@ -3036,11 +3053,10 @@ paths:
         - {}
       x-payment-info:
         protocols:
-          - x402: {}
           - mpp:
-              method: ''
+              method: tempo
               intent: session
-              currency: ''
+              currency: USDC
         price:
           mode: dynamic
           min: '0.00015'
@@ -3077,11 +3093,10 @@ paths:
         - {}
       x-payment-info:
         protocols:
-          - x402: {}
           - mpp:
-              method: ''
+              method: tempo
               intent: session
-              currency: ''
+              currency: USDC
         price:
           mode: dynamic
           min: '0.00015'
@@ -3123,11 +3138,10 @@ paths:
         - {}
       x-payment-info:
         protocols:
-          - x402: {}
           - mpp:
-              method: ''
+              method: tempo
               intent: charge
-              currency: ''
+              currency: USDC
         price:
           mode: fixed
           amount: '0.00015'
@@ -3159,6 +3173,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
         '502':
+          $ref: '#/components/responses/XApiError'
+        '424':
           $ref: '#/components/responses/XApiError'
 
   /x/users/{id}/follow:
@@ -3239,6 +3255,46 @@ paths:
         '500':
           $ref: '#/components/responses/WriteError'
 
+  /x/users/{id}/remove-follower:
+    post:
+      operationId: removeFollower
+      summary: Remove follower
+      tags: [X Write]
+      security:
+        - apiKey: []
+        - oauthBearer: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: User ID to remove from your followers
+      requestBody:
+        required: true
+        description: Account whose follower list should be updated.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/XAccountBody'
+      responses:
+        '200':
+          $ref: '#/components/responses/Success'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
+        '403':
+          $ref: '#/components/responses/AccountAuthError'
+        '422':
+          $ref: '#/components/responses/WriteRejected'
+        '429':
+          $ref: '#/components/responses/RateLimitedByX'
+        '503':
+          $ref: '#/components/responses/TransientError'
+        '500':
+          $ref: '#/components/responses/WriteError'
+
   /x/followers/check:
     get:
       operationId: checkFollow
@@ -3251,11 +3307,10 @@ paths:
         - {}
       x-payment-info:
         protocols:
-          - x402: {}
           - mpp:
-              method: ''
+              method: tempo
               intent: charge
-              currency: ''
+              currency: USDC
         price:
           mode: fixed
           amount: '0.00105'
@@ -3313,6 +3368,8 @@ paths:
         '402':
           $ref: '#/components/responses/PaymentRequired'
         '502':
+          $ref: '#/components/responses/XApiError'
+        '424':
           $ref: '#/components/responses/XApiError'
 
   /x/dm/{userId}:
@@ -3469,11 +3526,10 @@ paths:
         - {}
       x-payment-info:
         protocols:
-          - x402: {}
           - mpp:
-              method: ''
+              method: tempo
               intent: session
-              currency: ''
+              currency: USDC
         price:
           mode: dynamic
           min: '0.00015'
@@ -3994,6 +4050,8 @@ paths:
           $ref: '#/components/responses/ConnectRateLimitExceeded'
         '502':
           $ref: '#/components/responses/ConnectUserLookupFailed'
+        '424':
+          $ref: '#/components/responses/ConnectUserLookupFailed'
         '503':
           $ref: '#/components/responses/ConnectServiceUnavailable'
 
@@ -4142,11 +4200,10 @@ paths:
         - {}
       x-payment-info:
         protocols:
-          - x402: {}
           - mpp:
-              method: ''
+              method: tempo
               intent: charge
-              currency: ''
+              currency: USDC
         price:
           mode: fixed
           amount: '0.00045'
@@ -4219,6 +4276,8 @@ paths:
         '402':
           $ref: '#/components/responses/PaymentRequired'
         '502':
+          $ref: '#/components/responses/XApiError'
+        '424':
           $ref: '#/components/responses/XApiError'
 
   # ── Support Tickets ─────────────────────────────────────
@@ -4639,11 +4698,10 @@ paths:
         - {}
       x-payment-info:
         protocols:
-          - x402: {}
           - mpp:
-              method: ''
+              method: tempo
               intent: session
-              currency: ''
+              currency: USDC
         price:
           mode: dynamic
           min: '0.00015'
@@ -4676,6 +4734,8 @@ paths:
           $ref: '#/components/responses/PaymentRequired'
         '502':
           $ref: '#/components/responses/XApiError'
+        '424':
+          $ref: '#/components/responses/XApiError'
 
   /x/users/{id}/tweets:
     get:
@@ -4689,11 +4749,10 @@ paths:
         - {}
       x-payment-info:
         protocols:
-          - x402: {}
           - mpp:
-              method: ''
+              method: tempo
               intent: session
-              currency: ''
+              currency: USDC
         price:
           mode: dynamic
           min: '0.00015'
@@ -4751,11 +4810,10 @@ paths:
         - {}
       x-payment-info:
         protocols:
-          - x402: {}
           - mpp:
-              method: ''
+              method: tempo
               intent: session
-              currency: ''
+              currency: USDC
         price:
           mode: dynamic
           min: '0.00015'
@@ -4790,6 +4848,8 @@ paths:
           $ref: '#/components/responses/NotFound'
         '502':
           $ref: '#/components/responses/XApiError'
+        '424':
+          $ref: '#/components/responses/XApiError'
 
   /x/users/{id}/media:
     get:
@@ -4803,11 +4863,10 @@ paths:
         - {}
       x-payment-info:
         protocols:
-          - x402: {}
           - mpp:
-              method: ''
+              method: tempo
               intent: session
-              currency: ''
+              currency: USDC
         price:
           mode: dynamic
           min: '0.00015'
@@ -4842,6 +4901,8 @@ paths:
           $ref: '#/components/responses/NotFound'
         '502':
           $ref: '#/components/responses/XApiError'
+        '424':
+          $ref: '#/components/responses/XApiError'
 
   /x/users/{id}/followers-you-know:
     get:
@@ -4855,11 +4916,10 @@ paths:
         - {}
       x-payment-info:
         protocols:
-          - x402: {}
           - mpp:
-              method: ''
+              method: tempo
               intent: session
-              currency: ''
+              currency: USDC
         price:
           mode: dynamic
           min: '0.00015'
@@ -4891,6 +4951,8 @@ paths:
         '402':
           $ref: '#/components/responses/PaymentRequired'
         '502':
+          $ref: '#/components/responses/XApiError'
+        '424':
           $ref: '#/components/responses/XApiError'
 
   /x/bookmarks:
@@ -4926,6 +4988,8 @@ paths:
         '402':
           $ref: '#/components/responses/PaymentRequired'
         '502':
+          $ref: '#/components/responses/XApiError'
+        '424':
           $ref: '#/components/responses/XApiError'
 
   /x/bookmarks/folders:
@@ -4978,6 +5042,8 @@ paths:
         '402':
           $ref: '#/components/responses/PaymentRequired'
         '502':
+          $ref: '#/components/responses/XApiError'
+        '424':
           $ref: '#/components/responses/XApiError'
 
   /x/notifications:
@@ -5054,6 +5120,8 @@ paths:
           $ref: '#/components/responses/PaymentRequired'
         '502':
           $ref: '#/components/responses/XApiError'
+        '424':
+          $ref: '#/components/responses/XApiError'
 
   /x/timeline:
     get:
@@ -5087,6 +5155,8 @@ paths:
         '402':
           $ref: '#/components/responses/PaymentRequired'
         '502':
+          $ref: '#/components/responses/XApiError'
+        '424':
           $ref: '#/components/responses/XApiError'
 
   /x/dm/{userId}/history:
@@ -5236,6 +5306,8 @@ paths:
                     error: account_needs_reauth
         '502':
           $ref: '#/components/responses/XApiError'
+        '424':
+          $ref: '#/components/responses/XApiError'
 
   /x/communities/{id}/info:
     get:
@@ -5249,11 +5321,10 @@ paths:
         - {}
       x-payment-info:
         protocols:
-          - x402: {}
           - mpp:
-              method: ''
+              method: tempo
               intent: charge
-              currency: ''
+              currency: USDC
         price:
           mode: fixed
           amount: '0.00015'
@@ -5353,11 +5424,10 @@ paths:
         - {}
       x-payment-info:
         protocols:
-          - x402: {}
           - mpp:
-              method: ''
+              method: tempo
               intent: session
-              currency: ''
+              currency: USDC
         price:
           mode: dynamic
           min: '0.00015'
@@ -5404,11 +5474,10 @@ paths:
         - {}
       x-payment-info:
         protocols:
-          - x402: {}
           - mpp:
-              method: ''
+              method: tempo
               intent: session
-              currency: ''
+              currency: USDC
         price:
           mode: dynamic
           min: '0.00015'
@@ -5450,11 +5519,10 @@ paths:
         - {}
       x-payment-info:
         protocols:
-          - x402: {}
           - mpp:
-              method: ''
+              method: tempo
               intent: session
-              currency: ''
+              currency: USDC
         price:
           mode: dynamic
           min: '0.00015'
@@ -5496,11 +5564,10 @@ paths:
         - {}
       x-payment-info:
         protocols:
-          - x402: {}
           - mpp:
-              method: ''
+              method: tempo
               intent: session
-              currency: ''
+              currency: USDC
         price:
           mode: dynamic
           min: '0.00015'
@@ -5547,11 +5614,10 @@ paths:
         - {}
       x-payment-info:
         protocols:
-          - x402: {}
           - mpp:
-              method: ''
+              method: tempo
               intent: session
-              currency: ''
+              currency: USDC
         price:
           mode: dynamic
           min: '0.00015'
@@ -5600,11 +5666,10 @@ paths:
         - {}
       x-payment-info:
         protocols:
-          - x402: {}
           - mpp:
-              method: ''
+              method: tempo
               intent: session
-              currency: ''
+              currency: USDC
         price:
           mode: dynamic
           min: '0.00015'
@@ -5646,11 +5711,10 @@ paths:
         - {}
       x-payment-info:
         protocols:
-          - x402: {}
           - mpp:
-              method: ''
+              method: tempo
               intent: session
-              currency: ''
+              currency: USDC
         price:
           mode: dynamic
           min: '0.00015'
@@ -5697,11 +5761,10 @@ paths:
         - {}
       x-payment-info:
         protocols:
-          - x402: {}
           - mpp:
-              method: ''
+              method: tempo
               intent: session
-              currency: ''
+              currency: USDC
         price:
           mode: dynamic
           min: '0.00015'
@@ -5758,11 +5821,10 @@ paths:
         - {}
       x-payment-info:
         protocols:
-          - x402: {}
           - mpp:
-              method: ''
+              method: tempo
               intent: session
-              currency: ''
+              currency: USDC
         price:
           mode: dynamic
           min: '0.00015'
@@ -5819,11 +5881,10 @@ paths:
         - {}
       x-payment-info:
         protocols:
-          - x402: {}
           - mpp:
-              method: ''
+              method: tempo
               intent: session
-              currency: ''
+              currency: USDC
         price:
           mode: dynamic
           min: '0.00015'
@@ -5875,11 +5936,10 @@ paths:
         - {}
       x-payment-info:
         protocols:
-          - x402: {}
           - mpp:
-              method: ''
+              method: tempo
               intent: session
-              currency: ''
+              currency: USDC
         price:
           mode: dynamic
           min: '0.00015'
@@ -5921,11 +5981,10 @@ paths:
         - {}
       x-payment-info:
         protocols:
-          - x402: {}
           - mpp:
-              method: ''
+              method: tempo
               intent: session
-              currency: ''
+              currency: USDC
         price:
           mode: dynamic
           min: '0.00015'
@@ -5967,11 +6026,10 @@ paths:
         - {}
       x-payment-info:
         protocols:
-          - x402: {}
           - mpp:
-              method: ''
+              method: tempo
               intent: session
-              currency: ''
+              currency: USDC
         price:
           mode: dynamic
           min: '0.00015'
@@ -6034,11 +6092,10 @@ paths:
         - {}
       x-payment-info:
         protocols:
-          - x402: {}
           - mpp:
-              method: ''
+              method: tempo
               intent: session
-              currency: ''
+              currency: USDC
         price:
           mode: dynamic
           min: '0.00015'
@@ -6101,11 +6158,10 @@ paths:
         - {}
       x-payment-info:
         protocols:
-          - x402: {}
           - mpp:
-              method: ''
+              method: tempo
               intent: session
-              currency: ''
+              currency: USDC
         price:
           mode: dynamic
           min: '0.00015'
@@ -6161,11 +6217,10 @@ paths:
         - {}
       x-payment-info:
         protocols:
-          - x402: {}
           - mpp:
-              method: ''
+              method: tempo
               intent: session
-              currency: ''
+              currency: USDC
         price:
           mode: dynamic
           min: '0.00015'
@@ -6204,8 +6259,10 @@ components:
     apiKey:
       type: apiKey
       in: header
-      name: X-Api-Key
-      description: API key passed via the X-Api-Key header
+      name: x-api-key
+      description:
+        API key passed via the x-api-key header. Xquik-Api-Key is accepted as a
+        non-breaking vendor-prefixed alias.
     oauthBearer:
       type: http
       scheme: bearer
@@ -6229,11 +6286,11 @@ components:
         maximum: 100
         default: 50
     After:
-      name: after
+      name: cursor
       in: query
       schema:
         type: string
-      description: Cursor for keyset pagination
+      description: Cursor for keyset pagination from prior response next_cursor
     StyleId:
       name: id
       in: path
@@ -6311,9 +6368,9 @@ components:
         X rejected the write or the media URL could not be downloaded. Possible
         codes: `x_content_too_long`, `x_duplicate_action`,
         `x_account_suspended`, `x_account_protected`, `x_target_not_found`,
-        `x_account_feature_required`, `x_rejected`, `media_download_failed`
-        (URL fetch path only - body.url not HTTPS, resolves to private IP, file
-        too large, origin error, or timeout).
+        `x_account_feature_required`, `x_rejected`, `media_download_failed` (URL
+        fetch path only - body.url not HTTPS, resolves to private IP, file too
+        large, origin error, or timeout).
       content:
         application/json:
           schema:
@@ -6330,13 +6387,16 @@ components:
     TransientError:
       description: >
         A transient upstream issue occurred. Safe to retry with exponential
-        backoff. Returns `{ "error": "x_transient_error" }`.
+        backoff. Returns error code `x_transient_error`.
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
     XApiError:
-      description: X API unavailable, unauthorized, or rate limited
+      description: >
+        Dependency unavailable, unauthorized, or rate limited. Default v1
+        returns 502. The best-practice response contract returns 424 for
+        transparent dependency failures.
       content:
         application/json:
           schema:
@@ -6344,7 +6404,7 @@ components:
     ConnectAlreadyConnected:
       description: >
         The specified X account is already connected to this Xquik account.
-        Returns `{ "error": "account_already_connected" }`.
+        Returns error code `account_already_connected`.
       content:
         application/json:
           schema:
@@ -6352,8 +6412,8 @@ components:
     ConnectLoginFailed:
       description: >
         Could not authenticate with X. The provided credentials (username,
-        password, or TOTP secret) were rejected. Returns `{ "error":
-        "login_failed" }`.
+        password, or TOTP secret) were rejected. Returns error code
+        `login_failed`.
       content:
         application/json:
           schema:
@@ -6361,8 +6421,8 @@ components:
     ConnectLoginCooldown:
       description: >
         A prior login attempt triggered a cooldown. Response includes `reason`,
-        `retryAfterMs`, and a `Retry-After` header (seconds). Returns `{
-        "error": "login_cooldown" }`.
+        `retry_after_ms`, and a `Retry-After` header in seconds. Returns error
+        code `login_cooldown`.
       content:
         application/json:
           schema:
@@ -6381,7 +6441,8 @@ components:
     ConnectUserLookupFailed:
       description: >
         The X username could not be resolved. Verify the handle is correct and
-        the account exists. Returns `{ "error": "x_user_lookup_failed" }`.
+        the account exists. Default v1 returns 502. The best-practice response
+        contract returns 424. Error code: `x_user_lookup_failed`.
       content:
         application/json:
           schema:
@@ -6389,15 +6450,15 @@ components:
     ConnectServiceUnavailable:
       description: >
         The X connection service is temporarily unavailable. Retry after a short
-        delay. Returns `{ "error": "service_unavailable" }`.
+        delay. Returns error code `service_unavailable`.
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
     ReauthAccountNotFound:
       description: >
-        No X account with this ID belongs to the authenticated user. Returns `{
-        "error": "account_not_found" }`.
+        No X account with this ID belongs to the authenticated user. Returns
+        error code `account_not_found`.
       content:
         application/json:
           schema:
@@ -6442,42 +6503,94 @@ components:
           type: string
           example: 'DAACCgACGRElMJcAAA'
     Error:
-      description: Error response containing a machine-readable error code.
+      description: >
+        Error response. Default v1 returns a legacy string error code. Send
+        `xquik-api-contract: 2026-04-29` to receive the structured best-practice
+        error object.
       type: object
       required: [error]
       properties:
         error:
-          type: string
-          title: ErrorCode
-          enum:
-            - internal_error
-            - invalid_format
-            - invalid_id
-            - invalid_input
-            - invalid_params
-            - invalid_tool_type
-            - invalid_tweet_id
-            - invalid_tweet_url
-            - invalid_username
-            - insufficient_credits
-            - missing_params
-            - missing_query
-            - monitor_already_exists
-            - monitor_limit_reached
-            - no_credits
-            - no_subscription
-            - not_found
-            - subscription_inactive
-            - tweet_not_found
-            - unauthenticated
-            - unsupported_field
-            - user_not_found
-            - webhook_inactive
-            - x_api_rate_limited
-            - x_api_unavailable
-            - x_api_unauthorized
-
-          example: 'invalid_input'
+          oneOf:
+            - type: string
+              title: LegacyErrorCode
+              enum:
+                - internal_error
+                - invalid_format
+                - invalid_id
+                - invalid_input
+                - invalid_params
+                - invalid_tool_type
+                - invalid_tweet_id
+                - invalid_tweet_url
+                - invalid_username
+                - insufficient_credits
+                - missing_params
+                - missing_query
+                - monitor_already_exists
+                - monitor_limit_reached
+                - no_credits
+                - no_subscription
+                - not_found
+                - subscription_inactive
+                - tweet_not_found
+                - unauthenticated
+                - unsupported_field
+                - user_not_found
+                - webhook_inactive
+                - x_api_rate_limited
+                - x_api_unavailable
+                - x_api_unauthorized
+              example: invalid_input
+            - type: object
+              title: StructuredError
+              required: [message, type, code]
+              properties:
+                message:
+                  type: string
+                  example: 'Invalid input. Check the request body.'
+                type:
+                  type: string
+                  enum:
+                    - api_error
+                    - authentication_error
+                    - billing_error
+                    - dependency_error
+                    - invalid_request_error
+                    - permission_error
+                    - rate_limit_error
+                  example: invalid_request_error
+                code:
+                  type: string
+                  title: ErrorCode
+                  enum:
+                    - internal_error
+                    - invalid_format
+                    - invalid_id
+                    - invalid_input
+                    - invalid_params
+                    - invalid_tool_type
+                    - invalid_tweet_id
+                    - invalid_tweet_url
+                    - invalid_username
+                    - insufficient_credits
+                    - missing_params
+                    - missing_query
+                    - monitor_already_exists
+                    - monitor_limit_reached
+                    - no_credits
+                    - no_subscription
+                    - not_found
+                    - subscription_inactive
+                    - tweet_not_found
+                    - unauthenticated
+                    - unsupported_field
+                    - user_not_found
+                    - webhook_inactive
+                    - x_api_rate_limited
+                    - x_api_unavailable
+                    - x_api_unauthorized
+                  example: invalid_input
     EventType:
       description: Type of monitor event fired when account activity occurs.
       type: string

@@ -169,6 +169,37 @@ Exceeding limits returns `429 Too Many Requests` with a `Retry-After` header. Se
     </Tabs>
     Cursors are opaque strings - do not decode or construct them manually. Monitors, webhooks, and API keys return up to 200 items without pagination.
   </Accordion>
+  <Accordion title="Opt-in response contract">
+    v1 keeps the default response contract unchanged for existing clients. Send `xquik-api-contract: 2026-04-29` to opt in to the best-practice response contract.
+
+    ```bash
+    curl "https://xquik.com/api/v1/events" \
+     -H "x-api-key: xq_YOUR_KEY_HERE" \
+     -H "xquik-api-contract: 2026-04-29"
+    ```
+
+    Opt-in responses use snake_case field names, Unix timestamps in seconds, structured error objects, `has_more` and `next_cursor` pagination fields, an `object` field on recognized resources, and prefixed IDs where available.
+
+    ```json
+    {
+      "events": [],
+      "has_more": true,
+      "next_cursor": "MjAyNi0wMi0yNFQxMDozMDowMC4wMDBa..."
+    }
+    ```
+
+    Legacy dependency failures that return `502` by default return `424 Failed Dependency` in the opt-in contract:
+
+    ```json
+    {
+      "error": {
+        "type": "dependency_error",
+        "code": "x_api_unavailable",
+        "message": "X data source temporarily unavailable. Retry shortly."
+      }
+    }
+    ```
+  </Accordion>
 </AccordionGroup>
 
 ## Event types
