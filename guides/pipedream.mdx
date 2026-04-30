@@ -53,13 +53,13 @@ export default {
     },
   },
   methods: {
-    async request($, config) {
+    async request($, config, apiKey) {
       return axios($, {
         ...config,
         baseURL: "https://xquik.com/api/v1",
         headers: {
           "content-type": "application/json",
-          "x-api-key": this.apiKey,
+          "x-api-key": apiKey,
           ...(config.headers || {}),
         },
       });
@@ -67,6 +67,9 @@ export default {
   },
 };
 ```
+
+Add `apiKey: { propDefinition: [xquik, "apiKey"] }` to each action and source
+that calls `xquik.request`.
 
 Use `GET /account` as the auth smoke test in your first action because it verifies the API key without mutating data.
 
@@ -119,15 +122,20 @@ export default {
   type: "action",
   props: {
     xquik,
+    apiKey: { propDefinition: [xquik, "apiKey"] },
     q: { type: "string", label: "Query" },
     limit: { type: "integer", label: "Limit", optional: true, default: 25 },
   },
   async run({ $ }) {
-    const data = await this.xquik.request($, {
-      method: "GET",
-      url: "/x/tweets/search",
-      params: { q: this.q, limit: this.limit },
-    });
+    const data = await this.xquik.request(
+      $,
+      {
+        method: "GET",
+        url: "/x/tweets/search",
+        params: { q: this.q, limit: this.limit },
+      },
+      this.apiKey,
+    );
 
     $.export("$summary", `Found ${(data.tweets || []).length} tweets.`);
     return data.tweets || [];
@@ -173,14 +181,19 @@ export default {
   type: "source",
   props: {
     xquik,
+    apiKey: { propDefinition: [xquik, "apiKey"] },
     timer: { type: "$.interface.timer", default: { intervalSeconds: 900 } },
   },
   async run() {
-    const data = await this.xquik.request(this, {
-      method: "GET",
-      url: "/extractions",
-      params: { status: "completed", limit: 25 },
-    });
+    const data = await this.xquik.request(
+      this,
+      {
+        method: "GET",
+        url: "/extractions",
+        params: { status: "completed", limit: 25 },
+      },
+      this.apiKey,
+    );
 
     for (const job of data.extractions || []) {
       this.$emit(job, {
