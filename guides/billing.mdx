@@ -39,7 +39,7 @@ Every subscription includes a monthly credit allowance that resets each billing 
 - Unused credits **do not carry over**
 - API calls are also subject to [rate limits](/guides/rate-limits) (separate from credit usage)
 - At 100% usage, metered calls return `402 Payment Required` (see [error handling](/guides/error-handling#billing--subscription-errors-402) for recovery patterns)
-- Non-metered operations (monitors, webhooks, account) always work
+- Managing monitors, reading stored monitor events, webhooks, and account endpoints are free. Capturing new monitor events is metered.
 
 ```json 402 response body
 { "error": "no_subscription", "message": "Subscribe to access this endpoint" }
@@ -70,6 +70,7 @@ Each metered operation deducts credits from your shared pool. Per-credit cost de
 | [Get tweet](/api-reference/x/get-tweet) | per call | 1 |
 | [Get user](/api-reference/x/get-user) | per call | 1 |
 | [Like](/api-reference/x-write/like) | per call | 10 |
+| Monitor event capture | per captured event | 1 |
 | [Notifications](/api-reference/x/notifications) | per result | 1 |
 | [Retweet](/api-reference/x-write/retweet) | per call | 10 |
 | [Remove follower](/api-reference/x-write/remove-follower) | per call | 10 |
@@ -96,11 +97,15 @@ Extractions consume 1-10 credits per result depending on the extraction type:
 | 1 per result | Followers, following, favoriters, retweeters, community members, people search, list members, list followers, verified followers |
 | 5 per result | Articles |
 
-Draws consume 1 credit per participant. Use the [estimate endpoint](/api-reference/extractions/estimate) to preview costs before running large jobs.
+Draws charge for the source tweet lookup, reply search, optional retweeter profile checks when `mustRetweet` is true, and optional follow checks for unique authors when `mustFollowUsername` is set. The draw first checks that the minimum cost is affordable. Remaining credits cap how many replies and retweeters can be inspected before filters and winner selection run. If the final computed cost cannot be deducted, the API returns `402 insufficient_credits` and does not persist a draw result.
+
+### Credit-affordable result pages
+
+Paid X read endpoints that charge per returned result treat `limit`, `pageSize`, `count`, and multi-ID request sizes as upper bounds. If the remaining credit balance cannot cover the full requested page, the endpoint can return fewer results than requested. If zero paid results are affordable, it returns `402 insufficient_credits`.
 
 ### Free operations
 
-The following do not consume any credits: managing monitors (get, update, delete) and all webhook operations (create, get, update, delete, deliveries, test); reading, fetching, and exporting extractions and draws; cost estimates; tweet composition (compose, refine, score); style cache management; drafts; support tickets; API key management; X account management; and credit top-ups ([checkout](/api-reference/credits/topup) and [quick top-up](/api-reference/credits/quick-topup)). Account status and [radar](/api-reference/radar/list) are also free.
+The following do not consume any credits: managing monitors (create, get, update, delete), reading stored monitor events, and all webhook operations (create, get, update, delete, deliveries, test); reading, fetching, and exporting extractions and draws; cost estimates; tweet composition (compose, refine, score); style cache management; drafts; support tickets; API key management; X account management; and credit top-ups ([checkout](/api-reference/credits/topup) and [quick top-up](/api-reference/credits/quick-topup)). Account status and [radar](/api-reference/radar/list) are also free. Capturing new monitor events costs 1 credit per event, and a monitor pauses when an event cannot be charged.
 
 ## Credit top-ups
 
@@ -108,6 +113,7 @@ If you need more credits beyond the included monthly allowance, purchase additio
 
 - Use the [top-up endpoint](/api-reference/credits/topup) to redirect to Stripe checkout
 - Use the [quick top-up endpoint](/api-reference/credits/quick-topup) to instantly charge your saved payment method
+- Configure automatic top-up from the dashboard. `GET /credits` and `GET /account` return the enabled status, dollar amount, and trigger threshold.
 - Top-up credits cost $0.00015 each and are added to your balance immediately
 - Top-up credits do not expire and carry over between billing periods
 
@@ -187,12 +193,14 @@ curl -s https://xquik.com/api/v1/account \
     "balance": 77000,
     "lifetimePurchased": 140000,
     "lifetimeUsed": 63000,
-    "autoTopupEnabled": false
+    "autoTopupEnabled": false,
+    "autoTopupAmountDollars": 10,
+    "autoTopupThreshold": "50000"
   }
 }
 ```
 
-The `creditInfo.balance` field shows how many credits remain. At 0, metered calls are rejected until you [top up credits](/api-reference/credits/topup).
+The `creditInfo.balance` field shows how many credits remain. The automatic top-up fields show whether top-up is enabled, the charge amount, and the balance threshold. At 0, metered calls are rejected until you [top up credits](/api-reference/credits/topup).
 
 <Tip>
   Poll the account endpoint periodically to track usage. Build alerts when `creditInfo.balance` drops below 20% of your plan's allowance to avoid hitting the limit unexpectedly.
@@ -202,7 +210,7 @@ The `creditInfo.balance` field shows how many credits remain. At 0, metered call
 
 <AccordionGroup>
   <Accordion title="What happens when I run out of credits?">
-    Metered calls return `402 Payment Required`. Non-metered operations (monitors, webhooks, account) continue working. [Top up credits](/api-reference/credits/topup) from the dashboard to continue.
+    Metered calls return `402 Payment Required`. Managing monitors, reading stored monitor events, webhooks, and account endpoints continue working. New monitor event capture pauses when an event cannot be charged. [Top up credits](/api-reference/credits/topup) from the dashboard to continue.
   </Accordion>
   <Accordion title="Do unused credits carry over?">
     No. Credits reset to zero each billing period.

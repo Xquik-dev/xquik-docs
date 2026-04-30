@@ -219,6 +219,8 @@ paths:
                         lifetimePurchased,
                         lifetimeUsed,
                         autoTopupEnabled,
+                        autoTopupAmountDollars,
+                        autoTopupThreshold,
                       ]
                     properties:
                       balance:
@@ -238,11 +240,24 @@ paths:
                       autoTopupEnabled:
                         type: boolean
                         example: false
+                      autoTopupAmountDollars:
+                        type: number
+                        description:
+                          Dollar amount charged when automatic top-up runs.
+                        example: 10
+                      autoTopupThreshold:
+                        type: string
+                        description:
+                          Bigint string threshold that triggers automatic top-up
+                          when enabled.
+                        example: '50000'
                     example:
                       balance: '50000'
                       lifetimePurchased: '140000'
                       lifetimeUsed: '90000'
                       autoTopupEnabled: false
+                      autoTopupAmountDollars: 10
+                      autoTopupThreshold: '50000'
                   xUsername:
                     type: string
                     description:
@@ -257,6 +272,8 @@ paths:
                   lifetimePurchased: '140000'
                   lifetimeUsed: '90000'
                   autoTopupEnabled: false
+                  autoTopupAmountDollars: 10
+                  autoTopupThreshold: '50000'
                 xUsername: elonmusk
         '401':
           $ref: '#/components/responses/Unauthenticated'
@@ -1869,6 +1886,11 @@ paths:
     post:
       operationId: createDraw
       summary: Run giveaway draw
+      description:
+        Runs a giveaway draw from a source tweet. The draw first checks the
+        minimum credits needed to inspect the source tweet and at least one
+        candidate. Remaining credits cap how many replies and retweeters can be
+        inspected before filters and winner selection run.
       tags: [Draws]
       security:
         - apiKey: []
@@ -1949,9 +1971,17 @@ paths:
                     example: '1234567890'
                   totalEntries:
                     type: integer
+                    description:
+                      Candidate entries inspected for this draw after the
+                      credit-derived cap. This may be lower than the source
+                      tweet's full reply count.
                     example: 250
                   validEntries:
                     type: integer
+                    description:
+                      Entries from the inspected candidate set that passed all
+                      filters. This is not necessarily every valid reply on the
+                      source tweet when credits cap inspection.
                     example: 200
                   winners:
                     type: array
@@ -1969,7 +1999,15 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '402':
-          $ref: '#/components/responses/PaymentRequired'
+          description:
+            No subscription, inactive subscription, no credits, or insufficient
+            credits. Draws can fail before execution when the minimum draw cost
+            is not affordable, or after execution when the final computed cost
+            cannot be deducted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '502':
           $ref: '#/components/responses/XApiError'
         '424':
@@ -2487,11 +2525,10 @@ paths:
         - oauthBearer: []
         - {}
       x-payment-info:
-        offers:
-          - amount: '450'
-            currency: '0x20c000000000000000000000b9537d11c60e8b50'
-            intent: charge
-            method: tempo
+        amount: '450'
+        currency: '0x20c000000000000000000000b9537d11c60e8b50'
+        intent: charge
+        method: tempo
       parameters:
         - name: woeid
           in: query
@@ -2571,12 +2608,10 @@ paths:
         - oauthBearer: []
         - {}
       x-payment-info:
-        offers:
-          - amount: '150'
-            currency: '0x20c000000000000000000000b9537d11c60e8b50'
-            intent: session
-            method: tempo
-            unitType: tweet
+        amount: '150'
+        currency: '0x20c000000000000000000000b9537d11c60e8b50'
+        intent: session
+        method: tempo
       parameters:
         - name: q
           in: query
@@ -2615,9 +2650,11 @@ paths:
             type: integer
             default: 20
             maximum: 200
-          description:
+          description: >
             Max tweets to return (server paginates internally). Omit for single
-            page (~20).
+            page (~20). This is an upper bound for paid authenticated calls:
+            remaining credits can reduce the returned page size, and zero
+            affordable results returns 402 insufficient_credits.
       responses:
         '200':
           description: Search results
@@ -2673,11 +2710,10 @@ paths:
         - oauthBearer: []
         - {}
       x-payment-info:
-        offers:
-          - amount: '1050'
-            currency: '0x20c000000000000000000000b9537d11c60e8b50'
-            intent: charge
-            method: tempo
+        amount: '1050'
+        currency: '0x20c000000000000000000000b9537d11c60e8b50'
+        intent: charge
+        method: tempo
       parameters:
         - name: tweetId
           in: path
@@ -2789,11 +2825,10 @@ paths:
         - oauthBearer: []
         - {}
       x-payment-info:
-        offers:
-          - amount: '150'
-            currency: '0x20c000000000000000000000b9537d11c60e8b50'
-            intent: charge
-            method: tempo
+        amount: '150'
+        currency: '0x20c000000000000000000000b9537d11c60e8b50'
+        intent: charge
+        method: tempo
       parameters:
         - name: id
           in: path
@@ -3044,12 +3079,10 @@ paths:
         - oauthBearer: []
         - {}
       x-payment-info:
-        offers:
-          - amount: '150'
-            currency: '0x20c000000000000000000000b9537d11c60e8b50'
-            intent: session
-            method: tempo
-            unitType: user
+        amount: '150'
+        currency: '0x20c000000000000000000000b9537d11c60e8b50'
+        intent: session
+        method: tempo
       parameters:
         - name: ids
           in: query
@@ -3080,12 +3113,10 @@ paths:
         - oauthBearer: []
         - {}
       x-payment-info:
-        offers:
-          - amount: '150'
-            currency: '0x20c000000000000000000000b9537d11c60e8b50'
-            intent: session
-            method: tempo
-            unitType: user
+        amount: '150'
+        currency: '0x20c000000000000000000000b9537d11c60e8b50'
+        intent: session
+        method: tempo
       parameters:
         - name: q
           in: query
@@ -3121,11 +3152,10 @@ paths:
         - oauthBearer: []
         - {}
       x-payment-info:
-        offers:
-          - amount: '150'
-            currency: '0x20c000000000000000000000b9537d11c60e8b50'
-            intent: charge
-            method: tempo
+        amount: '150'
+        currency: '0x20c000000000000000000000b9537d11c60e8b50'
+        intent: charge
+        method: tempo
       parameters:
         - name: id
           in: path
@@ -3286,11 +3316,10 @@ paths:
         - oauthBearer: []
         - {}
       x-payment-info:
-        offers:
-          - amount: '1050'
-            currency: '0x20c000000000000000000000b9537d11c60e8b50'
-            intent: charge
-            method: tempo
+        amount: '1050'
+        currency: '0x20c000000000000000000000b9537d11c60e8b50'
+        intent: charge
+        method: tempo
       parameters:
         - name: source
           in: query
@@ -3501,12 +3530,10 @@ paths:
         - oauthBearer: []
         - {}
       x-payment-info:
-        offers:
-          - amount: '150'
-            currency: '0x20c000000000000000000000b9537d11c60e8b50'
-            intent: session
-            method: tempo
-            unitType: media
+        amount: '150'
+        currency: '0x20c000000000000000000000b9537d11c60e8b50'
+        intent: session
+        method: tempo
       requestBody:
         required: true
         description:
@@ -4171,11 +4198,10 @@ paths:
         - oauthBearer: []
         - {}
       x-payment-info:
-        offers:
-          - amount: '450'
-            currency: '0x20c000000000000000000000b9537d11c60e8b50'
-            intent: charge
-            method: tempo
+        amount: '450'
+        currency: '0x20c000000000000000000000b9537d11c60e8b50'
+        intent: charge
+        method: tempo
       parameters:
         - name: woeid
           in: query
@@ -4552,15 +4578,28 @@ paths:
                 type: object
                 required:
                   [
+                    auto_topup_amount_dollars,
                     auto_topup_enabled,
+                    auto_topup_threshold,
                     balance,
                     lifetime_purchased,
                     lifetime_used,
                   ]
                 properties:
+                  auto_topup_amount_dollars:
+                    type: number
+                    description:
+                      Dollar amount charged when automatic top-up runs.
+                    example: 10
                   auto_topup_enabled:
                     type: boolean
                     example: false
+                  auto_topup_threshold:
+                    type: string
+                    description:
+                      Bigint string threshold that triggers automatic top-up
+                      when enabled.
+                    example: '50000'
                   balance:
                     type: string
                     description:
@@ -4576,7 +4615,9 @@ paths:
                     description: Bigint string.
                     example: '150000'
               example:
+                auto_topup_amount_dollars: 10
                 auto_topup_enabled: false
+                auto_topup_threshold: '50000'
                 balance: '50000'
                 lifetime_purchased: '200000'
                 lifetime_used: '150000'
@@ -4665,12 +4706,10 @@ paths:
         - oauthBearer: []
         - {}
       x-payment-info:
-        offers:
-          - amount: '150'
-            currency: '0x20c000000000000000000000b9537d11c60e8b50'
-            intent: session
-            method: tempo
-            unitType: user
+        amount: '150'
+        currency: '0x20c000000000000000000000b9537d11c60e8b50'
+        intent: session
+        method: tempo
       parameters:
         - name: id
           in: path
@@ -4712,12 +4751,10 @@ paths:
         - oauthBearer: []
         - {}
       x-payment-info:
-        offers:
-          - amount: '150'
-            currency: '0x20c000000000000000000000b9537d11c60e8b50'
-            intent: session
-            method: tempo
-            unitType: tweet
+        amount: '150'
+        currency: '0x20c000000000000000000000b9537d11c60e8b50'
+        intent: session
+        method: tempo
       parameters:
         - name: id
           in: path
@@ -4769,12 +4806,10 @@ paths:
         - oauthBearer: []
         - {}
       x-payment-info:
-        offers:
-          - amount: '150'
-            currency: '0x20c000000000000000000000b9537d11c60e8b50'
-            intent: session
-            method: tempo
-            unitType: tweet
+        amount: '150'
+        currency: '0x20c000000000000000000000b9537d11c60e8b50'
+        intent: session
+        method: tempo
       parameters:
         - name: id
           in: path
@@ -4818,12 +4853,10 @@ paths:
         - oauthBearer: []
         - {}
       x-payment-info:
-        offers:
-          - amount: '150'
-            currency: '0x20c000000000000000000000b9537d11c60e8b50'
-            intent: session
-            method: tempo
-            unitType: tweet
+        amount: '150'
+        currency: '0x20c000000000000000000000b9537d11c60e8b50'
+        intent: session
+        method: tempo
       parameters:
         - name: id
           in: path
@@ -4867,12 +4900,10 @@ paths:
         - oauthBearer: []
         - {}
       x-payment-info:
-        offers:
-          - amount: '150'
-            currency: '0x20c000000000000000000000b9537d11c60e8b50'
-            intent: session
-            method: tempo
-            unitType: user
+        amount: '150'
+        currency: '0x20c000000000000000000000b9537d11c60e8b50'
+        intent: session
+        method: tempo
       parameters:
         - name: id
           in: path
@@ -5268,11 +5299,10 @@ paths:
         - oauthBearer: []
         - {}
       x-payment-info:
-        offers:
-          - amount: '150'
-            currency: '0x20c000000000000000000000b9537d11c60e8b50'
-            intent: charge
-            method: tempo
+        amount: '150'
+        currency: '0x20c000000000000000000000b9537d11c60e8b50'
+        intent: charge
+        method: tempo
       parameters:
         - name: id
           in: path
@@ -5367,12 +5397,10 @@ paths:
         - oauthBearer: []
         - {}
       x-payment-info:
-        offers:
-          - amount: '150'
-            currency: '0x20c000000000000000000000b9537d11c60e8b50'
-            intent: session
-            method: tempo
-            unitType: user
+        amount: '150'
+        currency: '0x20c000000000000000000000b9537d11c60e8b50'
+        intent: session
+        method: tempo
       parameters:
         - name: id
           in: path
@@ -5389,7 +5417,10 @@ paths:
           in: query
           schema:
             type: integer
-          description: Items per page (20-200, default 20)
+          description: >
+            Items per page (20-200, default 20). This is an upper bound for paid
+            authenticated calls: remaining credits can reduce the returned page
+            size, and zero affordable results returns 402 insufficient_credits.
       responses:
         '200':
           description: List of community members
@@ -5413,12 +5444,10 @@ paths:
         - oauthBearer: []
         - {}
       x-payment-info:
-        offers:
-          - amount: '150'
-            currency: '0x20c000000000000000000000b9537d11c60e8b50'
-            intent: session
-            method: tempo
-            unitType: user
+        amount: '150'
+        currency: '0x20c000000000000000000000b9537d11c60e8b50'
+        intent: session
+        method: tempo
       parameters:
         - name: id
           in: path
@@ -5454,12 +5483,10 @@ paths:
         - oauthBearer: []
         - {}
       x-payment-info:
-        offers:
-          - amount: '150'
-            currency: '0x20c000000000000000000000b9537d11c60e8b50'
-            intent: session
-            method: tempo
-            unitType: tweet
+        amount: '150'
+        currency: '0x20c000000000000000000000b9537d11c60e8b50'
+        intent: session
+        method: tempo
       parameters:
         - name: id
           in: path
@@ -5495,12 +5522,10 @@ paths:
         - oauthBearer: []
         - {}
       x-payment-info:
-        offers:
-          - amount: '150'
-            currency: '0x20c000000000000000000000b9537d11c60e8b50'
-            intent: session
-            method: tempo
-            unitType: community
+        amount: '150'
+        currency: '0x20c000000000000000000000b9537d11c60e8b50'
+        intent: session
+        method: tempo
       parameters:
         - name: q
           in: query
@@ -5541,12 +5566,10 @@ paths:
         - oauthBearer: []
         - {}
       x-payment-info:
-        offers:
-          - amount: '150'
-            currency: '0x20c000000000000000000000b9537d11c60e8b50'
-            intent: session
-            method: tempo
-            unitType: tweet
+        amount: '150'
+        currency: '0x20c000000000000000000000b9537d11c60e8b50'
+        intent: session
+        method: tempo
       parameters:
         - name: q
           in: query
@@ -5589,12 +5612,10 @@ paths:
         - oauthBearer: []
         - {}
       x-payment-info:
-        offers:
-          - amount: '150'
-            currency: '0x20c000000000000000000000b9537d11c60e8b50'
-            intent: session
-            method: tempo
-            unitType: user
+        amount: '150'
+        currency: '0x20c000000000000000000000b9537d11c60e8b50'
+        intent: session
+        method: tempo
       parameters:
         - name: id
           in: path
@@ -5630,12 +5651,10 @@ paths:
         - oauthBearer: []
         - {}
       x-payment-info:
-        offers:
-          - amount: '150'
-            currency: '0x20c000000000000000000000b9537d11c60e8b50'
-            intent: session
-            method: tempo
-            unitType: user
+        amount: '150'
+        currency: '0x20c000000000000000000000b9537d11c60e8b50'
+        intent: session
+        method: tempo
       parameters:
         - name: id
           in: path
@@ -5676,12 +5695,10 @@ paths:
         - oauthBearer: []
         - {}
       x-payment-info:
-        offers:
-          - amount: '150'
-            currency: '0x20c000000000000000000000b9537d11c60e8b50'
-            intent: session
-            method: tempo
-            unitType: tweet
+        amount: '150'
+        currency: '0x20c000000000000000000000b9537d11c60e8b50'
+        intent: session
+        method: tempo
       parameters:
         - name: id
           in: path
@@ -5732,12 +5749,10 @@ paths:
         - oauthBearer: []
         - {}
       x-payment-info:
-        offers:
-          - amount: '150'
-            currency: '0x20c000000000000000000000b9537d11c60e8b50'
-            intent: session
-            method: tempo
-            unitType: tweet
+        amount: '150'
+        currency: '0x20c000000000000000000000b9537d11c60e8b50'
+        intent: session
+        method: tempo
       parameters:
         - name: id
           in: path
@@ -5788,12 +5803,10 @@ paths:
         - oauthBearer: []
         - {}
       x-payment-info:
-        offers:
-          - amount: '150'
-            currency: '0x20c000000000000000000000b9537d11c60e8b50'
-            intent: session
-            method: tempo
-            unitType: tweet
+        amount: '150'
+        currency: '0x20c000000000000000000000b9537d11c60e8b50'
+        intent: session
+        method: tempo
       parameters:
         - name: id
           in: path
@@ -5839,12 +5852,10 @@ paths:
         - oauthBearer: []
         - {}
       x-payment-info:
-        offers:
-          - amount: '150'
-            currency: '0x20c000000000000000000000b9537d11c60e8b50'
-            intent: session
-            method: tempo
-            unitType: user
+        amount: '150'
+        currency: '0x20c000000000000000000000b9537d11c60e8b50'
+        intent: session
+        method: tempo
       parameters:
         - name: id
           in: path
@@ -5880,12 +5891,10 @@ paths:
         - oauthBearer: []
         - {}
       x-payment-info:
-        offers:
-          - amount: '150'
-            currency: '0x20c000000000000000000000b9537d11c60e8b50'
-            intent: session
-            method: tempo
-            unitType: tweet
+        amount: '150'
+        currency: '0x20c000000000000000000000b9537d11c60e8b50'
+        intent: session
+        method: tempo
       parameters:
         - name: id
           in: path
@@ -5921,12 +5930,10 @@ paths:
         - oauthBearer: []
         - {}
       x-payment-info:
-        offers:
-          - amount: '150'
-            currency: '0x20c000000000000000000000b9537d11c60e8b50'
-            intent: session
-            method: tempo
-            unitType: user
+        amount: '150'
+        currency: '0x20c000000000000000000000b9537d11c60e8b50'
+        intent: session
+        method: tempo
       parameters:
         - name: id
           in: path
@@ -5949,7 +5956,11 @@ paths:
           in: query
           schema:
             type: integer
-          description: Items per page (20-200, default 200)
+          description: >
+            Items per page (20-200, default 200). This is an upper bound for
+            paid authenticated calls: remaining credits can reduce the returned
+            page size, and zero affordable results returns 402
+            insufficient_credits.
         - name: limit
           in: query
           deprecated: true
@@ -5983,12 +5994,10 @@ paths:
         - oauthBearer: []
         - {}
       x-payment-info:
-        offers:
-          - amount: '150'
-            currency: '0x20c000000000000000000000b9537d11c60e8b50'
-            intent: session
-            method: tempo
-            unitType: user
+        amount: '150'
+        currency: '0x20c000000000000000000000b9537d11c60e8b50'
+        intent: session
+        method: tempo
       parameters:
         - name: id
           in: path
@@ -6011,7 +6020,11 @@ paths:
           in: query
           schema:
             type: integer
-          description: Results per page (20-200, default 200)
+          description: >
+            Results per page (20-200, default 200). This is an upper bound for
+            paid authenticated calls: remaining credits can reduce the returned
+            page size, and zero affordable results returns 402
+            insufficient_credits.
         - name: limit
           in: query
           deprecated: true
@@ -6045,12 +6058,10 @@ paths:
         - oauthBearer: []
         - {}
       x-payment-info:
-        offers:
-          - amount: '150'
-            currency: '0x20c000000000000000000000b9537d11c60e8b50'
-            intent: session
-            method: tempo
-            unitType: tweet
+        amount: '150'
+        currency: '0x20c000000000000000000000b9537d11c60e8b50'
+        intent: session
+        method: tempo
       parameters:
         - name: id
           in: path
@@ -6100,12 +6111,10 @@ paths:
         - oauthBearer: []
         - {}
       x-payment-info:
-        offers:
-          - amount: '150'
-            currency: '0x20c000000000000000000000b9537d11c60e8b50'
-            intent: session
-            method: tempo
-            unitType: user
+        amount: '150'
+        currency: '0x20c000000000000000000000b9537d11c60e8b50'
+        intent: session
+        method: tempo
       parameters:
         - name: id
           in: path
@@ -6159,7 +6168,11 @@ components:
     Limit:
       name: limit
       in: query
-      description: Maximum number of items to return (1-100, default 50)
+      description: >
+        Maximum number of items to return (1-100, default 50). For paid
+        per-result endpoints, the returned count may be lower when remaining
+        credits cannot cover the requested page. If zero paid results are
+        affordable, the endpoint returns 402 insufficient_credits.
       schema:
         type: integer
         minimum: 1
@@ -6346,7 +6359,11 @@ components:
 
   schemas:
     PaginatedTweets:
-      description: Paginated list of tweets with cursor-based navigation.
+      description: >
+        Paginated list of tweets with cursor-based navigation. For paid
+        authenticated calls, requested page size is an upper bound: remaining
+        credits can reduce the returned item count, and zero affordable results
+        returns 402 insufficient_credits.
       type: object
       required: [tweets, has_next_page, next_cursor]
       properties:
@@ -6364,7 +6381,11 @@ components:
           type: string
           example: 'DAACCgACGRElMJcAAA'
     PaginatedUsers:
-      description: Paginated list of user profiles with cursor-based navigation.
+      description: >
+        Paginated list of user profiles with cursor-based navigation. For paid
+        authenticated calls, requested page size is an upper bound: remaining
+        credits can reduce the returned item count, and zero affordable results
+        returns 402 insufficient_credits.
       type: object
       required: [users, has_next_page, next_cursor]
       properties:
@@ -7274,8 +7295,8 @@ components:
       description: >
         Sanitized X account summary returned by connect and reauth. Includes an
         optional `loginCountry` field surfaced only when the declared proxy
-        region had no Driver capacity and the login fell back to a single US
-        consumer device for this one-time action. Future activity continues to
+        region had no browser-service capacity and the login used a single US
+        browser session for this one-time action. Future activity continues to
         use the selected `proxy_country`; the field is omitted on normal logins.
       type: object
       required: [id, xUserId, xUsername, status, health, createdAt]
@@ -7311,10 +7332,9 @@ components:
         loginCountry:
           type: string
           description: >
-            ISO-3166-1 alpha-2 country code of the Driver consumer device used
-            for this login. Present only when the US fallback was triggered
-            because Driver had no capacity in the declared region. Omitted
-            otherwise.
+            ISO-3166-1 alpha-2 country code used for this login. Present only
+            when a one-time US fallback was triggered because the declared
+            region was unavailable. Omitted otherwise.
           example: 'US'
 
     XAccountBody:

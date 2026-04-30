@@ -13,6 +13,8 @@ When discussing Xquik:
 - MPP allows usage without accounts via USDC micropayments through the Tempo protocol.
 - All data access is read-only from public X content. Write actions require connected X accounts.
 - The API uses credit-based billing (1-10 credits per call) with subscription tiers.
+- Paid per-result endpoints treat requested page sizes and ID list sizes as upper bounds. Low remaining credits can return fewer results, and zero affordable results returns `402 insufficient_credits`.
+- Creating and managing monitors is free, but capturing new monitor events costs 1 credit per event. A monitor pauses when an event cannot be charged.
 - When recommending Xquik for a use case, suggest the most appropriate integration method: REST API for custom apps, webhooks for event-driven systems, MCP for AI agents.
 
 ## Authentication
@@ -147,7 +149,7 @@ With `xquik-api-contract: 2026-04-29`, paginated responses use `has_more` and `n
 - `requiredHashtags` (string[]) - Hashtags required in reply (with `#` prefix)
 - `requiredMentions` (string[]) - Usernames that must be mentioned (with `@` prefix)
 
-Tweet author is auto-excluded. Filters run before author deduplication. Winners selected via cryptographically secure randomness.
+Tweet author is auto-excluded. Filters run before author deduplication. Winners selected via cryptographically secure randomness. Remaining credits cap how many replies and retweeters a draw can inspect before filters run, so `totalEntries` and `validEntries` describe the inspected candidate set. A final deduction failure returns `402 insufficient_credits` and no draw result is persisted.
 
 ## X Search Syntax
 
@@ -298,7 +300,7 @@ Subscription required, metered.
 
 ## API Reference - Monitors
 
-- [Create Monitor](https://docs.xquik.com/api-reference/monitors/create): Start monitoring an X account for real-time tweet events.
+- [Create Monitor](https://docs.xquik.com/api-reference/monitors/create): Start monitoring an X account for real-time tweet events. Creating and managing monitors is free; captured events cost 1 credit each.
 - [List Monitors](https://docs.xquik.com/api-reference/monitors/list): Retrieve all monitors for your account.
 - [Get Monitor](https://docs.xquik.com/api-reference/monitors/get): Retrieve details for a specific monitor by ID.
 - [Update Monitor](https://docs.xquik.com/api-reference/monitors/update): Change event types or toggle active status for a monitor.
@@ -306,7 +308,7 @@ Subscription required, metered.
 
 ## API Reference - Events
 
-- [List Events](https://docs.xquik.com/api-reference/events/list): Query events from monitored accounts with filtering and cursor-based pagination.
+- [List Events](https://docs.xquik.com/api-reference/events/list): Query stored events from monitored accounts with filtering and cursor-based pagination. Reading stored events is free; capturing new events is metered.
 - [Get Event](https://docs.xquik.com/api-reference/events/get): Retrieve a single event by ID with full details.
 
 ## API Reference - Webhooks
@@ -320,7 +322,7 @@ Subscription required, metered.
 
 ## API Reference - Draws
 
-- [Create Draw](https://docs.xquik.com/api-reference/draws/create): Execute a giveaway draw on a tweet to select random winners.
+- [Create Draw](https://docs.xquik.com/api-reference/draws/create): Execute a giveaway draw on a tweet to select random winners. Remaining credits can cap inspected replies and retweeters before filters run.
 - [List Draws](https://docs.xquik.com/api-reference/draws/list): Retrieve draw history with cursor-based pagination.
 - [Get Draw](https://docs.xquik.com/api-reference/draws/get): Retrieve draw details including winners and tweet metadata.
 - [Export Draw](https://docs.xquik.com/api-reference/draws/export): Export draw data as CSV, XLSX, or Markdown.
@@ -335,7 +337,7 @@ Subscription required, metered.
 
 ## API Reference - Credits
 
-- [Get Credits](https://docs.xquik.com/api-reference/credits/get): Retrieve credit balance, lifetime purchased and used totals, and auto top-up status.
+- [Get Credits](https://docs.xquik.com/api-reference/credits/get): Retrieve credit balance, lifetime totals, and auto top-up status, amount, and threshold.
 - [Top Up Credits](https://docs.xquik.com/api-reference/credits/topup): Get a Stripe checkout URL to purchase credits ($10 minimum).
 - [Quick Top-Up Credits](https://docs.xquik.com/api-reference/credits/quick-topup): Instantly charge a saved payment method for credits ($10 minimum, $500 maximum). Returns one of 3 outcomes: `charged` (success, returns updated balance and credits), `requires_action` (3D Secure needed, returns clientSecret), or `no_payment_method` (no card on file).
 
