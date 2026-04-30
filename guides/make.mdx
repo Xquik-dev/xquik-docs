@@ -1,0 +1,256 @@
+---
+title: Make
+description: Build a private Make custom app for Xquik with API-key auth, search, trends, extraction jobs, monitor webhooks, and X actions
+keywords: ["make", "make.com", "workflow automation", "twitter", "x", "webhooks", "extractions"]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+<LlmsDirective />
+
+Use Xquik in Make when a scenario needs X (Twitter) search, account lookups, trends, publishing, extraction jobs, monitors, or webhook automation without an X Developer app.
+
+Make discontinued its native X app in 2025. Start with a private Make custom app so your team can keep scenarios focused, test auth safely, and decide later whether to request public app review.
+
+## Prerequisites
+
+- [Xquik API key](/quickstart)
+- Make organization with Custom Apps access
+- HTTPS Make webhook URL for instant monitor-event scenarios
+- Optional Slack, Sheets, Airtable, or CRM module for downstream steps
+
+## App Shape
+
+| Surface | Initial scope |
+|---------|---------------|
+| Connection | API key parameter named `apiKey`, injected as `x-api-key` |
+| Base URL | `https://xquik.com/api/v1` |
+| Modules | Search Tweets, Get Tweet, Get User, Get Trends, Create Tweet, Create Extraction, Create Monitor, Create Webhook, Make an API Call |
+| Triggers | Monitor Event instant webhook, Extraction Completed polling |
+| Error handling | Map `401`, `402`, `429`, and `5xx` to short scenario messages |
+
+Make custom apps split this into a connection, base request settings, modules, and optional webhook components. Use Xquik's `/account` endpoint as the connection test because it validates the API key without mutating data.
+
+## Connection
+
+Create a connection parameter that stores the API key as a password field:
+
+```json
+[
+  {
+    "name": "apiKey",
+    "label": "Xquik API Key",
+    "type": "password",
+    "required": true,
+    "editable": true,
+    "help": "Create an API key in the Xquik dashboard."
+  }
+]
+```
+
+Use `GET /account` to validate the connection:
+
+```json
+{
+  "url": "https://xquik.com/api/v1/account",
+  "method": "GET",
+  "headers": {
+    "x-api-key": "{{parameters.apiKey}}"
+  },
+  "response": {
+    "metadata": {
+      "type": "email",
+      "value": "{{body.email}}"
+    },
+    "error": {
+      "message": "{{body.message || body.error || 'Xquik authentication failed.'}}"
+    }
+  },
+  "log": {
+    "sanitize": ["request.headers.x-api-key"]
+  }
+}
+```
+
+## Base Request Pattern
+
+Use one base request pattern for JSON modules:
+
+```json
+{
+  "baseUrl": "https://xquik.com/api/v1",
+  "headers": {
+    "x-api-key": "{{connection.apiKey}}",
+    "content-type": "application/json"
+  },
+  "response": {
+    "error": {
+      "message": "{{body.message || body.error || 'Xquik request failed.'}}"
+    }
+  },
+  "log": {
+    "sanitize": ["request.headers.x-api-key"]
+  }
+}
+```
+
+Handle status codes consistently:
+
+| Status | Make scenario message |
+|--------|-----------------------|
+| `401` | Authentication failed. Check the Xquik API key. |
+| `402` | Subscription or credits required. Update billing in Xquik. |
+| `429` | Rate limited. Respect the `Retry-After` header before retrying. |
+| `5xx` | Xquik service unavailable. Retry with exponential backoff. |
+
+## Starter Modules
+
+| Module | Make type | Method and path | Notes |
+|--------|-----------|-----------------|-------|
+| Search Tweets | Search | `GET /x/tweets/search` | Inputs: `q`, `limit`, optional `cursor` |
+| Get Tweet | Action | `GET /x/tweets/{id}` | Input: tweet ID |
+| Get User | Action | `GET /x/users/{id}` | Input: user ID or username |
+| Get Trends | Search | `GET /x/trends` | Inputs: optional `woeid` and `count` |
+| Create Tweet | Action | `POST /x/tweets` | Inputs: account, text, optional media URLs |
+| Create Extraction | Action | `POST /extractions` | Inputs: `toolType`, query fields, result limit |
+| Create Monitor | Action | `POST /monitors` | Inputs: username and event types |
+| Create Webhook | Action | `POST /webhooks` | Inputs: callback URL and event types |
+| Make an API Call | Universal | Any `/api/v1` path | Escape hatch for endpoints not yet modeled |
+
+Example Search Tweets module communication:
+
+```json
+{
+  "url": "/x/tweets/search",
+  "method": "GET",
+  "qs": {
+    "q": "{{parameters.q}}",
+    "limit": "{{parameters.limit || 25}}",
+    "cursor": "{{parameters.cursor}}"
+  },
+  "response": {
+    "iterate": "{{body.tweets}}",
+    "output": {
+      "id": "{{item.id}}",
+      "text": "{{item.text}}",
+      "authorUsername": "{{item.author.username}}",
+      "url": "{{item.url}}"
+    }
+  }
+}
+```
+
+## Instant Trigger: Monitor Events
+
+Use a dedicated Make webhook for monitor events. Register that webhook URL in Xquik:
+
+```json
+{
+  "url": "https://xquik.com/api/v1/webhooks",
+  "method": "POST",
+  "body": {
+    "url": "{{webhook.url}}",
+    "eventTypes": ["tweet.new", "tweet.reply", "tweet.quote", "tweet.retweet"]
+  }
+}
+```
+
+Then create or confirm the monitor:
+
+```json
+{
+  "url": "https://xquik.com/api/v1/monitors",
+  "method": "POST",
+  "body": {
+    "username": "xquikcom",
+    "eventTypes": ["tweet.new", "tweet.reply", "tweet.quote", "tweet.retweet"]
+  }
+}
+```
+
+Map webhook output fields for downstream modules:
+
+| Make field | Xquik payload field |
+|------------|---------------------|
+| Event type | `eventType` |
+| Occurred at | `occurredAt` |
+| Username | `username` |
+| Tweet ID | `data.id` |
+| Text | `data.text` |
+| Author username | `data.author.userName` |
+
+Keep the webhook secret returned by Xquik. If the scenario includes a verification step before routing, verify `x-xquik-signature` with that secret before sending alerts.
+
+## Polling Trigger: Extraction Completed
+
+Use a polling trigger when users want bulk results without webhook setup:
+
+```json
+{
+  "url": "/extractions",
+  "method": "GET",
+  "qs": {
+    "status": "completed",
+    "limit": 25
+  },
+  "response": {
+    "iterate": "{{body.extractions}}",
+    "uid": "{{item.id}}",
+    "output": {
+      "id": "{{item.id}}",
+      "status": "{{item.status}}",
+      "toolType": "{{item.toolType}}",
+      "createdAt": "{{item.createdAt}}",
+      "completedAt": "{{item.completedAt}}"
+    }
+  }
+}
+```
+
+Fetch the job detail with `GET /extractions/{id}` and loop through `nextCursor` when `hasMore` is true.
+
+## Recipes
+
+### Social Listening To Slack
+
+| Step | Make module |
+|------|-------------|
+| 1 | Xquik Monitor Event instant trigger |
+| 2 | Text parser or filter for topic keywords |
+| 3 | Slack Create a Message |
+| 4 | Data store upsert by tweet ID |
+
+### Daily Topic Research To Sheets
+
+| Step | Make module |
+|------|-------------|
+| 1 | Scheduler |
+| 2 | Xquik Search Tweets |
+| 3 | Iterator |
+| 4 | Google Sheets Add a Row |
+
+### Bulk Extraction To CRM
+
+| Step | Make module |
+|------|-------------|
+| 1 | Scheduler or manual trigger |
+| 2 | Xquik Create Extraction |
+| 3 | Sleep or polling trigger |
+| 4 | Xquik Get Extraction |
+| 5 | CRM upsert by user ID |
+
+## Test Checklist
+
+- Connection test rejects invalid API keys with a clear `401` message.
+- Every module sanitizes `x-api-key` in logs.
+- Search modules return arrays and stable IDs for Make deduplication.
+- Instant trigger maps `tweet.new`, `tweet.reply`, `tweet.quote`, and `tweet.retweet`.
+- Extraction polling stops when no new completed jobs are returned.
+- `429` errors tell users to wait for `Retry-After`.
+- The Universal module accepts any `/api/v1` path but still injects the API key.
+
+## Next Steps
+
+- Read [Webhooks](/webhooks/overview) for payload shape and retries.
+- Read [Extraction Workflow](/guides/extraction-workflow) for job creation and pagination.
+- Use [Zapier](/guides/zapier) or [Pipedream](/guides/pipedream) when the team prefers code-backed workflow components.

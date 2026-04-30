@@ -1,0 +1,251 @@
+---
+title: Pipedream
+description: Build Xquik Pipedream components with API-key auth, starter actions, monitor-event sources, and extraction polling
+keywords: ["pipedream", "workflow automation", "components", "twitter", "x", "webhooks", "extractions"]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+<LlmsDirective />
+
+Use Xquik in Pipedream when a workflow needs X (Twitter) search, account lookups, trends, publishing, extraction jobs, monitors, or webhook automation with one API key.
+
+Start with a source-available component package. Keep the first release small: one app file, eight actions, and two sources. Add more endpoints after workflows repeatedly fall back to a manual API request.
+
+## Prerequisites
+
+- [Xquik API key](/quickstart)
+- Pipedream account
+- Node.js 18+
+- Pipedream CLI installed and authenticated
+
+```bash
+npm install -g @pipedream/cli
+pd login
+```
+
+## Component Shape
+
+| Surface | Initial scope |
+|---------|---------------|
+| App | `components/xquik/app/xquik.app.ts` |
+| Auth | API key prop injected as `x-api-key` |
+| Base URL | `https://xquik.com/api/v1` |
+| Actions | Get Tweet, Search Tweets, Get User, Get Trends, Create Tweet, Create Extraction, Create Monitor, Create Webhook |
+| Sources | Monitor Event Webhook, Extraction Completed Polling |
+| Shared helper | JSON requests, structured Xquik errors, `Retry-After` handling |
+
+## App File
+
+Create the shared app component first:
+
+```typescript
+import { axios } from "@pipedream/platform";
+
+export default {
+  type: "app",
+  app: "xquik",
+  propDefinitions: {
+    apiKey: {
+      type: "string",
+      label: "Xquik API Key",
+      secret: true,
+    },
+  },
+  methods: {
+    async request($, config) {
+      return axios($, {
+        ...config,
+        baseURL: "https://xquik.com/api/v1",
+        headers: {
+          "content-type": "application/json",
+          "x-api-key": this.apiKey,
+          ...(config.headers || {}),
+        },
+      });
+    },
+  },
+};
+```
+
+Use `GET /account` as the auth smoke test in your first action because it verifies the API key without mutating data.
+
+## Shared Error Handling
+
+Wrap requests so every action and source reports the same remediation:
+
+```typescript
+function xquikErrorMessage(status: number, body: unknown, headers: Record<string, string>) {
+  if (status === 401) return "Authentication failed. Check the Xquik API key.";
+  if (status === 402) return "Subscription or credits required. Update billing in Xquik.";
+  if (status === 429) {
+    const retryAfter = headers["retry-after"];
+    return retryAfter
+      ? `Rate limited. Retry after ${retryAfter} seconds.`
+      : "Rate limited. Retry after the cooldown period.";
+  }
+  if (typeof body === "object" && body !== null && "message" in body) {
+    return String((body as { message: unknown }).message);
+  }
+  return "Xquik request failed.";
+}
+```
+
+Pipedream actions should call the helper once per request and export a short `$summary` so the workflow run is scannable.
+
+## Starter Actions
+
+| Action | Method and path | Output |
+|--------|-----------------|--------|
+| Get Tweet | `GET /x/tweets/{id}` | One tweet |
+| Search Tweets | `GET /x/tweets/search` | Array of tweets |
+| Get User | `GET /x/users/{id}` | One user |
+| Get Trends | `GET /x/trends` | Trend list |
+| Create Tweet | `POST /x/tweets` | Created tweet metadata |
+| Create Extraction | `POST /extractions` | Job ID and status |
+| Create Monitor | `POST /monitors` | Monitor ID and status |
+| Create Webhook | `POST /webhooks` | Webhook ID and secret |
+
+Example Search Tweets action:
+
+```typescript
+import xquik from "../../app/xquik.app";
+
+export default {
+  key: "xquik-search-tweets",
+  name: "Search Tweets",
+  description: "Search recent X posts with Xquik.",
+  version: "0.0.1",
+  type: "action",
+  props: {
+    xquik,
+    q: { type: "string", label: "Query" },
+    limit: { type: "integer", label: "Limit", optional: true, default: 25 },
+  },
+  async run({ $ }) {
+    const data = await this.xquik.request($, {
+      method: "GET",
+      url: "/x/tweets/search",
+      params: { q: this.q, limit: this.limit },
+    });
+
+    $.export("$summary", `Found ${(data.tweets || []).length} tweets.`);
+    return data.tweets || [];
+  },
+};
+```
+
+## Source 1: Monitor Event Webhook
+
+Use this for immediate tweet, reply, quote, and retweet alerts.
+
+Setup flow:
+
+1. Pipedream creates an HTTP endpoint for the source.
+2. The source calls `POST /webhooks` with that endpoint and selected event types.
+3. The user creates or selects an Xquik monitor.
+4. Each webhook payload emits one event with a stable ID.
+
+Payload mapping:
+
+| Pipedream field | Xquik payload field |
+|-----------------|---------------------|
+| `id` | `streamEventId` or `deliveryId` |
+| `eventType` | `eventType` |
+| `occurredAt` | `occurredAt` |
+| `username` | `username` |
+| `tweetId` | `data.id` |
+| `text` | `data.text` |
+| `authorUsername` | `data.author.userName` |
+
+Keep the webhook secret returned by Xquik and verify `x-xquik-signature` before emitting events.
+
+## Source 2: Extraction Completed Polling
+
+Use this when teams want batch jobs without webhook setup.
+
+```typescript
+export default {
+  key: "xquik-extraction-completed",
+  name: "Extraction Completed",
+  description: "Emit completed Xquik extraction jobs.",
+  version: "0.0.1",
+  type: "source",
+  props: {
+    xquik,
+    timer: { type: "$.interface.timer", default: { intervalSeconds: 900 } },
+  },
+  async run() {
+    const data = await this.xquik.request(this, {
+      method: "GET",
+      url: "/extractions",
+      params: { status: "completed", limit: 25 },
+    });
+
+    for (const job of data.extractions || []) {
+      this.$emit(job, {
+        id: job.id,
+        summary: `Extraction ${job.id} completed`,
+        ts: Date.parse(job.completedAt || job.updatedAt || job.createdAt),
+      });
+    }
+  },
+};
+```
+
+## Recipes
+
+### Search Tweets To Slack
+
+| Step | Pipedream component |
+|------|---------------------|
+| 1 | Schedule trigger |
+| 2 | Xquik Search Tweets |
+| 3 | Filter by minimum engagement |
+| 4 | Slack Send Message |
+
+### Monitor Events To CRM
+
+| Step | Pipedream component |
+|------|---------------------|
+| 1 | Xquik Monitor Event Webhook source |
+| 2 | Filter by `eventType` |
+| 3 | Enrich with Get User |
+| 4 | CRM upsert by user ID |
+
+### Extraction To Warehouse
+
+| Step | Pipedream component |
+|------|---------------------|
+| 1 | Xquik Create Extraction |
+| 2 | Xquik Extraction Completed source |
+| 3 | Fetch extraction detail |
+| 4 | Send rows to the warehouse destination |
+
+## Test Coverage
+
+Add focused tests before sharing the component package:
+
+| Test | Expected assertion |
+|------|--------------------|
+| Auth injection | Every request includes `x-api-key` and never logs the key |
+| Invalid key | `401` produces "Authentication failed. Check the Xquik API key." |
+| Rate limit | `429` includes `Retry-After` when present |
+| Search action | Returns an array with stable tweet IDs |
+| Create webhook | Sends callback URL and selected event types |
+| Webhook source | Emits one event per payload with a stable ID |
+| Polling source | Emits only completed extraction jobs |
+
+Run component tests and publish privately first:
+
+```bash
+npm test
+pd publish components/xquik/actions/search-tweets/search-tweets.ts
+```
+
+## Next Steps
+
+- Read [API Reference](/api-reference/overview) for auth, rate limits, and errors.
+- Read [Webhooks](/webhooks/overview) for payload shape and retries.
+- Read [Extraction Workflow](/guides/extraction-workflow) for job creation and result pagination.
+- Use [Make](/guides/make) or [Zapier](/guides/zapier) when the team wants no-code scenario builders.
