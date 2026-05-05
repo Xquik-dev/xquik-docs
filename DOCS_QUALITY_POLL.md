@@ -196,6 +196,15 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
   subscription checks, so `402` was stale in OpenAPI for those routes. `POST
   /styles` and `GET /styles/{id}/performance` still legitimately document
   `402`.
+- Run 2026-05-05 22:36 UTC: refreshed Mintlify score report remained 94/100
+  with 25/29 checks passing. The prior public-build hygiene fix is now visible:
+  `llms.txt` covers 100% of 189 sitemap doc pages.
+- Drafts endpoint source audit found all Drafts routes run through
+  `withV1Auth`, so tier rate limits can return `429` with
+  `rate_limit_exceeded`, `retryAfter`, and a `Retry-After` header.
+- Draft routes do not run subscription checks, so `402` was stale in OpenAPI
+  for list, create, get, and delete draft operations. Draft ID routes return
+  `400 invalid_id` before database lookup when the `{id}` value is malformed.
 
 ## Completed Changes
 
@@ -342,6 +351,17 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
   36 tests passed and 1 skipped; `bunx --bun mint validate` passed;
   `bunx --bun mint broken-links` passed; `git diff --check` passed; no edited
   file contained an em dash or banned spaced double-hyphen sequence.
+- Added the Drafts endpoint family to the fully audited response-status set in
+  `api-response-status.test.ts`.
+- Corrected Drafts OpenAPI error status coverage: removed stale `402`
+  responses, added Xquik tier `429` rate-limit responses, and added missing
+  `400` responses for malformed draft IDs.
+- Updated Drafts API pages with `429 Rate Limited` tabs that document
+  `rate_limit_exceeded`, `retryAfter`, and `Retry-After` retry guidance.
+- Run 2026-05-05 22:36 UTC checks: `bun run test:agent-docs` passed with
+  36 tests passed and 1 skipped; `bunx --bun mint validate` passed;
+  `bunx --bun mint broken-links` passed; `git diff --check` passed; no edited
+  file contained an em dash or banned spaced double-hyphen sequence.
 
 ## Unresolved Risks
 
@@ -386,6 +406,9 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
 - Styles endpoints now have all-status parity guarded. Other endpoint families
   still need source-verified error status audits before they can be added to
   the fully audited set.
+- Drafts endpoints now have all-status parity guarded. Remaining endpoint
+  families still need source-verified error status audits before they can be
+  added to the fully audited set.
 
 ## Recommendations For Next Run
 
@@ -436,9 +459,9 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
     small endpoint family, verify each against product routes, then decide
     whether to update OpenAPI, endpoint docs, or both before expanding the
     guard beyond 2xx statuses.
-18. Pick the next endpoint family for all-status parity after Styles. Good
-    candidates are Drafts, Webhooks, Monitors, or Credits because each has a
-    compact route surface and meaningful error-status drift.
+18. Pick the next endpoint family for all-status parity after Styles and
+    Drafts. Good candidates are Webhooks, Monitors, or Credits because each has
+    a compact route surface and meaningful error-status drift.
 
 ## Prompt For Next Run
 
@@ -487,11 +510,12 @@ Run one focused improvement loop per poll:
    success response-status guard and verify route behavior against product
    source before changing OpenAPI or endpoint docs. Expand full status parity
    only by adding source-verified endpoint families to the fully audited
-   operation set in `api-response-status.test.ts`. If you touch `docs.json`,
-   `llms.txt`, or navigation, run the `llms.txt` coverage and navigation
-   default-state guards, keep the file below the 50,000 character score
-   threshold, and keep nested X API endpoint groups expanded by default. If you
-   touch page metadata, run the SEO metadata guard and keep descriptions
+   operation set in `api-response-status.test.ts`; Styles and Drafts are
+   already covered, so prefer Webhooks, Monitors, or Credits next. If you touch
+   `docs.json`, `llms.txt`, or navigation, run the `llms.txt` coverage and
+   navigation default-state guards, keep the file below the 50,000 character
+   score threshold, and keep nested X API endpoint groups expanded by default.
+   If you touch page metadata, run the SEO metadata guard and keep descriptions
    useful, specific, and search-preview friendly. If you touch API endpoint
    pages, run the API content-quality guard and preserve copy-ready code
    examples, headers, response documentation, and a successful response tab. If

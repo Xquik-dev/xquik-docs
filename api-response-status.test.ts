@@ -10,10 +10,14 @@ const RESPONSE_TAB_PATTERN = /<Tab title="(\d{3})\b/gu;
 const STATUS_CODE_PATTERN = /^\d{3}$/u;
 const FULL_STATUS_AUDITED_OPERATIONS = new Set([
   'DELETE /styles/{id}',
+  'DELETE /drafts/{id}',
+  'GET /drafts',
+  'GET /drafts/{id}',
   'GET /styles',
   'GET /styles/{id}',
   'GET /styles/{id}/performance',
   'GET /styles/compare',
+  'POST /drafts',
   'POST /styles',
   'PUT /styles/{id}',
 ]);
