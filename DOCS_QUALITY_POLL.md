@@ -177,6 +177,15 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
   collapsed unless `expanded: true` is set. `docs.json` already keeps every
   nested X API group expanded: Users, Tweets, Relationships, Engagement,
   Timeline & DMs, Communities, and Lists.
+- Run 2026-05-05 21:45 UTC: refreshed Mintlify score report remained 94/100
+  with 25/29 checks passing. The remaining failed score item is still generated
+  HTML size, while markdown page size and direct markdown access pass.
+- Success-response status audit found one OpenAPI drift: `POST /styles`
+  documented only `200`, but product source returns `201` when it refreshes and
+  upserts a style profile via `styleUpsertResponse(upserted, 201)`.
+- A strict all-status response audit found broader existing error-status drift
+  between OpenAPI and endpoint tabs. That is too large for one poll cycle and
+  should be handled as a dedicated source-truth audit before enforcing.
 
 ## Completed Changes
 
@@ -295,6 +304,17 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
   34 tests passed and 1 skipped; `bunx --bun mint validate` passed;
   `bunx --bun mint broken-links` passed; `git diff --check` passed; no edited
   file contained an em dash or banned spaced double-hyphen sequence.
+- Added `api-response-status.test.ts`, which checks every API endpoint page's
+  2xx response tabs against OpenAPI success response statuses.
+- Wired the success response-status guard into `bun run test:agent-docs`.
+- Corrected `openapi.yaml` for `POST /styles` by documenting both `200` cached
+  style responses and `201` created or refreshed style responses.
+- Updated the live automation prompt to include response status parity, the
+  success response-status guard, and small-slice error status parity work.
+- Run 2026-05-05 21:45 UTC checks: `bun run test:agent-docs` passed with
+  35 tests passed and 1 skipped; `bunx --bun mint validate` passed;
+  `bunx --bun mint broken-links` passed; `git diff --check` passed; no edited
+  file contained an em dash or banned spaced double-hyphen sequence.
 
 ## Unresolved Risks
 
@@ -333,6 +353,9 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
 - Navigation state is now guarded from `docs.json`, but this run intentionally
   skipped browser or localhost visual checks under the static-check-only poll
   rule.
+- Success response status parity is now guarded. Error response status parity
+  is not yet enforced because the first strict audit found broad drift that
+  needs endpoint-by-endpoint product source verification.
 
 ## Recommendations For Next Run
 
@@ -379,6 +402,10 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
 16. Keep the X API sidebar groups expanded by default. If API Reference
     navigation changes, run the navigation default-state guard and verify
     nested group behavior against official Mintlify navigation docs.
+17. Continue response-status parity work. Start with error status codes for a
+    small endpoint family, verify each against product routes, then decide
+    whether to update OpenAPI, endpoint docs, or both before expanding the
+    guard beyond 2xx statuses.
 
 ## Prompt For Next Run
 
@@ -391,10 +418,10 @@ First, pull latest changes and inspect `git status`. Read
 `DOCS_QUALITY_POLL.md`, `docs.json`, `openapi.yaml`, and the highest-risk docs
 from the recommendations above. Preserve unrelated user changes. Remember that
 `bun run test:agent-docs` now includes prose endpoint-string, event-type,
-required request-field, `llms.txt` coverage, SEO metadata, API content-quality,
-navigation default-state, and Mintlify ignore guards; treat failures as docs
-accuracy, navigation usability, or quality issues unless a guard itself is
-plainly wrong.
+required request-field, success response-status, `llms.txt` coverage, SEO
+metadata, API content-quality, navigation default-state, and Mintlify ignore
+guards; treat failures as docs accuracy, navigation usability, or quality
+issues unless a guard itself is plainly wrong.
 
 Also review the Mintlify score report at `https://www.mintlify.com/score/xquik`
 and the markdown version at `https://www.mintlify.com/score/xquik.md`. Try to
@@ -423,16 +450,18 @@ Run one focused improvement loop per poll:
    and payload wording against OpenAPI plus product event source files. If you
    touch API request docs or OpenAPI request bodies, run the required-field
    guard and verify any conditional fields or legacy aliases against product
-   routes before changing public docs. If you touch `docs.json`, `llms.txt`, or
-   navigation, run the `llms.txt` coverage and navigation default-state guards,
-   keep the file below the 50,000 character score threshold, and keep nested X
-   API endpoint groups expanded by default. If you touch page metadata, run the
-   SEO metadata guard and keep descriptions useful, specific, and
-   search-preview friendly. If you touch API endpoint pages, run the API
-   content-quality guard and preserve copy-ready code examples, headers,
-   response documentation, and a successful response tab. If you add root
-   Markdown support files, update `.mintignore` unless they are intentionally
-   public docs pages.
+   routes before changing public docs. If you touch response statuses, run the
+   success response-status guard and verify route behavior against product
+   source before changing OpenAPI or endpoint docs. If you touch `docs.json`,
+   `llms.txt`, or navigation, run the `llms.txt` coverage and navigation
+   default-state guards, keep the file below the 50,000 character score
+   threshold, and keep nested X API endpoint groups expanded by default. If you
+   touch page metadata, run the SEO metadata guard and keep descriptions
+   useful, specific, and search-preview friendly. If you touch API endpoint
+   pages, run the API content-quality guard and preserve copy-ready code
+   examples, headers, response documentation, and a successful response tab. If
+   you add root Markdown support files, update `.mintignore` unless they are
+   intentionally public docs pages.
 2. Improve docs directly when the fix is clear. Make content more correct,
    useful, detailed, persuasive, or SEO aligned. Keep claims factual and
    specific.
