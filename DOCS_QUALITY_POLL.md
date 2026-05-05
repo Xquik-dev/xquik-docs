@@ -114,6 +114,15 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
   `webhook.test` as a non-subscribable test payload event.
 - `webhooks/overview.mdx` still described follower event payloads even though
   follower event types were removed from the current public contract.
+- Run 2026-05-05 19:24 UTC: request-field audit found OpenAPI drift for
+  `POST /credits/topup`; the product route reads a required `dollars` body
+  field, but `openapi.yaml` documented `amount`.
+- The same audit found OpenAPI drift for `POST /subscribe`; the product route
+  accepts an optional `tier` body field, but `openapi.yaml` had no request
+  body for the operation.
+- The same audit found OpenAPI drift for `POST /x/media`; the product route
+  accepts multipart uploads with `file` or JSON URL uploads with `url`, but
+  `openapi.yaml` only documented the multipart file path.
 
 ## Completed Changes
 
@@ -162,6 +171,23 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
   28 tests passed and 1 skipped; `bunx --bun mint validate` passed;
   `bunx --bun mint broken-links` passed; `git diff --check` passed; no edited
   file contained an em dash or banned spaced double-hyphen sequence.
+- Added `api-params.test.ts`, which parses `openapi.yaml` and checks every API
+  reference page documents required OpenAPI path, query, and body fields with a
+  required marker.
+- Updated `bun run test:agent-docs` to execute Vitest with `bunx --bun` because
+  the new OpenAPI parser uses Bun's YAML parser.
+- Corrected `openapi.yaml` for `POST /credits/topup` by replacing `amount`
+  with required `dollars`, adding optional `locale`, and updating the example.
+- Corrected `openapi.yaml` for `POST /subscribe` by documenting the optional
+  `tier` request body field.
+- Corrected `openapi.yaml` for `POST /x/media` by documenting both multipart
+  `file` uploads and JSON `url` uploads.
+- Added optional `locale` body documentation to
+  `api-reference/credits/topup.mdx`.
+- Run 2026-05-05 19:24 UTC checks: `bun run test:agent-docs` passed with
+  29 tests passed and 1 skipped; `bunx --bun mint validate` passed;
+  `bunx --bun mint broken-links` passed; `git diff --check` passed; no edited
+  file contained an em dash or banned spaced double-hyphen sequence.
 
 ## Unresolved Risks
 
@@ -179,6 +205,10 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
 - Event-type docs now have an automated guard, but the guard only covers event
   tokens, retired follower-event wording, and required mentions in core event
   docs. It does not verify every webhook payload field against product code.
+- Required request fields now have an automated guard, but optional fields are
+  only partially covered. The next guard should compare optional top-level
+  request fields, response fields, and status codes after resolving intentional
+  conditional fields and legacy aliases.
 
 ## Recommendations For Next Run
 
@@ -198,10 +228,10 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
 7. After updating this file, also update the live automation prompt when the
    recurring workflow itself can be improved.
 8. Commit and push successful changes to `main` after checks pass.
-9. Extend automated docs guards beyond endpoint strings and event names.
-   Prioritize checking documented request fields, response fields, status
-   codes, pagination fields, and webhook payload fields against `openapi.yaml`
-   and product source.
+9. Extend automated docs guards beyond endpoint strings, event names, and
+   required request fields. Prioritize optional top-level request fields,
+   response fields, status codes, pagination fields, and webhook payload fields
+   against `openapi.yaml` and product source.
 
 ## Prompt For Next Run
 
@@ -213,9 +243,9 @@ to trust.
 First, pull latest changes and inspect `git status`. Read
 `DOCS_QUALITY_POLL.md`, `docs.json`, `openapi.yaml`, and the highest-risk docs
 from the recommendations above. Preserve unrelated user changes. Remember that
-`bun run test:agent-docs` now includes prose endpoint-string and event-type
-guards; treat failures as docs accuracy issues unless a guard itself is plainly
-wrong.
+`bun run test:agent-docs` now includes prose endpoint-string, event-type, and
+required request-field guards; treat failures as docs accuracy issues unless a
+guard itself is plainly wrong.
 
 Run one focused improvement loop per poll:
 
@@ -224,7 +254,10 @@ Run one focused improvement loop per poll:
    dashboard flows, tool capabilities, or high-value comparison pages. If you
    touch endpoint prose, use the endpoint-string guard to catch placeholder and
    route drift. If you touch monitoring or webhook docs, compare event types
-   and payload wording against OpenAPI plus product event source files.
+   and payload wording against OpenAPI plus product event source files. If you
+   touch API request docs or OpenAPI request bodies, run the required-field
+   guard and verify any conditional fields or legacy aliases against product
+   routes before changing public docs.
 2. Improve docs directly when the fix is clear. Make content more correct,
    useful, detailed, persuasive, or SEO aligned. Keep claims factual and
    specific.

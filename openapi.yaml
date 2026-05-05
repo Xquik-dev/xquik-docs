@@ -535,6 +535,21 @@ paths:
       security:
         - apiKey: []
         - oauthBearer: []
+      requestBody:
+        required: false
+        description: Optional subscription tier to pre-select at checkout.
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                tier:
+                  type: string
+                  enum: [starter, pro, business]
+                  description: Subscription tier to pre-select.
+                  example: pro
+            example:
+              tier: pro
       responses:
         '200':
           description: Billing URL
@@ -3751,7 +3766,9 @@ paths:
         - oauthBearer: []
       requestBody:
         required: true
-        description: Account, media file, and optional long-video flag.
+        description:
+          Upload media with multipart form data, or provide a JSON URL for
+          server-side download.
         content:
           multipart/form-data:
             schema:
@@ -3774,6 +3791,23 @@ paths:
               account: '@elonmusk'
               file: 'file_value'
               is_long_video: true
+          application/json:
+            schema:
+              type: object
+              required: [account, url]
+              properties:
+                account:
+                  type: string
+                  description: X account (@username or ID) uploading media
+                  example: '@elonmusk'
+                url:
+                  type: string
+                  format: uri
+                  description: HTTPS URL to download and upload as media
+                  example: 'https://example.com/image.png'
+            example:
+              account: '@elonmusk'
+              url: 'https://example.com/image.png'
       responses:
         '200':
           description: Media uploaded
@@ -4924,19 +4958,24 @@ paths:
         - oauthBearer: []
       requestBody:
         required: true
-        description: Credit amount to add to the account balance.
+        description: Dollar amount to add to the account balance.
         content:
           application/json:
             schema:
               type: object
-              required: [amount]
+              required: [dollars]
               properties:
-                amount:
+                dollars:
                   type: integer
-                  description: Amount to top up in credits
-                  example: 10000
+                  description: Amount to top up in US dollars. Minimum 10.
+                  minimum: 10
+                  example: 10
+                locale:
+                  type: string
+                  description: Optional checkout locale. Defaults to en.
+                  example: en
             example:
-              amount: 10000
+              dollars: 10
       responses:
         '200':
           $ref: '#/components/responses/Success'
