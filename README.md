@@ -2,7 +2,7 @@
 
 Public documentation for [Xquik](https://xquik.com), the X (Twitter) real-time data and automation platform. Built on [Mintlify](https://mintlify.com), deployed at **[docs.xquik.com](https://docs.xquik.com)**.
 
-This repository powers the developer reference: REST API, webhooks, MCP server, OAuth 2.1, SDKs, and how-to guides. Marketing content (blog, comparisons, glossary) lives on the main app at [xquik.com](https://xquik.com).
+This repository powers the developer reference: REST API, webhooks, MCP server, OAuth 2.1, SDKs, glossary, and how-to guides. Main-domain pages should link or redirect here when the content is technical reference, implementation guidance, or API documentation.
 
 ## What's covered
 
