@@ -223,6 +223,21 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
 - The webhook creation route returns a plaintext 64-character hex HMAC secret
   once at creation time. The OpenAPI example used a `whsec_`-style placeholder
   that did not match product behavior.
+- Run 2026-05-05 23:24 UTC: refreshed Mintlify score report remained 94/100
+  with 25/29 checks passing. The docs DNS migration is live, `llms.txt` still
+  resolves, and the report still shows the generated HTML size failure as the
+  only failed component.
+- Credits endpoint source audit found all Credits routes run through
+  `withV1Auth`, so tier rate limits can return `429` with
+  `rate_limit_exceeded`, `retryAfter`, and a `Retry-After` header.
+- Credits routes do not run subscription checks, so `402` was stale in OpenAPI
+  for get credits, standard top-up checkout, top-up status, and quick top-up.
+- Credits OpenAPI success schemas were stale for standard top-up and quick
+  top-up. The product returns a checkout `url` for standard top-up, and quick
+  top-up returns one of `charged`, `requires_action`, or `no_payment_method`
+  result bodies.
+- Top-up status can return `amount_dollars: null`, and `credits` is omitted
+  unless the billing status has a credit amount.
 
 ## Completed Changes
 
@@ -393,6 +408,18 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
   36 tests passed and 1 skipped; `bunx --bun mint validate` passed;
   `bunx --bun mint broken-links` passed; `git diff --check` passed; no edited
   file contained an em dash or banned spaced double-hyphen sequence.
+- Added the Credits endpoint family to the fully audited response-status set in
+  `api-response-status.test.ts`.
+- Corrected Credits OpenAPI error status coverage: removed stale `402`
+  responses and added Xquik tier `429` rate-limit responses.
+- Corrected Credits OpenAPI success response schemas for standard top-up,
+  quick top-up, and nullable top-up status fields.
+- Updated Credits API pages with `429 Rate Limited` tabs and removed the stale
+  `402 Payment required` tab from top-up status.
+- Run 2026-05-05 23:24 UTC checks: `bun run test:agent-docs` passed with
+  36 tests passed and 1 skipped; `bunx --bun mint validate` passed;
+  `bunx --bun mint broken-links` passed; `git diff --check` passed; no edited
+  file contained an em dash or banned spaced double-hyphen sequence.
 
 ## Unresolved Risks
 
@@ -443,6 +470,13 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
 - Webhooks endpoints now have all-status parity guarded. Remaining endpoint
   families still need source-verified error status audits before they can be
   added to the fully audited set.
+- Credits endpoints now have all-status parity guarded. Remaining endpoint
+  families still need source-verified error status audits before they can be
+  added to the fully audited set.
+- Quick top-up still needs a product follow-up if below-minimum or above-maximum
+  amounts should reliably return a public `400` instead of a generic failure.
+  This run narrowed the docs' explicit `400` text to route-level validation
+  that the current source returns directly.
 
 ## Recommendations For Next Run
 
@@ -494,8 +528,8 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
     whether to update OpenAPI, endpoint docs, or both before expanding the
     guard beyond 2xx statuses.
 18. Pick the next endpoint family for all-status parity after Styles, Drafts,
-    and Webhooks. Good candidates are Monitors or Credits because each has a
-    compact route surface and meaningful error-status drift.
+    Webhooks, and Credits. Monitors are the next best candidate because they
+    have meaningful error-status drift and a high-value docs surface.
 
 ## Prompt For Next Run
 
@@ -544,12 +578,12 @@ Run one focused improvement loop per poll:
    success response-status guard and verify route behavior against product
    source before changing OpenAPI or endpoint docs. Expand full status parity
    only by adding source-verified endpoint families to the fully audited
-   operation set in `api-response-status.test.ts`; Styles, Drafts, and
-   Webhooks are already covered, so prefer Monitors or Credits next. If you
-   touch `docs.json`, `llms.txt`, or navigation, run the `llms.txt` coverage
-   and navigation default-state guards, keep the file below the 50,000
-   character score threshold, and keep nested X API endpoint groups expanded
-   by default. If you touch page metadata, run the SEO metadata guard and keep
+   operation set in `api-response-status.test.ts`; Styles, Drafts, Webhooks,
+   and Credits are already covered, so prefer Monitors next. If you touch
+   `docs.json`, `llms.txt`, or navigation, run the `llms.txt` coverage and
+   navigation default-state guards, keep the file below the 50,000 character
+   score threshold, and keep nested X API endpoint groups expanded by default.
+   If you touch page metadata, run the SEO metadata guard and keep
    descriptions useful, specific, and search-preview friendly. If you touch API endpoint
    pages, run the API content-quality guard and preserve copy-ready code
    examples, headers, response documentation, and a successful response tab. If

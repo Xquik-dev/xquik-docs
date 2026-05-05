@@ -4972,9 +4972,8 @@ paths:
                 lifetime_used: '150000'
         '401':
           $ref: '#/components/responses/Unauthenticated'
-
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
   /credits/topup:
     post:
       operationId: topUpCredits
@@ -5006,14 +5005,27 @@ paths:
               dollars: 10
       responses:
         '200':
-          $ref: '#/components/responses/Success'
+          description: Top-up checkout URL
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [url]
+                properties:
+                  url:
+                    type: string
+                    format: uri
+                    description:
+                      Checkout URL where the user completes the top-up payment.
+                    example: 'https://xquik.com/billing/checkout/session'
+              example:
+                url: 'https://xquik.com/billing/checkout/session'
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
-
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
   /credits/topup/status:
     get:
       operationId: getCreditTopupStatus
@@ -5040,7 +5052,9 @@ paths:
                 required: [status]
                 properties:
                   amount_dollars:
-                    type: integer
+                    anyOf:
+                      - type: integer
+                      - type: 'null'
                     description: Dollar amount requested for the top-up.
                     minimum: 10
                     example: 25
@@ -5060,10 +5074,10 @@ paths:
           $ref: '#/components/responses/InvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
         '404':
           $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
   /credits/quick-topup:
     post:
       operationId: quickTopUpCredits
@@ -5092,13 +5106,66 @@ paths:
               dollars: 25
       responses:
         '200':
-          $ref: '#/components/responses/Success'
+          description: Quick top-up result
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: object
+                    required: [outcome, balance, credits]
+                    properties:
+                      outcome:
+                        type: string
+                        const: charged
+                      balance:
+                        type: string
+                        description:
+                          Updated credit balance as a bigint string.
+                        example: '1450'
+                      credits:
+                        type: string
+                        description:
+                          Credits added by this top-up as a bigint string.
+                        example: '1000'
+                  - type: object
+                    required: [outcome, clientSecret]
+                    properties:
+                      outcome:
+                        type: string
+                        const: requires_action
+                      clientSecret:
+                        type: string
+                        description:
+                          Payment client secret for completing authentication.
+                        example: pi_3abc_secret_xyz
+                  - type: object
+                    required: [outcome]
+                    properties:
+                      outcome:
+                        type: string
+                        const: no_payment_method
+              examples:
+                charged:
+                  summary: Payment succeeded
+                  value:
+                    outcome: charged
+                    balance: '1450'
+                    credits: '1000'
+                requiresAction:
+                  summary: Additional authentication required
+                  value:
+                    outcome: requires_action
+                    clientSecret: pi_3abc_secret_xyz
+                noPaymentMethod:
+                  summary: No saved payment method
+                  value:
+                    outcome: no_payment_method
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
   /x/tweets/{id}/favoriters:
     get:
       operationId: getTweetFavoriters
