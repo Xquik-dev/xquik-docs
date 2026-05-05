@@ -162,6 +162,13 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
   endpoint pages had code examples, response sections, and successful response
   tabs. `api-reference/radar/list.mdx` was the only endpoint page without a
   dedicated headers section.
+- Run 2026-05-05 21:03 UTC: refreshed Mintlify score report showed 94/100 with
+  25/29 checks passing. The previous `llms.txt` freshness warning improved from
+  86% to 99%, but the live sitemap still exposed
+  `https://docs.xquik.com/DOCS_QUALITY_POLL`.
+- The internal docs poll handoff page was publicly reachable and appeared in
+  the live sitemap. It should not be part of `docs.xquik.com` or the Mintlify
+  score corpus.
 
 ## Completed Changes
 
@@ -262,6 +269,14 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
   32 tests passed and 1 skipped; `bunx --bun mint validate` passed;
   `bunx --bun mint broken-links` passed; `git diff --check` passed; no edited
   file contained an em dash or banned spaced double-hyphen sequence.
+- Added `DOCS_QUALITY_POLL.md` to `.mintignore` so the internal poll handoff is
+  removed from future public docs builds and sitemap output.
+- Added `mintignore.test.ts`, which ensures internal docs poll files stay out
+  of the public Mintlify build.
+- Wired the Mintlify ignore guard into `bun run test:agent-docs`.
+- Run 2026-05-05 21:03 UTC checks: `bun run test:agent-docs` passed with
+  33 tests passed and 1 skipped; `bunx --bun mint validate` passed;
+  `bunx --bun mint broken-links` passed.
 
 ## Unresolved Risks
 
@@ -295,6 +310,8 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
 - The API content-quality guard checks structural coverage only. It does not yet
   compare documented response fields, status codes, or error examples against
   `openapi.yaml` and product source.
+- The current deployed docs may continue serving `DOCS_QUALITY_POLL` until the
+  next Mintlify deploy completes and the score report reruns.
 
 ## Recommendations For Next Run
 
@@ -335,6 +352,9 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
 14. Extend API content-quality automation from structure to schema parity.
     Prioritize response status coverage, response field coverage, pagination
     field coverage, and error shape checks against `openapi.yaml`.
+15. Keep internal handoff, audit, and automation files out of the public docs
+    build. Before adding root Markdown support files, either list them in
+    `.mintignore` or intentionally add public-facing frontmatter and navigation.
 
 ## Prompt For Next Run
 
@@ -347,9 +367,9 @@ First, pull latest changes and inspect `git status`. Read
 `DOCS_QUALITY_POLL.md`, `docs.json`, `openapi.yaml`, and the highest-risk docs
 from the recommendations above. Preserve unrelated user changes. Remember that
 `bun run test:agent-docs` now includes prose endpoint-string, event-type,
-required request-field, `llms.txt` coverage, SEO metadata, and API
-content-quality guards; treat failures as docs accuracy or quality issues unless
-a guard itself is plainly wrong.
+required request-field, `llms.txt` coverage, SEO metadata, API content-quality,
+and Mintlify ignore guards; treat failures as docs accuracy or quality issues
+unless a guard itself is plainly wrong.
 
 Also review the Mintlify score report at `https://www.mintlify.com/score/xquik`
 and the markdown version at `https://www.mintlify.com/score/xquik.md`. Try to
@@ -384,7 +404,8 @@ Run one focused improvement loop per poll:
    metadata guard and keep descriptions useful, specific, and search-preview
    friendly. If you touch API endpoint pages, run the API content-quality guard
    and preserve copy-ready code examples, headers, response documentation, and a
-   successful response tab.
+   successful response tab. If you add root Markdown support files, update
+   `.mintignore` unless they are intentionally public docs pages.
 2. Improve docs directly when the fix is clear. Make content more correct,
    useful, detailed, persuasive, or SEO aligned. Keep claims factual and
    specific.
