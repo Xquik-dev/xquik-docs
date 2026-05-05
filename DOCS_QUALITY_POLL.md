@@ -94,6 +94,13 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
 - Run 2026-05-05 follow-up: the user explicitly requested that the poll should
   keep improving its prompt, update the live automation prompt when useful, and
   always commit and push successful changes.
+- Run 2026-05-05 18:25 UTC: billing and MPP pricing values matched product
+  constants in `/Users/burak/Developer/xquik/lib/credits/constants.ts`,
+  `/Users/burak/Developer/xquik/lib/monitors/billing.ts`, and
+  `/Users/burak/Developer/xquik/lib/mpp/pricing.ts`.
+- The MPP article endpoint was named with `{id}` in prose tables while
+  `openapi.yaml`, the product route, the API reference, and `llms.txt` use
+  or should use `{tweetId}`.
 
 ## Completed Changes
 
@@ -109,6 +116,12 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
 - Ran `bunx --bun mint broken-links`: passed with no broken links.
 - Added prompt self-improvement, live automation update, and commit/push
   requirements to this handoff.
+- Corrected the MPP article endpoint placeholder from `{id}` to `{tweetId}` in
+  `guides/billing.mdx`, `mpp/overview.mdx`, and `llms.txt`.
+- Added endpoint placeholder-name checks to the next-run prompt and live
+  automation prompt.
+- Run 2026-05-05 18:25 UTC checks: `bun run test:agent-docs`,
+  `bunx --bun mint validate`, and `bunx --bun mint broken-links` passed.
 
 ## Unresolved Risks
 
@@ -120,6 +133,9 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
 - Radar source names are public API enum values today. If any source name should
   be confidential, the product API contract must change before docs can hide it
   without becoming inaccurate.
+- Prose tables can drift from OpenAPI even when endpoint pages are correct.
+  Future schema checks must include endpoint strings embedded in guides,
+  overview pages, and comparison content.
 
 ## Recommendations For Next Run
 
@@ -139,6 +155,9 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
 7. After updating this file, also update the live automation prompt when the
    recurring workflow itself can be improved.
 8. Commit and push successful changes to `main` after checks pass.
+9. Add an automated or scripted check for endpoint strings in prose tables, with
+   special attention to placeholder names such as `{tweetId}`, `{userId}`, and
+   `{id}`.
 
 ## Prompt For Next Run
 
@@ -155,7 +174,8 @@ Run one focused improvement loop per poll:
 
 1. Verify something important against source truth. Prefer schema-level OpenAPI
    parity, billing, MPP, MCP, Radar, extraction workflow, webhooks, SDKs, auth,
-   dashboard flows, tool capabilities, or high-value comparison pages.
+   dashboard flows, tool capabilities, high-value comparison pages, or endpoint
+   strings embedded in prose tables.
 2. Improve docs directly when the fix is clear. Make content more correct,
    useful, detailed, persuasive, or SEO aligned. Keep claims factual and
    specific.
