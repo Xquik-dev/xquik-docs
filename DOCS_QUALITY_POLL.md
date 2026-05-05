@@ -105,6 +105,15 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
   placeholders in authentication, extraction, type, and `llms.txt` content.
 - The same audit found one incorrect direct-message media send endpoint in the
   upload-media API reference: `POST /x/dm/id` did not match OpenAPI.
+- Run 2026-05-05 19:05 UTC: event-type audit confirmed product source
+  `/Users/burak/Developer/xquik/lib/events/event-types.ts` exposes 4
+  subscribable events: `tweet.new`, `tweet.quote`, `tweet.reply`, and
+  `tweet.retweet`.
+- The product test webhook source
+  `/Users/burak/Developer/xquik/lib/webhooks/test-webhook.ts` exposes
+  `webhook.test` as a non-subscribable test payload event.
+- `webhooks/overview.mdx` still described follower event payloads even though
+  follower event types were removed from the current public contract.
 
 ## Completed Changes
 
@@ -139,6 +148,20 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
   23 tests passed and 1 skipped; `bunx --bun mint validate` passed;
   `bunx --bun mint broken-links` passed; `git diff --check` passed; no edited
   file contained an em dash or banned spaced double-hyphen sequence.
+- Added `event-types.test.ts`, which checks the OpenAPI `EventType` enum,
+  catches unsupported event type tokens, blocks current-doc references to
+  retired follower events, verifies core event docs list all 4 subscribable
+  event types, and verifies webhook test docs mention `webhook.test`.
+- Wired the event-type guard into `bun run test:agent-docs`.
+- Added Valid Event Types tables to `api-reference/webhooks/create.mdx` and
+  `api-reference/webhooks/update.mdx`, including a note that `webhook.test` is
+  generated only by the test endpoint and cannot be subscribed to.
+- Updated `webhooks/overview.mdx` to remove the stale follower-event payload
+  description and clarify the `webhook.test` payload shape.
+- Run 2026-05-05 19:05 UTC checks: `bun run test:agent-docs` passed with
+  28 tests passed and 1 skipped; `bunx --bun mint validate` passed;
+  `bunx --bun mint broken-links` passed; `git diff --check` passed; no edited
+  file contained an em dash or banned spaced double-hyphen sequence.
 
 ## Unresolved Risks
 
@@ -153,6 +176,9 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
 - Endpoint strings in prose now have an automated OpenAPI route guard, but the
   guard does not yet verify parameter descriptions, request bodies, response
   fields, pagination semantics, or error shapes.
+- Event-type docs now have an automated guard, but the guard only covers event
+  tokens, retired follower-event wording, and required mentions in core event
+  docs. It does not verify every webhook payload field against product code.
 
 ## Recommendations For Next Run
 
@@ -172,9 +198,10 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
 7. After updating this file, also update the live automation prompt when the
    recurring workflow itself can be improved.
 8. Commit and push successful changes to `main` after checks pass.
-9. Extend automated docs guards beyond endpoint strings. Prioritize checking
-   documented request fields, response fields, status codes, pagination fields,
-   and webhook event names against `openapi.yaml` and product source.
+9. Extend automated docs guards beyond endpoint strings and event names.
+   Prioritize checking documented request fields, response fields, status
+   codes, pagination fields, and webhook payload fields against `openapi.yaml`
+   and product source.
 
 ## Prompt For Next Run
 
@@ -186,8 +213,9 @@ to trust.
 First, pull latest changes and inspect `git status`. Read
 `DOCS_QUALITY_POLL.md`, `docs.json`, `openapi.yaml`, and the highest-risk docs
 from the recommendations above. Preserve unrelated user changes. Remember that
-`bun run test:agent-docs` now includes a prose endpoint-string guard; treat a
-failure as a docs accuracy issue unless the guard itself is plainly wrong.
+`bun run test:agent-docs` now includes prose endpoint-string and event-type
+guards; treat failures as docs accuracy issues unless a guard itself is plainly
+wrong.
 
 Run one focused improvement loop per poll:
 
@@ -195,7 +223,8 @@ Run one focused improvement loop per poll:
    parity, billing, MPP, MCP, Radar, extraction workflow, webhooks, SDKs, auth,
    dashboard flows, tool capabilities, or high-value comparison pages. If you
    touch endpoint prose, use the endpoint-string guard to catch placeholder and
-   route drift.
+   route drift. If you touch monitoring or webhook docs, compare event types
+   and payload wording against OpenAPI plus product event source files.
 2. Improve docs directly when the fix is clear. Make content more correct,
    useful, detailed, persuasive, or SEO aligned. Keep claims factual and
    specific.
