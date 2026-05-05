@@ -42,7 +42,7 @@ Xquik is a hosted SaaS platform for X (Twitter) data. All data processing happen
 
 | Component | Role |
 |-----------|------|
-| **REST API** | 113 endpoints at `https://xquik.com/api/v1/*` for programmatic access |
+| **REST API** | 118 documented operations at `https://xquik.com/api/v1/*` for programmatic access |
 | **MCP Server** | 2 tools (`explore` + `xquik`) at `https://xquik.com/mcp` for AI agent integration |
 | **Dashboard** | Web UI for managing monitors, running extractions, viewing results |
 | **Xquik Stream** | Background service that maintains WebSocket connections to X and delivers webhook events |
@@ -94,19 +94,19 @@ Xquik uses a flat permission model: no roles, no RBAC, no team workspaces.
 - **One user, one account**: Each account has full access to all its own resources
 - **API key = full access**: Any valid API key for an account can perform all operations that account is authorized for
 - **Session-only endpoints**: API key management (`/api/v1/api-keys/*`) requires session auth (dashboard login), not API key auth. You cannot create or revoke API keys using an API key.
-- **Subscription gates**: Creating extractions, draws, and monitors plus media downloads and X lookups require an active subscription or credits. All webhook operations (create, read, update, delete, deliveries, test) are always free. Reading, updating, deleting, exporting, and testing existing extractions, draws, monitors, and stored events is always free. Capturing new monitor events costs 1 credit per event and pauses the monitor if an event cannot be charged.
+- **Subscription gates**: Creating extractions, draws, active monitors, media downloads, and X lookups require an active subscription or credits. All webhook operations (create, read, update, delete, deliveries, test) are always free. Reading, updating, deleting, exporting, and testing existing extractions, draws, monitors, and stored events is always free. Active instant monitors cost 21 credits per hour while enabled.
 
 ## Rate limits
 
-Rate limits are enforced per user account using a **fixed-window counter** algorithm. Each tier has an independent counter that resets every 60 seconds.
+Rate limits are enforced per user account using a **fixed-window counter** algorithm. Each tier has an independent counter. Read counters reset every 1 second; write and delete counters reset every 60 seconds.
 
 | Tier | Methods | Limit |
 |------|---------|-------|
-| **Read** | `GET`, `HEAD`, `OPTIONS` | 120 per 60s |
+| **Read** | `GET`, `HEAD`, `OPTIONS` | 10 per 1s |
 | **Write** | `POST`, `PUT`, `PATCH` | 30 per 60s |
 | **Delete** | `DELETE` | 15 per 60s |
 
-When the limit is reached, requests return `429 Too Many Requests` with a `Retry-After: 60` header.
+When the limit is reached, requests return `429 Too Many Requests` with a `Retry-After` header. Read throttles return `Retry-After: 1`; write and delete throttles return `Retry-After: 60`.
 
 See the [Rate Limits](/guides/rate-limits) guide for detailed explanations, backoff strategies, and client-side rate limiter code examples.
 
@@ -114,8 +114,8 @@ See the [Rate Limits](/guides/rate-limits) guide for detailed explanations, back
 
 | Aspect | Detail |
 |--------|--------|
-| **Subscription** | USD 20-199/month. Includes 1 monitor + monthly credit allowance |
-| **Additional monitors** | USD 5/month each |
+| **Subscription** | USD 20-199/month. Includes a monthly credit allowance |
+| **Active monitors** | Unlimited slots. Active instant monitors cost 21 credits per hour |
 | **Credit top-ups** | Purchase additional credits at USD 0.00015/credit via the dashboard. See [Billing & Usage](/guides/billing#credit-top-ups) |
 
 ### What counts as usage
@@ -136,7 +136,7 @@ See [Billing & Usage](/guides/billing) for credit costs and billing.
 
 ## Monitoring architecture
 
-Xquik monitors X accounts in real time through a dedicated background service.
+Xquik monitors X accounts and keyword queries in real time through a dedicated background service.
 
 ```text
 X Data Stream
@@ -172,7 +172,7 @@ X Data Stream
 | **Bookmarked tweets** | Bookmarks require an authenticated X account connection |
 | **Export cap** | File exports are capped at 100,000 rows per extraction (10,000 for PDF). Formats: CSV, JSON, MD, MD Document, PDF, TXT, XLSX |
 | **Webhook retries** | 5 attempts maximum. After exhaustion, the delivery is marked as `exhausted` |
-| **Monitor default** | 1 monitor included per subscription. Additional monitors cost USD 5/month each |
+| **Monitor slots** | Unlimited. Active instant monitors cost 21 credits per hour while enabled |
 
 ## Next steps
 

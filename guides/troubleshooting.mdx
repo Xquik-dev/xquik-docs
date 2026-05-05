@@ -40,29 +40,30 @@ Solutions:
 - [Top up credits](/api-reference/credits/topup) from the dashboard
 - Use [Estimate Extraction](/api-reference/extractions/estimate) before running extractions to avoid surprises
 
-Management endpoints (monitors, events, webhooks, API keys, account) are not affected and continue to work normally.
+Management endpoints (stored monitors, events, webhooks, API keys, account) are not affected and continue to work normally.
 
-### 403 Monitor Limit Reached
+### Monitor Credits
 
-Your plan allows 1 monitor by default. Creating a second monitor returns:
+Monitor slots are unlimited. Active instant monitors cost 21 credits per hour and require available credits while enabled.
 
 ```json
-{ "error": "monitor_limit_reached", "limit": 1 }
+{ "error": "insufficient_credits", "message": "Insufficient credits" }
 ```
 
 Solutions:
 
-- Delete an unused monitor to free a slot: `DELETE /api/v1/monitors/{id}`
-- Add more monitors from the dashboard billing page (\$5/month each)
-- Check your current usage: `GET /api/v1/account` shows `monitorsAllowed` and `monitorsUsed`
+- Pause an unused account monitor with `PATCH /api/v1/monitors/{id}` and `{ "isActive": false }`
+- Pause an unused keyword monitor with `PATCH /api/v1/monitors/keywords/{id}` and `{ "isActive": false }`
+- Delete an unused monitor with `DELETE /api/v1/monitors/{id}` or `DELETE /api/v1/monitors/keywords/{id}`
+- Check current monitor billing: `GET /api/v1/account` shows `monitorsUsed` and `monitorBilling`
 
 ### 429 Too Many Requests
 
-You've exceeded the API rate limit. The API uses a 3-tier fixed window (60s):
+You've exceeded the API rate limit. The API uses fixed windows per tier:
 
 | Tier | Methods | Limit |
 |------|---------|-------|
-| Read | GET, HEAD, OPTIONS | 120 per 60s |
+| Read | GET, HEAD, OPTIONS | 10 per 1s |
 | Write | POST, PUT, PATCH | 30 per 60s |
 | Delete | DELETE | 15 per 60s |
 
@@ -119,9 +120,9 @@ Call `GET /api/v1/account`. The `creditInfo` object shows your balance:
 ```json
 {
   "creditInfo": {
-    "balance": 42500,
-    "lifetimePurchased": 140000,
-    "lifetimeUsed": 97500,
+    "balance": "42500",
+    "lifetimePurchased": "140000",
+    "lifetimeUsed": "97500",
     "autoTopupEnabled": false
   }
 }
@@ -138,8 +139,8 @@ See [Billing & Usage](/guides/billing) for credit costs and billing.
 
 Partially. Non-metered endpoints work without an active subscription:
 
-- **Work without subscription:** Monitors, events, webhooks, API keys, account management
-- **Require subscription:** Draws, extractions, X API lookups (tweets, users, follower checks) return `402` with `no_subscription`
+- **Work without subscription:** Reading, updating, and deleting stored monitors, events, webhooks, API keys, and account management
+- **Require subscription:** Creating active monitors, draws, extractions, and X API lookups (tweets, users, follower checks) return `402` with `no_subscription`
 
 Subscribe from the [dashboard](https://xquik.com) billing page to unlock metered endpoints. Access activates immediately after payment.
 

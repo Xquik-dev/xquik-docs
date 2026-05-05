@@ -12,15 +12,15 @@ Xquik uses a flat subscription model with a monthly credit allowance. Your month
 
 ## Subscription
 
-| Tier | Price | Included credits | Monitor allowance | Best for |
-|------|-------|------------------|-------------------|----------|
-| Starter | USD 20/month | 140,000 credits (USD 0.00014/credit) | 1 monitor | Prototyping and low-volume integrations |
-| Pro | USD 99/month | 770,000 credits (USD 0.00013/credit) | 1 monitor | Production workloads and growing teams |
-| Business | USD 199/month | 1,670,000 credits (USD 0.00012/credit) | 1 monitor | High-volume automation and enterprise use |
+| Tier | Price | Included credits | Monitor slots | Best for |
+|------|-------|------------------|---------------|----------|
+| Starter | USD 20/month | 140,000 credits (USD 0.00014/credit) | Unlimited | Prototyping and low-volume integrations |
+| Pro | USD 99/month | 770,000 credits (USD 0.00013/credit) | Unlimited | Production workloads and growing teams |
+| Business | USD 199/month | 1,670,000 credits (USD 0.00012/credit) | Unlimited | High-volume automation and enterprise use |
 
 Higher tiers give you more credits at a lower per-credit cost. PAYG credits cost USD 0.00015 each.
 
-All tiers include 1 monitor. Additional monitors are USD 5/month each. Payment via credit/debit card.
+All tiers support unlimited monitor slots. Active instant monitors cost 21 credits per hour and check every 1 second. Event and webhook deliveries are included in active monitor billing.
 
 Subscribe from the [dashboard](https://xquik.com). Your subscription activates immediately and renews monthly. An active subscription is required for all API access.
 
@@ -33,7 +33,7 @@ Every subscription includes a monthly credit allowance that resets each billing 
 - Unused credits **do not carry over**
 - API calls are also subject to [rate limits](/guides/rate-limits) (separate from credit usage)
 - At 100% usage, metered calls return `402 Payment Required` (see [error handling](/guides/error-handling#billing--subscription-errors-402) for recovery patterns)
-- Managing monitors, reading stored monitor events, webhooks, and account endpoints are free. Capturing new monitor events is metered.
+- Reading and managing stored monitor records, stored events, webhooks, and account endpoints are free. Active instant monitors are billed hourly while enabled.
 
 ```json 402 response body
 { "error": "no_subscription", "message": "Subscribe to access this endpoint" }
@@ -62,7 +62,7 @@ Each metered operation deducts credits from your shared pool. Per-credit cost de
 | [Get tweet](/api-reference/x/get-tweet) | per call | 1 |
 | [Get user](/api-reference/x/get-user) | per call | 1 |
 | [Like](/api-reference/x-write/like) | per call | 10 |
-| Monitor event capture | per captured event | 1 |
+| Active instant monitor | per active monitor-hour | 21 |
 | [Notifications](/api-reference/x/notifications) | per result | 1 |
 | [Retweet](/api-reference/x-write/retweet) | per call | 10 |
 | [Remove follower](/api-reference/x-write/remove-follower) | per call | 10 |
@@ -97,13 +97,13 @@ Paid X read endpoints that charge per returned result treat `limit`, `pageSize`,
 
 ### Free operations
 
-The following do not consume any credits: managing monitors (create, get, update, delete), reading stored monitor events, and all webhook operations (create, get, update, delete, deliveries, test); reading, fetching, and exporting extractions and draws; cost estimates; tweet composition (compose, refine, score); style cache management; drafts; support tickets; API key management; X account management; and credit top-ups ([checkout](/api-reference/credits/topup), [checkout status](/api-reference/credits/topup-status), and [quick top-up](/api-reference/credits/quick-topup)). Account status and [radar](/api-reference/radar/list) are also free. Capturing new monitor events costs 1 credit per event, and a monitor pauses when an event cannot be charged.
+The following do not consume credits: reading and managing stored monitor records, reading stored monitor events, all webhook operations (create, get, update, delete, deliveries, test), reading, fetching, and exporting extractions and draws, cost estimates, tweet composition (compose, refine, score), style cache management, drafts, support tickets, API key management, X account management, and credit top-ups ([checkout](/api-reference/credits/topup), [checkout status](/api-reference/credits/topup-status), and [quick top-up](/api-reference/credits/quick-topup)). Account status and [radar](/api-reference/radar/list) are also free. Active instant monitors cost 21 credits per hour while enabled.
 
 ## Credit top-ups
 
 If you need more credits beyond the included monthly allowance, purchase additional credits from the dashboard:
 
-- Use the [top-up endpoint](/api-reference/credits/topup) to redirect to Stripe checkout
+- Use the [top-up endpoint](/api-reference/credits/topup) to redirect to checkout
 - Use the [top-up status endpoint](/api-reference/credits/topup-status) to poll checkout completion
 - Use the [quick top-up endpoint](/api-reference/credits/quick-topup) to instantly charge your saved payment method
 - Configure automatic top-up from the dashboard. `GET /credits` and `GET /account` return the enabled status, dollar amount, and trigger threshold.
@@ -162,7 +162,7 @@ Related MPP pages:
 
 ## Checking usage
 
-Call `GET /api/v1/account` to see your current period usage:
+Call `GET /api/v1/account` to see your credit balance, lifetime usage, and monitor billing:
 
 ```bash
 curl -s https://xquik.com/api/v1/account \
@@ -174,12 +174,21 @@ curl -s https://xquik.com/api/v1/account \
 ```json
 {
   "plan": "active",
-  "monitorsAllowed": 1,
+  "monitorsAllowed": 9007199254740991,
   "monitorsUsed": 1,
+  "monitorBilling": {
+    "activeDailyEstimate": "500",
+    "activeHourlyBurn": "21",
+    "creditsPerActiveMonitorDay": "500",
+    "creditsPerActiveMonitorHour": "21",
+    "eventsIncluded": true,
+    "instantCheckIntervalSeconds": 1,
+    "unlimitedSlots": true
+  },
   "creditInfo": {
-    "balance": 77000,
-    "lifetimePurchased": 140000,
-    "lifetimeUsed": 63000,
+    "balance": "77000",
+    "lifetimePurchased": "140000",
+    "lifetimeUsed": "63000",
     "autoTopupEnabled": false,
     "autoTopupAmountDollars": 10,
     "autoTopupThreshold": "50000"
@@ -195,13 +204,13 @@ The `creditInfo.balance` field shows how many credits remain. The automatic top-
 
 ### What happens when I run out of credits?
 
-Metered calls return `402 Payment Required`. Managing monitors, reading stored monitor events, webhooks, and account endpoints continue working. New monitor event capture pauses when an event cannot be charged. [Top up credits](/api-reference/credits/topup) from the dashboard to continue.
+Metered calls return `402 Payment Required`. Reading stored monitor events, webhooks, and account endpoints continue working. Active monitors may pause when hourly billing cannot be charged. [Top up credits](/api-reference/credits/topup) from the dashboard to continue.
 
 ### Do unused credits carry over?
 
 No. Credits reset to zero each billing period.
 
-### How do I check my current usage?
+### How do I check my credit balance?
 
 Call `GET /api/v1/account` - the `creditInfo.balance` field shows remaining credits.
 
@@ -211,7 +220,7 @@ Yes. Changes take effect at the end of the current billing period.
 
 ### Can I top up credits without a checkout redirect?
 
-Yes. Use the [quick top-up endpoint](/api-reference/credits/quick-topup) to instantly charge your saved payment method. If no card is on file, use the standard [top-up endpoint](/api-reference/credits/topup) which redirects to Stripe checkout.
+Yes. Use the [quick top-up endpoint](/api-reference/credits/quick-topup) to instantly charge your saved payment method. If no card is on file, use the standard [top-up endpoint](/api-reference/credits/topup), which redirects to checkout.
 
 ## Next steps
 

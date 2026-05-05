@@ -17,7 +17,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
     <Warning>
       An active subscription is required to use the Xquik API. All metered endpoints return `402` without a subscription. See [Pricing, credits & billing](/guides/billing) for plan details.
     </Warning>
-    Xquik requires an active subscription ($20/month) to access the API. Subscribe from the dashboard billing page. Your plan includes 1 monitor and a monthly credit allowance.
+    Xquik requires an active subscription ($20/month) to access the API. Subscribe from the dashboard billing page. Your plan includes a monthly credit allowance.
   </Step>
   <Step title="Generate an API key">
     Navigate to **API Keys** in the dashboard sidebar and create a new key. Copy the full key immediately - it's only shown once.
@@ -41,12 +41,12 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
     ```
 
     ```javascript Node.js
-    const response = await fetch("https://xquik.com/api/v1/account", {
-      headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
-    });
-    const account = await response.json();
-    console.log(account);
-    ```
+  const response = await fetch("https://xquik.com/api/v1/account", {
+    headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
+  });
+  const account = await response.json();
+  process.stdout.write(`${JSON.stringify(account, null, 2)}\n`);
+  ```
 
     ```python Python
     import requests
@@ -89,13 +89,24 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
     ```json
     {
       "plan": "active",
-      "monitorsAllowed": 1,
+      "monitorsAllowed": 9007199254740991,
       "monitorsUsed": 0,
+      "monitorBilling": {
+        "activeDailyEstimate": "0",
+        "activeHourlyBurn": "0",
+        "creditsPerActiveMonitorDay": "500",
+        "creditsPerActiveMonitorHour": "21",
+        "eventsIncluded": true,
+        "instantCheckIntervalSeconds": 1,
+        "unlimitedSlots": true
+      },
       "creditInfo": {
-        "balance": 50000,
-        "lifetimePurchased": 140000,
-        "lifetimeUsed": 90000,
-        "autoTopupEnabled": false
+        "balance": "50000",
+        "lifetimePurchased": "140000",
+        "lifetimeUsed": "90000",
+        "autoTopupEnabled": false,
+        "autoTopupAmountDollars": 10,
+        "autoTopupThreshold": "50000"
       }
     }
     ```
@@ -123,10 +134,10 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
         username: "elonmusk",
         eventTypes: ["tweet.new", "tweet.reply"],
       }),
-    });
-    const monitor = await response.json();
-    console.log(monitor);
-    ```
+  });
+  const monitor = await response.json();
+  process.stdout.write(`${JSON.stringify(monitor, null, 2)}\n`);
+  ```
 
     ```python Python
     import requests
@@ -211,11 +222,11 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
         url: "https://your-server.com/webhook",
         eventTypes: ["tweet.new"],
       }),
-    });
-    const webhook = await response.json();
-    console.log(webhook);
-    // Save webhook.secret for signature verification
-    ```
+  });
+  const webhook = await response.json();
+  process.stdout.write(`${JSON.stringify(webhook, null, 2)}\n`);
+  // Save webhook.secret for signature verification
+  ```
 
     ```python Python
     import requests
@@ -320,12 +331,12 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
     Verify the header name is `x-api-key` (lowercase). Check that the key starts with `xq_` and hasn't been revoked. Regenerate from the [dashboard](https://xquik.com/dashboard/account).
   </Accordion>
   <Accordion title="Getting 402 error">
-    Creating extractions, draws, and monitors (plus media downloads) requires an active subscription. All webhook operations (create, read, update, delete, deliveries, test) are free. Reading, updating, deleting, exporting, and testing existing extractions, draws, monitors, and stored events is also free. Capturing new monitor events costs 1 credit per event and pauses the monitor if an event cannot be charged. Other free endpoints include compose, styles, drafts, radar, account, API keys, credit balance, and credit top-ups. Check your account status via [Get Account](/api-reference/account/get).
+    Creating extractions, draws, active monitors, media downloads, and X lookups requires an active subscription and enough credits. Webhook operations are free. Reading, updating, deleting, exporting, and testing existing extractions, draws, monitors, and stored events is also free. Active instant monitors cost 21 credits per hour while enabled. Other free endpoints include compose, styles, drafts, radar, account, API keys, credit balance, and credit top-ups. Check your account status via [Get Account](/api-reference/account/get).
   </Accordion>
   <Accordion title="Webhook not receiving events">
     Verify the URL uses HTTPS. Check that the webhook is active via [List Webhooks](/api-reference/webhooks/list). Test delivery with the [Test Webhook](/api-reference/webhooks/test) endpoint.
   </Accordion>
   <Accordion title="Rate limited (429)">
-    The API uses a 3-tier fixed window: 120 reads/60s, 30 writes/60s, 15 deletes/60s. Implement exponential backoff and respect the `Retry-After` header. See [Rate Limits](/guides/rate-limits).
+    The API uses a 3-tier fixed window: 10 reads/1s, 30 writes/60s, 15 deletes/60s. Implement exponential backoff and respect the `Retry-After` header. See [Rate Limits](/guides/rate-limits).
   </Accordion>
 </AccordionGroup>

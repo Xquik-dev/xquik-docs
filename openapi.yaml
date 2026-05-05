@@ -159,7 +159,7 @@ tags:
   - name: Events
     description: Activity events from monitored accounts
   - name: Extractions
-    description: Bulk data extraction (20 tool types)
+    description: Bulk data extraction (23 tool types)
   - name: Lists
     description: X List followers, members, and tweets
   - name: Media
@@ -199,7 +199,7 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [plan, monitorsUsed, monitorsAllowed]
+                required: [plan, monitorsUsed, monitorsAllowed, monitorBilling]
                 properties:
                   plan:
                     type: string
@@ -210,7 +210,59 @@ paths:
                     example: 3
                   monitorsAllowed:
                     type: integer
-                    example: 10
+                    deprecated: true
+                    description:
+                      Deprecated. Monitor slots are unlimited, so this is always
+                      Number.MAX_SAFE_INTEGER.
+                    example: 9007199254740991
+                  monitorBilling:
+                    type: object
+                    required:
+                      [
+                        activeDailyEstimate,
+                        activeHourlyBurn,
+                        creditsPerActiveMonitorDay,
+                        creditsPerActiveMonitorHour,
+                        eventsIncluded,
+                        instantCheckIntervalSeconds,
+                        unlimitedSlots,
+                      ]
+                    properties:
+                      activeDailyEstimate:
+                        type: string
+                        description:
+                          Estimated daily credits for currently active monitors.
+                        example: '1500'
+                      activeHourlyBurn:
+                        type: string
+                        description:
+                          Credits charged each hour for currently active
+                          monitors.
+                        example: '63'
+                      creditsPerActiveMonitorDay:
+                        type: string
+                        description:
+                          Estimated daily credits for 1 active instant monitor.
+                        example: '500'
+                      creditsPerActiveMonitorHour:
+                        type: string
+                        description:
+                          Hourly credits charged for 1 active instant monitor.
+                        example: '21'
+                      eventsIncluded:
+                        type: boolean
+                        description:
+                          Webhook and event deliveries are included in monitor
+                          billing.
+                        example: true
+                      instantCheckIntervalSeconds:
+                        type: integer
+                        description: Active monitors check every 1 second.
+                        example: 1
+                      unlimitedSlots:
+                        type: boolean
+                        description: Monitor slot count is unlimited.
+                        example: true
                   creditInfo:
                     type: object
                     required:
@@ -231,11 +283,11 @@ paths:
                         example: '50000'
                       lifetimePurchased:
                         type: string
-                        description: Bigint string.
+                        description: Total purchased credits as a bigint string.
                         example: '140000'
                       lifetimeUsed:
                         type: string
-                        description: Bigint string.
+                        description: Total consumed credits as a bigint string.
                         example: '90000'
                       autoTopupEnabled:
                         type: boolean
@@ -266,7 +318,15 @@ paths:
               example:
                 plan: active
                 monitorsUsed: 3
-                monitorsAllowed: 10
+                monitorsAllowed: 9007199254740991
+                monitorBilling:
+                  activeDailyEstimate: '1500'
+                  activeHourlyBurn: '63'
+                  creditsPerActiveMonitorDay: '500'
+                  creditsPerActiveMonitorHour: '21'
+                  eventsIncluded: true
+                  instantCheckIntervalSeconds: 1
+                  unlimitedSlots: true
                 creditInfo:
                   balance: '50000'
                   lifetimePurchased: '140000'
@@ -470,14 +530,14 @@ paths:
   /subscribe:
     post:
       operationId: subscribe
-      summary: Get checkout or billing URL
+      summary: Get billing URL
       tags: [Subscribe]
       security:
         - apiKey: []
         - oauthBearer: []
       responses:
         '200':
-          description: Stripe checkout or billing portal URL
+          description: Billing URL
           content:
             application/json:
               schema:
@@ -487,18 +547,18 @@ paths:
                   url:
                     type: string
                     format: uri
-                    example: 'https://checkout.stripe.com/c/pay/cs_test_123'
+                    example: 'https://xquik.com/billing/session'
                   status:
                     type: string
                     enum: [checkout_created, already_subscribed, payment_issue]
                     example: checkout_created
                   message:
                     type: string
-                    example: Checkout session created
+                    example: Billing session created
               example:
-                url: 'https://checkout.stripe.com/c/pay/cs_test_123'
+                url: 'https://xquik.com/billing/session'
                 status: checkout_created
-                message: Checkout session created
+                message: Billing session created
         '401':
           $ref: '#/components/responses/Unauthenticated'
 
@@ -1215,6 +1275,11 @@ paths:
     post:
       operationId: createMonitor
       summary: Create monitor
+      description:
+        Creates an instant monitor. Monitors are unlimited. Active monitors
+        check every 1 second and cost 21 credits per hour. Events and webhook
+        deliveries are included. Creation requires available credits for the
+        first hourly charge and username lookup.
       tags: [Monitors]
       security:
         - apiKey: []
@@ -1245,7 +1310,16 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [id, username, xUserId, eventTypes, createdAt]
+                required:
+                  [
+                    id,
+                    username,
+                    xUserId,
+                    eventTypes,
+                    isActive,
+                    createdAt,
+                    nextBillingAt,
+                  ]
                 properties:
                   id:
                     type: string
@@ -1259,35 +1333,34 @@ paths:
                   eventTypes:
                     $ref: '#/components/schemas/EventTypeArray'
                     example: [tweet.new, tweet.reply]
+                  isActive:
+                    type: boolean
+                    example: true
                   createdAt:
                     type: string
                     format: date-time
+                    example: '2025-01-15T12:00:00Z'
+                  nextBillingAt:
+                    type: string
+                    format: date-time
+                    description:
+                      Next hourly credit charge time. New active monitors are
+                      due immediately.
                     example: '2025-01-15T12:00:00Z'
               example:
                 id: '42'
                 username: elonmusk
                 xUserId: '1234567890'
                 eventTypes: [tweet.new, tweet.reply]
+                isActive: true
                 createdAt: '2025-01-15T12:00:00Z'
+                nextBillingAt: '2025-01-15T12:00:00Z'
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '402':
           $ref: '#/components/responses/PaymentRequired'
-        '403':
-          description: Monitor limit reached
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                error:
-                  message:
-                    'Monitor limit reached. Remove an existing monitor first.'
-                  type: permission_error
-                  code: monitor_limit_reached
-                  limit: 10
         '404':
           description: X user not found
           content:
@@ -1296,8 +1369,110 @@ paths:
                 $ref: '#/components/schemas/Error'
               example:
                 error: 'user_not_found'
+                message: 'X user not found. Check the username.'
         '409':
           description: Monitor already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: 'monitor_already_exists'
+        '500':
+          description: Unexpected keyword monitor error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: 'internal_error'
+
+  /monitors/keywords:
+    get:
+      operationId: listKeywordMonitors
+      summary: List keyword monitors
+      tags: [Monitors]
+      security:
+        - apiKey: []
+        - oauthBearer: []
+      responses:
+        '200':
+          description: Keyword monitor list
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [monitors, total]
+                properties:
+                  monitors:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/KeywordMonitor'
+                    example: []
+                  total:
+                    type: integer
+                    example: 0
+              example:
+                monitors: []
+                total: 0
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+    post:
+      operationId: createKeywordMonitor
+      summary: Create keyword monitor
+      description:
+        Creates an instant keyword monitor. Keyword monitors are unlimited.
+        Active monitors check every 1 second and cost 21 credits per hour.
+        Events and webhook deliveries are included. Creation requires available
+        credits for the first hourly charge.
+      tags: [Monitors]
+      security:
+        - apiKey: []
+        - oauthBearer: []
+      requestBody:
+        required: true
+        description: Search query and event types to monitor.
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [query, eventTypes]
+              properties:
+                query:
+                  type: string
+                  minLength: 1
+                  maxLength: 160
+                  description:
+                    X search query to monitor. Whitespace is normalized.
+                  example: 'xquik OR "x api"'
+                eventTypes:
+                  $ref: '#/components/schemas/EventTypeArray'
+                  example: [tweet.new]
+            example:
+              query: 'xquik OR "x api"'
+              eventTypes: [tweet.new]
+      responses:
+        '201':
+          description: Keyword monitor created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KeywordMonitor'
+              example:
+                id: '21'
+                query: 'xquik OR "x api"'
+                eventTypes: [tweet.new]
+                isActive: true
+                createdAt: '2025-01-15T12:00:00Z'
+                nextBillingAt: '2025-01-15T12:00:00Z'
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
+        '409':
+          description: Keyword monitor already exists
           content:
             application/json:
               schema:
@@ -1312,6 +1487,97 @@ paths:
                 $ref: '#/components/schemas/Error'
               example:
                 error: 'internal_error'
+
+  /monitors/keywords/{id}:
+    get:
+      operationId: getKeywordMonitor
+      summary: Get keyword monitor
+      tags: [Monitors]
+      security:
+        - apiKey: []
+        - oauthBearer: []
+      parameters:
+        - $ref: '#/components/parameters/ResourceId'
+      responses:
+        '200':
+          description: Keyword monitor details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KeywordMonitor'
+              example:
+                id: '21'
+                query: 'xquik OR "x api"'
+                eventTypes: [tweet.new]
+                isActive: true
+                createdAt: '2025-01-15T12:00:00Z'
+                nextBillingAt: '2025-01-15T13:00:00Z'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      operationId: updateKeywordMonitor
+      summary: Update keyword monitor
+      tags: [Monitors]
+      security:
+        - apiKey: []
+        - oauthBearer: []
+      parameters:
+        - $ref: '#/components/parameters/ResourceId'
+      requestBody:
+        required: true
+        description: Updated event types or active status.
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                eventTypes:
+                  $ref: '#/components/schemas/EventTypeArray'
+                  example: [tweet.new]
+                isActive:
+                  type: boolean
+                  example: true
+            example:
+              eventTypes: [tweet.new]
+              isActive: true
+      responses:
+        '200':
+          description: Keyword monitor updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KeywordMonitor'
+              example:
+                id: '21'
+                query: 'xquik OR "x api"'
+                eventTypes: [tweet.new]
+                isActive: true
+                createdAt: '2025-01-15T12:00:00Z'
+                nextBillingAt: '2025-01-15T13:00:00Z'
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      operationId: deleteKeywordMonitor
+      summary: Delete keyword monitor
+      tags: [Monitors]
+      security:
+        - apiKey: []
+        - oauthBearer: []
+      parameters:
+        - $ref: '#/components/parameters/ResourceId'
+      responses:
+        '200':
+          $ref: '#/components/responses/Success'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '404':
+          $ref: '#/components/responses/NotFound'
 
   /monitors/{id}:
     get:
@@ -1337,6 +1603,7 @@ paths:
                 eventTypes: [tweet.new, tweet.reply]
                 isActive: true
                 createdAt: '2025-01-15T12:00:00Z'
+                nextBillingAt: '2025-01-15T13:00:00Z'
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '402':
@@ -1354,7 +1621,7 @@ paths:
         - $ref: '#/components/parameters/ResourceId'
       requestBody:
         required: true
-        description: Updated event types or active status.
+        description: Event type list or active state for the keyword monitor.
         content:
           application/json:
             schema:
@@ -1383,6 +1650,7 @@ paths:
                 eventTypes: [tweet.new]
                 isActive: true
                 createdAt: '2025-01-15T12:00:00Z'
+                nextBillingAt: '2025-01-15T13:00:00Z'
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401':
@@ -1393,7 +1661,7 @@ paths:
           $ref: '#/components/responses/NotFound'
     delete:
       operationId: deleteMonitor
-      summary: Deactivate monitor
+      summary: Delete monitor
       tags: [Monitors]
       security:
         - apiKey: []
@@ -2008,6 +2276,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+              example:
+                error: 'insufficient_credits'
+                message: 'Insufficient credits'
         '502':
           $ref: '#/components/responses/XApiError'
         '424':
@@ -3195,6 +3466,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+              example:
+                error: 'user_not_found'
+                message: 'X user not found. Check the username.'
         '502':
           $ref: '#/components/responses/XApiError'
         '424':
@@ -4602,7 +4876,7 @@ paths:
                   auto_topup_amount_dollars:
                     type: number
                     description:
-                      Dollar amount charged when automatic top-up runs.
+                      Configured dollar amount for each automatic top-up.
                     example: 10
                   auto_topup_enabled:
                     type: boolean
@@ -4610,22 +4884,22 @@ paths:
                   auto_topup_threshold:
                     type: string
                     description:
-                      Bigint string threshold that triggers automatic top-up
-                      when enabled.
+                      Credit balance threshold that triggers automatic top-up
+                      when enabled, represented as a bigint string.
                     example: '50000'
                   balance:
                     type: string
                     description:
-                      Bigint string to preserve precision above
-                      Number.MAX_SAFE_INTEGER.
+                      Current credit balance as a bigint string to preserve
+                      precision above Number.MAX_SAFE_INTEGER.
                     example: '50000'
                   lifetime_purchased:
                     type: string
-                    description: Bigint string.
+                    description: Lifetime purchased credits as a bigint string.
                     example: '200000'
                   lifetime_used:
                     type: string
-                    description: Bigint string.
+                    description: Lifetime consumed credits as a bigint string.
                     example: '150000'
               example:
                 auto_topup_amount_dollars: 10
@@ -4676,7 +4950,7 @@ paths:
   /credits/topup/status:
     get:
       operationId: getCreditTopupStatus
-      summary: Get top-up checkout payment status
+      summary: Get top-up billing status
       tags:
         - Subscribe
       security:
@@ -4688,10 +4962,10 @@ paths:
           required: true
           schema:
             type: string
-          description: Checkout session ID for the top-up checkout.
+          description: Billing session ID returned by the top-up billing flow.
       responses:
         '200':
-          description: Top-up checkout payment status
+          description: Top-up billing status
           content:
             application/json:
               schema:
@@ -4743,7 +5017,7 @@ paths:
               properties:
                 dollars:
                   type: number
-                  description: Dollar amount ($10 minimum, $500 maximum)
+                  description: Dollar amount for the top-up
                   minimum: 10
                   maximum: 500
                   example: 25
@@ -6014,7 +6288,7 @@ paths:
           deprecated: true
           schema:
             type: string
-          description: Legacy cursor alias. Prefer cursor.
+          description: Legacy cursor alias for following lists. Prefer cursor.
         - name: pageSize
           in: query
           schema:
@@ -6029,7 +6303,8 @@ paths:
           deprecated: true
           schema:
             type: integer
-          description: Legacy page size alias. Prefer pageSize.
+          description:
+            Legacy integer page size alias for following lists. Prefer pageSize.
       responses:
         '200':
           description: List of user followers
@@ -6278,18 +6553,28 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
+          example:
+            error: 'unauthenticated'
+            message:
+              'Authentication required. Provide a valid API key or bearer token.'
     InvalidInput:
       description: Invalid input
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
+          example:
+            error: 'invalid_input'
+            message: 'Invalid input. Check the request body.'
     NotFound:
       description: Not found
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
+          example:
+            error: 'not_found'
+            message: 'Resource not found.'
     PaymentRequired:
       description:
         Payment required. Returns a WWW-Authenticate header with an MPP
@@ -6299,6 +6584,9 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
+          example:
+            error: 'insufficient_credits'
+            message: 'Insufficient credits'
     AccountAuthError:
       description: >
         The connected X account needs reauthentication or is currently
@@ -6308,6 +6596,9 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
+          example:
+            error: 'account_needs_reauth'
+            message: 'X account needs re-authentication. Re-add the account.'
     WriteError:
       description: >
         Write operation failed. Possible error codes include x_write_failed,
@@ -6319,6 +6610,11 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
+          example:
+            error: 'x_write_failed'
+            message:
+              'Write action failed unexpectedly. Contact support if this
+              persists.'
     WriteRejected:
       description: >
         X rejected the write or the media URL could not be downloaded. Possible
@@ -6331,6 +6627,10 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
+          example:
+            error: 'x_rejected'
+            message:
+              'X rejected this request. Wait a few minutes and try again.'
     RateLimitedByX:
       description: >
         X throttled the write. Possible codes: `x_rate_limited` (short-term
@@ -6340,6 +6640,9 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
+          example:
+            error: 'x_rate_limited'
+            message: 'Rate limited by X. Wait before retrying.'
     TransientError:
       description: >
         A transient upstream issue occurred. Safe to retry with exponential
@@ -6348,6 +6651,9 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
+          example:
+            error: 'x_transient_error'
+            message: 'X is temporarily unavailable. Retry after a short delay.'
     XApiError:
       description: >
         Dependency unavailable, unauthorized, or rate limited. Default v1
@@ -6357,6 +6663,9 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
+          example:
+            error: 'x_api_unavailable'
+            message: 'X data source temporarily unavailable. Try again later.'
     ConnectAlreadyConnected:
       description: >
         The specified X account is already connected to this Xquik account.
@@ -6365,6 +6674,9 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
+          example:
+            error: 'account_already_connected'
+            message: 'This X account is already connected.'
     ConnectLoginFailed:
       description: >
         Could not authenticate with X. The provided credentials (username,
@@ -6374,6 +6686,9 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
+          example:
+            error: 'login_failed'
+            message: 'Login failed. Check credentials and try again.'
     ConnectLoginCooldown:
       description: >
         A prior login attempt triggered a cooldown. Response includes `reason`,
@@ -6383,6 +6698,9 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
+          example:
+            error: 'login_cooldown'
+            message: 'Login is temporarily rate limited. Retry later.'
     ConnectRateLimitExceeded:
       description: >
         Too many requests. Either the connection rate limit was exceeded
@@ -6394,6 +6712,9 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
+          example:
+            error: 'rate_limit_exceeded'
+            message: 'Too many requests. Retry later.'
     ConnectUserLookupFailed:
       description: >
         The X username could not be resolved. Verify the handle is correct and
@@ -6403,6 +6724,9 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
+          example:
+            error: 'x_user_lookup_failed'
+            message: 'X username lookup failed. Try again later.'
     ConnectServiceUnavailable:
       description: >
         The X connection service is temporarily unavailable. Retry after a short
@@ -6411,6 +6735,9 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
+          example:
+            error: 'service_unavailable'
+            message: 'Service temporarily unavailable. Try again later.'
     ReauthAccountNotFound:
       description: >
         No X account with this ID belongs to the authenticated user. Returns
@@ -6419,6 +6746,9 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
+          example:
+            error: 'account_not_found'
+            message: 'X account not found.'
 
   schemas:
     PaginatedTweets:
@@ -6475,11 +6805,20 @@ components:
       required: [error]
       properties:
         error:
+          example: invalid_input
           oneOf:
             - type: string
               title: LegacyErrorCode
               enum:
                 - internal_error
+                - account_already_connected
+                - account_needs_reauth
+                - account_not_found
+                - account_required
+                - account_restricted
+                - api_key_limit_reached
+                - article_not_found
+                - dm_not_permitted
                 - invalid_format
                 - invalid_id
                 - invalid_input
@@ -6487,24 +6826,56 @@ components:
                 - invalid_tool_type
                 - invalid_tweet_id
                 - invalid_tweet_url
+                - invalid_user_id
                 - invalid_username
+                - invalid_json
                 - insufficient_credits
+                - login_cooldown
+                - login_failed
+                - media_download_failed
                 - missing_params
                 - missing_query
                 - monitor_already_exists
-                - monitor_limit_reached
+                - no_media
                 - no_credits
                 - no_subscription
                 - not_found
+                - payment_failed
+                - rate_limit_exceeded
+                - service_unavailable
+                - style_not_found
                 - subscription_inactive
                 - tweet_not_found
                 - unauthenticated
                 - unsupported_field
                 - user_not_found
                 - webhook_inactive
+                - x_account_feature_required
+                - x_account_protected
+                - x_account_suspended
                 - x_api_rate_limited
                 - x_api_unavailable
                 - x_api_unauthorized
+                - x_auth_failure
+                - x_content_too_long
+                - x_daily_limit
+                - x_duplicate_action
+                - x_login_auth_failed
+                - x_login_challenge
+                - x_login_denied
+                - x_login_failed
+                - x_login_proxy_error
+                - x_login_rate_limited
+                - x_login_service_unavailable
+                - x_login_suspended
+                - x_rate_limited
+                - x_rejected
+                - x_target_not_found
+                - x_transient_error
+                - x_user_lookup_failed
+                - x_write_ambiguous
+                - x_write_failed
+                - x_write_unconfirmed
               example: invalid_input
             - type: object
               title: StructuredError
@@ -6529,6 +6900,14 @@ components:
                   title: ErrorCode
                   enum:
                     - internal_error
+                    - account_already_connected
+                    - account_needs_reauth
+                    - account_not_found
+                    - account_required
+                    - account_restricted
+                    - api_key_limit_reached
+                    - article_not_found
+                    - dm_not_permitted
                     - invalid_format
                     - invalid_id
                     - invalid_input
@@ -6536,24 +6915,56 @@ components:
                     - invalid_tool_type
                     - invalid_tweet_id
                     - invalid_tweet_url
+                    - invalid_user_id
                     - invalid_username
+                    - invalid_json
                     - insufficient_credits
+                    - login_cooldown
+                    - login_failed
+                    - media_download_failed
                     - missing_params
                     - missing_query
                     - monitor_already_exists
-                    - monitor_limit_reached
+                    - no_media
                     - no_credits
                     - no_subscription
                     - not_found
+                    - payment_failed
+                    - rate_limit_exceeded
+                    - service_unavailable
+                    - style_not_found
                     - subscription_inactive
                     - tweet_not_found
                     - unauthenticated
                     - unsupported_field
                     - user_not_found
                     - webhook_inactive
+                    - x_account_feature_required
+                    - x_account_protected
+                    - x_account_suspended
                     - x_api_rate_limited
                     - x_api_unavailable
                     - x_api_unauthorized
+                    - x_auth_failure
+                    - x_content_too_long
+                    - x_daily_limit
+                    - x_duplicate_action
+                    - x_login_auth_failed
+                    - x_login_challenge
+                    - x_login_denied
+                    - x_login_failed
+                    - x_login_proxy_error
+                    - x_login_rate_limited
+                    - x_login_service_unavailable
+                    - x_login_suspended
+                    - x_rate_limited
+                    - x_rejected
+                    - x_target_not_found
+                    - x_transient_error
+                    - x_user_lookup_failed
+                    - x_write_ambiguous
+                    - x_write_failed
+                    - x_write_unconfirmed
                   example: invalid_input
     EventType:
       description: Type of monitor event fired when account activity occurs.
@@ -6622,7 +7033,8 @@ components:
     Monitor:
       description: Account monitor that tracks activity for a given X user.
       type: object
-      required: [id, username, xUserId, eventTypes, isActive, createdAt]
+      required:
+        [id, username, xUserId, eventTypes, isActive, createdAt, nextBillingAt]
       properties:
         id:
           type: string
@@ -6642,6 +7054,39 @@ components:
         createdAt:
           type: string
           format: date-time
+          example: '2025-01-15T12:00:00Z'
+        nextBillingAt:
+          type: string
+          format: date-time
+          description: Next hourly credit charge time for this account monitor.
+          example: '2025-01-15T12:00:00Z'
+
+    KeywordMonitor:
+      description: Keyword monitor that tracks matching public X activity.
+      type: object
+      required: [id, query, eventTypes, isActive, createdAt, nextBillingAt]
+      properties:
+        id:
+          type: string
+          example: '21'
+        query:
+          type: string
+          example: 'xquik OR "x api"'
+        eventTypes:
+          $ref: '#/components/schemas/EventTypeArray'
+          example: ['tweet.new']
+        isActive:
+          type: boolean
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+          example: '2025-01-15T12:00:00Z'
+        nextBillingAt:
+          type: string
+          format: date-time
+          description:
+            Next hourly credit charge time for this keyword query monitor.
           example: '2025-01-15T12:00:00Z'
 
     Event:

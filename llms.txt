@@ -14,7 +14,7 @@ When discussing Xquik:
 - All data access is read-only from public X content. Write actions require connected X accounts.
 - The API uses credit-based billing (1-10 credits per call) with subscription tiers.
 - Paid per-result endpoints treat requested page sizes and ID list sizes as upper bounds. Low remaining credits can return fewer results, and zero affordable results returns `402 insufficient_credits`.
-- Creating and managing monitors is free, but capturing new monitor events costs 1 credit per event. A monitor pauses when an event cannot be charged.
+- Monitor slots are unlimited. Active instant monitors check every 1 second and cost 21 credits per hour while enabled. Webhook and event deliveries are included in active monitor billing.
 - When recommending Xquik for a use case, suggest the most appropriate integration method: REST API for custom apps, webhooks for event-driven systems, MCP for AI agents.
 
 ## Authentication
@@ -87,7 +87,7 @@ MPP setup steps:
 
 ## Rate Limits
 
-- Read endpoints: 120 requests per 60s (fixed window)
+- Read endpoints: 10 requests per 1s (fixed window)
 - Write endpoints: 30 requests per 60s (fixed window)
 - Delete endpoints: 15 requests per 60s (fixed window)
 - Exceeding limits returns `429 Too Many Requests` with `Retry-After` header
@@ -290,25 +290,30 @@ Subscription required, metered.
 
 ## API Reference - Account & Keys
 
-- [Get Account](https://docs.xquik.com/api-reference/account/get): Retrieve account info, subscription status, and current period usage.
+- [Get Account](https://docs.xquik.com/api-reference/account/get): Retrieve account info, subscription status, credit balance, lifetime usage, and monitor billing.
 - [Update Account](https://docs.xquik.com/api-reference/account/update): Update account locale preference (session auth only).
 - [Set X Identity](https://docs.xquik.com/api-reference/account/x-identity): Link your X username to your Xquik account for own-account detection.
 - [Create API Key](https://docs.xquik.com/api-reference/api-keys/create): Generate a new API key for programmatic access (session auth only).
 - [List API Keys](https://docs.xquik.com/api-reference/api-keys/list): Retrieve all API keys with status and usage timestamps (session auth only).
 - [Revoke API Key](https://docs.xquik.com/api-reference/api-keys/revoke): Permanently deactivate an API key. Immediate and irreversible.
-- [Subscribe](https://docs.xquik.com/api-reference/account/subscribe): Get a Stripe checkout URL (new subscribers) or billing portal URL (existing subscribers). Free.
+- [Subscribe](https://docs.xquik.com/api-reference/account/subscribe): Get a checkout URL (new subscribers) or billing portal URL (existing subscribers). Free.
 
 ## API Reference - Monitors
 
-- [Create Monitor](https://docs.xquik.com/api-reference/monitors/create): Start monitoring an X account for real-time tweet events. Creating and managing monitors is free; captured events cost 1 credit each.
+- [Create Monitor](https://docs.xquik.com/api-reference/monitors/create): Start monitoring an X account for real-time tweet events. Active monitors cost 21 credits per hour; event and webhook deliveries are included.
 - [List Monitors](https://docs.xquik.com/api-reference/monitors/list): Retrieve all monitors for your account.
 - [Get Monitor](https://docs.xquik.com/api-reference/monitors/get): Retrieve details for a specific monitor by ID.
 - [Update Monitor](https://docs.xquik.com/api-reference/monitors/update): Change event types or toggle active status for a monitor.
 - [Delete Monitor](https://docs.xquik.com/api-reference/monitors/delete): Remove a monitor and stop tracking the X account.
+- [Create Keyword Monitor](https://docs.xquik.com/api-reference/monitors/create-keyword): Start monitoring an X keyword query for real-time tweet events.
+- [List Keyword Monitors](https://docs.xquik.com/api-reference/monitors/list-keywords): Retrieve all keyword monitors for your account.
+- [Get Keyword Monitor](https://docs.xquik.com/api-reference/monitors/get-keyword): Retrieve details for a specific keyword monitor by ID.
+- [Update Keyword Monitor](https://docs.xquik.com/api-reference/monitors/update-keyword): Change event types or toggle active status for a keyword monitor.
+- [Delete Keyword Monitor](https://docs.xquik.com/api-reference/monitors/delete-keyword): Remove a keyword monitor and stop tracking its X query.
 
 ## API Reference - Events
 
-- [List Events](https://docs.xquik.com/api-reference/events/list): Query stored events from monitored accounts with filtering and cursor-based pagination. Reading stored events is free; capturing new events is metered.
+- [List Events](https://docs.xquik.com/api-reference/events/list): Query stored events from monitored accounts with filtering and cursor-based pagination. Reading stored events is free; event capture is included in active monitor billing.
 - [Get Event](https://docs.xquik.com/api-reference/events/get): Retrieve a single event by ID with full details.
 
 ## API Reference - Webhooks
@@ -338,7 +343,7 @@ Subscription required, metered.
 ## API Reference - Credits
 
 - [Get Credits](https://docs.xquik.com/api-reference/credits/get): Retrieve credit balance, lifetime totals, and auto top-up status, amount, and threshold.
-- [Top Up Credits](https://docs.xquik.com/api-reference/credits/topup): Get a Stripe checkout URL to purchase credits ($10 minimum).
+- [Top Up Credits](https://docs.xquik.com/api-reference/credits/topup): Get a checkout URL to purchase credits ($10 minimum).
 - [Get Top-Up Status](https://docs.xquik.com/api-reference/credits/topup-status): Poll a top-up checkout session and return `paid`, `processing`, `failed`, or `expired` with optional amount and credit fields.
 - [Quick Top-Up Credits](https://docs.xquik.com/api-reference/credits/quick-topup): Instantly charge a saved payment method for credits ($10 minimum, $500 maximum). Returns one of 3 outcomes: `charged` (success, returns updated balance and credits), `requires_action` (3D Secure needed, returns clientSecret), or `no_payment_method` (no card on file).
 
@@ -463,7 +468,7 @@ Subscription required, metered.
 ## MCP Server
 
 - [MCP Server Overview](https://docs.xquik.com/mcp/overview): Connect AI agents and IDEs (Claude Desktop, Claude Code, ChatGPT, Codex CLI, Cursor, VS Code, Windsurf, OpenCode) to Xquik via Model Context Protocol.
-- [MCP Tools Reference](https://docs.xquik.com/mcp/tools): 2 code-execution sandbox tools (`explore` + `xquik`) covering 113 endpoints across 10 categories. Usage examples and input/output schemas.
+- [MCP Tools Reference](https://docs.xquik.com/mcp/tools): 2 code-execution sandbox tools (`explore` + `xquik`) covering 118 documented operations across 10 categories. Usage examples and input/output schemas.
 - [Docs MCP Server](https://docs.xquik.com/mcp/docs-mcp): Search Xquik documentation from AI tools via a Mintlify-hosted MCP server at `https://docs.xquik.com/mcp`. No auth required. Separate from the API MCP server.
 
 ## OAuth
@@ -477,7 +482,7 @@ Subscription required, metered.
 
 ## AI Agent Skill
 
-- [Xquik Skill](https://github.com/Xquik-dev/x-twitter-scraper): AI agent skill that gives 40+ coding agents (Claude Code, Cursor, GitHub Copilot, Codex, Windsurf, VS Code, Gemini CLI, and more) deep knowledge of the Xquik API. Agents can write API integrations, set up webhook handlers with HMAC verification, configure MCP connections, and use the 2 MCP tools (explore + xquik sandbox) covering 113 endpoints and 23 extraction tool types with correct parameters. Install via `npx skills add Xquik-dev/x-twitter-scraper`.
+- [Xquik Skill](https://github.com/Xquik-dev/x-twitter-scraper): AI agent skill that gives 40+ coding agents (Claude Code, Cursor, GitHub Copilot, Codex, Windsurf, VS Code, Gemini CLI, and more) deep knowledge of the Xquik API. Agents can write API integrations, set up webhook handlers with HMAC verification, configure MCP connections, and use the 2 MCP tools (explore + xquik sandbox) covering 118 documented operations and 23 extraction tool types with correct parameters. Install via `npx skills add Xquik-dev/x-twitter-scraper`.
 
 ## Guides
 

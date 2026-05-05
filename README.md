@@ -6,7 +6,7 @@ This repository powers the developer reference: REST API, webhooks, MCP server, 
 
 ## What's covered
 
-- **REST API** - 113 endpoint pages spanning account, api-keys, monitors, events, webhooks, draws, extractions, x, trends, radar, styles, drafts, compose, x-accounts, x-write, support, and integrations.
+- **REST API** - 118 endpoint pages spanning account, api-keys, monitors, events, webhooks, draws, extractions, x, trends, radar, styles, drafts, compose, x-accounts, x-write, support, and integrations.
 - **Webhooks** - HMAC SHA-256 signature verification, retry semantics, payload schemas.
 - **MCP server** - Model Context Protocol integration for Claude, ChatGPT, Cursor, and other AI agents. Tool reference + setup.
 - **OAuth 2.1** - Authorization Code + PKCE flow, scopes, token refresh.
@@ -17,7 +17,7 @@ This repository powers the developer reference: REST API, webhooks, MCP server, 
 ## Repository layout
 
 ```
-api-reference/      113 endpoint pages, grouped by resource
+api-reference/      118 endpoint pages, grouped by resource
 guides/             Workflow, operations, and framework guides
 webhooks/           Overview + signature verification
 mcp/                MCP server overview + tool reference

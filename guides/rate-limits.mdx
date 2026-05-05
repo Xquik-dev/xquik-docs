@@ -11,7 +11,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 Xquik enforces rate limits to ensure fair usage and platform stability. Limits are applied per user account using a fixed window counter.
 
 <Note>
-**Quick answer:** 120 GET/60s, 30 POST/60s, 15 DELETE/60s per account.
+**Quick answer:** 10 GET/1s, 30 POST/60s, 15 DELETE/60s per account.
 Hit the limit? Respect the `Retry-After` header. Avoid 429s? Use the client-side rate limiter below.
 </Note>
 
@@ -19,7 +19,7 @@ Hit the limit? Respect the `Retry-After` header. Avoid 429s? Use the client-side
 
 | Tier | Methods | Limit |
 |------|---------|-------|
-| Read | GET, HEAD, OPTIONS | 120 per 60s |
+| Read | GET, HEAD, OPTIONS | 10 per 1s |
 | Write | POST, PUT, PATCH | 30 per 60s |
 | Delete | DELETE | 15 per 60s |
 
@@ -38,13 +38,13 @@ Xquik uses a **fixed window counter**:
 
 <Steps>
   <Step title="Window starts on first request">
-    The first request from your account starts a 60-second window for that tier.
+    The first request starts a 1-second read window or a 60-second write/delete window.
   </Step>
   <Step title="Each request increments the counter">
     Every request within the window increments the counter for its tier (read, write, or delete).
   </Step>
   <Step title="Counter resets after window expires">
-    After 60 seconds, the window resets and the counter returns to zero.
+    After that tier's window expires, the counter returns to zero.
   </Step>
   <Step title="Requests rejected when limit is reached">
     If the counter exceeds the tier limit within a window, subsequent requests return `429 Too Many Requests` until the window resets.
@@ -52,12 +52,12 @@ Xquik uses a **fixed window counter**:
 </Steps>
 
 ```text
-Read tier (120 per 60s):
+Read tier (10 per 1s):
 
-Time 0s:   [0/120]  → Send 50 GET requests  → [50/120]
-Time 10s:  [50/120] → Send 70 GET requests  → [120/120] (limit reached)
-Time 30s:  [120/120] → GET request → 429 (rejected, window active)
-Time 60s:  [0/120]  → Window resets → requests allowed again
+Time 0.0s: [0/10]  -> Send 6 GET requests  -> [6/10]
+Time 0.5s: [6/10]  -> Send 4 GET requests  -> [10/10] (limit reached)
+Time 0.8s: [10/10] -> GET request -> 429 (rejected, window active)
+Time 1.0s: [0/10]  -> Window resets -> requests allowed again
 ```
 
 ## Response headers
@@ -72,10 +72,10 @@ When you exceed the rate limit, the response includes:
 
 ```text
 HTTP/1.1 429 Too Many Requests
-Retry-After: 60
+Retry-After: 1
 Content-Type: application/json
 
-{ "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 60 }
+{ "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 1 }
 ```
 
 Always respect the `Retry-After` header. Sending requests before the window resets may extend your cooldown.
@@ -114,8 +114,8 @@ class WindowRateLimiter {
   }
 }
 
-// Read tier: 120 requests per 60s
-const readLimiter = new WindowRateLimiter(120, 60_000);
+// Read tier: 10 requests per 1s
+const readLimiter = new WindowRateLimiter(10, 1_000);
 
 async function apiRequest(url) {
   await readLimiter.acquire();
@@ -153,8 +153,8 @@ class WindowRateLimiter:
 
             self.count += 1
 
-# Read tier: 120 requests per 60s
-read_limiter = WindowRateLimiter(120, 60)
+# Read tier: 10 requests per 1s
+read_limiter = WindowRateLimiter(10, 1)
 
 def api_request(url: str) -> requests.Response:
     read_limiter.acquire()
@@ -210,8 +210,8 @@ func (r *WindowRateLimiter) Acquire() {
 	r.count++
 }
 
-// Read tier: 120 requests per 60s
-var readLimiter = NewWindowRateLimiter(120, 60*time.Second)
+// Read tier: 10 requests per 1s
+var readLimiter = NewWindowRateLimiter(10, time.Second)
 
 func apiRequest(url string) (*http.Response, error) {
 	readLimiter.Acquire()
@@ -227,7 +227,7 @@ func apiRequest(url string) (*http.Response, error) {
 ```bash cURL
 #!/bin/bash
 # Simple rate limiter using sleep between requests
-# Read tier: 120 per 60s = ~500ms between requests
+# Read tier: 10 per 1s = ~100ms between requests
 
 URLS=(
   "https://xquik.com/api/v1/events?monitorId=7"
@@ -237,7 +237,7 @@ URLS=(
 
 for url in "${URLS[@]}"; do
   curl -s "$url" -H "x-api-key: xq_YOUR_KEY_HERE" | jq
-  sleep 0.5  # 500ms = ~2 req/s (stays within 120 per 60s)
+  sleep 0.12  # 120ms stays under 10 requests per second
 done
 ```
 
@@ -258,9 +258,9 @@ Instead of building your own rate limiter, consider these battle-tested librarie
 import Bottleneck from "bottleneck";
 
 const limiter = new Bottleneck({
-  reservoir: 120,           // 120 requests per window
-  reservoirRefreshAmount: 120,
-  reservoirRefreshInterval: 60_000, // 60 seconds
+  reservoir: 10,            // 10 requests per read window
+  reservoirRefreshAmount: 10,
+  reservoirRefreshInterval: 1_000, // 1 second
   maxConcurrent: 5,
 });
 
@@ -287,7 +287,7 @@ const response = await limiter.schedule(() =>
     When you receive a 429, wait for the `Retry-After` duration. If the retry also fails, double the wait time. See the [error handling guide](/guides/error-handling) for complete retry implementations.
   </Accordion>
   <Accordion title="Spread requests evenly">
-    Avoid sending all requests in a burst at the start of each window. Spread them evenly across the 60-second window to avoid hitting the limit early.
+    Avoid sending all requests in a burst at the start of each window. Spread them evenly across each tier's window to avoid hitting the limit early.
   </Accordion>
 </AccordionGroup>
 
