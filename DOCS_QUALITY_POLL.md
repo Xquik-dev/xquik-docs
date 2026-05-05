@@ -153,6 +153,11 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
   `introduction.mdx`, `skill.md`, and `llms.txt`; current product event types
   are limited to `tweet.new`, `tweet.quote`, `tweet.reply`, and
   `tweet.retweet`.
+- Run 2026-05-05 20:30 UTC: navigation-page SEO metadata scan found 190 docs
+  pages all had title and description frontmatter, but
+  `api-reference/monitors/delete.mdx` and
+  `api-reference/monitors/list-keywords.mdx` had descriptions below the
+  50-character search-preview quality floor.
 
 ## Completed Changes
 
@@ -234,6 +239,15 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
   `skill.md`, and `llms.txt`.
 - Extended `event-types.test.ts` so current docs cannot reintroduce follower
   event or follower-change monitoring claims.
+- Expanded the 2 short monitor API descriptions so they are more specific and
+  SEO-ready.
+- Added `seo-metadata.test.ts`, which checks every `docs.json` navigation page
+  has title and description frontmatter and keeps descriptions between 50 and
+  160 characters.
+- Wired the SEO metadata guard into `bun run test:agent-docs`.
+- Run 2026-05-05 20:30 UTC checks: `bun run test:agent-docs` passed with
+  31 tests passed and 1 skipped; `bunx --bun mint validate` passed;
+  `bunx --bun mint broken-links` passed.
 
 ## Unresolved Risks
 
@@ -261,6 +275,9 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
 - The Mintlify Page Size HTML failure remains unresolved because the report
   points to rendered HTML weight across all sampled pages, while the generated
   markdown alternatives already pass. Recheck after Mintlify reruns the score.
+- The SEO metadata guard only verifies title and description presence and
+  description length. It does not yet score page intros, heading hierarchy,
+  example depth, or search intent coverage.
 
 ## Recommendations For Next Run
 
@@ -295,6 +312,9 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
 12. Keep `llms.txt` aligned with `docs.json` navigation. Run
     `bun run test:agent-docs` after navigation or link-index changes and keep
     `llms.txt` under 50,000 characters.
+13. Extend SEO and content-quality automation beyond frontmatter. Prioritize
+    checks for first-paragraph quality, heading structure, concrete examples,
+    response details, error guidance, and next-step links on API endpoint pages.
 
 ## Prompt For Next Run
 
@@ -306,9 +326,10 @@ to trust.
 First, pull latest changes and inspect `git status`. Read
 `DOCS_QUALITY_POLL.md`, `docs.json`, `openapi.yaml`, and the highest-risk docs
 from the recommendations above. Preserve unrelated user changes. Remember that
-`bun run test:agent-docs` now includes prose endpoint-string, event-type, and
-required request-field guards; treat failures as docs accuracy issues unless a
-guard itself is plainly wrong.
+`bun run test:agent-docs` now includes prose endpoint-string, event-type,
+required request-field, `llms.txt` coverage, and SEO metadata guards; treat
+failures as docs accuracy or quality issues unless a guard itself is plainly
+wrong.
 
 Also review the Mintlify score report at `https://www.mintlify.com/score/xquik`
 and the markdown version at `https://www.mintlify.com/score/xquik.md`. Try to
@@ -339,7 +360,9 @@ Run one focused improvement loop per poll:
    guard and verify any conditional fields or legacy aliases against product
    routes before changing public docs. If you touch `docs.json`, `llms.txt`, or
    navigation, run the `llms.txt` coverage guard and keep the file below the
-   50,000 character score threshold.
+   50,000 character score threshold. If you touch page metadata, run the SEO
+   metadata guard and keep descriptions useful, specific, and search-preview
+   friendly.
 2. Improve docs directly when the fix is clear. Make content more correct,
    useful, detailed, persuasive, or SEO aligned. Keep claims factual and
    specific.
