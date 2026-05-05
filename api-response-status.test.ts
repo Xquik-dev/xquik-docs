@@ -8,6 +8,15 @@ const API_REFERENCE_DIR = join(PROJECT_ROOT, 'api-reference');
 const FRONTMATTER_API_PATTERN = /^api:\s*"([A-Z]+) ([^"]+)"/mu;
 const RESPONSE_TAB_PATTERN = /<Tab title="(\d{3})\b/gu;
 const STATUS_CODE_PATTERN = /^\d{3}$/u;
+const FULL_STATUS_AUDITED_OPERATIONS = new Set([
+  'DELETE /styles/{id}',
+  'GET /styles',
+  'GET /styles/{id}',
+  'GET /styles/{id}/performance',
+  'GET /styles/compare',
+  'POST /styles',
+  'PUT /styles/{id}',
+]);
 
 interface ApiDoc {
   readonly file: string;
@@ -93,6 +102,12 @@ function documentedSuccessfulResponseTabs(source: string): readonly string[] {
     .sort();
 }
 
+function documentedResponseTabs(source: string): readonly string[] {
+  return [...source.matchAll(RESPONSE_TAB_PATTERN)]
+    .map((match): string => match[1] ?? '')
+    .sort();
+}
+
 function operationKey(apiDoc: ApiDoc): string {
   return `${apiDoc.method.toUpperCase()} ${apiDoc.path}`;
 }
@@ -107,9 +122,52 @@ function getOperation(
 function collectResponseStatusFindings(
   spec: OpenApiSpec,
 ): readonly ResponseStatusFinding[] {
+  return collectStatusFindings({
+    docsStatusProvider: documentedSuccessfulResponseTabs,
+    issuePrefix: 'success ',
+    spec,
+    statusProvider: successfulResponseStatuses,
+  });
+}
+
+function responseStatuses(operation: OpenApiOperation): readonly string[] {
+  return Object.keys(operation.responses ?? {})
+    .filter((status): boolean => STATUS_CODE_PATTERN.test(status))
+    .sort();
+}
+
+function collectAuditedResponseStatusFindings(
+  spec: OpenApiSpec,
+): readonly ResponseStatusFinding[] {
+  return collectStatusFindings({
+    docsStatusProvider: documentedResponseTabs,
+    issuePrefix: '',
+    operationFilter: (apiDoc): boolean =>
+      FULL_STATUS_AUDITED_OPERATIONS.has(operationKey(apiDoc)),
+    spec,
+    statusProvider: responseStatuses,
+  });
+}
+
+function collectStatusFindings({
+  docsStatusProvider,
+  issuePrefix,
+  operationFilter = (): boolean => true,
+  spec,
+  statusProvider,
+}: {
+  readonly docsStatusProvider: (source: string) => readonly string[];
+  readonly issuePrefix: string;
+  readonly operationFilter?: (apiDoc: ApiDoc) => boolean;
+  readonly spec: OpenApiSpec;
+  readonly statusProvider: (operation: OpenApiOperation) => readonly string[];
+}): readonly ResponseStatusFinding[] {
   const findings: ResponseStatusFinding[] = [];
 
   for (const apiDoc of readApiDocs()) {
+    if (!operationFilter(apiDoc)) {
+      continue;
+    }
     const operation = getOperation(spec, apiDoc);
     if (operation === undefined) {
       findings.push({
@@ -121,15 +179,15 @@ function collectResponseStatusFindings(
       continue;
     }
 
-    const openApiStatuses = successfulResponseStatuses(operation);
-    const docsStatuses = documentedSuccessfulResponseTabs(apiDoc.source);
+    const openApiStatuses = statusProvider(operation);
+    const docsStatuses = docsStatusProvider(apiDoc.source);
 
     for (const status of openApiStatuses.filter(
       (statusCode): boolean => !docsStatuses.includes(statusCode),
     )) {
       findings.push({
         file: apiDoc.file,
-        issue: 'OpenAPI success response status is missing from endpoint docs.',
+        issue: `OpenAPI ${issuePrefix}response status is missing from endpoint docs.`,
         operation: operationKey(apiDoc),
         status,
       });
@@ -140,7 +198,7 @@ function collectResponseStatusFindings(
     )) {
       findings.push({
         file: apiDoc.file,
-        issue: 'Endpoint docs include a success status not present in OpenAPI.',
+        issue: `Endpoint docs include a ${issuePrefix}status not present in OpenAPI.`,
         operation: operationKey(apiDoc),
         status,
       });
@@ -156,5 +214,12 @@ describe('API success response status documentation', (): void => {
 
     const spec = parseYaml(readFileSync(join(PROJECT_ROOT, 'openapi.yaml'), 'utf8'));
     expect(collectResponseStatusFindings(spec)).toStrictEqual([]);
+  });
+
+  it('keeps fully audited endpoint response tabs aligned with OpenAPI status codes', (): void => {
+    expect.assertions(1);
+
+    const spec = parseYaml(readFileSync(join(PROJECT_ROOT, 'openapi.yaml'), 'utf8'));
+    expect(collectAuditedResponseStatusFindings(spec)).toStrictEqual([]);
   });
 });

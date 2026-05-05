@@ -860,8 +860,8 @@ paths:
                 styles: []
         '401':
           $ref: '#/components/responses/Unauthenticated'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
     post:
       operationId: analyzeStyle
       summary: Analyze writing style from recent tweets
@@ -920,6 +920,8 @@ paths:
 
         '402':
           $ref: '#/components/responses/PaymentRequired'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
   /styles/compare:
     get:
       operationId: compareStyles
@@ -975,10 +977,10 @@ paths:
           $ref: '#/components/responses/InvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
         '404':
           $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
 
   /styles/{id}:
     get:
@@ -1007,10 +1009,10 @@ paths:
                     text: 'Just launched our new feature!'
         '401':
           $ref: '#/components/responses/Unauthenticated'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
         '404':
           $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
     put:
       operationId: saveStyle
       summary: Save style profile with custom tweets
@@ -1069,8 +1071,8 @@ paths:
           $ref: '#/components/responses/InvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
     delete:
       operationId: deleteStyle
       summary: Delete a style profile
@@ -1085,10 +1087,10 @@ paths:
           $ref: '#/components/responses/NoContent'
         '401':
           $ref: '#/components/responses/Unauthenticated'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
         '404':
           $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
 
   /styles/{id}/performance:
     get:
@@ -1168,6 +1170,8 @@ paths:
           $ref: '#/components/responses/PaymentRequired'
         '404':
           $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
 
   /radar:
     get:
@@ -6768,6 +6772,24 @@ components:
           example:
             error: 'rate_limit_exceeded'
             message: 'Too many requests. Retry later.'
+    RateLimitExceeded:
+      description: >
+        Xquik tier rate limit exceeded. The response includes a `Retry-After`
+        header with the number of seconds to wait before retrying.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/Error'
+              - type: object
+                properties:
+                  retryAfter:
+                    type: integer
+                    example: 60
+          example:
+            error: 'rate_limit_exceeded'
+            message: 'Too many requests. Try again later.'
+            retryAfter: 60
     ConnectUserLookupFailed:
       description: >
         The X username could not be resolved. Verify the handle is correct and

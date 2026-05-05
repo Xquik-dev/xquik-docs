@@ -186,6 +186,16 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
 - A strict all-status response audit found broader existing error-status drift
   between OpenAPI and endpoint tabs. That is too large for one poll cycle and
   should be handled as a dedicated source-truth audit before enforcing.
+- Run 2026-05-05 22:02 UTC: refreshed Mintlify score report remained 94/100
+  with 25/29 checks passing. The remaining failed score item is still generated
+  HTML size, while markdown page size and direct markdown access pass.
+- Styles endpoint source audit found all Styles routes run through `withV1Auth`
+  or `withXApiGuard`, so tier rate limits can return `429` with
+  `rate_limit_exceeded`, `retryAfter`, and a `Retry-After` header.
+- The Styles cache list, compare, get, save, and delete routes do not run
+  subscription checks, so `402` was stale in OpenAPI for those routes. `POST
+  /styles` and `GET /styles/{id}/performance` still legitimately document
+  `402`.
 
 ## Completed Changes
 
@@ -315,6 +325,23 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
   35 tests passed and 1 skipped; `bunx --bun mint validate` passed;
   `bunx --bun mint broken-links` passed; `git diff --check` passed; no edited
   file contained an em dash or banned spaced double-hyphen sequence.
+- Extended `api-response-status.test.ts` with a fully audited operation set so
+  endpoint families can graduate from success-status parity to all-status
+  parity after source verification.
+- Added the Styles endpoint family to that fully audited response-status set.
+- Corrected Styles OpenAPI error status coverage: removed stale `402` responses
+  from free cache/list/get/compare/save/delete routes and added Xquik tier
+  `429` rate-limit responses where the product route wrappers can return them.
+- Updated Styles API pages with `429 Rate Limited` tabs and corrected the
+  public rate-limit error code from `rate_limited` to
+  `rate_limit_exceeded`.
+- Updated the live automation prompt to explain the fully audited operation set
+  and to avoid global all-status enforcement until endpoint families are
+  source-verified one at a time.
+- Run 2026-05-05 22:02 UTC checks: `bun run test:agent-docs` passed with
+  36 tests passed and 1 skipped; `bunx --bun mint validate` passed;
+  `bunx --bun mint broken-links` passed; `git diff --check` passed; no edited
+  file contained an em dash or banned spaced double-hyphen sequence.
 
 ## Unresolved Risks
 
@@ -356,6 +383,9 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
 - Success response status parity is now guarded. Error response status parity
   is not yet enforced because the first strict audit found broad drift that
   needs endpoint-by-endpoint product source verification.
+- Styles endpoints now have all-status parity guarded. Other endpoint families
+  still need source-verified error status audits before they can be added to
+  the fully audited set.
 
 ## Recommendations For Next Run
 
@@ -406,6 +436,9 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
     small endpoint family, verify each against product routes, then decide
     whether to update OpenAPI, endpoint docs, or both before expanding the
     guard beyond 2xx statuses.
+18. Pick the next endpoint family for all-status parity after Styles. Good
+    candidates are Drafts, Webhooks, Monitors, or Credits because each has a
+    compact route surface and meaningful error-status drift.
 
 ## Prompt For Next Run
 
@@ -452,7 +485,9 @@ Run one focused improvement loop per poll:
    guard and verify any conditional fields or legacy aliases against product
    routes before changing public docs. If you touch response statuses, run the
    success response-status guard and verify route behavior against product
-   source before changing OpenAPI or endpoint docs. If you touch `docs.json`,
+   source before changing OpenAPI or endpoint docs. Expand full status parity
+   only by adding source-verified endpoint families to the fully audited
+   operation set in `api-response-status.test.ts`. If you touch `docs.json`,
    `llms.txt`, or navigation, run the `llms.txt` coverage and navigation
    default-state guards, keep the file below the 50,000 character score
    threshold, and keep nested X API endpoint groups expanded by default. If you
