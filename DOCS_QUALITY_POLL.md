@@ -48,6 +48,8 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
 - Mintlify SEO docs: `https://www.mintlify.com/docs/optimize/seo`
 - Mintlify API settings docs: `https://www.mintlify.com/docs/organize/settings-api`
 - Mintlify page metadata docs: `https://www.mintlify.com/docs/organize/pages`
+- Mintlify score report: `https://www.mintlify.com/score/xquik`
+- Mintlify score report markdown: `https://www.mintlify.com/score/xquik.md`
 
 ## Quality Bar
 
@@ -62,6 +64,8 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
   private.
 - No broken links, stale redirects, empty sections, filler, vague claims,
   or outdated examples.
+- Each run should try to improve the Mintlify score for Xquik when the score
+  report identifies a clear, factual, and safe docs improvement.
 
 ## Current Findings
 
@@ -232,6 +236,10 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
    required request fields. Prioritize optional top-level request fields,
    response fields, status codes, pagination fields, and webhook payload fields
    against `openapi.yaml` and product source.
+10. Check the Mintlify score report at `https://www.mintlify.com/score/xquik`
+    and the markdown report at `https://www.mintlify.com/score/xquik.md`.
+    Prefer clear fixes that can improve the score without weakening accuracy,
+    usefulness, or confidentiality.
 
 ## Prompt For Next Run
 
@@ -246,6 +254,12 @@ from the recommendations above. Preserve unrelated user changes. Remember that
 `bun run test:agent-docs` now includes prose endpoint-string, event-type, and
 required request-field guards; treat failures as docs accuracy issues unless a
 guard itself is plainly wrong.
+
+Also review the Mintlify score report at `https://www.mintlify.com/score/xquik`
+and the markdown version at `https://www.mintlify.com/score/xquik.md`. Try to
+improve the score on every run when the report suggests a clear, factual, safe
+docs improvement. Do not chase score changes that would make the docs less
+accurate, less useful, or less confidential.
 
 Run one focused improvement loop per poll:
 
