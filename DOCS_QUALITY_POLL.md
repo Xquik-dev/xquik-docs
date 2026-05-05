@@ -54,6 +54,7 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
 - Mintlify SEO docs: `https://www.mintlify.com/docs/optimize/seo`
 - Mintlify API settings docs: `https://www.mintlify.com/docs/organize/settings-api`
 - Mintlify page metadata docs: `https://www.mintlify.com/docs/organize/pages`
+- Mintlify navigation docs: `https://www.mintlify.com/docs/organize/navigation`
 - Mintlify score report: `https://www.mintlify.com/score/xquik`
 - Mintlify score report markdown: `https://www.mintlify.com/score/xquik.md`
 
@@ -169,6 +170,13 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
 - The internal docs poll handoff page was publicly reachable and appeared in
   the live sitemap. It should not be part of `docs.xquik.com` or the Mintlify
   score corpus.
+- Run 2026-05-05 21:24 UTC: refreshed Mintlify score report remained 94/100
+  with 25/29 checks passing. The remaining failed score item is still rendered
+  HTML size, while markdown page size and direct markdown access pass.
+- Official Mintlify navigation docs confirm nested sidebar groups default to
+  collapsed unless `expanded: true` is set. `docs.json` already keeps every
+  nested X API group expanded: Users, Tweets, Relationships, Engagement,
+  Timeline & DMs, Communities, and Lists.
 
 ## Completed Changes
 
@@ -277,6 +285,16 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
 - Run 2026-05-05 21:03 UTC checks: `bun run test:agent-docs` passed with
   33 tests passed and 1 skipped; `bunx --bun mint validate` passed;
   `bunx --bun mint broken-links` passed.
+- Added `navigation-state.test.ts`, which ensures the X API sidebar groups stay
+  expanded by default so endpoint pages are visible without extra clicks.
+- Wired the navigation default-state guard into `bun run test:agent-docs`.
+- Updated the live automation prompt to include navigation usability, the
+  navigation default-state guard, and the requirement to keep nested X API
+  endpoint groups expanded.
+- Run 2026-05-05 21:24 UTC checks: `bun run test:agent-docs` passed with
+  34 tests passed and 1 skipped; `bunx --bun mint validate` passed;
+  `bunx --bun mint broken-links` passed; `git diff --check` passed; no edited
+  file contained an em dash or banned spaced double-hyphen sequence.
 
 ## Unresolved Risks
 
@@ -312,6 +330,9 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
   `openapi.yaml` and product source.
 - The current deployed docs may continue serving `DOCS_QUALITY_POLL` until the
   next Mintlify deploy completes and the score report reruns.
+- Navigation state is now guarded from `docs.json`, but this run intentionally
+  skipped browser or localhost visual checks under the static-check-only poll
+  rule.
 
 ## Recommendations For Next Run
 
@@ -355,6 +376,9 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
 15. Keep internal handoff, audit, and automation files out of the public docs
     build. Before adding root Markdown support files, either list them in
     `.mintignore` or intentionally add public-facing frontmatter and navigation.
+16. Keep the X API sidebar groups expanded by default. If API Reference
+    navigation changes, run the navigation default-state guard and verify
+    nested group behavior against official Mintlify navigation docs.
 
 ## Prompt For Next Run
 
@@ -368,8 +392,9 @@ First, pull latest changes and inspect `git status`. Read
 from the recommendations above. Preserve unrelated user changes. Remember that
 `bun run test:agent-docs` now includes prose endpoint-string, event-type,
 required request-field, `llms.txt` coverage, SEO metadata, API content-quality,
-and Mintlify ignore guards; treat failures as docs accuracy or quality issues
-unless a guard itself is plainly wrong.
+navigation default-state, and Mintlify ignore guards; treat failures as docs
+accuracy, navigation usability, or quality issues unless a guard itself is
+plainly wrong.
 
 Also review the Mintlify score report at `https://www.mintlify.com/score/xquik`
 and the markdown version at `https://www.mintlify.com/score/xquik.md`. Try to
@@ -399,13 +424,15 @@ Run one focused improvement loop per poll:
    touch API request docs or OpenAPI request bodies, run the required-field
    guard and verify any conditional fields or legacy aliases against product
    routes before changing public docs. If you touch `docs.json`, `llms.txt`, or
-   navigation, run the `llms.txt` coverage guard and keep the file below the
-   50,000 character score threshold. If you touch page metadata, run the SEO
-   metadata guard and keep descriptions useful, specific, and search-preview
-   friendly. If you touch API endpoint pages, run the API content-quality guard
-   and preserve copy-ready code examples, headers, response documentation, and a
-   successful response tab. If you add root Markdown support files, update
-   `.mintignore` unless they are intentionally public docs pages.
+   navigation, run the `llms.txt` coverage and navigation default-state guards,
+   keep the file below the 50,000 character score threshold, and keep nested X
+   API endpoint groups expanded by default. If you touch page metadata, run the
+   SEO metadata guard and keep descriptions useful, specific, and
+   search-preview friendly. If you touch API endpoint pages, run the API
+   content-quality guard and preserve copy-ready code examples, headers,
+   response documentation, and a successful response tab. If you add root
+   Markdown support files, update `.mintignore` unless they are intentionally
+   public docs pages.
 2. Improve docs directly when the fix is clear. Make content more correct,
    useful, detailed, persuasive, or SEO aligned. Keep claims factual and
    specific.
