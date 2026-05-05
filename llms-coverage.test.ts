@@ -1,0 +1,65 @@
+import { readFileSync } from 'node:fs';
+
+import { describe, expect, it } from 'vitest';
+
+const DOCS_ORIGIN = 'https://docs.xquik.com';
+const MARKDOWN_LINK_PATTERN =
+  /\[[^\]]+\]\(https:\/\/docs\.xquik\.com\/([^\s)]+)\)/gu;
+
+interface NavigationGroup {
+  readonly anchors?: readonly NavigationItem[];
+  readonly groups?: readonly NavigationItem[];
+  readonly pages?: readonly NavigationItem[];
+  readonly tabs?: readonly NavigationItem[];
+}
+
+type NavigationItem = string | NavigationGroup;
+
+interface DocsConfig {
+  readonly navigation: NavigationGroup;
+}
+
+function flattenNavigationPages(item: NavigationItem): readonly string[] {
+  if (typeof item === 'string') {
+    return [normalizePagePath(item)];
+  }
+
+  return [
+    ...(item.anchors ?? []),
+    ...(item.groups ?? []),
+    ...(item.pages ?? []),
+    ...(item.tabs ?? []),
+  ].flatMap(flattenNavigationPages);
+}
+
+function normalizePagePath(page: string): string {
+  return page
+    .replace(/^\/+/u, '')
+    .replace(/\.mdx?$/u, '')
+    .replace(/#.*$/u, '');
+}
+
+function documentedLlmsPages(source: string): ReadonlySet<string> {
+  return new Set(
+    [...source.matchAll(MARKDOWN_LINK_PATTERN)].map((match): string =>
+      normalizePagePath(match[1] ?? ''),
+    ),
+  );
+}
+
+describe('llms.txt coverage', (): void => {
+  it('lists every docs.json navigation page as a markdown link', (): void => {
+    expect.assertions(1);
+
+    const docsConfig = JSON.parse(
+      readFileSync('docs.json', 'utf8'),
+    ) as DocsConfig;
+    const expectedPages = flattenNavigationPages(docsConfig.navigation);
+    const actualPages = documentedLlmsPages(readFileSync('llms.txt', 'utf8'));
+    const missingPages = expectedPages
+      .filter((page): boolean => !actualPages.has(page))
+      .map((page): string => `${DOCS_ORIGIN}/${page}`);
+
+    expect(missingPages).toStrictEqual([]);
+  });
+});

@@ -9,7 +9,7 @@ const EXCLUDED_DIRS = new Set(['.git', 'node_modules']);
 const EXCLUDED_FILES = new Set(['DOCS_QUALITY_POLL.md']);
 const EVENT_TYPE_TOKEN_PATTERN =
   /\b(?:follower\.(?:gained|lost)|tweet\.(?:created|deleted|new|quote|reply|retweet)|webhook\.test)\b/gu;
-const RETIRED_EVENT_PHRASE_PATTERN = /\bfollower events?\b/giu;
+const RETIRED_EVENT_PHRASE_PATTERN = /\bfollower (?:changes|events?)\b/giu;
 const EXPECTED_SUBSCRIBABLE_EVENT_TYPES = [
   'tweet.new',
   'tweet.quote',
@@ -157,7 +157,7 @@ function collectRetiredEventPhraseFindings(): readonly Finding[] {
       findings.push({
         eventType: match[0],
         file,
-        issue: 'Current docs should not describe retired follower events.',
+        issue: 'Current docs should not describe retired follower event support.',
         line: lineNumberForIndex(source, match.index ?? 0),
       });
     }
@@ -204,7 +204,7 @@ describe('documented event types', (): void => {
     );
   });
 
-  it('does not describe retired follower events in current docs', (): void => {
+  it('does not describe retired follower event support in current docs', (): void => {
     expect.assertions(1);
 
     expect(collectRetiredEventPhraseFindings()).toStrictEqual([]);

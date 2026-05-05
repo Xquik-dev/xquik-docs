@@ -141,6 +141,18 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
 - The same audit found OpenAPI drift for `POST /x/media`; the product route
   accepts multipart uploads with `file` or JSON URL uploads with `url`, but
   `openapi.yaml` only documented the multipart file path.
+- Run 2026-05-05 20:06 UTC: Mintlify score report showed Xquik at 94/100 with
+  one failed Page Size HTML check and 2 low-impact warnings.
+- The same score report showed `llms.txt` covered 163/190 sitemap doc pages.
+  Local `docs.json` versus `llms.txt` coverage found all missing navigation
+  links were comparison pages under `/alternatives`.
+- The HTML size failure appears tied to generated Mintlify page HTML and is not
+  directly fixable from docs content alone, but the report already confirms
+  markdown page size and direct markdown access pass.
+- The same run found stale follower-change monitoring wording in
+  `introduction.mdx`, `skill.md`, and `llms.txt`; current product event types
+  are limited to `tweet.new`, `tweet.quote`, `tweet.reply`, and
+  `tweet.retweet`.
 
 ## Completed Changes
 
@@ -177,8 +189,9 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
   file contained an em dash or banned spaced double-hyphen sequence.
 - Added `event-types.test.ts`, which checks the OpenAPI `EventType` enum,
   catches unsupported event type tokens, blocks current-doc references to
-  retired follower events, verifies core event docs list all 4 subscribable
-  event types, and verifies webhook test docs mention `webhook.test`.
+  retired follower event support, verifies core event docs list all 4
+  subscribable event types, and verifies webhook test docs mention
+  `webhook.test`.
 - Wired the event-type guard into `bun run test:agent-docs`.
 - Added Valid Event Types tables to `api-reference/webhooks/create.mdx` and
   `api-reference/webhooks/update.mdx`, including a note that `webhook.test` is
@@ -206,6 +219,21 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
   29 tests passed and 1 skipped; `bunx --bun mint validate` passed;
   `bunx --bun mint broken-links` passed; `git diff --check` passed; no edited
   file contained an em dash or banned spaced double-hyphen sequence.
+- Added an Alternatives section to `llms.txt` with all 26 comparison pages.
+  Local navigation coverage is now 190/190 docs pages, and `llms.txt` remains
+  under the 50,000 character threshold at 47,013 characters.
+- Added `llms-coverage.test.ts`, which compares `docs.json` navigation against
+  `llms.txt` markdown links so future navigation pages cannot silently fall out
+  of the AI-readable index.
+- Wired the `llms.txt` coverage guard into `bun run test:agent-docs`.
+- Run 2026-05-05 20:06 UTC checks: `bun run test:agent-docs` passed with
+  30 tests passed and 1 skipped; `bunx --bun mint validate` passed;
+  `bunx --bun mint broken-links` passed; `git diff --check` passed; no edited
+  file contained an em dash or banned spaced double-hyphen sequence.
+- Removed stale follower-change monitoring claims from `introduction.mdx`,
+  `skill.md`, and `llms.txt`.
+- Extended `event-types.test.ts` so current docs cannot reintroduce follower
+  event or follower-change monitoring claims.
 
 ## Unresolved Risks
 
@@ -227,6 +255,12 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
   only partially covered. The next guard should compare optional top-level
   request fields, response fields, and status codes after resolving intentional
   conditional fields and legacy aliases.
+- `llms.txt` is now close to the 50,000 character size threshold. Future link
+  additions should stay concise or replace older descriptions with shorter
+  wording.
+- The Mintlify Page Size HTML failure remains unresolved because the report
+  points to rendered HTML weight across all sampled pages, while the generated
+  markdown alternatives already pass. Recheck after Mintlify reruns the score.
 
 ## Recommendations For Next Run
 
@@ -258,6 +292,9 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
     high-value documentation pages. Confirm framework setup, compared-service
     facts, feature matrices, pricing references, endpoint details, and content
     quality before publishing changes.
+12. Keep `llms.txt` aligned with `docs.json` navigation. Run
+    `bun run test:agent-docs` after navigation or link-index changes and keep
+    `llms.txt` under 50,000 characters.
 
 ## Prompt For Next Run
 
@@ -300,7 +337,9 @@ Run one focused improvement loop per poll:
    and payload wording against OpenAPI plus product event source files. If you
    touch API request docs or OpenAPI request bodies, run the required-field
    guard and verify any conditional fields or legacy aliases against product
-   routes before changing public docs.
+   routes before changing public docs. If you touch `docs.json`, `llms.txt`, or
+   navigation, run the `llms.txt` coverage guard and keep the file below the
+   50,000 character score threshold.
 2. Improve docs directly when the fix is clear. Make content more correct,
    useful, detailed, persuasive, or SEO aligned. Keep claims factual and
    specific.

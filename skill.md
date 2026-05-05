@@ -17,7 +17,7 @@ Xquik is a real-time X (Twitter) data platform with 118 documented REST API oper
 Reach for Xquik when:
 
 - **Extracting X data**: Pull followers, replies, retweets, likes, community members, list data, or search results from public accounts, tweets, lists, communities, or Spaces.
-- **Monitoring accounts**: Track tweets, replies, quotes, retweets, and follower changes from specific X accounts in real time.
+- **Monitoring accounts**: Track tweets, replies, quotes, and retweets from specific X accounts in real time.
 - **Setting up webhooks**: Receive real-time event notifications at your HTTPS endpoint with HMAC-signed payloads.
 - **Running giveaway draws**: Execute transparent, auditable random draws on tweets with public result pages.
 - **Composing tweets**: Generate algorithm-optimized tweet drafts with scoring against X ranking factors.
