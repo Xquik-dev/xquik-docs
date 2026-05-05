@@ -101,6 +101,10 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
 - The MPP article endpoint was named with `{id}` in prose tables while
   `openapi.yaml`, the product route, the API reference, and `llms.txt` use
   or should use `{tweetId}`.
+- Run 2026-05-05 18:42 UTC: prose endpoint string audit found stale colon
+  placeholders in authentication, extraction, type, and `llms.txt` content.
+- The same audit found one incorrect direct-message media send endpoint in the
+  upload-media API reference: `POST /x/dm/id` did not match OpenAPI.
 
 ## Completed Changes
 
@@ -122,6 +126,19 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
   automation prompt.
 - Run 2026-05-05 18:25 UTC checks: `bun run test:agent-docs`,
   `bunx --bun mint validate`, and `bunx --bun mint broken-links` passed.
+- Added `endpoint-strings.test.ts`, which checks documented endpoint strings
+  against OpenAPI route templates, catches colon placeholders, catches bare
+  placeholder segments like `/id`, and allows concrete examples that match a
+  documented OpenAPI route pattern.
+- Wired the endpoint string guard into `bun run test:agent-docs`.
+- Corrected prose endpoint placeholders in `api-reference/authentication.mdx`,
+  `guides/extraction-workflow.mdx`, `guides/types.mdx`, and `llms.txt`.
+- Corrected the upload-media response note from `POST /x/dm/id` to
+  `POST /x/dm/{userId}`.
+- Run 2026-05-05 18:42 UTC checks: `bun run test:agent-docs` passed with
+  23 tests passed and 1 skipped; `bunx --bun mint validate` passed;
+  `bunx --bun mint broken-links` passed; `git diff --check` passed; no edited
+  file contained an em dash or banned spaced double-hyphen sequence.
 
 ## Unresolved Risks
 
@@ -133,9 +150,9 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
 - Radar source names are public API enum values today. If any source name should
   be confidential, the product API contract must change before docs can hide it
   without becoming inaccurate.
-- Prose tables can drift from OpenAPI even when endpoint pages are correct.
-  Future schema checks must include endpoint strings embedded in guides,
-  overview pages, and comparison content.
+- Endpoint strings in prose now have an automated OpenAPI route guard, but the
+  guard does not yet verify parameter descriptions, request bodies, response
+  fields, pagination semantics, or error shapes.
 
 ## Recommendations For Next Run
 
@@ -155,9 +172,9 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
 7. After updating this file, also update the live automation prompt when the
    recurring workflow itself can be improved.
 8. Commit and push successful changes to `main` after checks pass.
-9. Add an automated or scripted check for endpoint strings in prose tables, with
-   special attention to placeholder names such as `{tweetId}`, `{userId}`, and
-   `{id}`.
+9. Extend automated docs guards beyond endpoint strings. Prioritize checking
+   documented request fields, response fields, status codes, pagination fields,
+   and webhook event names against `openapi.yaml` and product source.
 
 ## Prompt For Next Run
 
@@ -168,14 +185,17 @@ to trust.
 
 First, pull latest changes and inspect `git status`. Read
 `DOCS_QUALITY_POLL.md`, `docs.json`, `openapi.yaml`, and the highest-risk docs
-from the recommendations above. Preserve unrelated user changes.
+from the recommendations above. Preserve unrelated user changes. Remember that
+`bun run test:agent-docs` now includes a prose endpoint-string guard; treat a
+failure as a docs accuracy issue unless the guard itself is plainly wrong.
 
 Run one focused improvement loop per poll:
 
 1. Verify something important against source truth. Prefer schema-level OpenAPI
    parity, billing, MPP, MCP, Radar, extraction workflow, webhooks, SDKs, auth,
-   dashboard flows, tool capabilities, high-value comparison pages, or endpoint
-   strings embedded in prose tables.
+   dashboard flows, tool capabilities, or high-value comparison pages. If you
+   touch endpoint prose, use the endpoint-string guard to catch placeholder and
+   route drift.
 2. Improve docs directly when the fix is clear. Make content more correct,
    useful, detailed, persuasive, or SEO aligned. Keep claims factual and
    specific.
