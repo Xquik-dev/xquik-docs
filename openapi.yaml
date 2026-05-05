@@ -2449,8 +2449,8 @@ paths:
                 webhooks: []
         '401':
           $ref: '#/components/responses/Unauthenticated'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
     post:
       operationId: createWebhook
       summary: Create webhook
@@ -2496,7 +2496,10 @@ paths:
                     example: 'https://example.com/webhook'
                   secret:
                     type: string
-                    example: 'whsec_abc123def456'
+                    description:
+                      Plaintext HMAC signing secret returned only at creation.
+                    example:
+                      'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2'
                   eventTypes:
                     $ref: '#/components/schemas/EventTypeArray'
                     example: [tweet.new, tweet.reply]
@@ -2507,16 +2510,16 @@ paths:
               example:
                 id: '42'
                 url: 'https://example.com/webhook'
-                secret: 'whsec_abc123def456'
+                secret:
+                  'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2'
                 eventTypes: [tweet.new, tweet.reply]
                 createdAt: '2025-01-15T12:00:00Z'
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
-
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
   /webhooks/{id}:
     patch:
       operationId: updateWebhook
@@ -2565,10 +2568,10 @@ paths:
           $ref: '#/components/responses/InvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
         '404':
           $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
     delete:
       operationId: deleteWebhook
       summary: Deactivate webhook
@@ -2581,12 +2584,14 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/Success'
+        '400':
+          $ref: '#/components/responses/InvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
         '404':
           $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
 
   /webhooks/{id}/deliveries:
     get:
@@ -2614,12 +2619,14 @@ paths:
                     example: []
               example:
                 deliveries: []
+        '400':
+          $ref: '#/components/responses/InvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
         '404':
           $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
 
   /webhooks/{id}/test:
     post:
@@ -2653,7 +2660,7 @@ paths:
                 success: true
                 statusCode: 200
         '400':
-          description: Webhook inactive
+          description: Invalid webhook ID or inactive webhook
           content:
             application/json:
               schema:
@@ -2662,10 +2669,10 @@ paths:
                 error: 'webhook_inactive'
         '401':
           $ref: '#/components/responses/Unauthenticated'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
         '404':
           $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
 
   # ── X API (reads) ────────────────────────────────────────
   /x/tweets:

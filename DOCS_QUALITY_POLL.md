@@ -205,6 +205,24 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
 - Draft routes do not run subscription checks, so `402` was stale in OpenAPI
   for list, create, get, and delete draft operations. Draft ID routes return
   `400 invalid_id` before database lookup when the `{id}` value is malformed.
+- Run 2026-05-05 22:56 UTC: refreshed Mintlify score report remained 94/100
+  with 25/29 checks passing. `llms.txt` covers 100% of 189 sitemap doc pages
+  and is 47,005 characters, under the 50,000 character threshold.
+- The score report still flags generated HTML size across sampled pages and a
+  minor markdown versus HTML parity warning on 1 sampled page. Markdown size,
+  direct markdown access, content discoverability, `llms-full.txt`, `skill.md`,
+  and MCP discovery all pass.
+- Webhooks endpoint source audit found all Webhooks routes run through
+  `withV1Auth`, `withV1AuthAndId`, or `createV1IdRoute`, so tier rate limits
+  can return `429` with `rate_limit_exceeded`, `retryAfter`, and a
+  `Retry-After` header.
+- Webhook routes do not run subscription checks, so `402` was stale in OpenAPI
+  for list, create, update, delete, deliveries, and test operations. Webhook ID
+  routes can return `400 invalid_id`; the test route can also return
+  `400 webhook_inactive`.
+- The webhook creation route returns a plaintext 64-character hex HMAC secret
+  once at creation time. The OpenAPI example used a `whsec_`-style placeholder
+  that did not match product behavior.
 
 ## Completed Changes
 
@@ -362,6 +380,19 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
   36 tests passed and 1 skipped; `bunx --bun mint validate` passed;
   `bunx --bun mint broken-links` passed; `git diff --check` passed; no edited
   file contained an em dash or banned spaced double-hyphen sequence.
+- Added the Webhooks endpoint family to the fully audited response-status set
+  in `api-response-status.test.ts`.
+- Corrected Webhooks OpenAPI error status coverage: removed stale `402`
+  responses, added Xquik tier `429` rate-limit responses, and added missing
+  `400` responses for malformed webhook IDs on ID-based routes.
+- Updated Webhooks API pages with `429 Rate Limited` tabs and expanded the
+  test-webhook `400` tab to include both malformed IDs and inactive webhooks.
+- Corrected the webhook creation OpenAPI `secret` example to a 64-character hex
+  value and described that it is returned only at creation.
+- Run 2026-05-05 22:56 UTC checks: `bun run test:agent-docs` passed with
+  36 tests passed and 1 skipped; `bunx --bun mint validate` passed;
+  `bunx --bun mint broken-links` passed; `git diff --check` passed; no edited
+  file contained an em dash or banned spaced double-hyphen sequence.
 
 ## Unresolved Risks
 
@@ -407,6 +438,9 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
   still need source-verified error status audits before they can be added to
   the fully audited set.
 - Drafts endpoints now have all-status parity guarded. Remaining endpoint
+  families still need source-verified error status audits before they can be
+  added to the fully audited set.
+- Webhooks endpoints now have all-status parity guarded. Remaining endpoint
   families still need source-verified error status audits before they can be
   added to the fully audited set.
 
@@ -459,9 +493,9 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
     small endpoint family, verify each against product routes, then decide
     whether to update OpenAPI, endpoint docs, or both before expanding the
     guard beyond 2xx statuses.
-18. Pick the next endpoint family for all-status parity after Styles and
-    Drafts. Good candidates are Webhooks, Monitors, or Credits because each has
-    a compact route surface and meaningful error-status drift.
+18. Pick the next endpoint family for all-status parity after Styles, Drafts,
+    and Webhooks. Good candidates are Monitors or Credits because each has a
+    compact route surface and meaningful error-status drift.
 
 ## Prompt For Next Run
 
@@ -510,13 +544,13 @@ Run one focused improvement loop per poll:
    success response-status guard and verify route behavior against product
    source before changing OpenAPI or endpoint docs. Expand full status parity
    only by adding source-verified endpoint families to the fully audited
-   operation set in `api-response-status.test.ts`; Styles and Drafts are
-   already covered, so prefer Webhooks, Monitors, or Credits next. If you touch
-   `docs.json`, `llms.txt`, or navigation, run the `llms.txt` coverage and
-   navigation default-state guards, keep the file below the 50,000 character
-   score threshold, and keep nested X API endpoint groups expanded by default.
-   If you touch page metadata, run the SEO metadata guard and keep descriptions
-   useful, specific, and search-preview friendly. If you touch API endpoint
+   operation set in `api-response-status.test.ts`; Styles, Drafts, and
+   Webhooks are already covered, so prefer Monitors or Credits next. If you
+   touch `docs.json`, `llms.txt`, or navigation, run the `llms.txt` coverage
+   and navigation default-state guards, keep the file below the 50,000
+   character score threshold, and keep nested X API endpoint groups expanded
+   by default. If you touch page metadata, run the SEO metadata guard and keep
+   descriptions useful, specific, and search-preview friendly. If you touch API endpoint
    pages, run the API content-quality guard and preserve copy-ready code
    examples, headers, response documentation, and a successful response tab. If
    you add root Markdown support files, update `.mintignore` unless they are

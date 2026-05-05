@@ -9,16 +9,22 @@ const FRONTMATTER_API_PATTERN = /^api:\s*"([A-Z]+) ([^"]+)"/mu;
 const RESPONSE_TAB_PATTERN = /<Tab title="(\d{3})\b/gu;
 const STATUS_CODE_PATTERN = /^\d{3}$/u;
 const FULL_STATUS_AUDITED_OPERATIONS = new Set([
-  'DELETE /styles/{id}',
   'DELETE /drafts/{id}',
+  'DELETE /styles/{id}',
+  'DELETE /webhooks/{id}',
   'GET /drafts',
   'GET /drafts/{id}',
   'GET /styles',
   'GET /styles/{id}',
   'GET /styles/{id}/performance',
   'GET /styles/compare',
+  'GET /webhooks',
+  'GET /webhooks/{id}/deliveries',
+  'PATCH /webhooks/{id}',
   'POST /drafts',
   'POST /styles',
+  'POST /webhooks',
+  'POST /webhooks/{id}/test',
   'PUT /styles/{id}',
 ]);
 
