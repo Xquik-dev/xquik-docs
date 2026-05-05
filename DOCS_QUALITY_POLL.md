@@ -158,6 +158,10 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
   `api-reference/monitors/delete.mdx` and
   `api-reference/monitors/list-keywords.mdx` had descriptions below the
   50-character search-preview quality floor.
+- Run 2026-05-05 20:47 UTC: API endpoint content-quality scan found all 118
+  endpoint pages had code examples, response sections, and successful response
+  tabs. `api-reference/radar/list.mdx` was the only endpoint page without a
+  dedicated headers section.
 
 ## Completed Changes
 
@@ -248,6 +252,16 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
 - Run 2026-05-05 20:30 UTC checks: `bun run test:agent-docs` passed with
   31 tests passed and 1 skipped; `bunx --bun mint validate` passed;
   `bunx --bun mint broken-links` passed.
+- Added the missing `x-api-key` headers section to
+  `api-reference/radar/list.mdx`.
+- Added `api-content-quality.test.ts`, which checks every API endpoint page has
+  copy-ready code examples, a headers section, a response section, and a
+  successful response tab.
+- Wired the API content-quality guard into `bun run test:agent-docs`.
+- Run 2026-05-05 20:47 UTC checks: `bun run test:agent-docs` passed with
+  32 tests passed and 1 skipped; `bunx --bun mint validate` passed;
+  `bunx --bun mint broken-links` passed; `git diff --check` passed; no edited
+  file contained an em dash or banned spaced double-hyphen sequence.
 
 ## Unresolved Risks
 
@@ -278,6 +292,9 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
 - The SEO metadata guard only verifies title and description presence and
   description length. It does not yet score page intros, heading hierarchy,
   example depth, or search intent coverage.
+- The API content-quality guard checks structural coverage only. It does not yet
+  compare documented response fields, status codes, or error examples against
+  `openapi.yaml` and product source.
 
 ## Recommendations For Next Run
 
@@ -315,6 +332,9 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
 13. Extend SEO and content-quality automation beyond frontmatter. Prioritize
     checks for first-paragraph quality, heading structure, concrete examples,
     response details, error guidance, and next-step links on API endpoint pages.
+14. Extend API content-quality automation from structure to schema parity.
+    Prioritize response status coverage, response field coverage, pagination
+    field coverage, and error shape checks against `openapi.yaml`.
 
 ## Prompt For Next Run
 
@@ -327,9 +347,9 @@ First, pull latest changes and inspect `git status`. Read
 `DOCS_QUALITY_POLL.md`, `docs.json`, `openapi.yaml`, and the highest-risk docs
 from the recommendations above. Preserve unrelated user changes. Remember that
 `bun run test:agent-docs` now includes prose endpoint-string, event-type,
-required request-field, `llms.txt` coverage, and SEO metadata guards; treat
-failures as docs accuracy or quality issues unless a guard itself is plainly
-wrong.
+required request-field, `llms.txt` coverage, SEO metadata, and API
+content-quality guards; treat failures as docs accuracy or quality issues unless
+a guard itself is plainly wrong.
 
 Also review the Mintlify score report at `https://www.mintlify.com/score/xquik`
 and the markdown version at `https://www.mintlify.com/score/xquik.md`. Try to
@@ -362,7 +382,9 @@ Run one focused improvement loop per poll:
    navigation, run the `llms.txt` coverage guard and keep the file below the
    50,000 character score threshold. If you touch page metadata, run the SEO
    metadata guard and keep descriptions useful, specific, and search-preview
-   friendly.
+   friendly. If you touch API endpoint pages, run the API content-quality guard
+   and preserve copy-ready code examples, headers, response documentation, and a
+   successful response tab.
 2. Improve docs directly when the fix is clear. Make content more correct,
    useful, detailed, persuasive, or SEO aligned. Keep claims factual and
    specific.
