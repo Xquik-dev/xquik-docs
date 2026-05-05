@@ -2,7 +2,7 @@
 
 Public documentation for [Xquik](https://xquik.com), the X (Twitter) real-time data and automation platform. Built on [Mintlify](https://mintlify.com), deployed at **[docs.xquik.com](https://docs.xquik.com)**.
 
-This repository powers the developer reference: REST API, webhooks, MCP server, OAuth 2.1, SDKs, glossary, and how-to guides. Main-domain pages should link or redirect here when the content is technical reference, implementation guidance, or API documentation.
+This repository powers the developer reference: REST API, webhooks, MCP server, OAuth 2.1, SDKs, glossary, comparison guides, and how-to guides. Main-domain pages should link or redirect here when the content is technical reference, implementation guidance, comparison guidance, or API documentation.
 
 ## What's covered
 
@@ -12,6 +12,7 @@ This repository powers the developer reference: REST API, webhooks, MCP server, 
 - **OAuth 2.1** - Authorization Code + PKCE flow, scopes, token refresh.
 - **Guides** - Workflows, error handling, rate limits, billing, trends, extraction workflow, architecture, troubleshooting, types, webhook testing, and framework integrations.
 - **SDKs** - 10 generated client libraries (TypeScript, Python, Go, Java, Kotlin, C#, Ruby, PHP, CLI as Go binary, Terraform provider) with auto-pagination, retry, and typed responses.
+- **Comparisons** - Factual alternatives and migration guides for X API, creator tools, social suites, data tools, and workflow platforms.
 - **OpenAPI 3.1** - Machine-readable spec at `openapi.yaml`, used by Mintlify for endpoint pages and by Stainless for SDK generation.
 
 ## Repository layout
@@ -23,6 +24,7 @@ webhooks/           Overview + signature verification
 mcp/                MCP server overview + tool reference
 oauth/              OAuth 2.1 setup + flow
 sdks/               Per-language SDK landing pages
+alternatives/       Comparison and migration guides
 introduction.mdx    Platform overview
 quickstart.mdx      2-minute quickstart
 docs.json           Navigation + theme config
@@ -33,13 +35,15 @@ openapi.yaml        OpenAPI 3.1 source of truth
 
 ## Local development
 
-Prerequisites: [Node.js 20+](https://nodejs.org) and the [Mintlify CLI](https://www.npmjs.com/package/mintlify).
+Prerequisites: [Node.js 20+](https://nodejs.org) and the [Mintlify CLI](https://www.npmjs.com/package/mint).
 
 ```bash
-npm install -g mintlify
-mintlify dev          # local preview at http://localhost:3000
-mintlify broken-links # check for broken internal links
-mintlify openapi-check openapi.yaml  # validate the OpenAPI spec
+npm install -g mint
+mint dev          # local preview at http://localhost:3000
+mint broken-links # check for broken internal links
+mint validate     # validate the documentation build
+mint a11y         # check accessibility issues
+mint openapi-check openapi.yaml  # validate the OpenAPI spec
 ```
 
 Edit any `.mdx` file and the preview reloads automatically.

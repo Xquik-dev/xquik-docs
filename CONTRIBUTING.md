@@ -5,10 +5,10 @@ Thanks for helping improve the Xquik docs. This file covers how to set up your e
 ## Quick start
 
 1. Fork the repository or create a branch if you have write access.
-2. Install the [Mintlify CLI](https://www.npmjs.com/package/mintlify): `npm install -g mintlify`.
-3. Run a local preview: `mintlify dev` (serves at `http://localhost:3000`).
+2. Install the [Mintlify CLI](https://www.npmjs.com/package/mint): `npm install -g mint`.
+3. Run a local preview: `mint dev` (serves at `http://localhost:3000`).
 4. Make your edits to the relevant `.mdx`, `.md`, `openapi.yaml`, or `docs.json`.
-5. Run `mintlify broken-links` and (when touching the API spec) `mintlify openapi-check openapi.yaml`.
+5. Run `mint broken-links`, `mint validate`, `mint a11y`, and (when touching the API spec) `mint openapi-check openapi.yaml`.
 6. Commit, push, and open a pull request against `main`.
 
 ## What kinds of contributions are welcome
@@ -16,13 +16,14 @@ Thanks for helping improve the Xquik docs. This file covers how to set up your e
 - Typo and clarity fixes on any page.
 - New or improved code samples (curl, Python, TypeScript, etc.) on endpoint pages.
 - New guides for common integration patterns. Open an issue first so we can agree on scope.
+- New factual comparison and migration guides that help users evaluate X workflow options.
 - OpenAPI spec corrections when documented behaviour does not match the live API. Verify against the live API before submitting.
 - SDK landing-page updates when an SDK adds a feature or changes auth semantics.
 
 ## What we do not accept here
 
 - Changes to internal product behaviour. The Xquik app is closed-source and lives in a separate repository; documentation must follow real behaviour, not propose new behaviour.
-- Promotional or marketing content. Keep it factual, technical, and short.
+- Promotional or search-only content. Keep comparison pages factual, technical, and useful.
 - Auto-generated SDK code. Each SDK has its own repository under the [Xquik-dev](https://github.com/Xquik-dev) org.
 
 ## Style rules
