@@ -24,16 +24,22 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
    and next steps.
 7. Review comparison pages for factual fairness and strong positioning:
    show where Xquik wins, state tradeoffs clearly, and avoid unverifiable claims.
-8. Check public wording for confidentiality. Never disclose private vendors,
+8. Review framework guides for accurate setup commands, package names,
+   supported framework behavior, authentication patterns, examples, and feature
+   coverage.
+9. Review every API endpoint page and high-value documentation page for SEO
+   compatible metadata, useful content depth, concrete examples, and accurate
+   workflow guidance.
+10. Check public wording for confidentiality. Never disclose private vendors,
    internal infrastructure names, internal cost units, or implementation details
    that should not be public.
-9. Run available static docs tests or validators. Do not start local dev servers
+11. Run available static docs tests or validators. Do not start local dev servers
    unless explicitly requested in that run.
-10. Update this file with findings, completed changes, recommendations, and an
+12. Update this file with findings, completed changes, recommendations, and an
     improved prompt for the next run.
-11. If the run discovers a better polling strategy, update the live automation
+13. If the run discovers a better polling strategy, update the live automation
     prompt as well as this file.
-12. Commit and push successful docs changes after checks pass.
+14. Commit and push successful docs changes after checks pass.
 
 ## Accuracy Sources
 
@@ -59,7 +65,15 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
 - Each guide includes prerequisites, setup, happy path, edge cases, errors,
   verification, and a useful next step.
 - SEO metadata targets developer search intent without keyword stuffing.
+- Every API endpoint page and high-value documentation page has an SEO-ready
+  title and description, a clear search intent, substantial useful content,
+  accurate examples, error guidance, and a logical next step.
+- Framework guides are accurate for the current Xquik SDKs, auth model,
+  supported workflows, and feature set.
 - Comparison pages are specific, persuasive, and credible.
+- Comparison pages verify compared services, feature rows, pricing references,
+  and data claims against official or clearly reliable sources before changing
+  public claims.
 - Public docs use generic service wording where implementation details are
   private.
 - No broken links, stale redirects, empty sections, filler, vague claims,
@@ -240,6 +254,10 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
     and the markdown report at `https://www.mintlify.com/score/xquik.md`.
     Prefer clear fixes that can improve the score without weakening accuracy,
     usefulness, or confidentiality.
+11. Prioritize framework guides, comparison pages, API endpoint pages, and
+    high-value documentation pages. Confirm framework setup, compared-service
+    facts, feature matrices, pricing references, endpoint details, and content
+    quality before publishing changes.
 
 ## Prompt For Next Run
 
@@ -260,6 +278,17 @@ and the markdown version at `https://www.mintlify.com/score/xquik.md`. Try to
 improve the score on every run when the report suggests a clear, factual, safe
 docs improvement. Do not chase score changes that would make the docs less
 accurate, less useful, or less confidential.
+
+Treat framework guides, comparison pages, all API endpoint pages, and high-value
+documentation pages as recurring priorities. For framework guides, verify setup
+commands, package names, runtime assumptions, authentication patterns, examples,
+and supported feature claims against current Xquik SDKs and product behavior.
+For comparison pages, verify the compared services, feature rows, pricing
+references, and data claims against official or clearly reliable sources before
+strengthening Xquik positioning. For every API endpoint page and docs page you
+touch, make sure the page is SEO compatible and has quality content: clear
+title, useful description, search-intent aligned intro, prerequisites, examples,
+response details, error guidance, and a logical next step.
 
 Run one focused improvement loop per poll:
 
