@@ -416,6 +416,24 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
 - Extraction export requires a `format` query parameter in source. The previous
   OpenAPI default implied `csv` would be used when `format` was omitted, but
   the route returns `400 invalid_format` instead.
+- Run 2026-05-06 03:44 UTC: refreshed Mintlify score report remained 94/100
+  with 25/29 checks passing. `llms.txt` still covers 100% of 191 sitemap doc
+  pages at 47,513 characters, under the 50,000 character threshold. The only
+  failed score component is still generated HTML size.
+- Official Mintlify OpenAPI research reconfirmed repository OpenAPI files can
+  generate endpoint pages, drive authentication fields, and supply generated
+  page metadata from operation `summary` and `description`. This supports
+  keeping operation metadata specific when correcting OpenAPI drift.
+- Radar endpoint source audit found `GET /radar` runs through `withV1Auth`, so
+  tier rate limits can return `429` with `rate_limit_exceeded`, `retryAfter`,
+  and a `Retry-After` header.
+- Radar is authenticated but free. The route does not run subscription or
+  credit guards, so `402` was stale in OpenAPI and endpoint docs.
+- Radar query parsing returns `400 invalid_input` only for invalid `source` or
+  `category`. Numeric `hours` and `limit` are clamped to source-defined bounds,
+  and non-numeric values fall back to defaults.
+- Radar OpenAPI had stale time-window values. Product source uses a 6-hour
+  default and 72-hour maximum, not a 24-hour default and 168-hour maximum.
 
 ## Completed Changes
 
@@ -774,6 +792,27 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
   product `openapi.yaml` matched with `cmp -s`; `git diff --check` passed in
   both affected repos; edited files contained no em dash or banned spaced
   double-hyphen sequence.
+- Added `GET /radar` to the fully audited response-status set in
+  `api-response-status.test.ts`.
+- Corrected Radar OpenAPI status coverage in both docs and product
+  `openapi.yaml`: removed stale `402`, added source-verified `400` and `429`,
+  corrected the `hours` default and maximum, and added the `region` default.
+- Updated `api-reference/radar/list.mdx` with source-aligned free-route
+  wording, `400` guidance, a `429 Rate Limited` tab, and a public-safe Radar
+  item ID description.
+- Synced docs `openapi.yaml` and product
+  `/Users/burak/Developer/xquik/openapi.yaml`; `cmp -s` confirmed they match.
+- Updated the live automation prompt so future runs treat Radar as covered and
+  prefer Support for the next all-status parity audit.
+- Run 2026-05-06 03:44 UTC checks: docs `bunx --bun vitest run
+  api-response-status.test.ts` passed with 2 tests; docs
+  `bun run test:agent-docs` passed with 36 tests passed and 1 skipped; docs
+  `bunx --bun mint validate` passed; docs `bunx --bun mint broken-links`
+  passed; product `bun run vacuum` passed with 7 duplicate-description informs;
+  product targeted OpenAPI tests passed with 10 tests across 4 files; docs and
+  product `openapi.yaml` matched with `cmp -s`; `git diff --check` passed in
+  both affected repos; edited files contained no em dash or banned spaced
+  double-hyphen sequence.
 
 ## Unresolved Risks
 
@@ -865,6 +904,9 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
 - Extractions is now source-audited for all documented statuses. Remaining
   endpoint families still need source-verified error status audits before they
   can be added to the fully audited set.
+- Radar is now source-audited for all documented statuses. Remaining endpoint
+  families still need source-verified error status audits before they can be
+  added to the fully audited set.
 
 ## Recommendations For Next Run
 
@@ -925,10 +967,10 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
     run the relevant static OpenAPI checks before committing.
 19. Pick the next endpoint family for all-status parity after Styles, Drafts,
     Webhooks, Credits, Monitors, Events, API Keys, Account, Subscribe, Compose,
-    Draws, and Extractions. Radar is the next best candidate because it is a
-    high-value workflow with trend discovery, pagination, source filters, auth,
-    and route-level rate limits that need source verification against product
-    routes and OpenAPI.
+    Draws, Extractions, and Radar. Support is the next best candidate because
+    ticket list, create, get, update, and reply routes have user-facing
+    workflow docs plus auth, ID parsing, validation, and rate-limit statuses
+    that need source verification.
 20. Maintain and deepen dedicated plugin docs for TweetClaw and Hermes Tweet. Use
     `/Users/burak/Developer/tweetclaw` and
     `/Users/burak/Developer/hermes-tweet` as source truth for install commands,
@@ -1011,8 +1053,8 @@ Run one focused improvement loop per poll:
    status parity only by adding source-verified endpoint families to the fully
    audited operation set in `api-response-status.test.ts`; Styles, Drafts,
    Webhooks, Credits, Monitors, Events, API Keys, Account, Subscribe, Compose,
-   Draws, and Extractions are already covered, so prefer Radar next. When
-   either OpenAPI file changes, compare docs `openapi.yaml` and product
+   Draws, Extractions, and Radar are already covered, so prefer Support next.
+   When either OpenAPI file changes, compare docs `openapi.yaml` and product
    `/Users/burak/Developer/xquik/openapi.yaml` with
    `cmp -s` or an equivalent diff before committing so the public contracts do
    not silently drift.

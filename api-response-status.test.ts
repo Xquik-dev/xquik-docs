@@ -33,6 +33,7 @@ const FULL_STATUS_AUDITED_OPERATIONS = new Set([
   'GET /monitors/{id}',
   'GET /monitors/keywords',
   'GET /monitors/keywords/{id}',
+  'GET /radar',
   'GET /styles',
   'GET /styles/{id}',
   'GET /styles/{id}/performance',

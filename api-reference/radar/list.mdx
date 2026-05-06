@@ -1,6 +1,6 @@
 ---
 title: "List radar items"
-description: "Trending topics and news from 7 sources. Free for all subscribers, no usage cost"
+description: "Fetch free trending topics from 7 Radar sources with filters and cursor pagination"
 api: "GET /radar"
 keywords: ["radar", "trending", "Google Trends", "Hacker News", "GitHub Trending", "Reddit", "Wikipedia", "TrustMRR", "Polymarket"]
 ---
@@ -15,7 +15,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 Get trending topics and news aggregated from 7 sources: Google Trends, Hacker News, Polymarket, TrustMRR, Wikipedia, GitHub Trending, and Reddit. Filter by source, category, region, and time window.
 
-Free for all subscribers. No usage cost.
+Radar is authenticated but free. It does not require an active subscription and does not consume credits.
 
 ## Headers
 
@@ -66,7 +66,7 @@ Free for all subscribers. No usage cost.
 ### RadarItem fields
 
 <ResponseField name="id" type="string" required>
-  Unique item identifier.
+  Radar item identifier.
 </ResponseField>
 
 <ResponseField name="title" type="string" required>
@@ -265,13 +265,19 @@ for _, item := range data.Items {
     ```json
     { "error": "invalid_input" }
     ```
-    Invalid query parameter value. Verify `source`, `category`, `region`, `hours` (1-72), and `limit` (1-100) are within accepted ranges.
+    Invalid `source` or `category` value. Numeric `hours` and `limit` values are clamped to the accepted range; non-numeric values fall back to defaults.
   </Tab>
   <Tab title="401 Unauthenticated">
     ```json
     { "error": "unauthenticated" }
     ```
     Missing or invalid API key. Check the `x-api-key` header value.
+  </Tab>
+  <Tab title="429 Rate Limited">
+    ```json
+    { "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 1 }
+    ```
+    Wait for the `Retry-After` value before requesting another Radar page.
   </Tab>
 </Tabs>
 
