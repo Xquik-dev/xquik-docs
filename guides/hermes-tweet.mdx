@@ -22,21 +22,32 @@ Hermes plugins are opt-in. The official Hermes plugin docs describe pip entry po
 
 ## Install
 
-Install the published PyPI package:
+Use Hermes' plugin installer for the public GitHub repo:
 
 ```bash
-python -m pip install hermes-tweet
+hermes plugins install Xquik-dev/hermes-tweet --enable
+```
+
+Hermes prompts for `XQUIK_API_KEY` during an interactive install and stores it
+in `~/.hermes/.env`. Non-interactive installs skip the prompt. Set the key in
+the process environment or `~/.hermes/.env` before calling `tweet_read`.
+
+Install the published PyPI package directly when you manage the Hermes Python
+environment yourself:
+
+```bash
+~/.hermes/hermes-agent/venv/bin/python -m pip install hermes-tweet
 hermes plugins enable hermes-tweet
 ```
 
 If you use `uv` inside your Hermes Python environment:
 
 ```bash
-uv pip install hermes-tweet
+uv pip install --python ~/.hermes/hermes-agent/venv/bin/python hermes-tweet
 hermes plugins enable hermes-tweet
 ```
 
-The current package version is `0.1.0`. The plugin name is `hermes-tweet`, and the Python entry point is `hermes-tweet = hermes_tweet`.
+The current package version is `0.1.2`. The plugin name is `hermes-tweet`, and the Python entry point is `hermes-tweet = hermes_tweet`.
 
 ## Configure
 
@@ -44,6 +55,12 @@ Set your Xquik API key before starting Hermes:
 
 ```bash
 export XQUIK_API_KEY="xq_..."
+```
+
+For persistent Hermes sessions, add the key to `~/.hermes/.env`:
+
+```bash
+XQUIK_API_KEY=xq_...
 ```
 
 Optional environment variables:
@@ -58,6 +75,9 @@ Keep `HERMES_TWEET_ENABLE_ACTIONS=false` for unattended sessions. Enable actions
 ```bash
 export HERMES_TWEET_ENABLE_ACTIONS="true"
 ```
+
+If Hermes is already running after you edit `~/.hermes/.env`, run `/reload` in
+the active session or start a new session before calling `tweet_read`.
 
 ## Tools
 
@@ -118,6 +138,12 @@ After installing, enabling, and setting `XQUIK_API_KEY`, run:
 /xstatus
 ```
 
+For scriptable diagnostics, list the plugin toolset:
+
+```bash
+hermes tools list
+```
+
 Then test a read workflow:
 
 ```text
@@ -130,8 +156,9 @@ For action workflows, require an explicit draft and approval step before enablin
 
 | Symptom | Fix |
 |---------|-----|
-| Plugin appears but tools are missing | Run `hermes plugins enable hermes-tweet` and restart Hermes |
-| Auth fails | Confirm `XQUIK_API_KEY` is exported in the same environment that starts Hermes |
+| Plugin appears but tools are missing | Run `hermes plugins enable hermes-tweet`, then `hermes tools list` |
+| Auth fails | Confirm `XQUIK_API_KEY` is exported in the same environment that starts Hermes, or stored in `~/.hermes/.env` |
+| Env file changed but auth still fails | Run `/reload` in the active Hermes session or start a new session |
 | Action tool is hidden | Set `HERMES_TWEET_ENABLE_ACTIONS=true` only for approved action workflows |
 | Endpoint is missing | Regenerate the catalog from the current Xquik OpenAPI file in local development |
 | Writes are too risky for the workflow | Keep `HERMES_TWEET_ENABLE_ACTIONS=false` and use read tools only |
@@ -142,6 +169,8 @@ TweetClaw is the OpenClaw-native npm plugin. Hermes Tweet is the Hermes-native P
 
 ## References
 
+- [Hermes Tweet GitHub repo](https://github.com/Xquik-dev/hermes-tweet)
+- [Hermes Tweet on PyPI](https://pypi.org/project/hermes-tweet/)
 - [Hermes Agent plugin docs](https://hermes-agent.nousresearch.com/docs/user-guide/features/plugins)
 - [TweetClaw for OpenClaw](/guides/tweetclaw)
 - [API Reference](/api-reference/overview)
