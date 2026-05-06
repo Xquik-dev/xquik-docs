@@ -123,14 +123,22 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 ## Body
 
-Provide either `tweetInput` (single tweet) or `tweetIds` (bulk). Exactly 1 is required.
+Use `tweetIds` for bulk downloads. If `tweetIds` is present with at least 1 string value, the route uses bulk mode and ignores single-tweet fields. Otherwise, use `tweetInput`, `tweetId`, or `tweetUrl` for a single tweet.
 
 <ParamField body="tweetInput" type="string">
-  Tweet URL or numeric tweet ID for a single download. Accepts `x.com` and `twitter.com` URL formats. Aliases: `tweetId`, `tweetUrl`.
+  Tweet URL or numeric tweet ID for a single download. Accepts `x.com` and `twitter.com` URL formats.
+</ParamField>
+
+<ParamField body="tweetId" type="string">
+  Numeric tweet ID alias for `tweetInput`. Used when `tweetInput` is not provided.
+</ParamField>
+
+<ParamField body="tweetUrl" type="string">
+  Tweet URL alias for `tweetInput`. Used when `tweetInput` and `tweetId` are not provided.
 </ParamField>
 
 <ParamField body="tweetIds" type="string[]">
-  Array of tweet URLs or IDs for bulk download. Maximum 50 items. Returns a single combined gallery.
+  Array of tweet URLs or IDs for bulk download. Maximum 50 string items. Invalid IDs are skipped; the request fails only when no valid tweet IDs remain.
 </ParamField>
 
 ## Response
@@ -178,7 +186,7 @@ Provide either `tweetInput` (single tweet) or `tweetIds` (bulk). Exactly 1 is re
     ```json
     { "error": "invalid_input", "message": "Invalid request body" }
     ```
-    Missing or malformed request body.
+    Missing, malformed, or non-JSON request body. Malformed JSON can also return `invalid_json`.
   </Tab>
   <Tab title="400 Invalid Tweet ID">
     ```json
@@ -211,11 +219,33 @@ Provide either `tweetInput` (single tweet) or `tweetIds` (bulk). Exactly 1 is re
     An active subscription is required. Subscribe from the [dashboard](https://xquik.com/subscription).
     For [MPP](/mpp/overview) requests without a valid payment credential, 402 returns a `WWW-Authenticate: Payment` challenge header instead.
   </Tab>
+  <Tab title="404 Tweet Not Found">
+    ```json
+    { "error": "tweet_not_found", "message": "Tweet not found" }
+    ```
+    The tweet ID is valid, but the tweet cannot be fetched or no longer exists.
+  </Tab>
+  <Tab title="429 Rate Limit Exceeded">
+    ```json
+    {
+      "error": "rate_limit_exceeded",
+      "message": "Too many requests. Try again later.",
+      "retryAfter": 60
+    }
+    ```
+    The API key, user, or plan tier is sending requests too quickly. Respect the `Retry-After` header before retrying.
+  </Tab>
   <Tab title="502 X API unavailable">
     ```json
     { "error": "x_api_unavailable" }
     ```
     The X data source returned an error. Retry after a short delay.
+  </Tab>
+  <Tab title="424 Dependency Failed">
+    ```json
+    { "error": "x_api_unavailable" }
+    ```
+    Returned when you opt into the normalized v1 response contract and the upstream dependency fails.
   </Tab>
 </Tabs>
 

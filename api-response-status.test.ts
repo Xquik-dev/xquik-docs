@@ -115,6 +115,7 @@ const FULL_STATUS_AUDITED_OPERATIONS = new Set([
   'POST /x/communities',
   'POST /x/communities/{id}/join',
   'POST /x/dm/{userId}',
+  'POST /x/media/download',
   'POST /x/media',
   'POST /x/tweets',
   'POST /x/tweets/{id}/like',
