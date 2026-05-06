@@ -18,29 +18,31 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
    `/Users/burak/Developer/xquik/openapi.yaml`, and actual route behavior.
 4. Verify guides against current features, pricing, auth, webhooks, MCP, MPP,
    SDKs, dashboard flows, and tool capabilities.
-5. Review `docs.json` for valid Mintlify structure, navigation, redirects,
+5. Verify plugin docs against local plugin source repos, especially TweetClaw
+   for OpenClaw and Hermes Tweet for Hermes Agent.
+6. Review `docs.json` for valid Mintlify structure, navigation, redirects,
    metadata, branding, icons, API playground settings, and SEO basics.
-6. Review every new or changed MDX page for useful examples, clear prerequisites,
+7. Review every new or changed MDX page for useful examples, clear prerequisites,
    accurate request and response shapes, error handling, pagination, rate limits,
    and next steps.
-7. Review comparison pages for factual fairness and strong positioning:
+8. Review comparison pages for factual fairness and strong positioning:
    show where Xquik wins, state tradeoffs clearly, and avoid unverifiable claims.
-8. Review framework guides for accurate setup commands, package names,
+9. Review framework guides for accurate setup commands, package names,
    supported framework behavior, authentication patterns, examples, and feature
    coverage.
-9. Review every API endpoint page and high-value documentation page for SEO
+10. Review every API endpoint page and high-value documentation page for SEO
    compatible metadata, useful content depth, concrete examples, and accurate
    workflow guidance.
-10. Check public wording for confidentiality. Never disclose private vendors,
+11. Check public wording for confidentiality. Never disclose private vendors,
    internal infrastructure names, internal cost units, or implementation details
    that should not be public.
-11. Run available static docs tests or validators. Do not start local dev servers
+12. Run available static docs tests or validators. Do not start local dev servers
    unless explicitly requested in that run.
-12. Update this file with findings, completed changes, recommendations, and an
+13. Update this file with findings, completed changes, recommendations, and an
     improved prompt for the next run.
-13. If the run discovers a better polling strategy, update the live automation
+14. If the run discovers a better polling strategy, update the live automation
     prompt as well as this file.
-14. Commit and push successful docs changes after checks pass.
+15. Commit and push successful docs changes after checks pass.
 
 ## Accuracy Sources
 
@@ -52,6 +54,9 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
 - API routes: `/Users/burak/Developer/xquik/app/api/v1`
 - Feature logic: `/Users/burak/Developer/xquik/lib`
 - SDK references: `/Users/burak/Developer/xquik/sdks`
+- TweetClaw OpenClaw plugin repo: `/Users/burak/Developer/tweetclaw`
+- Hermes Tweet Hermes Agent plugin repo:
+  `/Users/burak/Developer/hermes-tweet`
 - Product and dashboard copy: `/Users/burak/Developer/xquik/app`
 - Mintlify SEO docs: `https://www.mintlify.com/docs/optimize/seo`
 - Mintlify API settings docs: `https://www.mintlify.com/docs/organize/settings-api`
@@ -77,6 +82,9 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
   accurate examples, error guidance, and a logical next step.
 - Framework guides are accurate for the current Xquik SDKs, auth model,
   supported workflows, and feature set.
+- Plugin docs are accurate for local plugin packages, install commands,
+  runtime versions, config and environment variables, tools, slash commands,
+  safety boundaries, endpoint counts, MPP support, and catalog generation.
 - Comparison pages are specific, persuasive, and credible.
 - Comparison pages verify compared services, feature rows, pricing references,
   and data claims against official or clearly reliable sources before changing
@@ -312,6 +320,23 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
 - Run 2026-05-06 prompt update: the user requested that every poll run should
   research online to learn new domain and scope information, then sharpen the
   poll prompt from those findings.
+- Run 2026-05-06 plugin-docs audit: local plugin source repos are
+  `/Users/burak/Developer/tweetclaw` and
+  `/Users/burak/Developer/hermes-tweet`.
+- Current docs only mention TweetClaw in the top-level `openapi.yaml`
+  description. No dedicated TweetClaw/OpenClaw or Hermes Tweet/Hermes Agent
+  documentation pages were found in `xquik-docs`.
+- TweetClaw source truth: npm package `@xquik/tweetclaw` v1.6.12, OpenClaw
+  plugin, install command `openclaw plugins install @xquik/tweetclaw`, tools
+  `explore` and `tweetclaw`, slash commands `/xstatus` and `/xtrends`, API key
+  or Tempo signing key config, optional base URL and polling settings, 99
+  agent-callable endpoints, and 32 MPP read-only endpoints.
+- Hermes Tweet source truth: PyPI package `hermes-tweet` v0.1.0, Hermes Agent
+  plugin, install command `python -m pip install hermes-tweet` followed by
+  `hermes plugins enable hermes-tweet`, tools `tweet_explore`, `tweet_read`,
+  and `tweet_action`, required `XQUIK_API_KEY`, optional `XQUIK_BASE_URL` and
+  `HERMES_TWEET_ENABLE_ACTIONS`, Python `>=3.11`, 99 agent-callable endpoints,
+  and 32 MPP-tagged read endpoints.
 
 ## Completed Changes
 
@@ -582,6 +607,9 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
   agent ecosystem changes, official competitor information, and relevant public
   API documentation, then use those findings to improve docs and the poll
   prompt.
+- Run 2026-05-06 plugin-docs prompt update: added TweetClaw and Hermes Tweet
+  local source repos to the recurring docs poll scope. The live automation
+  prompt was updated with the same requirement.
 
 ## Unresolved Risks
 
@@ -660,6 +688,10 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
   can be added to the fully audited set.
 - The Account audit did not start any local server or browser session, so it
   verified route behavior statically from product source and tests only.
+- Dedicated docs pages for TweetClaw/OpenClaw and Hermes Tweet/Hermes Agent are
+  still missing from docs navigation. A future run should create or expand
+  integration docs, add SEO metadata, verify install and config details against
+  local plugin repos, and consider `llms.txt` coverage.
 
 ## Recommendations For Next Run
 
@@ -723,6 +755,12 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
     Compose is the next best candidate because it has one route, touches a
     high-value onboarding workflow, and likely needs careful source verification
     for billing, AI workflow inputs, and error statuses.
+20. Add or audit dedicated plugin docs for TweetClaw and Hermes Tweet. Use
+    `/Users/burak/Developer/tweetclaw` and
+    `/Users/burak/Developer/hermes-tweet` as source truth for install commands,
+    package names, versions, runtime requirements, config and env vars, tool
+    names, slash commands, action safety boundaries, endpoint counts, MPP
+    support, and catalog generation.
 
 ## Prompt For Next Run
 
@@ -745,6 +783,15 @@ navigation default-state, and Mintlify ignore guards; treat failures as docs
 accuracy, navigation usability, or quality issues unless a guard itself is
 plainly wrong.
 
+Also treat `/Users/burak/Developer/tweetclaw` and
+`/Users/burak/Developer/hermes-tweet` as plugin source-truth repos. Current
+docs only mention TweetClaw in `openapi.yaml`; no dedicated TweetClaw/OpenClaw
+or Hermes Tweet/Hermes Agent docs pages were found. Prefer creating or
+expanding those integration docs when scope allows. Verify plugin package names,
+versions, install commands, runtime requirements, config and env vars, tool
+names, slash commands, action safety boundaries, endpoint counts, MPP support,
+and catalog generation against the local plugin repos before publishing claims.
+
 Also review the Mintlify score report at `https://www.mintlify.com/score/xquik`
 and the markdown version at `https://www.mintlify.com/score/xquik.md`. Try to
 improve the score on every run when the report suggests a clear, factual, safe
@@ -759,9 +806,11 @@ public API documentation. Turn useful findings into better docs, better checks,
 or a sharper poll prompt, and record what changed in this file.
 
 Treat framework guides, comparison pages, all API endpoint pages, and high-value
-documentation pages as recurring priorities. For framework guides, verify setup
-commands, package names, runtime assumptions, authentication patterns, examples,
-and supported feature claims against current Xquik SDKs and product behavior.
+documentation pages as recurring priorities. Treat plugin docs as a recurring
+priority too, especially TweetClaw/OpenClaw and Hermes Tweet/Hermes Agent. For
+framework guides, verify setup commands, package names, runtime assumptions,
+authentication patterns, examples, and supported feature claims against current
+Xquik SDKs and product behavior.
 For comparison pages, verify the compared services, feature rows, pricing
 references, and data claims against official or clearly reliable sources before
 strengthening Xquik positioning. For every API endpoint page and docs page you
