@@ -543,6 +543,23 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
 - `GET /x/articles/{tweetId}` returns explicit `404 article_not_found` when a
   valid tweet ID is not an X Article. `GET /x/tweets/{id}` docs already
   documented `404 tweet_not_found`, so OpenAPI needed the same public status.
+- Run 2026-05-06 07:19 UTC: refreshed Mintlify score report remained 94/100
+  with 25/29 checks passing. `llms.txt` still covers 100% of 191 sitemap doc
+  pages at 47,513 characters, under the 50,000 character threshold. The only
+  failed score component is still generated HTML size.
+- Online research reconfirmed Mintlify uses repository OpenAPI files to
+  generate endpoint pages, request builders, authentication fields, and
+  generated endpoint metadata. OpenAPI 3.1 response maps remain the
+  machine-readable contract for expected operation responses.
+- X Write tweet-action source audit found create tweet, delete tweet, like,
+  unlike, retweet, and unretweet route through `handleWriteAction` or
+  `createToggleHandler`, so they can return route-level `400 invalid_input`,
+  authentication `401`, write-credit `402`, account-state `403`, write
+  rejection `422`, X rate-limit `429`, transient `503`, and generic write
+  failure `500`.
+- `DELETE /x/tweets/{id}` did not have a source path that returns the generic
+  `404` response documented in OpenAPI. Target-not-found write errors are
+  classified as `422 x_target_not_found` in the shared write-action handler.
 
 ## Completed Changes
 
@@ -1042,6 +1059,27 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
   docs and product `openapi.yaml` matched with `cmp -s`; `git diff --check`
   passed in both affected repos; edited files contained no em dash or banned
   spaced double-hyphen sequence.
+- Added the X Write tweet-action family to the fully audited response-status
+  set in `api-response-status.test.ts`: create tweet, delete tweet, like,
+  unlike, retweet, and unretweet.
+- Corrected X Write tweet-action OpenAPI status coverage in both docs and
+  product `openapi.yaml`: added source-verified `400 invalid_input` coverage
+  to delete, like, unlike, retweet, and unretweet; added missing write-action
+  `403`, `422`, `429`, and `503` coverage to delete tweet; and removed stale
+  delete-tweet `404` coverage.
+- Synced docs `openapi.yaml` and product
+  `/Users/burak/Developer/xquik/openapi.yaml`; `cmp -s` confirmed they match.
+- Updated the live automation prompt so future runs treat X Write tweet
+  actions as covered and prefer X Write user actions next.
+- Run 2026-05-06 07:19 UTC checks: docs `bunx --bun vitest run
+  api-response-status.test.ts api-params.test.ts` passed with 3 tests; docs
+  `bun run test:agent-docs` passed with 36 tests passed and 1 skipped; docs
+  `bunx --bun mint validate` passed; docs `bunx --bun mint broken-links`
+  passed; product `bun run vacuum` passed with 7 duplicate-description
+  informs; product targeted OpenAPI tests passed with 10 tests across 4 files;
+  docs and product `openapi.yaml` matched with `cmp -s`; `git diff --check`
+  passed in both affected repos; edited files contained no em dash or banned
+  spaced double-hyphen sequence.
 
 ## Unresolved Risks
 
@@ -1181,6 +1219,16 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
 - This Tweets audit did not start a local server, browser session, Playwright,
   or localhost visual check. It verified route behavior statically from
   product source and tests only, per the poll's static-check policy.
+- X Write tweet actions are now source-audited for all documented statuses.
+  Remaining write-side endpoint families still need source-verified status
+  audits before they can be added to the fully audited set.
+- This X Write tweet-action audit did not include follow, unfollow, remove
+  follower, direct-message sends, media upload, profile updates, or community
+  writes. Audit those in smaller write-side slices.
+- `/Users/burak/Developer/hermes-tweet` is on a local non-tracking branch with
+  unrelated dirty docs files, so `git pull --ff-only` could not run there in
+  this cycle. Treat its current checkout as source context until the branch and
+  local changes are resolved.
 
 ## Recommendations For Next Run
 
@@ -1242,10 +1290,10 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
 19. Pick the next endpoint family for all-status parity after Styles, Drafts,
     Webhooks, Credits, Monitors, Events, API Keys, Account, Subscribe, Compose,
     Draws, Extractions, Radar, Support, X Accounts, Trends, read-side Users,
-    and read-side Tweets. X Write actions are the next best candidate because
-    create tweet, delete tweet, like, unlike, retweet, unretweet, follow,
-    unfollow, remove follower, direct-message sends, and media upload use
-    write-action error components that differ from read-side X API responses.
+    read-side Tweets, and X Write tweet actions. X Write user actions are the
+    next best candidate because follow, unfollow, and remove follower use the
+    shared write-action handler but have user-target semantics that should be
+    verified separately from tweet-target writes.
 20. Maintain and deepen dedicated plugin docs for TweetClaw and Hermes Tweet. Use
     `/Users/burak/Developer/tweetclaw` and
     `/Users/burak/Developer/hermes-tweet` as source truth for install commands,
@@ -1328,11 +1376,11 @@ Run one focused improvement loop per poll:
    status parity only by adding source-verified endpoint families to the fully
    audited operation set in `api-response-status.test.ts`; Styles, Drafts,
    Webhooks, Credits, Monitors, Events, API Keys, Account, Subscribe, Compose,
-   Draws, Extractions, Radar, Support, X Accounts, Trends, read-side Users, and
-   read-side Tweets are already covered, so prefer X Write actions next. Treat
-   create tweet, delete tweet, like, unlike, retweet, unretweet, follow,
-   unfollow, remove follower, direct-message sends, and media upload as
-   write-side routes with distinct public error components.
+   Draws, Extractions, Radar, Support, X Accounts, Trends, read-side Users,
+   read-side Tweets, and X Write tweet actions are already covered, so prefer
+   X Write user actions next. Treat follow, unfollow, and remove follower as a
+   dedicated write-side slice with user-target semantics before moving to
+   direct-message sends, media upload, profile updates, or community writes.
    When either OpenAPI file changes, compare docs `openapi.yaml` and product
    `/Users/burak/Developer/xquik/openapi.yaml` with
    `cmp -s` or an equivalent diff before committing so the public contracts do
