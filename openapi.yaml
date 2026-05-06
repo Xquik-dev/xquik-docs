@@ -5878,7 +5878,7 @@ paths:
                     type: array
                     items:
                       type: object
-                      required: [id]
+                      required: [id, senderId, receiverId]
                       properties:
                         id:
                           type: string
@@ -5905,6 +5905,7 @@ paths:
                       - id: '1234567890123456789'
                         text: 'Hey, how are you?'
                         senderId: '9876543210'
+                        receiverId: '1234567890'
                   has_next_page:
                     type: boolean
                     example: true
@@ -5916,11 +5917,9 @@ paths:
                   - id: '1234567890123456789'
                     text: 'Hey, how are you?'
                     senderId: '9876543210'
+                    receiverId: '1234567890'
                 has_next_page: true
                 next_cursor: 'DAACCgACGRElMJcAAA'
-                senderId: '42'
-                receiverId: '42'
-                createdAt: 'createdAt_value'
         '400':
           description: >
             Invalid input. Either `invalid_user_id` (path user ID is empty or
@@ -5940,8 +5939,8 @@ paths:
                   value:
                     error: account_required
                     message: >-
-                      Provide an account query parameter naming a connected X
-                      account. DM history requires a participant session.
+                      Provide ?account=<x_handle> for a connected X account. DM
+                      history requires a participant session.
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '402':
@@ -5974,9 +5973,23 @@ paths:
                   summary: Connected account needs reauthentication
                   value:
                     error: account_needs_reauth
-        '502':
-          $ref: '#/components/responses/XApiError'
+        '404':
+          description:
+            Connected X account not found for the authenticated user.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: account_not_found
+                message:
+                  X account not found. Connect it first at
+                  /dashboard/account?tab=x-accounts.
         '424':
+          $ref: '#/components/responses/XApiError'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+        '502':
           $ref: '#/components/responses/XApiError'
 
   /x/communities/{id}/info:

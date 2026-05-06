@@ -89,6 +89,10 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   Pagination cursor. Pass the `next_cursor` value from the previous response to fetch older messages.
 </ParamField>
 
+<ParamField query="maxId" type="string">
+  Legacy pagination cursor. Use `cursor` for new integrations. When both are present, `cursor` takes precedence.
+</ParamField>
+
 ## Headers
 
 <ParamField header="x-api-key" type="string" required>
@@ -104,8 +108,8 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       <Expandable title="message object">
         <ResponseField name="id" type="string">Message ID.</ResponseField>
         <ResponseField name="text" type="string">Message text. Omitted if unavailable.</ResponseField>
-        <ResponseField name="senderId" type="string">Sender user ID. Omitted if unavailable.</ResponseField>
-        <ResponseField name="receiverId" type="string">Receiver user ID. Omitted if unavailable.</ResponseField>
+        <ResponseField name="senderId" type="string">Sender user ID.</ResponseField>
+        <ResponseField name="receiverId" type="string">Receiver user ID.</ResponseField>
         <ResponseField name="createdAt" type="string">ISO 8601 timestamp. Omitted if unavailable.</ResponseField>
         <ResponseField name="mediaUrl" type="string">URL of attached media (image, GIF, or video). Omitted when the message has no media attachment.</ResponseField>
       </Expandable>
@@ -141,7 +145,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   </Tab>
   <Tab title="400 Account required">
     ```json
-    { "error": "account_required", "message": "Provide an account query parameter naming a connected X account. DM history requires a participant session." }
+    { "error": "account_required", "message": "Provide ?account=<x_handle> for a connected X account. DM history requires a participant session." }
     ```
     The `account` query parameter was missing or empty. Pass the handle of a connected X account that participates in the conversation.
   </Tab>
@@ -174,6 +178,24 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
     { "error": "account_needs_reauth" }
     ```
     The connected account needs to be reauthenticated. Reconnect it from the dashboard.
+  </Tab>
+  <Tab title="404 Account not found">
+    ```json
+    { "error": "account_not_found" }
+    ```
+    The requested connected X account was not found. Connect it first or pass another account handle.
+  </Tab>
+  <Tab title="429 Rate Limit Exceeded">
+    ```json
+    { "error": "rate_limit_exceeded", "retryAfter": 60 }
+    ```
+    Your tier rate limit was exceeded. Wait for the `Retry-After` header before retrying.
+  </Tab>
+  <Tab title="424 Dependency Failed">
+    ```json
+    { "error": "x_api_unavailable" }
+    ```
+    The best-practice response contract can return 424 when the upstream X data source fails.
   </Tab>
   <Tab title="502 X API unavailable">
     ```json
