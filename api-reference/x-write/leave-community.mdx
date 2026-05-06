@@ -154,9 +154,9 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   </Tab>
   <Tab title="404 Not Found">
     ```json
-    { "error": "not_found", "message": "Community not found or not a member" }
+    { "error": "account_not_found", "message": "X account not found. Connect it first at /dashboard/account?tab=x-accounts." }
     ```
-    The specified community does not exist, or the account is not a member of it.
+    The specified `account` is not connected to your Xquik account. Connect it from the [dashboard](https://xquik.com/dashboard).
   </Tab>
   <Tab title="403 Account Needs Reauth">
     ```json
@@ -174,19 +174,25 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
     ```json
     { "error": "x_content_too_long", "message": "..." }
     ```
-    X rejected the write. Possible codes: `x_content_too_long`, `x_duplicate_action`, `x_account_suspended`, `x_account_protected`, `x_target_not_found`, `x_account_feature_required`, `x_rejected`. See [error handling](/guides/error-handling) for details.
+    X rejected the write. Possible codes: `x_duplicate_action`, `x_account_suspended`, `x_account_protected`, `x_target_not_found`, `x_account_feature_required`, `x_rejected`. Target community errors and not-a-member errors are write rejections. See [error handling](/guides/error-handling) for details.
   </Tab>
-  <Tab title="429 Rate Limited by X">
+  <Tab title="429 Rate Limited">
     ```json
-    { "error": "x_rate_limited", "message": "..." }
+    { "error": "rate_limit_exceeded", "retryAfter": 60 }
     ```
-    X throttled the write. Possible codes: `x_rate_limited` (short-term throttle) or `x_daily_limit` (daily cap hit). Back off and retry later. Distinct from Xquik tier-based 429.
+    The request hit an Xquik tier limit, or X throttled the community leave. Possible codes: `rate_limit_exceeded`, `x_rate_limited`, or `x_daily_limit`. Respect the `Retry-After` header when present.
   </Tab>
   <Tab title="503 Transient Error">
     ```json
     { "error": "x_transient_error", "message": "..." }
     ```
     A transient upstream issue occurred. Safe to retry with exponential backoff.
+  </Tab>
+  <Tab title="500 Write Failed">
+    ```json
+    { "error": "x_write_failed", "message": "Write failed. Try again later." }
+    ```
+    Xquik could not complete the write and did not receive a more specific error from X. Check the account and retry later.
   </Tab>
 </Tabs>
 
