@@ -502,6 +502,27 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
   back to worldwide, and invalid or below-minimum `count` falls back to 30. The
   docs and OpenAPI should not publish a `400` response for that route unless
   product behavior changes first.
+- Run 2026-05-06 06:10 UTC: refreshed Mintlify score report remained 94/100
+  with 25/29 checks passing. `llms.txt` still covers 100% of 191 sitemap doc
+  pages at 47,513 characters, under the 50,000 character threshold. The only
+  failed score component is still generated HTML size.
+- Mintlify OpenAPI research reconfirmed OpenAPI files power generated endpoint
+  docs, request builders, authentication fields, and metadata. OpenAPI 3.1
+  research reconfirmed response maps should cover successful responses and
+  known errors.
+- Read-side Users source audit found batch lookup, search, profile lookup,
+  relationship check, followers, following, mutual followers, verified
+  followers, user tweets, likes, media, and mentions all run through
+  `withXApiGuard`, so they can return `429 rate_limit_exceeded`,
+  subscription/payment `402`, upstream `502`, and normalized `424` dependency
+  failures.
+- `GET /x/users/batch` returns route-level `400` for missing `ids` and more
+  than 100 IDs. `GET /x/users/search` returns route-level `400` for missing
+  `q`. Both OpenAPI operations were missing those source-verified `400`
+  responses before this run.
+- User list routes clamp page sizes to source bounds and available credits;
+  zero affordable result count can return `402 insufficient_credits` before
+  upstream work is delivered.
 
 ## Completed Changes
 
@@ -954,6 +975,30 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
   double-hyphen sequence.
 - GitHub Actions check found the latest 8 `Agent-Friendly Docs` runs on `main`
   passed before this run's new commit.
+- Added the read-side Users endpoint family to the fully audited
+  response-status set in `api-response-status.test.ts`.
+- Corrected read-side Users OpenAPI status coverage in both docs and product
+  `openapi.yaml`: added source-verified route-level `400` responses for batch
+  and search, added source-verified `429` tier rate-limit responses, and added
+  source-verified `502` plus normalized `424` dependency responses where they
+  were missing.
+- Updated 11 Users API pages with source-aligned `502`, `429`, and `424`
+  response tabs so endpoint docs now match OpenAPI for the audited operations.
+- Synced docs `openapi.yaml` and product
+  `/Users/burak/Developer/xquik/openapi.yaml`; `cmp -s` confirmed they match.
+- Updated the live automation prompt so future runs treat read-side Users as
+  covered and prefer Tweets for the next all-status parity audit.
+- Run 2026-05-06 06:10 UTC checks: docs `bunx --bun vitest run
+  api-response-status.test.ts api-params.test.ts` passed with 3 tests; docs
+  `bun run test:agent-docs` passed with 36 tests passed and 1 skipped; docs
+  `bunx --bun mint validate` passed; docs `bunx --bun mint broken-links`
+  passed; product `bun run vacuum` passed with 7 duplicate-description informs;
+  product targeted OpenAPI tests passed with 10 tests across 4 files; docs and
+  product `openapi.yaml` matched with `cmp -s`; `git diff --check` passed in
+  both affected repos; edited files contained no em dash or banned spaced
+  double-hyphen sequence.
+- GitHub Actions check found the latest 8 `Agent-Friendly Docs` runs on `main`
+  passed before this run's new commit.
 
 ## Unresolved Risks
 
@@ -1071,6 +1116,15 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
 - This Trends audit did not start a local server, browser session, Playwright,
   or localhost visual check. It verified route behavior statically from product
   source and tests only, per the poll's static-check policy.
+- Read-side Users endpoints are now source-audited for all documented statuses.
+  Remaining endpoint families still need source-verified error status audits
+  before they can be added to the fully audited set.
+- This Users audit did not include write-side X actions such as follow,
+  unfollow, or remove follower. Those routes use the write-action path and
+  should be audited with X Write endpoints instead of read-side Users.
+- This Users audit did not start a local server, browser session, Playwright,
+  or localhost visual check. It verified route behavior statically from product
+  source and tests only, per the poll's static-check policy.
 
 ## Recommendations For Next Run
 
@@ -1131,10 +1185,11 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
     run the relevant static OpenAPI checks before committing.
 19. Pick the next endpoint family for all-status parity after Styles, Drafts,
     Webhooks, Credits, Monitors, Events, API Keys, Account, Subscribe, Compose,
-    Draws, Extractions, Radar, Support, X Accounts, and Trends. Users is the
-    next best candidate because the X user lookup, search, followers, and
-    relationship workflows have multiple auth, pagination, validation,
-    dependency, and rate-limit behaviors that need source verification.
+    Draws, Extractions, Radar, Support, X Accounts, Trends, and read-side
+    Users. Tweets is the next best candidate because tweet lookup, search,
+    batch lookup, thread, quotes, replies, favoriters, retweeters, and article
+    workflows have multiple auth, payment, pagination, validation, dependency,
+    and rate-limit behaviors that need source verification.
 20. Maintain and deepen dedicated plugin docs for TweetClaw and Hermes Tweet. Use
     `/Users/burak/Developer/tweetclaw` and
     `/Users/burak/Developer/hermes-tweet` as source truth for install commands,
@@ -1217,8 +1272,8 @@ Run one focused improvement loop per poll:
    status parity only by adding source-verified endpoint families to the fully
    audited operation set in `api-response-status.test.ts`; Styles, Drafts,
    Webhooks, Credits, Monitors, Events, API Keys, Account, Subscribe, Compose,
-   Draws, Extractions, Radar, Support, X Accounts, and Trends are already
-   covered, so prefer Users next.
+   Draws, Extractions, Radar, Support, X Accounts, Trends, and read-side Users
+   are already covered, so prefer Tweets next.
    When either OpenAPI file changes, compare docs `openapi.yaml` and product
    `/Users/burak/Developer/xquik/openapi.yaml` with
    `cmp -s` or an equivalent diff before committing so the public contracts do
