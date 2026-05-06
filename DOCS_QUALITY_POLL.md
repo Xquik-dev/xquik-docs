@@ -600,6 +600,19 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
   client currently reads a singular internal `media_id` when building the X
   DM request. Treat DM media attachment behavior as a product correctness
   follow-up before expanding media attachment guidance.
+- Run 2026-05-06 08:50 UTC: refreshed Mintlify score report remained 94/100
+  with 25/29 checks passing. `llms.txt` still covers 100% of 191 sitemap doc
+  pages at 47,513 characters, under the 50,000 character threshold. The only
+  failed score component is still generated HTML size.
+- Online research reconfirmed Mintlify uses repository OpenAPI files to
+  generate endpoint pages, request builders, authentication fields, and
+  generated endpoint metadata. OpenAPI request-body research reconfirmed that
+  OpenAPI schema properties should describe the payload fields clients can
+  rely on.
+- DM media source audit found the public route accepted `media_ids`, but
+  passed that array through unchanged while the lower write client reads a
+  singular internal `media_id`. The same route accepted
+  `reply_to_message_id`, but the lower send-DM operation did not consume it.
 
 ## Completed Changes
 
@@ -1165,6 +1178,34 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
   docs and product `openapi.yaml` matched with `cmp -s`; `git diff --check`
   passed in both affected repos; edited files contained no em dash or banned
   spaced double-hyphen sequence.
+- Fixed the product DM media field path: `POST /x/dm/{userId}` now maps a
+  public exactly-one-item `media_ids` array to the internal `media_id` field
+  consumed by the write client.
+- Rejected unsupported DM reply threading at the product route boundary instead
+  of accepting `reply_to_message_id` and silently ignoring it.
+- Added targeted product route tests for text-only DMs, one-item media DMs,
+  empty media arrays, multiple media IDs, and unsupported reply threading.
+- Updated docs and product `openapi.yaml`, Send DM, Upload Media, and
+  `llms.txt` to document exactly one uploaded media item per direct message
+  when `media_ids` is present and remove reply-threading from the public
+  send-DM contract.
+- Synced docs `openapi.yaml` and product
+  `/Users/burak/Developer/xquik/openapi.yaml`; `cmp -s` confirmed they match.
+- Updated the live automation prompt so future runs treat DM media behavior as
+  source-aligned and prefer media upload for the next all-status parity audit.
+- Run 2026-05-06 08:50 UTC checks: docs `bunx --bun vitest run
+  api-response-status.test.ts api-params.test.ts llms-coverage.test.ts`
+  passed with 4 tests across 3 files; docs `bun run test:agent-docs` passed
+  with 36 tests passed and 1 skipped; docs `bunx --bun mint validate` passed;
+  docs `bunx --bun mint broken-links` passed; product targeted DM and write
+  tests passed with 185 tests across 3 files; a targeted rerun of the DM route
+  test passed with 5 tests; product `bun run typecheck` passed; product
+  `bun run lint` passed; product `bunx --bun oxfmt --check` passed for the
+  edited route files; product `bun run vacuum` passed with 7
+  duplicate-description informs; product targeted OpenAPI tests passed with 10
+  tests across 4 files; docs and product `openapi.yaml` matched with `cmp -s`;
+  local `llms.txt` measured 47,562 characters; `git diff --check` and
+  edited-file punctuation scans passed in both affected repos.
 
 ## Unresolved Risks
 
@@ -1316,13 +1357,15 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
 - This X Write user-action audit did not include direct-message sends, media
   upload, profile updates, or community writes. Audit those in smaller
   write-side slices.
-- Direct-message send statuses are now source-audited. The separate DM media
-  field behavior is not fully source-correct yet: the public route validates
-  `media_ids`, while the lower write client currently reads singular
-  `media_id`. Fix or intentionally document that behavior before expanding DM
-  media guidance.
 - This direct-message audit did not include media upload, profile updates, or
   community writes. Audit those in smaller write-side slices.
+- DM media behavior is now source-aligned for exactly one uploaded media item
+  per direct message when `media_ids` is present. Empty media arrays, multiple
+  media items, and DM reply threading remain unsupported in the public send-DM
+  contract.
+- This DM media audit did not complete the broader media upload all-status
+  parity pass. Audit `POST /x/media` next before profile updates or community
+  writes.
 
 ## Recommendations For Next Run
 
@@ -1385,11 +1428,9 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
     Webhooks, Credits, Monitors, Events, API Keys, Account, Subscribe, Compose,
     Draws, Extractions, Radar, Support, X Accounts, Trends, read-side Users,
     read-side Tweets, X Write tweet actions, X Write user actions, and
-    direct-message sends. Before moving to media upload, fix or intentionally
-    document the DM media field behavior: the public route validates
-    `media_ids`, while the lower write client currently reads singular
-    `media_id`. After that product follow-up, media upload is the next best
-    all-status parity candidate.
+    direct-message sends. DM media behavior is now source-aligned for exactly
+    one uploaded media item per direct message when `media_ids` is present, so
+    media upload is the next best all-status parity candidate.
 20. Maintain and deepen dedicated plugin docs for TweetClaw and Hermes Tweet. Use
     `/Users/burak/Developer/tweetclaw` and
     `/Users/burak/Developer/hermes-tweet` as source truth for install commands,
@@ -1474,12 +1515,10 @@ Run one focused improvement loop per poll:
    Webhooks, Credits, Monitors, Events, API Keys, Account, Subscribe, Compose,
    Draws, Extractions, Radar, Support, X Accounts, Trends, read-side Users,
    read-side Tweets, X Write tweet actions, X Write user actions, and
-   direct-message send statuses are already covered. Before moving to media
-   upload, fix or intentionally document the DM media field behavior: the
-   public route validates `media_ids`, while the lower write client currently
-   reads singular `media_id`. After that product follow-up, prefer media
-   upload for the next all-status parity audit before profile updates or
-   community writes.
+   direct-message sends are already covered. DM media behavior is now
+   source-aligned for exactly one uploaded media item per direct message when
+   `media_ids` is present, so prefer media upload for the next all-status
+   parity audit before profile updates or community writes.
    When either OpenAPI file changes, compare docs `openapi.yaml` and product
    `/Users/burak/Developer/xquik/openapi.yaml` with
    `cmp -s` or an equivalent diff before committing so the public contracts do
