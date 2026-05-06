@@ -238,6 +238,22 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
   result bodies.
 - Top-up status can return `amount_dollars: null`, and `credits` is omitted
   unless the billing status has a credit amount.
+- Run 2026-05-05 23:56 UTC: refreshed Mintlify score report remained 94/100
+  with 25/29 checks passing. `llms.txt` still covers 100% of 189 sitemap doc
+  pages and remains 47,005 characters. The only failed score component is
+  still generated HTML size.
+- Monitors endpoint source audit found account and keyword monitor routes run
+  through `withV1Auth` or `createV1IdRoute`, so tier rate limits can return
+  `429` with `rate_limit_exceeded`, `retryAfter`, and a `Retry-After` header.
+- Monitor ID routes can return `400 invalid_id` before lookup or update when
+  `{id}` is malformed.
+- Free monitor list, get, update, and delete routes do not run the credit guard,
+  so `402` was stale for those OpenAPI operations. Create monitor routes still
+  legitimately return `402` for credit failures before creating an active
+  monitor.
+- Monitor create operations had stale generic `500` response entries in
+  OpenAPI, and duplicate monitor examples did not match the current
+  `monitor_already_exists` message.
 
 ## Completed Changes
 
@@ -420,6 +436,23 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
   36 tests passed and 1 skipped; `bunx --bun mint validate` passed;
   `bunx --bun mint broken-links` passed; `git diff --check` passed; no edited
   file contained an em dash or banned spaced double-hyphen sequence.
+- Added the Monitors endpoint family to the fully audited response-status set
+  in `api-response-status.test.ts`.
+- Corrected Monitors OpenAPI error status coverage: removed stale `402`
+  responses from free list, get, update, and delete operations; added missing
+  `400` malformed-ID responses; added Xquik tier `429` rate-limit responses;
+  and removed stale generic `500` entries from monitor creation operations.
+- Corrected the account monitor update request-body description in OpenAPI and
+  aligned duplicate monitor examples with the current public error message.
+- Updated all 10 Monitors API pages with `429 Rate Limited` tabs. The create
+  pages now narrow `402` wording to credit failures, and ID pages use the
+  source-aligned `invalid_id` message.
+- Updated the live automation prompt so future runs treat Monitors as covered
+  and prefer Events for the next all-status parity audit.
+- Run 2026-05-05 23:56 UTC checks: `bun run test:agent-docs` passed with
+  36 tests passed and 1 skipped; `bunx --bun mint validate` passed;
+  `bunx --bun mint broken-links` passed; `git diff --check` passed; no edited
+  file contained an em dash or banned spaced double-hyphen sequence.
 
 ## Unresolved Risks
 
@@ -477,6 +510,9 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
   amounts should reliably return a public `400` instead of a generic failure.
   This run narrowed the docs' explicit `400` text to route-level validation
   that the current source returns directly.
+- Monitors endpoints now have all-status parity guarded. Remaining endpoint
+  families still need source-verified error status audits before they can be
+  added to the fully audited set.
 
 ## Recommendations For Next Run
 
@@ -528,8 +564,9 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
     whether to update OpenAPI, endpoint docs, or both before expanding the
     guard beyond 2xx statuses.
 18. Pick the next endpoint family for all-status parity after Styles, Drafts,
-    Webhooks, and Credits. Monitors are the next best candidate because they
-    have meaningful error-status drift and a high-value docs surface.
+    Webhooks, Credits, and Monitors. Events are the next best candidate because
+    they have a compact route surface and are tightly tied to monitor and
+    webhook correctness.
 
 ## Prompt For Next Run
 
@@ -579,11 +616,11 @@ Run one focused improvement loop per poll:
    source before changing OpenAPI or endpoint docs. Expand full status parity
    only by adding source-verified endpoint families to the fully audited
    operation set in `api-response-status.test.ts`; Styles, Drafts, Webhooks,
-   and Credits are already covered, so prefer Monitors next. If you touch
-   `docs.json`, `llms.txt`, or navigation, run the `llms.txt` coverage and
-   navigation default-state guards, keep the file below the 50,000 character
-   score threshold, and keep nested X API endpoint groups expanded by default.
-   If you touch page metadata, run the SEO metadata guard and keep
+   Credits, and Monitors are already covered, so prefer Events next. If you
+   touch `docs.json`, `llms.txt`, or navigation, run the `llms.txt` coverage
+   and navigation default-state guards, keep the file below the 50,000
+   character score threshold, and keep nested X API endpoint groups expanded
+   by default. If you touch page metadata, run the SEO metadata guard and keep
    descriptions useful, specific, and search-preview friendly. If you touch API endpoint
    pages, run the API content-quality guard and preserve copy-ready code
    examples, headers, response documentation, and a successful response tab. If
