@@ -613,6 +613,34 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
   passed that array through unchanged while the lower write client reads a
   singular internal `media_id`. The same route accepted
   `reply_to_message_id`, but the lower send-DM operation did not consume it.
+- Run 2026-05-06 09:21 UTC: refreshed Mintlify score report remained 94/100
+  with 25/29 checks passing. `llms.txt` still covers 100% of 191 sitemap doc
+  pages in the score report and local `llms.txt` is 47,534 characters, under
+  the 50,000 character threshold. The only failed score component is still
+  generated HTML size.
+- Online research reconfirmed Mintlify uses OpenAPI files as the source for
+  API reference generation and request builder behavior. OpenAPI 3.1 response
+  maps remain the public machine-readable contract for operation statuses and
+  response shapes.
+- Online research into official X media docs found long video uploads need the
+  chunked media upload flow with a video media category. The public Xquik docs
+  should keep this framed as `is_long_video` behavior, not expose lower-level
+  write implementation details.
+- Media upload source audit found `POST /x/media` accepts multipart file
+  uploads or JSON URL uploads, resolves the connected X account, runs through
+  the shared write-action billing and retry path, and returns public response
+  fields from the route helper.
+- Media upload can return route-level `400 invalid_input`, authentication
+  `401`, write-credit `402`, account-state `403`, account lookup `404`,
+  write rejection `422`, rate-limit `429`, transient `503`, and generic write
+  failure `500`.
+- Media upload success responses include both `mediaId` and `mediaUrl`.
+  `mediaUrl` is the correct value for tweet `media` arrays, while `mediaId`
+  is the correct value for the one-item DM `media_ids` array.
+- Product source accepted `is_long_video` but the lower upload client did not
+  pass a video media category before this run. The product now makes that
+  field functional for multipart `video/mp4` uploads longer than 140 seconds
+  and rejects `is_long_video=true` on non-video multipart uploads.
 
 ## Completed Changes
 
@@ -1206,6 +1234,37 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
   tests across 4 files; docs and product `openapi.yaml` matched with `cmp -s`;
   local `llms.txt` measured 47,562 characters; `git diff --check` and
   edited-file punctuation scans passed in both affected repos.
+- Added `POST /x/media` to the fully audited operation set in
+  `api-response-status.test.ts`.
+- Updated docs and product `openapi.yaml` for media upload: 200 responses now
+  require `mediaId`, `mediaUrl`, and `success`; 404 account-not-found behavior
+  is documented; 429 uses the shared `WriteRateLimited` response; and
+  `is_long_video` is documented as a `video/mp4` multipart-only flag for files
+  longer than 140 seconds.
+- Updated `api-reference/x-write/upload-media.mdx` with DM and tweet usage,
+  `mediaUrl` response details, source-verified 404 and 429 examples, a 500
+  error tab, and stronger related endpoint guidance.
+- Updated `llms.txt` so Upload Media explains when to use `mediaUrl` versus
+  `mediaId` while staying under the score threshold.
+- Updated product media upload behavior so `is_long_video=true` is only valid
+  for multipart `video/mp4` uploads and maps to the lower video upload
+  category. Updated the product MCP API catalog wording for the same public
+  flag.
+- Synced docs `openapi.yaml` and product
+  `/Users/burak/Developer/xquik/openapi.yaml`; `cmp -s` confirmed they match.
+- Run 2026-05-06 09:21 UTC checks: docs targeted
+  `bunx --bun vitest run api-response-status.test.ts api-params.test.ts
+  llms-coverage.test.ts api-content-quality.test.ts` passed with 5 tests
+  across 4 files; docs `bun run test:agent-docs` passed with 36 tests passed
+  and 1 skipped; docs `bunx --bun mint validate` passed; docs
+  `bunx --bun mint broken-links` passed; product
+  `bun test lib/x-api/write-client-twikit.test.ts lib/mcp/v2/api-spec.test.ts
+  lib/mcp/v2/openapi-sync.test.ts` passed with 97 tests; product targeted
+  OpenAPI route tests passed with 10 tests across 4 files; product
+  `bun run vacuum` passed with 7 duplicate-description informs; product
+  `bun run lint` passed; product `bun run typecheck` passed; product
+  `bun run format:check` passed; docs and product `openapi.yaml` matched with
+  `cmp -s`; local `llms.txt` measured 47,534 characters.
 
 ## Unresolved Risks
 
@@ -1366,6 +1425,11 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
 - This DM media audit did not complete the broader media upload all-status
   parity pass. Audit `POST /x/media` next before profile updates or community
   writes.
+- Media upload is now source-audited for all documented statuses. Remaining
+  write-side endpoint families still need source-verified status audits before
+  they can be added to the fully audited set.
+- This media upload audit did not include profile updates or community writes.
+  Audit those in smaller write-side slices.
 
 ## Recommendations For Next Run
 
@@ -1428,9 +1492,8 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
     Webhooks, Credits, Monitors, Events, API Keys, Account, Subscribe, Compose,
     Draws, Extractions, Radar, Support, X Accounts, Trends, read-side Users,
     read-side Tweets, X Write tweet actions, X Write user actions, and
-    direct-message sends. DM media behavior is now source-aligned for exactly
-    one uploaded media item per direct message when `media_ids` is present, so
-    media upload is the next best all-status parity candidate.
+    direct-message sends, and media upload. Prefer profile updates next, then
+    community writes.
 20. Maintain and deepen dedicated plugin docs for TweetClaw and Hermes Tweet. Use
     `/Users/burak/Developer/tweetclaw` and
     `/Users/burak/Developer/hermes-tweet` as source truth for install commands,
@@ -1514,11 +1577,9 @@ Run one focused improvement loop per poll:
    audited operation set in `api-response-status.test.ts`; Styles, Drafts,
    Webhooks, Credits, Monitors, Events, API Keys, Account, Subscribe, Compose,
    Draws, Extractions, Radar, Support, X Accounts, Trends, read-side Users,
-   read-side Tweets, X Write tweet actions, X Write user actions, and
-   direct-message sends are already covered. DM media behavior is now
-   source-aligned for exactly one uploaded media item per direct message when
-   `media_ids` is present, so prefer media upload for the next all-status
-   parity audit before profile updates or community writes.
+   read-side Tweets, X Write tweet actions, X Write user actions,
+   direct-message sends, and media upload are already covered. Prefer profile
+   updates next, then community writes.
    When either OpenAPI file changes, compare docs `openapi.yaml` and product
    `/Users/burak/Developer/xquik/openapi.yaml` with
    `cmp -s` or an equivalent diff before committing so the public contracts do

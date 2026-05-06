@@ -3945,6 +3945,9 @@ paths:
                   example: 'binary-content'
                 is_long_video:
                   type: boolean
+                  description:
+                    Set true only for video/mp4 multipart uploads longer than
+                    140 seconds.
                   example: false
             example:
               account: '@elonmusk'
@@ -3974,11 +3977,16 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [mediaId, success]
+                required: [mediaId, mediaUrl, success]
                 properties:
                   mediaId:
                     type: string
                     example: '1234567890123456789'
+                  mediaUrl:
+                    type: string
+                    format: uri
+                    description: Public media URL for tweet `media` arrays.
+                    example: 'https://media.xquik.com/uploads/1234567890123456789.png'
                   success:
                     type: boolean
                     const: true
@@ -3990,10 +3998,21 @@ paths:
           $ref: '#/components/responses/PaymentRequired'
         '403':
           $ref: '#/components/responses/AccountAuthError'
+        '404':
+          description: Connected X account not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: 'account_not_found'
+                message:
+                  'X account not found. Connect it first at
+                  /dashboard/account?tab=x-accounts.'
         '422':
           $ref: '#/components/responses/WriteRejected'
         '429':
-          $ref: '#/components/responses/RateLimitedByX'
+          $ref: '#/components/responses/WriteRateLimited'
         '503':
           $ref: '#/components/responses/TransientError'
         '500':

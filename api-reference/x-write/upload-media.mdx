@@ -1,8 +1,8 @@
 ---
 title: "Upload media"
-description: "Upload an image, GIF, or video to use when creating tweets"
+description: "Upload an image, GIF, or video for tweets or direct messages"
 api: "POST /x/media"
-keywords: ["media", "upload", "image", "video", "gif", "tweet attachment"]
+keywords: ["media", "upload", "image", "video", "gif", "tweet attachment", "dm attachment"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -163,7 +163,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 </ParamField>
 
 <ParamField body="is_long_video" type="boolean">
-  Set to `true` for videos longer than 140 seconds. Defaults to `false`.
+  Multipart video uploads only. Set to `true` for `video/mp4` files longer than 140 seconds. Defaults to `false`.
 </ParamField>
 
 ## Response
@@ -171,11 +171,13 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 <Tabs>
   <Tab title="200 OK">
     <ResponseField name="mediaId" type="string">The uploaded media ID. Supply it as the only item in the `media_ids` array on `POST /x/dm/{userId}` when sending a direct message with media.</ResponseField>
+    <ResponseField name="mediaUrl" type="string">A public media URL. Pass it in the `media` array on `POST /x/tweets` when creating a tweet with uploaded media.</ResponseField>
     <ResponseField name="success" type="boolean">Always `true` on success.</ResponseField>
 
     ```json
     {
       "mediaId": "1893726451023847424",
+      "mediaUrl": "https://media.xquik.com/uploads/1893726451023847424.png",
       "success": true
     }
     ```
@@ -206,7 +208,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   </Tab>
   <Tab title="404 Account Not Found">
     ```json
-    { "error": "account_not_found", "message": "Connected X account not found" }
+    { "error": "account_not_found", "message": "X account not found. Connect it first at /dashboard/account?tab=x-accounts." }
     ```
     The specified `account` is not connected to your Xquik account. Connect it from the [dashboard](https://xquik.com/dashboard).
   </Tab>
@@ -228,17 +230,23 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
     ```
     X rejected the write or the media URL could not be downloaded. Possible codes: `x_content_too_long`, `x_duplicate_action`, `x_account_suspended`, `x_account_protected`, `x_target_not_found`, `x_account_feature_required`, `x_rejected`, `media_download_failed` (URL fetch path only - body.url not HTTPS, resolves to private IP, file too large, origin error, or timeout). See [error handling](/guides/error-handling) for details.
   </Tab>
-  <Tab title="429 Rate Limited by X">
+  <Tab title="429 Rate Limited">
     ```json
-    { "error": "x_rate_limited", "message": "..." }
+    { "error": "rate_limit_exceeded", "retryAfter": 60 }
     ```
-    X throttled the write. Possible codes: `x_rate_limited` (short-term throttle) or `x_daily_limit` (daily cap hit). Back off and retry later. Distinct from Xquik tier-based 429.
+    The request hit an Xquik tier limit, or X throttled the upload. Possible codes: `rate_limit_exceeded`, `x_rate_limited`, or `x_daily_limit`. Respect the `Retry-After` header when present.
   </Tab>
   <Tab title="503 Transient Error">
     ```json
     { "error": "x_transient_error", "message": "..." }
     ```
     A transient upstream issue occurred. Safe to retry with exponential backoff.
+  </Tab>
+  <Tab title="500 Upload Failed">
+    ```json
+    { "error": "x_write_failed", "message": "Write action failed unexpectedly. Contact support if this persists." }
+    ```
+    The upload could not be completed. Retry after a short delay, then contact support if the failure persists.
   </Tab>
 </Tabs>
 
@@ -247,9 +255,9 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 </Callout>
 
 <Tip>
-  Use the returned `mediaId` as the only item in the `media_ids` array when [sending a direct message](/api-reference/x-write/send-dm). Media IDs are valid for 24 hours after upload.
+  Use `mediaUrl` when [creating tweets](/api-reference/x-write/create-tweet). Use `mediaId` as the only item in the `media_ids` array when [sending a direct message](/api-reference/x-write/send-dm). Media IDs are valid for 24 hours after upload.
 </Tip>
 
 <Note>
-  **Related endpoints:** [Send Direct Message](/api-reference/x-write/send-dm) to send a DM with one uploaded media item, [Create Community](/api-reference/x-write/create-community) to create a new community.
+  **Related endpoints:** [Create Tweet](/api-reference/x-write/create-tweet) to post with the returned `mediaUrl`, or [Send Direct Message](/api-reference/x-write/send-dm) to send a DM with one uploaded media item.
 </Note>
