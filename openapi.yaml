@@ -4393,8 +4393,8 @@ paths:
                     createdAt: '2025-01-15T12:00:00Z'
         '401':
           $ref: '#/components/responses/Unauthenticated'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
     post:
       operationId: connectXAccount
       summary: Connect X account
@@ -4456,8 +4456,6 @@ paths:
           $ref: '#/components/responses/ConnectRateLimitExceeded'
         '502':
           $ref: '#/components/responses/ConnectUserLookupFailed'
-        '424':
-          $ref: '#/components/responses/ConnectUserLookupFailed'
         '503':
           $ref: '#/components/responses/ConnectServiceUnavailable'
 
@@ -4478,12 +4476,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/XAccountDetail'
+        '400':
+          $ref: '#/components/responses/InvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
         '404':
           $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
     delete:
       operationId: disconnectXAccount
       summary: Disconnect X account
@@ -4496,12 +4496,14 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/Success'
+        '400':
+          $ref: '#/components/responses/InvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
         '404':
           $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
 
   /x/accounts/{id}/reauth:
     post:
@@ -4590,10 +4592,10 @@ paths:
                 cleared: 3
         '401':
           $ref: '#/components/responses/Unauthenticated'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
 
-        # ── Trends ───────────────────────────────────────────────
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
+  # ── Trends ───────────────────────────────────────────────
   /trends:
     get:
       operationId: getTrends
@@ -6891,7 +6893,7 @@ components:
     ConnectLoginCooldown:
       description: >
         A prior login attempt triggered a cooldown. Response includes `reason`,
-        `retry_after_ms`, and a `Retry-After` header in seconds. Returns error
+        `retryAfterMs`, and a `Retry-After` header in seconds. Returns error
         code `login_cooldown`.
       content:
         application/json:
@@ -6899,7 +6901,7 @@ components:
             $ref: '#/components/schemas/Error'
           example:
             error: 'login_cooldown'
-            message: 'Login is temporarily rate limited. Retry later.'
+            message: 'Login is temporarily paused'
     ConnectRateLimitExceeded:
       description: >
         Too many requests. Either the connection rate limit was exceeded

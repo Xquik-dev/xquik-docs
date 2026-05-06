@@ -456,6 +456,33 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
 - `PATCH /support/tickets/{id}` validates the request body but does not return
   `404` when the ticket ID does not match an existing ticket in current source,
   so the docs should not invent a not-found response for that operation.
+- Run 2026-05-06 05:10 UTC: refreshed Mintlify score report remained 94/100
+  with 25/29 checks passing. `llms.txt` still covers 100% of 191 sitemap doc
+  pages at 47,513 characters, under the 50,000 character threshold. The only
+  failed score component is still generated HTML size.
+- Mintlify OpenAPI research reconfirmed Mintlify supports OpenAPI 3.0 and 3.1
+  files for generated API documentation, request builders, authentication
+  fields, and generated endpoint metadata. This supports keeping operation
+  summaries, descriptions, security, and response maps accurate in both
+  OpenAPI files.
+- OpenAPI 3.1 research reconfirmed response maps should cover successful
+  operation responses and known errors. This supports continuing the
+  source-verified response-status parity audit in small endpoint-family slices.
+- X Accounts endpoint source audit found list, connect, reauth, bulk retry,
+  get, and disconnect routes run through `withV1Auth` or `createV1IdRoute`, so
+  tier rate limits can return `429` with `rate_limit_exceeded`, `retryAfter`,
+  and a `Retry-After` header.
+- X Accounts routes do not run subscription or credit guards, so `402` was
+  stale in OpenAPI for list, get, disconnect, and bulk retry.
+- X Accounts ID routes parse numeric IDs through `createV1IdRoute`, so get,
+  disconnect, and reauth can return `400 invalid_id` before route lookup when
+  the `{id}` path value is malformed.
+- `POST /x/accounts` returns `502 x_user_lookup_failed` for username lookup
+  failures in current source. The previous OpenAPI `424` entry for that
+  operation was stale.
+- X Accounts get and disconnect use the generic `not_found` response message
+  `Resource not found.` when the account does not exist or belongs to another
+  Xquik account.
 
 ## Completed Changes
 
@@ -859,6 +886,32 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
   double-hyphen sequence.
 - GitHub Actions check found the latest 8 `Agent-Friendly Docs` runs on `main`
   passed before this run's new commit.
+- Added the X Accounts endpoint family to the fully audited response-status set
+  in `api-response-status.test.ts`.
+- Corrected X Accounts OpenAPI status coverage in both docs and product
+  `openapi.yaml`: removed stale `402` responses from free management routes,
+  removed the stale connect `424`, added source-verified `400 invalid_id`
+  coverage on ID routes, and added source-verified `429` tier rate-limit
+  responses.
+- Updated X Accounts API pages with `429 Rate Limited` tabs, source-aligned
+  generic `not_found` examples for get and disconnect, and source-aligned
+  connect error messages for invalid input, duplicate account, and login
+  cooldown cases.
+- Corrected the OpenAPI login-cooldown component to use `retryAfterMs` and the
+  current public message `Login is temporarily paused`.
+- Synced docs `openapi.yaml` and product
+  `/Users/burak/Developer/xquik/openapi.yaml`; `cmp -s` confirmed they match.
+- Updated the live automation prompt so future runs treat X Accounts as
+  covered and prefer Trends for the next all-status parity audit.
+- Run 2026-05-06 05:10 UTC checks: docs `bunx --bun vitest run
+  api-response-status.test.ts api-params.test.ts` passed with 3 tests; docs
+  `bun run test:agent-docs` passed with 36 tests passed and 1 skipped; docs
+  `bunx --bun mint validate` passed; docs `bunx --bun mint broken-links`
+  passed; product `bun run vacuum` passed with 7 duplicate-description informs;
+  product targeted OpenAPI tests passed with 10 tests across 4 files; docs and
+  product `openapi.yaml` matched with `cmp -s`.
+- GitHub Actions check found the latest 8 `Agent-Friendly Docs` runs on `main`
+  passed before this run's new commit.
 
 ## Unresolved Risks
 
@@ -960,6 +1013,12 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
   query even when no matching ticket exists. If the product should expose
   missing-ticket feedback for status updates, fix product behavior first and
   then document the new `404`.
+- X Accounts is now source-audited for all documented statuses. Remaining
+  endpoint families still need source-verified error status audits before they
+  can be added to the fully audited set.
+- The X Accounts audit did not start browser login or local app sessions. It
+  verified route behavior statically from product source and existing tests
+  only, per the poll's static-check policy.
 
 ## Recommendations For Next Run
 
@@ -1020,10 +1079,10 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
     run the relevant static OpenAPI checks before committing.
 19. Pick the next endpoint family for all-status parity after Styles, Drafts,
     Webhooks, Credits, Monitors, Events, API Keys, Account, Subscribe, Compose,
-    Draws, Extractions, Radar, and Support. X Accounts is the next best
-    candidate because connect, reauth, disconnect, bulk retry, list, and get
-    routes are high-value onboarding workflows with auth, state, validation,
-    and rate-limit statuses that need source verification.
+    Draws, Extractions, Radar, Support, and X Accounts. Trends is the next best
+    candidate because `/trends` and related X trends pages are discovery
+    workflows with auth, payment, query validation, and dependency statuses
+    that need source verification.
 20. Maintain and deepen dedicated plugin docs for TweetClaw and Hermes Tweet. Use
     `/Users/burak/Developer/tweetclaw` and
     `/Users/burak/Developer/hermes-tweet` as source truth for install commands,
@@ -1106,8 +1165,8 @@ Run one focused improvement loop per poll:
    status parity only by adding source-verified endpoint families to the fully
    audited operation set in `api-response-status.test.ts`; Styles, Drafts,
    Webhooks, Credits, Monitors, Events, API Keys, Account, Subscribe, Compose,
-   Draws, Extractions, Radar, and Support are already covered, so prefer X
-   Accounts next.
+   Draws, Extractions, Radar, Support, and X Accounts are already covered, so
+   prefer Trends next.
    When either OpenAPI file changes, compare docs `openapi.yaml` and product
    `/Users/burak/Developer/xquik/openapi.yaml` with
    `cmp -s` or an equivalent diff before committing so the public contracts do
