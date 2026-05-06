@@ -15,6 +15,7 @@ const FULL_STATUS_AUDITED_OPERATIONS = new Set([
   'DELETE /monitors/keywords/{id}',
   'DELETE /styles/{id}',
   'DELETE /webhooks/{id}',
+  'GET /account',
   'GET /api-keys',
   'GET /credits',
   'GET /credits/topup/status',
@@ -32,10 +33,12 @@ const FULL_STATUS_AUDITED_OPERATIONS = new Set([
   'GET /styles/compare',
   'GET /webhooks',
   'GET /webhooks/{id}/deliveries',
+  'PATCH /account',
   'PATCH /monitors/{id}',
   'PATCH /monitors/keywords/{id}',
   'PATCH /webhooks/{id}',
   'POST /api-keys',
+  'POST /subscribe',
   'POST /credits/quick-topup',
   'POST /credits/topup',
   'POST /drafts',
@@ -44,6 +47,7 @@ const FULL_STATUS_AUDITED_OPERATIONS = new Set([
   'POST /styles',
   'POST /webhooks',
   'POST /webhooks/{id}/test',
+  'PUT /account/x-identity',
   'PUT /styles/{id}',
 ]);
 

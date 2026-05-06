@@ -289,6 +289,26 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
   This run synced the product OpenAPI file back to the docs OpenAPI contract.
 - GitHub Actions check found the latest 5 `Agent-Friendly Docs` runs on `main`
   passed. Older failed runs from 2026-05-05 are superseded by passing commits.
+- Run 2026-05-06 01:12 UTC: refreshed Mintlify score report remained 94/100
+  with 25/29 checks passing. `llms.txt` still covers 100% of 189 sitemap doc
+  pages and remains 47,005 characters. The only failed score component is
+  still generated HTML size.
+- Account and Subscribe source audit found `GET /account`, `PATCH /account`,
+  `PUT /account/x-identity`, and `POST /subscribe` all run through
+  `withV1Auth`, so tier rate limits can return `429` with
+  `rate_limit_exceeded`, `retryAfter`, and a `Retry-After` header.
+- Account and Subscribe routes do not run subscription or credit guards, so
+  `402` was stale for those OpenAPI operations. `PATCH /account` and
+  `PUT /account/x-identity` can return `400 invalid_input`; X identity can also
+  return `400 invalid_username`.
+- `POST /subscribe` always returns `url`, `status`, and `message` on the
+  successful route path. The previous OpenAPI response schema only required
+  `url`.
+- Product `/Users/burak/Developer/xquik/openapi.yaml` had a newer monitor-copy
+  cleanup commit than docs `openapi.yaml`. This run carried those product
+  contract cleanups back into docs while keeping both OpenAPI files aligned.
+- GitHub Actions check found the latest 6 `Agent-Friendly Docs` runs on `main`
+  passed before this run's new commit.
 
 ## Completed Changes
 
@@ -532,6 +552,27 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
   description informs; product targeted OpenAPI tests passed with 10 tests
   across 4 files; `git diff --check` passed in both repos; no edited file
   contained an em dash or banned spaced double-hyphen sequence.
+- Added Account and Subscribe operations to the fully audited response-status
+  set in `api-response-status.test.ts`: `GET /account`, `PATCH /account`,
+  `PUT /account/x-identity`, and `POST /subscribe`.
+- Corrected Account and Subscribe OpenAPI status coverage in both docs and
+  product `openapi.yaml`: removed stale `402` responses, added tier `429`
+  responses, and kept source-verified `400` response coverage for invalid
+  locale and X username input.
+- Corrected the Subscribe success schema so `url`, `status`, and `message` are
+  all required on the documented `200` response.
+- Updated Account and Subscribe API pages with `429 Rate Limited` tabs and
+  retry guidance.
+- Synced docs `openapi.yaml` with the product OpenAPI monitor-copy cleanup, so
+  docs and product OpenAPI files match byte-for-byte again.
+- Updated the live automation prompt so future runs treat Account and Subscribe
+  as covered and prefer Compose for the next all-status parity audit.
+- Run 2026-05-06 01:12 UTC checks: `bun run test:agent-docs` passed with
+  36 tests passed and 1 skipped; `bunx --bun mint validate` passed;
+  `bunx --bun mint broken-links` passed; product `bun run vacuum` passed with
+  6 duplicate description informs; product targeted OpenAPI tests passed with
+  10 tests across 4 files; docs and product `openapi.yaml` matched with
+  `cmp -s`.
 
 ## Unresolved Risks
 
@@ -605,6 +646,11 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
 - Product OpenAPI is now synced to docs OpenAPI, but future OpenAPI corrections
   must keep both files aligned in the same run or explicitly document why they
   intentionally differ.
+- Account and Subscribe endpoints now have all-status parity guarded. Remaining
+  endpoint families still need source-verified error status audits before they
+  can be added to the fully audited set.
+- The Account audit did not start any local server or browser session, so it
+  verified route behavior statically from product source and tests only.
 
 ## Recommendations For Next Run
 
@@ -660,10 +706,10 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
     If either OpenAPI file is stale, update the stale file in its own repo and
     run the relevant static OpenAPI checks before committing.
 18. Pick the next endpoint family for all-status parity after Styles, Drafts,
-    Webhooks, Credits, Monitors, Events, and API Keys. Account is the next best
-    candidate because it has a compact route surface and protects onboarding,
-    but verify subscription, locale, and X identity behavior before changing
-    any public `402` status.
+    Webhooks, Credits, Monitors, Events, API Keys, Account, and Subscribe.
+    Compose is the next best candidate because it has one route, touches a
+    high-value onboarding workflow, and likely needs careful source verification
+    for billing, AI workflow inputs, and error statuses.
 
 ## Prompt For Next Run
 
@@ -720,8 +766,8 @@ Run one focused improvement loop per poll:
    source before changing either OpenAPI file or endpoint docs. Expand full
    status parity only by adding source-verified endpoint families to the fully
    audited operation set in `api-response-status.test.ts`; Styles, Drafts,
-   Webhooks, Credits, Monitors, Events, and API Keys are already covered, so
-   prefer Account next. When either OpenAPI file changes, compare docs
+   Webhooks, Credits, Monitors, Events, API Keys, Account, and Subscribe are
+   already covered, so prefer Compose next. When either OpenAPI file changes, compare docs
    `openapi.yaml` and product `/Users/burak/Developer/xquik/openapi.yaml` with
    `cmp -s` or an equivalent diff before committing so the public contracts do
    not silently drift.
