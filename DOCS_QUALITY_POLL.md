@@ -309,6 +309,9 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
   contract cleanups back into docs while keeping both OpenAPI files aligned.
 - GitHub Actions check found the latest 6 `Agent-Friendly Docs` runs on `main`
   passed before this run's new commit.
+- Run 2026-05-06 prompt update: the user requested that every poll run should
+  research online to learn new domain and scope information, then sharpen the
+  poll prompt from those findings.
 
 ## Completed Changes
 
@@ -573,6 +576,12 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
   6 duplicate description informs; product targeted OpenAPI tests passed with
   10 tests across 4 files; docs and product `openapi.yaml` matched with
   `cmp -s`.
+- Run 2026-05-06 prompt update: added a recurring online research requirement
+  to this handoff and to the live automation prompt. Future runs should research
+  current Mintlify guidance, SEO and documentation best practices, framework and
+  agent ecosystem changes, official competitor information, and relevant public
+  API documentation, then use those findings to improve docs and the poll
+  prompt.
 
 ## Unresolved Risks
 
@@ -680,32 +689,36 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
     and the markdown report at `https://www.mintlify.com/score/xquik.md`.
     Prefer clear fixes that can improve the score without weakening accuracy,
     usefulness, or confidentiality.
-11. Prioritize framework guides, comparison pages, API endpoint pages, and
+11. Research online on every run to keep learning about the docs domain and
+    poll scope. Prefer official or primary sources for Mintlify, SEO, API docs,
+    framework guides, MCP, agent documentation patterns, and compared services.
+    Record useful findings in this file and use them to sharpen the next prompt.
+12. Prioritize framework guides, comparison pages, API endpoint pages, and
     high-value documentation pages. Confirm framework setup, compared-service
     facts, feature matrices, pricing references, endpoint details, and content
     quality before publishing changes.
-12. Keep `llms.txt` aligned with `docs.json` navigation. Run
+13. Keep `llms.txt` aligned with `docs.json` navigation. Run
     `bun run test:agent-docs` after navigation or link-index changes and keep
     `llms.txt` under 50,000 characters.
-13. Extend SEO and content-quality automation beyond frontmatter. Prioritize
+14. Extend SEO and content-quality automation beyond frontmatter. Prioritize
     checks for first-paragraph quality, heading structure, concrete examples,
     response details, error guidance, and next-step links on API endpoint pages.
-14. Extend API content-quality automation from structure to schema parity.
+15. Extend API content-quality automation from structure to schema parity.
     Prioritize response status coverage, response field coverage, pagination
     field coverage, and error shape checks against `openapi.yaml`.
-15. Keep internal handoff, audit, and automation files out of the public docs
+16. Keep internal handoff, audit, and automation files out of the public docs
     build. Before adding root Markdown support files, either list them in
     `.mintignore` or intentionally add public-facing frontmatter and navigation.
-16. Keep the X API sidebar groups expanded by default. If API Reference
+17. Keep the X API sidebar groups expanded by default. If API Reference
     navigation changes, run the navigation default-state guard and verify
     nested group behavior against official Mintlify navigation docs.
-17. Continue response-status parity work. Start with error status codes for a
+18. Continue response-status parity work. Start with error status codes for a
     small endpoint family, verify each against product routes, then decide
     whether to update OpenAPI, endpoint docs, or both before expanding the
     guard beyond 2xx statuses.
     If either OpenAPI file is stale, update the stale file in its own repo and
     run the relevant static OpenAPI checks before committing.
-18. Pick the next endpoint family for all-status parity after Styles, Drafts,
+19. Pick the next endpoint family for all-status parity after Styles, Drafts,
     Webhooks, Credits, Monitors, Events, API Keys, Account, and Subscribe.
     Compose is the next best candidate because it has one route, touches a
     high-value onboarding workflow, and likely needs careful source verification
@@ -737,6 +750,13 @@ and the markdown version at `https://www.mintlify.com/score/xquik.md`. Try to
 improve the score on every run when the report suggests a clear, factual, safe
 docs improvement. Do not chase score changes that would make the docs less
 accurate, less useful, or less confidential.
+
+Research online on every run to learn current information in the docs domain
+and poll scope. Use official or primary sources when possible: Mintlify docs and
+score guidance, SEO and documentation best practices, framework docs, MCP and
+agent documentation patterns, official compared-service docs, and relevant
+public API documentation. Turn useful findings into better docs, better checks,
+or a sharper poll prompt, and record what changed in this file.
 
 Treat framework guides, comparison pages, all API endpoint pages, and high-value
 documentation pages as recurring priorities. For framework guides, verify setup
@@ -785,8 +805,9 @@ Run one focused improvement loop per poll:
    specific.
 3. Improve the poll itself. Update `DOCS_QUALITY_POLL.md` with findings,
    completed changes, recommendations, unresolved risks, skipped checks, and a
-   sharper prompt. If the live automation prompt should change too, update it
-   with `automation_update`.
+   sharper prompt. Incorporate useful online research findings into the next
+   prompt. If the live automation prompt should change too, update it with
+   `automation_update`.
 
 Use official Mintlify docs for config changes and official competitor sources
 for new comparison-page factual claims. Do not publish private implementation
