@@ -104,6 +104,9 @@ const FULL_STATUS_AUDITED_OPERATIONS = new Set([
   'POST /x/users/{id}/follow',
   'POST /x/users/{id}/remove-follower',
   'PUT /account/x-identity',
+  'PATCH /x/profile',
+  'PATCH /x/profile/avatar',
+  'PATCH /x/profile/banner',
   'PUT /styles/{id}',
 ]);
 

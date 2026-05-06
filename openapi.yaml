@@ -3999,16 +3999,7 @@ paths:
         '403':
           $ref: '#/components/responses/AccountAuthError'
         '404':
-          description: Connected X account not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                error: 'account_not_found'
-                message:
-                  'X account not found. Connect it first at
-                  /dashboard/account?tab=x-accounts.'
+          $ref: '#/components/responses/XAccountNotFound'
         '422':
           $ref: '#/components/responses/WriteRejected'
         '429':
@@ -4146,10 +4137,12 @@ paths:
           $ref: '#/components/responses/PaymentRequired'
         '403':
           $ref: '#/components/responses/AccountAuthError'
+        '404':
+          $ref: '#/components/responses/XAccountNotFound'
         '422':
           $ref: '#/components/responses/WriteRejected'
         '429':
-          $ref: '#/components/responses/RateLimitedByX'
+          $ref: '#/components/responses/WriteRateLimited'
         '503':
           $ref: '#/components/responses/TransientError'
         '500':
@@ -4165,7 +4158,8 @@ paths:
         - oauthBearer: []
       requestBody:
         required: true
-        description: Account and avatar image file (max 716 KB).
+        description:
+          Account and avatar image file or HTTPS image URL (max 700 KB).
         content:
           multipart/form-data:
             schema:
@@ -4179,11 +4173,28 @@ paths:
                 file:
                   type: string
                   format: binary
-                  description: Avatar image (max 716KB)
+                  description: Avatar image (max 700 KB)
                   example: 'binary-content'
             example:
               account: '@elonmusk'
               file: 'file_value'
+          application/json:
+            schema:
+              type: object
+              required: [account, url]
+              properties:
+                account:
+                  type: string
+                  description: X account (@username or ID) for avatar update
+                  example: '@elonmusk'
+                url:
+                  type: string
+                  format: uri
+                  description: HTTPS URL to the avatar image to download
+                  example: 'https://example.com/avatar.png'
+            example:
+              account: '@elonmusk'
+              url: 'https://example.com/avatar.png'
       responses:
         '200':
           $ref: '#/components/responses/Success'
@@ -4195,10 +4206,12 @@ paths:
           $ref: '#/components/responses/PaymentRequired'
         '403':
           $ref: '#/components/responses/AccountAuthError'
+        '404':
+          $ref: '#/components/responses/XAccountNotFound'
         '422':
           $ref: '#/components/responses/WriteRejected'
         '429':
-          $ref: '#/components/responses/RateLimitedByX'
+          $ref: '#/components/responses/WriteRateLimited'
         '503':
           $ref: '#/components/responses/TransientError'
         '500':
@@ -4214,7 +4227,8 @@ paths:
         - oauthBearer: []
       requestBody:
         required: true
-        description: Account and banner image file (max 2 MB).
+        description:
+          Account and banner image file or HTTPS image URL (max 2 MB).
         content:
           multipart/form-data:
             schema:
@@ -4233,6 +4247,23 @@ paths:
             example:
               account: '@elonmusk'
               file: 'file_value'
+          application/json:
+            schema:
+              type: object
+              required: [account, url]
+              properties:
+                account:
+                  type: string
+                  description: X account (@username or ID) for banner update
+                  example: '@elonmusk'
+                url:
+                  type: string
+                  format: uri
+                  description: HTTPS URL to the banner image to download
+                  example: 'https://example.com/banner.png'
+            example:
+              account: '@elonmusk'
+              url: 'https://example.com/banner.png'
       responses:
         '200':
           $ref: '#/components/responses/Success'
@@ -4244,10 +4275,12 @@ paths:
           $ref: '#/components/responses/PaymentRequired'
         '403':
           $ref: '#/components/responses/AccountAuthError'
+        '404':
+          $ref: '#/components/responses/XAccountNotFound'
         '422':
           $ref: '#/components/responses/WriteRejected'
         '429':
-          $ref: '#/components/responses/RateLimitedByX'
+          $ref: '#/components/responses/WriteRateLimited'
         '503':
           $ref: '#/components/responses/TransientError'
         '500':
@@ -6964,6 +6997,17 @@ components:
           example:
             error: 'account_needs_reauth'
             message: 'X account needs re-authentication. Re-add the account.'
+    XAccountNotFound:
+      description: Connected X account not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: 'account_not_found'
+            message:
+              'X account not found. Connect it first at
+              /dashboard/account?tab=x-accounts.'
     WriteError:
       description: >
         Write operation failed. Possible error codes include x_write_failed,

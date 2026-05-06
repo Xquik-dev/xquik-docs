@@ -105,6 +105,18 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
   ```
 </CodeGroup>
 
+<CodeGroup>
+  ```bash URL Upload
+  curl -X PATCH https://xquik.com/api/v1/x/profile/avatar \
+    -H "x-api-key: xq_YOUR_KEY_HERE" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "account": "myxaccount",
+      "url": "https://example.com/avatar.png"
+    }' | jq
+  ```
+</CodeGroup>
+
 ## Headers
 
 <ParamField header="x-api-key" type="string" required>
@@ -112,17 +124,21 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 </ParamField>
 
 <ParamField header="Content-Type" type="string" required>
-  Must be `multipart/form-data`. Set automatically by most HTTP clients when using FormData.
+  Use `multipart/form-data` for file uploads or `application/json` for URL uploads. Most HTTP clients set the multipart boundary automatically.
 </ParamField>
 
-## Body (FormData)
+## Body
 
 <ParamField body="account" type="string" required>
   X username or account ID of your connected account to act as.
 </ParamField>
 
-<ParamField body="file" type="binary" required>
-  The image file to upload. Accepted formats: JPEG, PNG. Maximum file size: 700 KB.
+<ParamField body="file" type="binary">
+  Multipart upload file. Required unless `url` is provided. Accepted formats: JPEG, PNG. Maximum file size: 700 KB.
+</ParamField>
+
+<ParamField body="url" type="string">
+  JSON upload URL. Required unless `file` is provided. Must be an HTTPS URL that Xquik can fetch directly.
 </ParamField>
 
 ## Response
@@ -173,17 +189,23 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
     ```
     The connected X account is locked, suspended, recovering, or temporarily restricted. Resolve the restriction on X before retrying.
   </Tab>
+  <Tab title="404 Account Not Found">
+    ```json
+    { "error": "account_not_found", "message": "X account not found. Connect it first at /dashboard/account?tab=x-accounts." }
+    ```
+    The specified `account` is not connected to your Xquik account. Connect it from the [dashboard](https://xquik.com/dashboard).
+  </Tab>
   <Tab title="422 Write Rejected">
     ```json
     { "error": "x_content_too_long", "message": "..." }
     ```
     X rejected the write or the media URL could not be downloaded. Possible codes: `x_content_too_long`, `x_duplicate_action`, `x_account_suspended`, `x_account_protected`, `x_target_not_found`, `x_account_feature_required`, `x_rejected`, `media_download_failed` (URL fetch path only - body.url not HTTPS, resolves to private IP, file too large, origin error, or timeout). See [error handling](/guides/error-handling) for details.
   </Tab>
-  <Tab title="429 Rate Limited by X">
+  <Tab title="429 Rate Limited">
     ```json
-    { "error": "x_rate_limited", "message": "..." }
+    { "error": "rate_limit_exceeded", "retryAfter": 60 }
     ```
-    X throttled the write. Possible codes: `x_rate_limited` (short-term throttle) or `x_daily_limit` (daily cap hit). Back off and retry later. Distinct from Xquik tier-based 429.
+    The request hit an Xquik tier limit, or X throttled the avatar update. Possible codes: `rate_limit_exceeded`, `x_rate_limited`, or `x_daily_limit`. Respect the `Retry-After` header when present.
   </Tab>
   <Tab title="503 Transient Error">
     ```json

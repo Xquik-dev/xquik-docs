@@ -641,6 +641,27 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
   pass a video media category before this run. The product now makes that
   field functional for multipart `video/mp4` uploads longer than 140 seconds
   and rejects `is_long_video=true` on non-video multipart uploads.
+- Run 2026-05-06 10:02 UTC: refreshed Mintlify score report remained 94/100
+  with 25/29 checks passing. `llms.txt` still covers 100% of 191 sitemap doc
+  pages in the score report, and local `llms.txt` is 47,560 characters after
+  this run, under the 50,000 character threshold. The only failed score
+  component is still generated HTML size.
+- Online research reconfirmed Mintlify uses OpenAPI files to generate API
+  endpoint pages, request builders, authentication fields, and endpoint
+  metadata. OpenAPI 3.1 request bodies can describe multiple media types under
+  one operation, which matches the profile image routes' multipart and JSON URL
+  upload behavior.
+- Profile update source audit found `PATCH /x/profile` validates at least one
+  profile field, enforces product field limits, resolves the connected X
+  account, and then uses the shared write-action billing and retry path.
+- Profile image source audit found `PATCH /x/profile/avatar` and
+  `PATCH /x/profile/banner` accept multipart JPEG or PNG files and JSON HTTPS
+  image URLs through the shared image-upload route helper. Avatar files are
+  capped at 700 KB; banner files are capped at 2 MB.
+- Profile update routes can return route-level `400 invalid_input`,
+  authentication `401`, write-credit `402`, account-state `403`, account
+  lookup `404`, write rejection `422`, rate-limit `429`, transient `503`, and
+  generic write failure `500`.
 
 ## Completed Changes
 
@@ -1265,6 +1286,34 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
   `bun run lint` passed; product `bun run typecheck` passed; product
   `bun run format:check` passed; docs and product `openapi.yaml` matched with
   `cmp -s`; local `llms.txt` measured 47,534 characters.
+- Added `PATCH /x/profile`, `PATCH /x/profile/avatar`, and
+  `PATCH /x/profile/banner` to the fully audited operation set in
+  `api-response-status.test.ts`.
+- Updated docs and product `openapi.yaml` for profile updates: profile,
+  avatar, and banner now document account lookup `404`; 429 responses use the
+  shared `WriteRateLimited` response; avatar and banner request bodies document
+  both multipart file uploads and JSON URL uploads; and a reusable
+  `XAccountNotFound` response keeps account lookup errors consistent.
+- Updated the Update Profile, Update Avatar, and Update Banner API pages with
+  source-aligned `404 Account Not Found` and `429 Rate Limited` examples.
+  Avatar and banner pages now include copy-ready JSON URL upload examples,
+  body fields for `file` or `url`, and source-aligned file-size guidance.
+- Updated `llms.txt` so Update Avatar and Update Banner mention URL-fetch
+  uploads while staying under the Mintlify score threshold.
+- Synced docs `openapi.yaml` and product
+  `/Users/burak/Developer/xquik/openapi.yaml`; `cmp -s` confirmed they match.
+- Run 2026-05-06 10:02 UTC targeted checks: docs targeted
+  `bunx --bun vitest run api-response-status.test.ts api-params.test.ts
+  llms-coverage.test.ts api-content-quality.test.ts` passed with 5 tests
+  across 4 files; product `bun run vacuum` passed with 9
+  duplicate-description informs and a 99/100 score; product targeted OpenAPI
+  and MCP tests passed with 32 tests across 5 files; product
+  `bunx --bun oxfmt --check openapi.yaml` passed; docs and product
+  `openapi.yaml` matched with `cmp -s`; `git diff --check` passed in both
+  affected repos; local `llms.txt` measured 47,560 characters.
+- Run 2026-05-06 10:02 UTC full docs checks: `bun run test:agent-docs` passed
+  with 36 tests passed and 1 skipped; `bunx --bun mint validate` passed;
+  `bunx --bun mint broken-links` passed.
 
 ## Unresolved Risks
 
@@ -1430,6 +1479,17 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
   they can be added to the fully audited set.
 - This media upload audit did not include profile updates or community writes.
   Audit those in smaller write-side slices.
+- Profile updates are now source-audited for all documented statuses. Remaining
+  write-side endpoint families still need source-verified status audits before
+  they can be added to the fully audited set.
+- This profile update audit did not include community writes, profile page UI
+  flows, browser upload behavior, or localhost visual checks. It verified route
+  behavior statically from product source and tests only, per the poll's
+  static-check policy.
+- Broad product checks were intentionally skipped because this run changed only
+  OpenAPI in the product repo and there were unrelated local product edits
+  outside this task. Targeted OpenAPI formatting, linting, and tests were run
+  instead.
 
 ## Recommendations For Next Run
 
@@ -1492,8 +1552,8 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
     Webhooks, Credits, Monitors, Events, API Keys, Account, Subscribe, Compose,
     Draws, Extractions, Radar, Support, X Accounts, Trends, read-side Users,
     read-side Tweets, X Write tweet actions, X Write user actions, and
-    direct-message sends, and media upload. Prefer profile updates next, then
-    community writes.
+    direct-message sends, media upload, and profile updates. Prefer community
+    writes next.
 20. Maintain and deepen dedicated plugin docs for TweetClaw and Hermes Tweet. Use
     `/Users/burak/Developer/tweetclaw` and
     `/Users/burak/Developer/hermes-tweet` as source truth for install commands,
@@ -1578,8 +1638,8 @@ Run one focused improvement loop per poll:
    Webhooks, Credits, Monitors, Events, API Keys, Account, Subscribe, Compose,
    Draws, Extractions, Radar, Support, X Accounts, Trends, read-side Users,
    read-side Tweets, X Write tweet actions, X Write user actions,
-   direct-message sends, and media upload are already covered. Prefer profile
-   updates next, then community writes.
+   direct-message sends, media upload, and profile updates are already covered.
+   Prefer community writes next.
    When either OpenAPI file changes, compare docs `openapi.yaml` and product
    `/Users/burak/Developer/xquik/openapi.yaml` with
    `cmp -s` or an equivalent diff before committing so the public contracts do
