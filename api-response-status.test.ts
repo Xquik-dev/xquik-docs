@@ -9,11 +9,13 @@ const FRONTMATTER_API_PATTERN = /^api:\s*"([A-Z]+) ([^"]+)"/mu;
 const RESPONSE_TAB_PATTERN = /<Tab title="(\d{3})\b/gu;
 const STATUS_CODE_PATTERN = /^\d{3}$/u;
 const FULL_STATUS_AUDITED_OPERATIONS = new Set([
+  'DELETE /api-keys/{id}',
   'DELETE /drafts/{id}',
   'DELETE /monitors/{id}',
   'DELETE /monitors/keywords/{id}',
   'DELETE /styles/{id}',
   'DELETE /webhooks/{id}',
+  'GET /api-keys',
   'GET /credits',
   'GET /credits/topup/status',
   'GET /drafts',
@@ -33,6 +35,7 @@ const FULL_STATUS_AUDITED_OPERATIONS = new Set([
   'PATCH /monitors/{id}',
   'PATCH /monitors/keywords/{id}',
   'PATCH /webhooks/{id}',
+  'POST /api-keys',
   'POST /credits/quick-topup',
   'POST /credits/topup',
   'POST /drafts',

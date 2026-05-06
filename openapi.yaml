@@ -446,8 +446,8 @@ paths:
                 keys: []
         '401':
           $ref: '#/components/responses/Unauthenticated'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
     post:
       operationId: createApiKey
       summary: Create API key
@@ -501,9 +501,30 @@ paths:
                 createdAt: '2025-01-15T12:00:00Z'
         '401':
           $ref: '#/components/responses/Unauthenticated'
-
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
+        '403':
+          description: API key limit reached
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [error, limit, message]
+                properties:
+                  error:
+                    type: string
+                    const: api_key_limit_reached
+                    example: api_key_limit_reached
+                  limit:
+                    type: integer
+                    example: 100
+                  message:
+                    type: string
+                    example: API key limit reached. Delete an existing key first.
+              example:
+                error: api_key_limit_reached
+                limit: 100
+                message: API key limit reached. Delete an existing key first.
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
   /api-keys/{id}:
     delete:
       operationId: revokeApiKey
@@ -521,10 +542,10 @@ paths:
           $ref: '#/components/responses/InvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
         '404':
           $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
 
   # ── Subscribe ────────────────────────────────────────────
   /subscribe:
@@ -1791,6 +1812,7 @@ paths:
                 type: 'tweet.new'
                 username: 'elonmusk'
                 monitorId: '7'
+                monitorType: account
                 occurredAt: '2025-01-15T12:00:00Z'
                 data:
                   tweetId: '1234567890'
@@ -5061,9 +5083,9 @@ paths:
                   amount_dollars:
                     anyOf:
                       - type: integer
+                        minimum: 10
                       - type: 'null'
                     description: Dollar amount requested for the top-up.
-                    minimum: 10
                     example: 25
                   credits:
                     type: string

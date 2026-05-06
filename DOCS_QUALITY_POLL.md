@@ -273,6 +273,22 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
 - The public event response schema was under-specified for keyword monitor
   events. Product formatting returns `monitorType`, may return
   `keywordMonitorId` and `query`, and omits `username` for keyword events.
+- Run 2026-05-06 00:43 UTC: refreshed Mintlify score report remained 94/100
+  with 25/29 checks passing. `llms.txt` still covers 100% of 189 sitemap doc
+  pages and remains 47,005 characters. The only failed score component is
+  still generated HTML size.
+- API Keys source audit found list, create, and revoke routes run through
+  `withV1Auth` or `createV1IdRoute`, so tier rate limits can return `429`
+  with `rate_limit_exceeded`, `retryAfter`, and a `Retry-After` header.
+- API key management routes do not run subscription or credit guards, so `402`
+  was stale for the API Keys OpenAPI operations. `POST /api-keys` can return
+  `403 api_key_limit_reached` at the 100-key account limit, and
+  `DELETE /api-keys/{id}` can return `400 invalid_id` for malformed IDs.
+- Product `/Users/burak/Developer/xquik/openapi.yaml` had fallen behind the
+  source-verified docs OpenAPI corrections from recent response-status audits.
+  This run synced the product OpenAPI file back to the docs OpenAPI contract.
+- GitHub Actions check found the latest 5 `Agent-Friendly Docs` runs on `main`
+  passed. Older failed runs from 2026-05-05 are superseded by passing commits.
 
 ## Completed Changes
 
@@ -496,6 +512,26 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
 - Run 2026-05-06 prompt update checks: `bun run test:agent-docs` passed with
   36 tests passed and 1 skipped; `git diff --check` passed; no edited file
   contained an em dash or banned spaced double-hyphen sequence.
+- Added the API Keys endpoint family to the fully audited response-status set
+  in `api-response-status.test.ts`.
+- Corrected API Keys OpenAPI status coverage in both docs and product
+  `openapi.yaml`: removed stale `402` responses, added tier `429` responses,
+  and documented the source-verified `403 api_key_limit_reached` create-key
+  limit response.
+- Updated API Keys API pages with `429 Rate Limited` tabs and retry guidance.
+- Fixed OpenAPI linter issues exposed by the product sync: the event detail
+  example now includes required `monitorType`, and nullable top-up
+  `amount_dollars` keeps the integer `minimum` constraint inside the integer
+  branch.
+- Synced `/Users/burak/Developer/xquik/openapi.yaml` to docs `openapi.yaml` so
+  the product repo serves the same source-verified public contract as the docs.
+- Run 2026-05-06 00:43 UTC checks: `bun run test:agent-docs` passed with
+  36 tests passed and 1 skipped; `bunx --bun mint validate` passed after
+  removing a corrupted temporary `bunx` Mintlify install; `bunx --bun mint
+  broken-links` passed; product `bun run vacuum` passed with 6 duplicate
+  description informs; product targeted OpenAPI tests passed with 10 tests
+  across 4 files; `git diff --check` passed in both repos; no edited file
+  contained an em dash or banned spaced double-hyphen sequence.
 
 ## Unresolved Risks
 
@@ -559,6 +595,16 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
 - Events endpoints now have all-status parity guarded. Remaining endpoint
   families still need source-verified error status audits before they can be
   added to the fully audited set.
+- API Keys endpoints now have all-status parity guarded. Remaining endpoint
+  families still need source-verified error status audits before they can be
+  added to the fully audited set.
+- The Mintlify CLI can leave a corrupted temporary `bunx` install in this
+  shell. If `bunx --bun mint ...` reports missing CLI dependencies, remove the
+  affected temporary `bunx-*mint*` directory and retry before treating it as a
+  docs validation failure.
+- Product OpenAPI is now synced to docs OpenAPI, but future OpenAPI corrections
+  must keep both files aligned in the same run or explicitly document why they
+  intentionally differ.
 
 ## Recommendations For Next Run
 
@@ -614,9 +660,10 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
     If either OpenAPI file is stale, update the stale file in its own repo and
     run the relevant static OpenAPI checks before committing.
 18. Pick the next endpoint family for all-status parity after Styles, Drafts,
-    Webhooks, Credits, Monitors, and Events. API Keys are the next best
-    candidate because they have a compact route surface and protect the auth
-    onboarding path.
+    Webhooks, Credits, Monitors, Events, and API Keys. Account is the next best
+    candidate because it has a compact route surface and protects onboarding,
+    but verify subscription, locale, and X identity behavior before changing
+    any public `402` status.
 
 ## Prompt For Next Run
 
@@ -673,8 +720,11 @@ Run one focused improvement loop per poll:
    source before changing either OpenAPI file or endpoint docs. Expand full
    status parity only by adding source-verified endpoint families to the fully
    audited operation set in `api-response-status.test.ts`; Styles, Drafts,
-   Webhooks, Credits, Monitors, and Events are already covered, so prefer API
-   Keys next.
+   Webhooks, Credits, Monitors, Events, and API Keys are already covered, so
+   prefer Account next. When either OpenAPI file changes, compare docs
+   `openapi.yaml` and product `/Users/burak/Developer/xquik/openapi.yaml` with
+   `cmp -s` or an equivalent diff before committing so the public contracts do
+   not silently drift.
    If you touch `docs.json`, `llms.txt`, or navigation, run the `llms.txt`
    coverage and navigation default-state guards, keep the file below the
    50,000 character score threshold, and keep nested X API endpoint groups
