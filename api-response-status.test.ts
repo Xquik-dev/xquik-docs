@@ -38,6 +38,7 @@ const FULL_STATUS_AUDITED_OPERATIONS = new Set([
   'PATCH /monitors/keywords/{id}',
   'PATCH /webhooks/{id}',
   'POST /api-keys',
+  'POST /compose',
   'POST /subscribe',
   'POST /credits/quick-topup',
   'POST /credits/topup',

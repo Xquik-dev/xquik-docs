@@ -347,6 +347,21 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
   `guides/hermes-tweet.mdx` documents the Hermes Tweet Hermes Agent plugin.
   Both pages were source-verified against local plugin repos and current
   official plugin documentation patterns.
+- Run 2026-05-06 02:30 UTC: refreshed Mintlify score report remained 94/100
+  with 25/29 checks passing. `llms.txt` covers 100% of 191 sitemap doc pages
+  and the live report shows 47,513 characters, under the 50,000 character
+  threshold. The only failed component is still generated HTML size.
+- OpenAPI 3.1 research confirmed response documentation is expected to include
+  successful responses and known errors. This supports continuing the
+  source-verified all-status parity audit family by family.
+- Compose endpoint source audit found `POST /api/v1/compose` runs through
+  `withV1Auth`, so it can return tier `429 rate_limit_exceeded` with a
+  `Retry-After` header. The route does not run a subscription or credit guard,
+  so the documented `402` response was stale.
+- Compose validation can return `400 invalid_json` for malformed JSON and
+  `400 invalid_input` for invalid workflow state such as missing `step`, missing
+  `topic` for `compose`, missing `goal`, `tone`, or `topic` for `refine`, or
+  missing `draft` for `score`.
 
 ## Completed Changes
 
@@ -633,6 +648,24 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
   `bunx --bun mint broken-links` passed. Local dev server, Browser Use,
   Playwright, and localhost visual checks were skipped under the static-check
   poll policy.
+- Added `POST /compose` to the fully audited response-status operation set.
+- Corrected Compose response status coverage in both docs and product
+  `openapi.yaml`: removed stale `402` and added source-verified tier `429`.
+- Updated `api-reference/compose/create.mdx` with a `429 Rate Limited` tab and
+  clearer `400` guidance for malformed JSON and step-specific validation.
+- Synced docs `openapi.yaml` and product
+  `/Users/burak/Developer/xquik/openapi.yaml`; `cmp -s` confirmed they match.
+- Updated the live automation prompt so future runs treat Compose as covered
+  and prefer Draws for the next all-status parity audit.
+- Run 2026-05-06 02:30 UTC checks: docs `bunx --bun vitest run
+  api-response-status.test.ts` passed with 2 tests; docs
+  `bun run test:agent-docs` passed with 36 tests passed and 1 skipped; docs
+  `bunx --bun mint validate` passed; docs `bunx --bun mint broken-links`
+  passed; product `bun run vacuum` passed with 6 duplicate-description informs;
+  product targeted OpenAPI tests passed with 10 tests across 4 files; docs and
+  product `openapi.yaml` matched with `cmp -s`; `git diff --check` passed in
+  both affected repos; edited files contained no em dash or banned spaced
+  double-hyphen sequence.
 
 ## Unresolved Risks
 
@@ -715,6 +748,9 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
   exist, but there is not yet an automated plugin-docs drift guard comparing
   docs content against `/Users/burak/Developer/tweetclaw` and
   `/Users/burak/Developer/hermes-tweet`.
+- Compose is now source-audited for all documented statuses. Remaining endpoint
+  families still need source-verified error status audits before they can be
+  added to the fully audited set.
 
 ## Recommendations For Next Run
 
@@ -774,10 +810,11 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
     If either OpenAPI file is stale, update the stale file in its own repo and
     run the relevant static OpenAPI checks before committing.
 19. Pick the next endpoint family for all-status parity after Styles, Drafts,
-    Webhooks, Credits, Monitors, Events, API Keys, Account, and Subscribe.
-    Compose is the next best candidate because it has one route, touches a
-    high-value onboarding workflow, and likely needs careful source verification
-    for billing, AI workflow inputs, and error statuses.
+    Webhooks, Credits, Monitors, Events, API Keys, Account, Subscribe, and
+    Compose. Draws is the next best candidate because it is a high-value
+    workflow with create, list, get, and export routes, and it likely needs
+    careful source verification for billing, export statuses, validation, and
+    error response shapes.
 20. Maintain and deepen dedicated plugin docs for TweetClaw and Hermes Tweet. Use
     `/Users/burak/Developer/tweetclaw` and
     `/Users/burak/Developer/hermes-tweet` as source truth for install commands,
@@ -859,8 +896,8 @@ Run one focused improvement loop per poll:
    source before changing either OpenAPI file or endpoint docs. Expand full
    status parity only by adding source-verified endpoint families to the fully
    audited operation set in `api-response-status.test.ts`; Styles, Drafts,
-   Webhooks, Credits, Monitors, Events, API Keys, Account, and Subscribe are
-   already covered, so prefer Compose next. When either OpenAPI file changes, compare docs
+   Webhooks, Credits, Monitors, Events, API Keys, Account, Subscribe, and
+   Compose are already covered, so prefer Draws next. When either OpenAPI file changes, compare docs
    `openapi.yaml` and product `/Users/burak/Developer/xquik/openapi.yaml` with
    `cmp -s` or an equivalent diff before committing so the public contracts do
    not silently drift.
