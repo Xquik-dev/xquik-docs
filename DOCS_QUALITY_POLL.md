@@ -14,7 +14,8 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
 
 1. Pull the latest `xquik-docs` changes and inspect the working tree before edits.
 2. Compare docs against the Xquik product source at `/Users/burak/Developer/xquik`.
-3. Verify API reference pages against `openapi.yaml` and actual route behavior.
+3. Verify API reference pages against docs `openapi.yaml`, product
+   `/Users/burak/Developer/xquik/openapi.yaml`, and actual route behavior.
 4. Verify guides against current features, pricing, auth, webhooks, MCP, MPP,
    SDKs, dashboard flows, and tool capabilities.
 5. Review `docs.json` for valid Mintlify structure, navigation, redirects,
@@ -46,7 +47,8 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
 - Docs repo: `/Users/burak/Developer/xquik-docs`
 - Product repo: `/Users/burak/Developer/xquik`
 - Navigation and Mintlify config: `docs.json`
-- API schema: `openapi.yaml`
+- Docs API schema: `openapi.yaml`
+- Product API schema: `/Users/burak/Developer/xquik/openapi.yaml`
 - API routes: `/Users/burak/Developer/xquik/app/api/v1`
 - Feature logic: `/Users/burak/Developer/xquik/lib`
 - SDK references: `/Users/burak/Developer/xquik/sdks`
@@ -61,6 +63,10 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
 ## Quality Bar
 
 - Content is 100% aligned with the product and OpenAPI schema.
+- Docs `openapi.yaml`, product `/Users/burak/Developer/xquik/openapi.yaml`,
+  and route source agree on public methods, paths, parameters, request bodies,
+  response statuses, response shapes, event types, auth, rate limits, and
+  billing behavior.
 - Pages explain the real workflow, not only endpoint signatures.
 - Code examples are copy ready, current, and consistent across languages.
 - Each guide includes prerequisites, setup, happy path, edge cases, errors,
@@ -482,6 +488,14 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
   36 tests passed and 1 skipped; `bunx --bun mint validate` passed;
   `bunx --bun mint broken-links` passed; `git diff --check` passed; no edited
   file contained an em dash or banned spaced double-hyphen sequence.
+- Run 2026-05-06 prompt update: added product
+  `/Users/burak/Developer/xquik/openapi.yaml` as an explicit accuracy source
+  and required every API audit to compare docs OpenAPI, product OpenAPI, and
+  route source. The live automation prompt was updated with the same
+  requirement.
+- Run 2026-05-06 prompt update checks: `bun run test:agent-docs` passed with
+  36 tests passed and 1 skipped; `git diff --check` passed; no edited file
+  contained an em dash or banned spaced double-hyphen sequence.
 
 ## Unresolved Risks
 
@@ -550,6 +564,8 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
 
 1. Run schema-level OpenAPI diff against product routes, including parameters,
    request bodies, response status codes, pagination fields, and error shapes.
+   Always include both OpenAPI files in that audit: docs `openapi.yaml` and
+   `/Users/burak/Developer/xquik/openapi.yaml`.
 2. Use `bunx --bun mint validate` and `bunx --bun mint broken-links` for
    Mintlify checks in this shell. Avoid plain `bunx mint` unless Node is an LTS
    version.
@@ -595,6 +611,8 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
     small endpoint family, verify each against product routes, then decide
     whether to update OpenAPI, endpoint docs, or both before expanding the
     guard beyond 2xx statuses.
+    If either OpenAPI file is stale, update the stale file in its own repo and
+    run the relevant static OpenAPI checks before committing.
 18. Pick the next endpoint family for all-status parity after Styles, Drafts,
     Webhooks, Credits, Monitors, and Events. API Keys are the next best
     candidate because they have a compact route surface and protect the auth
@@ -608,13 +626,18 @@ to make `docs.xquik.com` accurate, complete, persuasive, SEO strong, and easy
 to trust.
 
 First, pull latest changes and inspect `git status`. Read
-`DOCS_QUALITY_POLL.md`, `docs.json`, `openapi.yaml`, and the highest-risk docs
-from the recommendations above. Preserve unrelated user changes. Remember that
-`bun run test:agent-docs` now includes prose endpoint-string, event-type,
-required request-field, success response-status, `llms.txt` coverage, SEO
-metadata, API content-quality, navigation default-state, and Mintlify ignore
-guards; treat failures as docs accuracy, navigation usability, or quality
-issues unless a guard itself is plainly wrong.
+`DOCS_QUALITY_POLL.md`, `docs.json`, docs `openapi.yaml`, product
+`/Users/burak/Developer/xquik/openapi.yaml`, and the highest-risk docs from the
+recommendations above. Preserve unrelated user changes. Treat both OpenAPI
+files as public contract files that must stay aligned with each other and with
+`/Users/burak/Developer/xquik/app/api/v1` route behavior. If either OpenAPI
+file is stale, update the stale file in its own repo and run the relevant
+static OpenAPI checks before committing. Remember that `bun run test:agent-docs`
+now includes prose endpoint-string, event-type, required request-field, success
+response-status, `llms.txt` coverage, SEO metadata, API content-quality,
+navigation default-state, and Mintlify ignore guards; treat failures as docs
+accuracy, navigation usability, or quality issues unless a guard itself is
+plainly wrong.
 
 Also review the Mintlify score report at `https://www.mintlify.com/score/xquik`
 and the markdown version at `https://www.mintlify.com/score/xquik.md`. Try to
@@ -636,19 +659,22 @@ response details, error guidance, and a logical next step.
 Run one focused improvement loop per poll:
 
 1. Verify something important against source truth. Prefer schema-level OpenAPI
-   parity, billing, MPP, MCP, Radar, extraction workflow, webhooks, SDKs, auth,
-   dashboard flows, tool capabilities, or high-value comparison pages. If you
-   touch endpoint prose, use the endpoint-string guard to catch placeholder and
-   route drift. If you touch monitoring or webhook docs, compare event types
-   and payload wording against OpenAPI plus product event source files. If you
+   parity across docs `openapi.yaml`, product
+   `/Users/burak/Developer/xquik/openapi.yaml`, and product routes; billing,
+   MPP, MCP, Radar, extraction workflow, webhooks, SDKs, auth, dashboard flows,
+   tool capabilities, or high-value comparison pages. If you touch endpoint
+   prose, use the endpoint-string guard to catch placeholder and route drift.
+   If you touch monitoring or webhook docs, compare event types and payload
+   wording against both OpenAPI files plus product event source files. If you
    touch API request docs or OpenAPI request bodies, run the required-field
    guard and verify any conditional fields or legacy aliases against product
    routes before changing public docs. If you touch response statuses, run the
    success response-status guard and verify route behavior against product
-   source before changing OpenAPI or endpoint docs. Expand full status parity
-   only by adding source-verified endpoint families to the fully audited
-   operation set in `api-response-status.test.ts`; Styles, Drafts, Webhooks,
-   Credits, Monitors, and Events are already covered, so prefer API Keys next.
+   source before changing either OpenAPI file or endpoint docs. Expand full
+   status parity only by adding source-verified endpoint families to the fully
+   audited operation set in `api-response-status.test.ts`; Styles, Drafts,
+   Webhooks, Credits, Monitors, and Events are already covered, so prefer API
+   Keys next.
    If you touch `docs.json`, `llms.txt`, or navigation, run the `llms.txt`
    coverage and navigation default-state guards, keep the file below the
    50,000 character score threshold, and keep nested X API endpoint groups
