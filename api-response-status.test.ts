@@ -96,6 +96,7 @@ const FULL_STATUS_AUDITED_OPERATIONS = new Set([
   'POST /x/accounts',
   'POST /x/accounts/{id}/reauth',
   'POST /x/accounts/bulk-retry',
+  'POST /x/dm/{userId}',
   'POST /x/tweets',
   'POST /x/tweets/{id}/like',
   'POST /x/tweets/{id}/retweet',

@@ -577,6 +577,29 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
   before the upstream write call, so their `429` responses can be either
   Xquik `rate_limit_exceeded` or X write throttles such as `x_rate_limited` and
   `x_daily_limit`.
+- Run 2026-05-06 08:13 UTC: refreshed Mintlify score report remained 94/100
+  with 25/29 checks passing. `llms.txt` still covers 100% of 191 sitemap doc
+  pages at 47,513 characters, under the 50,000 character threshold. The only
+  failed score component is still generated HTML size.
+- Online research reconfirmed Mintlify uses repository OpenAPI files to
+  generate endpoint pages, request builders, authentication fields, and
+  generated endpoint metadata. OpenAPI 3.1 response maps remain the
+  machine-readable contract for expected operation responses.
+- Direct-message send source audit found `POST /x/dm/{userId}` validates
+  required `account` and `text`, accepts optional `media_ids` and
+  `reply_to_message_id`, resolves the connected account, and then uses the
+  shared write-action retry and billing path.
+- Direct-message sends can return route-level `400 invalid_input`,
+  authentication `401`, write-credit `402`, account-state `403`, write
+  rejection `422`, rate-limit `429`, transient `503`, and generic write
+  failure `500`.
+- The latest product `openapi.yaml` already broadened `POST /x/tweets` 429
+  coverage to `WriteRateLimited`, while docs `openapi.yaml` and the
+  create-tweet API page still had X-only 429 wording.
+- The direct-message public route validates `media_ids`, but the lower write
+  client currently reads a singular internal `media_id` when building the X
+  DM request. Treat DM media attachment behavior as a product correctness
+  follow-up before expanding media attachment guidance.
 
 ## Completed Changes
 
@@ -1118,6 +1141,30 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
   docs and product `openapi.yaml` matched with `cmp -s`; `git diff --check`
   passed in both affected repos; edited files contained no em dash or banned
   spaced double-hyphen sequence.
+- Added direct-message sends to the fully audited response-status set in
+  `api-response-status.test.ts`.
+- Corrected `POST /x/dm/{userId}` OpenAPI 429 coverage in both docs and
+  product `openapi.yaml` from X-only throttling to the shared
+  `WriteRateLimited` response, because the route can return both Xquik
+  `rate_limit_exceeded` and X write throttles.
+- Aligned docs `openapi.yaml` and the create-tweet API page with the latest
+  product OpenAPI truth for `POST /x/tweets` 429 coverage.
+- Updated the Send DM API page with source-aligned `429 Rate Limited` wording
+  and examples.
+- Synced docs `openapi.yaml` and product
+  `/Users/burak/Developer/xquik/openapi.yaml`; `cmp -s` confirmed they match.
+- Updated the live automation prompt so future runs treat direct-message send
+  statuses as covered, but prioritize the DM `media_ids` to internal
+  `media_id` product follow-up before moving to media upload.
+- Run 2026-05-06 08:13 UTC checks: docs `bunx --bun vitest run
+  api-response-status.test.ts api-params.test.ts` passed with 3 tests; docs
+  `bun run test:agent-docs` passed with 36 tests passed and 1 skipped; docs
+  `bunx --bun mint validate` passed; docs `bunx --bun mint broken-links`
+  passed; product `bun run vacuum` passed with 7 duplicate-description
+  informs; product targeted OpenAPI tests passed with 10 tests across 4 files;
+  docs and product `openapi.yaml` matched with `cmp -s`; `git diff --check`
+  passed in both affected repos; edited files contained no em dash or banned
+  spaced double-hyphen sequence.
 
 ## Unresolved Risks
 
@@ -1269,6 +1316,13 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
 - This X Write user-action audit did not include direct-message sends, media
   upload, profile updates, or community writes. Audit those in smaller
   write-side slices.
+- Direct-message send statuses are now source-audited. The separate DM media
+  field behavior is not fully source-correct yet: the public route validates
+  `media_ids`, while the lower write client currently reads singular
+  `media_id`. Fix or intentionally document that behavior before expanding DM
+  media guidance.
+- This direct-message audit did not include media upload, profile updates, or
+  community writes. Audit those in smaller write-side slices.
 
 ## Recommendations For Next Run
 
@@ -1330,10 +1384,12 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
 19. Pick the next endpoint family for all-status parity after Styles, Drafts,
     Webhooks, Credits, Monitors, Events, API Keys, Account, Subscribe, Compose,
     Draws, Extractions, Radar, Support, X Accounts, Trends, read-side Users,
-    read-side Tweets, X Write tweet actions, and X Write user actions. Direct
-    message sends are the next best candidate because `POST /x/dm/{userId}`
-    combines write-action handling with target user validation and optional
-    media fields.
+    read-side Tweets, X Write tweet actions, X Write user actions, and
+    direct-message sends. Before moving to media upload, fix or intentionally
+    document the DM media field behavior: the public route validates
+    `media_ids`, while the lower write client currently reads singular
+    `media_id`. After that product follow-up, media upload is the next best
+    all-status parity candidate.
 20. Maintain and deepen dedicated plugin docs for TweetClaw and Hermes Tweet. Use
     `/Users/burak/Developer/tweetclaw` and
     `/Users/burak/Developer/hermes-tweet` as source truth for install commands,
@@ -1417,11 +1473,13 @@ Run one focused improvement loop per poll:
    audited operation set in `api-response-status.test.ts`; Styles, Drafts,
    Webhooks, Credits, Monitors, Events, API Keys, Account, Subscribe, Compose,
    Draws, Extractions, Radar, Support, X Accounts, Trends, read-side Users,
-   read-side Tweets, X Write tweet actions, and X Write user actions are
-   already covered, so prefer direct-message sends next. Treat
-   `POST /x/dm/{userId}` as a dedicated write-side slice with target user
-   validation and optional media fields before moving to media upload, profile
-   updates, or community writes.
+   read-side Tweets, X Write tweet actions, X Write user actions, and
+   direct-message send statuses are already covered. Before moving to media
+   upload, fix or intentionally document the DM media field behavior: the
+   public route validates `media_ids`, while the lower write client currently
+   reads singular `media_id`. After that product follow-up, prefer media
+   upload for the next all-status parity audit before profile updates or
+   community writes.
    When either OpenAPI file changes, compare docs `openapi.yaml` and product
    `/Users/burak/Developer/xquik/openapi.yaml` with
    `cmp -s` or an equivalent diff before committing so the public contracts do
