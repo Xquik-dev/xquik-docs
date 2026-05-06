@@ -434,6 +434,28 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
   and non-numeric values fall back to defaults.
 - Radar OpenAPI had stale time-window values. Product source uses a 6-hour
   default and 72-hour maximum, not a 24-hour default and 168-hour maximum.
+- Run 2026-05-06 04:28 UTC: refreshed Mintlify score report remained 94/100
+  with 25/29 checks passing. `llms.txt` still covers 100% of 191 sitemap doc
+  pages at 47,513 characters, under the 50,000 character threshold. The only
+  failed score component is still generated HTML size.
+- OpenAPI 3.1 research confirmed response maps should cover successful
+  operation responses and known errors. This continues to support the
+  family-by-family response-status parity audit instead of global enforcement
+  before source drift is resolved.
+- Support endpoint source audit found all ticket routes run through
+  `withV1Auth`, so tier rate limits can return `429` with
+  `rate_limit_exceeded`, `retryAfter`, and a `Retry-After` header.
+- Support ticket routes do not run subscription or credit guards, so `402` was
+  stale in OpenAPI for list, create, get, update, and reply operations.
+- Support ticket public IDs use the `tkt_` prefix plus 24 hex characters.
+  OpenAPI examples still used stale `tk_abc123` examples and one unrelated
+  `messages_value` path example.
+- `GET /support/tickets/{id}` and `POST /support/tickets/{id}/messages` return
+  the generic `not_found` message `Resource not found.` for missing or
+  cross-account tickets.
+- `PATCH /support/tickets/{id}` validates the request body but does not return
+  `404` when the ticket ID does not match an existing ticket in current source,
+  so the docs should not invent a not-found response for that operation.
 
 ## Completed Changes
 
@@ -813,6 +835,30 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
   product `openapi.yaml` matched with `cmp -s`; `git diff --check` passed in
   both affected repos; edited files contained no em dash or banned spaced
   double-hyphen sequence.
+- Added the Support endpoint family to the fully audited response-status set
+  in `api-response-status.test.ts`.
+- Corrected Support OpenAPI status coverage in both docs and product
+  `openapi.yaml`: removed stale `402` responses, added source-verified tier
+  `429` responses, kept `404` only where current source can return it, and
+  aligned public ticket ID examples with the `tkt_` format.
+- Updated Support API pages with `429 Rate Limited` tabs, source-aligned
+  `not_found` examples, and descriptions that no longer mention a `priority`
+  field the API does not return.
+- Synced docs `openapi.yaml` and product
+  `/Users/burak/Developer/xquik/openapi.yaml`; `cmp -s` confirmed they match.
+- Updated the live automation prompt so future runs treat Support as covered
+  and prefer X Accounts for the next all-status parity audit.
+- Run 2026-05-06 04:28 UTC checks: docs `bunx --bun vitest run
+  api-response-status.test.ts` passed with 2 tests; docs
+  `bun run test:agent-docs` passed with 36 tests passed and 1 skipped; docs
+  `bunx --bun mint validate` passed; docs `bunx --bun mint broken-links`
+  passed; product `bun run vacuum` passed with 7 duplicate-description informs;
+  product targeted OpenAPI tests passed with 10 tests across 4 files; docs and
+  product `openapi.yaml` matched with `cmp -s`; `git diff --check` passed in
+  both affected repos; edited files contained no em dash or banned spaced
+  double-hyphen sequence.
+- GitHub Actions check found the latest 8 `Agent-Friendly Docs` runs on `main`
+  passed before this run's new commit.
 
 ## Unresolved Risks
 
@@ -907,6 +953,13 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
 - Radar is now source-audited for all documented statuses. Remaining endpoint
   families still need source-verified error status audits before they can be
   added to the fully audited set.
+- Support is now source-audited for all documented statuses. Remaining endpoint
+  families still need source-verified error status audits before they can be
+  added to the fully audited set.
+- The Support update route currently returns success after calling the update
+  query even when no matching ticket exists. If the product should expose
+  missing-ticket feedback for status updates, fix product behavior first and
+  then document the new `404`.
 
 ## Recommendations For Next Run
 
@@ -967,10 +1020,10 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
     run the relevant static OpenAPI checks before committing.
 19. Pick the next endpoint family for all-status parity after Styles, Drafts,
     Webhooks, Credits, Monitors, Events, API Keys, Account, Subscribe, Compose,
-    Draws, Extractions, and Radar. Support is the next best candidate because
-    ticket list, create, get, update, and reply routes have user-facing
-    workflow docs plus auth, ID parsing, validation, and rate-limit statuses
-    that need source verification.
+    Draws, Extractions, Radar, and Support. X Accounts is the next best
+    candidate because connect, reauth, disconnect, bulk retry, list, and get
+    routes are high-value onboarding workflows with auth, state, validation,
+    and rate-limit statuses that need source verification.
 20. Maintain and deepen dedicated plugin docs for TweetClaw and Hermes Tweet. Use
     `/Users/burak/Developer/tweetclaw` and
     `/Users/burak/Developer/hermes-tweet` as source truth for install commands,
@@ -1053,7 +1106,8 @@ Run one focused improvement loop per poll:
    status parity only by adding source-verified endpoint families to the fully
    audited operation set in `api-response-status.test.ts`; Styles, Drafts,
    Webhooks, Credits, Monitors, Events, API Keys, Account, Subscribe, Compose,
-   Draws, Extractions, and Radar are already covered, so prefer Support next.
+   Draws, Extractions, Radar, and Support are already covered, so prefer X
+   Accounts next.
    When either OpenAPI file changes, compare docs `openapi.yaml` and product
    `/Users/burak/Developer/xquik/openapi.yaml` with
    `cmp -s` or an equivalent diff before committing so the public contracts do
