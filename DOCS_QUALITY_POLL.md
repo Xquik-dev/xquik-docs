@@ -362,6 +362,29 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
   `400 invalid_input` for invalid workflow state such as missing `step`, missing
   `topic` for `compose`, missing `goal`, `tone`, or `topic` for `refine`, or
   missing `draft` for `score`.
+- Run 2026-05-06 02:51 UTC: refreshed Mintlify score report remained 94/100
+  with 25/29 checks passing. `llms.txt` covers 100% of 191 sitemap doc pages
+  and the live report shows 47,513 characters, under the 50,000 character
+  threshold. The only failed component is still generated HTML size.
+- Official Mintlify OpenAPI research confirmed Mintlify supports OpenAPI 3.0
+  and 3.1 specs for generated endpoint pages, and generated page metadata comes
+  from operation `summary` and `description` fields when present. This supports
+  keeping both Xquik OpenAPI files valid, synchronized, and specific.
+- Draws endpoint source audit found list, get, and export routes run through
+  `withV1Auth` or `createV1StringIdRoute`, so tier rate limits can return
+  `429` with `rate_limit_exceeded`, `retryAfter`, and a `Retry-After` header.
+- Free Draws list, get, and export routes do not run subscription or credit
+  guards, so `402` was stale for those OpenAPI operations. `POST /draws`
+  still legitimately returns `402` when minimum or final draw credits cannot
+  be covered.
+- Draw creation can return `404 tweet_not_found` through the X API route error
+  handler, `502` by default for dependency failures, and `424` for those same
+  dependency failures when callers opt into the best-practice response
+  contract.
+- Draw IDs in public API responses come from `draws.publicId`, not the internal
+  numeric row ID, so numeric examples on Draws pages and Draws OpenAPI examples
+  were stale. Draw export requires a `format` query parameter and can return
+  `400 invalid_params` for missing or unsupported `format` or `type` values.
 
 ## Completed Changes
 
@@ -666,6 +689,33 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
   product `openapi.yaml` matched with `cmp -s`; `git diff --check` passed in
   both affected repos; edited files contained no em dash or banned spaced
   double-hyphen sequence.
+- Added the Draws endpoint family to the fully audited response-status set in
+  `api-response-status.test.ts`.
+- Corrected Draws OpenAPI status coverage in both docs and product
+  `openapi.yaml`: removed stale `402` responses from free list, get, and export
+  routes; added tier `429` responses; added source-verified `404`, `424`, and
+  `429` coverage for create; and added `400` invalid-params coverage for
+  export.
+- Added a Draw-specific OpenAPI path parameter, documented public draw ID
+  examples, marked export `format` as required, and corrected Draw schemas that
+  still showed numeric IDs or an unrelated webhook URL example.
+- Updated Draws API pages with public ID examples, `429 Rate Limited` tabs,
+  the opt-in `424` dependency-failure tab for draw creation, source-aligned
+  `400` and `404` guidance, and filename patterns that do not imply the public
+  draw ID is embedded in export filenames.
+- Synced docs `openapi.yaml` and product
+  `/Users/burak/Developer/xquik/openapi.yaml`; `cmp -s` confirmed they match.
+- Updated the live automation prompt so future runs treat Draws as covered and
+  prefer Extractions for the next all-status parity audit.
+- Run 2026-05-06 02:51 UTC checks: docs `bunx --bun vitest run
+  api-response-status.test.ts` passed with 2 tests; docs
+  `bun run test:agent-docs` passed with 36 tests passed and 1 skipped; docs
+  `bunx --bun mint validate` passed; docs `bunx --bun mint broken-links`
+  passed; product `bun run vacuum` passed with 7 duplicate-description informs;
+  product targeted OpenAPI tests passed with 10 tests across 4 files; docs and
+  product `openapi.yaml` matched with `cmp -s`; `git diff --check` passed in
+  both affected repos; edited files contained no em dash or banned spaced
+  double-hyphen sequence.
 
 ## Unresolved Risks
 
@@ -751,6 +801,9 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
 - Compose is now source-audited for all documented statuses. Remaining endpoint
   families still need source-verified error status audits before they can be
   added to the fully audited set.
+- Draws is now source-audited for all documented statuses. Remaining endpoint
+  families still need source-verified error status audits before they can be
+  added to the fully audited set.
 
 ## Recommendations For Next Run
 
@@ -810,11 +863,11 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
     If either OpenAPI file is stale, update the stale file in its own repo and
     run the relevant static OpenAPI checks before committing.
 19. Pick the next endpoint family for all-status parity after Styles, Drafts,
-    Webhooks, Credits, Monitors, Events, API Keys, Account, Subscribe, and
-    Compose. Draws is the next best candidate because it is a high-value
-    workflow with create, list, get, and export routes, and it likely needs
-    careful source verification for billing, export statuses, validation, and
-    error response shapes.
+    Webhooks, Credits, Monitors, Events, API Keys, Account, Subscribe, Compose,
+    and Draws. Extractions is the next best candidate because it is a
+    high-value workflow with create, estimate, list, get, and export routes,
+    plus billing, export statuses, validation, and dependency errors that need
+    careful source verification.
 20. Maintain and deepen dedicated plugin docs for TweetClaw and Hermes Tweet. Use
     `/Users/burak/Developer/tweetclaw` and
     `/Users/burak/Developer/hermes-tweet` as source truth for install commands,
@@ -896,9 +949,10 @@ Run one focused improvement loop per poll:
    source before changing either OpenAPI file or endpoint docs. Expand full
    status parity only by adding source-verified endpoint families to the fully
    audited operation set in `api-response-status.test.ts`; Styles, Drafts,
-   Webhooks, Credits, Monitors, Events, API Keys, Account, Subscribe, and
-   Compose are already covered, so prefer Draws next. When either OpenAPI file changes, compare docs
-   `openapi.yaml` and product `/Users/burak/Developer/xquik/openapi.yaml` with
+   Webhooks, Credits, Monitors, Events, API Keys, Account, Subscribe, Compose,
+   and Draws are already covered, so prefer Extractions next. When either
+   OpenAPI file changes, compare docs `openapi.yaml` and product
+   `/Users/burak/Developer/xquik/openapi.yaml` with
    `cmp -s` or an equivalent diff before committing so the public contracts do
    not silently drift.
    If you touch `docs.json`, `llms.txt`, or navigation, run the `llms.txt`

@@ -2214,8 +2214,8 @@ paths:
                 hasMore: false
         '401':
           $ref: '#/components/responses/Unauthenticated'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
     post:
       operationId: createDraw
       summary: Run giveaway draw
@@ -2298,7 +2298,7 @@ paths:
                 properties:
                   id:
                     type: string
-                    example: '42'
+                    example: 'f4bd00a2-7b4e-4e59-8e1b-72e2c9f12345'
                   tweetId:
                     type: string
                     example: '1234567890'
@@ -2322,7 +2322,7 @@ paths:
                       $ref: '#/components/schemas/Winner'
                     example: []
               example:
-                id: '42'
+                id: 'f4bd00a2-7b4e-4e59-8e1b-72e2c9f12345'
                 tweetId: '1234567890'
                 totalEntries: 250
                 validEntries: 200
@@ -2344,9 +2344,13 @@ paths:
               example:
                 error: 'insufficient_credits'
                 message: 'Insufficient credits'
-        '502':
-          $ref: '#/components/responses/XApiError'
+        '404':
+          $ref: '#/components/responses/NotFound'
         '424':
+          $ref: '#/components/responses/XApiError'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+        '502':
           $ref: '#/components/responses/XApiError'
 
   /draws/{id}:
@@ -2358,7 +2362,7 @@ paths:
         - apiKey: []
         - oauthBearer: []
       parameters:
-        - $ref: '#/components/parameters/ResourceId'
+        - $ref: '#/components/parameters/DrawId'
       responses:
         '200':
           description: Draw with winners
@@ -2371,7 +2375,7 @@ paths:
                   draw:
                     $ref: '#/components/schemas/DrawDetail'
                     example:
-                      id: '42'
+                      id: 'f4bd00a2-7b4e-4e59-8e1b-72e2c9f12345'
                       tweetUrl: 'https://x.com/elonmusk/status/1234567890'
                       tweetId: '1234567890'
                       tweetText: 'Giving away 3 Tesla Model 3s!'
@@ -2391,7 +2395,7 @@ paths:
                     example: []
               example:
                 draw:
-                  id: '42'
+                  id: 'f4bd00a2-7b4e-4e59-8e1b-72e2c9f12345'
                   tweetUrl: 'https://x.com/elonmusk/status/1234567890'
                   tweetId: '1234567890'
                   tweetText: 'Giving away 3 Tesla Model 3s!'
@@ -2407,10 +2411,10 @@ paths:
                 winners: []
         '401':
           $ref: '#/components/responses/Unauthenticated'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
         '404':
           $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
 
   /draws/{id}/export:
     get:
@@ -2421,14 +2425,14 @@ paths:
         - apiKey: []
         - oauthBearer: []
       parameters:
-        - $ref: '#/components/parameters/ResourceId'
+        - $ref: '#/components/parameters/DrawId'
         - name: format
           in: query
+          required: true
           description: Export output format
           schema:
             type: string
             enum: [csv, json, md, md-document, pdf, txt, xlsx]
-            default: csv
         - name: type
           in: query
           schema:
@@ -2444,12 +2448,14 @@ paths:
               schema:
                 type: string
                 format: binary
+        '400':
+          $ref: '#/components/responses/InvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
         '404':
           $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
 
   # ── Webhooks ─────────────────────────────────────────────
   /webhooks:
@@ -6662,7 +6668,15 @@ components:
       required: true
       schema:
         type: string
-      description: Resource ID (stringified bigint)
+      description: Resource ID returned by the matching create or list endpoint.
+    DrawId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        example: 'f4bd00a2-7b4e-4e59-8e1b-72e2c9f12345'
+      description: Draw public ID returned by create and list draw responses.
     Limit:
       name: limit
       in: query
@@ -7381,6 +7395,8 @@ components:
       properties:
         id:
           type: string
+          description: Draw public ID.
+          example: 'f4bd00a2-7b4e-4e59-8e1b-72e2c9f12345'
         tweetUrl:
           type: string
           format: uri
@@ -7417,7 +7433,8 @@ components:
       properties:
         id:
           type: string
-          example: 'https://example.com/webhook'
+          description: Draw public ID.
+          example: 'f4bd00a2-7b4e-4e59-8e1b-72e2c9f12345'
         tweetUrl:
           type: string
           format: uri
