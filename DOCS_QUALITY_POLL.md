@@ -523,6 +523,26 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
 - User list routes clamp page sizes to source bounds and available credits;
   zero affordable result count can return `402 insufficient_credits` before
   upstream work is delivered.
+- Run 2026-05-06 06:48 UTC: refreshed Mintlify score report remained 94/100
+  with 25/29 checks passing. `llms.txt` still covers 100% of 191 sitemap doc
+  pages at 47,513 characters, under the 50,000 character threshold. The only
+  failed score component is still generated HTML size.
+- Official Mintlify OpenAPI research reconfirmed OpenAPI files power generated
+  endpoint docs, request builders, authentication fields, and generated page
+  metadata from operation summaries and descriptions. This continues to
+  support keeping both OpenAPI files synchronized and source verified.
+- Read-side Tweets source audit found batch lookup, search, single tweet
+  lookup, article lookup, favoriters, quotes, replies, retweeters, and thread
+  routes use `withXApiGuard`, so they can return subscription or payment
+  `402`, tier `429 rate_limit_exceeded`, upstream `502`, and normalized `424`
+  dependency failures.
+- `GET /x/tweets` returns route-level `400` for missing `ids` and for more
+  than 100 IDs. `GET /x/tweets/search` returns route-level `400` for missing
+  `q`. Tweet ID based read routes return route-level `400 invalid_tweet_id`
+  for malformed IDs.
+- `GET /x/articles/{tweetId}` returns explicit `404 article_not_found` when a
+  valid tweet ID is not an X Article. `GET /x/tweets/{id}` docs already
+  documented `404 tweet_not_found`, so OpenAPI needed the same public status.
 
 ## Completed Changes
 
@@ -999,6 +1019,29 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
   double-hyphen sequence.
 - GitHub Actions check found the latest 8 `Agent-Friendly Docs` runs on `main`
   passed before this run's new commit.
+- Added the read-side Tweets endpoint family to the fully audited
+  response-status set in `api-response-status.test.ts`.
+- Corrected read-side Tweets OpenAPI status coverage in both docs and product
+  `openapi.yaml`: added source-verified route-level `400` responses, added
+  missing `404 tweet_not_found` coverage for single tweet lookup, and added
+  source-verified `502`, `429`, and `424` dependency or rate-limit responses
+  where they were missing.
+- Updated 9 Tweets and article API pages with source-aligned `502`, `429`, and
+  `424` response tabs so endpoint docs now match OpenAPI for the audited
+  operations.
+- Synced docs `openapi.yaml` and product
+  `/Users/burak/Developer/xquik/openapi.yaml`; `cmp -s` confirmed they match.
+- Updated the live automation prompt so future runs treat read-side Tweets as
+  covered and prefer X Write actions for the next all-status parity audit.
+- Run 2026-05-06 06:48 UTC checks: docs `bunx --bun vitest run
+  api-response-status.test.ts api-params.test.ts` passed with 3 tests; docs
+  `bun run test:agent-docs` passed with 36 tests passed and 1 skipped; docs
+  `bunx --bun mint validate` passed; docs `bunx --bun mint broken-links`
+  passed; product `bun run vacuum` passed with 7 duplicate-description
+  informs; product targeted OpenAPI tests passed with 10 tests across 4 files;
+  docs and product `openapi.yaml` matched with `cmp -s`; `git diff --check`
+  passed in both affected repos; edited files contained no em dash or banned
+  spaced double-hyphen sequence.
 
 ## Unresolved Risks
 
@@ -1125,6 +1168,19 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
 - This Users audit did not start a local server, browser session, Playwright,
   or localhost visual check. It verified route behavior statically from product
   source and tests only, per the poll's static-check policy.
+- Read-side Tweets endpoints are now source-audited for all documented
+  statuses. Remaining endpoint families still need source-verified error
+  status audits before they can be added to the fully audited set.
+- This Tweets audit did not include write-side X actions such as create tweet,
+  delete tweet, like, unlike, retweet, unretweet, follow, unfollow, remove
+  follower, direct-message sends, or media upload. Audit those through the X
+  Write family because their route wrappers and public error statuses differ
+  from read-side endpoints.
+- This Tweets audit did not include timeline, bookmarks, lists, communities, or
+  direct-message read pages. Audit those in their own endpoint-family slices.
+- This Tweets audit did not start a local server, browser session, Playwright,
+  or localhost visual check. It verified route behavior statically from
+  product source and tests only, per the poll's static-check policy.
 
 ## Recommendations For Next Run
 
@@ -1185,11 +1241,11 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
     run the relevant static OpenAPI checks before committing.
 19. Pick the next endpoint family for all-status parity after Styles, Drafts,
     Webhooks, Credits, Monitors, Events, API Keys, Account, Subscribe, Compose,
-    Draws, Extractions, Radar, Support, X Accounts, Trends, and read-side
-    Users. Tweets is the next best candidate because tweet lookup, search,
-    batch lookup, thread, quotes, replies, favoriters, retweeters, and article
-    workflows have multiple auth, payment, pagination, validation, dependency,
-    and rate-limit behaviors that need source verification.
+    Draws, Extractions, Radar, Support, X Accounts, Trends, read-side Users,
+    and read-side Tweets. X Write actions are the next best candidate because
+    create tweet, delete tweet, like, unlike, retweet, unretweet, follow,
+    unfollow, remove follower, direct-message sends, and media upload use
+    write-action error components that differ from read-side X API responses.
 20. Maintain and deepen dedicated plugin docs for TweetClaw and Hermes Tweet. Use
     `/Users/burak/Developer/tweetclaw` and
     `/Users/burak/Developer/hermes-tweet` as source truth for install commands,
@@ -1272,8 +1328,11 @@ Run one focused improvement loop per poll:
    status parity only by adding source-verified endpoint families to the fully
    audited operation set in `api-response-status.test.ts`; Styles, Drafts,
    Webhooks, Credits, Monitors, Events, API Keys, Account, Subscribe, Compose,
-   Draws, Extractions, Radar, Support, X Accounts, Trends, and read-side Users
-   are already covered, so prefer Tweets next.
+   Draws, Extractions, Radar, Support, X Accounts, Trends, read-side Users, and
+   read-side Tweets are already covered, so prefer X Write actions next. Treat
+   create tweet, delete tweet, like, unlike, retweet, unretweet, follow,
+   unfollow, remove follower, direct-message sends, and media upload as
+   write-side routes with distinct public error components.
    When either OpenAPI file changes, compare docs `openapi.yaml` and product
    `/Users/burak/Developer/xquik/openapi.yaml` with
    `cmp -s` or an equivalent diff before committing so the public contracts do
