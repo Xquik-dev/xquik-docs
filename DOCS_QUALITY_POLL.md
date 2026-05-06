@@ -560,6 +560,23 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
 - `DELETE /x/tweets/{id}` did not have a source path that returns the generic
   `404` response documented in OpenAPI. Target-not-found write errors are
   classified as `422 x_target_not_found` in the shared write-action handler.
+- Run 2026-05-06 07:44 UTC: refreshed Mintlify score report remained 94/100
+  with 25/29 checks passing. `llms.txt` still covers 100% of 191 sitemap doc
+  pages at 47,513 characters, under the 50,000 character threshold. The only
+  failed score component is still generated HTML size.
+- Online research reconfirmed Mintlify uses repository OpenAPI files to
+  generate endpoint pages, request builders, authentication fields, and
+  generated endpoint metadata. OpenAPI 3.1 response maps remain the
+  machine-readable contract for expected operation responses.
+- X Write user-action source audit found follow, unfollow, and remove follower
+  route through `createToggleHandler` and the shared write-action handler.
+  They can return route-level `400 invalid_input`, authentication `401`,
+  write-credit `402`, account-state `403`, write rejection `422`, rate-limit
+  `429`, transient `503`, and generic write failure `500`.
+- Follow and remove-follower also apply the product follow action limiter
+  before the upstream write call, so their `429` responses can be either
+  Xquik `rate_limit_exceeded` or X write throttles such as `x_rate_limited` and
+  `x_daily_limit`.
 
 ## Completed Changes
 
@@ -1080,6 +1097,27 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
   docs and product `openapi.yaml` matched with `cmp -s`; `git diff --check`
   passed in both affected repos; edited files contained no em dash or banned
   spaced double-hyphen sequence.
+- Added the X Write user-action family to the fully audited response-status
+  set in `api-response-status.test.ts`: follow, unfollow, and remove follower.
+- Corrected X Write user-action OpenAPI status coverage in both docs and
+  product `openapi.yaml`: added source-verified `400 invalid_input` coverage
+  and replaced the X-only 429 response reference with a `WriteRateLimited`
+  component that covers both Xquik `rate_limit_exceeded` and X write throttles.
+- Updated follow, unfollow, and remove-follower API pages with source-aligned
+  `429 Rate Limited` wording and examples.
+- Synced docs `openapi.yaml` and product
+  `/Users/burak/Developer/xquik/openapi.yaml`; `cmp -s` confirmed they match.
+- Updated the live automation prompt so future runs treat X Write user actions
+  as covered and prefer direct-message sends next.
+- Run 2026-05-06 07:44 UTC checks: docs `bunx --bun vitest run
+  api-response-status.test.ts api-params.test.ts` passed with 3 tests; docs
+  `bun run test:agent-docs` passed with 36 tests passed and 1 skipped; docs
+  `bunx --bun mint validate` passed; docs `bunx --bun mint broken-links`
+  passed; product `bun run vacuum` passed with 7 duplicate-description
+  informs; product targeted OpenAPI tests passed with 10 tests across 4 files;
+  docs and product `openapi.yaml` matched with `cmp -s`; `git diff --check`
+  passed in both affected repos; edited files contained no em dash or banned
+  spaced double-hyphen sequence.
 
 ## Unresolved Risks
 
@@ -1225,10 +1263,12 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
 - This X Write tweet-action audit did not include follow, unfollow, remove
   follower, direct-message sends, media upload, profile updates, or community
   writes. Audit those in smaller write-side slices.
-- `/Users/burak/Developer/hermes-tweet` is on a local non-tracking branch with
-  unrelated dirty docs files, so `git pull --ff-only` could not run there in
-  this cycle. Treat its current checkout as source context until the branch and
-  local changes are resolved.
+- X Write user actions are now source-audited for all documented statuses.
+  Remaining write-side endpoint families still need source-verified status
+  audits before they can be added to the fully audited set.
+- This X Write user-action audit did not include direct-message sends, media
+  upload, profile updates, or community writes. Audit those in smaller
+  write-side slices.
 
 ## Recommendations For Next Run
 
@@ -1290,10 +1330,10 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
 19. Pick the next endpoint family for all-status parity after Styles, Drafts,
     Webhooks, Credits, Monitors, Events, API Keys, Account, Subscribe, Compose,
     Draws, Extractions, Radar, Support, X Accounts, Trends, read-side Users,
-    read-side Tweets, and X Write tweet actions. X Write user actions are the
-    next best candidate because follow, unfollow, and remove follower use the
-    shared write-action handler but have user-target semantics that should be
-    verified separately from tweet-target writes.
+    read-side Tweets, X Write tweet actions, and X Write user actions. Direct
+    message sends are the next best candidate because `POST /x/dm/{userId}`
+    combines write-action handling with target user validation and optional
+    media fields.
 20. Maintain and deepen dedicated plugin docs for TweetClaw and Hermes Tweet. Use
     `/Users/burak/Developer/tweetclaw` and
     `/Users/burak/Developer/hermes-tweet` as source truth for install commands,
@@ -1377,10 +1417,11 @@ Run one focused improvement loop per poll:
    audited operation set in `api-response-status.test.ts`; Styles, Drafts,
    Webhooks, Credits, Monitors, Events, API Keys, Account, Subscribe, Compose,
    Draws, Extractions, Radar, Support, X Accounts, Trends, read-side Users,
-   read-side Tweets, and X Write tweet actions are already covered, so prefer
-   X Write user actions next. Treat follow, unfollow, and remove follower as a
-   dedicated write-side slice with user-target semantics before moving to
-   direct-message sends, media upload, profile updates, or community writes.
+   read-side Tweets, X Write tweet actions, and X Write user actions are
+   already covered, so prefer direct-message sends next. Treat
+   `POST /x/dm/{userId}` as a dedicated write-side slice with target user
+   validation and optional media fields before moving to media upload, profile
+   updates, or community writes.
    When either OpenAPI file changes, compare docs `openapi.yaml` and product
    `/Users/burak/Developer/xquik/openapi.yaml` with
    `cmp -s` or an equivalent diff before committing so the public contracts do

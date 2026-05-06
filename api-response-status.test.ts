@@ -19,6 +19,7 @@ const FULL_STATUS_AUDITED_OPERATIONS = new Set([
   'DELETE /x/tweets/{id}',
   'DELETE /x/tweets/{id}/like',
   'DELETE /x/tweets/{id}/retweet',
+  'DELETE /x/users/{id}/follow',
   'GET /account',
   'GET /api-keys',
   'GET /credits',
@@ -98,6 +99,8 @@ const FULL_STATUS_AUDITED_OPERATIONS = new Set([
   'POST /x/tweets',
   'POST /x/tweets/{id}/like',
   'POST /x/tweets/{id}/retweet',
+  'POST /x/users/{id}/follow',
+  'POST /x/users/{id}/remove-follower',
   'PUT /account/x-identity',
   'PUT /styles/{id}',
 ]);

@@ -3665,6 +3665,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/Success'
+        '400':
+          $ref: '#/components/responses/InvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '402':
@@ -3674,7 +3676,7 @@ paths:
         '422':
           $ref: '#/components/responses/WriteRejected'
         '429':
-          $ref: '#/components/responses/RateLimitedByX'
+          $ref: '#/components/responses/WriteRateLimited'
         '503':
           $ref: '#/components/responses/TransientError'
         '500':
@@ -3703,6 +3705,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/Success'
+        '400':
+          $ref: '#/components/responses/InvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '402':
@@ -3712,7 +3716,7 @@ paths:
         '422':
           $ref: '#/components/responses/WriteRejected'
         '429':
-          $ref: '#/components/responses/RateLimitedByX'
+          $ref: '#/components/responses/WriteRateLimited'
         '503':
           $ref: '#/components/responses/TransientError'
         '500':
@@ -3743,6 +3747,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/Success'
+        '400':
+          $ref: '#/components/responses/InvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '402':
@@ -3752,7 +3758,7 @@ paths:
         '422':
           $ref: '#/components/responses/WriteRejected'
         '429':
-          $ref: '#/components/responses/RateLimitedByX'
+          $ref: '#/components/responses/WriteRateLimited'
         '503':
           $ref: '#/components/responses/TransientError'
         '500':
@@ -6983,6 +6989,34 @@ components:
           example:
             error: 'x_rate_limited'
             message: 'Rate limited by X. Wait before retrying.'
+    WriteRateLimited:
+      description: >
+        A write was throttled by Xquik's tier or action limits
+        (`rate_limit_exceeded`) or by X (`x_rate_limited`, `x_daily_limit`).
+        Respect the `Retry-After` header when present, otherwise back off
+        before retrying.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/Error'
+              - type: object
+                properties:
+                  retryAfter:
+                    type: integer
+                    example: 60
+          examples:
+            xquikLimit:
+              summary: Xquik tier or action limit
+              value:
+                error: 'rate_limit_exceeded'
+                message: 'Too many requests. Try again later.'
+                retryAfter: 60
+            xLimit:
+              summary: X rate limit
+              value:
+                error: 'x_rate_limited'
+                message: 'Rate limited by X. Wait before retrying.'
     TransientError:
       description: >
         A transient upstream issue occurred. Safe to retry with exponential
