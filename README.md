@@ -1,5 +1,7 @@
 # Xquik Docs
 
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/Xquik-dev/xquik-docs)
+
 Public documentation for [Xquik](https://xquik.com), the X (Twitter) real-time data and automation platform. Built on [Mintlify](https://mintlify.com), deployed at **[docs.xquik.com](https://docs.xquik.com)**.
 
 This repository powers the developer reference: REST API, webhooks, MCP server, OAuth 2.1, SDKs, glossary, comparison guides, and how-to guides. Main-domain pages should link or redirect here when the content is technical reference, implementation guidance, comparison guidance, or API documentation.
