@@ -55,6 +55,7 @@ const FULL_STATUS_AUDITED_OPERATIONS = new Set([
   'GET /x/accounts',
   'GET /x/accounts/{id}',
   'GET /x/bookmarks',
+  'GET /x/bookmarks/folders',
   'GET /x/communities/search',
   'GET /x/communities/tweets',
   'GET /x/communities/{id}/info',
