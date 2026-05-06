@@ -18,6 +18,8 @@ const FULL_STATUS_AUDITED_OPERATIONS = new Set([
   'GET /credits/topup/status',
   'GET /drafts',
   'GET /drafts/{id}',
+  'GET /events',
+  'GET /events/{id}',
   'GET /monitors',
   'GET /monitors/{id}',
   'GET /monitors/keywords',

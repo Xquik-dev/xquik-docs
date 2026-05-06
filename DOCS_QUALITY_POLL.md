@@ -254,6 +254,19 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
 - Monitor create operations had stale generic `500` response entries in
   OpenAPI, and duplicate monitor examples did not match the current
   `monitor_already_exists` message.
+- Run 2026-05-06 00:20 UTC: refreshed Mintlify score report remained 94/100
+  with 25/29 checks passing. `llms.txt` still covers 100% of 189 sitemap doc
+  pages and remains 47,005 characters. The only failed score component is
+  still generated HTML size.
+- Events endpoint source audit found both Events routes run through
+  `withV1Auth` or `createV1IdRoute`, so tier rate limits can return `429`
+  with `rate_limit_exceeded`, `retryAfter`, and a `Retry-After` header.
+- Events routes do not run the credit guard, so `402` was stale for both
+  Events OpenAPI operations. `GET /events/{id}` can return `400 invalid_id`
+  before lookup when `{id}` is malformed.
+- The public event response schema was under-specified for keyword monitor
+  events. Product formatting returns `monitorType`, may return
+  `keywordMonitorId` and `query`, and omits `username` for keyword events.
 
 ## Completed Changes
 
@@ -453,6 +466,22 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
   36 tests passed and 1 skipped; `bunx --bun mint validate` passed;
   `bunx --bun mint broken-links` passed; `git diff --check` passed; no edited
   file contained an em dash or banned spaced double-hyphen sequence.
+- Added the Events endpoint family to the fully audited response-status set in
+  `api-response-status.test.ts`.
+- Corrected Events OpenAPI error status coverage: removed stale `402`
+  responses, added Xquik tier `429` rate-limit responses, and added the
+  malformed-ID `400` response for `GET /events/{id}`.
+- Corrected Events response schemas for account and keyword event sources:
+  `monitorType` is now required, `username` is optional, and keyword events can
+  expose `keywordMonitorId` and `query`.
+- Updated Events API pages with `429 Rate Limited` tabs, source-aligned
+  `invalid_id` messaging, and account versus keyword response-field guidance.
+- Updated the live automation prompt so future runs treat Events as covered
+  and prefer API Keys for the next all-status parity audit.
+- Run 2026-05-06 00:20 UTC checks: `bun run test:agent-docs` passed with
+  36 tests passed and 1 skipped; `bunx --bun mint validate` passed;
+  `bunx --bun mint broken-links` passed; `git diff --check` passed; no edited
+  file contained an em dash or banned spaced double-hyphen sequence.
 
 ## Unresolved Risks
 
@@ -513,6 +542,9 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
 - Monitors endpoints now have all-status parity guarded. Remaining endpoint
   families still need source-verified error status audits before they can be
   added to the fully audited set.
+- Events endpoints now have all-status parity guarded. Remaining endpoint
+  families still need source-verified error status audits before they can be
+  added to the fully audited set.
 
 ## Recommendations For Next Run
 
@@ -564,9 +596,9 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
     whether to update OpenAPI, endpoint docs, or both before expanding the
     guard beyond 2xx statuses.
 18. Pick the next endpoint family for all-status parity after Styles, Drafts,
-    Webhooks, Credits, and Monitors. Events are the next best candidate because
-    they have a compact route surface and are tightly tied to monitor and
-    webhook correctness.
+    Webhooks, Credits, Monitors, and Events. API Keys are the next best
+    candidate because they have a compact route surface and protect the auth
+    onboarding path.
 
 ## Prompt For Next Run
 
@@ -616,11 +648,11 @@ Run one focused improvement loop per poll:
    source before changing OpenAPI or endpoint docs. Expand full status parity
    only by adding source-verified endpoint families to the fully audited
    operation set in `api-response-status.test.ts`; Styles, Drafts, Webhooks,
-   Credits, and Monitors are already covered, so prefer Events next. If you
-   touch `docs.json`, `llms.txt`, or navigation, run the `llms.txt` coverage
-   and navigation default-state guards, keep the file below the 50,000
-   character score threshold, and keep nested X API endpoint groups expanded
-   by default. If you touch page metadata, run the SEO metadata guard and keep
+   Credits, Monitors, and Events are already covered, so prefer API Keys next.
+   If you touch `docs.json`, `llms.txt`, or navigation, run the `llms.txt`
+   coverage and navigation default-state guards, keep the file below the
+   50,000 character score threshold, and keep nested X API endpoint groups
+   expanded by default. If you touch page metadata, run the SEO metadata guard and keep
    descriptions useful, specific, and search-preview friendly. If you touch API endpoint
    pages, run the API content-quality guard and preserve copy-ready code
    examples, headers, response documentation, and a successful response tab. If

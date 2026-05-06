@@ -1767,9 +1767,8 @@ paths:
                 hasMore: false
         '401':
           $ref: '#/components/responses/Unauthenticated'
-
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
   /events/{id}:
     get:
       operationId: getEvent
@@ -1797,10 +1796,12 @@ paths:
                   tweetId: '1234567890'
         '401':
           $ref: '#/components/responses/Unauthenticated'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
+        '400':
+          $ref: '#/components/responses/InvalidInput'
         '404':
           $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
 
   # ── Extractions ──────────────────────────────────────────
   /extractions:
@@ -7249,9 +7250,9 @@ components:
 
     Event:
       description:
-        Monitor event summary with type, username, and occurrence time.
+        Monitor event summary with source metadata and occurrence time.
       type: object
-      required: [id, type, username, monitorId, occurredAt, data]
+      required: [id, type, monitorId, monitorType, occurredAt, data]
       properties:
         id:
           type: string
@@ -7259,8 +7260,22 @@ components:
           $ref: '#/components/schemas/EventType'
         username:
           type: string
+          description: Account username, present for account monitor events.
+        query:
+          type: string
+          description: Keyword query, present for keyword monitor events.
         monitorId:
           type: string
+          description:
+            Account monitor ID for account events, or keyword monitor ID for
+            keyword events.
+        monitorType:
+          type: string
+          enum: [account, keyword]
+          description: Source monitor type.
+        keywordMonitorId:
+          type: string
+          description: Keyword monitor ID, present for keyword monitor events.
         occurredAt:
           type: string
           format: date-time
@@ -7272,7 +7287,7 @@ components:
       description:
         Full monitor event including payload data and optional X event ID.
       type: object
-      required: [id, type, username, monitorId, occurredAt, data]
+      required: [id, type, monitorId, monitorType, occurredAt, data]
       properties:
         id:
           type: string
@@ -7282,10 +7297,27 @@ components:
           example: 'tweet.new'
         username:
           type: string
+          description: Account username, present for account monitor events.
           example: 'elonmusk'
+        query:
+          type: string
+          description: Keyword query, present for keyword monitor events.
+          example: 'xquik OR "x api"'
         monitorId:
           type: string
+          description:
+            Account monitor ID for account events, or keyword monitor ID for
+            keyword events.
           example: '10'
+        monitorType:
+          type: string
+          enum: [account, keyword]
+          description: Source monitor type.
+          example: account
+        keywordMonitorId:
+          type: string
+          description: Keyword monitor ID, present for keyword monitor events.
+          example: '21'
         occurredAt:
           type: string
           format: date-time
