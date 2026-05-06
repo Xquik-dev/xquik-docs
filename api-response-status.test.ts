@@ -64,6 +64,7 @@ const FULL_STATUS_AUDITED_OPERATIONS = new Set([
   'GET /x/lists/{id}/followers',
   'GET /x/lists/{id}/members',
   'GET /x/lists/{id}/tweets',
+  'GET /x/notifications',
   'GET /x/trends',
   'GET /x/tweets',
   'GET /x/tweets/search',
