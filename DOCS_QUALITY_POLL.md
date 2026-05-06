@@ -323,9 +323,9 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
 - Run 2026-05-06 plugin-docs audit: local plugin source repos are
   `/Users/burak/Developer/tweetclaw` and
   `/Users/burak/Developer/hermes-tweet`.
-- Current docs only mention TweetClaw in the top-level `openapi.yaml`
-  description. No dedicated TweetClaw/OpenClaw or Hermes Tweet/Hermes Agent
-  documentation pages were found in `xquik-docs`.
+- Before the 2026-05-06 plugin-docs update, docs only mentioned TweetClaw in
+  the top-level `openapi.yaml` description. No dedicated TweetClaw/OpenClaw or
+  Hermes Tweet/Hermes Agent documentation pages were present in `xquik-docs`.
 - TweetClaw source truth: npm package `@xquik/tweetclaw` v1.6.12, OpenClaw
   plugin, install command `openclaw plugins install @xquik/tweetclaw`, tools
   `explore` and `tweetclaw`, slash commands `/xstatus` and `/xtrends`, API key
@@ -337,6 +337,16 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
   and `tweet_action`, required `XQUIK_API_KEY`, optional `XQUIK_BASE_URL` and
   `HERMES_TWEET_ENABLE_ACTIONS`, Python `>=3.11`, 99 agent-callable endpoints,
   and 32 MPP-tagged read endpoints.
+- Run 2026-05-06 02:01 UTC: online research confirmed Mintlify page
+  descriptions improve SEO previews, Mintlify indexes navigation pages into
+  sitemap/search/AI contexts, OpenClaw plugin installs should be treated as
+  executable code with pinned versions preferred for production, and Hermes
+  pip-entry-point plugins remain disabled until explicitly enabled.
+- The dedicated plugin docs gap is now closed in navigation:
+  `guides/tweetclaw.mdx` documents the official TweetClaw OpenClaw plugin and
+  `guides/hermes-tweet.mdx` documents the Hermes Tweet Hermes Agent plugin.
+  Both pages were source-verified against local plugin repos and current
+  official plugin documentation patterns.
 
 ## Completed Changes
 
@@ -610,6 +620,19 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
 - Run 2026-05-06 plugin-docs prompt update: added TweetClaw and Hermes Tweet
   local source repos to the recurring docs poll scope. The live automation
   prompt was updated with the same requirement.
+- Run 2026-05-06 02:01 UTC: added dedicated plugin docs pages for TweetClaw
+  and Hermes Tweet, added an Agent Plugins navigation group, and added both
+  pages to `llms.txt`. The pages cover install commands, package versions,
+  prerequisites, API key and MPP configuration, tools, slash commands, safety
+  boundaries, coverage, verification, troubleshooting, and next steps.
+- Updated the live automation prompt so future runs treat the plugin pages as
+  existing docs that need ongoing source-truth maintenance instead of missing
+  pages to create.
+- Run 2026-05-06 02:01 UTC checks: `bun run test:agent-docs` passed with
+  36 tests passed and 1 skipped; `bunx --bun mint validate` passed;
+  `bunx --bun mint broken-links` passed. Local dev server, Browser Use,
+  Playwright, and localhost visual checks were skipped under the static-check
+  poll policy.
 
 ## Unresolved Risks
 
@@ -688,10 +711,10 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
   can be added to the fully audited set.
 - The Account audit did not start any local server or browser session, so it
   verified route behavior statically from product source and tests only.
-- Dedicated docs pages for TweetClaw/OpenClaw and Hermes Tweet/Hermes Agent are
-  still missing from docs navigation. A future run should create or expand
-  integration docs, add SEO metadata, verify install and config details against
-  local plugin repos, and consider `llms.txt` coverage.
+- Dedicated docs pages for TweetClaw/OpenClaw and Hermes Tweet/Hermes Agent now
+  exist, but there is not yet an automated plugin-docs drift guard comparing
+  docs content against `/Users/burak/Developer/tweetclaw` and
+  `/Users/burak/Developer/hermes-tweet`.
 
 ## Recommendations For Next Run
 
@@ -755,12 +778,13 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
     Compose is the next best candidate because it has one route, touches a
     high-value onboarding workflow, and likely needs careful source verification
     for billing, AI workflow inputs, and error statuses.
-20. Add or audit dedicated plugin docs for TweetClaw and Hermes Tweet. Use
+20. Maintain and deepen dedicated plugin docs for TweetClaw and Hermes Tweet. Use
     `/Users/burak/Developer/tweetclaw` and
     `/Users/burak/Developer/hermes-tweet` as source truth for install commands,
     package names, versions, runtime requirements, config and env vars, tool
     names, slash commands, action safety boundaries, endpoint counts, MPP
-    support, and catalog generation.
+    support, and catalog generation. Add an automated plugin-docs drift guard
+    if these fields change often.
 
 ## Prompt For Next Run
 
@@ -784,13 +808,13 @@ accuracy, navigation usability, or quality issues unless a guard itself is
 plainly wrong.
 
 Also treat `/Users/burak/Developer/tweetclaw` and
-`/Users/burak/Developer/hermes-tweet` as plugin source-truth repos. Current
-docs only mention TweetClaw in `openapi.yaml`; no dedicated TweetClaw/OpenClaw
-or Hermes Tweet/Hermes Agent docs pages were found. Prefer creating or
-expanding those integration docs when scope allows. Verify plugin package names,
-versions, install commands, runtime requirements, config and env vars, tool
-names, slash commands, action safety boundaries, endpoint counts, MPP support,
-and catalog generation against the local plugin repos before publishing claims.
+`/Users/burak/Developer/hermes-tweet` as plugin source-truth repos. Dedicated
+plugin docs now exist at `guides/tweetclaw.mdx` and
+`guides/hermes-tweet.mdx`; keep them current and expand them when plugin repos
+change. Verify plugin package names, versions, install commands, runtime
+requirements, config and env vars, tool names, slash commands, action safety
+boundaries, endpoint counts, MPP support, and catalog generation against the
+local plugin repos before publishing claims.
 
 Also review the Mintlify score report at `https://www.mintlify.com/score/xquik`
 and the markdown version at `https://www.mintlify.com/score/xquik.md`. Try to

@@ -1,0 +1,148 @@
+---
+title: Hermes Tweet for Hermes Agent
+description: Install and configure the Hermes Tweet plugin for Xquik-powered X automation in Hermes Agent
+keywords: ["hermes tweet", "hermes agent", "xquik", "x automation", "twitter automation", "hermes plugin"]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+<LlmsDirective />
+
+Hermes Tweet is the native Hermes Agent plugin for using Xquik as a structured X automation toolset. It packages the Xquik endpoint catalog, read tools, optional action tools, slash commands, and a bundled Hermes skill into a Python plugin.
+
+Use Hermes Tweet when a Hermes Agent workflow needs X search, account reads, tweet posting, replies, likes, retweets, follows, DMs, monitors, webhooks, giveaway draws, extraction jobs, media operations, or trend reads.
+
+## Prerequisites
+
+- Python `3.11` or newer
+- Hermes Agent with plugin support
+- [Xquik API key](/quickstart)
+
+Hermes plugins are opt-in. The official Hermes plugin docs describe pip entry points through the `hermes_agent.plugins` group and require plugins to be enabled before they load.
+
+## Install
+
+Install the published PyPI package:
+
+```bash
+python -m pip install hermes-tweet
+hermes plugins enable hermes-tweet
+```
+
+If you use `uv` inside your Hermes Python environment:
+
+```bash
+uv pip install hermes-tweet
+hermes plugins enable hermes-tweet
+```
+
+The current package version is `0.1.0`. The plugin name is `hermes-tweet`, and the Python entry point is `hermes-tweet = hermes_tweet`.
+
+## Configure
+
+Set your Xquik API key before starting Hermes:
+
+```bash
+export XQUIK_API_KEY="xq_..."
+```
+
+Optional environment variables:
+
+```bash
+export XQUIK_BASE_URL="https://xquik.com"
+export HERMES_TWEET_ENABLE_ACTIONS="false"
+```
+
+Keep `HERMES_TWEET_ENABLE_ACTIONS=false` for unattended sessions. Enable actions only for workflows with an explicit approval step:
+
+```bash
+export HERMES_TWEET_ENABLE_ACTIONS="true"
+```
+
+## Tools
+
+| Tool | Purpose | Enabled By Default |
+|------|---------|--------------------|
+| `tweet_explore` | Search the bundled Xquik endpoint catalog without making an API call | Yes |
+| `tweet_read` | Call catalog-listed read-only endpoints | Yes |
+| `tweet_action` | Call write-like or private endpoints | No |
+
+Start with `tweet_explore` so the agent can discover the right method, path, parameters, and response shape before it calls an endpoint.
+
+```text
+Use tweet_explore to find the endpoint for user lookup, then call tweet_read for @xquikcom.
+```
+
+## Slash Commands
+
+| Command | Purpose |
+|---------|---------|
+| `/xstatus` | Show Xquik account, subscription, and usage status |
+| `/xtrends` | Show current X trends |
+
+## Safety Model
+
+Hermes Tweet reads auth from environment variables and injects it at request time. The model does not receive the API key as a tool argument.
+
+The plugin blocks dashboard-only admin, billing, credit top-up, support-ticket, API-key, and account re-authentication endpoints from the catalog. Private reads and write-like endpoints go through `tweet_action`, which stays hidden unless `HERMES_TWEET_ENABLE_ACTIONS=true`.
+
+For unattended jobs, keep action tools disabled and use only `tweet_explore` plus `tweet_read`.
+
+## API Coverage
+
+Hermes Tweet includes 99 agent-callable Xquik endpoints generated from the OpenAPI contract, plus 32 MPP-tagged read endpoints in the bundled catalog.
+
+| Area | Examples |
+|------|----------|
+| Public reads | Tweet search, tweet lookup, user lookup, timelines, articles, trends |
+| Private reads | Account status, connected accounts, usage, events |
+| Monitoring | Account monitors, keyword monitors, events, webhooks |
+| Workflows | Extractions, giveaway draws, exports, compose, drafts, styles |
+| Actions | Tweet, reply, like, retweet, follow, DM, profile, media, communities |
+
+## Local Development
+
+For local plugin development, regenerate the bundled catalog from the Xquik OpenAPI contract:
+
+```bash
+python scripts/build_catalog.py ../xquik/openapi.yaml
+```
+
+Run that command from the `hermes-tweet` repository after the Xquik OpenAPI file changes.
+
+## Verify
+
+After installing, enabling, and setting `XQUIK_API_KEY`, run:
+
+```text
+/xstatus
+```
+
+Then test a read workflow:
+
+```text
+Use tweet_explore to find X trends, then use tweet_read to return current trends.
+```
+
+For action workflows, require an explicit draft and approval step before enabling `tweet_action`.
+
+## Troubleshooting
+
+| Symptom | Fix |
+|---------|-----|
+| Plugin appears but tools are missing | Run `hermes plugins enable hermes-tweet` and restart Hermes |
+| Auth fails | Confirm `XQUIK_API_KEY` is exported in the same environment that starts Hermes |
+| Action tool is hidden | Set `HERMES_TWEET_ENABLE_ACTIONS=true` only for approved action workflows |
+| Endpoint is missing | Regenerate the catalog from the current Xquik OpenAPI file in local development |
+| Writes are too risky for the workflow | Keep `HERMES_TWEET_ENABLE_ACTIONS=false` and use read tools only |
+
+## Relationship To TweetClaw
+
+TweetClaw is the OpenClaw-native npm plugin. Hermes Tweet is the Hermes-native Python plugin. Both use the same Xquik API contract and expose agent-safe catalog discovery before live endpoint calls.
+
+## References
+
+- [Hermes Agent plugin docs](https://hermes-agent.nousresearch.com/docs/user-guide/features/plugins)
+- [TweetClaw for OpenClaw](/guides/tweetclaw)
+- [API Reference](/api-reference/overview)
+- [MCP Server](/mcp/overview)
