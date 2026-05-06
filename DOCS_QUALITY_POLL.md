@@ -385,6 +385,37 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
   numeric row ID, so numeric examples on Draws pages and Draws OpenAPI examples
   were stale. Draw export requires a `format` query parameter and can return
   `400 invalid_params` for missing or unsupported `format` or `type` values.
+- Run 2026-05-06 03:19 UTC: refreshed Mintlify score report remained 94/100
+  with 25/29 checks passing. The only failed score component is still rendered
+  HTML page size, while direct markdown access, markdown page size,
+  `llms-full.txt`, `skill.md`, and MCP discovery pass.
+- Official Mintlify OpenAPI research confirmed Mintlify supports OpenAPI 3.0
+  and 3.1 specs, can generate endpoint pages from repository OpenAPI files,
+  and uses operation `summary` and `description` fields as generated endpoint
+  metadata.
+- OpenAPI 3.1 research confirmed response maps are the public machine-readable
+  contract for expected operation responses. This supports continuing the
+  source-verified response-status audit in small endpoint-family slices.
+- Extractions endpoint source audit found list, get, and export routes run
+  through `withV1Auth` or `createV1StringIdRoute`, so tier rate limits can
+  return `429` with `rate_limit_exceeded`, `retryAfter`, and a `Retry-After`
+  header.
+- Free Extractions list, get, and export routes do not run subscription or
+  credit guards, so `402` was stale for those OpenAPI operations. `POST
+  /extractions` and `POST /extractions/estimate` still legitimately return
+  `402` when subscription or credit checks fail.
+- Extraction creation can return `404` for missing tweet or user targets, `502`
+  by default for upstream data dependency failures, and `424` for the same
+  dependency failures when callers opt into the best-practice response
+  contract.
+- The Extraction tool enum in both OpenAPI files was missing 3 current product
+  tool types: `favoriters`, `user_likes`, and `user_media`.
+- Extraction estimate `source` values were under-documented. Product source
+  also returns `following`, `paginationCap`, and `posts` in addition to the
+  already documented estimate sources.
+- Extraction export requires a `format` query parameter in source. The previous
+  OpenAPI default implied `csv` would be used when `format` was omitted, but
+  the route returns `400 invalid_format` instead.
 
 ## Completed Changes
 
@@ -716,6 +747,33 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
   product `openapi.yaml` matched with `cmp -s`; `git diff --check` passed in
   both affected repos; edited files contained no em dash or banned spaced
   double-hyphen sequence.
+- Added the Extractions endpoint family to the fully audited response-status
+  set in `api-response-status.test.ts`.
+- Corrected Extractions OpenAPI status coverage in both docs and product
+  `openapi.yaml`: removed stale `402` responses from free list, get, and
+  export routes; added tier `429` responses; added source-verified `404`,
+  `424`, and `429` coverage for create; added `404` and `429` coverage for
+  estimate; added `400 invalid_format` coverage for export; and marked export
+  `format` as required.
+- Synced the current Extraction tool enum and estimate-source enum across docs
+  and product OpenAPI files.
+- Updated Extractions API pages with `429 Rate Limited` tabs, the opt-in `424`
+  dependency-failure tab for extraction creation, source-aligned estimate
+  source values, source-aligned export `400` guidance, and export filename
+  patterns that do not imply the public extraction ID is embedded in filenames.
+- Synced docs `openapi.yaml` and product
+  `/Users/burak/Developer/xquik/openapi.yaml`; `cmp -s` confirmed they match.
+- Updated the live automation prompt so future runs treat Extractions as
+  covered and prefer Radar for the next all-status parity audit.
+- Run 2026-05-06 03:19 UTC checks: docs `bunx --bun vitest run
+  api-response-status.test.ts` passed with 2 tests; docs
+  `bun run test:agent-docs` passed with 36 tests passed and 1 skipped; docs
+  `bunx --bun mint validate` passed; docs `bunx --bun mint broken-links`
+  passed; product `bun run vacuum` passed with 7 duplicate-description informs;
+  product targeted OpenAPI tests passed with 10 tests across 4 files; docs and
+  product `openapi.yaml` matched with `cmp -s`; `git diff --check` passed in
+  both affected repos; edited files contained no em dash or banned spaced
+  double-hyphen sequence.
 
 ## Unresolved Risks
 
@@ -804,6 +862,9 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
 - Draws is now source-audited for all documented statuses. Remaining endpoint
   families still need source-verified error status audits before they can be
   added to the fully audited set.
+- Extractions is now source-audited for all documented statuses. Remaining
+  endpoint families still need source-verified error status audits before they
+  can be added to the fully audited set.
 
 ## Recommendations For Next Run
 
@@ -864,10 +925,10 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
     run the relevant static OpenAPI checks before committing.
 19. Pick the next endpoint family for all-status parity after Styles, Drafts,
     Webhooks, Credits, Monitors, Events, API Keys, Account, Subscribe, Compose,
-    and Draws. Extractions is the next best candidate because it is a
-    high-value workflow with create, estimate, list, get, and export routes,
-    plus billing, export statuses, validation, and dependency errors that need
-    careful source verification.
+    Draws, and Extractions. Radar is the next best candidate because it is a
+    high-value workflow with trend discovery, pagination, source filters, auth,
+    and route-level rate limits that need source verification against product
+    routes and OpenAPI.
 20. Maintain and deepen dedicated plugin docs for TweetClaw and Hermes Tweet. Use
     `/Users/burak/Developer/tweetclaw` and
     `/Users/burak/Developer/hermes-tweet` as source truth for install commands,
@@ -950,8 +1011,8 @@ Run one focused improvement loop per poll:
    status parity only by adding source-verified endpoint families to the fully
    audited operation set in `api-response-status.test.ts`; Styles, Drafts,
    Webhooks, Credits, Monitors, Events, API Keys, Account, Subscribe, Compose,
-   and Draws are already covered, so prefer Extractions next. When either
-   OpenAPI file changes, compare docs `openapi.yaml` and product
+   Draws, and Extractions are already covered, so prefer Radar next. When
+   either OpenAPI file changes, compare docs `openapi.yaml` and product
    `/Users/burak/Developer/xquik/openapi.yaml` with
    `cmp -s` or an equivalent diff before committing so the public contracts do
    not silently drift.
