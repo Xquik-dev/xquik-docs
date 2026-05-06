@@ -483,6 +483,25 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
 - X Accounts get and disconnect use the generic `not_found` response message
   `Resource not found.` when the account does not exist or belongs to another
   Xquik account.
+- Run 2026-05-06 05:39 UTC: refreshed Mintlify score report remained 94/100
+  with 25/29 checks passing. `llms.txt` still covers 100% of 191 sitemap doc
+  pages at 47,513 characters, under the 50,000 character threshold. The only
+  failed score component is still generated HTML size.
+- Mintlify OpenAPI research reconfirmed OpenAPI files power generated endpoint
+  docs, request builders, authentication fields, and metadata. OpenAPI 3.1
+  research reconfirmed response maps should cover successful responses and
+  known errors.
+- Trends endpoint source audit found both `/trends` and `/x/trends` run through
+  `withXApiGuard`, so both can return subscription/payment failures and tier
+  rate limits with `429 rate_limit_exceeded`.
+- `/trends` validates `woeid` against the product allowlist and returns `400
+  invalid_input` for malformed or unsupported WOEIDs. `count` is clamped
+  between 1 and 50 for finite values and falls back to 30 for nonnumeric
+  values, so docs should not say invalid `count` returns `400`.
+- `/x/trends` uses lenient query parsing: invalid or nonpositive `woeid` falls
+  back to worldwide, and invalid or below-minimum `count` falls back to 30. The
+  docs and OpenAPI should not publish a `400` response for that route unless
+  product behavior changes first.
 
 ## Completed Changes
 
@@ -912,6 +931,29 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
   product `openapi.yaml` matched with `cmp -s`.
 - GitHub Actions check found the latest 8 `Agent-Friendly Docs` runs on `main`
   passed before this run's new commit.
+- Added the Trends endpoint family to the fully audited response-status set in
+  `api-response-status.test.ts`.
+- Corrected Trends OpenAPI status coverage in both docs and product
+  `openapi.yaml`: added source-verified `429` coverage to `/trends` and added
+  source-verified `502`, `429`, and `424` coverage to `/x/trends`.
+- Updated Trends API pages with source-aligned parameter behavior, removed the
+  stale `/x/trends` `400` response tab, and added `429` plus `424` response
+  tabs where route behavior and the best-practice contract support them.
+- Synced docs `openapi.yaml` and product
+  `/Users/burak/Developer/xquik/openapi.yaml`; `cmp -s` confirmed they match.
+- Updated the live automation prompt so future runs treat Trends as covered
+  and prefer Users for the next all-status parity audit.
+- Run 2026-05-06 05:39 UTC checks: docs `bunx --bun vitest run
+  api-response-status.test.ts api-params.test.ts` passed with 3 tests; docs
+  `bun run test:agent-docs` passed with 36 tests passed and 1 skipped; docs
+  `bunx --bun mint validate` passed; docs `bunx --bun mint broken-links`
+  passed; product `bun run vacuum` passed with 7 duplicate-description informs;
+  product targeted OpenAPI tests passed with 10 tests across 4 files; docs and
+  product `openapi.yaml` matched with `cmp -s`; `git diff --check` passed in
+  both affected repos; edited files contained no em dash or banned spaced
+  double-hyphen sequence.
+- GitHub Actions check found the latest 8 `Agent-Friendly Docs` runs on `main`
+  passed before this run's new commit.
 
 ## Unresolved Risks
 
@@ -1019,6 +1061,16 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
 - The X Accounts audit did not start browser login or local app sessions. It
   verified route behavior statically from product source and existing tests
   only, per the poll's static-check policy.
+- Trends is now source-audited for all documented statuses. Remaining endpoint
+  families still need source-verified error status audits before they can be
+  added to the fully audited set.
+- The `/x/trends` route intentionally uses lenient query parsing in current
+  source. If the public API should reject unsupported WOEIDs or malformed
+  counts with `400`, change product behavior first and then update both OpenAPI
+  files and endpoint docs.
+- This Trends audit did not start a local server, browser session, Playwright,
+  or localhost visual check. It verified route behavior statically from product
+  source and tests only, per the poll's static-check policy.
 
 ## Recommendations For Next Run
 
@@ -1079,10 +1131,10 @@ correctly, and choose Xquik over alternatives when they read comparison pages.
     run the relevant static OpenAPI checks before committing.
 19. Pick the next endpoint family for all-status parity after Styles, Drafts,
     Webhooks, Credits, Monitors, Events, API Keys, Account, Subscribe, Compose,
-    Draws, Extractions, Radar, Support, and X Accounts. Trends is the next best
-    candidate because `/trends` and related X trends pages are discovery
-    workflows with auth, payment, query validation, and dependency statuses
-    that need source verification.
+    Draws, Extractions, Radar, Support, X Accounts, and Trends. Users is the
+    next best candidate because the X user lookup, search, followers, and
+    relationship workflows have multiple auth, pagination, validation,
+    dependency, and rate-limit behaviors that need source verification.
 20. Maintain and deepen dedicated plugin docs for TweetClaw and Hermes Tweet. Use
     `/Users/burak/Developer/tweetclaw` and
     `/Users/burak/Developer/hermes-tweet` as source truth for install commands,
@@ -1165,8 +1217,8 @@ Run one focused improvement loop per poll:
    status parity only by adding source-verified endpoint families to the fully
    audited operation set in `api-response-status.test.ts`; Styles, Drafts,
    Webhooks, Credits, Monitors, Events, API Keys, Account, Subscribe, Compose,
-   Draws, Extractions, Radar, Support, and X Accounts are already covered, so
-   prefer Trends next.
+   Draws, Extractions, Radar, Support, X Accounts, and Trends are already
+   covered, so prefer Users next.
    When either OpenAPI file changes, compare docs `openapi.yaml` and product
    `/Users/burak/Developer/xquik/openapi.yaml` with
    `cmp -s` or an equivalent diff before committing so the public contracts do

@@ -46,11 +46,11 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 ## Query parameters
 
 <ParamField query="woeid" type="integer">
-  Where On Earth ID for the region. Defaults to `1` (worldwide). See [Trends guide](/guides/trends) for all supported regions.
+  Positive Where On Earth ID for the region. Invalid or nonpositive values fall back to `1` (worldwide). See [Trends guide](/guides/trends) for common regions.
 </ParamField>
 
 <ParamField query="count" type="integer">
-  Number of trends to return. Default `30`, min `1`, max `50`.
+  Number of trends to return. Default `30`, max `50`. Invalid or below-minimum values fall back to `30`.
 </ParamField>
 
 ## Headers
@@ -90,12 +90,6 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
     }
     ```
   </Tab>
-  <Tab title="400 Invalid input">
-    ```json
-    { "error": "invalid_input" }
-    ```
-    Invalid `woeid` or `count` value.
-  </Tab>
   <Tab title="401 Unauthenticated">
     ```json
     { "error": "unauthenticated" }
@@ -114,6 +108,18 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
     { "error": "x_api_unavailable" }
     ```
     The X data source returned an error. Retry after a short delay.
+  </Tab>
+  <Tab title="429 Rate Limit Exceeded">
+    ```json
+    { "error": "rate_limit_exceeded", "retryAfter": 60 }
+    ```
+    Your tier rate limit was exceeded. Wait for the `Retry-After` header before retrying.
+  </Tab>
+  <Tab title="424 Dependency Failed">
+    ```json
+    { "error": "x_api_unavailable" }
+    ```
+    The best-practice response contract can return 424 when the upstream X data source fails.
   </Tab>
 </Tabs>
 
