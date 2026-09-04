@@ -85,6 +85,12 @@ describe("MCP 2026-07-28 documentation contract", (): void => {
     expect(LLMS).toContain("MCP 2026-07-28");
   });
 
+  it("names the X-Request-Id header to quote when an MCP request fails", (): void => {
+    expect.assertions(2);
+    expect(OVERVIEW).toContain("Read `X-Request-Id` on MCP responses");
+    expect(OVERVIEW).toContain("not the JSON-RPC message or authenticated session");
+  });
+
   it("keeps README and changelog release guidance visible", (): void => {
     expect.assertions(10);
 
