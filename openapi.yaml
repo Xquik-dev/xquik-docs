@@ -5572,6 +5572,8 @@ paths:
         '400': *invalid-input-response
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403':
+          $ref: '#/components/responses/ProtectedTimeline'
         '404': *user-not-found-response
         '502': *x-api-error-response
         '429': *rate-limit-exceeded-response-2
@@ -5663,6 +5665,8 @@ paths:
         '400': *invalid-input-response
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403':
+          $ref: '#/components/responses/ProtectedTimeline'
         '404': *user-not-found-response
         '502': *x-api-error-response
         '429': *rate-limit-exceeded-response-2
@@ -6764,8 +6768,8 @@ paths:
             minimum: 1
           description: >
             Complete mode defaults to 25,000 combined direct and nested replies.
-            Set a smaller or larger total with limit.
-            Automatic pages accept 1-300. Standard pages accept 1-100.
+            Set a smaller or larger total with limit. Automatic pages accept
+            1-300. Standard pages accept 1-100.
         - $ref: '#/components/parameters/AutomaticTweetPageSize'
         - name: scope
           in: query
@@ -8322,6 +8326,17 @@ components:
                   requires_user_interaction: true
                   response_fields: [checkout_url, api_key, status_url]
                   response_url_field: checkout_url
+    ProtectedTimeline:
+      description: >-
+        Account is protected. Choose a public account. Applies to initial and
+        continuation requests in every timeline mode. No results are collected
+        or charged. Public profile lookup remains available.
+      content:
+        application/json:
+          schema: *error-schema
+          example:
+            error: x_account_protected
+            message: Account is protected. Choose a public account.
     AccountAuthError:
       description: >
         The connected X account needs reauthentication or is currently
@@ -10006,7 +10021,7 @@ components:
         filtered_count:
           type: integer
           minimum: 0
-        users:
+        users: &public-user-results
           type: array
           items:
             $ref: '#/components/schemas/UserProfile'
@@ -10108,14 +10123,7 @@ components:
           minimum: 0
           description: Profiles rejected by the requested filters.
           example: 0
-        users:
-          type: array
-          example:
-            - id: '9876543210'
-              username: 'elonmusk'
-              name: 'Elon Musk'
-          items:
-            $ref: '#/components/schemas/UserProfile'
+        users: *public-user-results
         has_next_page:
           type: boolean
           const: false
@@ -10586,7 +10594,7 @@ components:
         next_step:
           type: string
           const: Ask the user to confirm a USD amount before creating checkout.
-        payment_options:
+        payment_options: &guest-payment-options
           type: object
           additionalProperties: false
           required: [guest_wallet]
@@ -10839,18 +10847,7 @@ components:
         next_step:
           type: string
           const: Ask the user to confirm a USD amount before creating checkout.
-        payment_options:
-          type: object
-          additionalProperties: false
-          required: [guest_wallet]
-          properties:
-            guest_wallet:
-              type: object
-              additionalProperties: false
-              required: [create_checkout]
-              properties:
-                create_checkout:
-                  $ref: '#/components/schemas/GuestWalletCreateCheckoutAction'
+        payment_options: *guest-payment-options
         status:
           type: integer
           const: 402
@@ -13214,7 +13211,7 @@ components:
         status:
           type: string
           example: 'active'
-        health:
+        health: &x-account-health-schema
           type: string
           enum: [healthy, locked, needsReauth, recovering, suspended, temporaryIssue]
           example: 'healthy'
@@ -13249,10 +13246,7 @@ components:
           type: string
           const: active
           example: 'active'
-        health:
-          type: string
-          enum: [healthy, locked, needsReauth, recovering, suspended, temporaryIssue]
-          example: 'healthy'
+        health: *x-account-health-schema
         createdAt:
           type: string
           format: date-time
