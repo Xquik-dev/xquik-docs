@@ -2,7 +2,10 @@ import { spawnSync } from "node:child_process";
 
 import { describe, expect, it } from "vitest";
 
-import { validateDependencies } from "./scripts/check-dependency-policy.mjs";
+import {
+  checkRepositoryDependencies,
+  validateDependencies,
+} from "./scripts/check-dependency-policy.mjs";
 const metadata = {
   version: "1.0.0",
   integrity: "sha512-fixture",
@@ -30,12 +33,19 @@ function checkPolicy(
 }
 
 describe("dependency policy", (): void => {
-  it("validates the real repository through the CLI", (): void => {
-    expect.assertions(2);
+  it("rejects manifests without dependency metadata", (): void => {
+    expect.assertions(1);
+    expect((): string =>
+      validateDependencies({}, {}, { allowedLicenses: ["MIT"], packageLicenses: {} }),
+    ).toThrow("The lockfile contains no dependencies.");
+  });
+  it("validates the real repository through the CLI", async (): Promise<void> => {
+    expect.assertions(3);
     const result = spawnSync(process.execPath, ["scripts/check-dependency-policy.mjs"], {
       encoding: "utf8",
       timeout: 5000,
     });
+    expect(result.stdout).toBe(await checkRepositoryDependencies());
     expect(result.status).toBe(0);
     expect(result.stdout).toContain("locked dependencies with approved integrity and licenses.");
   });

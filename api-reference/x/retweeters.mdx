@@ -209,6 +209,29 @@ checkpoint instead of raw response pages. Persist each mapped row and the latest
 `next_cursor` so an import, giveaway verifier, CRM sync, or agent job can resume
 from the last completed page without duplicate rows.
 
+## Retweet timestamps
+
+Set `includeRetweetTimestamp=true` to request each account's matching repost timestamp.
+The additional lookup checks the newest available profile page and adds latency.
+It does not search the account's complete history.
+
+```bash Retweet timestamps
+curl -G https://xquik.com/api/v1/x/tweets/1893456789012345678/retweeters \
+  --data-urlencode "includeRetweetTimestamp=true" \
+  -H "x-api-key: xq_your_api_key_here"
+```
+
+Read `users[].retweetedAt` as a UTC ISO 8601 timestamp or `null`.
+`null` means the lookup could not establish the matching repost time.
+The profile remains in the response when that lookup fails or expires.
+Neither the account creation date nor the original post date replaces it.
+`createdAt` continues to describe the account's creation date.
+
+The option defaults to `false`; ordinary retweeter responses omit `retweetedAt`.
+Keep it enabled on subsequent pages when exporting timestamps.
+The Engagement Scraper accepts the same option for `retweeters` results.
+Its snake_case output uses `retweeted_at`.
+
 ## Direct retweeter handoff
 
 Use `GET /api/v1/x/tweets/{id}/retweeters` when a workflow needs one row per
@@ -329,6 +352,12 @@ initial request. Pass it only when `has_next_page` is true.
 
 Profiles per page. Range: `20-200`. Defaults to `200`.
 
+</ParamField>
+
+<ParamField query="includeRetweetTimestamp" type="boolean" default="false">
+  Look for each account's matching repost on its newest available profile page. Adds latency and
+  returns `retweetedAt` as a UTC timestamp or `null`. Unavailable timestamps do not remove profile
+  rows.
 </ParamField>
 
 ## Which tweet engagement endpoint?

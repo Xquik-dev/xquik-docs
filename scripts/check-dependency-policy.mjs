@@ -53,14 +53,15 @@ export function validateDependencies(packageJson, lockfile, policy, competingLoc
   return `Verified ${dependencies.length} locked dependencies with approved integrity and licenses.\n`;
 }
 
-if (import.meta.main) {
+/** @returns {Promise<string>} */
+export async function checkRepositoryDependencies() {
   const [packageJson, lockfile, policy] = await Promise.all(
     ["package.json", "package-lock.json", "config/dependency-license-policy.json"].map((path) =>
       Bun.file(path).json(),
     ),
   );
 
-  process.stdout.write(
-    validateDependencies(packageJson, lockfile, policy, await Bun.file("bun.lock").exists()),
-  );
+  return validateDependencies(packageJson, lockfile, policy, await Bun.file("bun.lock").exists());
 }
+
+if (import.meta.main) process.stdout.write(await checkRepositoryDependencies());

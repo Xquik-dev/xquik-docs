@@ -4028,8 +4028,7 @@ const REQUIRED_TWEET_REPLIES_EXPORT_SNIPPETS = [
 
 const REQUIRED_TWEET_REPLIES_API_HANDOFF_SNIPPETS = [
   'title: "Twitter API get replies to a tweet & author fields"',
-  "Get tweet replies returns reply tweets for one X post by numeric tweet ID.",
-  "conversation analysis, support queues, moderation review, giveaway",
+  "Get replies by tweet ID for analysis, support, moderation, giveaways, and agents.",
   "`GET /api/v1/x/tweets/{id}/replies`",
   "# First page of replies",
   "# Resume with the previous next_cursor",
