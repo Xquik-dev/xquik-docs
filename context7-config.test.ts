@@ -98,12 +98,8 @@ interface Context7Config {
   readonly url?: string;
 }
 
-function readContext7Config(): Context7Config {
-  return JSON.parse(readFileSync("context7.json", "utf8")) as Context7Config;
-}
-
-function readContext7WebsiteClaim(): Context7Config {
-  return JSON.parse(readFileSync("docs/context7.json", "utf8")) as Context7Config;
+function readContext7Config(path: string): Context7Config {
+  return JSON.parse(readFileSync(path, "utf8")) as Context7Config;
 }
 
 function missingEntries(
@@ -119,7 +115,7 @@ describe("Context7 configuration", (): void => {
   it("keeps ownership fields exact for the public docs repository library", (): void => {
     expect.assertions(4);
 
-    const config = readContext7Config();
+    const config = readContext7Config("context7.json");
 
     expect(config.$schema).toBe("https://context7.com/schema/context7.json");
     expect(config.branch).toBe("main");
@@ -130,7 +126,7 @@ describe("Context7 configuration", (): void => {
   it("keeps non-doc repository files out of Context7 parsing", (): void => {
     expect.assertions(2);
 
-    const config = readContext7Config();
+    const config = readContext7Config("context7.json");
 
     expect(missingEntries(config.excludeFiles, REQUIRED_EXCLUDED_FILES)).toStrictEqual([]);
     expect(missingEntries(config.excludeFolders, REQUIRED_EXCLUDED_FOLDERS)).toStrictEqual([]);
@@ -139,7 +135,7 @@ describe("Context7 configuration", (): void => {
   it("keeps Context7 rules pointed at the pages agents should read first", (): void => {
     expect.assertions(1);
 
-    const config = readContext7Config();
+    const config = readContext7Config("context7.json");
     const rules = (config.rules ?? []).join("\n");
     const missingRuleSnippets = REQUIRED_RULE_SNIPPETS.filter(
       (snippet): boolean => !rules.includes(snippet),
@@ -151,7 +147,7 @@ describe("Context7 configuration", (): void => {
   it("keeps the public website ownership claim exact", (): void => {
     expect.assertions(2);
 
-    const claim = readContext7WebsiteClaim();
+    const claim = readContext7Config("docs/context7.json");
 
     expect(claim.url).toBe(CONTEXT7_WEBSITE_URL);
     expect(claim.public_key).toBe(CONTEXT7_PUBLIC_KEY);
