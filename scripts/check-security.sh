@@ -2,7 +2,7 @@
 set -euo pipefail
 
 bun run check:loc
-bunx --bun npm@12.0.1 audit --audit-level=low
+osv-scanner scan source --lockfile go.mod --lockfile package-lock.json --all-vulns
 options=(--config .gitleaks.toml --redact=100 --no-banner --ignore-gitleaks-allow --gitleaks-ignore-path /dev/null)
 if [[ -n $(git status --porcelain) ]]; then
 	gitleaks git --pre-commit "${options[@]}"

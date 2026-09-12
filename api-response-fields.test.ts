@@ -1370,239 +1370,90 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
       page: "api-reference/x/twitter-profile-lookup.mdx",
       requiredFields: requiredSchemaPropertyNames(spec, "UserProfile"),
     },
-    {
-      allowedFields: uniqueSorted([...notifications, ...notification]),
-      page: NOTIFICATION_PAGE,
-      requiredFields: uniqueSorted([...notifications, ...notification]),
-    },
-    {
-      allowedFields: uniqueSorted(["community", ...communityInfo]),
-      page: COMMUNITY_INFO_PAGE,
-      requiredFields: uniqueSorted(["community", ...communityInfo]),
-    },
-    {
-      allowedFields: mediaDownload,
-      page: MEDIA_DOWNLOAD_PAGE,
-      requiredFields: mediaDownload,
-    },
-    {
-      allowedFields: uniqueSorted([...bookmarkFolders, ...bookmarkFolder]),
-      page: BOOKMARK_FOLDERS_PAGE,
-      requiredFields: uniqueSorted([...bookmarkFolders, ...bookmarkFolder]),
-    },
-    {
-      allowedFields: uniqueSorted([...xTrends, ...xTrend]),
-      page: X_TRENDS_PAGE,
-      requiredFields: uniqueSorted([...xTrends, ...xTrend]),
-    },
-    {
-      allowedFields: followCheck,
-      page: FOLLOW_CHECK_PAGE,
-      requiredFields: followCheck,
-    },
-    {
-      allowedFields: accountGet,
-      page: ACCOUNT_GET_PAGE,
-      requiredFields: accountGet,
-    },
-    {
-      allowedFields: accountUpdate,
-      page: ACCOUNT_UPDATE_PAGE,
-      requiredFields: accountUpdate,
-    },
-    {
-      allowedFields: accountXIdentity,
-      page: ACCOUNT_X_IDENTITY_PAGE,
-      requiredFields: accountXIdentity,
-    },
-    {
-      allowedFields: subscribe,
-      page: SUBSCRIBE_PAGE,
-      requiredFields: subscribe,
-    },
-    { allowedFields: credits, page: CREDITS_PAGE, requiredFields: credits },
-    {
-      allowedFields: creditsTopup,
-      page: CREDITS_TOPUP_PAGE,
-      requiredFields: creditsTopup,
-    },
-    {
-      allowedFields: creditsTopupStatus,
-      page: CREDITS_TOPUP_STATUS_PAGE,
-      requiredFields: creditsTopupStatus,
-    },
-    {
-      allowedFields: creditsQuickTopup,
-      page: CREDITS_QUICK_TOPUP_PAGE,
-      requiredFields: creditsQuickTopup,
-    },
-    {
-      allowedFields: apiKeysList,
-      page: API_KEYS_LIST_PAGE,
-      requiredFields: apiKeysList,
-    },
-    {
-      allowedFields: apiKeysCreate,
-      page: API_KEYS_CREATE_PAGE,
-      requiredFields: apiKeysCreate,
-    },
-    {
-      allowedFields: apiKeysRevoke,
-      page: API_KEYS_REVOKE_PAGE,
-      requiredFields: apiKeysRevoke,
-    },
-    {
-      allowedFields: uniqueSorted([
-        ...article,
-        ...articleBody,
-        ...articleContent,
-        ...articleInlineStyle,
-        ...articleAuthor,
-      ]),
-      page: ARTICLE_PAGE,
-      requiredFields: uniqueSorted([
-        ...article,
-        ...articleBody,
-        ...articleContent,
-        ...articleInlineStyle,
-        ...articleAuthor,
-      ]),
-    },
-    {
-      allowedFields: uniqueSorted([...dmHistory, ...dmMessage]),
-      page: DM_HISTORY_PAGE,
-      requiredFields: uniqueSorted([...dmHistory, ...dmMessage]),
-    },
-    { allowedFields: sendDm, page: SEND_DM_PAGE, requiredFields: sendDm },
-    {
-      allowedFields: uploadMedia,
-      page: UPLOAD_MEDIA_PAGE,
-      requiredFields: uploadMedia,
-    },
-    {
-      allowedFields: updateProfile,
-      page: UPDATE_PROFILE_PAGE,
-      requiredFields: updateProfile,
-    },
-    {
-      allowedFields: updateAvatar,
-      page: UPDATE_AVATAR_PAGE,
-      requiredFields: updateAvatar,
-    },
-    {
-      allowedFields: updateBanner,
-      page: UPDATE_BANNER_PAGE,
-      requiredFields: updateBanner,
-    },
-    {
-      allowedFields: createCommunity,
-      page: CREATE_COMMUNITY_PAGE,
-      requiredFields: createCommunity,
-    },
-    {
-      allowedFields: deleteCommunity,
-      page: DELETE_COMMUNITY_PAGE,
-      requiredFields: deleteCommunity,
-    },
-    {
-      allowedFields: joinCommunity,
-      page: JOIN_COMMUNITY_PAGE,
-      requiredFields: joinCommunity,
-    },
-    {
-      allowedFields: leaveCommunity,
-      page: LEAVE_COMMUNITY_PAGE,
-      requiredFields: leaveCommunity,
-    },
-    {
-      allowedFields: createTweet,
-      page: CREATE_TWEET_PAGE,
-      requiredFields: createTweet,
-    },
-    {
-      allowedFields: deleteTweet,
-      page: DELETE_TWEET_PAGE,
-      requiredFields: deleteTweet,
-    },
-    {
-      allowedFields: likeTweet,
-      page: LIKE_TWEET_PAGE,
-      requiredFields: likeTweet,
-    },
-    {
-      allowedFields: unlikeTweet,
-      page: UNLIKE_TWEET_PAGE,
-      requiredFields: unlikeTweet,
-    },
-    { allowedFields: retweet, page: RETWEET_PAGE, requiredFields: retweet },
-    {
-      allowedFields: unretweet,
-      page: UNRETWEET_PAGE,
-      requiredFields: unretweet,
-    },
-    {
-      allowedFields: followUser,
-      page: FOLLOW_USER_PAGE,
-      requiredFields: followUser,
-    },
-    {
-      allowedFields: unfollowUser,
-      page: UNFOLLOW_USER_PAGE,
-      requiredFields: unfollowUser,
-    },
-    {
-      allowedFields: removeFollower,
-      page: REMOVE_FOLLOWER_PAGE,
-      requiredFields: removeFollower,
-    },
-    {
-      allowedFields: writeActionStatus,
-      page: WRITE_ACTION_STATUS_PAGE,
-      requiredFields: writeActionStatus,
-    },
+    ...(
+      [
+        [NOTIFICATION_PAGE, uniqueSorted([...notifications, ...notification])],
+        [COMMUNITY_INFO_PAGE, uniqueSorted(["community", ...communityInfo])],
+        [MEDIA_DOWNLOAD_PAGE, mediaDownload],
+        [BOOKMARK_FOLDERS_PAGE, uniqueSorted([...bookmarkFolders, ...bookmarkFolder])],
+        [X_TRENDS_PAGE, uniqueSorted([...xTrends, ...xTrend])],
+        [FOLLOW_CHECK_PAGE, followCheck],
+        [ACCOUNT_GET_PAGE, accountGet],
+        [ACCOUNT_UPDATE_PAGE, accountUpdate],
+        [ACCOUNT_X_IDENTITY_PAGE, accountXIdentity],
+        [SUBSCRIBE_PAGE, subscribe],
+        [CREDITS_PAGE, credits],
+        [CREDITS_TOPUP_PAGE, creditsTopup],
+        [CREDITS_TOPUP_STATUS_PAGE, creditsTopupStatus],
+        [CREDITS_QUICK_TOPUP_PAGE, creditsQuickTopup],
+        [API_KEYS_LIST_PAGE, apiKeysList],
+        [API_KEYS_CREATE_PAGE, apiKeysCreate],
+        [API_KEYS_REVOKE_PAGE, apiKeysRevoke],
+        [
+          ARTICLE_PAGE,
+          uniqueSorted([
+            ...article,
+            ...articleBody,
+            ...articleContent,
+            ...articleInlineStyle,
+            ...articleAuthor,
+          ]),
+        ],
+        [DM_HISTORY_PAGE, uniqueSorted([...dmHistory, ...dmMessage])],
+        [SEND_DM_PAGE, sendDm],
+        [UPLOAD_MEDIA_PAGE, uploadMedia],
+        [UPDATE_PROFILE_PAGE, updateProfile],
+        [UPDATE_AVATAR_PAGE, updateAvatar],
+        [UPDATE_BANNER_PAGE, updateBanner],
+        [CREATE_COMMUNITY_PAGE, createCommunity],
+        [DELETE_COMMUNITY_PAGE, deleteCommunity],
+        [JOIN_COMMUNITY_PAGE, joinCommunity],
+        [LEAVE_COMMUNITY_PAGE, leaveCommunity],
+        [CREATE_TWEET_PAGE, createTweet],
+        [DELETE_TWEET_PAGE, deleteTweet],
+        [LIKE_TWEET_PAGE, likeTweet],
+        [UNLIKE_TWEET_PAGE, unlikeTweet],
+        [RETWEET_PAGE, retweet],
+        [UNRETWEET_PAGE, unretweet],
+        [FOLLOW_USER_PAGE, followUser],
+        [UNFOLLOW_USER_PAGE, unfollowUser],
+        [REMOVE_FOLLOWER_PAGE, removeFollower],
+        [WRITE_ACTION_STATUS_PAGE, writeActionStatus],
+      ] satisfies readonly (readonly [string, readonly string[]])[]
+    ).map(([page, fields]): PageContract => ({
+      page,
+      allowedFields: fields,
+      requiredFields: fields,
+    })),
     {
       allowedFields: uniqueSorted([...xAccountList, ...prefixedFields("accounts[].", xAccount)]),
       page: X_ACCOUNT_LIST_PAGE,
       requiredFields: uniqueSorted(["accounts", ...prefixedFields("accounts[].", xAccount)]),
     },
-    {
-      allowedFields: xAccountDetail,
-      page: X_ACCOUNT_DETAIL_PAGE,
-      requiredFields: xAccountDetail,
-    },
-    {
-      allowedFields: uniqueSorted([
-        ...sanitizedXAccount,
-        ...xAccountConnectionAttemptPending,
-        ...xAccountConnectionChallenge,
-      ]),
-      page: X_ACCOUNT_CONNECT_PAGE,
-      requiredFields: uniqueSorted([
-        ...sanitizedXAccount,
-        ...xAccountConnectionAttemptPending,
-        ...xAccountConnectionChallenge,
-      ]),
-    },
-    {
-      allowedFields: uniqueSorted([...sanitizedXAccount, ...xAccountConnectionChallenge]),
-      page: X_ACCOUNT_CHALLENGE_SUBMIT_PAGE,
-      requiredFields: uniqueSorted([...sanitizedXAccount, ...xAccountConnectionChallenge]),
-    },
-    {
-      allowedFields: sanitizedXAccount,
-      page: X_ACCOUNT_REAUTH_PAGE,
-      requiredFields: sanitizedXAccount,
-    },
-    {
-      allowedFields: bulkRetry,
-      page: X_ACCOUNT_BULK_RETRY_PAGE,
-      requiredFields: bulkRetry,
-    },
-    {
-      allowedFields: xAccountDisconnect,
-      page: X_ACCOUNT_DISCONNECT_PAGE,
-      requiredFields: xAccountDisconnect,
-    },
+    ...(
+      [
+        [X_ACCOUNT_DETAIL_PAGE, xAccountDetail],
+        [
+          X_ACCOUNT_CONNECT_PAGE,
+          uniqueSorted([
+            ...sanitizedXAccount,
+            ...xAccountConnectionAttemptPending,
+            ...xAccountConnectionChallenge,
+          ]),
+        ],
+        [
+          X_ACCOUNT_CHALLENGE_SUBMIT_PAGE,
+          uniqueSorted([...sanitizedXAccount, ...xAccountConnectionChallenge]),
+        ],
+        [X_ACCOUNT_REAUTH_PAGE, sanitizedXAccount],
+        [X_ACCOUNT_BULK_RETRY_PAGE, bulkRetry],
+        [X_ACCOUNT_DISCONNECT_PAGE, xAccountDisconnect],
+      ] satisfies readonly (readonly [string, readonly string[]])[]
+    ).map(([page, fields]): PageContract => ({
+      page,
+      allowedFields: fields,
+      requiredFields: fields,
+    })),
   ];
 }
 
