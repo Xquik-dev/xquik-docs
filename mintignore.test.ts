@@ -1,48 +1,66 @@
+import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
-
+import {
+  createMintIgnoreMatcher,
+  isMintIgnoredBy,
+  processMintIgnoreString,
+} from "@mintlify/common";
 import { describe, expect, it } from "vitest";
 
-const GIT_IGNORED_INTERNAL_FILES = ["DOCS_QUALITY_POLL.md"] as const;
-const MINTLIFY_IGNORED_SUPPORT_FILES = ["AGENTS.md", ...GIT_IGNORED_INTERNAL_FILES] as const;
-
-function mintignoreEntries(): ReadonlySet<string> {
-  return new Set(
-    readFileSync(".mintignore", "utf8")
-      .split(/\r?\n/u)
-      .map((line): string => line.trim())
-      .filter((line): boolean => line !== "" && !line.startsWith("#")),
-  );
-}
-
-function gitignoreEntries(): ReadonlySet<string> {
-  return new Set(
-    readFileSync(".gitignore", "utf8")
-      .split(/\r?\n/u)
-      .map((line): string => line.trim())
-      .filter((line): boolean => line !== "" && !line.startsWith("#")),
-  );
+function ignoreEntries(path: string): string[] {
+  return processMintIgnoreString(readFileSync(path, "utf8"));
 }
 
 describe("Mintlify ignore rules", (): void => {
-  it("keeps support and handoff files out of the public docs build", (): void => {
+  it.each([
+    {
+      name: "keeps support and handoff files out of the public docs build",
+      path: ".mintignore",
+      files: ["AGENTS.md", "DOCS_QUALITY_POLL.md"],
+    },
+    {
+      name: "keeps internal handoff files ignored by Git",
+      path: ".gitignore",
+      files: ["DOCS_QUALITY_POLL.md"],
+    },
+  ])("$name", ({ path, files }): void => {
     expect.assertions(1);
-
-    const ignoredFiles = mintignoreEntries();
-    const mintlifyExposedFiles = MINTLIFY_IGNORED_SUPPORT_FILES.filter(
-      (file): boolean => !ignoredFiles.has(file),
-    );
-
-    expect(mintlifyExposedFiles).toStrictEqual([]);
+    expect(files.filter((file): boolean => !ignoreEntries(path).includes(file))).toStrictEqual([]);
   });
 
-  it("keeps internal handoff files ignored by Git", (): void => {
-    expect.assertions(1);
-
-    const gitIgnoredFiles = gitignoreEntries();
-    const gitExposedFiles = GIT_IGNORED_INTERNAL_FILES.filter(
-      (file): boolean => !gitIgnoredFiles.has(file),
-    );
-
-    expect(gitExposedFiles).toStrictEqual([]);
+  it("excludes tooling while retaining documentation, contracts, and assets", (): void => {
+    expect.assertions(2);
+    const matcher = createMintIgnoreMatcher(ignoreEntries(".mintignore"));
+    const tooling = [
+      "mintignore.test.ts",
+      "scripts/responses/main.go",
+      "config/dependency-license-policy.json",
+      "patches/comply-licensing.patch",
+      "package.json",
+      "package-lock.json",
+      "go.mod",
+      "go.sum",
+      "tsconfig.json",
+      "LICENSES/MIT.txt",
+    ];
+    expect(tooling.filter((file): boolean => !isMintIgnoredBy(file, matcher))).toStrictEqual([]);
+    const published = execFileSync(
+      "git",
+      [
+        "ls-files",
+        "--",
+        "*.mdx",
+        "images/*",
+        "logo/*",
+        "docs.json",
+        "openapi.yaml",
+        "context7.json",
+        "docs/context7.json",
+      ],
+      { encoding: "utf8" },
+    )
+      .trim()
+      .split("\n");
+    expect(published.filter((file): boolean => isMintIgnoredBy(file, matcher))).toStrictEqual([]);
   });
 });
