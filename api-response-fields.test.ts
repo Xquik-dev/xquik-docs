@@ -1054,106 +1054,6 @@ function productSimpleWriteFields(
   return ["success"];
 }
 
-function productLikeTweetFields(): readonly string[] {
-  return productSimpleWriteFields(
-    PRODUCT_X_TWEET_LIKE_ROUTE_PATH,
-    "like",
-    "/twitter/like_tweet_v2",
-    "likeTweet",
-    "tweet_id",
-  );
-}
-
-function productUnlikeTweetFields(): readonly string[] {
-  return productSimpleWriteFields(
-    PRODUCT_X_TWEET_LIKE_ROUTE_PATH,
-    "unlike",
-    "/twitter/unlike_tweet_v2",
-    "unlikeTweet",
-    "tweet_id",
-  );
-}
-
-function productRetweetFields(): readonly string[] {
-  return productSimpleWriteFields(
-    PRODUCT_X_TWEET_RETWEET_ROUTE_PATH,
-    "retweet",
-    "/twitter/retweet_tweet_v2",
-    "retweet",
-    "tweet_id",
-  );
-}
-
-function productUnretweetFields(): readonly string[] {
-  return productSimpleWriteFields(
-    PRODUCT_X_TWEET_RETWEET_ROUTE_PATH,
-    "unretweet",
-    "/twitter/unretweet_tweet_v2",
-    "unretweet",
-    "tweet_id",
-  );
-}
-
-function productDeleteTweetFields(): readonly string[] {
-  return productSimpleWriteFields(
-    PRODUCT_X_TWEET_ID_ROUTE_PATH,
-    "delete_tweet",
-    "/twitter/delete_tweet_v2",
-    "deleteTweet",
-    "tweet_id",
-  );
-}
-
-function productFollowUserFields(): readonly string[] {
-  return productSimpleWriteFields(
-    PRODUCT_X_USER_FOLLOW_ROUTE_PATH,
-    "follow",
-    "/twitter/follow_user_v2",
-    "followUser",
-    "user_id",
-  );
-}
-
-function productUnfollowUserFields(): readonly string[] {
-  return productSimpleWriteFields(
-    PRODUCT_X_USER_FOLLOW_ROUTE_PATH,
-    "unfollow",
-    "/twitter/unfollow_user_v2",
-    "unfollowUser",
-    "user_id",
-  );
-}
-
-function productRemoveFollowerFields(): readonly string[] {
-  return productSimpleWriteFields(
-    PRODUCT_X_USER_REMOVE_FOLLOWER_ROUTE_PATH,
-    "remove_follower",
-    "/twitter/remove_follower_v2",
-    "removeFollower",
-    "user_id",
-  );
-}
-
-function productJoinCommunityFields(): readonly string[] {
-  return productSimpleWriteFields(
-    PRODUCT_X_COMMUNITY_JOIN_ROUTE_PATH,
-    "join_community",
-    "/twitter/join_community_v2",
-    "joinCommunity",
-    "community_id",
-  );
-}
-
-function productLeaveCommunityFields(): readonly string[] {
-  return productSimpleWriteFields(
-    PRODUCT_X_COMMUNITY_JOIN_ROUTE_PATH,
-    "leave_community",
-    "/twitter/leave_community_v2",
-    "leaveCommunity",
-    "community_id",
-  );
-}
-
 function productBulkRetryFields(): readonly string[] {
   const source = readFileSync(PRODUCT_X_ACCOUNTS_BULK_RETRY_ROUTE_PATH, "utf8");
   const responseStart = source.indexOf("return NextResponse.json({");
@@ -1677,43 +1577,103 @@ describe("API response field docs", (): void => {
     const joinCommunityFields = propertyNames(
       responseSchema(spec, "/x/communities/{id}/join", "post"),
     );
-    productJoinCommunityFields();
+    productSimpleWriteFields(
+      PRODUCT_X_COMMUNITY_JOIN_ROUTE_PATH,
+      "join_community",
+      "/twitter/join_community_v2",
+      "joinCommunity",
+      "community_id",
+    );
     const productJoinCommunityResponseFields = canonicalWriteActionFields;
     const leaveCommunityFields = propertyNames(
       responseSchema(spec, "/x/communities/{id}/join", "delete"),
     );
-    productLeaveCommunityFields();
+    productSimpleWriteFields(
+      PRODUCT_X_COMMUNITY_JOIN_ROUTE_PATH,
+      "leave_community",
+      "/twitter/leave_community_v2",
+      "leaveCommunity",
+      "community_id",
+    );
     const productLeaveCommunityResponseFields = canonicalWriteActionFields;
     const createTweetFields = propertyNames(responseSchema(spec, "/x/tweets", "post"));
     productCreateTweetFields();
     const productCreateTweetResponseFields = canonicalWriteActionFields;
     const deleteTweetFields = propertyNames(responseSchema(spec, "/x/tweets/{id}", "delete"));
-    productDeleteTweetFields();
+    productSimpleWriteFields(
+      PRODUCT_X_TWEET_ID_ROUTE_PATH,
+      "delete_tweet",
+      "/twitter/delete_tweet_v2",
+      "deleteTweet",
+      "tweet_id",
+    );
     const productDeleteTweetResponseFields = canonicalWriteActionFields;
     const likeTweetFields = propertyNames(responseSchema(spec, "/x/tweets/{id}/like", "post"));
-    productLikeTweetFields();
+    productSimpleWriteFields(
+      PRODUCT_X_TWEET_LIKE_ROUTE_PATH,
+      "like",
+      "/twitter/like_tweet_v2",
+      "likeTweet",
+      "tweet_id",
+    );
     const productLikeTweetResponseFields = canonicalWriteActionFields;
     const unlikeTweetFields = propertyNames(responseSchema(spec, "/x/tweets/{id}/like", "delete"));
-    productUnlikeTweetFields();
+    productSimpleWriteFields(
+      PRODUCT_X_TWEET_LIKE_ROUTE_PATH,
+      "unlike",
+      "/twitter/unlike_tweet_v2",
+      "unlikeTweet",
+      "tweet_id",
+    );
     const productUnlikeTweetResponseFields = canonicalWriteActionFields;
     const retweetFields = propertyNames(responseSchema(spec, "/x/tweets/{id}/retweet", "post"));
-    productRetweetFields();
+    productSimpleWriteFields(
+      PRODUCT_X_TWEET_RETWEET_ROUTE_PATH,
+      "retweet",
+      "/twitter/retweet_tweet_v2",
+      "retweet",
+      "tweet_id",
+    );
     const productRetweetResponseFields = canonicalWriteActionFields;
     const unretweetFields = propertyNames(responseSchema(spec, "/x/tweets/{id}/retweet", "delete"));
-    productUnretweetFields();
+    productSimpleWriteFields(
+      PRODUCT_X_TWEET_RETWEET_ROUTE_PATH,
+      "unretweet",
+      "/twitter/unretweet_tweet_v2",
+      "unretweet",
+      "tweet_id",
+    );
     const productUnretweetResponseFields = canonicalWriteActionFields;
     const followUserFields = propertyNames(responseSchema(spec, "/x/users/{id}/follow", "post"));
-    productFollowUserFields();
+    productSimpleWriteFields(
+      PRODUCT_X_USER_FOLLOW_ROUTE_PATH,
+      "follow",
+      "/twitter/follow_user_v2",
+      "followUser",
+      "user_id",
+    );
     const productFollowUserResponseFields = canonicalWriteActionFields;
     const unfollowUserFields = propertyNames(
       responseSchema(spec, "/x/users/{id}/follow", "delete"),
     );
-    productUnfollowUserFields();
+    productSimpleWriteFields(
+      PRODUCT_X_USER_FOLLOW_ROUTE_PATH,
+      "unfollow",
+      "/twitter/unfollow_user_v2",
+      "unfollowUser",
+      "user_id",
+    );
     const productUnfollowUserResponseFields = canonicalWriteActionFields;
     const removeFollowerFields = propertyNames(
       responseSchema(spec, "/x/users/{id}/remove-follower", "post"),
     );
-    productRemoveFollowerFields();
+    productSimpleWriteFields(
+      PRODUCT_X_USER_REMOVE_FOLLOWER_ROUTE_PATH,
+      "remove_follower",
+      "/twitter/remove_follower_v2",
+      "removeFollower",
+      "user_id",
+    );
     const productRemoveFollowerResponseFields = canonicalWriteActionFields;
     const productXAccountFields = productReturnFieldsFromPath(
       PRODUCT_X_ACCOUNTS_ROUTE_HELPERS_PATH,
