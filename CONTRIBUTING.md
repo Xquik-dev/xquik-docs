@@ -5,8 +5,8 @@ Thanks for helping improve the Xquik docs. This file covers how to set up your e
 ## Quick start
 
 1. Fork the repository or create a branch if you have write access.
-2. Install Node.js 22, Bun 1.3.14, and REUSE 6.2.0.
-3. Run `npm ci --ignore-scripts`.
+2. Install the latest stable Node.js, Bun, Go, and rustup.
+3. Run `bun run install:frozen` and `bun run install:licenses`.
 4. Edit the relevant `.mdx`, `.md`, `openapi.yaml`, or `docs.json`.
 5. Run every static check listed below.
 6. Sign off your commit.
@@ -15,13 +15,15 @@ Thanks for helping improve the Xquik docs. This file covers how to set up your e
 Run these checks:
 
 ```sh
-npm run check:dependencies
-npm run test:agent-docs
-npm run docs:validate
-npm run docs:links
-npm audit --audit-level=low
-reuse lint
+bun run check:all
 ```
+
+The license checker uses a checksum-verified Comply release with a reviewed patch.
+The patch rejects malformed license declarations and preserves REUSE annotation precedence.
+Installation builds the checker separately. Validation never downloads or builds it.
+Installation also installs pinned cargo-audit. Each license check audits the Rust lockfile.
+`go.mod` selects Go. `package.json` pins Rust and the license tools.
+Install OSV-Scanner, Gitleaks, and shfmt for dependency, secret, and shell checks.
 
 Use `mint dev` only when visual previewing is necessary.
 

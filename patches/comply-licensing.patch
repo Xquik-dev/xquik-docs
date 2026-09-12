@@ -1,0 +1,158 @@
+--- a/src/cli/commands/lint.rs
++++ b/src/cli/commands/lint.rs
+@@ -16,27 +16,23 @@
+ use crate::cli::output::{self, Format};
+ use crate::cli::shared::{load_config, resolve_root};
+
+-/// Decide one source file's status and the licensing that applies to it.
++/// Decide one file's status and the licensing that applies to it.
+ ///
+ /// Per REUSE 7.2 a `.license` companion supersedes the file's own content, so
+ /// that is what gets read when one exists.
+-fn lint_source(entry: &file::FileEntry, rel_path: &str, config: &Config) -> (Status, Licensing) {
++fn lint_licensing(entry: &file::FileEntry, rel_path: &str, config: &Config) -> (Status, Licensing) {
+     let content = if entry.has_license_file {
+         fs::read_to_string(file::license_companion_path(&entry.path))
++    } else if entry.file_type == FileType::Binary {
++        Ok(String::new())
+     } else {
+         fs::read_to_string(&entry.path)
+     };
+
+-    let content = match content {
+-        Ok(content) => content,
+-        // `InvalidData` means the bytes are simply not text -- a binary the
+-        // classifier did not recognise, which needs a `.license` companion.
+-        // Anything else (permissions, I/O) is a genuine read error.
+-        Err(e) if e.kind() != std::io::ErrorKind::InvalidData => {
+-            return (Status::ReadError, Licensing::default());
+-        }
+-        Err(_) if entry.has_license_file => return (Status::Ok, Licensing::default()),
+-        Err(_) => return (Status::MissingLicenseFile, Licensing::default()),
++    let (content, unreadable) = match content {
++        Ok(content) => (content, false),
++        Err(e) if e.kind() == std::io::ErrorKind::InvalidData => (String::new(), true),
++        Err(_) => return (Status::ReadError, Licensing::default()),
+     };
+
+     // A REUSE.toml annotation is an equally valid way to declare licensing,
+@@ -64,7 +60,14 @@
+         return (Status::InvalidExpression(expression), resolved);
+     }
+
+-    let status = classify_licensing(&resolved);
++    let status = match classify_licensing(&resolved) {
++        Status::MissingCopyright | Status::MissingLicense
++            if unreadable || entry.file_type == FileType::Binary =>
++        {
++            Status::MissingLicenseFile
++        }
++        status => status,
++    };
+     (status, resolved)
+ }
+
+@@ -80,32 +83,8 @@
+ ) -> ReportBuilder {
+     match entry.file_type {
+         FileType::Ignored => builder.add_skipped(rel_path),
+-        FileType::Binary => {
+-            // A file that cannot carry a header is licensed either by a
+-            // `.license` companion or by a REUSE.toml annotation; both are
+-            // valid declarations, so both have to be consulted.
+-            let companion = entry
+-                .has_license_file
+-                .then(|| fs::read_to_string(file::license_companion_path(&entry.path)).ok())
+-                .flatten()
+-                .and_then(|text| header::detect(&text));
+-            let (companion_copyrights, companion_license) =
+-                companion.map_or_else(Default::default, |h| (h.copyrights, h.license_expression));
+-            let resolved = config.resolve_licensing(
+-                rel_path,
+-                &companion_copyrights,
+-                companion_license.as_deref(),
+-            );
+-
+-            if resolved.copyrights.is_empty() || resolved.license.is_none() {
+-                builder.add_result(rel_path, Status::MissingLicenseFile, vec![], None)
+-            } else {
+-                collect_identifiers(resolved.license.as_deref(), used_licenses);
+-                builder.add_ok_with_header(rel_path, resolved.copyrights, resolved.license)
+-            }
+-        }
+-        FileType::Source => {
+-            let (status, resolved) = lint_source(entry, rel_path, config);
++        FileType::Binary | FileType::Source => {
++            let (status, resolved) = lint_licensing(entry, rel_path, config);
+             collect_identifiers(resolved.license.as_deref(), used_licenses);
+             builder.add_result(rel_path, status, resolved.copyrights, resolved.license)
+         }
+@@ -395,7 +374,7 @@
+             has_license_file: false,
+         };
+
+-        let (status, licensing) = lint_source(&entry, "src/gone.rs", &Config::builder().build());
++        let (status, licensing) = lint_licensing(&entry, "src/gone.rs", &Config::builder().build());
+
+         assert_eq!(status, Status::ReadError);
+         assert_eq!(licensing, Licensing::default());
+@@ -476,6 +455,39 @@
+             run(&lint_cmd(&root, false)).unwrap(),
+             "adding the .license companion makes it compliant"
+         );
++    }
++
++    #[test]
++    fn invalid_companion_expressions_fail_for_source_and_binary_files() {
++        for name in ["src/a.rs", "src/a.png"] {
++            let (_tmp, root) = project();
++            fs::write(root.join(name), [0xff, 0xfe, 0x00]).unwrap();
++            fs::write(
++                root.join(format!("{name}.license")),
++                format!("{HEADER}// SPDX-License-Identifier: MIT AND AND MIT\n"),
++            )
++            .unwrap();
++            let report = lint_project(&root, &Config::builder().build()).unwrap();
++            assert!(matches!(
++                report.get(name).unwrap().status,
++                Status::InvalidExpression(_)
++            ));
++        }
++    }
++
++    #[test]
++    fn annotations_license_non_utf8_source_and_binary_files() {
++        for name in ["src/a.rs", "src/a.png"] {
++            let (_tmp, root) = project();
++            fs::write(root.join(name), [0xff, 0xfe, 0x00]).unwrap();
++            annotate_src(
++                &root,
++                "SPDX-FileCopyrightText = \"2026 Test Author\"\nSPDX-License-Identifier = \"MIT\"",
++                "override",
++            );
++            license_files(&root, &["MIT.txt"]);
++            assert!(run(&lint_cmd(&root, false)).unwrap());
++        }
+     }
+
+     #[test]
+@@ -773,7 +785,7 @@
+     }
+
+     #[test]
+-    fn unreadable_content_falls_back_to_whether_a_companion_exists() {
++    fn unreadable_companions_do_not_declare_licensing() {
+         let (_tmp, root) = project();
+         // Source extension, but bytes that are not valid UTF-8.
+         fs::write(root.join("src/withcompanion.rs"), [0xff, 0xfe, 0x00]).unwrap();
+@@ -784,8 +796,8 @@
+         .unwrap();
+
+         assert!(
+-            run(&lint_cmd(&root, false)).unwrap(),
+-            "a companion is taken as the declaration even when it cannot be parsed"
++            !run(&lint_cmd(&root, false)).unwrap(),
++            "an unreadable companion cannot declare copyright or licensing"
+         );
+
+         fs::write(root.join("src/bare.rs"), [0xff, 0xfe, 0x00]).unwrap();

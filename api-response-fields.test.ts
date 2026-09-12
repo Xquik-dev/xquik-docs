@@ -391,6 +391,17 @@ function responseFields(page: string): readonly string[] {
   ).filter((field): boolean => field.length > 0);
 }
 
+function fieldDifferences(
+  label: string,
+  actual: readonly string[],
+  expected: readonly string[],
+): readonly string[] {
+  return [
+    ...setDifference(actual, expected).map((field) => `${label} has no product field ${field}.`),
+    ...setDifference(expected, actual).map((field) => `${label} is missing ${field}.`),
+  ];
+}
+
 function setDifference(actual: readonly string[], expected: readonly string[]): readonly string[] {
   const expectedSet = new Set(expected);
   return actual.filter((field): boolean => !expectedSet.has(field));
@@ -1359,243 +1370,102 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
       page: "api-reference/x/twitter-profile-lookup.mdx",
       requiredFields: requiredSchemaPropertyNames(spec, "UserProfile"),
     },
-    {
-      allowedFields: uniqueSorted([...notifications, ...notification]),
-      page: NOTIFICATION_PAGE,
-      requiredFields: uniqueSorted([...notifications, ...notification]),
-    },
-    {
-      allowedFields: uniqueSorted(["community", ...communityInfo]),
-      page: COMMUNITY_INFO_PAGE,
-      requiredFields: uniqueSorted(["community", ...communityInfo]),
-    },
-    {
-      allowedFields: mediaDownload,
-      page: MEDIA_DOWNLOAD_PAGE,
-      requiredFields: mediaDownload,
-    },
-    {
-      allowedFields: uniqueSorted([...bookmarkFolders, ...bookmarkFolder]),
-      page: BOOKMARK_FOLDERS_PAGE,
-      requiredFields: uniqueSorted([...bookmarkFolders, ...bookmarkFolder]),
-    },
-    {
-      allowedFields: uniqueSorted([...xTrends, ...xTrend]),
-      page: X_TRENDS_PAGE,
-      requiredFields: uniqueSorted([...xTrends, ...xTrend]),
-    },
-    {
-      allowedFields: followCheck,
-      page: FOLLOW_CHECK_PAGE,
-      requiredFields: followCheck,
-    },
-    {
-      allowedFields: accountGet,
-      page: ACCOUNT_GET_PAGE,
-      requiredFields: accountGet,
-    },
-    {
-      allowedFields: accountUpdate,
-      page: ACCOUNT_UPDATE_PAGE,
-      requiredFields: accountUpdate,
-    },
-    {
-      allowedFields: accountXIdentity,
-      page: ACCOUNT_X_IDENTITY_PAGE,
-      requiredFields: accountXIdentity,
-    },
-    {
-      allowedFields: subscribe,
-      page: SUBSCRIBE_PAGE,
-      requiredFields: subscribe,
-    },
-    { allowedFields: credits, page: CREDITS_PAGE, requiredFields: credits },
-    {
-      allowedFields: creditsTopup,
-      page: CREDITS_TOPUP_PAGE,
-      requiredFields: creditsTopup,
-    },
-    {
-      allowedFields: creditsTopupStatus,
-      page: CREDITS_TOPUP_STATUS_PAGE,
-      requiredFields: creditsTopupStatus,
-    },
-    {
-      allowedFields: creditsQuickTopup,
-      page: CREDITS_QUICK_TOPUP_PAGE,
-      requiredFields: creditsQuickTopup,
-    },
-    {
-      allowedFields: apiKeysList,
-      page: API_KEYS_LIST_PAGE,
-      requiredFields: apiKeysList,
-    },
-    {
-      allowedFields: apiKeysCreate,
-      page: API_KEYS_CREATE_PAGE,
-      requiredFields: apiKeysCreate,
-    },
-    {
-      allowedFields: apiKeysRevoke,
-      page: API_KEYS_REVOKE_PAGE,
-      requiredFields: apiKeysRevoke,
-    },
-    {
-      allowedFields: uniqueSorted([
-        ...article,
-        ...articleBody,
-        ...articleContent,
-        ...articleInlineStyle,
-        ...articleAuthor,
-      ]),
-      page: ARTICLE_PAGE,
-      requiredFields: uniqueSorted([
-        ...article,
-        ...articleBody,
-        ...articleContent,
-        ...articleInlineStyle,
-        ...articleAuthor,
-      ]),
-    },
-    {
-      allowedFields: uniqueSorted([...dmHistory, ...dmMessage]),
-      page: DM_HISTORY_PAGE,
-      requiredFields: uniqueSorted([...dmHistory, ...dmMessage]),
-    },
-    { allowedFields: sendDm, page: SEND_DM_PAGE, requiredFields: sendDm },
-    {
-      allowedFields: uploadMedia,
-      page: UPLOAD_MEDIA_PAGE,
-      requiredFields: uploadMedia,
-    },
-    {
-      allowedFields: updateProfile,
-      page: UPDATE_PROFILE_PAGE,
-      requiredFields: updateProfile,
-    },
-    {
-      allowedFields: updateAvatar,
-      page: UPDATE_AVATAR_PAGE,
-      requiredFields: updateAvatar,
-    },
-    {
-      allowedFields: updateBanner,
-      page: UPDATE_BANNER_PAGE,
-      requiredFields: updateBanner,
-    },
-    {
-      allowedFields: createCommunity,
-      page: CREATE_COMMUNITY_PAGE,
-      requiredFields: createCommunity,
-    },
-    {
-      allowedFields: deleteCommunity,
-      page: DELETE_COMMUNITY_PAGE,
-      requiredFields: deleteCommunity,
-    },
-    {
-      allowedFields: joinCommunity,
-      page: JOIN_COMMUNITY_PAGE,
-      requiredFields: joinCommunity,
-    },
-    {
-      allowedFields: leaveCommunity,
-      page: LEAVE_COMMUNITY_PAGE,
-      requiredFields: leaveCommunity,
-    },
-    {
-      allowedFields: createTweet,
-      page: CREATE_TWEET_PAGE,
-      requiredFields: createTweet,
-    },
-    {
-      allowedFields: deleteTweet,
-      page: DELETE_TWEET_PAGE,
-      requiredFields: deleteTweet,
-    },
-    {
-      allowedFields: likeTweet,
-      page: LIKE_TWEET_PAGE,
-      requiredFields: likeTweet,
-    },
-    {
-      allowedFields: unlikeTweet,
-      page: UNLIKE_TWEET_PAGE,
-      requiredFields: unlikeTweet,
-    },
-    { allowedFields: retweet, page: RETWEET_PAGE, requiredFields: retweet },
-    {
-      allowedFields: unretweet,
-      page: UNRETWEET_PAGE,
-      requiredFields: unretweet,
-    },
-    {
-      allowedFields: followUser,
-      page: FOLLOW_USER_PAGE,
-      requiredFields: followUser,
-    },
-    {
-      allowedFields: unfollowUser,
-      page: UNFOLLOW_USER_PAGE,
-      requiredFields: unfollowUser,
-    },
-    {
-      allowedFields: removeFollower,
-      page: REMOVE_FOLLOWER_PAGE,
-      requiredFields: removeFollower,
-    },
-    {
-      allowedFields: writeActionStatus,
-      page: WRITE_ACTION_STATUS_PAGE,
-      requiredFields: writeActionStatus,
-    },
+    ...(
+      [
+        [NOTIFICATION_PAGE, uniqueSorted([...notifications, ...notification])],
+        [COMMUNITY_INFO_PAGE, uniqueSorted(["community", ...communityInfo])],
+        [MEDIA_DOWNLOAD_PAGE, mediaDownload],
+        [BOOKMARK_FOLDERS_PAGE, uniqueSorted([...bookmarkFolders, ...bookmarkFolder])],
+        [X_TRENDS_PAGE, uniqueSorted([...xTrends, ...xTrend])],
+        [FOLLOW_CHECK_PAGE, followCheck],
+        [ACCOUNT_GET_PAGE, accountGet],
+        [ACCOUNT_UPDATE_PAGE, accountUpdate],
+        [ACCOUNT_X_IDENTITY_PAGE, accountXIdentity],
+        [SUBSCRIBE_PAGE, subscribe],
+        [CREDITS_PAGE, credits],
+        [CREDITS_TOPUP_PAGE, creditsTopup],
+        [CREDITS_TOPUP_STATUS_PAGE, creditsTopupStatus],
+        [CREDITS_QUICK_TOPUP_PAGE, creditsQuickTopup],
+        [API_KEYS_LIST_PAGE, apiKeysList],
+        [API_KEYS_CREATE_PAGE, apiKeysCreate],
+        [API_KEYS_REVOKE_PAGE, apiKeysRevoke],
+        [
+          ARTICLE_PAGE,
+          uniqueSorted([
+            ...article,
+            ...articleBody,
+            ...articleContent,
+            ...articleInlineStyle,
+            ...articleAuthor,
+          ]),
+        ],
+        [DM_HISTORY_PAGE, uniqueSorted([...dmHistory, ...dmMessage])],
+        [SEND_DM_PAGE, sendDm],
+        [UPLOAD_MEDIA_PAGE, uploadMedia],
+        [UPDATE_PROFILE_PAGE, updateProfile],
+        [UPDATE_AVATAR_PAGE, updateAvatar],
+        [UPDATE_BANNER_PAGE, updateBanner],
+        [CREATE_COMMUNITY_PAGE, createCommunity],
+        [DELETE_COMMUNITY_PAGE, deleteCommunity],
+        [JOIN_COMMUNITY_PAGE, joinCommunity],
+        [LEAVE_COMMUNITY_PAGE, leaveCommunity],
+        [CREATE_TWEET_PAGE, createTweet],
+        [DELETE_TWEET_PAGE, deleteTweet],
+        [LIKE_TWEET_PAGE, likeTweet],
+        [UNLIKE_TWEET_PAGE, unlikeTweet],
+        [RETWEET_PAGE, retweet],
+        [UNRETWEET_PAGE, unretweet],
+        [FOLLOW_USER_PAGE, followUser],
+        [UNFOLLOW_USER_PAGE, unfollowUser],
+        [REMOVE_FOLLOWER_PAGE, removeFollower],
+        [WRITE_ACTION_STATUS_PAGE, writeActionStatus],
+      ] satisfies readonly (readonly [string, readonly string[]])[]
+    ).map(([page, fields]): PageContract => ({
+      page,
+      allowedFields: fields,
+      requiredFields: fields,
+    })),
     {
       allowedFields: uniqueSorted([...xAccountList, ...prefixedFields("accounts[].", xAccount)]),
       page: X_ACCOUNT_LIST_PAGE,
       requiredFields: uniqueSorted(["accounts", ...prefixedFields("accounts[].", xAccount)]),
     },
-    {
-      allowedFields: xAccountDetail,
-      page: X_ACCOUNT_DETAIL_PAGE,
-      requiredFields: xAccountDetail,
-    },
-    {
-      allowedFields: uniqueSorted([
-        ...sanitizedXAccount,
-        ...xAccountConnectionAttemptPending,
-        ...xAccountConnectionChallenge,
-      ]),
-      page: X_ACCOUNT_CONNECT_PAGE,
-      requiredFields: uniqueSorted([
-        ...sanitizedXAccount,
-        ...xAccountConnectionAttemptPending,
-        ...xAccountConnectionChallenge,
-      ]),
-    },
-    {
-      allowedFields: uniqueSorted([...sanitizedXAccount, ...xAccountConnectionChallenge]),
-      page: X_ACCOUNT_CHALLENGE_SUBMIT_PAGE,
-      requiredFields: uniqueSorted([...sanitizedXAccount, ...xAccountConnectionChallenge]),
-    },
-    {
-      allowedFields: sanitizedXAccount,
-      page: X_ACCOUNT_REAUTH_PAGE,
-      requiredFields: sanitizedXAccount,
-    },
-    {
-      allowedFields: bulkRetry,
-      page: X_ACCOUNT_BULK_RETRY_PAGE,
-      requiredFields: bulkRetry,
-    },
-    {
-      allowedFields: xAccountDisconnect,
-      page: X_ACCOUNT_DISCONNECT_PAGE,
-      requiredFields: xAccountDisconnect,
-    },
+    ...(
+      [
+        [X_ACCOUNT_DETAIL_PAGE, xAccountDetail],
+        [
+          X_ACCOUNT_CONNECT_PAGE,
+          uniqueSorted([
+            ...sanitizedXAccount,
+            ...xAccountConnectionAttemptPending,
+            ...xAccountConnectionChallenge,
+          ]),
+        ],
+        [
+          X_ACCOUNT_CHALLENGE_SUBMIT_PAGE,
+          uniqueSorted([...sanitizedXAccount, ...xAccountConnectionChallenge]),
+        ],
+        [X_ACCOUNT_REAUTH_PAGE, sanitizedXAccount],
+        [X_ACCOUNT_BULK_RETRY_PAGE, bulkRetry],
+        [X_ACCOUNT_DISCONNECT_PAGE, xAccountDisconnect],
+      ] satisfies readonly (readonly [string, readonly string[]])[]
+    ).map(([page, fields]): PageContract => ({
+      page,
+      allowedFields: fields,
+      requiredFields: fields,
+    })),
   ];
 }
 
 describe("API response field docs", (): void => {
+  it("reports unexpected and missing fields independently", (): void => {
+    expect.assertions(2);
+    expect(fieldDifferences("Example", ["shared", "extra"], ["shared", "missing"])).toEqual([
+      "Example has no product field extra.",
+      "Example is missing missing.",
+    ]);
+    expect(fieldDifferences("Example", ["shared"], ["shared"])).toEqual([]);
+  });
   it("keeps selected X read endpoint fields aligned with OpenAPI schemas", (): void => {
     expect.assertions(1);
 
@@ -1907,10 +1777,13 @@ describe("API response field docs", (): void => {
       ),
       ...productConstStringArrayFields(PRODUCT_X_API_TYPES_PATH, "PUBLIC_TWEET_PASSTHROUGH_FIELDS"),
     ]);
-    const publicProfileFields = productConstStringArrayFields(
-      PRODUCT_READ_RICHNESS_CONTRACT_PATH,
-      "PUBLIC_PROFILE_DATA_FIELDS",
-    );
+    const publicProfileFields = uniqueSorted([
+      ...productConstStringArrayFields(
+        PRODUCT_READ_RICHNESS_CONTRACT_PATH,
+        "PUBLIC_PROFILE_DATA_FIELDS",
+      ),
+      ...productConstStringArrayFields(PRODUCT_X_API_TYPES_PATH, "PUBLIC_USER_FIELDS"),
+    ]);
     const publicUnsafeFields = productPublicUnsafeFields();
     const publicCommunityInfoFields = withoutFields(
       productInterfaceFields("TwitterApiCommunityInfo"),
@@ -1918,55 +1791,39 @@ describe("API response field docs", (): void => {
     );
     const publicArticleAuthorFields = withoutFields(productArticleAuthorFields, publicUnsafeFields);
     const findings = [
-      ...setDifference(schemaPropertyNames(spec, "SearchTweet"), publicTweetFields).map(
-        (field): string => `SearchTweet has no product field ${field}.`,
+      ...fieldDifferences(
+        "SearchTweet",
+        schemaPropertyNames(spec, "SearchTweet"),
+        publicTweetFields,
       ),
-      ...setDifference(publicTweetFields, schemaPropertyNames(spec, "SearchTweet")).map(
-        (field): string => `SearchTweet is missing ${field}.`,
+      ...fieldDifferences(
+        "UserProfile",
+        schemaPropertyNames(spec, "UserProfile"),
+        publicProfileFields,
       ),
-      ...setDifference(schemaPropertyNames(spec, "UserProfile"), publicProfileFields).map(
-        (field): string => `UserProfile has no product field ${field}.`,
-      ),
-      ...setDifference(publicProfileFields, schemaPropertyNames(spec, "UserProfile")).map(
-        (field): string => `UserProfile is missing ${field}.`,
-      ),
-      ...setDifference(
+      ...fieldDifferences(
+        "Notification",
         itemPropertyNamesFromProperty(
           spec,
           responseSchema(spec, "/x/notifications", "get"),
           "notifications",
         ),
         productNotificationFields(),
-      ).map((field): string => `Notification has no product field ${field}.`),
-      ...setDifference(
-        productNotificationFields(),
-        itemPropertyNamesFromProperty(
-          spec,
-          responseSchema(spec, "/x/notifications", "get"),
-          "notifications",
-        ),
-      ).map((field): string => `Notification is missing ${field}.`),
-      ...setDifference(
+      ),
+      ...fieldDifferences(
+        "Community info",
         propertyNames(
           responseSchema(spec, "/x/communities/{id}/info", "get").properties?.["community"],
         ),
         publicCommunityInfoFields,
-      ).map((field): string => `Community info has no product field ${field}.`),
-      ...setDifference(
-        publicCommunityInfoFields,
-        propertyNames(
-          responseSchema(spec, "/x/communities/{id}/info", "get").properties?.["community"],
-        ),
-      ).map((field): string => `Community info is missing ${field}.`),
-      ...setDifference(
+      ),
+      ...fieldDifferences(
+        "Media download",
         propertyNames(responseSchema(spec, "/x/media/download", "post")),
         productMediaDownloadFields(),
-      ).map((field): string => `Media download has no product field ${field}.`),
-      ...setDifference(
-        productMediaDownloadFields(),
-        propertyNames(responseSchema(spec, "/x/media/download", "post")),
-      ).map((field): string => `Media download is missing ${field}.`),
-      ...setDifference(
+      ),
+      ...fieldDifferences(
+        "Bookmark folders",
         uniqueSorted([
           ...propertyNames(responseSchema(spec, "/x/bookmarks/folders", "get")),
           ...itemPropertyNamesFromProperty(
@@ -1976,19 +1833,9 @@ describe("API response field docs", (): void => {
           ),
         ]),
         productBookmarkFolderFields(),
-      ).map((field): string => `Bookmark folders has no product field ${field}.`),
-      ...setDifference(
-        productBookmarkFolderFields(),
-        uniqueSorted([
-          ...propertyNames(responseSchema(spec, "/x/bookmarks/folders", "get")),
-          ...itemPropertyNamesFromProperty(
-            spec,
-            responseSchema(spec, "/x/bookmarks/folders", "get"),
-            "folders",
-          ),
-        ]),
-      ).map((field): string => `Bookmark folders is missing ${field}.`),
-      ...setDifference(
+      ),
+      ...fieldDifferences(
+        "X trends",
         uniqueSorted([
           ...propertyNames(responseSchema(spec, "/x/trends", "get")),
           ...itemPropertyNamesFromProperty(
@@ -1998,277 +1845,120 @@ describe("API response field docs", (): void => {
           ),
         ]),
         productXTrendsFields(),
-      ).map((field): string => `X trends has no product field ${field}.`),
-      ...setDifference(
-        productXTrendsFields(),
-        uniqueSorted([
-          ...propertyNames(responseSchema(spec, "/x/trends", "get")),
-          ...itemPropertyNamesFromProperty(
-            spec,
-            responseSchema(spec, "/x/trends", "get"),
-            "trends",
-          ),
-        ]),
-      ).map((field): string => `X trends is missing ${field}.`),
-      ...setDifference(
+      ),
+      ...fieldDifferences(
+        "Follow check",
         propertyNames(responseSchema(spec, "/x/followers/check", "get")),
         productFollowCheckFields(),
-      ).map((field): string => `Follow check has no product field ${field}.`),
-      ...setDifference(
-        productFollowCheckFields(),
-        propertyNames(responseSchema(spec, "/x/followers/check", "get")),
-      ).map((field): string => `Follow check is missing ${field}.`),
-      ...setDifference(accountGetFields, productAccountGetResponseFields).map(
-        (field): string => `Account info has no product field ${field}.`,
       ),
-      ...setDifference(productAccountGetResponseFields, accountGetFields).map(
-        (field): string => `Account info is missing ${field}.`,
-      ),
-      ...setDifference(accountUpdateFields, productAccountUpdateResponseFields).map(
-        (field): string => `Account update has no product field ${field}.`,
-      ),
-      ...setDifference(productAccountUpdateResponseFields, accountUpdateFields).map(
-        (field): string => `Account update is missing ${field}.`,
-      ),
-      ...setDifference(accountXIdentityFields, productAccountXIdentityResponseFields).map(
-        (field): string => `Account X identity has no product field ${field}.`,
-      ),
-      ...setDifference(productAccountXIdentityResponseFields, accountXIdentityFields).map(
-        (field): string => `Account X identity is missing ${field}.`,
-      ),
-      ...setDifference(subscribeFields, productSubscribeResponseFields).map(
-        (field): string => `Subscribe has no product field ${field}.`,
-      ),
-      ...setDifference(productSubscribeResponseFields, subscribeFields).map(
-        (field): string => `Subscribe is missing ${field}.`,
-      ),
-      ...setDifference(creditsFields, productCreditsResponseFields).map(
-        (field): string => `Credits has no product field ${field}.`,
-      ),
-      ...setDifference(productCreditsResponseFields, creditsFields).map(
-        (field): string => `Credits is missing ${field}.`,
-      ),
-      ...setDifference(creditsTopupFields, productCreditsTopupResponseFields).map(
-        (field): string => `Credits top-up has no product field ${field}.`,
-      ),
-      ...setDifference(productCreditsTopupResponseFields, creditsTopupFields).map(
-        (field): string => `Credits top-up is missing ${field}.`,
-      ),
-      ...setDifference(creditsTopupStatusFields, productCreditsTopupStatusResponseFields).map(
-        (field): string => `Credits top-up status has no product field ${field}.`,
-      ),
-      ...setDifference(productCreditsTopupStatusResponseFields, creditsTopupStatusFields).map(
-        (field): string => `Credits top-up status is missing ${field}.`,
-      ),
-      ...setDifference(creditsQuickTopupFields, productCreditsQuickTopupResponseFields).map(
-        (field): string => `Credits quick top-up has no product field ${field}.`,
-      ),
-      ...setDifference(productCreditsQuickTopupResponseFields, creditsQuickTopupFields).map(
-        (field): string => `Credits quick top-up is missing ${field}.`,
-      ),
-      ...setDifference(apiKeyListFields, productApiKeyListResponseFields).map(
-        (field): string => `API key list has no product field ${field}.`,
-      ),
-      ...setDifference(productApiKeyListResponseFields, apiKeyListFields).map(
-        (field): string => `API key list is missing ${field}.`,
-      ),
-      ...setDifference(apiKeyCreateFields, productApiKeyCreateResponseFields).map(
-        (field): string => `API key create has no product field ${field}.`,
-      ),
-      ...setDifference(productApiKeyCreateResponseFields, apiKeyCreateFields).map(
-        (field): string => `API key create is missing ${field}.`,
-      ),
-      ...setDifference(apiKeyRevokeFields, productApiKeyRevokeResponseFields).map(
-        (field): string => `API key revoke has no product field ${field}.`,
-      ),
-      ...setDifference(productApiKeyRevokeResponseFields, apiKeyRevokeFields).map(
-        (field): string => `API key revoke is missing ${field}.`,
-      ),
-      ...setDifference(openApiDmHistoryFields, productDmHistoryResponseFields).map(
-        (field): string => `DM history has no product field ${field}.`,
-      ),
-      ...setDifference(productDmHistoryResponseFields, openApiDmHistoryFields).map(
-        (field): string => `DM history is missing ${field}.`,
-      ),
-      ...setDifference(sendDmFields, productSendDmResponseFields).map(
-        (field): string => `Send DM has no product field ${field}.`,
-      ),
-      ...setDifference(productSendDmResponseFields, sendDmFields).map(
-        (field): string => `Send DM is missing ${field}.`,
-      ),
-      ...setDifference(uploadMediaFields, productUploadMediaResponseFields).map(
-        (field): string => `Upload media has no product field ${field}.`,
-      ),
-      ...setDifference(productUploadMediaResponseFields, uploadMediaFields).map(
-        (field): string => `Upload media is missing ${field}.`,
-      ),
-      ...setDifference(updateProfileFields, productUpdateProfileResponseFields).map(
-        (field): string => `Update profile has no product field ${field}.`,
-      ),
-      ...setDifference(productUpdateProfileResponseFields, updateProfileFields).map(
-        (field): string => `Update profile is missing ${field}.`,
-      ),
-      ...setDifference(updateAvatarFields, productUpdateAvatarResponseFields).map(
-        (field): string => `Update avatar has no product field ${field}.`,
-      ),
-      ...setDifference(productUpdateAvatarResponseFields, updateAvatarFields).map(
-        (field): string => `Update avatar is missing ${field}.`,
-      ),
-      ...setDifference(updateBannerFields, productUpdateBannerResponseFields).map(
-        (field): string => `Update banner has no product field ${field}.`,
-      ),
-      ...setDifference(productUpdateBannerResponseFields, updateBannerFields).map(
-        (field): string => `Update banner is missing ${field}.`,
-      ),
-      ...setDifference(createCommunityFields, productCreateCommunityResponseFields).map(
-        (field): string => `Create community has no product field ${field}.`,
-      ),
-      ...setDifference(productCreateCommunityResponseFields, createCommunityFields).map(
-        (field): string => `Create community is missing ${field}.`,
-      ),
-      ...setDifference(deleteCommunityFields, productDeleteCommunityResponseFields).map(
-        (field): string => `Delete community has no product field ${field}.`,
-      ),
-      ...setDifference(productDeleteCommunityResponseFields, deleteCommunityFields).map(
-        (field): string => `Delete community is missing ${field}.`,
-      ),
-      ...setDifference(joinCommunityFields, productJoinCommunityResponseFields).map(
-        (field): string => `Join community has no product field ${field}.`,
-      ),
-      ...setDifference(productJoinCommunityResponseFields, joinCommunityFields).map(
-        (field): string => `Join community is missing ${field}.`,
-      ),
-      ...setDifference(leaveCommunityFields, productLeaveCommunityResponseFields).map(
-        (field): string => `Leave community has no product field ${field}.`,
-      ),
-      ...setDifference(productLeaveCommunityResponseFields, leaveCommunityFields).map(
-        (field): string => `Leave community is missing ${field}.`,
-      ),
-      ...setDifference(createTweetFields, productCreateTweetResponseFields).map(
-        (field): string => `Create tweet has no product field ${field}.`,
-      ),
-      ...setDifference(productCreateTweetResponseFields, createTweetFields).map(
-        (field): string => `Create tweet is missing ${field}.`,
-      ),
-      ...setDifference(deleteTweetFields, productDeleteTweetResponseFields).map(
-        (field): string => `Delete tweet has no product field ${field}.`,
-      ),
-      ...setDifference(productDeleteTweetResponseFields, deleteTweetFields).map(
-        (field): string => `Delete tweet is missing ${field}.`,
-      ),
-      ...setDifference(likeTweetFields, productLikeTweetResponseFields).map(
-        (field): string => `Like tweet has no product field ${field}.`,
-      ),
-      ...setDifference(productLikeTweetResponseFields, likeTweetFields).map(
-        (field): string => `Like tweet is missing ${field}.`,
-      ),
-      ...setDifference(unlikeTweetFields, productUnlikeTweetResponseFields).map(
-        (field): string => `Unlike tweet has no product field ${field}.`,
-      ),
-      ...setDifference(productUnlikeTweetResponseFields, unlikeTweetFields).map(
-        (field): string => `Unlike tweet is missing ${field}.`,
-      ),
-      ...setDifference(retweetFields, productRetweetResponseFields).map(
-        (field): string => `Retweet has no product field ${field}.`,
-      ),
-      ...setDifference(productRetweetResponseFields, retweetFields).map(
-        (field): string => `Retweet is missing ${field}.`,
-      ),
-      ...setDifference(unretweetFields, productUnretweetResponseFields).map(
-        (field): string => `Unretweet has no product field ${field}.`,
-      ),
-      ...setDifference(productUnretweetResponseFields, unretweetFields).map(
-        (field): string => `Unretweet is missing ${field}.`,
-      ),
-      ...setDifference(followUserFields, productFollowUserResponseFields).map(
-        (field): string => `Follow user has no product field ${field}.`,
-      ),
-      ...setDifference(productFollowUserResponseFields, followUserFields).map(
-        (field): string => `Follow user is missing ${field}.`,
-      ),
-      ...setDifference(unfollowUserFields, productUnfollowUserResponseFields).map(
-        (field): string => `Unfollow user has no product field ${field}.`,
-      ),
-      ...setDifference(productUnfollowUserResponseFields, unfollowUserFields).map(
-        (field): string => `Unfollow user is missing ${field}.`,
-      ),
-      ...setDifference(removeFollowerFields, productRemoveFollowerResponseFields).map(
-        (field): string => `Remove follower has no product field ${field}.`,
-      ),
-      ...setDifference(productRemoveFollowerResponseFields, removeFollowerFields).map(
-        (field): string => `Remove follower is missing ${field}.`,
-      ),
-      ...setDifference(openApiArticleResponseFields, productArticleResponseFields).map(
-        (field): string => `Article response has no product field ${field}.`,
-      ),
-      ...setDifference(productArticleResponseFields, openApiArticleResponseFields).map(
-        (field): string => `Article response is missing ${field}.`,
-      ),
-      ...setDifference(openApiArticleFields, productArticleFields).map(
-        (field): string => `Article has no product field ${field}.`,
-      ),
-      ...setDifference(productArticleFields, openApiArticleFields).map(
-        (field): string => `Article is missing ${field}.`,
-      ),
-      ...setDifference(openApiArticleContentFields, productArticleContentFields()).map(
-        (field): string => `Article content has no product field ${field}.`,
-      ),
-      ...setDifference(productArticleContentFields(), openApiArticleContentFields).map(
-        (field): string => `Article content is missing ${field}.`,
-      ),
-      ...setDifference(
+      ...fieldDifferences("Account info", accountGetFields, productAccountGetResponseFields),
+      ...fieldDifferences(
+        "Account update",
+        accountUpdateFields,
+        productAccountUpdateResponseFields,
+      ),
+      ...fieldDifferences(
+        "Account X identity",
+        accountXIdentityFields,
+        productAccountXIdentityResponseFields,
+      ),
+      ...fieldDifferences("Subscribe", subscribeFields, productSubscribeResponseFields),
+      ...fieldDifferences("Credits", creditsFields, productCreditsResponseFields),
+      ...fieldDifferences("Credits top-up", creditsTopupFields, productCreditsTopupResponseFields),
+      ...fieldDifferences(
+        "Credits top-up status",
+        creditsTopupStatusFields,
+        productCreditsTopupStatusResponseFields,
+      ),
+      ...fieldDifferences(
+        "Credits quick top-up",
+        creditsQuickTopupFields,
+        productCreditsQuickTopupResponseFields,
+      ),
+      ...fieldDifferences("API key list", apiKeyListFields, productApiKeyListResponseFields),
+      ...fieldDifferences("API key create", apiKeyCreateFields, productApiKeyCreateResponseFields),
+      ...fieldDifferences("API key revoke", apiKeyRevokeFields, productApiKeyRevokeResponseFields),
+      ...fieldDifferences("DM history", openApiDmHistoryFields, productDmHistoryResponseFields),
+      ...fieldDifferences("Send DM", sendDmFields, productSendDmResponseFields),
+      ...fieldDifferences("Upload media", uploadMediaFields, productUploadMediaResponseFields),
+      ...fieldDifferences(
+        "Update profile",
+        updateProfileFields,
+        productUpdateProfileResponseFields,
+      ),
+      ...fieldDifferences("Update avatar", updateAvatarFields, productUpdateAvatarResponseFields),
+      ...fieldDifferences("Update banner", updateBannerFields, productUpdateBannerResponseFields),
+      ...fieldDifferences(
+        "Create community",
+        createCommunityFields,
+        productCreateCommunityResponseFields,
+      ),
+      ...fieldDifferences(
+        "Delete community",
+        deleteCommunityFields,
+        productDeleteCommunityResponseFields,
+      ),
+      ...fieldDifferences(
+        "Join community",
+        joinCommunityFields,
+        productJoinCommunityResponseFields,
+      ),
+      ...fieldDifferences(
+        "Leave community",
+        leaveCommunityFields,
+        productLeaveCommunityResponseFields,
+      ),
+      ...fieldDifferences("Create tweet", createTweetFields, productCreateTweetResponseFields),
+      ...fieldDifferences("Delete tweet", deleteTweetFields, productDeleteTweetResponseFields),
+      ...fieldDifferences("Like tweet", likeTweetFields, productLikeTweetResponseFields),
+      ...fieldDifferences("Unlike tweet", unlikeTweetFields, productUnlikeTweetResponseFields),
+      ...fieldDifferences("Retweet", retweetFields, productRetweetResponseFields),
+      ...fieldDifferences("Unretweet", unretweetFields, productUnretweetResponseFields),
+      ...fieldDifferences("Follow user", followUserFields, productFollowUserResponseFields),
+      ...fieldDifferences("Unfollow user", unfollowUserFields, productUnfollowUserResponseFields),
+      ...fieldDifferences(
+        "Remove follower",
+        removeFollowerFields,
+        productRemoveFollowerResponseFields,
+      ),
+      ...fieldDifferences(
+        "Article response",
+        openApiArticleResponseFields,
+        productArticleResponseFields,
+      ),
+      ...fieldDifferences("Article", openApiArticleFields, productArticleFields),
+      ...fieldDifferences(
+        "Article content",
+        openApiArticleContentFields,
+        productArticleContentFields(),
+      ),
+      ...fieldDifferences(
+        "Article inline style",
         openApiArticleInlineStyleFields,
         productInterfaceFields("TwitterApiArticleInlineStyle"),
-      ).map((field): string => `Article inline style has no product field ${field}.`),
-      ...setDifference(
-        productInterfaceFields("TwitterApiArticleInlineStyle"),
-        openApiArticleInlineStyleFields,
-      ).map((field): string => `Article inline style is missing ${field}.`),
-      ...setDifference(openApiArticleAuthorFields, publicArticleAuthorFields).map(
-        (field): string => `Article author has no product field ${field}.`,
       ),
-      ...setDifference(publicArticleAuthorFields, openApiArticleAuthorFields).map(
-        (field): string => `Article author is missing ${field}.`,
+      ...fieldDifferences("Article author", openApiArticleAuthorFields, publicArticleAuthorFields),
+      ...fieldDifferences("XAccount", schemaPropertyNames(spec, "XAccount"), productXAccountFields),
+      ...fieldDifferences(
+        "XAccountDetail",
+        schemaPropertyNames(spec, "XAccountDetail"),
+        productXAccountFields,
       ),
-      ...setDifference(schemaPropertyNames(spec, "XAccount"), productXAccountFields).map(
-        (field): string => `XAccount has no product field ${field}.`,
-      ),
-      ...setDifference(productXAccountFields, schemaPropertyNames(spec, "XAccount")).map(
-        (field): string => `XAccount is missing ${field}.`,
-      ),
-      ...setDifference(schemaPropertyNames(spec, "XAccountDetail"), productXAccountFields).map(
-        (field): string => `XAccountDetail has no product field ${field}.`,
-      ),
-      ...setDifference(productXAccountFields, schemaPropertyNames(spec, "XAccountDetail")).map(
-        (field): string => `XAccountDetail is missing ${field}.`,
-      ),
-      ...setDifference(
+      ...fieldDifferences(
+        "SanitizedXAccount",
         schemaPropertyNames(spec, "SanitizedXAccount"),
         productSanitizedXAccountFields,
-      ).map((field): string => `SanitizedXAccount has no product field ${field}.`),
-      ...setDifference(
-        productSanitizedXAccountFields,
-        schemaPropertyNames(spec, "SanitizedXAccount"),
-      ).map((field): string => `SanitizedXAccount is missing ${field}.`),
-      ...setDifference(
+      ),
+      ...fieldDifferences(
+        "XAccountConnectionChallenge",
         schemaPropertyNames(spec, "XAccountConnectionChallenge"),
         productXAccountConnectionChallengeFields,
-      ).map((field): string => `XAccountConnectionChallenge has no product field ${field}.`),
-      ...setDifference(
-        productXAccountConnectionChallengeFields,
-        schemaPropertyNames(spec, "XAccountConnectionChallenge"),
-      ).map((field): string => `XAccountConnectionChallenge is missing ${field}.`),
-      ...setDifference(bulkRetryFields, productBulkRetryResponseFields).map(
-        (field): string => `Bulk retry has no product field ${field}.`,
       ),
-      ...setDifference(productBulkRetryResponseFields, bulkRetryFields).map(
-        (field): string => `Bulk retry is missing ${field}.`,
-      ),
-      ...setDifference(xAccountDisconnectFields, productXAccountDisconnectResponseFields).map(
-        (field): string => `X account disconnect has no product field ${field}.`,
-      ),
-      ...setDifference(productXAccountDisconnectResponseFields, xAccountDisconnectFields).map(
-        (field): string => `X account disconnect is missing ${field}.`,
+      ...fieldDifferences("Bulk retry", bulkRetryFields, productBulkRetryResponseFields),
+      ...fieldDifferences(
+        "X account disconnect",
+        xAccountDisconnectFields,
+        productXAccountDisconnectResponseFields,
       ),
     ];
 

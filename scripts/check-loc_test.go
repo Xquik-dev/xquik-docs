@@ -116,3 +116,71 @@ func TestMarkdownShellContinuations(t *testing.T) {
 		}
 	}
 }
+
+func TestLicenseCommand(t *testing.T) {
+	root := t.TempDir()
+	write := func(path string, data []byte) {
+		t.Helper()
+		path = filepath.Join(root, path)
+		if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, data, 0700); err != nil {
+			t.Fatal(err)
+		}
+	}
+	original := map[string][]byte{}
+	for _, path := range []string{"scripts/licenses.sh", "package.json", "patches/comply-licensing.patch", "REUSE.toml", "LICENSES/MIT.txt", "LICENSES/Apache-2.0.txt"} {
+		data, err := os.ReadFile(filepath.Join("..", path))
+		if err != nil {
+			t.Fatal(err)
+		}
+		original[path] = data
+		write(path, data)
+	}
+	cmd := exec.Command("git", "init", "--quiet", root)
+	if output, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("initialize fixture: %v\n%s", err, output)
+	}
+	cmd = exec.Command("git", "rev-parse", "--path-format=absolute", "--git-path", "tools")
+	tools, err := cmd.Output()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(strings.TrimSpace(string(tools)), filepath.Join(root, ".git", "tools")); err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct {
+		name, command, path, suffix, message, replace, with string
+		code                                                int
+	}{
+		{name: "installed checker", command: "lint", message: "0 failed"},
+		{name: "changed patch", command: "lint", path: "patches/comply-licensing.patch", suffix: "\n", message: "License checker unavailable", code: 1},
+		{name: "changed archive checksum", command: "lint", path: "package.json", replace: `"sha256": "`, with: `"sha256": "0`, message: "License checker unavailable", code: 1},
+		{name: "unknown command", command: "invalid", message: "Unknown license command", code: 2},
+		{name: "wrong audit version", command: "lint", message: "Audit version differs", code: 1},
+		{name: "invalid archive", command: "install", message: "FAILED", code: 1},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if tc.path != "" {
+				write(tc.path, []byte(strings.Replace(string(original[tc.path]), tc.replace, tc.with, 1)+tc.suffix))
+				defer write(tc.path, original[tc.path])
+			}
+			cmd := exec.Command("bash", filepath.Join(root, "scripts/licenses.sh"), tc.command)
+			cmd.Env = append(os.Environ(), "PATH="+filepath.Join(root, "bin")+":"+os.Getenv("PATH"))
+			if tc.name == "wrong audit version" {
+				write("bin/cargo", []byte("#!/bin/bash\necho 'cargo-audit 0.0.0'\n"))
+			}
+			if tc.command == "install" {
+				write("bin/curl", []byte("#!/bin/bash\nprintf invalid > \"${@: -1}\"\n"))
+				for _, name := range []string{"tar", "cargo"} {
+					write("bin/"+name, []byte("#!/bin/bash\necho 'UNVERIFIED ARCHIVE USED' >&2\nexit 99\n"))
+				}
+			}
+			output, err := cmd.CombinedOutput()
+			if cmd.ProcessState == nil || cmd.ProcessState.ExitCode() != tc.code || !strings.Contains(string(output), tc.message) || strings.Contains(string(output), "UNVERIFIED ARCHIVE USED") {
+				t.Fatalf("want exit %d containing %q: %v\n%s", tc.code, tc.message, err, output)
+			}
+		})
+	}
+}

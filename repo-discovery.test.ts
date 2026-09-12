@@ -4028,8 +4028,7 @@ const REQUIRED_TWEET_REPLIES_EXPORT_SNIPPETS = [
 
 const REQUIRED_TWEET_REPLIES_API_HANDOFF_SNIPPETS = [
   'title: "Twitter API get replies to a tweet & author fields"',
-  "Get tweet replies returns reply tweets for one X post by numeric tweet ID.",
-  "conversation analysis, support queues, moderation review, giveaway",
+  "Get replies by tweet ID for analysis, support, moderation, giveaways, and agents.",
   "`GET /api/v1/x/tweets/{id}/replies`",
   "# First page of replies",
   "# Resume with the previous next_cursor",
@@ -12391,84 +12390,8 @@ function collectReadmeDiscoveryFindings(): readonly DiscoveryFinding[] {
   return findings;
 }
 
-function collectPublicApifyMarketplaceFindings(): readonly DiscoveryFinding[] {
-  const findings: DiscoveryFinding[] = [];
-
-  for (const file of listPublicMarkdownFiles()) {
-    const source = readFileSync(file, "utf8");
-
-    for (const snippet of FORBIDDEN_PUBLIC_APIFY_MARKETPLACE_SNIPPETS) {
-      if (source.includes(snippet)) {
-        findings.push({
-          file,
-          issue: `Public Markdown freezes volatile Apify marketplace claim "${snippet}".`,
-        });
-      }
-    }
-  }
-
-  return findings;
-}
-
-function collectStaleCreditCostFindings(): readonly DiscoveryFinding[] {
-  const findings: DiscoveryFinding[] = [];
-
-  for (const file of listPublicMarkdownFiles()) {
-    const source = readFileSync(file, "utf8");
-
-    for (const snippet of FORBIDDEN_STALE_CREDIT_COST_SNIPPETS) {
-      if (source.includes(snippet)) {
-        findings.push({
-          file,
-          issue: `Public Markdown contains stale credit cost wording "${snippet}".`,
-        });
-      }
-    }
-  }
-
-  return findings;
-}
-
 function sha256File(file: string): string {
   return createHash("sha256").update(readFileSync(file)).digest("hex");
-}
-
-function collectPublicConfidentialityWordingFindings(): readonly DiscoveryFinding[] {
-  const findings: DiscoveryFinding[] = [];
-
-  for (const file of [...listPublicMarkdownFiles(), "context7.json", "llms.txt"]) {
-    const source = readFileSync(file, "utf8");
-
-    for (const snippet of FORBIDDEN_PUBLIC_CONFIDENTIALITY_WORDING) {
-      if (source.includes(snippet)) {
-        findings.push({
-          file,
-          issue: `Public file contains deprecated confidentiality wording "${snippet}".`,
-        });
-      }
-    }
-  }
-
-  return findings;
-}
-
-function collectStaleSearchTweetsQueryParamFindings(): readonly DiscoveryFinding[] {
-  const findings: DiscoveryFinding[] = [];
-
-  for (const file of [...listPublicMarkdownFiles(), "openapi.yaml"]) {
-    const source = readFileSync(file, "utf8");
-
-    for (const snippet of FORBIDDEN_SEARCH_TWEETS_QUERY_PARAM_SNIPPETS) {
-      if (source.includes(snippet)) {
-        findings.push({
-          file,
-          issue: `Public docs use stale Search Tweets query parameter "${snippet}". Use q for GET /x/tweets/search.`,
-        });
-      }
-    }
-  }
-
-  return findings;
 }
 
 function getOpenApiOperationCount(): number {
@@ -12489,82 +12412,6 @@ function collectStaleOperationCountFindings(): readonly DiscoveryFinding[] {
         findings.push({
           file,
           issue: `Public Markdown contains stale operation count "${snippet}".`,
-        });
-      }
-    }
-  }
-
-  return findings;
-}
-
-function collectUnsupportedDmHistorySdkExampleFindings(): readonly DiscoveryFinding[] {
-  const findings: DiscoveryFinding[] = [];
-
-  for (const file of listPublicMarkdownFiles()) {
-    const source = readFileSync(file, "utf8");
-
-    for (const snippet of FORBIDDEN_DM_HISTORY_SDK_EXAMPLE_SNIPPETS) {
-      if (source.includes(snippet)) {
-        findings.push({
-          file,
-          issue: `Public Markdown contains unsupported DM history SDK/CLI example "${snippet}". Use raw REST until generated clients expose the required account query.`,
-        });
-      }
-    }
-  }
-
-  return findings;
-}
-
-function collectPublicTweetMediaIdBoundaryFindings(): readonly DiscoveryFinding[] {
-  const findings: DiscoveryFinding[] = [];
-
-  for (const file of listPublicMarkdownFiles()) {
-    const source = readFileSync(file, "utf8");
-
-    for (const snippet of FORBIDDEN_PUBLIC_TWEET_MEDIA_ID_SNIPPETS) {
-      if (source.includes(snippet)) {
-        findings.push({
-          file,
-          issue: `Public Markdown tells tweet callers to use uploaded media IDs with POST /x/tweets: "${snippet}". Use public media URLs in media and reserve media_ids for one-item DMs.`,
-        });
-      }
-    }
-  }
-
-  return findings;
-}
-
-function collectPublicDmReplyFieldExampleFindings(): readonly DiscoveryFinding[] {
-  const findings: DiscoveryFinding[] = [];
-
-  for (const file of listPublicMarkdownFiles()) {
-    const source = readFileSync(file, "utf8");
-
-    for (const snippet of FORBIDDEN_PUBLIC_DM_REPLY_FIELD_EXAMPLES) {
-      if (source.includes(snippet)) {
-        findings.push({
-          file,
-          issue: `Public Markdown shows an unsupported DM reply field example with "${snippet}". Leave reply_to_message_id unset for POST /x/dm/{userId}.`,
-        });
-      }
-    }
-  }
-
-  return findings;
-}
-
-function collectStaleXAccountPublicContractFindings(): readonly DiscoveryFinding[] {
-  const findings: DiscoveryFinding[] = [];
-
-  for (const file of X_ACCOUNT_PUBLIC_CONTRACT_FILES) {
-    const source = readFileSync(file, "utf8");
-
-    for (const snippet of FORBIDDEN_X_ACCOUNT_PUBLIC_CONTRACT_SNIPPETS) {
-      if (source.includes(snippet)) {
-        findings.push({
-          file,
-          issue: `X account public docs contain stale connection contract snippet "${snippet}".`,
         });
       }
     }
@@ -12606,25 +12453,6 @@ function normalizeEvidence(value: string): string {
 
 function hasPaymentRequiredSection(source: string): boolean {
   return /^(?:### 402 Payment required|<Tab title="402 Payment required">)/imu.test(source);
-}
-
-function collectComparisonPositioningFindings(): readonly DiscoveryFinding[] {
-  const findings: DiscoveryFinding[] = [];
-
-  for (const file of listAlternativeFiles()) {
-    const source = readFileSync(file, "utf8");
-
-    for (const phrase of FORBIDDEN_COMPARISON_POSITIONING) {
-      if (source.includes(phrase)) {
-        findings.push({
-          file,
-          issue: `Comparison guide contains vague positioning phrase "${phrase}".`,
-        });
-      }
-    }
-  }
-
-  return findings;
 }
 
 function collectAlternativesOverviewCardParagraphFindings(): readonly DiscoveryFinding[] {
@@ -12883,10 +12711,79 @@ describe("repository discovery", (): void => {
     expect(collectEndpointSentenceCaseFindings()).toStrictEqual([]);
   });
 
-  it("keeps public confidentiality wording generic and product-approved", (): void => {
+  it.each([
+    {
+      name: "keeps public confidentiality wording generic and product-approved",
+      files: (): readonly string[] => [...listPublicMarkdownFiles(), "context7.json", "llms.txt"],
+      snippets: FORBIDDEN_PUBLIC_CONFIDENTIALITY_WORDING,
+      issue: (snippet: string): string =>
+        `Public file contains deprecated confidentiality wording "${snippet}".`,
+    },
+    {
+      name: "keeps public tweet media docs on public URLs, not uploaded IDs",
+      files: (): readonly string[] => listPublicMarkdownFiles(),
+      snippets: FORBIDDEN_PUBLIC_TWEET_MEDIA_ID_SNIPPETS,
+      issue: (snippet: string): string =>
+        `Public Markdown tells tweet callers to use uploaded media IDs with POST /x/tweets: "${snippet}". Use public media URLs in media and reserve media_ids for one-item DMs.`,
+    },
+    {
+      name: "keeps public DM docs from showing unsupported reply field examples",
+      files: (): readonly string[] => listPublicMarkdownFiles(),
+      snippets: FORBIDDEN_PUBLIC_DM_REPLY_FIELD_EXAMPLES,
+      issue: (snippet: string): string =>
+        `Public Markdown shows an unsupported DM reply field example with "${snippet}". Leave reply_to_message_id unset for POST /x/dm/{userId}.`,
+    },
+    {
+      name: "keeps public Search Tweets links on the q query parameter",
+      files: (): readonly string[] => [...listPublicMarkdownFiles(), "openapi.yaml"],
+      snippets: FORBIDDEN_SEARCH_TWEETS_QUERY_PARAM_SNIPPETS,
+      issue: (snippet: string): string =>
+        `Public docs use stale Search Tweets query parameter "${snippet}". Use q for GET /x/tweets/search.`,
+    },
+    {
+      name: "keeps DM history examples on raw REST until generated clients expose account query support",
+      files: (): readonly string[] => listPublicMarkdownFiles(),
+      snippets: FORBIDDEN_DM_HISTORY_SDK_EXAMPLE_SNIPPETS,
+      issue: (snippet: string): string =>
+        `Public Markdown contains unsupported DM history SDK/CLI example "${snippet}". Use raw REST until generated clients expose the required account query.`,
+    },
+    {
+      name: "keeps X account public docs aligned with the current connection contract",
+      files: (): readonly string[] => X_ACCOUNT_PUBLIC_CONTRACT_FILES,
+      snippets: FORBIDDEN_X_ACCOUNT_PUBLIC_CONTRACT_SNIPPETS,
+      issue: (snippet: string): string =>
+        `X account public docs contain stale connection contract snippet "${snippet}".`,
+    },
+    {
+      name: "keeps volatile Apify marketplace claims out of public Markdown",
+      files: (): readonly string[] => listPublicMarkdownFiles(),
+      snippets: FORBIDDEN_PUBLIC_APIFY_MARKETPLACE_SNIPPETS,
+      issue: (snippet: string): string =>
+        `Public Markdown freezes volatile Apify marketplace claim "${snippet}".`,
+    },
+    {
+      name: "keeps public credit cost wording aligned with billing model",
+      files: (): readonly string[] => listPublicMarkdownFiles(),
+      snippets: FORBIDDEN_STALE_CREDIT_COST_SNIPPETS,
+      issue: (snippet: string): string =>
+        `Public Markdown contains stale credit cost wording "${snippet}".`,
+    },
+    {
+      name: "keeps comparison guides direct and value focused",
+      files: (): readonly string[] => listAlternativeFiles(),
+      snippets: FORBIDDEN_COMPARISON_POSITIONING,
+      issue: (snippet: string): string =>
+        `Comparison guide contains vague positioning phrase "${snippet}".`,
+    },
+  ])("$name", ({ files, snippets, issue }): void => {
     expect.assertions(1);
-
-    expect(collectPublicConfidentialityWordingFindings()).toStrictEqual([]);
+    const findings = files().flatMap((file): DiscoveryFinding[] => {
+      const source = readFileSync(file, "utf8");
+      return snippets
+        .filter((snippet) => source.includes(snippet))
+        .map((snippet) => ({ file, issue: issue(snippet) }));
+    });
+    expect(findings).toStrictEqual([]);
   });
 
   it("keeps public agent entry points visible to docs crawlers", (): void => {
@@ -13063,138 +12960,454 @@ describe("repository discovery", (): void => {
     ).toStrictEqual([]);
   });
 
-  it("keeps the SDK overview useful for choosing SDK, CLI, and MCP handoffs", (): void => {
+  it.each([
+    {
+      name: "keeps the SDK overview useful for choosing SDK, CLI, and MCP handoffs",
+      file: "sdks.mdx",
+      label: "SDK overview docs",
+      required: REQUIRED_SDK_OVERVIEW_SNIPPETS,
+      forbidden: FORBIDDEN_SDK_OVERVIEW_SNIPPETS,
+    },
+    {
+      name: "keeps troubleshooting clear about Docs MCP vs API MCP",
+      file: "guides/troubleshooting.mdx",
+      label: "Troubleshooting MCP handoff",
+      required: REQUIRED_TROUBLESHOOTING_MCP_HANDOFF_SNIPPETS,
+      forbidden: FORBIDDEN_TROUBLESHOOTING_MCP_HANDOFF_SNIPPETS,
+    },
+    {
+      name: "keeps guest wallet creation secrets out of example output",
+      file: "api-reference/guest-wallets/create.mdx",
+      label: "Create guest wallet docs",
+      required: REQUIRED_GUEST_WALLET_CREATE_SECURITY_SNIPPETS,
+      forbidden: FORBIDDEN_GUEST_WALLET_CREATE_LOG_SNIPPETS,
+    },
+    {
+      name: "keeps glossary credit carry-over aligned with billing behavior",
+      file: "guides/glossary.mdx",
+      label: "Glossary credit carry-over",
+      required: REQUIRED_GLOSSARY_CREDIT_CARRYOVER_SNIPPETS,
+      forbidden: FORBIDDEN_GLOSSARY_CREDIT_CARRYOVER_SNIPPETS,
+    },
+    {
+      name: "keeps the X API glossary concrete and source-backed",
+      file: "guides/glossary.mdx",
+      label: "X API glossary",
+      required: REQUIRED_X_API_GLOSSARY_SNIPPETS,
+      forbidden: FORBIDDEN_X_API_GLOSSARY_SNIPPETS,
+    },
+    {
+      name: "keeps authentication account checks aligned with monitor billing behavior",
+      file: "api-reference/authentication.mdx",
+      label: "Authentication account check docs",
+      required: REQUIRED_AUTHENTICATION_ACCOUNT_SNIPPETS,
+      forbidden: FORBIDDEN_AUTHENTICATION_ACCOUNT_SNIPPETS,
+    },
+    {
+      name: "keeps the X API integration checklist concrete",
+      file: "guides/x-api-integration-checklist.mdx",
+      label: "X API integration checklist",
+      required: REQUIRED_X_API_INTEGRATION_CHECKLIST_SNIPPETS,
+      forbidden: FORBIDDEN_API_OVERVIEW_SNIPPETS,
+    },
+    {
+      name: "keeps the Twitter API rate-limit guide source-backed",
+      file: "guides/rate-limits.mdx",
+      label: "Twitter API rate-limit guide",
+      required: REQUIRED_TWITTER_RATE_LIMIT_GUIDE_SNIPPETS,
+      forbidden: FORBIDDEN_TWITTER_RATE_LIMIT_GUIDE_SNIPPETS,
+    },
+    {
+      name: "keeps the tweet replies API handoff concrete",
+      file: "api-reference/x/tweet-replies.mdx",
+      label: "Tweet replies endpoint page",
+      required: REQUIRED_TWEET_REPLIES_API_HANDOFF_SNIPPETS,
+      forbidden: FORBIDDEN_TWEET_REPLIES_API_RAW_OUTPUT_SNIPPETS,
+    },
+    {
+      name: "keeps the tweet quotes API handoff concrete",
+      file: "api-reference/x/tweet-quotes.mdx",
+      label: "Tweet quotes endpoint page",
+      required: REQUIRED_TWEET_QUOTES_API_HANDOFF_SNIPPETS,
+      forbidden: FORBIDDEN_TWEET_QUOTES_API_RAW_OUTPUT_SNIPPETS,
+    },
+    {
+      name: "keeps the get tweet API handoff concrete",
+      file: "api-reference/x/get-tweet.mdx",
+      label: "Get tweet endpoint page",
+      required: REQUIRED_GET_TWEET_API_HANDOFF_SNIPPETS,
+      forbidden: FORBIDDEN_GET_TWEET_API_RAW_OUTPUT_SNIPPETS,
+    },
+    {
+      name: "keeps the get user API handoff concrete",
+      file: "api-reference/x/twitter-profile-lookup.mdx",
+      label: "Get user endpoint page",
+      required: REQUIRED_GET_USER_API_HANDOFF_SNIPPETS,
+      forbidden: FORBIDDEN_GET_USER_API_RAW_OUTPUT_SNIPPETS,
+    },
+    {
+      name: "keeps the notifications API handoff concrete",
+      file: "api-reference/x/notifications.mdx",
+      label: "Notifications endpoint page",
+      required: REQUIRED_NOTIFICATIONS_API_HANDOFF_SNIPPETS,
+      forbidden: FORBIDDEN_NOTIFICATIONS_API_RAW_OUTPUT_SNIPPETS,
+    },
+    {
+      name: "keeps the X trends API handoff concrete",
+      file: "api-reference/x/trends.mdx",
+      label: "X trends endpoint page",
+      required: REQUIRED_X_TRENDS_API_HANDOFF_SNIPPETS,
+      forbidden: FORBIDDEN_X_TRENDS_API_RAW_OUTPUT_SNIPPETS,
+    },
+    {
+      name: "keeps the trends API handoff concrete",
+      file: "api-reference/trends/list.mdx",
+      label: "Trends API page",
+      required: REQUIRED_TRENDS_API_HANDOFF_SNIPPETS,
+      forbidden: FORBIDDEN_TRENDS_API_RAW_OUTPUT_SNIPPETS,
+    },
+    {
+      name: "keeps the get article API handoff concrete",
+      file: "api-reference/x/get-article.mdx",
+      label: "Get article endpoint page",
+      required: REQUIRED_GET_ARTICLE_API_HANDOFF_SNIPPETS,
+      forbidden: FORBIDDEN_GET_ARTICLE_API_RAW_OUTPUT_SNIPPETS,
+    },
+    {
+      name: "keeps the tweet thread API handoff concrete",
+      file: "api-reference/x/tweet-thread.mdx",
+      label: "Tweet thread endpoint page",
+      required: REQUIRED_TWEET_THREAD_API_HANDOFF_SNIPPETS,
+      forbidden: FORBIDDEN_TWEET_THREAD_API_RAW_OUTPUT_SNIPPETS,
+    },
+    {
+      name: "keeps the retweeters API handoff concrete",
+      file: "api-reference/x/retweeters.mdx",
+      label: "Retweeters endpoint page",
+      required: REQUIRED_RETWEETERS_API_HANDOFF_SNIPPETS,
+      forbidden: FORBIDDEN_RETWEETERS_API_RAW_OUTPUT_SNIPPETS,
+    },
+    {
+      name: "keeps the favoriters API handoff concrete",
+      file: "api-reference/x/favoriters.mdx",
+      label: "Favoriters endpoint page",
+      required: REQUIRED_FAVORITERS_API_HANDOFF_SNIPPETS,
+      forbidden: FORBIDDEN_FAVORITERS_API_RAW_OUTPUT_SNIPPETS,
+    },
+    {
+      name: "keeps the community info API handoff concrete",
+      file: "api-reference/x/community-info.mdx",
+      label: "Community info endpoint page",
+      required: REQUIRED_COMMUNITY_INFO_API_HANDOFF_SNIPPETS,
+      forbidden: FORBIDDEN_COMMUNITY_INFO_API_RAW_OUTPUT_SNIPPETS,
+    },
+    {
+      name: "keeps the community members API handoff concrete",
+      file: "api-reference/x/community-members.mdx",
+      label: "Community members endpoint page",
+      required: REQUIRED_COMMUNITY_MEMBERS_API_HANDOFF_SNIPPETS,
+      forbidden: FORBIDDEN_COMMUNITY_MEMBERS_API_RAW_OUTPUT_SNIPPETS,
+    },
+    {
+      name: "keeps the community moderators API handoff concrete",
+      file: "api-reference/x/community-moderators.mdx",
+      label: "Community moderators endpoint page",
+      required: REQUIRED_COMMUNITY_MODERATORS_API_HANDOFF_SNIPPETS,
+      forbidden: FORBIDDEN_COMMUNITY_MODERATORS_API_RAW_OUTPUT_SNIPPETS,
+    },
+    {
+      name: "keeps the community tweets API handoff concrete",
+      file: "api-reference/x/community-tweets.mdx",
+      label: "Community tweets endpoint page",
+      required: REQUIRED_COMMUNITY_TWEETS_API_HANDOFF_SNIPPETS,
+      forbidden: FORBIDDEN_COMMUNITY_TWEETS_API_RAW_OUTPUT_SNIPPETS,
+    },
+    {
+      name: "keeps the community search API handoff concrete",
+      file: "api-reference/x/community-search.mdx",
+      label: "Community search API page",
+      required: REQUIRED_COMMUNITY_SEARCH_API_HANDOFF_SNIPPETS,
+      forbidden: FORBIDDEN_COMMUNITY_SEARCH_API_RAW_OUTPUT_SNIPPETS,
+    },
+    {
+      name: "keeps the followers API handoff concrete",
+      file: "api-reference/x/followers.mdx",
+      label: "Followers API page",
+      required: REQUIRED_FOLLOWERS_API_HANDOFF_SNIPPETS,
+      forbidden: FORBIDDEN_FOLLOWERS_API_RAW_OUTPUT_SNIPPETS,
+    },
+    {
+      name: "keeps the following API handoff concrete",
+      file: "api-reference/x/following.mdx",
+      label: "Following API page",
+      required: REQUIRED_FOLLOWING_API_HANDOFF_SNIPPETS,
+      forbidden: FORBIDDEN_FOLLOWING_API_RAW_OUTPUT_SNIPPETS,
+    },
+    {
+      name: "keeps the list followers API handoff concrete",
+      file: "api-reference/x/list-followers.mdx",
+      label: "List followers API page",
+      required: REQUIRED_LIST_FOLLOWERS_API_HANDOFF_SNIPPETS,
+      forbidden: FORBIDDEN_LIST_FOLLOWERS_API_RAW_OUTPUT_SNIPPETS,
+    },
+    {
+      name: "keeps the list tweets API handoff concrete",
+      file: "api-reference/x/list-tweets.mdx",
+      label: "List tweets API page",
+      required: REQUIRED_LIST_TWEETS_API_HANDOFF_SNIPPETS,
+      forbidden: FORBIDDEN_LIST_TWEETS_API_RAW_OUTPUT_SNIPPETS,
+    },
+    {
+      name: "keeps the batch users API handoff concrete",
+      file: "api-reference/x/batch-users.mdx",
+      label: "Batch users API page",
+      required: REQUIRED_BATCH_USERS_API_HANDOFF_SNIPPETS,
+      forbidden: FORBIDDEN_BATCH_USERS_API_RAW_OUTPUT_SNIPPETS,
+    },
+    {
+      name: "keeps the batch tweets API handoff concrete",
+      file: "api-reference/x/batch-tweets.mdx",
+      label: "Batch tweets API page",
+      required: REQUIRED_BATCH_TWEETS_API_HANDOFF_SNIPPETS,
+      forbidden: FORBIDDEN_BATCH_TWEETS_API_RAW_OUTPUT_SNIPPETS,
+    },
+    {
+      name: "keeps the bookmark folders API handoff concrete",
+      file: "api-reference/x/bookmark-folders.mdx",
+      label: "Bookmark folders API page",
+      required: REQUIRED_BOOKMARK_FOLDERS_API_HANDOFF_SNIPPETS,
+      forbidden: FORBIDDEN_BOOKMARK_FOLDERS_API_RAW_OUTPUT_SNIPPETS,
+    },
+    {
+      name: "keeps the search users API handoff concrete",
+      file: "api-reference/x/search-users.mdx",
+      label: "Search users API page",
+      required: REQUIRED_SEARCH_USERS_API_HANDOFF_SNIPPETS,
+      forbidden: FORBIDDEN_SEARCH_USERS_API_RAW_OUTPUT_SNIPPETS,
+    },
+    {
+      name: "keeps the user mentions API handoff concrete",
+      file: "api-reference/x/user-mentions.mdx",
+      label: "User mentions API page",
+      required: REQUIRED_USER_MENTIONS_API_HANDOFF_SNIPPETS,
+      forbidden: FORBIDDEN_USER_MENTIONS_API_RAW_OUTPUT_SNIPPETS,
+    },
+    {
+      name: "keeps the verified followers API handoff concrete",
+      file: "api-reference/x/verified-followers.mdx",
+      label: "Verified followers API page",
+      required: REQUIRED_VERIFIED_FOLLOWERS_API_HANDOFF_SNIPPETS,
+      forbidden: FORBIDDEN_VERIFIED_FOLLOWERS_API_RAW_OUTPUT_SNIPPETS,
+    },
+    {
+      name: "keeps the followers you know API handoff concrete",
+      file: "api-reference/x/followers-you-know.mdx",
+      label: "Followers you know API page",
+      required: REQUIRED_FOLLOWERS_YOU_KNOW_API_HANDOFF_SNIPPETS,
+      forbidden: FORBIDDEN_FOLLOWERS_YOU_KNOW_API_RAW_OUTPUT_SNIPPETS,
+    },
+    {
+      name: "keeps the bookmarks API handoff concrete",
+      file: "api-reference/x/bookmarks.mdx",
+      label: "Bookmarks endpoint page",
+      required: REQUIRED_BOOKMARKS_API_HANDOFF_SNIPPETS,
+      forbidden: FORBIDDEN_BOOKMARKS_API_RAW_SNIPPETS,
+    },
+    {
+      name: "keeps the timeline API handoff concrete",
+      file: "api-reference/x/timeline.mdx",
+      label: "Timeline endpoint page",
+      required: REQUIRED_TIMELINE_API_HANDOFF_SNIPPETS,
+      forbidden: FORBIDDEN_TIMELINE_API_RAW_SNIPPETS,
+    },
+    {
+      name: "keeps the user tweets API handoff concrete",
+      file: "api-reference/x/user-tweets.mdx",
+      label: "User tweets endpoint page",
+      required: REQUIRED_USER_TWEETS_API_HANDOFF_SNIPPETS,
+      forbidden: FORBIDDEN_USER_TWEETS_API_RAW_SNIPPETS,
+    },
+    {
+      name: "keeps the user likes API handoff concrete",
+      file: "api-reference/x/user-likes.mdx",
+      label: "User likes endpoint page",
+      required: REQUIRED_USER_LIKES_API_HANDOFF_SNIPPETS,
+      forbidden: FORBIDDEN_USER_LIKES_API_RAW_SNIPPETS,
+    },
+    {
+      name: "keeps the user media API handoff concrete",
+      file: "api-reference/x/user-media.mdx",
+      label: "User media endpoint page",
+      required: REQUIRED_USER_MEDIA_API_HANDOFF_SNIPPETS,
+      forbidden: FORBIDDEN_USER_MEDIA_API_RAW_SNIPPETS,
+    },
+    {
+      name: "keeps response formats and exports source-backed",
+      file: "guides/response-formats-exports.mdx",
+      label: "Response formats and exports guide",
+      required: REQUIRED_RESPONSE_FORMATS_EXPORTS_SNIPPETS,
+      forbidden: FORBIDDEN_RESPONSE_FORMATS_EXPORTS_SNIPPETS,
+    },
+    {
+      name: "keeps the get extraction page cursor-safe for JSON handoffs",
+      file: "api-reference/extractions/twitter-extraction-results.mdx",
+      label: "Get extraction cursor handoff",
+      required: REQUIRED_EXTRACTION_GET_HANDOFF_SNIPPETS,
+      forbidden: FORBIDDEN_EXTRACTION_GET_HANDOFF_SNIPPETS,
+    },
+    {
+      name: "documents the extraction polling lifecycle",
+      file: "api-reference/extractions/create.mdx",
+      label: "Extraction create lifecycle",
+      required: REQUIRED_EXTRACTION_CREATE_LIFECYCLE_SNIPPETS,
+      forbidden: FORBIDDEN_EXTRACTION_CREATE_LIFECYCLE_SNIPPETS,
+    },
+    {
+      name: "keeps the download media API handoff concrete",
+      file: "api-reference/x/download-media.mdx",
+      label: "Download media API page",
+      required: REQUIRED_DOWNLOAD_MEDIA_API_HANDOFF_SNIPPETS,
+      forbidden: FORBIDDEN_DOWNLOAD_MEDIA_RAW_OUTPUT_SNIPPETS,
+    },
+    {
+      name: "keeps the direct message workflow aligned with DM API behavior",
+      file: "guides/direct-message-workflow.mdx",
+      label: "Direct message workflow guide",
+      required: REQUIRED_DIRECT_MESSAGE_WORKFLOW_SNIPPETS,
+      forbidden: FORBIDDEN_DIRECT_MESSAGE_WORKFLOW_SNIPPETS,
+    },
+    {
+      name: "keeps the DM history API page aligned with participant-scoped reads",
+      file: "api-reference/x/dm-history.mdx",
+      label: "DM history API docs",
+      required: REQUIRED_DM_HISTORY_API_SNIPPETS,
+      forbidden: FORBIDDEN_DM_HISTORY_LOG_SNIPPETS,
+    },
+    {
+      name: "keeps the list events API page useful for event row handoff",
+      file: "api-reference/events/list.mdx",
+      label: "List events API docs",
+      required: REQUIRED_EVENT_LIST_API_HANDOFF_SNIPPETS,
+      forbidden: FORBIDDEN_EVENT_LIST_RAW_OUTPUT_SNIPPETS,
+    },
+    {
+      name: "keeps the get event API page useful for detail row handoff",
+      file: "api-reference/events/get.mdx",
+      label: "Get event API docs",
+      required: REQUIRED_EVENT_GET_API_HANDOFF_SNIPPETS,
+      forbidden: FORBIDDEN_EVENT_GET_RAW_OUTPUT_SNIPPETS,
+    },
+    {
+      name: "keeps the campaign verification workflow source-backed",
+      file: "guides/campaign-verification-workflow.mdx",
+      label: "Campaign verification workflow",
+      required: REQUIRED_CAMPAIGN_VERIFICATION_WORKFLOW_SNIPPETS,
+      forbidden: FORBIDDEN_CAMPAIGN_VERIFICATION_WORKFLOW_SNIPPETS,
+    },
+    {
+      name: "keeps request-efficient API usage source-backed",
+      file: "guides/request-efficient-api-usage.mdx",
+      label: "Request-efficient API usage guide",
+      required: REQUIRED_REQUEST_EFFICIENT_API_USAGE_SNIPPETS,
+      forbidden: FORBIDDEN_REQUEST_EFFICIENT_API_USAGE_SNIPPETS,
+    },
+    {
+      name: "keeps the keyword monitor list API handoff concrete",
+      file: "api-reference/monitors/list-keywords.mdx",
+      label: "List keyword monitor API page",
+      required: REQUIRED_KEYWORD_MONITOR_LIST_API_HANDOFF_SNIPPETS,
+      forbidden: FORBIDDEN_KEYWORD_MONITOR_LIST_RAW_OUTPUT_SNIPPETS,
+    },
+    {
+      name: "keeps the keyword monitor get API handoff concrete",
+      file: "api-reference/monitors/get-keyword.mdx",
+      label: "Get keyword monitor API page",
+      required: REQUIRED_KEYWORD_MONITOR_GET_API_HANDOFF_SNIPPETS,
+      forbidden: FORBIDDEN_KEYWORD_MONITOR_GET_RAW_OUTPUT_SNIPPETS,
+    },
+    {
+      name: "keeps the account monitor API handoff concrete",
+      file: "api-reference/monitors/create.mdx",
+      label: "Create account monitor endpoint page",
+      required: REQUIRED_ACCOUNT_MONITOR_API_HANDOFF_SNIPPETS,
+      forbidden: FORBIDDEN_ACCOUNT_MONITOR_CREATE_SNIPPETS,
+    },
+    {
+      name: "keeps the account monitor list API handoff concrete",
+      file: "api-reference/monitors/list.mdx",
+      label: "List account monitor API page",
+      required: REQUIRED_ACCOUNT_MONITOR_LIST_API_HANDOFF_SNIPPETS,
+      forbidden: FORBIDDEN_ACCOUNT_MONITOR_LIST_RAW_OUTPUT_SNIPPETS,
+    },
+  ])("$name", ({ file, label, required, forbidden }): void => {
     expect.assertions(1);
-
-    const source = readFileSync("sdks.mdx", "utf8");
-
     expect(
-      collectSnippetFindings(
-        source,
-        "SDK overview docs",
-        REQUIRED_SDK_OVERVIEW_SNIPPETS,
-        FORBIDDEN_SDK_OVERVIEW_SNIPPETS,
-      ),
+      collectSnippetFindings(readFileSync(file, "utf8"), label, required, forbidden),
     ).toStrictEqual([]);
   });
 
-  it("keeps the TypeScript SDK page useful for tweet search handoffs", (): void => {
+  it.each([
+    {
+      name: "keeps the TypeScript SDK page useful for tweet search handoffs",
+      file: "sdks/typescript.mdx",
+      limit: 19_050,
+      label: "TypeScript SDK workflow docs",
+      required: REQUIRED_TYPESCRIPT_SDK_WORKFLOW_SNIPPETS,
+      forbidden: FORBIDDEN_TYPESCRIPT_SDK_RAW_SEARCH_SNIPPETS,
+    },
+    {
+      name: "keeps the Go SDK page useful for tweet search handoffs",
+      file: "sdks/go.mdx",
+      limit: 20_100,
+      label: "Go SDK workflow docs",
+      required: REQUIRED_GO_SDK_WORKFLOW_SNIPPETS,
+      forbidden: FORBIDDEN_GO_SDK_WEAK_SEARCH_SNIPPETS,
+    },
+    {
+      name: "keeps the Python SDK page useful for tweet search handoffs",
+      file: "sdks/python.mdx",
+      limit: 20_400,
+      label: "Python SDK workflow docs",
+      required: REQUIRED_PYTHON_SDK_WORKFLOW_SNIPPETS,
+      forbidden: FORBIDDEN_PYTHON_SDK_RAW_SEARCH_SNIPPETS,
+    },
+    {
+      name: "keeps the Ruby SDK page useful for tweet search handoffs",
+      file: "sdks/ruby.mdx",
+      limit: 17_950,
+      label: "Ruby SDK workflow docs",
+      required: REQUIRED_RUBY_SDK_WORKFLOW_SNIPPETS,
+      forbidden: FORBIDDEN_RUBY_SDK_WEAK_SEARCH_SNIPPETS,
+    },
+    {
+      name: "keeps the CLI SDK page useful for tweet search, follower export, and replies handoffs",
+      file: "sdks/cli.mdx",
+      limit: 18_950,
+      label: "CLI SDK workflow docs",
+      required: REQUIRED_CLI_SDK_WORKFLOW_SNIPPETS,
+      forbidden: FORBIDDEN_CLI_SDK_WORKFLOW_SNIPPETS,
+    },
+    {
+      name: "keeps the C# SDK page useful for tweet search handoffs",
+      file: "sdks/csharp-x-api-sdk.mdx",
+      limit: 23_100,
+      label: "C# SDK workflow docs",
+      required: REQUIRED_CSHARP_SDK_WORKFLOW_SNIPPETS,
+      forbidden: FORBIDDEN_CSHARP_SDK_WEAK_SEARCH_SNIPPETS,
+    },
+    {
+      name: "keeps the PHP SDK page useful for tweet search handoffs",
+      file: "sdks/php.mdx",
+      limit: 20_150,
+      label: "PHP SDK workflow docs",
+      required: REQUIRED_PHP_SDK_WORKFLOW_SNIPPETS,
+      forbidden: FORBIDDEN_PHP_SDK_WEAK_SEARCH_SNIPPETS,
+    },
+  ])("$name", ({ file, limit, label, required, forbidden }): void => {
     expect.assertions(2);
-
-    const source = readFileSync("sdks/typescript.mdx", "utf8");
-
-    expect(source.length).toBeLessThanOrEqual(19_050);
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "TypeScript SDK workflow docs",
-        REQUIRED_TYPESCRIPT_SDK_WORKFLOW_SNIPPETS,
-        FORBIDDEN_TYPESCRIPT_SDK_RAW_SEARCH_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it("keeps the Go SDK page useful for tweet search handoffs", (): void => {
-    expect.assertions(2);
-
-    const source = readFileSync("sdks/go.mdx", "utf8");
-
-    expect(source.length).toBeLessThanOrEqual(20_100);
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "Go SDK workflow docs",
-        REQUIRED_GO_SDK_WORKFLOW_SNIPPETS,
-        FORBIDDEN_GO_SDK_WEAK_SEARCH_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it("keeps the Python SDK page useful for tweet search handoffs", (): void => {
-    expect.assertions(2);
-
-    const source = readFileSync("sdks/python.mdx", "utf8");
-
-    expect(source.length).toBeLessThanOrEqual(20_400);
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "Python SDK workflow docs",
-        REQUIRED_PYTHON_SDK_WORKFLOW_SNIPPETS,
-        FORBIDDEN_PYTHON_SDK_RAW_SEARCH_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it("keeps the Ruby SDK page useful for tweet search handoffs", (): void => {
-    expect.assertions(2);
-
-    const source = readFileSync("sdks/ruby.mdx", "utf8");
-
-    expect(source.length).toBeLessThanOrEqual(17_950);
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "Ruby SDK workflow docs",
-        REQUIRED_RUBY_SDK_WORKFLOW_SNIPPETS,
-        FORBIDDEN_RUBY_SDK_WEAK_SEARCH_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it("keeps the CLI SDK page useful for tweet search, follower export, and replies handoffs", (): void => {
-    expect.assertions(2);
-
-    const source = readFileSync("sdks/cli.mdx", "utf8");
-
-    expect(source.length).toBeLessThanOrEqual(18_950);
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "CLI SDK workflow docs",
-        REQUIRED_CLI_SDK_WORKFLOW_SNIPPETS,
-        FORBIDDEN_CLI_SDK_WORKFLOW_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it("keeps the C# SDK page useful for tweet search handoffs", (): void => {
-    expect.assertions(2);
-
-    const source = readFileSync("sdks/csharp-x-api-sdk.mdx", "utf8");
-
-    expect(source.length).toBeLessThanOrEqual(23_100);
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "C# SDK workflow docs",
-        REQUIRED_CSHARP_SDK_WORKFLOW_SNIPPETS,
-        FORBIDDEN_CSHARP_SDK_WEAK_SEARCH_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it("keeps the PHP SDK page useful for tweet search handoffs", (): void => {
-    expect.assertions(2);
-
-    const source = readFileSync("sdks/php.mdx", "utf8");
-
-    expect(source.length).toBeLessThanOrEqual(20_150);
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "PHP SDK workflow docs",
-        REQUIRED_PHP_SDK_WORKFLOW_SNIPPETS,
-        FORBIDDEN_PHP_SDK_WEAK_SEARCH_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
+    const source = readFileSync(file, "utf8");
+    expect(source.length).toBeLessThanOrEqual(limit);
+    expect(collectSnippetFindings(source, label, required, forbidden)).toStrictEqual([]);
   });
 
   it("keeps the Java SDK page useful for tweet search handoffs", (): void => {
@@ -13281,18 +13494,6 @@ describe("repository discovery", (): void => {
     });
 
     expect(findings).toStrictEqual([]);
-  });
-
-  it("keeps public tweet media docs on public URLs, not uploaded IDs", (): void => {
-    expect.assertions(1);
-
-    expect(collectPublicTweetMediaIdBoundaryFindings()).toStrictEqual([]);
-  });
-
-  it("keeps public DM docs from showing unsupported reply field examples", (): void => {
-    expect.assertions(1);
-
-    expect(collectPublicDmReplyFieldExampleFindings()).toStrictEqual([]);
   });
 
   it("keeps the Terraform provider page useful for monitor webhook handoffs", (): void => {
@@ -13558,21 +13759,6 @@ describe("repository discovery", (): void => {
     ).toStrictEqual([]);
   });
 
-  it("keeps troubleshooting clear about Docs MCP vs API MCP", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("guides/troubleshooting.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "Troubleshooting MCP handoff",
-        REQUIRED_TROUBLESHOOTING_MCP_HANDOFF_SNIPPETS,
-        FORBIDDEN_TROUBLESHOOTING_MCP_HANDOFF_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
   it("keeps billing recovery steps concrete for 402 failures", (): void => {
     expect.assertions(2);
 
@@ -13772,21 +13958,6 @@ describe("repository discovery", (): void => {
     expect(collectSnippetFindings(source, label, snippets)).toStrictEqual([]);
   });
 
-  it("keeps guest wallet creation secrets out of example output", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("api-reference/guest-wallets/create.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "Create guest wallet docs",
-        REQUIRED_GUEST_WALLET_CREATE_SECURITY_SNIPPETS,
-        FORBIDDEN_GUEST_WALLET_CREATE_LOG_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
   it("keeps guest paid reads separate from direct MPP operations", (): void => {
     expect.assertions(1);
 
@@ -13807,51 +13978,6 @@ describe("repository discovery", (): void => {
           ),
         ];
       }),
-    ).toStrictEqual([]);
-  });
-
-  it("keeps glossary credit carry-over aligned with billing behavior", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("guides/glossary.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "Glossary credit carry-over",
-        REQUIRED_GLOSSARY_CREDIT_CARRYOVER_SNIPPETS,
-        FORBIDDEN_GLOSSARY_CREDIT_CARRYOVER_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it("keeps the X API glossary concrete and source-backed", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("guides/glossary.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "X API glossary",
-        REQUIRED_X_API_GLOSSARY_SNIPPETS,
-        FORBIDDEN_X_API_GLOSSARY_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it("keeps authentication account checks aligned with monitor billing behavior", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("api-reference/authentication.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "Authentication account check docs",
-        REQUIRED_AUTHENTICATION_ACCOUNT_SNIPPETS,
-        FORBIDDEN_AUTHENTICATION_ACCOUNT_SNIPPETS,
-      ),
     ).toStrictEqual([]);
   });
 
@@ -13906,27 +14032,6 @@ describe("repository discovery", (): void => {
     ).toStrictEqual([]);
   });
 
-  it("keeps the X API integration checklist concrete", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("guides/x-api-integration-checklist.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "X API integration checklist",
-        REQUIRED_X_API_INTEGRATION_CHECKLIST_SNIPPETS,
-        FORBIDDEN_API_OVERVIEW_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it("keeps public Search Tweets links on the q query parameter", (): void => {
-    expect.assertions(1);
-
-    expect(collectStaleSearchTweetsQueryParamFindings()).toStrictEqual([]);
-  });
-
   it("keeps rate-limit troubleshooting aligned with fixed-window behavior", (): void => {
     expect.assertions(1);
 
@@ -13941,21 +14046,6 @@ describe("repository discovery", (): void => {
         "Rate-limit troubleshooting docs",
         REQUIRED_RATE_LIMIT_TROUBLESHOOTING_SNIPPETS,
         FORBIDDEN_RATE_LIMIT_TROUBLESHOOTING_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it("keeps the Twitter API rate-limit guide source-backed", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("guides/rate-limits.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "Twitter API rate-limit guide",
-        REQUIRED_TWITTER_RATE_LIMIT_GUIDE_SNIPPETS,
-        FORBIDDEN_TWITTER_RATE_LIMIT_GUIDE_SNIPPETS,
       ),
     ).toStrictEqual([]);
   });
@@ -14066,276 +14156,6 @@ describe("repository discovery", (): void => {
     expect(source).not.toContain("console.log(JSON.stringify(row));");
   });
 
-  it("keeps the tweet replies API handoff concrete", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("api-reference/x/tweet-replies.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "Tweet replies endpoint page",
-        REQUIRED_TWEET_REPLIES_API_HANDOFF_SNIPPETS,
-        FORBIDDEN_TWEET_REPLIES_API_RAW_OUTPUT_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it("keeps the tweet quotes API handoff concrete", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("api-reference/x/tweet-quotes.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "Tweet quotes endpoint page",
-        REQUIRED_TWEET_QUOTES_API_HANDOFF_SNIPPETS,
-        FORBIDDEN_TWEET_QUOTES_API_RAW_OUTPUT_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it("keeps the get tweet API handoff concrete", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("api-reference/x/get-tweet.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "Get tweet endpoint page",
-        REQUIRED_GET_TWEET_API_HANDOFF_SNIPPETS,
-        FORBIDDEN_GET_TWEET_API_RAW_OUTPUT_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it("keeps the get user API handoff concrete", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("api-reference/x/twitter-profile-lookup.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "Get user endpoint page",
-        REQUIRED_GET_USER_API_HANDOFF_SNIPPETS,
-        FORBIDDEN_GET_USER_API_RAW_OUTPUT_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it("keeps the notifications API handoff concrete", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("api-reference/x/notifications.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "Notifications endpoint page",
-        REQUIRED_NOTIFICATIONS_API_HANDOFF_SNIPPETS,
-        FORBIDDEN_NOTIFICATIONS_API_RAW_OUTPUT_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it("keeps the X trends API handoff concrete", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("api-reference/x/trends.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "X trends endpoint page",
-        REQUIRED_X_TRENDS_API_HANDOFF_SNIPPETS,
-        FORBIDDEN_X_TRENDS_API_RAW_OUTPUT_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it("keeps the trends API handoff concrete", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("api-reference/trends/list.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "Trends API page",
-        REQUIRED_TRENDS_API_HANDOFF_SNIPPETS,
-        FORBIDDEN_TRENDS_API_RAW_OUTPUT_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it("keeps the get article API handoff concrete", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("api-reference/x/get-article.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "Get article endpoint page",
-        REQUIRED_GET_ARTICLE_API_HANDOFF_SNIPPETS,
-        FORBIDDEN_GET_ARTICLE_API_RAW_OUTPUT_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it("keeps the tweet thread API handoff concrete", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("api-reference/x/tweet-thread.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "Tweet thread endpoint page",
-        REQUIRED_TWEET_THREAD_API_HANDOFF_SNIPPETS,
-        FORBIDDEN_TWEET_THREAD_API_RAW_OUTPUT_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it("keeps the retweeters API handoff concrete", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("api-reference/x/retweeters.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "Retweeters endpoint page",
-        REQUIRED_RETWEETERS_API_HANDOFF_SNIPPETS,
-        FORBIDDEN_RETWEETERS_API_RAW_OUTPUT_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it("keeps the favoriters API handoff concrete", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("api-reference/x/favoriters.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "Favoriters endpoint page",
-        REQUIRED_FAVORITERS_API_HANDOFF_SNIPPETS,
-        FORBIDDEN_FAVORITERS_API_RAW_OUTPUT_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it("keeps the community info API handoff concrete", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("api-reference/x/community-info.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "Community info endpoint page",
-        REQUIRED_COMMUNITY_INFO_API_HANDOFF_SNIPPETS,
-        FORBIDDEN_COMMUNITY_INFO_API_RAW_OUTPUT_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it("keeps the community members API handoff concrete", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("api-reference/x/community-members.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "Community members endpoint page",
-        REQUIRED_COMMUNITY_MEMBERS_API_HANDOFF_SNIPPETS,
-        FORBIDDEN_COMMUNITY_MEMBERS_API_RAW_OUTPUT_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it("keeps the community moderators API handoff concrete", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("api-reference/x/community-moderators.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "Community moderators endpoint page",
-        REQUIRED_COMMUNITY_MODERATORS_API_HANDOFF_SNIPPETS,
-        FORBIDDEN_COMMUNITY_MODERATORS_API_RAW_OUTPUT_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it("keeps the community tweets API handoff concrete", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("api-reference/x/community-tweets.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "Community tweets endpoint page",
-        REQUIRED_COMMUNITY_TWEETS_API_HANDOFF_SNIPPETS,
-        FORBIDDEN_COMMUNITY_TWEETS_API_RAW_OUTPUT_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it("keeps the community search API handoff concrete", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("api-reference/x/community-search.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "Community search API page",
-        REQUIRED_COMMUNITY_SEARCH_API_HANDOFF_SNIPPETS,
-        FORBIDDEN_COMMUNITY_SEARCH_API_RAW_OUTPUT_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it("keeps the followers API handoff concrete", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("api-reference/x/followers.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "Followers API page",
-        REQUIRED_FOLLOWERS_API_HANDOFF_SNIPPETS,
-        FORBIDDEN_FOLLOWERS_API_RAW_OUTPUT_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it("keeps the following API handoff concrete", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("api-reference/x/following.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "Following API page",
-        REQUIRED_FOLLOWING_API_HANDOFF_SNIPPETS,
-        FORBIDDEN_FOLLOWING_API_RAW_OUTPUT_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
   it("keeps the Check Follower page off the reverted relationship-row pattern", (): void => {
     expect.assertions(1);
 
@@ -14389,21 +14209,6 @@ describe("repository discovery", (): void => {
     ).toStrictEqual([]);
   });
 
-  it("keeps the list followers API handoff concrete", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("api-reference/x/list-followers.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "List followers API page",
-        REQUIRED_LIST_FOLLOWERS_API_HANDOFF_SNIPPETS,
-        FORBIDDEN_LIST_FOLLOWERS_API_RAW_OUTPUT_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
   it("keeps the list members API handoff concrete", (): void => {
     expect.assertions(1);
 
@@ -14427,126 +14232,6 @@ describe("repository discovery", (): void => {
       ),
       ...forbiddenRawOutputFindings,
     ]).toStrictEqual([]);
-  });
-
-  it("keeps the list tweets API handoff concrete", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("api-reference/x/list-tweets.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "List tweets API page",
-        REQUIRED_LIST_TWEETS_API_HANDOFF_SNIPPETS,
-        FORBIDDEN_LIST_TWEETS_API_RAW_OUTPUT_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it("keeps the batch users API handoff concrete", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("api-reference/x/batch-users.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "Batch users API page",
-        REQUIRED_BATCH_USERS_API_HANDOFF_SNIPPETS,
-        FORBIDDEN_BATCH_USERS_API_RAW_OUTPUT_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it("keeps the batch tweets API handoff concrete", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("api-reference/x/batch-tweets.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "Batch tweets API page",
-        REQUIRED_BATCH_TWEETS_API_HANDOFF_SNIPPETS,
-        FORBIDDEN_BATCH_TWEETS_API_RAW_OUTPUT_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it("keeps the bookmark folders API handoff concrete", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("api-reference/x/bookmark-folders.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "Bookmark folders API page",
-        REQUIRED_BOOKMARK_FOLDERS_API_HANDOFF_SNIPPETS,
-        FORBIDDEN_BOOKMARK_FOLDERS_API_RAW_OUTPUT_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it("keeps the search users API handoff concrete", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("api-reference/x/search-users.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "Search users API page",
-        REQUIRED_SEARCH_USERS_API_HANDOFF_SNIPPETS,
-        FORBIDDEN_SEARCH_USERS_API_RAW_OUTPUT_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it("keeps the user mentions API handoff concrete", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("api-reference/x/user-mentions.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "User mentions API page",
-        REQUIRED_USER_MENTIONS_API_HANDOFF_SNIPPETS,
-        FORBIDDEN_USER_MENTIONS_API_RAW_OUTPUT_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it("keeps the verified followers API handoff concrete", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("api-reference/x/verified-followers.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "Verified followers API page",
-        REQUIRED_VERIFIED_FOLLOWERS_API_HANDOFF_SNIPPETS,
-        FORBIDDEN_VERIFIED_FOLLOWERS_API_RAW_OUTPUT_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it("keeps the followers you know API handoff concrete", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("api-reference/x/followers-you-know.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "Followers you know API page",
-        REQUIRED_FOLLOWERS_YOU_KNOW_API_HANDOFF_SNIPPETS,
-        FORBIDDEN_FOLLOWERS_YOU_KNOW_API_RAW_OUTPUT_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
   });
 
   it("keeps tweet search export workflow steps concrete", (): void => {
@@ -14614,81 +14299,6 @@ describe("repository discovery", (): void => {
     expect(findings).toStrictEqual([]);
   });
 
-  it("keeps the bookmarks API handoff concrete", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("api-reference/x/bookmarks.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "Bookmarks endpoint page",
-        REQUIRED_BOOKMARKS_API_HANDOFF_SNIPPETS,
-        FORBIDDEN_BOOKMARKS_API_RAW_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it("keeps the timeline API handoff concrete", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("api-reference/x/timeline.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "Timeline endpoint page",
-        REQUIRED_TIMELINE_API_HANDOFF_SNIPPETS,
-        FORBIDDEN_TIMELINE_API_RAW_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it("keeps the user tweets API handoff concrete", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("api-reference/x/user-tweets.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "User tweets endpoint page",
-        REQUIRED_USER_TWEETS_API_HANDOFF_SNIPPETS,
-        FORBIDDEN_USER_TWEETS_API_RAW_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it("keeps the user likes API handoff concrete", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("api-reference/x/user-likes.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "User likes endpoint page",
-        REQUIRED_USER_LIKES_API_HANDOFF_SNIPPETS,
-        FORBIDDEN_USER_LIKES_API_RAW_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it("keeps the user media API handoff concrete", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("api-reference/x/user-media.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "User media endpoint page",
-        REQUIRED_USER_MEDIA_API_HANDOFF_SNIPPETS,
-        FORBIDDEN_USER_MEDIA_API_RAW_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
   it("keeps the extraction workflow concrete for credits, JSON, and file handoffs", (): void => {
     expect.assertions(2);
 
@@ -14703,36 +14313,6 @@ describe("repository discovery", (): void => {
       ),
     ).toStrictEqual([]);
     expect(source.length).toBeLessThanOrEqual(30_000);
-  });
-
-  it("keeps response formats and exports source-backed", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("guides/response-formats-exports.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "Response formats and exports guide",
-        REQUIRED_RESPONSE_FORMATS_EXPORTS_SNIPPETS,
-        FORBIDDEN_RESPONSE_FORMATS_EXPORTS_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it("keeps the get extraction page cursor-safe for JSON handoffs", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("api-reference/extractions/twitter-extraction-results.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "Get extraction cursor handoff",
-        REQUIRED_EXTRACTION_GET_HANDOFF_SNIPPETS,
-        FORBIDDEN_EXTRACTION_GET_HANDOFF_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
   });
 
   it("keeps the list extractions page cursor-safe for job inventory handoffs", (): void => {
@@ -14825,21 +14405,6 @@ describe("repository discovery", (): void => {
       ),
     ).toStrictEqual([]);
     expect(source).not.toContain("|-----------|---------------|-------------|");
-  });
-
-  it("documents the extraction polling lifecycle", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("api-reference/extractions/create.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "Extraction create lifecycle",
-        REQUIRED_EXTRACTION_CREATE_LIFECYCLE_SNIPPETS,
-        FORBIDDEN_EXTRACTION_CREATE_LIFECYCLE_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
   });
 
   it("keeps extraction estimate framed as a decision checkpoint", (): void => {
@@ -14955,87 +14520,6 @@ describe("repository discovery", (): void => {
     ).toStrictEqual([]);
     expect(
       FORBIDDEN_UPLOAD_MEDIA_API_HANDOFF_SNIPPETS.filter((snippet) => source.includes(snippet)),
-    ).toStrictEqual([]);
-  });
-
-  it("keeps the download media API handoff concrete", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("api-reference/x/download-media.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "Download media API page",
-        REQUIRED_DOWNLOAD_MEDIA_API_HANDOFF_SNIPPETS,
-        FORBIDDEN_DOWNLOAD_MEDIA_RAW_OUTPUT_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it("keeps the direct message workflow aligned with DM API behavior", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("guides/direct-message-workflow.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "Direct message workflow guide",
-        REQUIRED_DIRECT_MESSAGE_WORKFLOW_SNIPPETS,
-        FORBIDDEN_DIRECT_MESSAGE_WORKFLOW_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it("keeps DM history examples on raw REST until generated clients expose account query support", (): void => {
-    expect.assertions(1);
-
-    expect(collectUnsupportedDmHistorySdkExampleFindings()).toStrictEqual([]);
-  });
-
-  it("keeps the DM history API page aligned with participant-scoped reads", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("api-reference/x/dm-history.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "DM history API docs",
-        REQUIRED_DM_HISTORY_API_SNIPPETS,
-        FORBIDDEN_DM_HISTORY_LOG_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it("keeps the list events API page useful for event row handoff", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("api-reference/events/list.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "List events API docs",
-        REQUIRED_EVENT_LIST_API_HANDOFF_SNIPPETS,
-        FORBIDDEN_EVENT_LIST_RAW_OUTPUT_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it("keeps the get event API page useful for detail row handoff", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("api-reference/events/get.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "Get event API docs",
-        REQUIRED_EVENT_GET_API_HANDOFF_SNIPPETS,
-        FORBIDDEN_EVENT_GET_RAW_OUTPUT_SNIPPETS,
-      ),
     ).toStrictEqual([]);
   });
 
@@ -15502,12 +14986,6 @@ describe("repository discovery", (): void => {
     ).toStrictEqual([]);
   });
 
-  it("keeps X account public docs aligned with the current connection contract", (): void => {
-    expect.assertions(1);
-
-    expect(collectStaleXAccountPublicContractFindings()).toStrictEqual([]);
-  });
-
   it("keeps the workflows overview handoff matrix concrete", (): void => {
     expect.assertions(1);
 
@@ -15557,42 +15035,12 @@ describe("repository discovery", (): void => {
     ]).toStrictEqual([]);
   });
 
-  it("keeps the campaign verification workflow source-backed", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("guides/campaign-verification-workflow.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "Campaign verification workflow",
-        REQUIRED_CAMPAIGN_VERIFICATION_WORKFLOW_SNIPPETS,
-        FORBIDDEN_CAMPAIGN_VERIFICATION_WORKFLOW_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
   it("keeps the workflows overview within the generated HTML weight budget", (): void => {
     expect.assertions(1);
 
     const source = readFileSync("guides/workflows.mdx", "utf8");
 
     expect(source.length).toBeLessThanOrEqual(MAX_WORKFLOWS_OVERVIEW_CHARS);
-  });
-
-  it("keeps request-efficient API usage source-backed", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("guides/request-efficient-api-usage.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "Request-efficient API usage guide",
-        REQUIRED_REQUEST_EFFICIENT_API_USAGE_SNIPPETS,
-        FORBIDDEN_REQUEST_EFFICIENT_API_USAGE_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
   });
 
   it("keeps the keyword monitor API handoff concrete", (): void => {
@@ -15639,36 +15087,6 @@ describe("repository discovery", (): void => {
             : [],
       ),
     ]).toStrictEqual([]);
-  });
-
-  it("keeps the keyword monitor list API handoff concrete", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("api-reference/monitors/list-keywords.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "List keyword monitor API page",
-        REQUIRED_KEYWORD_MONITOR_LIST_API_HANDOFF_SNIPPETS,
-        FORBIDDEN_KEYWORD_MONITOR_LIST_RAW_OUTPUT_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it("keeps the keyword monitor get API handoff concrete", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("api-reference/monitors/get-keyword.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "Get keyword monitor API page",
-        REQUIRED_KEYWORD_MONITOR_GET_API_HANDOFF_SNIPPETS,
-        FORBIDDEN_KEYWORD_MONITOR_GET_RAW_OUTPUT_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
   });
 
   it("keeps the keyword monitor update API handoff concrete", (): void => {
@@ -15751,21 +15169,6 @@ describe("repository discovery", (): void => {
     ]).toStrictEqual([]);
   });
 
-  it("keeps the account monitor API handoff concrete", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("api-reference/monitors/create.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "Create account monitor endpoint page",
-        REQUIRED_ACCOUNT_MONITOR_API_HANDOFF_SNIPPETS,
-        FORBIDDEN_ACCOUNT_MONITOR_CREATE_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
-  });
-
   it("keeps the account monitor get API handoff concrete", (): void => {
     expect.assertions(1);
 
@@ -15801,21 +15204,6 @@ describe("repository discovery", (): void => {
             : [],
       ),
     ]).toStrictEqual([]);
-  });
-
-  it("keeps the account monitor list API handoff concrete", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("api-reference/monitors/list.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(
-        source,
-        "List account monitor API page",
-        REQUIRED_ACCOUNT_MONITOR_LIST_API_HANDOFF_SNIPPETS,
-        FORBIDDEN_ACCOUNT_MONITOR_LIST_RAW_OUTPUT_SNIPPETS,
-      ),
-    ).toStrictEqual([]);
   });
 
   it("keeps the account monitor update API handoff concrete", (): void => {
@@ -16296,18 +15684,6 @@ describe("repository discovery", (): void => {
     expect(findings).toStrictEqual([]);
   });
 
-  it("keeps volatile Apify marketplace claims out of public Markdown", (): void => {
-    expect.assertions(1);
-
-    expect(collectPublicApifyMarketplaceFindings()).toStrictEqual([]);
-  });
-
-  it("keeps public credit cost wording aligned with billing model", (): void => {
-    expect.assertions(1);
-
-    expect(collectStaleCreditCostFindings()).toStrictEqual([]);
-  });
-
   it("keeps Xquik docs icon sources aligned with product icon policy", (): void => {
     expect.assertions(3);
 
@@ -16318,12 +15694,6 @@ describe("repository discovery", (): void => {
         : "7b22cb7c5f5f9f154e1327210b7878e03e1028ef33857282701feb5fd5e96960",
     );
     expect(readFileSync("docs.json", "utf8")).toContain('"favicon": "/favicon.svg"');
-  });
-
-  it("keeps comparison guides direct and value focused", (): void => {
-    expect.assertions(1);
-
-    expect(collectComparisonPositioningFindings()).toStrictEqual([]);
   });
 
   it("documents the public documentation protocols", (): void => {

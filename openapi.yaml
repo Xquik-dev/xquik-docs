@@ -4606,17 +4606,7 @@ paths:
           content: &support-receipt-content
             application/json:
               schema:
-                type: object
-                required: [publicId, attachments]
-                properties:
-                  publicId:
-                    type: string
-                    example: 'tkt_a1b2c3d4e5f6a1b2c3d4e5f6'
-                  attachments:
-                    type: array
-                    example: []
-                    items:
-                      $ref: '#/components/schemas/SupportAttachmentReceipt'
+                $ref: '#/components/schemas/SupportReceipt'
               example:
                 publicId: 'tkt_a1b2c3d4e5f6a1b2c3d4e5f6'
                 attachments: []
@@ -6874,7 +6864,9 @@ paths:
   /x/tweets/{id}/retweeters:
     get:
       operationId: getTweetRetweeters
-      description: Returns public profiles that reposted the selected tweet.
+      description: Lists reposting profiles. Optional timestamps come from the newest
+        profile page. Extra reads add latency. Missing or failed matches leave
+        null timestamps.
       summary: List users who retweeted a tweet
       tags:
         - Tweets
@@ -6891,6 +6883,12 @@ paths:
           schema:
             type: string
           description: Pagination cursor for retweeters
+        - name: includeRetweetTimestamp
+          in: query
+          description: Look up repost event times.
+          schema:
+            type: boolean
+            default: false
         - $ref: '#/components/parameters/FollowerPageSize'
         - $ref: '#/components/parameters/UserFilterMinFollowers'
         - $ref: '#/components/parameters/UserFilterMaxFollowers'
@@ -8656,6 +8654,32 @@ components:
             message: 'X account not found.'
 
   schemas:
+    SupportReceipt:
+      description: Support submission receipt.
+      type: object
+      required: [publicId, attachments]
+      properties:
+        publicId:
+          type: string
+          example: 'tkt_a1b2c3d4e5f6a1b2c3d4e5f6'
+        attachments:
+          type: array
+          example: []
+          items:
+            $ref: '#/components/schemas/SupportAttachmentReceipt'
+    GuestPaymentOptions:
+      description: Accountless checkout options.
+      type: object
+      additionalProperties: false
+      required: [guest_wallet]
+      properties:
+        guest_wallet:
+          type: object
+          additionalProperties: false
+          required: [create_checkout]
+          properties:
+            create_checkout:
+              $ref: '#/components/schemas/GuestWalletCreateCheckoutAction'
     # oxfmt-ignore
     NlwebAskRequest:
       description: Public NLWeb documentation search request.
@@ -10595,17 +10619,7 @@ components:
           type: string
           const: Ask the user to confirm a USD amount before creating checkout.
         payment_options: &guest-payment-options
-          type: object
-          additionalProperties: false
-          required: [guest_wallet]
-          properties:
-            guest_wallet:
-              type: object
-              additionalProperties: false
-              required: [create_checkout]
-              properties:
-                create_checkout:
-                  $ref: '#/components/schemas/GuestWalletCreateCheckoutAction'
+          $ref: '#/components/schemas/GuestPaymentOptions'
     GuestPaymentRequired:
       description: >
         Credit error for a paid-read guest key with only its accountless guest
@@ -12367,6 +12381,12 @@ components:
         isNoteTweet: { type: boolean, example: false }
         isQuoteStatus: { type: boolean, example: false }
         quotedTweetId: { type: string, description: Quoted tweet ID. }
+        retweetedAt:
+          type: [string, 'null']
+          format: date-time
+          description: Repost event time in UTC. Null when unavailable; omitted for other
+            posts.
+          example: '2026-09-11T20:24:45.000Z'
         inReplyToId: { type: string, example: '1234567890' }
         inReplyToUserId: { type: string, example: '9876543210' }
         inReplyToUsername: { type: string, example: example_user }
@@ -12674,7 +12694,7 @@ components:
         observedAt: { type: string, format: date-time, example: '2026-08-21T10:00:00Z' }
 
     UserProfile:
-      description: X user profile with bio, follower counts, and verification status.
+      description: Public X profile.
       type: object
       example: { id: '9876543210', username: elonmusk, name: 'Elon Musk' }
       required: [id, username, name]
@@ -12726,6 +12746,12 @@ components:
           anyOf:
             - $ref: '#/components/schemas/AccountBasedIn'
             - type: 'null'
+        retweetedAt:
+          type: [string, 'null']
+          format: date-time
+          description: UTC repost time with includeRetweetTimestamp. Null if the newest
+            profile page has no match or lookup failed; otherwise omitted.
+          example: '2026-09-11T20:24:45.000Z'
         createdAt:
           type: string
           example: '2009-06-02T20:12:29Z'

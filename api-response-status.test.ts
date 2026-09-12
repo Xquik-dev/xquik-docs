@@ -1,19 +1,21 @@
-import type {
-  Document as OpenApiSpec,
-  Operation as OpenApiOperation,
-} from "./scripts/sync-api-response-examples.mjs";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import {
-  replaceGeneratedBlock,
-  responseExampleBlock,
-} from "./scripts/sync-api-response-examples.mjs";
 
 import {
   GENERATED_RESPONSE_EXAMPLES_END,
   GENERATED_RESPONSE_EXAMPLES_START,
+  stripGeneratedResponseExamples,
 } from "./scripts/lib/generated-response-examples";
+
+interface OpenApiOperation {
+  readonly responses?: Readonly<Record<string, unknown>>;
+  readonly "x-write-action"?: string;
+}
+
+interface OpenApiSpec {
+  readonly paths?: Readonly<Record<string, Readonly<Record<string, OpenApiOperation>>>>;
+}
 
 const PROJECT_ROOT = process.cwd();
 const spec = Bun.YAML.parse(
@@ -181,32 +183,22 @@ function collectStatusFindings({
 }
 
 describe("API success response status documentation", (): void => {
-  it("generates the documented response blocks from canonical schemas", (): void => {
+  it.each([
+    GENERATED_RESPONSE_EXAMPLES_START,
+    GENERATED_RESPONSE_EXAMPLES_END,
+    `${GENERATED_RESPONSE_EXAMPLES_END}\n${GENERATED_RESPONSE_EXAMPLES_START}`,
+  ])("rejects incomplete or reversed response markers: %s", (source): void => {
     expect.assertions(1);
-    const mismatches = readApiDocs().flatMap((apiDoc): readonly string[] => {
-      const scope = apiDoc.file.replace(/^api-reference\//u, "").replace(/\.mdx$/u, "");
-      const operation = spec.paths?.[apiDoc.path]?.[apiDoc.method];
-      if (operation === undefined) return [apiDoc.file];
-      const generated = responseExampleBlock(spec, operation, scope);
-      return generatedResponseBlock(apiDoc.source) === generatedResponseBlock(generated) &&
-        replaceGeneratedBlock(apiDoc.source, generated) === apiDoc.source
-        ? []
-        : [apiDoc.file];
-    });
-    expect(mismatches).toStrictEqual([]);
+    expect(() => stripGeneratedResponseExamples(source)).toThrow(
+      "Generated response example markers are incomplete.",
+    );
   });
 
-  it("combines response schema fields without losing false or zero values", (): void => {
+  it("preserves documents without generated response markers", (): void => {
     expect.assertions(1);
-    const schema = {
-      allOf: [
-        { type: "object", properties: { available: { type: "boolean" } } },
-        { type: "object", properties: { score: { type: "integer" } } },
-      ],
-    };
-    const responses = { "200": { content: { "application/json": { schema } } } };
-    const block = responseExampleBlock({}, { responses }, "combined");
-    expect(generatedJsonResponse(block, "200")).toStrictEqual({ available: false, score: 0 });
+    expect(stripGeneratedResponseExamples("# Response\nHandwritten guidance.\n")).toBe(
+      "# Response\nHandwritten guidance.\n",
+    );
   });
 
   it.each([

@@ -7,7 +7,7 @@ const INDEPENDENCE_NOTICE =
 
 describe("OpenSSF shared-site assurance", (): void => {
   it("records the repository applicability without claiming Gold", (): void => {
-    expect.assertions(19);
+    expect.assertions(21);
 
     const page = readFileSync("guides/open-source-assurance.mdx", "utf8");
     const docsConfig = readFileSync("docs.json", "utf8");
@@ -20,9 +20,11 @@ describe("OpenSSF shared-site assurance", (): void => {
       "https://www.bestpractices.dev/en/criteria_discussion#terminology",
       "https://github.com/Xquik-dev/.github/blob/main/OPENSSF.md",
       "Passing does not mean Silver or Gold.",
-      "npm ci --ignore-scripts",
-      "npm run check:response-examples",
-      "reuse lint",
+      "bun run install:frozen",
+      "bun run install:licenses",
+      "bun run check:all",
+      "GitHub Actions is unavailable.",
+      "`check:licenses` verifies SPDX coverage",
       "The MIT License lets you use",
       "### Is the Xquik API open source?",
       "The hosted Xquik platform is not open source.",

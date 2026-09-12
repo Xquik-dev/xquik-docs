@@ -5,34 +5,37 @@
     "format": "bun run --bun --no-install oxfmt --write",
     "format:check": "bun run --bun --no-install oxfmt --check .",
     "lint": "bun run --bun --no-install oxlint --type-aware --type-check --deny-warnings --report-unused-disable-directives-severity=error .",
-    "check:dependencies": "bun scripts/check-dependency-policy.mjs",
-    "check:response-examples": "bun scripts/sync-api-response-examples.mjs --check",
+    "check:dependencies": "go run scripts/dependencies/main.go",
+    "check:response-examples": "go run ./scripts/responses --check",
     "docs:links": "bun run --bun --no-install mint broken-links",
     "docs:validate": "bun run --bun --no-install mint validate",
-    "sync:response-examples": "bun scripts/sync-api-response-examples.mjs",
+    "sync:response-examples": "go run ./scripts/responses",
     "test:agent-docs": "bun run --bun --no-install vitest run",
     "test:coverage": "coverage_report=$(mktemp -d \"$(git rev-parse --git-path coverage)-XXXXXXXX\"); bun run test:agent-docs --coverage --coverage.provider=istanbul '--coverage.include=**/*.{js,jsx,mjs,cjs,ts,tsx}' '--coverage.exclude=**/*.test.*' --coverage.reporter=text --coverage.reporter=json-summary --coverage.reporter=json --coverage.reportOnFailure --coverage.reportsDirectory=\"$coverage_report\" && bun run check:coverage \"$coverage_report/coverage-summary.json\"",
-    "check:all": "bun run --parallel --no-exit-on-error check:static test:coverage test:coverage-tool report:p99 check:loc",
+    "check:all": "bun run --parallel --no-exit-on-error check:static test:coverage test:coverage-tool test:dependencies test:responses report:p99 check:loc",
     "check:coverage": "go run scripts/check-coverage.go",
     "test:coverage-tool": "go test -cover scripts/check-coverage.go scripts/check-coverage_test.go scripts/check-loc_test.go",
-    "format:go:check": "gofmt -d scripts/*.go && test -z \"$(gofmt -l scripts/*.go)\"",
+    "test:dependencies": "go test -cover scripts/dependencies/*.go",
+    "test:responses": "go test -cover ./scripts/responses",
+    "format:go:check": "docs_gofmt=$(go env GOROOT)/bin/gofmt; \"$docs_gofmt\" -d scripts && test -z \"$(\"$docs_gofmt\" -l scripts)\"",
     "check:loc": "bash scripts/check-loc.sh",
     "format:shell:check": "shfmt -d scripts/*.sh",
     "check:security": "bash scripts/check-security.sh",
     "report:p99": "printf '{\"baseCommit\":\"%s\",\"scope\":\"documentation tooling\",\"coverage\":null,\"status\":\"unmeasured\",\"gaps\":[\"No representative per-operation latency distributions are retained.\",\"Check and build wall times do not establish p99.\"]}\\n' \"$(git rev-parse HEAD)\"",
-    "check:licenses": "uvx --from reuse==6.2.0 reuse lint",
+    "check:licenses": "bash scripts/licenses.sh lint",
     "check:static": "bash \"${XQUIK_ROOT:-${XQUIK_PRODUCT_ROOT:-../xquik}}/scripts/check-all.sh\" lane static bun run --parallel --no-exit-on-error check:security check:patches check:dependencies check:response-examples lint format:check format:go:check format:shell:check docs:validate docs:links check:licenses",
     "prepare:docs": "git apply --directory=node_modules --reverse --check patches/mintlify-archives.patch 2>/dev/null || git apply --directory=node_modules patches/mintlify-archives.patch",
     "postinstall": "bun run prepare:docs",
     "check:patches": "git apply --directory=node_modules --reverse --check patches/mintlify-archives.patch",
-    "install:frozen": "bunx --bun npm@12.0.1 ci --ignore-scripts && bun run prepare:docs"
+    "install:frozen": "bunx --bun npm@12.0.1 ci --ignore-scripts && bun run prepare:docs",
+    "install:licenses": "bash scripts/licenses.sh install"
   },
   "devDependencies": {
     "@types/bun": "1.4.2",
     "@vitest/coverage-istanbul": "5.0.0",
     "afdocs": "0.20.0",
     "fflate": "0.8.3",
-    "mint": "4.2.881",
+    "mint": "4.2.890",
     "oxfmt": "0.67.0",
     "oxlint": "1.82.0",
     "oxlint-tsgolint": "7.0.2001",
@@ -57,6 +60,15 @@
     "qs": "6.16.0",
     "sharp": "0.35.4",
     "tar": "7.5.21"
+  },
+  "config": {
+    "cargoAudit": "0.22.2",
+    "comply": {
+      "version": "0.1.1",
+      "sha256": "83dc4f918dc49fc4a66b2f5ec15c2b53e1ba0d44fb3ac1f922bf2b156f7d70db",
+      "sourceDateEpoch": 1785866486
+    },
+    "rustVersion": "1.98.1"
   },
   "packageManager": "npm@12.0.1+sha512.2f94fd8bf600416416a934bfc59c4991e8bff7372ef7d842784e2a8b8d48c81555ee645069ddea73625fb8e92dc261feab0188fd5dab6c22fefd46316f5f9140"
 }
