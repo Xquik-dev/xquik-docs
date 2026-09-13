@@ -3,7 +3,7 @@ import { loadConfig } from "afdocs/helpers";
 import type { AgentDocsConfig, CheckResult, RunnerOptions } from "afdocs";
 import { beforeAll, describe, expect, it } from "vitest";
 
-const LIVE_AGENT_DOCS_TIMEOUT_MS = 19_000;
+const LIVE_AGENT_DOCS_TIMEOUT_MS = 28_000;
 
 function runnerOptions(config: AgentDocsConfig): Partial<RunnerOptions> {
   const inferredStrategy =

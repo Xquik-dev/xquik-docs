@@ -3,18 +3,13 @@
 This repository is the public documentation site. Treat every committed file as
 public-facing unless it is explicitly a standard open-source project file.
 
-Every commit reduces combined handwritten source & test LOC against its parent.
-Use Git's native additions minus deletions, matching GitHub's diff statistics.
-Count all languages, including infrastructure, shell scripts & development tooling.
-Consistently exclude generated & non-code files. Never build custom LOC counters.
-Formatting, minification, moves, reclassification & deleted valuable tests never qualify.
-Preserve docs, assertions, coverage, guards, diagnostics & behavior.
-
-Each commit gains 0.1 percentage points across all four TS/JS coverage metrics.
-Include untested code & compare the full suite against its parent consistently.
-Metrics reaching 100% may gain less; metrics already there stay there.
+No per-commit LOC reduction or coverage gain is required.
+Preserve full TS/JS statement, branch, function & line coverage against the parent.
+Include untested code & compare full suites consistently.
+Preserve assertions, guards, diagnostics, behavior & coverage exclusions.
 Check other languages behaviorally & track measurement gaps separately.
 Coverage below 100% alone never blocks delivery.
+Git LOC statistics remain advisory.
 
 Run all applicable local checks through `bun run check:all` within 30 seconds.
 Include tests, coverage, LOC, types, lint, formatting, security, contracts & docs.

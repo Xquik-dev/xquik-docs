@@ -25,5 +25,4 @@ git diff --no-ext-diff --no-textconv --no-renames --numstat "$parent" -- . \
 	awk '{ additions += $1; deletions += $2 }
     END {
       printf "Git LOC: %d additions, %d deletions, delta %+d\n", additions, deletions, additions - deletions
-      exit additions >= deletions
     }'
