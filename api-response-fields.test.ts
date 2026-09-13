@@ -766,16 +766,12 @@ function productCreditsQuickTopupFields(): readonly string[] {
 
 function productApiKeyListFields(): readonly string[] {
   const source = readFileSync(PRODUCT_API_KEYS_ROUTE_PATH, "utf8");
-  const start = source.indexOf("const key: {");
-  const end = source.indexOf("\n      } = {", start);
+  const start = source.indexOf("const keys = rows.map((row) => ({");
+  const end = source.indexOf("\n    }));", start);
   if (start < 0 || end < 0) {
     throw new Error("Could not locate API key list item fields.");
   }
-  const itemFields = uniqueSorted(
-    [...source.slice(start, end).matchAll(/^\s{8}(?<field>[A-Za-z_]\w*)\??:/gmu)]
-      .map((match): string => match.groups?.["field"] ?? "")
-      .filter((field): boolean => field.length > 0),
-  );
+  const itemFields = objectLiteralFields(source.slice(start, end));
   if (!source.includes("return NextResponse.json({ keys });")) {
     throw new Error("Could not locate API key list success response.");
   }

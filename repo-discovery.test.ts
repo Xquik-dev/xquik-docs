@@ -12243,7 +12243,7 @@ const REQUIRED_AGENT_DOCS_PAGE_SIZE_CHECKS = [
   "  - page-size-markdown",
   "content-start-position stays disabled until the bounded afdocs sample starts",
   "Keep the live CI crawl deterministic and bounded",
-  "  maxConcurrency: 16",
+  "  maxConcurrency: 32",
   "  maxLinksToTest: 30",
   "  requestDelay: 0",
   "  requestTimeout: 10000",

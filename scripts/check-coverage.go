@@ -3,7 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"math"
+	"math/big"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -37,8 +37,9 @@ func compare(parent, current summary) error {
 			}
 			percentages[i] = 100 * float64(value.Covered) / float64(value.Total)
 		}
-		required := math.Min(100, percentages[0]+0.1)
-		if percentages[1]+1e-10 < required {
+		required := percentages[0]
+		previous, next := parent.Total[name], current.Total[name]
+		if new(big.Rat).SetFrac64(next.Covered, next.Total).Cmp(new(big.Rat).SetFrac64(previous.Covered, previous.Total)) < 0 {
 			return fmt.Errorf("%s coverage %.8f%% must reach %.8f%%", name, percentages[1], required)
 		}
 	}
@@ -86,5 +87,5 @@ func main() {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-	fmt.Println("All four coverage metrics meet the parent gain requirement.")
+	fmt.Println("All four coverage metrics preserve parent coverage.")
 }

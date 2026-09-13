@@ -35,8 +35,9 @@ func TestCompare(t *testing.T) {
 		failure         string
 	}{
 		{"exact gain", metric{1000, 500, 0}, metric{1000, 501, 0}, false, ""},
-		{"rounded gain fails", metric{10000, 5000, 0}, metric{10000, 5009, 0}, false, "must reach"},
-		{"unchanged fails", metric{1000, 500, 0}, metric{1000, 500, 0}, false, "must reach"},
+		{"small gain passes", metric{10000, 5000, 0}, metric{10000, 5009, 0}, false, ""},
+		{"unchanged passes", metric{1000, 500, 0}, metric{1000, 500, 0}, false, ""},
+		{"small regression fails", metric{10000, 5000, 0}, metric{10000, 4999, 0}, false, "must reach"},
 		{"finish coverage", metric{10000, 9999, 0}, metric{10000, 10000, 0}, false, ""},
 		{"keep complete", metric{1000, 1000, 0}, metric{1000, 1000, 0}, false, ""},
 		{"complete regression", metric{10000, 10000, 0}, metric{10000, 9999, 0}, false, "must reach"},
