@@ -48,12 +48,9 @@ Start with HTTP status. Retry only when stated.
 
   <Card title="400 request validation" icon="circle-alert">
 
-    Retry: no. Fix the body, query, or path. Covers `invalid_input`,
-    `invalid_json`, `invalid_id`, `invalid_tweet_url`, `invalid_tweet_id`,
-    `invalid_username`, `invalid_user_id`, `invalid_tool_type`,
-    `invalid_format`, `invalid_params`, `missing_query`, `missing_ids`,
-    `missing_params`, `too_many_ids`, `unsupported_field`, and
-    `invalid_coverage_cursor`.
+    Retry: no. Fix the body, query, or path. Examples include
+    `invalid_json`, `invalid_id`, `invalid_tweet_url`, `invalid_tweet_id`.
+    See [common error codes](#common-error-codes) for specific corrections.
 
   </Card>
   <Card title="401 authentication" icon="key-round">
@@ -80,11 +77,10 @@ Start with HTTP status. Retry only when stated.
   </Card>
   <Card title="404 missing resource" icon="search-x">
 
-    Retry: no. Verify the resource ID, connected account, username, tweet ID,
-    media, article, draft, or cached style. Covers `not_found`,
+    Retry: no. Verify the resource ID & connected account. Codes include
     `account_not_found`, `user_not_found`, `tweet_not_found`, `no_media`,
-    `article_not_found`, `draft_not_found`, `style_not_found`, and
-    `no_cached_style`.
+    and other missing resources.
+    Check the specific code below before changing targets.
 
   </Card>
   <Card title="409 or 410 cursor state" icon="refresh-cw">
@@ -121,6 +117,7 @@ Start with HTTP status. Retry only when stated.
     Retry: yes for `internal_error`, `x_api_rate_limited`,
     `x_api_unavailable` and `x_api_unauthorized`. For writes, retry only when
     `safeToRetry` is `true`, using a new `Idempotency-Key`.
+    For `pagination_stalled`, stop automatic retries & keep returned results.
 
   </Card>
 </CardGroup>
@@ -580,6 +577,13 @@ responses also include `message`, `reason`, `retryAfter`, or `retryAfterMs`.
         when present, otherwise retry with backoff.
 
       </Card>
+      <Card title="pagination_stalled" icon="pause">
+
+        Pagination stopped after repeated empty pages. Keep returned results & stop automatic retries.
+        Extraction remains incomplete; this does not prove source exhaustion.
+        Retry later with the same cursor before it expires. Deduplicate results by ID.
+
+      </Card>
       <Card title="x_api_unauthorized" icon="key-round">
 
         Read service authentication failed. Retry later and
@@ -641,7 +645,7 @@ Writes can return durable actions. Check lifecycle fields before handling succes
 
 ## Retry with exponential backoff
 
-For reads, retry only on `429` and `5xx` responses. Use `Retry-After`, then
+For reads, stop on `pagination_stalled`. Otherwise retry `429` and `5xx`. Use `Retry-After`, then
 exponential backoff with jitter. For writes, follow the durable action's
 `safeToRetry` and `nextAction` fields instead.
 
@@ -658,7 +662,12 @@ function retryDelayMs(response: Response, attempt: number): number {
   return 1000 * 2 ** attempt + Math.floor(Math.random() * 1000);
 }
 
-function shouldRetry(response: Response): boolean {
+async function shouldRetry(response: Response): Promise<boolean> {
+  const body = await response
+    .clone()
+    .json()
+    .catch(() => null);
+  if (body?.error === "pagination_stalled") return false;
   return response.status === 429 || response.status >= 500;
 }
 ```
@@ -706,31 +715,11 @@ Rate-limited requests return `429 Too Many Requests` with a
 
 ## Best practices
 
-<AccordionGroup>
-  <Accordion title="Check the error category">
-    Do not retry a `4xx` response unchanged. Fix authentication, billing,
-    permissions, or input first. Retry `429` and `5xx` only as described above.
-
-  </Accordion>
-  <Accordion title="Log error codes for debugging">
-
-    Log the status and error code. Never log credentials or private payloads.
-
-  </Accordion>
-  <Accordion title="Handle 409 gracefully">
-
-    Reuse `monitor_already_exists`. For a busy cursor, follow `Retry-After` and
-    retry once.
-
-  </Accordion>
-  <Accordion title="Set request timeouts">
-    Set client timeouts. Poll status endpoints for long-running jobs.
-  </Accordion>
-  <Accordion title="Use idempotent operations">
-    Duplicate monitor creation returns `409`. Deleting a missing resource returns `404`.
-    Both are safe to retry.
-  </Accordion>
-</AccordionGroup>
+Log status & error codes without credentials or private payloads.
+Set request timeouts & poll long-running jobs.
+Duplicate monitor creation returns `409`; reuse the existing monitor.
+Deleting missing resources returns `404`; repeating deletion is safe.
+Follow the recovery rules above before retrying other errors.
 
 <CardGroup cols={2}>
 
