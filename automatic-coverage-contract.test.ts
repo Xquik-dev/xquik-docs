@@ -51,7 +51,7 @@ describe("automatic maximum coverage contract", (): void => {
     expect(source).toContain("without another credit deduction");
     expect(source).toContain("Repeated busy responses never authorize restarting");
     expect(source).toContain("An expired initial key cannot restart its extraction");
-    expect(source).toContain("Only the preceding response remains replayable");
+    expect(source).toContain("including earlier and terminal pages");
     expect(replies).toContain("Automatic pages accept `1` through `300`.");
     expect(followers).toContain("Automatic pages accept `20` through `300`.");
     expect(search).toContain("every returned page");
