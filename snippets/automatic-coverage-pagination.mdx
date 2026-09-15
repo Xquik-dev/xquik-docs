@@ -14,12 +14,21 @@ Use `mode=standard` only to force legacy single-view pagination.
 A page can be empty or underfilled. Continue while `has_next_page` is `true`.
 Stop only after the response reports `has_next_page=false`.
 
-If automatic coverage is busy, an initial request returns a standard data page.
+Use an `Idempotency-Key` to retry the first page without starting another extraction.
+Choose a unique key containing 1-255 visible ASCII characters without spaces.
+Preserve the key, endpoint, target, filters, limits, and output options during retries.
+Matching retries return the retained response without another credit deduction.
+Each retained response remains replayable during the session lifetime, including earlier and terminal pages.
+Later pages use their returned cursor; legacy and explicit modes ignore this header.
+
 Live coverage cursors remain atomic. Concurrent use returns
 `409 coverage_cursor_unavailable` with exact `Retry-After` seconds. Wait, then
-retry the same cursor once.
+retry the same cursor once. Preserve the initial key for first-page retries.
+Repeated busy responses never authorize restarting with another cursor or key.
 
-Finished, expired, superseded, or identity-mismatched cursors return
-`410 coverage_cursor_gone`. The response omits `Retry-After`. Restart without
-a cursor. Deduplicate restarted results by `id`.
+Expired, unavailable, or identity-mismatched cursors return
+`410 coverage_cursor_gone`. The response omits `Retry-After`.
+Keep received results. Starting another extraction requires removing the cursor and choosing a new key.
+Deduplicate restarted results by `id`. An expired initial key cannot restart its extraction.
 Malformed cursors return `400 invalid_coverage_cursor`. Restart without them.
+Choose a new key when starting that separate extraction.

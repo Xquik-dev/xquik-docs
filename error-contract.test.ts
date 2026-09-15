@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 interface SchemaNode {
+  readonly $ref?: string;
   readonly enum?: readonly string[];
   readonly oneOf?: readonly SchemaNode[];
   readonly properties?: Readonly<Record<string, SchemaNode>>;
@@ -20,12 +21,15 @@ function parseOpenApi(): OpenApiDocument {
 }
 
 function requireErrorEnum(title: string, property?: string): readonly string[] {
-  const variants = parseOpenApi().components?.schemas?.["Error"]?.properties?.["error"]?.oneOf;
+  const schemas = parseOpenApi().components?.schemas;
+  const variants = schemas?.["Error"]?.properties?.["error"]?.oneOf;
   const variant = variants?.find((candidate) => candidate.title === title);
   if (variant === undefined) {
     throw new Error(`OpenAPI Error is missing ${title}.`);
   }
-  const values = (property === undefined ? variant : variant.properties?.[property])?.enum;
+  const codeSchema = property === undefined ? variant : variant.properties?.[property];
+  const reference = codeSchema?.$ref?.split("/").at(-1);
+  const values = (reference === undefined ? codeSchema : schemas?.[reference])?.enum;
   if (values === undefined) {
     const label = property === undefined ? title : `${title}.${property}`;
     throw new Error(`${label} is missing its enum.`);

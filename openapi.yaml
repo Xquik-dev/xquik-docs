@@ -2662,6 +2662,7 @@ paths:
             result_type, sort_order.'
         - $ref: '#/components/parameters/AutomaticCoverageMode'
         - $ref: '#/components/parameters/AutomaticCoverageCursor'
+        - $ref: '#/components/parameters/ReadIdempotencyKey'
         - $ref: '#/components/parameters/TweetSinceTime'
         - $ref: '#/components/parameters/TweetUntilTime'
         - name: limit
@@ -5251,6 +5252,7 @@ paths:
             type: string
           description: X user ID or username
         - $ref: '#/components/parameters/AutomaticCoverageCursor'
+        - $ref: '#/components/parameters/ReadIdempotencyKey'
         - $ref: '#/components/parameters/AutomaticTweetPageSize'
         - $ref: '#/components/parameters/TweetIncludeReplies'
         - name: includeParentTweet
@@ -5343,6 +5345,7 @@ paths:
             type: string
           description: Target user ID or username for the replies timeline.
         - $ref: '#/components/parameters/AutomaticCoverageCursor'
+        - $ref: '#/components/parameters/ReadIdempotencyKey'
         - $ref: '#/components/parameters/AutomaticTweetPageSize'
         - name: includeParentTweet
           in: query
@@ -6209,6 +6212,7 @@ paths:
       parameters: &list-profile-coverage-parameters
         - $ref: '#/components/parameters/ListPathId'
         - $ref: '#/components/parameters/AutomaticCoverageCursor'
+        - $ref: '#/components/parameters/ReadIdempotencyKey'
         - $ref: '#/components/parameters/AutomaticCoverageMode'
         - $ref: '#/components/parameters/AutomaticFollowerPageSize'
         - $ref: '#/components/parameters/UserFilterMinFollowers'
@@ -6286,6 +6290,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/ListPathId'
         - $ref: '#/components/parameters/AutomaticCoverageCursor'
+        - $ref: '#/components/parameters/ReadIdempotencyKey'
         - $ref: '#/components/parameters/AutomaticCoverageMode'
         - $ref: '#/components/parameters/AutomaticTweetPageSize'
         - $ref: '#/components/parameters/TweetSinceTime'
@@ -6352,6 +6357,7 @@ paths:
             type: string
           description: Numeric tweet ID to get quotes, 15-20 digits
         - $ref: '#/components/parameters/AutomaticCoverageCursor'
+        - $ref: '#/components/parameters/ReadIdempotencyKey'
         - name: mode
           in: query
           schema:
@@ -6437,6 +6443,7 @@ paths:
             type: string
           description: Tweet ID to get replies
         - $ref: '#/components/parameters/AutomaticCoverageCursor'
+        - $ref: '#/components/parameters/ReadIdempotencyKey'
         - name: mode
           in: query
           schema:
@@ -6687,6 +6694,7 @@ paths:
             type: string
           description: Target user ID or username for follower lookup.
         - $ref: '#/components/parameters/AutomaticCoverageCursor'
+        - $ref: '#/components/parameters/ReadIdempotencyKey'
         - $ref: '#/components/parameters/AutomaticCoverageMode'
         - name: after
           in: query
@@ -6747,6 +6755,7 @@ paths:
             type: string
           description: User ID or username for following lookup
         - $ref: '#/components/parameters/AutomaticCoverageCursor'
+        - $ref: '#/components/parameters/ReadIdempotencyKey'
         - $ref: '#/components/parameters/AutomaticCoverageMode'
         - name: after
           in: query
@@ -6888,6 +6897,7 @@ paths:
             type: string
           description: User ID or username for verified followers
         - $ref: '#/components/parameters/AutomaticCoverageCursor'
+        - $ref: '#/components/parameters/ReadIdempotencyKey'
         - $ref: '#/components/parameters/AutomaticCoverageMode'
         - name: after
           in: query
@@ -7093,6 +7103,23 @@ components:
         minimum: 1
         maximum: 100
         default: 20
+    ReadIdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      description: >
+        Optional first-page retry key for automatic coverage without a cursor.
+        Reuse it with identical filters, limits, output options, and ownership.
+        Matching retries return the retained page without another credit
+        deduction. Expired or unavailable replays return 410. Busy requests
+        return 409; honor Retry-After and preserve the key. New extractions
+        require new keys. Subsequent pages use their cursor. Legacy and explicit
+        modes ignore this header.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 255
+        pattern: '^[!-~]{1,255}$'
     AutomaticCoverageCursor:
       name: cursor
       in: query
@@ -7100,7 +7127,10 @@ components:
         type: string
       description: >
         Cursor from the previous response. Xquik cursors resume automatic
-        coverage. Existing unprefixed cursors keep legacy standard behavior.
+        coverage. Retry the same cursor with unchanged filters and output
+        options. Each retained response remains replayable during the session
+        lifetime, including earlier and terminal pages. Existing unprefixed cursors keep legacy standard
+        behavior.
     AutomaticCoverageMode:
       name: mode
       in: query
@@ -8062,14 +8092,15 @@ components:
             error: 'coverage_cursor_unavailable'
             message: 'Cursor busy. Retry after the indicated delay.'
     CursorGone:
-      description: Restart without the `coverage_cursor_gone` cursor.
+      description: Replay unavailable. Preserve results; a new extraction requires a new
+        key.
       content:
         application/json:
           schema: *error-schema
           example:
             error: 'coverage_cursor_gone'
-            message: 'Cursor finished, expired, or superseded. Restart pagination
-              without cursor.'
+            message: 'Replay unavailable. Keep received results. Start a new extraction
+              without cursor and with a new Idempotency-Key.'
     MaximumCoverageBusy:
       description: Coverage unavailable; retry pagination_stalled later.
       headers:
@@ -10263,6 +10294,124 @@ components:
           type: string
           format: uri
           const: https://paymentauth.org/problems/payment-required
+    PublicErrorCode:
+      description: Machine-readable error code shared by both response formats.
+      type: string
+      enum:
+        - internal_error
+        - account_already_connected
+        - account_needs_reauth
+        - account_not_found
+        - account_required
+        - account_restricted
+        - api_key_limit_reached
+        - article_not_found
+        - closed
+        - dm_not_permitted
+        - invalid_format
+        - invalid_id
+        - invalid_input
+        - invalid_params
+        - invalid_tool_type
+        - invalid_tweet_id
+        - invalid_tweet_url
+        - invalid_user_id
+        - invalid_user_ids
+        - invalid_username
+        - invalid_json
+        - insufficient_credits
+        - login_cooldown
+        - login_failed
+        - media_download_failed
+        - missing_params
+        - missing_query
+        - monitor_already_exists
+        - monitor_profile_unavailable
+        - no_media
+        - no_credits
+        - no_subscription
+        - not_found
+        - payment_failed
+        - rate_limit_exceeded
+        - service_unavailable
+        - style_not_found
+        - subscription_inactive
+        - tweet_not_found
+        - unauthenticated
+        - unsupported_field
+        - user_not_found
+        - body_too_large
+        - checkout_unavailable
+        - connection_challenge_expired
+        - connection_challenge_inactive
+        - coverage_cursor_gone
+        - coverage_cursor_unavailable
+        - draft_not_found
+        - expired
+        - favoriters_unavailable
+        - forbidden
+        - guest_wallet_unavailable
+        - guest_wallets_disabled
+        - guest_wallets_unavailable
+        - idempotency_conflict
+        - idempotency_key_conflict
+        - invalid_community_id
+        - invalid_complete_replies_request
+        - invalid_coverage_cursor
+        - invalid_coverage_request
+        - invalid_idempotency_key
+        - invalid_list_id
+        - invalid_output_options
+        - invalid_payment_amount
+        - invalid_range
+        - invalid_reply_options
+        - login_rate_limited
+        - login_service_unavailable
+        - missing_idempotency_key
+        - missing_ids
+        - missing_url
+        - no_cached_style
+        - pagination_stalled
+        - passkey_required
+        - rate_limited
+        - read_request_timeout
+        - replies_incomplete
+        - support_media_rate_limit
+        - support_request_rate_limit
+        - too_many_ids
+        - too_many_tweets
+        - unknown_field
+        - unsupported_media_type
+        - webhook_inactive
+        - write_tracking_unavailable
+        - x_write_unconfirmed
+        - x_account_feature_required
+        - x_account_protected
+        - x_account_suspended
+        - x_api_rate_limited
+        - x_api_unavailable
+        - x_api_unauthorized
+        - x_auth_failure
+        - x_content_too_long
+        - x_daily_limit
+        - x_dm_not_allowed
+        - x_duplicate_action
+        - x_login_auth_failed
+        - x_login_challenge
+        - x_login_denied
+        - x_login_failed
+        - x_login_proxy_error
+        - x_login_rate_limited
+        - x_login_service_unavailable
+        - x_login_suspended
+        - x_rate_limited
+        - x_rejected
+        - x_reply_not_allowed
+        - x_target_not_found
+        - x_transient_error
+        - x_user_lookup_failed
+        - x_write_ambiguous
+        - x_write_failed
     Error:
       description: >
         Error response. Default v1 returns a legacy string error code. Send
@@ -10281,121 +10430,7 @@ components:
           oneOf:
             - type: string
               title: LegacyErrorCode
-              enum: &public-error-codes
-                - internal_error
-                - account_already_connected
-                - account_needs_reauth
-                - account_not_found
-                - account_required
-                - account_restricted
-                - api_key_limit_reached
-                - article_not_found
-                - closed
-                - dm_not_permitted
-                - invalid_format
-                - invalid_id
-                - invalid_input
-                - invalid_params
-                - invalid_tool_type
-                - invalid_tweet_id
-                - invalid_tweet_url
-                - invalid_user_id
-                - invalid_user_ids
-                - invalid_username
-                - invalid_json
-                - insufficient_credits
-                - login_cooldown
-                - login_failed
-                - media_download_failed
-                - missing_params
-                - missing_query
-                - monitor_already_exists
-                - monitor_profile_unavailable
-                - no_media
-                - no_credits
-                - no_subscription
-                - not_found
-                - payment_failed
-                - rate_limit_exceeded
-                - service_unavailable
-                - style_not_found
-                - subscription_inactive
-                - tweet_not_found
-                - unauthenticated
-                - unsupported_field
-                - user_not_found
-                - body_too_large
-                - checkout_unavailable
-                - connection_challenge_expired
-                - connection_challenge_inactive
-                - coverage_cursor_gone
-                - coverage_cursor_unavailable
-                - draft_not_found
-                - expired
-                - favoriters_unavailable
-                - forbidden
-                - guest_wallet_unavailable
-                - guest_wallets_disabled
-                - guest_wallets_unavailable
-                - idempotency_conflict
-                - idempotency_key_conflict
-                - invalid_community_id
-                - invalid_complete_replies_request
-                - invalid_coverage_cursor
-                - invalid_coverage_request
-                - invalid_idempotency_key
-                - invalid_list_id
-                - invalid_output_options
-                - invalid_payment_amount
-                - invalid_range
-                - invalid_reply_options
-                - login_rate_limited
-                - login_service_unavailable
-                - missing_idempotency_key
-                - missing_ids
-                - missing_url
-                - no_cached_style
-                - pagination_stalled
-                - passkey_required
-                - rate_limited
-                - read_request_timeout
-                - replies_incomplete
-                - support_media_rate_limit
-                - support_request_rate_limit
-                - too_many_ids
-                - too_many_tweets
-                - unknown_field
-                - unsupported_media_type
-                - webhook_inactive
-                - write_tracking_unavailable
-                - x_write_unconfirmed
-                - x_account_feature_required
-                - x_account_protected
-                - x_account_suspended
-                - x_api_rate_limited
-                - x_api_unavailable
-                - x_api_unauthorized
-                - x_auth_failure
-                - x_content_too_long
-                - x_daily_limit
-                - x_dm_not_allowed
-                - x_duplicate_action
-                - x_login_auth_failed
-                - x_login_challenge
-                - x_login_denied
-                - x_login_failed
-                - x_login_proxy_error
-                - x_login_rate_limited
-                - x_login_service_unavailable
-                - x_login_suspended
-                - x_rate_limited
-                - x_rejected
-                - x_reply_not_allowed
-                - x_target_not_found
-                - x_transient_error
-                - x_user_lookup_failed
-                - x_write_ambiguous
-                - x_write_failed
+              $ref: '#/components/schemas/PublicErrorCode'
               example: invalid_input
             - type: object
               title: StructuredError
@@ -10418,7 +10453,7 @@ components:
                 code:
                   type: string
                   title: ErrorCode
-                  enum: *public-error-codes
+                  $ref: '#/components/schemas/PublicErrorCode'
                   example: invalid_input
         message:
           type: string

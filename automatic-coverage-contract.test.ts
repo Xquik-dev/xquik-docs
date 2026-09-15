@@ -26,7 +26,7 @@ describe("automatic maximum coverage contract", (): void => {
   });
 
   it("preserves pagination, billing, and legacy behavior", (): void => {
-    expect.assertions(21);
+    expect.assertions(26);
 
     const source = readFileSync("snippets/automatic-coverage-pagination.mdx", "utf8");
     const search = readFileSync("api-reference/x/search-tweets.mdx", "utf8");
@@ -47,6 +47,11 @@ describe("automatic maximum coverage contract", (): void => {
     expect(source).toContain("identity-mismatched cursors");
     expect(source).toContain("400 invalid_coverage_cursor");
     expect(source).toContain("Restart without them.");
+    expect(source).toContain("1-255 visible ASCII characters without spaces");
+    expect(source).toContain("without another credit deduction");
+    expect(source).toContain("Repeated busy responses never authorize restarting");
+    expect(source).toContain("An expired initial key cannot restart its extraction");
+    expect(source).toContain("including earlier and terminal pages");
     expect(replies).toContain("Automatic pages accept `1` through `300`.");
     expect(followers).toContain("Automatic pages accept `20` through `300`.");
     expect(search).toContain("every returned page");
