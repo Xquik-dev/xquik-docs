@@ -47,11 +47,13 @@ describe("automatic maximum coverage contract", (): void => {
     expect(source).toContain("identity-mismatched cursors");
     expect(source).toContain("400 invalid_coverage_cursor");
     expect(source).toContain("Restart without them.");
-    expect(source).toContain("1-255 visible ASCII characters without spaces");
-    expect(source).toContain("without another credit deduction");
+    expect(source).toContain("First-page requests do not support `Idempotency-Key` retries.");
+    expect(source).toContain("Results returned by that extraction incur their normal charges.");
     expect(source).toContain("Repeated busy responses never authorize restarting");
-    expect(source).toContain("An expired initial key cannot restart its extraction");
-    expect(source).toContain("including earlier and terminal pages");
+    expect(source).toContain("Repeating a cursorless request starts a separate extraction.");
+    expect(source).toContain(
+      "Earlier and terminal responses cannot be replayed after their cursors become unavailable.",
+    );
     expect(replies).toContain("Automatic pages accept `1` through `300`.");
     expect(followers).toContain("Automatic pages accept `20` through `300`.");
     expect(search).toContain("every returned page");
