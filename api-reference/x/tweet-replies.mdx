@@ -353,12 +353,12 @@ for page_index in range(3):
 
 ## Direct replies handoff
 
-Use `GET /x/tweets/{id}/replies` when a support, community, moderation,
-giveaway, or agent workflow needs reply rows as JSON. The examples above write
+Use `GET /x/tweets/{id}/replies` for support, community, moderation, giveaway, or agent workflows.
+The examples above write
 JSON Lines rows with `parent_tweet_id`, `reply_id`, `text`, author IDs and
-usernames, thread joins, media URLs, and cursor fields. Each output line ties
-one reply to the requested tweet. Workers can restart after storing the latest
-response page. The moderation table below adds follower, verification, timing,
+usernames, thread joins, media URLs, & cursors.
+Each row identifies its source tweet. Save each page before restarting workers.
+The moderation table below adds follower, verification, timing,
 and engagement projections.
 
 A `424 replies_incomplete` response still contains collected direct and nested
@@ -532,22 +532,22 @@ Array of reply tweets.
 
   <Expandable title="Tweet object fields">
 
-    <ResponseField name="id" type="string">This value is the tweet ID.</ResponseField>
-    <ResponseField name="text" type="string">This value contains the tweet text.</ResponseField>
-    <ResponseField name="type" type="string">This value identifies the tweet type when available.</ResponseField>
-    <ResponseField name="createdAt" type="string">This value contains the ISO 8601 creation timestamp.</ResponseField>
+    <ResponseField name="id" type="string">Tweet ID.</ResponseField>
+    <ResponseField name="text" type="string">Tweet text.</ResponseField>
+    <ResponseField name="type" type="string">Tweet type, when available.</ResponseField>
+    <ResponseField name="createdAt" type="string">ISO 8601 creation timestamp.</ResponseField>
     <ResponseField name="isNoteTweet" type="boolean">Whether this is a Note Tweet. Omitted if unavailable.</ResponseField>
     <ResponseField name="isReply" type="boolean">Whether the tweet is a reply.</ResponseField>
-    <ResponseField name="inReplyToId" type="string">This ID identifies the tweet receiving the reply.</ResponseField>
+    <ResponseField name="inReplyToId" type="string">Parent tweet ID.</ResponseField>
     <ResponseField name="inReplyToUserId" type="string">User ID being replied to. Omitted if unavailable.</ResponseField>
     <ResponseField name="inReplyToUsername" type="string">Username being replied to. Omitted if unavailable.</ResponseField>
     <ResponseField name="conversationId" type="string">Conversation thread ID. Omitted if unavailable.</ResponseField>
-    <ResponseField name="likeCount" type="number">This value records the like count when available.</ResponseField>
-    <ResponseField name="retweetCount" type="number">This value records the repost count when available.</ResponseField>
-    <ResponseField name="replyCount" type="number">This value records the reply count when available.</ResponseField>
-    <ResponseField name="quoteCount" type="number">This value records the quote tweet count when available.</ResponseField>
-    <ResponseField name="viewCount" type="number">This value records the view count when available.</ResponseField>
-    <ResponseField name="bookmarkCount" type="number">This value records the bookmark count when available.</ResponseField>
+    <ResponseField name="likeCount" type="number">Like count, when available.</ResponseField>
+    <ResponseField name="retweetCount" type="number">Repost count, when available.</ResponseField>
+    <ResponseField name="replyCount" type="number">Reply count, when available.</ResponseField>
+    <ResponseField name="quoteCount" type="number">Quote tweet count, when available.</ResponseField>
+    <ResponseField name="viewCount" type="number">View count, when available.</ResponseField>
+    <ResponseField name="bookmarkCount" type="number">Bookmark count, when available.</ResponseField>
     <ResponseField name="url" type="string">Permalink URL on X. Omitted if unavailable.</ResponseField>
     <ResponseField name="lang" type="string">The tweet's language code appears here when X returns it.</ResponseField>
     <ResponseField name="source" type="string">Client used to post the tweet. Omitted if unavailable.</ResponseField>
@@ -572,7 +572,7 @@ Array of reply tweets.
     </ResponseField>
     <ResponseField name="media" type="object[]">
 
-      This array contains media attachments when available.
+      Media attachments, when available.
       <Expandable title="Media object fields">
 
         <ResponseField name="mediaUrl" type="string">Direct media URL.</ResponseField>
@@ -597,6 +597,12 @@ Complete-mode coverage evidence. Omitted from standard responses.
   <Expandable title="Coverage diagnostic fields">
 
     <ResponseField name="complete" type="boolean">Whether direct coverage met the target without truncation.</ResponseField>
+    <ResponseField name="replyTreeComplete" type="boolean">
+      Every collected reply has a known child count matching its collected children.
+      The source post must also match. Omitted when confirmation is unavailable.
+      Counts reflect X's response at collection time. Continue pagination while
+      `has_next_page` is `true`.
+    </ResponseField>
     <ResponseField name="reportedReplyCount" type="number">Reply count reported on the source tweet.</ResponseField>
     <ResponseField name="targetDirectReplies" type="number">Minimum direct replies required for the coverage target.</ResponseField>
     <ResponseField name="uniqueDirectReplies" type="number">Unique replies whose parent matches the requested tweet.</ResponseField>
