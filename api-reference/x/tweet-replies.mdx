@@ -197,12 +197,10 @@ See [reply coverage and optional fields](/guides/tweet-profile-api-fields).
 
 ### How does the Twitter API get replies to a tweet?
 
-Start with the original tweet's numeric ID. Send it through this endpoint's
-path parameter. Automatic pages accept `pageSize` from `1` through `300`.
-Standard pages accept `1` through `100`.
-The response contains reply tweets, author profiles, and engagement counts.
-Store `next_cursor` after writing every page. Continue only while
-`has_next_page` remains `true`.
+Pass the original tweet's numeric ID in the path. Automatic `pageSize` accepts
+`1` through `300`; standard pages accept `1` through `100`.
+Responses include replies, author profiles & engagement counts.
+Save each page & `next_cursor`. Continue while `has_next_page` is `true`.
 
 ### How complete is a tweet reply collection?
 
@@ -219,10 +217,9 @@ Inspect `strategiesAttempted` for page limits, cursor failures, or other early s
 
 ### How can a team analyze or moderate replies?
 
-Store each reply ID, text, author ID, username, creation time, likes, reposts,
-quotes, views, bookmarks, and media. Create one moderation row per reply. Apply
-sentiment or spam labels with your classifier. Send uncertain rows to human
-reviewers. Xquik does not infer sentiment.
+Store reply IDs, text, authors, timestamps, engagement counts & media.
+Create one moderation row per reply. Apply your sentiment or spam classifier.
+Send uncertain rows to reviewers. Xquik does not infer sentiment.
 
 ### How can support teams receive new reply alerts?
 
@@ -598,10 +595,14 @@ Complete-mode coverage evidence. Omitted from standard responses.
 
     <ResponseField name="complete" type="boolean">Whether direct coverage met the target without truncation.</ResponseField>
     <ResponseField name="replyTreeComplete" type="boolean">
-      Every collected reply has a known child count matching its collected children.
-      The source post must also match. Omitted when confirmation is unavailable.
-      Counts reflect X's response at collection time. Continue pagination while
-      `has_next_page` is `true`.
+      Known child counts match the source post & every collected reply.
+      Omitted when confirmation is unavailable. Counts reflect collection time.
+      Continue pagination while `has_next_page` is `true`.
+    </ResponseField>
+    <ResponseField name="replyScopeComplete" type="boolean">
+      Known child counts confirm all replies within the requested scope & depth.
+      Deeper replies may remain. Omitted when confirmation is unavailable.
+      Check source errors & truncation separately.
     </ResponseField>
     <ResponseField name="reportedReplyCount" type="number">Reply count reported on the source tweet.</ResponseField>
     <ResponseField name="targetDirectReplies" type="number">Minimum direct replies required for the coverage target.</ResponseField>
@@ -655,8 +656,8 @@ Your tier rate limit was exceeded. Wait for the `Retry-After` header before retr
 
 ### 424 Replies incomplete
 
-The response preserves collected rows and diagnostic evidence. Trust
-`diagnostic.complete`. Follow `recommendedFallback` before retrying.
+Collected rows & diagnostics remain available. Check `diagnostic.complete`
+& `recommendedFallback` before retrying.
 
 ### 503 Complete reply extraction busy
 
