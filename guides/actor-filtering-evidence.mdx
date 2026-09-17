@@ -1,0 +1,43 @@
+---
+title: "Understand filtered Twitter scraper results"
+sidebarTitle: "Filtering evidence"
+description: "Explain empty Twitter scraper results with server & Actor filtering counts. Check date filters, identify missing evidence, and avoid unnecessary paid retries."
+---
+
+Tweet Scraper 1.12.109 records filtering evidence in its `run-report`.
+Final empty-result & partial diagnostics include the same `filtering` object.
+Page logs include these counts for each processed page.
+
+| Field                             | Meaning                                                                 |
+| --------------------------------- | ----------------------------------------------------------------------- |
+| `serverFilteredRows`              | Known rows rejected before the server returned each page.               |
+| `actorFilteredRows`               | Returned rows rejected by Actor filters before deduplication & billing. |
+| `pagesWithUnknownServerFiltering` | Processed pages without valid server filtering counts.                  |
+
+Counts describe rejected rows across processed pages, including repeated source rows.
+They do not count unique tweets or billable results.
+Missing server counts remain gaps, even when `serverFilteredRows` equals `0`.
+Older saved pages & paths without filtering evidence contribute to that gap.
+Restarts preserve the available counts.
+
+## Explain an empty run
+
+For example, a profile extraction might report these counts:
+
+```json
+{
+  "serverFilteredRows": 21,
+  "actorFilteredRows": 0,
+  "pagesWithUnknownServerFiltering": 0
+}
+```
+
+The server rejected 21 rows before returning them to the Actor.
+Check your date range & other filters before retrying.
+These counts alone do not prove that every matching tweet was available.
+
+Filtered rows & diagnostics never incur result charges.
+Apify platform usage remains separate.
+For interrupted runs, follow the diagnostic's `retryable` value & `nextAction`.
+
+See [Actor diagnostics](/guides/tweet-profile-api-fields#read-actor-diagnostics) for completion & recovery fields.
