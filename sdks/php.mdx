@@ -220,7 +220,7 @@ try {
 
 Each `SearchTweet` includes typed properties such as `$id`, `$text`, `$author`, `$createdAt`, `$likeCount`, `$replyCount`, `$retweetCount`, `$quoteCount`, `$bookmarkCount`, `$viewCount`, and `$isNoteTweet` when available. Project `$page->tweets` into JSON Lines and CSV rows with `tweet_id`, `author_username`, engagement counts, `page_index`, `page_cursor`, `next_cursor`, and `has_next_page` so workers can resume safely or load the same records into XLSX, CRM, warehouse, or agent workflows.
 
-Tweet search costs 1 credit per tweet returned. If remaining credits cannot cover a bounded `limit` request, the API can return fewer tweets; if 0 paid results are affordable, it returns `402 insufficient_credits`. The SDK retries connection errors, timeouts, 408, 409, 429, and 5xx responses 2 times by default. For explicit `limit` pulls, resume with the same query, filters, `queryType`, and `limit`; only `cursor` changes.
+Tweet search costs 1 credit per tweet returned. If remaining credits cannot cover a bounded `limit` request, the API can return fewer tweets. If 0 paid results are affordable, it returns `402 insufficient_credits`. The SDK retries connection errors, timeouts, 408, 409, 429, and 5xx responses 2 times by default. For explicit `limit` pulls, resume with the same query, filters, `queryType`, and `limit`; only `cursor` changes.
 
 ## Workflow: follower export to CSV, JSON, or XLSX
 
@@ -321,13 +321,13 @@ file_put_contents(
 );
 ```
 
-Persist `$job->id`, `$targetUsername`, `$estimate->estimatedResults`, and `$estimate->source` before polling so another queue worker can resume without rerunning the extraction. `$client->extractions->retrieve()` returns `$page->results`, `$page->hasMore`, and `$page->nextCursor`; pass `$page->nextCursor` back as `cursor` to page through large follower lists. Map exported `User ID` or row `xUserId` as the CRM unique key. Use `xquik-followers.jsonl` for queue replay or warehouse loads, `xquik-followers.json` for app ingestion, `xquik-followers.csv` for CRM import, and `xquik-followers.xlsx` for analyst handoff. Cost: 1 credit per follower extracted or returned. Exports are free after the extraction job exists.
+Persist `$job->id`, `$targetUsername`, `$estimate->estimatedResults`, and `$estimate->source` before polling so another queue worker can resume without rerunning the extraction. `$client->extractions->retrieve()` returns `$page->results`, `$page->hasMore`, and `$page->nextCursor`. Pass `$page->nextCursor` back as `cursor` to page through large follower lists. Map exported `User ID` or row `xUserId` as the CRM unique key. Use `xquik-followers.jsonl` for queue replay or warehouse loads, `xquik-followers.json` for app ingestion, `xquik-followers.csv` for CRM import, and `xquik-followers.xlsx` for analyst handoff. Cost: 1 credit per follower extracted or returned. Exports are free after the extraction job exists.
 
 ## Workflow: tweet replies to CSV, JSON, or XLSX
 
 Use this workflow when a PHP worker needs every reply on a public tweet in a durable file for moderation review, customer support triage, analyst export, or a warehouse loader.
 
-`$client->extractions->estimateCost()` and `$client->extractions->run()` map to the extraction workflow. For tweet replies, use `ToolType::REPLY_EXTRACTOR`; `reply_extractor` requires `targetTweetID`. `$client->extractions->retrieve()` returns `results`, `hasMore`, and `nextCursor` for pagination. `$client->extractions->exportResults()` returns the completed job as a string and supports `CSV`, `JSON`, and `XLSX` export formats.
+`$client->extractions->estimateCost()` and `$client->extractions->run()` map to the extraction workflow. For tweet replies, use `ToolType::REPLY_EXTRACTOR`. `reply_extractor` requires `targetTweetID`. `$client->extractions->retrieve()` returns `results`, `hasMore`, and `nextCursor` for pagination. `$client->extractions->exportResults()` returns the completed job as a string and supports `CSV`, `JSON`, and `XLSX` export formats.
 
 Reuse the polling, JSON Lines pagination, and export structure from the follower workflow. Only the tool type, target field, and filenames change:
 
@@ -368,7 +368,7 @@ Cost: 1 credit per reply extracted or returned. Store `$job->id` on the queue jo
 
 ## Workflow: post media tweets and DM attachments
 
-Use this workflow when a PHP app needs to publish a media tweet, reply with media, or send a direct message with an uploaded local file. `POST /x/tweets` accepts public media URLs through `media`. Send up to 4 image URLs or exactly 1 MP4 video URL up to 100 MB, and do not mix video with other media. For replies, set `replyToTweetID` to the parent tweet ID. `$client->x->media->upload()` maps to `POST /x/media`; use its `$media->mediaID` only for the one-item `mediaIDs` array on `$client->x->dm->send()`.
+Use this workflow when a PHP app needs to publish a media tweet, reply with media, or send a direct message with an uploaded local file. `POST /x/tweets` accepts public media URLs through `media`. Send up to 4 image URLs or exactly 1 MP4 video URL up to 100 MB, and do not mix video with other media. For replies, set `replyToTweetID` to the parent tweet ID. `$client->x->media->upload()` maps to `POST /x/media`. Use its `$media->mediaID` only for the one-item `mediaIDs` array on `$client->x->dm->send()`.
 
 Use `$client->x->tweets->raw->create()` to capture the durable write action. Send a unique `Idempotency-Key`, store `id`, `request.hash`, `billing`, `result`, and `statusUrl`, then poll while `terminal` is false. Retry only when `safeToRetry` is true, using a new key.
 
@@ -466,7 +466,7 @@ fwrite(
 );
 ```
 
-Store `write_action_id` and `charged_credits`, then poll [Get Write Action Status](/api-reference/x-write/get-write-action-status) before retrying a pending tweet or reply. Store `tweet_id` on the CMS, queue job, or agent state after confirmed writes. Store `$dm->messageID`, `$media->mediaID`, `account`, `user_id`, and send status on the support ticket or CRM note. Keep DM body text in private systems. Shared logs, public artifacts, queue status, and agent handoffs should store `message_id`, optional `media_id`, `account`, `user_id`, and send status instead of full DM bodies. Leave generated `replyToMessageID` unset even if SDK params expose it; the REST endpoint rejects DM reply threading. Text-only tweet and reply writes cost 30 credits. Tweet media adds 2 credits per started MB across attached files. Uploading media costs 10 credits, and sending the DM costs 10 credits. Do not pass uploaded `$media->mediaID` values to `$client->x->tweets->create()`; that method uses `media` with public media URLs.
+Store `write_action_id` and `charged_credits`, then poll [Get Write Action Status](/api-reference/x-write/get-write-action-status) before retrying a pending tweet or reply. Store `tweet_id` on the CMS, queue job, or agent state after confirmed writes. Store `$dm->messageID`, `$media->mediaID`, `account`, `user_id`, and send status on the support ticket or CRM note. Keep DM body text in private systems. Shared logs, public artifacts, queue status, and agent handoffs should store `message_id`, optional `media_id`, `account`, `user_id`, and send status instead of full DM bodies. Leave generated `replyToMessageID` unset even if SDK params expose it; the REST endpoint rejects DM reply threading. Text-only tweet and reply writes cost 30 credits. Tweet media adds 2 credits per started MB across attached files. Uploading media costs 10 credits, and sending the DM costs 10 credits. Do not pass uploaded `$media->mediaID` values to `$client->x->tweets->create()`. That method uses `media` with public media URLs.
 
 ## Error handling
 

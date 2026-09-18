@@ -387,7 +387,7 @@ writeExport(ctx, client, job.ID, xtwitterscraper.ExtractionExportResultsParamsFo
 writeExport(ctx, client, job.ID, xtwitterscraper.ExtractionExportResultsParamsFormatXlsx, "xquik-replies.xlsx")
 ```
 
-`reply_extractor` requires `TargetTweetID`. `client.Extractions.Get` returns `Results`, `HasMore`, and `NextCursor`; the shared `writeRows` helper passes `NextCursor` back as `Cursor` until all stored rows are written. Use `xquik-replies.jsonl` for queue replay or warehouse loads, `xquik-replies.json` for app ingestion, `xquik-replies.csv` for CRM import, and `xquik-replies.xlsx` for analyst handoff. `client.Extractions.ExportResults` supports CSV, JSON, and XLSX for file handoff. Cost: 1 credit per reply extracted or returned.
+`reply_extractor` requires `TargetTweetID`. `client.Extractions.Get` returns `Results`, `HasMore`, and `NextCursor`, and the shared `writeRows` helper passes `NextCursor` back as `Cursor` until all stored rows are written. Use `xquik-replies.jsonl` for queue replay or warehouse loads, `xquik-replies.json` for app ingestion, `xquik-replies.csv` for CRM import, and `xquik-replies.xlsx` for analyst handoff. `client.Extractions.ExportResults` supports CSV, JSON, and XLSX for file handoff. Cost: 1 credit per reply extracted or returned.
 
 ## Workflow: post media tweets and DM attachments
 
@@ -541,11 +541,11 @@ if err := json.NewEncoder(os.Stdout).Encode(dmHandoff); err != nil {
 
 Keep DM body text in private systems. Shared logs, public artifacts, queue status, and agent handoffs should store `message_id`, optional `media_id`, `account`, `user_id`, and send status instead of full DM bodies. Leave `ReplyToMessageID` unset even if generated SDK params expose it; the REST endpoint rejects DM reply threading.
 
-Text-only tweet and reply writes cost 30 credits. Tweet media adds 2 credits per started MB across attached files. Uploading media costs 10 credits, and sending the DM costs 10 credits. Do not pass uploaded `MediaID` values to `client.X.Tweets.New`; that method uses `Media` with public media URLs.
+Text-only tweet and reply writes cost 30 credits. Tweet media adds 2 credits per started MB across attached files. Uploading media costs 10 credits, and sending the DM costs 10 credits. Do not pass uploaded `MediaID` values to `client.X.Tweets.New`. That method uses `Media` with public media URLs.
 
 ## Cost, limits & retries
 
-Tweet search costs 1 credit per tweet returned. If remaining credits cannot cover the requested page, the API can return fewer tweets than `Limit`; if 0 paid results are affordable, it returns `402 insufficient_credits`. Read calls are rate-limited, and `429` responses include `Retry-After`.
+Tweet search costs 1 credit per tweet returned. If remaining credits cannot cover the requested page, the API can return fewer tweets than `Limit`. If 0 paid results are affordable, it returns `402 insufficient_credits`. Read calls are rate-limited, and `429` responses include `Retry-After`.
 
 Generated Go methods return `error` for connection failures and non-success responses. Retry connection errors, 408, 409, 429, and 5xx responses with backoff. Do not retry 400, 401, 403, 404, or 422 until the request, authentication, permission, or input issue is fixed.
 
