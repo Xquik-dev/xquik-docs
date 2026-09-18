@@ -141,7 +141,7 @@ Account monitors and keyword monitors use the same active billing rate:
 
 Creating or reactivating an account monitor requires at least 22 available credits: 1 credit for the username lookup plus the 21-credit first active monitor-hour. Creating or reactivating a keyword monitor also requires at least 22 available credits and then bills active monitor hours at 21 credits per hour while enabled.
 
-New active monitors are due for billing immediately. The create response includes `nextBillingAt`; after a successful hourly charge, the next billing time advances by 1 hour. If hourly billing cannot charge enough credits, the monitor may pause until credits are available.
+New active monitors are due for billing immediately. The create response includes `nextBillingAt`. After a successful hourly charge, the next billing time advances by 1 hour. If hourly billing cannot charge enough credits, the monitor may pause until credits are available.
 
 Use [`GET /account`](/api-reference/account/get) to inspect current monitor billing. `monitorsUsed`, `monitorBilling.activeHourlyBurn`, and `monitorBilling.activeDailyEstimate` include active account monitors and active keyword monitors.
 
@@ -168,7 +168,7 @@ Use `GET /account` before creating more tweet monitors or tweet alerts. Each act
   </Card>
 </CardGroup>
 
-The daily estimate is the value returned by the account API for capacity planning. It is intentionally rounded for alerting and top-up thresholds. If `creditInfo.balance` is below the next hourly burn, top up before enabling more monitors.
+The account API returns the daily estimate for capacity planning. Xquik rounds it on purpose for alerting and top-up thresholds. If `creditInfo.balance` is below the next hourly burn, top up before enabling more monitors.
 
 ## Monthly credits & carry-over
 
@@ -179,7 +179,7 @@ Every paid subscription invoice adds the monthly credit grant to your account ba
 - Unused subscription credits **carry over** to the next billing period
 - API calls are also subject to [rate limits](/guides/rate-limits) (separate from credit usage)
 - When the shared balance reaches 0, metered calls return `402 Payment Required` (see [error handling](/guides/error-handling#billing--credit-errors-402) for recovery patterns)
-- Reading and managing stored monitor records, stored events, webhooks, and account endpoints are free. Active monitors are billed hourly.
+- Reading and managing stored monitor records, stored events, webhooks, and account endpoints are free. Active monitors bill hourly.
 
 ```json 402 response body
 {
@@ -188,11 +188,11 @@ Every paid subscription invoice adds the monthly credit grant to your account ba
 }
 ```
 
-> **Warning.** Metered calls are rejected when available credits cannot cover the operation. [Top up credits](/api-reference/credits/topup) or subscribe to continue.
+> **Warning.** Xquik rejects metered calls when available credits cannot cover the operation. [Top up credits](/api-reference/credits/topup) or subscribe to continue.
 
 ## Per-operation costs
 
-Each metered operation deducts credits from your shared pool. Per-credit cost depends on your plan - from USD 0.00012 (Business) to USD 0.00015 (PAYG).
+Each metered operation deducts credits from your shared pool. Per-credit cost depends on your plan. It ranges from USD 0.00012 (Business) to USD 0.00015 (PAYG).
 
 - [Bookmark folders](/api-reference/x/bookmark-folders): 1 credit per call.
 - [Bookmarks](/api-reference/x/bookmarks): 1 credit per result.
@@ -251,7 +251,7 @@ Extractions consume 1 or 5 credits per result depending on the extraction type:
   </Card>
 </CardGroup>
 
-Draws charge for the source tweet lookup, reply search, optional retweeter profile checks when `mustRetweet` is true, and optional follow checks for unique authors when `mustFollowUsername` is set. The draw first checks that the minimum cost is affordable. Remaining credits cap how many replies and retweeters can be inspected before filters and winner selection run. If the final computed cost cannot be deducted, the API returns `402 insufficient_credits` and does not persist a draw result.
+Draws charge for the source tweet lookup, reply search, optional retweeter profile checks when `mustRetweet` is true, and optional follow checks for unique authors when `mustFollowUsername` is set. The draw first checks that the minimum cost is affordable. Remaining credits cap how many replies and retweeters the draw can inspect before filters and winner selection run. If the API cannot deduct the final computed cost, it returns `402 insufficient_credits` and does not persist a draw result.
 
 ### Credit-affordable result pages
 
@@ -269,7 +269,7 @@ Ask the user to confirm before creating account checkout or charging a saved pay
 - Use the [top-up status endpoint](/api-reference/credits/topup-status) to poll checkout completion
 - The dashboard uses [quick top-up](/api-reference/credits/quick-topup) for saved methods
 - Configure automatic top-up from the dashboard. `GET /credits` and `GET /account` return the enabled status, dollar amount, and trigger threshold.
-- Top-up credits cost USD 0.00015 each and are added to your balance immediately
+- Top-up credits cost USD 0.00015 each and reach your balance immediately
 - Top-up credits do not expire and carry over between billing periods
 
 > **Example.** Starter tier (USD 20, 140K credits). A USD 10 top-up adds 66,666 credits at USD 0.00015 per credit, rounded down to whole credits.
@@ -387,7 +387,7 @@ curl -s https://xquik.com/api/v1/account \
 }
 ```
 
-The `creditInfo.balance` field shows how many credits remain. The automatic top-up fields show whether top-up is enabled, the charge amount, and the balance threshold. At 0, metered calls are rejected until you [top up credits](/api-reference/credits/topup).
+The `creditInfo.balance` field shows how many credits remain. The automatic top-up fields show whether top-up is enabled, the charge amount, and the balance threshold. At 0, Xquik rejects metered calls until you [top up credits](/api-reference/credits/topup).
 
 > **Tip.** Poll the account endpoint periodically to track usage. Build alerts when `creditInfo.balance` drops below 20% of your plan's monthly credit grant to avoid hitting the limit unexpectedly.
 
@@ -411,7 +411,7 @@ Yes. Subscription credits and top-up credits stay in the shared balance until yo
 
 ### How do I check my credit balance?
 
-Call `GET /api/v1/account` - the `creditInfo.balance` field shows remaining credits.
+Call `GET /api/v1/account`. The `creditInfo.balance` field shows remaining credits.
 
 ## Next steps
 

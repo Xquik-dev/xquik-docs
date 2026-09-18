@@ -276,7 +276,7 @@ static void writeCsvRow(BufferedWriter writer, List<?> values) throws IOExceptio
 
 Each `SearchTweet` includes generated accessors such as `id()`, `text()`, `author()`, `createdAt()`, `likeCount()`, `replyCount()`, `retweetCount()`, `quoteCount()`, `viewCount()`, `bookmarkCount()`, and `isNoteTweet()` when available. Project `page.tweets()` into JSON Lines and CSV rows with `tweet_id`, `author_username`, engagement counts, `page_index`, `page_cursor`, `next_cursor`, and `has_next_page` so workers can resume safely or load the same records into XLSX, CRM, warehouse, or agent workflows.
 
-Tweet search costs 1 credit per tweet returned. If remaining credits cannot cover a bounded `.limit()` request, the API can return fewer tweets; if 0 paid results are affordable, it returns `402 insufficient_credits`. The SDK supports `withOptions()` for retry and request settings. For explicit `.limit()` pulls, resume with the same query, filters, `QueryType`, and `.limit()`; only `.cursor()` changes.
+Tweet search costs 1 credit per tweet returned. If remaining credits cannot cover a bounded `.limit()` request, the API can return fewer tweets. If 0 paid results are affordable, it returns `402 insufficient_credits`. The SDK supports `withOptions()` for retry and request settings. For explicit `.limit()` pulls, resume with the same query, filters, `QueryType`, and `.limit()`; only `.cursor()` changes.
 
 ## Workflow: follower export to CSV, JSON, or XLSX
 
@@ -420,11 +420,11 @@ try (HttpResponse export = client.extractions().exportResults(
 }
 ```
 
-Persist `job.id()`, `targetUsername`, `estimate.estimatedResults()`, and `estimate.source()` before polling so retries can resume the extraction. `client.extractions().retrieve` returns `results()`, `hasMore()`, and `nextCursor()`; pass `nextCursor()` back as `cursor` to page through large follower lists. Map exported `User ID` or row `xUserId` as the CRM unique key. Use `xquik-followers.jsonl` for queue replay or warehouse loads, `xquik-followers.json` for app ingestion, `xquik-followers.csv` for CRM import, and `xquik-followers.xlsx` for analyst handoff. Cost: 1 credit per follower extracted or returned. Exports are free after the extraction job exists.
+Persist `job.id()`, `targetUsername`, `estimate.estimatedResults()`, and `estimate.source()` before polling so retries can resume the extraction. `client.extractions().retrieve` returns `results()`, `hasMore()`, and `nextCursor()`, so pass `nextCursor()` back as `cursor` to page through large follower lists. Map exported `User ID` or row `xUserId` as the CRM unique key. Use `xquik-followers.jsonl` for queue replay or warehouse loads, `xquik-followers.json` for app ingestion, `xquik-followers.csv` for CRM import, and `xquik-followers.xlsx` for analyst handoff. Cost: 1 credit per follower extracted or returned. Exports are free after the extraction job exists.
 
 ## Workflow: tweet replies to CSV, JSON, or XLSX
 
-Use this workflow when a Java worker needs every reply to a campaign, support thread, launch post, or incident update as a durable file. `reply_extractor` requires `targetTweetId`; estimate first, run the job, poll `retrieve`, then export the completed job as CSV, JSON, or XLSX.
+Use this workflow when a Java worker needs every reply to a campaign, support thread, launch post, or incident update as a durable file. `reply_extractor` requires `targetTweetId`. Estimate first, run the job, poll `retrieve`, then export the completed job as CSV, JSON, or XLSX.
 
 Reuse the follower export loop above. Change only the required target, tool type, and output names:
 
@@ -481,7 +481,7 @@ Repeat the export with `ExtractionExportResultsParams.Format.JSON` to write `Pat
 
 ## Workflow: post media tweets and DM attachments
 
-Use this workflow when a JVM service needs to publish a media tweet, reply with media, or send a direct message with an uploaded local file. `client.x().tweets().create` maps to `POST /x/tweets`; pass public media URLs through `.addMedia()` or `.media()`. Send up to 4 image URLs or exactly 1 MP4 video URL up to 100 MB, and do not mix video with other media. For replies, set `.replyToTweetId()` to the parent tweet ID. `client.x().media().upload` maps to `POST /x/media`; use `media.mediaId()` only for the one-item DM `.addMediaId()` handoff.
+Use this workflow when a JVM service needs to publish a media tweet, reply with media, or send a direct message with an uploaded local file. `client.x().tweets().create` maps to `POST /x/tweets`. Pass public media URLs through `.addMedia()` or `.media()`. Send up to 4 image URLs or exactly 1 MP4 video URL up to 100 MB, and do not mix video with other media. For replies, set `.replyToTweetId()` to the parent tweet ID. `client.x().media().upload` maps to `POST /x/media`. Use `media.mediaId()` only for the one-item DM `.addMediaId()` handoff.
 
 ```java
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -648,7 +648,7 @@ Connection and I/O failures use `XTwitterScraperIoException`. All SDK exceptions
 
 ## Pagination
 
-Paginated responses expose generated fields such as `hasNextPage`. Use the endpoint cursor fields documented in the API reference when requesting additional pages.
+Paginated responses expose generated fields such as `hasNextPage`. Use the endpoint cursor fields documented in the API reference when requesting more pages.
 
 ```java
 if (tweets.hasNextPage()) {
