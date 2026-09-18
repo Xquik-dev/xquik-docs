@@ -48,6 +48,7 @@ const TWEET_FIELDS = [
   "retweetedAt",
   "isNoteTweet",
   "isReply",
+  "isRetweet",
   "isLimitedReply",
   "isQuoteStatus",
   "conversationId",
