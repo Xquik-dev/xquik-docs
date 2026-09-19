@@ -7276,7 +7276,7 @@ const REQUIRED_DIRECT_MESSAGE_WORKFLOW_SNIPPETS = [
   "A `422` means X rejected the request.",
   "Do not retry an unchanged rejected request.",
   "### Can this API create group DM conversations?",
-  "The current Xquik contract does not create group conversations.",
+  "The Xquik contract does not create group conversations.",
   "### How do I send a DM with media?",
   "Send one media ID.",
   "Empty or multiple media IDs fail.",
