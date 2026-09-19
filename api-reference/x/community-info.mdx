@@ -1,7 +1,7 @@
 ---
 title: "X community details API for members & rules"
 sidebarTitle: "Get community info"
-description: "Retrieve an X community's name, description, member count, creator, moderators, rules, join policy, banner, and creation time. Includes request fields."
+description: "Retrieve an X community's name, description, member count, creator, moderators, rules, join policy, banner, and creation time. Costs 1 credit per call."
 api: "GET /x/communities/{id}/info"
 keywords:
   [
@@ -129,7 +129,7 @@ Use the X communities API to resolve one community. Then read its members, moder
 
 Check community details for every numeric community ID.
 Confirm the community name, description, creator, join policy, rules, and
-banner before requesting members or tweets. This prevents exports from using
+banner before requesting members or tweets. An export then cannot use
 the wrong X community.
 
 Keep the returned community ID as a string. Store the creator and moderator
@@ -141,7 +141,7 @@ describe how the Twitter community operates. They do not replace member rows,
 moderator profiles, or community tweets.
 
 After validation, choose the smallest matching route. Fetch member profiles
-for audience review. Fetch moderators for governance review. Fetch recent
+for audience review. Fetch moderators to review who runs the community. Fetch recent
 tweets to review posts and engagement. Use saved extraction jobs to produce
 CSV, JSON, or XLSX output.
 
@@ -173,7 +173,7 @@ Start with community details when the numeric ID needs validation. Then choose t
   </Card>
   <Card title="Moderator profiles" icon="shield-check" href="/api-reference/x/community-moderators">
 
-    Retrieve the smaller moderator roster without treating every member as a moderator.
+    Retrieve the moderator list, which is smaller than the member list.
 
   </Card>
   <Card title="Saved exports" icon="file-spreadsheet" href="/api-reference/extractions/create">
@@ -185,7 +185,7 @@ Start with community details when the numeric ID needs validation. Then choose t
 
 Use member routes for profile rows. Use tweet routes for posts and engagement counts. Use extraction jobs to save CSV, JSON, or XLSX output.
 
-## Choose community metadata
+## When to read community metadata
 
 Use this route for community metadata, rules, policies, and counts. It returns one community record, not member profiles or tweet rows. Use member and tweet routes for those collections.
 
@@ -261,7 +261,7 @@ print(json.dumps(community_record, indent=2))
 
 </CodeGroup>
 
-Use `GET /x/communities/{id}/info` when a workflow needs one durable community
+Use `GET /x/communities/{id}/info` when a workflow needs one community
 profile row before member exports, moderator review, content routing, or CRM
 enrichment. Store `community_id`, `community_name`, `description`,
 `member_count`, `moderator_count`, policy fields, creator,
@@ -269,11 +269,11 @@ enrichment. Store `community_id`, `community_name`, `description`,
 
 ## Qualify a community before collecting profiles or tweets
 
-Read community metadata before starting a member or tweet export. This check
-prevents a copied community ID from sending results into the wrong project.
+Read community metadata before starting a member or tweet export. A mistyped community ID
+would otherwise send results into the wrong project.
 
 Confirm `community.id` and `community.name` first. Save both values with the
-planned member or tweet export. Names can change, while the numeric ID anchors
+planned member or tweet export. Names can change. The numeric ID stays the same across
 later member and tweet pages.
 
 Review `description` and `primary_topic` for research relevance. Keep this
@@ -284,14 +284,14 @@ Check `join_policy` and `invites_policy` before planning member collection.
 Do not infer either policy from member counts. Store the returned values
 exactly, including missing values.
 
-Use `member_count` to estimate roster size. Use `moderator_count` only for
-staffing context. Neither count replaces the paginated member or moderator
+Use `member_count` to estimate roster size. Use `moderator_count` only to
+see how many people moderate. Neither count replaces the paginated member or moderator
 routes.
 
 Review `is_nsfw` before sharing banners, descriptions, or tweets. Follow the
 receiving system's content rules. Keep API responses unchanged.
 
-Capture every community rule with its ID, name, and description. Preserve the
+Capture every community rule with its ID, name, and description. Keep the
 returned order. Do not merge several rules into one undocumented summary.
 
 Finish the qualification record with these decisions:
@@ -330,7 +330,7 @@ community ID and manifest ID.
 
 Stop when the returned community ID differs. Require a
 review when the name or topic conflicts with the project brief. Record the
-decision instead of silently selecting another community.
+decision. Do not pick another community without a record.
 
 ## Use community metadata to choose the next route
 
@@ -342,15 +342,15 @@ Use [Community Moderators](/api-reference/x/community-moderators) for moderator
 profiles. The moderator count does not expose those usernames or user IDs.
 
 Use [Community Tweets](/api-reference/x/community-tweets) for the unfiltered
-community timeline. Preserve community ID and cursor with every page.
+community timeline. Keep community ID and cursor with every page.
 
 Use [Community Search](/api-reference/x/community-search) for matching tweets.
-Preserve the exact keyword expression and sort mode with every result.
+Keep the exact keyword expression and sort mode with every result.
 
-Keep the creator object for ownership context. Require route evidence before
-exporting that profile as a member or moderator.
+Keep the creator object to show who owns the community. Export that profile as a member or moderator
+only when the member or moderator route returns it.
 
-## Detect community metadata drift
+## Detect community metadata changes
 
 Compare manifests by stable community ID. Never join them by community name.
 
@@ -358,11 +358,11 @@ Report name, description, topic, policy, rule, and sensitivity changes
 separately. A member-count change does not prove a policy change. Track
 community rules and tweets independently.
 
-Store both retrieval times and both returned values. Preserve absent fields.
+Store both retrieval times and both returned values. Keep absent fields.
 Never invent policy or count defaults.
 
 Refresh this endpoint before long-running exports. Attach the newest manifest
-ID to every new collection job. Keep earlier manifests immutable for audits.
+ID to every new collection job. Do not edit earlier manifests. Audits need them.
 
 ## Path parameters
 

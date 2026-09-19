@@ -1,7 +1,7 @@
 ---
 title: "Twitter media scraper & profile export API guide"
 sidebarTitle: "Get user media"
-description: "Scrape tweets with photos, videos, and GIFs from a Twitter or X profile. Export media posts with authors, metrics, cursors, and timestamps. See costs."
+description: "Scrape tweets with photos, videos, and GIFs from a Twitter or X profile. Export media posts with authors, metrics, cursors, and timestamps. 1 credit per tweet."
 api: "GET /x/users/{id}/media"
 keywords:
   [
@@ -281,8 +281,8 @@ Record both tweet and media fields:
 - Video variants when present.
 - Engagement counts and page cursor.
 
-One tweet can contain several media items. Preserve the tweet-to-media
-relationship. Do not flatten several URLs into an ambiguous single value.
+One tweet can contain several media items. Keep the tweet-to-media
+relationship. Do not merge several URLs into one value.
 
 Use the inventory for asset review, campaign research, or approved archiving.
 Respect the original publisher and applicable usage rights.
@@ -291,7 +291,7 @@ Deduplicate tweets by tweet ID. Deduplicate individual assets by their media
 URL within that tweet. Save each page before advancing the cursor.
 
 Use user likes for tweets the profile liked. Use user tweets for the complete
-profile timeline. Use download media only after selecting a specific asset.
+profile timeline. Use download media only after you select the tweets you need.
 
 ## Hand media into an asset workflow
 
@@ -302,26 +302,26 @@ Choose the best available video variant only after inspecting its metadata.
 Keep the original variant list when later processing may need another format.
 
 Do not download every asset during discovery. First filter and approve the
-relevant tweets. Then call the download route for selected media.
+relevant tweets. Then call the download route with the selected tweet IDs.
 
-Preserve attribution and source links in any archive. The media URL alone does
+Keep attribution and source links in any archive. The media URL alone does
 not explain who published the asset or where it appeared.
 
 Record download status separately from discovery status. A listed media URL
 does not mean the asset was downloaded.
 
-Keep failed downloads retryable by tweet ID and media URL. Do not rerun the
+Record the tweet ID and media URL of each failed download so you can retry it. Do not rerun the
 entire profile export for one failed asset.
 
 | Media inventory column | Response source                  | Asset rule                                                    |
 | ---------------------- | -------------------------------- | ------------------------------------------------------------- |
 | `source_x_user_id`     | Resolved profile ID              | Keep every media tweet tied to the intended profile.          |
 | `tweet_id`             | `tweets[].id`                    | Use as the parent key for one or more media items.            |
-| `tweet_url`            | `tweets[].url`                   | Preserve the original X post for attribution and review.      |
+| `tweet_url`            | `tweets[].url`                   | Keep the original X post for attribution and review.          |
 | `tweet_text`           | `tweets[].text`                  | Keep the caption or post context beside each asset.           |
-| `author_id`            | `tweets[].author.id`             | Preserve the original publisher as a stable identity.         |
+| `author_id`            | `tweets[].author.id`             | Keep the original publisher as a stable identity.             |
 | `created_at`           | `tweets[].createdAt`             | Store the tweet publication time.                             |
-| `media_index`          | Position inside `tweets[].media` | Preserve the order of several assets on one tweet.            |
+| `media_index`          | Position inside `tweets[].media` | Keep the order of several assets on one tweet.                |
 | `media_type`           | `tweets[].media[].type`          | Separate photo, video, and animated GIF processing.           |
 | `media_url`            | `tweets[].media[].mediaUrl`      | De-duplicate an asset only within its parent tweet.           |
 | `video_variants`       | `tweets[].media[].videoVariants` | Keep every returned rendition until a download is approved.   |
@@ -331,7 +331,7 @@ entire profile export for one failed asset.
 | Asset decision           | Required evidence                      | Next action                                                      |
 | ------------------------ | -------------------------------------- | ---------------------------------------------------------------- |
 | Review only              | Tweet URL, media URL, author, and text | Keep the remote asset linked to its source tweet.                |
-| Approved image download  | Image media type and approved usage    | Call the download route for the selected media URL.              |
+| Approved image download  | Image media type and approved usage    | Call the download route with the parent tweet ID.                |
 | Approved video download  | Video variants and selected format     | Choose a variant after inspecting bitrate and content type.      |
 | Rejected asset           | Reviewer decision and reason           | Keep the source record without downloading the file.             |
 | Failed selected download | Tweet ID, media URL, and failure state | Retry only the selected asset, not the entire profile inventory. |

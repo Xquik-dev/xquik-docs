@@ -1,7 +1,7 @@
 ---
 title: "Twitter API get replies to a tweet & author fields"
 sidebarTitle: "Get tweet replies"
-description: "Use a Twitter API to get replies to a tweet with cursors, author profiles, engagement metrics, media, time filters, moderation rows, and every error response."
+description: "Get replies to a tweet by ID with cursors, author profiles, engagement metrics, media, and time filters. Complete mode reports coverage. 1 credit per reply."
 api: "GET /x/tweets/{id}/replies"
 keywords:
   [
@@ -230,9 +230,9 @@ webhook signature. Store each event ID before updating a support ticket. Replay
 missed events through the events API. Poll this endpoint for conversation
 backfills.
 
-### Which reply fields should applications preserve?
+### Which reply fields should applications keep?
 
-Keep stable author IDs separately from mutable usernames. Save `conversationId`
+Keep author IDs separate from usernames, which can change. Save `conversationId`
 and `inReplyToId` for thread joins. Store media URLs, likes, reposts, quotes,
 views, bookmarks, time filters, page size, and cursors for audits and retries.
 
@@ -364,7 +364,7 @@ replies. Inspect its diagnostic before retrying. Keep only rows whose
 `inReplyToId` matches the requested tweet for direct-reply workflows.
 
 Use [`reply_extractor`](/guides/tweet-replies-export) instead when a team needs
-an estimate, durable extraction ID, stored result pages, or CSV, JSON, and XLSX
+an estimate, a reusable extraction ID, stored result pages, or CSV, JSON, and XLSX
 downloads after completion.
 
 Bound moderation, campaign, or giveaway periods with `sinceTime` and `untilTime`, in Unix seconds. Direct replies use the default paid page size. Use `reply_extractor` and `resultsLimit` to cap exports.
@@ -380,25 +380,25 @@ each conversation branch.
 | Reply column       | Response source             | Review use                                                |
 | ------------------ | --------------------------- | --------------------------------------------------------- |
 | `parent_tweet_id`  | Requested path ID           | Join every reply to the source tweet.                     |
-| `reply_id`         | `tweets[].id`               | De-duplicate replies and reference one reply safely.      |
+| `reply_id`         | `tweets[].id`               | Deduplicate replies and reference one reply.              |
 | `text`             | `tweets[].text`             | Search, label, and display the reply body.                |
 | `author_id`        | `tweets[].author.id`        | Keep a stable author key when usernames change.           |
 | `author_username`  | `tweets[].author.username`  | Show the current reply author handle.                     |
 | `author_followers` | `tweets[].author.followers` | Add audience context without using it as an identity key. |
-| `author_verified`  | `tweets[].author.verified`  | Preserve the observed verification state.                 |
+| `author_verified`  | `tweets[].author.verified`  | Keep the observed verification state.                     |
 | `created_at`       | `tweets[].createdAt`        | Sort replies inside the campaign or moderation window.    |
 | `in_reply_to_id`   | `tweets[].inReplyToId`      | Join nested replies to their immediate parent.            |
 | `conversation_id`  | `tweets[].conversationId`   | Group replies that belong to the same X conversation.     |
-| `like_count`       | `tweets[].likeCount`        | Prioritize replies with stronger visible engagement.      |
-| `media_urls`       | `tweets[].media[].mediaUrl` | Preserve image or video evidence attached to the reply.   |
+| `like_count`       | `tweets[].likeCount`        | Prioritize replies with more visible engagement.          |
+| `media_urls`       | `tweets[].media[].mediaUrl` | Keep image or video evidence attached to the reply.       |
 
-| Collection checkpoint        | Stored value                               | Recovery rule                                                      |
-| ---------------------------- | ------------------------------------------ | ------------------------------------------------------------------ |
-| Page identity                | `page_index` and `page_cursor`             | Save both before writing the next reply page.                      |
-| Resume cursor                | `next_cursor`                              | Send it as `cursor` only when `has_next_page` is `true`.           |
-| Time window                  | `sinceTime` and `untilTime`                | Keep both time values unchanged when retrying.                     |
-| Completion state             | `has_next_page` plus the terminal cursor   | Mark the export complete only after the final page.                |
-| Incomplete complete-mode run | `424 replies_incomplete` plus `diagnostic` | Preserve rows, inspect evidence, and follow `recommendedFallback`. |
+| Collection checkpoint        | Stored value                               | Recovery rule                                                  |
+| ---------------------------- | ------------------------------------------ | -------------------------------------------------------------- |
+| Page identity                | `page_index` and `page_cursor`             | Save both before writing the next reply page.                  |
+| Resume cursor                | `next_cursor`                              | Send it as `cursor` only when `has_next_page` is `true`.       |
+| Time window                  | `sinceTime` and `untilTime`                | Keep both time values unchanged when retrying.                 |
+| Completion state             | `has_next_page` plus the terminal cursor   | Mark the export complete only after the final page.            |
+| Incomplete complete-mode run | `424 replies_incomplete` plus `diagnostic` | Keep rows, inspect evidence, and follow `recommendedFallback`. |
 
 ## Which replies endpoint?
 

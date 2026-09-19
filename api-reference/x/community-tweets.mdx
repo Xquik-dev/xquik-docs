@@ -124,24 +124,23 @@ import TweetCommunityResultFilterParams from "/snippets/tweet-community-result-f
 <TweetCommunityResultFilterParams />
 
 Export Twitter community posts from one known Community timeline. Keep Tweet
-text, authors, engagement counts, media, and cursor state. Use this X Community
-Tweets API for Twitter Communities. Save live pages or CSV, JSON, and XLSX exports.
+text, authors, engagement counts, media, and cursor state. Save live pages or CSV, JSON, and XLSX exports.
 This Twitter community scraping guide builds a community timeline export from
 cursor pages.
 
 ## Archive the unfiltered community feed
 
-This endpoint accepts a community ID without a keyword. It preserves the
+This endpoint accepts a community ID without a keyword. It keeps the
 returned feed order for timeline archives, content review, and moderation.
 
-| Feed decision     | Request or response field         | Archive rule                                      |
-| ----------------- | --------------------------------- | ------------------------------------------------- |
-| Community scope   | Path `{id}`                       | Keep this ID on every exported tweet row.         |
-| Feed coverage     | No `q` parameter                  | Archive posts without text filtering.             |
-| Returned order    | Response tweet sequence           | Preserve the order instead of re-ranking rows.    |
-| Continuation      | `has_next_page` and `next_cursor` | Save each page before advancing.                  |
-| Duplicate control | Tweet `id`                        | Deduplicate moving-feed pages by stable tweet ID. |
-| Saved export      | `community_post_extractor`        | Produce CSV, JSON, or XLSX timeline files.        |
+| Feed decision     | Request or response field         | Archive rule                                                     |
+| ----------------- | --------------------------------- | ---------------------------------------------------------------- |
+| Community scope   | Path `{id}`                       | Keep this ID on every exported tweet row.                        |
+| Feed coverage     | No `q` parameter                  | Archive posts without text filtering.                            |
+| Returned order    | Response tweet sequence           | Keep the order. Do not re-rank rows.                             |
+| Continuation      | `has_next_page` and `next_cursor` | Save each page before advancing.                                 |
+| Duplicate control | Tweet `id`                        | Deduplicate pages by tweet ID, because new posts shift the feed. |
+| Saved export      | `community_post_extractor`        | Produce CSV, JSON, or XLSX timeline files.                       |
 
 Choose Community Search for keyword filters, `Latest`, or `Top` ranking.
 
@@ -219,10 +218,10 @@ text, author profiles, and exported engagement fields.
 
 The member route returns community profiles. The tweet route returns community
 posts and author fields. The info route returns community details. Moderator
-and search routes serve their own focused records.
+and search routes return their own records.
 
 Choose one route per task. Do not combine profile membership and tweet activity
-into an ambiguous row. Join them later with stable user and community IDs.
+in one row. Join them later with stable user and community IDs.
 
 ### How do I build a complete community tweet export?
 
@@ -326,7 +325,7 @@ print(json.dumps(tweet_rows, indent=2))
 
 Use `GET /x/communities/{id}/tweets` for community monitoring, content review,
 post exports, or moderation queues. It creates one row per community tweet.
-Store each Tweet ID in its own record. Preserve the Community ID, author, text,
+Store each Tweet ID in its own record. Keep the Community ID, author, text,
 creation time, engagement counts, media, and cursor checkpoint.
 
 <CardGroup cols={2}>
@@ -345,8 +344,8 @@ creation time, engagement counts, media, and cursor checkpoint.
   </Card>
   <Card title="Default page" icon="rows-3">
 
-    Request 1 to 100 tweets with `pageSize`. The default is 20. Treat the value
-    as an upper bound because the source or available credits can return fewer.
+    Request 1 to 100 tweets with `pageSize`. The default is 20. The value
+    is an upper bound because the source or available credits can return fewer.
 
   </Card>
   <Card title="Saved export" icon="file-spreadsheet">
@@ -373,14 +372,14 @@ discarding richer author, engagement, or media fields.
 
 Keep the first and last tweet timestamps for every run. They describe the
 observed feed window. They do not prove a complete historical archive. Label
-result caps, credit limits, and interrupted cursors explicitly.
+result caps, credit limits, and interrupted cursors on the run.
 
 Store a completion record after the final page. Include community ID, page
 count, unique Tweet count, first timestamp, and last timestamp. Add collection
 time and the interrupted cursor when applicable. Store a final
 `has_next_page` value of `false` for a completed cursor chain.
 
-## Preserve community tweet authors and media
+## Keep community tweet authors and media
 
 Store each stable Tweet ID in its own record. Keep author ID, username, profile
 name, and verification when returned. Separate Tweet content from author
@@ -398,7 +397,7 @@ analysts need one normalized row. Use XLSX for reviewed spreadsheet handoffs.
 Document any column flattening beside the exported file.
 
 Join later profile snapshots through stable author ID. Usernames and profile
-names are mutable attributes. Store Tweet creation times separately from later
+names can change. Store Tweet creation times separately from later
 profile checks.
 
 ## Compare community timeline snapshots
@@ -413,11 +412,11 @@ Compare authors through stable user IDs. Report username or profile changes as
 attributes. Do not treat them as new authors.
 
 Mark every incomplete run before comparison. Exclude partial snapshots from
-claims about feed growth or activity. Preserve their rows for troubleshooting
+claims about feed growth or activity. Keep their rows for troubleshooting
 and cursor recovery.
 
-Keep the request time, page count, row count, and completion state. These
-fields let another reviewer repeat the comparison without guessing its scope.
+Keep the request time, page count, row count, and completion state. With these
+fields, another reviewer can repeat the comparison.
 
 ## Path parameters
 

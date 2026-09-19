@@ -114,7 +114,7 @@ const REQUIRED_OPERATIONAL_CONTENT = [
     file: "api-reference/x/get-article.mdx",
     snippets: [
       "| Article archive column | Response source | Archive rule |",
-      "| Article block | Text projection | Structured value to preserve |",
+      "| Article block | Text projection | Structured value to keep |",
       "| Code | Code text | Language and formatting metadata |",
     ],
   },

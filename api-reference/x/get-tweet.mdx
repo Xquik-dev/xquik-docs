@@ -1,7 +1,7 @@
 ---
 title: "Tweet lookup API, post details & engagement counts"
 sidebarTitle: "Get tweet"
-description: "Retrieve one tweet by numeric ID with full text, author profile, media, reply and quote context, likes, reposts, views, and URLs. See response fields."
+description: "Retrieve one tweet by numeric ID with full text, author profile, media, reply and quote context, likes, reposts, views, and URLs. Costs 1 credit per call."
 api: "GET /x/tweets/{id}"
 keywords:
   [
@@ -135,9 +135,7 @@ import TweetReadApiLinks from "/snippets/x-tweet-read-api-links.mdx";
 
 <Info>
 
-Get tweet returns one tweet by numeric ID. It is also useful as a tweet lookup
-API, single tweet API, tweet info API, X tweet API, or tweet details endpoint.
-The canonical endpoint remains `GET /api/v1/x/tweets/{id}`.
+Get tweet returns one tweet by numeric ID. The endpoint is `GET /api/v1/x/tweets/{id}`.
 
 </Info>
 
@@ -237,12 +235,12 @@ print(json.dumps(handoff))
 
 </CodeGroup>
 
-The examples shape durable tweet lookup rows instead of raw response dumps. Use
+The examples build tweet lookup rows, not raw response dumps. Use
 `GET /api/v1/x/tweets/{id}` when a workflow needs one tweet plus author context.
 Store `tweet_id`, `text`, `author_id`, `author_username`, `author_followers`,
 `author_verified`, `author_profile_picture`, `created_at`, `conversation_id`,
 `is_reply`, `is_quote_status`, `is_note_tweet`, `tweet_source`,
-`quote_tweet_id`, `metrics`, and `media_urls` with the downstream record.
+`quote_tweet_id`, `metrics`, and `media_urls` with the record you pass on.
 
 ## Direct tweet handoff
 
@@ -258,25 +256,25 @@ record.
 ## Store a tweet lookup record
 
 Use the numeric Tweet ID as the stable key. Keep text, author, thread, quote,
-engagement, media, and disclosure fields as separate columns instead of
-flattening the response into one unsearchable value.
+engagement, media, and disclosure fields as separate columns. One
+merged value cannot be searched.
 
-| Tweet record column  | Response source           | Handoff rule                                              |
-| -------------------- | ------------------------- | --------------------------------------------------------- |
-| `tweet_id`           | `tweet.id`                | Use as the stable tweet upsert key.                       |
-| `tweet_url`          | `tweet.url`               | Preserve the original X permalink when returned.          |
-| `text`               | `tweet.text`              | Store the complete returned tweet or Note Tweet text.     |
-| `created_at`         | `tweet.createdAt`         | Preserve the tweet publication time.                      |
-| `author_id`          | `author.id`               | Keep a stable author identity when usernames change.      |
-| `author_username`    | `author.username`         | Display the current author handle.                        |
-| `conversation_id`    | `tweet.conversationId`    | Join the tweet to its conversation thread.                |
-| `in_reply_to_id`     | `tweet.inReplyToId`       | Join replies to their immediate parent tweet.             |
-| `quote_tweet_id`     | `tweet.quoted_tweet.id`   | Preserve quoted-tweet attribution when present.           |
-| `is_note_tweet`      | `tweet.isNoteTweet`       | Distinguish long-form Note Tweet text.                    |
-| `like_count`         | `tweet.likeCount`         | Store the observed engagement count with lookup time.     |
-| `reply_count`        | `tweet.replyCount`        | Route active conversation threads for review.             |
-| `media_urls`         | `tweet.media[].mediaUrl`  | Preserve image, video, or animated GIF URLs.              |
-| `content_disclosure` | `tweet.contentDisclosure` | Preserve paid-promotion or AI-media labels when returned. |
+| Tweet record column  | Response source           | Handoff rule                                          |
+| -------------------- | ------------------------- | ----------------------------------------------------- |
+| `tweet_id`           | `tweet.id`                | Use as the stable tweet upsert key.                   |
+| `tweet_url`          | `tweet.url`               | Keep the original X permalink when returned.          |
+| `text`               | `tweet.text`              | Store the complete returned tweet or Note Tweet text. |
+| `created_at`         | `tweet.createdAt`         | Keep the tweet publication time.                      |
+| `author_id`          | `author.id`               | Keep a stable author identity when usernames change.  |
+| `author_username`    | `author.username`         | Display the current author handle.                    |
+| `conversation_id`    | `tweet.conversationId`    | Join the tweet to its conversation thread.            |
+| `in_reply_to_id`     | `tweet.inReplyToId`       | Join replies to their immediate parent tweet.         |
+| `quote_tweet_id`     | `tweet.quoted_tweet.id`   | Keep quoted-tweet attribution when present.           |
+| `is_note_tweet`      | `tweet.isNoteTweet`       | Distinguish long-form Note Tweet text.                |
+| `like_count`         | `tweet.likeCount`         | Store the observed engagement count with lookup time. |
+| `reply_count`        | `tweet.replyCount`        | Send active conversation threads to review.           |
+| `media_urls`         | `tweet.media[].mediaUrl`  | Keep image, video, or animated GIF URLs.              |
+| `content_disclosure` | `tweet.contentDisclosure` | Keep paid-promotion or AI-media labels when returned. |
 
 Direct tweet reads cost 1 credit per successful call. For MPP callers, Xquik
 bills this endpoint as a fixed charge at USD 0.00015 per call.

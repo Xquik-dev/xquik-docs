@@ -1,7 +1,7 @@
 ---
 title: "Tweet thread API, conversation export & authors"
 sidebarTitle: "Get tweet thread"
-description: "Retrieve a complete tweet thread around one tweet with authors, reply relationships, text, media, engagement metrics, and cursors. See request fields."
+description: "Retrieve the tweet thread around one tweet with authors, reply relationships, text, media, engagement metrics, and cursors. Costs 1 credit per tweet returned."
 api: "GET /x/tweets/{id}/thread"
 keywords:
   [
@@ -11,6 +11,7 @@ keywords:
     "X thread API",
     "conversation thread API",
     "thread context",
+    "thread context endpoint",
     "tweet conversation",
     "CSV export",
   ]
@@ -128,9 +129,8 @@ Requested result counts are upper bounds for paid authenticated calls. When rema
 <Info>
 
 Get tweet thread returns tweet rows in the conversation thread around one
-source tweet. It is also useful as a tweet thread API, X thread API, Twitter
-thread API, conversation thread API, or thread context endpoint. The canonical
-endpoint remains `GET /api/v1/x/tweets/{id}/thread`.
+source tweet. The
+endpoint is `GET /api/v1/x/tweets/{id}/thread`.
 
 </Info>
 
@@ -236,18 +236,18 @@ print(json.dumps({"checkpoint": checkpoint}))
 </CodeGroup>
 
 The Node.js and Python snippets write JSON Lines thread rows plus a separate
-checkpoint instead of raw response pages. Persist each mapped row and the latest
+checkpoint. They do not write raw response pages. Store each mapped row and the latest
 `next_cursor` so a support timeline, research job, moderation queue, or agent
 handoff can resume from the last completed page without duplicate rows.
 
 ## Direct tweet thread handoff
 
 Use `GET /api/v1/x/tweets/{id}/thread` when a workflow needs ordered thread
-context as durable rows around one tweet. Store `source_tweet_id`,
+rows around one tweet. Store `source_tweet_id`,
 `thread_tweet_id`, `text`, `author_id`, `author_username`, `author_name`,
 `author_followers`, `author_verified`, `author_profile_picture`, `created_at`,
 `conversation_id`, `in_reply_to_id`, media URLs, and a separate `next_cursor`
-checkpoint for downstream jobs.
+checkpoint for later jobs.
 
 <CardGroup cols={2}>
 
@@ -277,7 +277,7 @@ checkpoint for downstream jobs.
   <Card title="Media context" icon="image">
 
     Store `media[].mediaUrl`, `entities`, `quoted_tweet`, and `retweeted_tweet`
-    when returned to preserve attached context.
+    when returned to keep attached context.
 
   </Card>
   <Card title="Next page" icon="arrow-right">
@@ -313,7 +313,7 @@ Store each tweet ID, text, author, creation time, engagement counts, media, and
 thread position. Keep the starting tweet ID with the complete result.
 
 Render posts in the returned thread order. Do not sort by engagement counts.
-Preserve media and quote relationships inside each post.
+Keep media and quote relationships inside each post.
 
 Thread results can support long-form reading, approved archiving, or
 conversation context. A reply from another author may belong to a different

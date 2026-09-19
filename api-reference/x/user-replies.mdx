@@ -1,7 +1,7 @@
 ---
 title: "Twitter replies scraper & profile timeline"
 sidebarTitle: "Get user replies"
-description: "Retrieve one user's X With Replies timeline with cursor pagination, parent tweet context, author fields, engagement metrics, media, and export handoffs"
+description: "Retrieve one user's X With Replies timeline with cursor pagination, parent tweet context, author fields, engagement metrics, and media. 1 credit per tweet."
 api: "GET /x/users/{id}/replies"
 keywords:
   [
@@ -170,9 +170,9 @@ import TweetResultFilterParams from "/snippets/tweet-result-filter-params.mdx";
 <TweetReadApiLinks />
 <ConnectedAccountApiLinks />
 
-## Choose replies by default
+## When to use the With Replies timeline
 
-Use this route when replies must appear by default. It can include parent context for each reply row. Use the standard user timeline when original posts are the primary target.
+Use this route when every page must include replies. It can include parent context for each reply row. Use the standard user timeline when original posts are the primary target.
 
 <Note>
 
@@ -190,9 +190,9 @@ Requested result counts are upper bounds for paid authenticated calls. When rema
 
 <Info>
 
-Get user replies timeline is the dedicated With Replies endpoint for one
-public X profile. Use it when replies must be included by default instead of
-adding `includeReplies=true` to `GET /api/v1/x/users/{id}/tweets`.
+This route returns the With Replies timeline for one
+public X profile. It includes replies by default, so you do not
+add `includeReplies=true` to `GET /api/v1/x/users/{id}/tweets`.
 
 Protected accounts return HTTP 403 with `x_account_protected`. Choose a public account.
 This applies to every mode, including continuation requests. Xquik collects no results and charges nothing.
@@ -345,7 +345,7 @@ opaque and pass it back as `cursor` only when `has_next_page` is true.
 ## Build a with replies sync
 
 Use these checkpoints when a timeline sync needs reply rows, parent context, and
-resumable cursor state.
+a cursor to resume.
 
 <CardGroup cols={2}>
 
@@ -369,7 +369,7 @@ resumable cursor state.
   </Card>
   <Card title="Cursor checkpoint" icon="database">
 
-    Persist `page_cursor`, `next_cursor`, and `has_next_page` before requesting
+    Store `page_cursor`, `next_cursor`, and `has_next_page` before requesting
     another page.
 
   </Card>
@@ -402,8 +402,8 @@ resumable cursor state.
 
 ## Build a profile reply archive
 
-Use this route to collect replies authored by one profile. Preserve the source
-profile ID with every reply. Also preserve the replied-to tweet ID when
+Use this route to collect replies authored by one profile. Keep the source
+profile ID with every reply. Also keep the replied-to tweet ID when
 available.
 
 Useful reply columns include:
@@ -421,22 +421,22 @@ Deduplicate by reply tweet ID. Save every page before advancing its cursor.
 New replies can shift the first page between runs.
 
 Use tweet replies to inspect replies under one specific tweet. Use user tweets
-for a profile timeline. Those routes begin from different targets.
+for a profile timeline. Each route starts from a different target.
 
 | Profile reply column | Response source             | Archive rule                                                |
 | -------------------- | --------------------------- | ----------------------------------------------------------- |
 | `source_x_user_id`   | Resolved profile ID         | Keep the authored-reply archive tied to one stable profile. |
 | `reply_id`           | `tweets[].id`               | Use as the stable reply upsert and deduplication key.       |
-| `text`               | `tweets[].text`             | Preserve the reply body returned by the API.                |
+| `text`               | `tweets[].text`             | Keep the reply body returned by the API.                    |
 | `created_at`         | `tweets[].createdAt`        | Order replies by creation time, not cursor position.        |
 | `in_reply_to_id`     | `tweets[].inReplyToId`      | Join each reply to its immediate parent tweet.              |
 | `conversation_id`    | `tweets[].conversationId`   | Group reply rows from the same X conversation.              |
-| `parent_tweet`       | Included parent object      | Preserve parent context when `includeParentTweet=true`.     |
+| `parent_tweet`       | Included parent object      | Keep parent context when `includeParentTweet=true`.         |
 | `like_count`         | `tweets[].likeCount`        | Rank authored replies by observed likes.                    |
 | `reply_count`        | `tweets[].replyCount`       | Identify replies that started deeper discussion.            |
-| `media_urls`         | `tweets[].media[].mediaUrl` | Preserve images and videos attached to the reply.           |
-| `page_cursor`        | Request `cursor`            | Prove which With Replies page produced the row.             |
-| `collected_at`       | Integration timestamp       | Distinguish repeated reply archive snapshots.               |
+| `media_urls`         | `tweets[].media[].mediaUrl` | Keep images and videos attached to the reply.               |
+| `page_cursor`        | Request `cursor`            | Record which With Replies page produced the row.            |
+| `collected_at`       | Integration timestamp       | Tell repeated reply archive snapshots apart.                |
 
 | Reply collection requirement           | Route and parameters                       | Use                                                      |
 | -------------------------------------- | ------------------------------------------ | -------------------------------------------------------- |

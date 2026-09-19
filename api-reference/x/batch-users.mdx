@@ -1,7 +1,7 @@
 ---
 title: "Twitter batch user lookup API & profile details"
 sidebarTitle: "Get users (batch)"
-description: "Retrieve up to 100 X user profiles by ID in one request, including usernames, bios, verification state, follower counts, and profile media. See costs."
+description: "Retrieve up to 100 X user profiles by ID in one request, including usernames, bios, verification state, follower counts, and profile media. 1 credit per user."
 api: "GET /x/users/batch"
 keywords: ["batch", "users", "bulk", "multiple", "x api"]
 ---
@@ -205,8 +205,8 @@ missing_ids = [user_id for user_id in ids if user_id not in profiles_by_id]
 
 </CodeGroup>
 
-The Node.js and Python snippets shape durable profile rows instead of printing
-full profile objects. Persist `profileRows` or `profile_rows` and `missingIds`
+The Node.js and Python snippets build profile rows. They do not print
+full profile objects. Store `profileRows` or `profile_rows` and `missingIds`
 or `missing_ids` with the original ID list so retries only request missing
 profiles.
 
@@ -219,7 +219,7 @@ or username to resolve.
 
 Store `requested_ids`, `user_id`, `username`, `display_name`, profile metrics,
 verification state, `profile_image_url`, `has_next_page`, and `next_cursor`.
-Join returned users by `user_id` instead of relying on response order. Send at
+Join returned users by `user_id`. Do not rely on response order. Send at
 most 100 IDs per request. Batch requests always return `has_next_page: false`
 and `next_cursor: ""`. Zero affordable results return
 `402 insufficient_credits`.
@@ -246,8 +246,8 @@ and `next_cursor: ""`. Zero affordable results return
   </Card>
   <Card title="No pagination" icon="route">
 
-    Use the single-page batch contract: `has_next_page: false` and
-    `next_cursor: ""`. Do not treat it as a cursor workflow.
+    A batch returns one page: `has_next_page: false` and
+    `next_cursor: ""`. Do not paginate it.
 
   </Card>
 </CardGroup>
@@ -276,7 +276,7 @@ and `next_cursor: ""`. Zero affordable results return
   </Card>
   <Card title="Tweet IDs" icon="list">
 
-    Use [`GET /x/tweets/batch`](/api-reference/x/batch-tweets) when the input
+    Use [`GET /x/tweets?ids=`](/api-reference/x/batch-tweets) when the input
     list contains tweet IDs instead of user IDs.
 
   </Card>
@@ -312,11 +312,11 @@ Useful enrichment fields include:
 - Follower and following counts.
 - Profile image and account creation time.
 
-Treat missing IDs explicitly. Do not shift remaining profiles into another
+Mark missing IDs as missing. Do not shift remaining profiles into another
 row's position. Join responses by numeric user ID.
 
 Split oversized workloads into supported batches. Save each completed batch
-before starting the next. This makes a failed enrichment job safe to resume.
+before starting the next. A failed enrichment job can then resume from the last saved batch.
 
 ## Query parameters
 

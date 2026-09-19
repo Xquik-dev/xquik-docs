@@ -115,8 +115,8 @@ Tweet IDs, authors, engagement counts, media, and cursors for exports.
 
 ## Filter one community by query
 
-This endpoint requires a search expression. It filters one community instead
-of returning the unfiltered feed. Keep the query beside every saved row.
+This endpoint requires a search expression. It filters one community. It does
+not return the unfiltered feed. Keep the query beside every saved row.
 
 | Search decision | Request field                 | Result boundary                                     |
 | --------------- | ----------------------------- | --------------------------------------------------- |
@@ -305,8 +305,8 @@ if next_cursor is not None:
 
 </CodeGroup>
 
-The Node.js & Python snippets shape one durable row per matching community
-tweet instead of printing the full response page. Persist the final
+The Node.js & Python snippets build one row per matching community
+tweet. They do not print the full response page. Store the final
 `next_cursor` row when `has_next_page` is true, then pass it back as `cursor`
 with the same `communityId`, `q`, `queryType`, and `pageSize`.
 
@@ -342,8 +342,8 @@ relevance-ranked review.
   </Card>
   <Card title="Default page" icon="rows-3">
 
-    Request 1 to 100 tweets with `pageSize`. The default is 20. Treat the value
-    as an upper bound because filters, source results, or credits can return fewer.
+    Request 1 to 100 tweets with `pageSize`. The default is 20. The value
+    is an upper bound because filters, source results, or credits can return fewer.
 
   </Card>
   <Card title="Saved export" icon="file-spreadsheet">
@@ -357,8 +357,8 @@ relevance-ranked review.
 ## Plan a community search export
 
 Choose this route for repeatable research across one known community. Define
-the question before choosing the query. A focused query produces cleaner tweet
-rows and simpler review.
+the question before choosing the query. A narrow query returns fewer irrelevant tweet
+rows to review.
 
 Start each export with these values:
 
@@ -369,20 +369,20 @@ Start each export with these values:
 - The time when collection started.
 
 Keep those values beside every saved cursor. Resume with the same values.
-Changing the query during pagination creates a different result stream.
+Changing the query during pagination starts a different result set.
 
 Use `Latest` for incident review, event coverage, and recent topic monitoring.
 Use `Top` for relevance-ranked discovery. Do not combine both orders inside one
-export file. Create separate exports when reviewers need both perspectives.
+export file. Create separate exports when reviewers need both orders.
 
-Normalize each tweet into explicit columns. Useful columns include tweet ID,
+Normalize each tweet into named columns. Useful columns include tweet ID,
 text, author username, creation time, likes, replies, reposts, and media URLs.
-Keep the community ID and query on every row. Those columns preserve context
+Keep the community ID and query on every row. Those columns keep context
 after CSV or XLSX handoff.
 
 Stop when `has_next_page` becomes false. Store the final checkpoint with the
-row count. Deduplicate resumed exports by tweet ID. This protects downstream
-spreadsheets when a worker retries the last completed page.
+row count. Deduplicate resumed exports by tweet ID. A worker that retries the last completed page
+then adds no duplicate spreadsheet rows.
 
 ## Write precise community queries
 
@@ -394,24 +394,24 @@ For moderation, search the specific phrase or hashtag under review. For
 research, separate broad themes into independent queries. For event coverage,
 record the chosen sort order and collection time.
 
-Avoid changing `q` after receiving a cursor. Start a new search instead. This
-keeps each cursor tied to one understandable result set.
+Avoid changing `q` after receiving a cursor. Start a new search. Each
+cursor then belongs to one result set.
 
 ## Validate a completed research file
 
 Count unique tweet IDs after the final page. Compare that count with the
-written row count. Any difference reveals repeated rows.
+written row count. Any difference means repeated rows.
 
 Check that every row carries the same community ID, query, and sort mode.
 Reject a mixed file before analyst handoff. Keep media URLs as arrays or
 separate child rows.
 
 Write a short export manifest. Include collection time, page count, unique
-tweet count, final cursor state, and output format. This makes a CSV or XLSX
-file understandable without the original job logs.
+tweet count, final cursor state, and output format. A reader can then understand the CSV or XLSX
+file without the original job logs.
 
-When a run stops early, label it partial. Preserve the last durable cursor for
-resumption. Do not present a partial export as the community's complete search
+When a run stops early, label it partial. Keep the last saved cursor to
+resume. Do not present a partial export as the community's complete search
 result.
 
 ## Schedule independent searches
@@ -422,24 +422,23 @@ between two terms.
 Run urgent moderation searches more frequently than broad research queries.
 Record the schedule beside the export manifest.
 
-If a query changes, start a new series. This preserves understandable
-comparisons across collection windows.
+If a query changes, start a new series. Compare only
+runs that used the same query.
 
 Use separate output names for each community. Include a short query slug and
 collection date. Keep the full query inside the manifest.
 
-Archive successful manifests beside their CSV, JSON, or XLSX files. This lets
-another analyst reproduce the search parameters without opening application
+Archive successful manifests beside their CSV, JSON, or XLSX files. Another
+analyst can then reproduce the search parameters without opening application
 logs.
 
-Version the manifest when a query changes. Keep earlier exports immutable.
-This preserves comparisons between research periods and prevents silent
-rewrites.
+Version the manifest when a query changes. Do not edit earlier exports.
+Comparisons between research periods depend on them.
 
 ## Compare latest and top results without mixing datasets
 
 Run `Latest` and `Top` as independent searches when research needs both views.
-They answer different questions and may return overlapping tweets.
+The 2 orders rank different tweets first and may return overlapping tweets.
 
 Give each run its own manifest, cursor chain, and output file. Keep the same
 community ID and query when comparing the two modes. Changing another input
@@ -466,8 +465,8 @@ Validate each dataset before comparison:
 - Each run removes duplicate tweet IDs.
 - Partial runs remain clearly labeled.
 
-Use the combined view for research prioritization. Preserve the independent
-exports for reproducibility and later audits.
+Use the combined view to decide what to research first. Keep the separate
+exports so others can reproduce and audit the work.
 
 ## Query parameters
 
@@ -551,11 +550,11 @@ Keep `next_cursor` outside the visible tweet list. Bind it to the community,
 query, sort mode, and page size. Disable the next-page action during requests.
 Disable it permanently when `has_next_page` becomes false.
 
-Treat an empty page as a valid search result. It does not mean the community
+An empty page is a valid search result. It does not mean the community
 is missing. Display empty matches separately from authentication, credit, and
 request errors.
 
-## Preserve decisions across a live moderation queue
+## Keep decisions across a live moderation queue
 
 Create one queue identity from the community ID, query, and sort mode. Keep it
 unchanged while reviewers page through matching tweets.
@@ -571,12 +570,12 @@ Separate four queue states:
 - Failed page requests that retain their previous cursor.
 
 When a page fails, keep the current rows and cursor. Retry with identical
-query parameters. Do not advance the cursor until every row is durable.
+query parameters. Do not advance the cursor until you have saved every row.
 
-Treat `Latest` as a moving queue. Deduplicate incoming rows by Tweet ID. Keep
+`Latest` results change as new tweets arrive. Deduplicate incoming rows by Tweet ID. Keep
 earlier decisions when the same tweet appears again.
 
-Treat `Top` as a relevance review. Record each collection time because ranking
+`Top` results rank by relevance. Record each collection time because ranking
 can change. Do not compare row positions across separate requests.
 
 Pass approved Tweet IDs into reply, thread, profile, or media workflows. Keep
@@ -585,7 +584,7 @@ reviewer, decision, and review time fields.
 
 ## Build a query-specific community review batch
 
-Save the exact query before requesting tweets. Preserve every operator, quoted
+Save the exact query before requesting tweets. Keep every operator, quoted
 phrase, exclusion, language choice, and engagement filter. Reviewers must see
 the expression that produced the queue.
 
@@ -597,7 +596,7 @@ Assign one purpose to each batch. Examples include campaign replies, support
 complaints, product feedback, rule violations, or event coverage. Never mix
 unrelated queries inside one review queue.
 
-Persist each cursor page before requesting another. Deduplicate repeated Tweet
+Store each cursor page before requesting another. Deduplicate repeated Tweet
 IDs after retries. Never discard a prior decision when engagement counts
 change.
 

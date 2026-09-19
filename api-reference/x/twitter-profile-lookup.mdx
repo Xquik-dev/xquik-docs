@@ -1,7 +1,7 @@
 ---
 title: "Twitter profile search, lookup & audience counts"
 sidebarTitle: "Get user"
-description: "Search a Twitter or X profile by username or user ID. Retrieve the bio, follower and following counts, verification status, location, and links. See costs."
+description: "Look up a Twitter or X profile by username or user ID. Retrieve the bio, follower and following counts, verification status, location, and links. 1 credit."
 api: "GET /x/users/{id}"
 keywords:
   [
@@ -252,11 +252,11 @@ func main() {
 
 </CodeGroup>
 
-Use `GET /x/users/{id}` when a workflow needs one durable profile row for CRM
+Use `GET /x/users/{id}` when a workflow needs one profile row for CRM
 enrichment, lead scoring, account monitoring, or support triage. Store
 `user_id`, `username`, `display_name`, `bio`, `follower_count`,
 `following_count`, `verified`, `verified_type`, `profile_url`,
-`profile_image_url`, `created_at`, and `unavailable_reason` instead of logging
+`profile_image_url`, `created_at`, and `unavailable_reason`. Do not log
 the full lookup response.
 
 <CardGroup cols={2}>
@@ -269,7 +269,7 @@ the full lookup response.
   </Card>
   <Card title="Lookup key" icon="key-round">
 
-    Use a numeric user ID for durable joins. Use username lookup when the
+    Join on the numeric user ID, which does not change. Use username lookup when the
     workflow starts from a handle.
 
   </Card>
@@ -293,22 +293,22 @@ the full lookup response.
 Keep the numeric X user ID as the stable key. Profile usernames, names, bios,
 counts, verification, locations, links, and images can change between lookups.
 
-| Profile column       | Response field      | CRM or warehouse rule                                            |
-| -------------------- | ------------------- | ---------------------------------------------------------------- |
-| `x_user_id`          | `id`                | Use as the stable profile upsert and relationship key.           |
-| `x_username`         | `username`          | Store the current handle without using it as the durable key.    |
-| `display_name`       | `name`              | Preserve the public profile name observed during lookup.         |
-| `bio`                | `description`       | Store the profile bio when X returns it.                         |
-| `follower_count`     | `followers`         | Preserve the observed follower count with the lookup time.       |
-| `following_count`    | `following`         | Preserve the observed following count with the lookup time.      |
-| `verified`           | `verified`          | Record the observed verification state.                          |
-| `verified_type`      | `verifiedType`      | Distinguish returned business or government verification types.  |
-| `location`           | `location`          | Preserve the public profile location when supplied.              |
-| `profile_url`        | `url`               | Keep the public website link from the profile.                   |
-| `profile_image_url`  | `profilePicture`    | Use the returned image in profile previews and review queues.    |
-| `account_created_at` | `createdAt`         | Preserve the account creation timestamp when available.          |
-| `unavailable`        | `unavailable`       | Separate an unavailable profile from a successful active lookup. |
-| `unavailable_reason` | `unavailableReason` | Route suspended, deactivated, or otherwise unavailable profiles. |
+| Profile column       | Response field      | CRM or warehouse rule                                                        |
+| -------------------- | ------------------- | ---------------------------------------------------------------------------- |
+| `x_user_id`          | `id`                | Use as the stable profile upsert and relationship key.                       |
+| `x_username`         | `username`          | Store the current handle. Do not use it as the key.                          |
+| `display_name`       | `name`              | Keep the public profile name observed during lookup.                         |
+| `bio`                | `description`       | Store the profile bio when X returns it.                                     |
+| `follower_count`     | `followers`         | Keep the observed follower count with the lookup time.                       |
+| `following_count`    | `following`         | Keep the observed following count with the lookup time.                      |
+| `verified`           | `verified`          | Record the observed verification state.                                      |
+| `verified_type`      | `verifiedType`      | Distinguish returned business or government verification types.              |
+| `location`           | `location`          | Keep the public profile location when supplied.                              |
+| `profile_url`        | `url`               | Keep the public website link from the profile.                               |
+| `profile_image_url`  | `profilePicture`    | Use the returned image in profile previews and review queues.                |
+| `account_created_at` | `createdAt`         | Keep the account creation timestamp when available.                          |
+| `unavailable`        | `unavailable`       | Separate an unavailable profile from a successful active lookup.             |
+| `unavailable_reason` | `unavailableReason` | Handle suspended, deactivated, or otherwise unavailable profiles separately. |
 
 | Next workflow                 | Stable input                                  | Route                     |
 | ----------------------------- | --------------------------------------------- | ------------------------- |
@@ -317,7 +317,7 @@ counts, verification, locations, links, and images can change between lookups.
 | Profile timeline              | `id`                                          | `/x/users/{id}/tweets`    |
 | Profile replies               | `id`                                          | `/x/users/{id}/replies`   |
 | Profile media                 | `id`                                          | `/x/users/{id}/media`     |
-| One follow relationship       | Source and target profile IDs                 | `/x/followers/check`      |
+| One follow relationship       | Source and target usernames                   | `/x/followers/check`      |
 | Saved profile or audience job | Numeric profile ID in the selected tool input | `/extractions`            |
 
 ## Path parameters
