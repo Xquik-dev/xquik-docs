@@ -2515,7 +2515,7 @@ const REQUIRED_API_KEYS_CREATE_PAGE_SNIPPETS = [
   'apiKey := key["fullKey"]',
   "Store apiKey in your secret manager; do not print it in logs.",
   "Created API key",
-  "Xquik returns `fullKey` **once**.",
+  "Xquik returns `fullKey` once.",
 ] as const;
 
 const FORBIDDEN_API_KEYS_CREATE_LOG_SNIPPETS = [
