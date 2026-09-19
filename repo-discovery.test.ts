@@ -6912,7 +6912,7 @@ const REQUIRED_EXTRACTION_LIST_HANDOFF_SNIPPETS = [
   "## Job inventory handoff",
   "Use `GET /extractions` as the job inventory step before fetching details or",
   "Treat `nextCursor` as opaque and pass it back as `cursor`",
-  "not dump raw job lists into shared logs.",
+  "not write raw job lists to shared logs.",
   '<Card title="Page checkpoint" icon="bookmark">',
   "`tool_type_filter`, and `status_filter`",
   '<Card title="Completed jobs" icon="circle-check">',
