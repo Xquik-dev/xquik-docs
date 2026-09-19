@@ -1,7 +1,7 @@
 ---
 title: "Resume Twitter webhook deliveries & retry events"
 sidebarTitle: "Resume webhook"
-description: "Test and resume a paused webhook after delivery failures. Confirm its HTTPS response before sending new signed monitor events. Includes request fields."
+description: "Test and resume a paused webhook after delivery failures. Xquik sends a signed test and reactivates the webhook only after a 2xx response. The call is free."
 api: "POST /webhooks/{id}/resume"
 keywords: ["webhook", "resume", "delivery failure", "needs attention", "test webhook"]
 ---
@@ -215,7 +215,7 @@ func main() {
 
 </CodeGroup>
 
-These snippets shape a recovery row. Store `delivery_status`,
+These snippets build a recovery row. Store `delivery_status`,
 `consecutive_failures`, `failure_hard_cap`, `status_code`, and the delivery-log
 endpoint beside the webhook ID.
 
@@ -241,21 +241,21 @@ Xquik sends a signed `webhook.test` request to the webhook URL. If your receiver
 returns a `2xx` status, Xquik reactivates the webhook, resets `consecutiveFailures` to `0`, and returns the updated webhook object.
 
 If the signed test fails, Xquik returns `400` with `success: false`,
-`statusCode`, and `error`. The webhook is not reactivated.
+`statusCode`, and `error`. Xquik does not reactivate the webhook.
 
 This endpoint does not rotate or return the signing secret. Keep using the
 one-time secret from [Create Webhook](/api-reference/webhooks/create).
 
-| Webhook resume check | Response source               | Recovery rule                           |
-| -------------------- | ----------------------------- | --------------------------------------- |
-| Signed test result   | `success`                     | Resume only when this value is `true`.  |
-| Receiver status      | `statusCode`                  | Require a `2xx` response.               |
-| Webhook ID           | `webhook.id`                  | Match the receiver being recovered.     |
-| Delivery URL         | `webhook.url`                 | Confirm the repaired HTTPS endpoint.    |
-| Event filter         | `webhook.eventTypes`          | Preserve monitor subscription coverage. |
-| Active state         | `webhook.isActive`            | Expect `true` after recovery.           |
-| Failure count        | `webhook.consecutiveFailures` | Expect `0` after recovery.              |
-| Delivery state       | `webhook.deliveryStatus`      | Expect `active` after recovery.         |
+| Webhook resume check | Response source               | Recovery rule                                             |
+| -------------------- | ----------------------------- | --------------------------------------------------------- |
+| Signed test result   | `success`                     | Resume only when this value is `true`.                    |
+| Receiver status      | `statusCode`                  | Require a `2xx` response.                                 |
+| Webhook ID           | `webhook.id`                  | Match the receiver being recovered.                       |
+| Delivery URL         | `webhook.url`                 | Confirm the repaired HTTPS endpoint.                      |
+| Event filter         | `webhook.eventTypes`          | Confirm the filter still covers your monitor event types. |
+| Active state         | `webhook.isActive`            | Expect `true` after recovery.                             |
+| Failure count        | `webhook.consecutiveFailures` | Expect `0` after recovery.                                |
+| Delivery state       | `webhook.deliveryStatus`      | Expect `active` after recovery.                           |
 
 ## Response
 
@@ -414,10 +414,10 @@ responses, became unreachable, or reached `deliveryStatus: "needs_attention"`.
 
   </Card>
 
-  <Card title="Signed test gate" icon="flask-conical">
+  <Card title="Signed test required" icon="flask-conical">
 
-    Resume only succeeds after a signed `webhook.test` request receives a `2xx`
-    response from your receiver.
+    Resume succeeds only after your receiver answers a signed `webhook.test` request with a `2xx`
+    response.
 
   </Card>
 
@@ -446,14 +446,14 @@ responses, became unreachable, or reached `deliveryStatus: "needs_attention"`.
   <Card title="Event replay" icon="link">
 
     Use delivery `streamEventId` with [Get Event](/api-reference/events/get) or
-    event list pages to backfill missed downstream work.
+    event list pages to backfill missed work.
 
   </Card>
 </CardGroup>
 
 <Note>
 
-This endpoint supports dual authentication. Send an API key in the `x-api-key` header or a session cookie from the dashboard.
+This endpoint accepts 2 auth methods. Send an API key in the `x-api-key` header or a session cookie from the dashboard.
 
 **Related.** [List Webhooks](/api-reference/webhooks/list) &middot; [Update Webhook](/api-reference/webhooks/update) &middot; [Test Webhook](/api-reference/webhooks/test) &middot; [List Deliveries](/api-reference/webhooks/deliveries) &middot; [Webhook Verification](/webhooks/verification)
 
