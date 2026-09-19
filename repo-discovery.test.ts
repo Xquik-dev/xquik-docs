@@ -10712,7 +10712,7 @@ const REQUIRED_TWEETCLAW_GUIDE_SNIPPETS = [
 
 const REQUIRED_MICROSOFT_AGENT_FRAMEWORK_GUIDE_SNIPPETS = [
   'title: "Microsoft Agent Framework Twitter MCP Python guide"',
-  "Use this Microsoft Agent Framework tutorial to build a production-ready Twitter",
+  "Use this Microsoft Agent Framework tutorial to build a Twitter",
   "This Microsoft Agent Framework Python example connects to Xquik's",
   "Connect the Microsoft Agent Framework MCP server client through Streamable HTTP.",
   "The Microsoft open-source agent framework provides agents",
@@ -10745,7 +10745,7 @@ const REQUIRED_MICROSOFT_AGENT_FRAMEWORK_GUIDE_SNIPPETS = [
   "| `424` | The upstream X dependency failed",
   "| `429` | The Twitter API rate limit applies",
   "| `502` | The X dependency returned an invalid response",
-  "## Preserve Microsoft Agent Framework workflows and handoffs",
+  "## Store Microsoft Agent Framework workflow handoffs",
   '<Card title="Tweet search rows" icon="search">',
   '<Card title="Profile and follower rows" icon="users">',
   '<Card title="Follower export jobs" icon="file-spreadsheet">',
