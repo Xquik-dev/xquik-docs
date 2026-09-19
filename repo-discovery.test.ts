@@ -8617,7 +8617,7 @@ const REQUIRED_TARGET_AUDIENCE_DISCOVERY_WORKFLOW_SNIPPETS = [
   "### How do I prevent duplicate audience profiles?",
   "## Cost and retry notes",
   "Estimate extraction jobs before running large follower, following, verified",
-  "Direct JSON pages are metered by returned user or tweet rows.",
+  "Xquik meters direct JSON pages by returned user or tweet rows.",
   "Treat cursors as opaque route checkpoints.",
 ] as const;
 
