@@ -1679,7 +1679,7 @@ const PUBLIC_READ_RATE_LIMIT_EXPECTATIONS = [
     required: [
       "`GET`, `HEAD`, and `OPTIONS` share a standard user limit of 300 requests per",
       "`POST`, `PUT`, and `PATCH` share a standard user limit of 120 requests per",
-      "`DELETE` requests are limited to 60 requests per 60 seconds.",
+      "`DELETE` requests have a limit of 60 requests per 60 seconds.",
     ],
     forbidden: [
       "standard user limit of 10 requests per",
@@ -7920,7 +7920,7 @@ const REQUIRED_WEBHOOK_ARCHITECTURE_SNIPPETS = [
 
 const REQUIRED_ARCHITECTURE_COMPONENT_SNIPPETS = [
   '<Card title="REST API" icon="braces">',
-  "130 documented operations at `https://xquik.com/api/v1/*`",
+  "131 documented operations at `https://xquik.com/api/v1/*`",
   '<Card title="MCP server" icon="bot">',
   "3 tools, `docs`, `search`, and `execute`, at `https://xquik.com/mcp`",
   '<Card title="Dashboard" icon="layout-dashboard">',
@@ -7952,7 +7952,7 @@ const REQUIRED_ARCHITECTURE_AUTHENTICATION_SNIPPETS = [
 
 const REQUIRED_ARCHITECTURE_DATA_ISOLATION_SNIPPETS = [
   '<Card title="Monitors" icon="radio">',
-  "Account and keyword monitors are scoped to the creating user account.",
+  "Account and keyword monitors belong to the user account that created them.",
   '<Card title="Events" icon="activity">',
   "Stored events resolve through account or keyword monitor ownership",
   '<Card title="Webhooks" icon="webhook">',
@@ -7971,9 +7971,9 @@ const REQUIRED_ARCHITECTURE_RATE_LIMIT_SNIPPETS = [
   '<Card title="Write bucket" icon="pen-line">',
   "`POST`, `PUT`, and `PATCH` share a standard user limit of 120 requests per",
   '<Card title="Delete bucket" icon="circle-x">',
-  "`DELETE` requests are limited to 60 requests per 60 seconds.",
+  "`DELETE` requests have a limit of 60 requests per 60 seconds.",
   '<Card title="Retry window" icon="timer">',
-  "Throttled reads return `Retry-After: 1`; throttled writes and deletes",
+  "Throttled reads return `Retry-After: 1`. Throttled writes and deletes",
 ] as const;
 
 const REQUIRED_ARCHITECTURE_BILLING_SNIPPETS = [
@@ -7985,7 +7985,7 @@ const REQUIRED_ARCHITECTURE_BILLING_SNIPPETS = [
   "cost 21 credits per active monitor-hour.",
   '<Card title="Credit top-ups" icon="wallet">',
   "Top up from USD 10.",
-  "Credits are priced at USD 0.00015 each.",
+  "Credits cost USD 0.00015 each.",
   "[Billing & Usage](/guides/billing#credit-top-ups).",
 ] as const;
 
@@ -8011,13 +8011,13 @@ const REQUIRED_ARCHITECTURE_LIMITATION_SNIPPETS = [
   "[bookmarks](/api-reference/x/bookmarks)",
   "[bookmark folders](/api-reference/x/bookmark-folders)",
   '<Card title="Export caps" icon="download">',
-  "Extraction exports are capped at 100,000 rows.",
-  "PDF exports are capped at",
+  "Extraction exports stop at 100,000 rows.",
+  "PDF exports stop at",
   "10,000 rows.",
   '<Card title="Webhook retries" icon="rotate-ccw">',
   "Webhook deliveries try up to 10 attempts.",
-  "`410 Gone` exhausts immediately;",
-  "other failures retry until delivered or exhausted.",
+  "`410 Gone` exhausts immediately.",
+  "Other failures retry until delivered or exhausted.",
   '<Card title="Monitor slots" icon="activity">',
   "Active monitors check every 1 second",
   "cost 21 credits per active monitor-hour.",
