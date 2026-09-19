@@ -149,7 +149,7 @@ const REQUIRED_OPERATIONAL_CONTENT = [
   {
     file: "api-reference/x-write/unfollow.mdx",
     snippets: [
-      "Store the returned action ID, request hash, and `statusUrl` immediately.",
+      "Store the returned action ID, request hash, and `statusUrl` from the response.",
       "[Remove Follower](/api-reference/x-write/remove-follower) ends one inbound relationship.",
     ],
   },
