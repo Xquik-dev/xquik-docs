@@ -1666,7 +1666,7 @@ const PUBLIC_READ_RATE_LIMIT_EXPECTATIONS = [
     required: [
       "`GET`, `HEAD`, and `OPTIONS` share 300 requests per 1 second.",
       "`POST`, `PUT`, and `PATCH` share 120 requests per 60 seconds.",
-      "`DELETE` requests are limited to 60 requests per 60 seconds.",
+      "`DELETE` allows 60 requests per 60 seconds.",
     ],
     forbidden: [
       "`GET`, `HEAD`, and `OPTIONS` share a limit of 60 requests per 1 second.",
@@ -3562,7 +3562,7 @@ const REQUIRED_SERVICE_ERROR_GUIDE_SNIPPETS = [
   '<Card title="x_transient_error" icon="rotate-ccw">',
   "Temporary write failure. Retry only when `safeToRetry` is `true`.",
   "The read service is temporarily unavailable or busy. This is usually transient.",
-  "the read service may be experiencing an outage",
+  "the read service may have an outage",
 ] as const;
 
 const REQUIRED_VALIDATION_ERROR_GUIDE_SNIPPETS = [

@@ -9,7 +9,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Common issues, error codes, and solutions. If your problem isn't covered here, contact [support@xquik.com](mailto:support@xquik.com).
+This page lists common issues, error codes, and fixes. If it does not cover your problem, contact [support@xquik.com](mailto:support@xquik.com).
 
 ## Error codes
 
@@ -82,7 +82,7 @@ You've exceeded the API rate limit. The API uses fixed windows per tier:
   </Card>
   <Card title="Delete" icon="circle-x">
 
-    `DELETE` requests are limited to 60 requests per 60 seconds.
+    `DELETE` allows 60 requests per 60 seconds.
 
   </Card>
 </CardGroup>
@@ -106,7 +106,7 @@ Solutions:
 - Respect `Retry-After` when present, then retry the request
 - If no `Retry-After` header is present, retry after 5 to 10 seconds
 - Use exponential backoff (see [Error Handling](/guides/error-handling))
-- If the error persists for more than 5 minutes, the read service may be experiencing an outage
+- If the error continues for more than 5 minutes, the read service may have an outage
 
 The same applies to draws and tweet, profile, follower, reply, timeline, community, and list endpoints under `/api/v1/x/*`.
 
@@ -114,11 +114,11 @@ The same applies to draws and tweet, profile, follower, reply, timeline, communi
 
 ### Webhooks not arriving?
 
-Webhooks can fail silently. Walk through this checklist:
+Webhook delivery can fail without a visible error. Check each item:
 
 1. **Webhook is active.** Verify `isActive: true` and `deliveryStatus: "active"` via `GET /api/v1/webhooks`. Paused webhooks do not receive deliveries.
 2. **HTTPS required.** Xquik rejects HTTP endpoints. Your URL must start with `https://`.
-3. **Response time.** We recommend responding with `2xx` within 10 seconds. Xquik may treat slow responses as failures.
+3. **Response time.** Respond with `2xx` within 10 seconds. Xquik may treat slow responses as failures.
 4. **Check deliveries.** Call `GET /api/v1/webhooks/{id}/deliveries` to see delivery status, attempt count, and error messages.
 5. **Correlate source events.** Call `GET /api/v1/events/{id}` with the stored `streamEventId`.
 6. **Local testing.** If using ngrok or a tunnel, verify it's running and the URL is current. Ngrok URLs change on restart (free plan).
@@ -134,14 +134,14 @@ If your monitor is active but no events appear:
 - **Check `isActive`.** Confirm via `GET /api/v1/monitors/{id}` that `isActive` is `true`. Paused monitors don't track.
 - **Event propagation delay.** Events take seconds to minutes to appear depending on X API latency. This is normal.
 - **Event types.** Verify your monitor's `eventTypes` array includes the type you expect. A monitor tracking only `["tweet.new"]` won't capture replies or retweets.
-- **Account activity.** The monitored X account must actually post content matching your event types. No posts = no events.
+- **Account activity.** The monitored X account must post content matching your event types. No posts means no events.
 - **Pagination.** If listing events, check `hasMore` in the response. Older events may be on subsequent pages.
 
 ### How do I replay stored monitor events?
 
 Call `GET /api/v1/events?monitorId={id}&limit=50` for account monitors, or
 `GET /api/v1/events?keywordMonitorId={id}&limit=50` for keyword monitors, then
-process each event once. If `hasMore` is `true`, store `nextCursor` and pass it as `cursor` on the next request. Add `eventType` when you need to separate follows, tweets, replies, or keyword matches.
+process each event once. If `hasMore` is `true`, store `nextCursor` and pass it as `cursor` on the next request. Add `eventType` when you need to separate tweets, replies, quotes, or profile changes.
 
 ### Write action still pending?
 
@@ -171,7 +171,7 @@ Call `GET /api/v1/account`. The `creditInfo` object shows your balance:
 - `creditInfo.balance`: Remaining credits available for metered calls
 - When `balance` reaches `0`, Xquik rejects metered calls until you top up credits or auto top-up triggers
 
-The dashboard also displays usage graphically on the billing page.
+The dashboard billing page also charts usage.
 
 See [Billing & Usage](/guides/billing) for credit costs and billing.
 
@@ -254,7 +254,7 @@ after browser approval and report:
 Authorization server response missing required issuer: expected https://xquik.com
 ```
 
-Codex CLI 0.147.0 and newer preserve the RFC 9207 `iss` authorization response value. Older Codex and affected Goose releases may discard it before token exchange. Xquik returns `iss=https://xquik.com` and advertises `authorization_response_iss_parameter_supported: true`. Xquik keeps issuer validation enabled. [Issue #31573](https://github.com/openai/codex/issues/31573) records the Codex defect and fix.
+Codex CLI 0.147.0 and newer keep the RFC 9207 `iss` authorization response value. Older Codex and affected Goose releases may discard it before token exchange. Xquik returns `iss=https://xquik.com` and advertises `authorization_response_iss_parameter_supported: true`. Xquik keeps issuer validation enabled. [Issue #31573](https://github.com/openai/codex/issues/31573) records the Codex defect and fix.
 
 Retrying OAuth does not restore the discarded value. Export an API key before configuring either fallback:
 
@@ -288,7 +288,7 @@ extensions:
     envs: {}
 ```
 
-Goose substitutes `XQUIK_API_KEY` before sending the header. Remove the custom header configuration only after your Goose release preserves the authorization response issuer.
+Goose substitutes `XQUIK_API_KEY` before sending the header. Remove the custom header configuration only after your Goose release keeps the authorization response issuer.
 
 The Docs MCP server needs no authentication. Older Codex and affected Goose releases can retrieve these instructions while API MCP OAuth is blocked:
 
@@ -306,7 +306,7 @@ After upgrading to Codex CLI 0.147.0 or newer, remove `bearer_token_env_var` and
 
 ### How do I export extraction results?
 
-Call `GET /api/v1/extractions/{id}/export?format=csv` (or `xlsx` or `md`). The response is a file download.
+Call `GET /api/v1/extractions/{id}/export?format=csv`. Other formats are `json`, `xlsx`, `md`, `md-document`, `pdf`, and `txt`. The response is a file download.
 
 Limits:
 
