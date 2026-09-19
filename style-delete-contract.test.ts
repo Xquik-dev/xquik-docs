@@ -9,7 +9,7 @@ describe("delete writing style documentation", (): void => {
     expect.assertions(1);
 
     expect({
-      cacheScopeDocumented: source.includes("This route deletes Xquik's cached analysis only."),
+      cacheScopeDocumented: source.includes("This route deletes Xquik's cached samples only."),
       liveTweetsPreserved: /The source tweets remain\s+on X\./u.test(source),
       restoreRouteDenied: /does not provide a restore endpoint for deleted\s+style profiles/iu.test(
         source,

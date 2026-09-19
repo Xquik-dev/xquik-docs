@@ -112,12 +112,12 @@ Check `accounts[].health` before every write. Use only a ready connection.
 ## Scope, ordering & pagination
 
 The response contains only connections owned by the authenticated Xquik
-account. Accounts are ordered by `createdAt` from earliest to latest. Equal
-timestamps use the connection ID as a stable tiebreaker.
+account. The API orders accounts by `createdAt` from earliest to latest. The
+connection ID breaks ties between equal timestamps.
 
 Send `limit` to enable cursor pagination. The default is 50. The maximum is 100. Pass `nextCursor` unchanged as `cursor` while `hasMore` is true.
 
-The best-practice contract paginates by default. Send this header:
+The opt-in contract paginates by default. Send this header:
 
 ```http
 xquik-api-contract: 2026-04-29
@@ -126,9 +126,9 @@ xquik-api-contract: 2026-04-29
 That contract returns `has_more` and `next_cursor`. The examples below show
 the default v1 camelCase fields.
 
-Legacy calls without `limit` or `cursor` return up to 10,000 connections. This
-keeps existing clients working. Larger lists receive cursor fields. New
-integrations should always paginate.
+Calls without `limit` or `cursor` return up to 10,000 connections, so
+existing clients keep working. Larger lists receive cursor fields. Paginate in new
+integrations.
 
 An account without connections receives `{"accounts": [], "hasMore": false}`
 when pagination is active.
@@ -295,13 +295,13 @@ ISO 8601 time when the connection last changed.
 | ----------- | ---------------- | -------------------------------------- |
 | `id`        | Xquik connection | Pass as `accountId` to write endpoints |
 | `xUserId`   | X account        | Correlate public read responses        |
-| `xUsername` | Public handle    | Confirm operator intent                |
+| `xUsername` | Public handle    | Confirm the account the operator meant |
 
 Do not send `xUserId` where a write endpoint requires `accountId`.
 
 ## Account health
 
-The `status` field alone is insufficient. Gate writes on `health`.
+The `status` field alone is not enough. Check `health` before every write.
 
 | Health           | Write readiness | Next action                                 |
 | ---------------- | --------------- | ------------------------------------------- |

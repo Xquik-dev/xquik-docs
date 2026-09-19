@@ -194,7 +194,7 @@ import WriteActionLifecycleResponse from "/snippets/write-action-lifecycle-respo
 ## How to create a community on Twitter with Xquik
 
 Call `POST /x/communities` to create a community on Twitter from one connected
-account. This create Twitter community workflow submits a name and optional
+account. The request submits a name and optional
 description. Xquik then tracks the write until X returns a final result.
 
 Use this route only when the account should own a new community. Use join or
@@ -204,8 +204,8 @@ moderators, invitations, posts, analytics, or membership settings.
 Each community gives one topic a dedicated space on X.
 People can search for communities by name, description, or creator.
 They can join a community later. Each member of the community follows
-the chosen membership type and community rules. This X social media workflow
-creates the community container only.
+the chosen membership type and community rules. This route
+creates the empty community only.
 
 <Callout icon="coins" color="#5c3327">
 
@@ -321,7 +321,7 @@ Community creation workflows should include:
 
 Do not submit parallel requests with different keys for one intended
 community. That can create multiple communities. Read the lifecycle state
-before exposing the new community to downstream workflows.
+before other workflows use the new community.
 
 ## Build a reviewable community brief
 
@@ -330,14 +330,14 @@ description, owner account, audience, and moderation purpose. Keep that brief
 beside the approval record. Reviewers can then compare the submitted fields
 against the approved community identity.
 
-Treat the name as a lasting public label. Check spelling, capitalization, and
+The name is public and hard to change later. Check spelling, capitalization, and
 topic scope before approval. Use the description to explain who should join.
-Avoid campaign dates or temporary slogans in either field. Those details age
-quickly and make later community discovery confusing.
+Avoid campaign dates or temporary slogans in either field. Those details go out of date
+and confuse people who find the community later.
 
-Choose one connected account as the accountable owner. Record its username and
+Choose one connected account as the owner. Record its username and
 stable account ID when available. Confirm that the account appears in your
-connected-account inventory. Keep the same owner during network recovery. A
+connected-account list. Keep the same owner during network recovery. A
 different owner means a different write request.
 
 Store these creation inputs together:
@@ -348,7 +348,7 @@ Store these creation inputs together:
 - Idempotency key for this exact submission.
 - Returned action ID and lifecycle state.
 
-This record separates approval from network recovery. Repeat the unchanged
+Repeat the unchanged
 request only after a network timeout. Changed text needs a new approval and key.
 
 ## Confirm the community admin account
@@ -367,7 +367,7 @@ playbook lists these checks:
 
 X enforces these requirements and can change them. The request has no
 eligibility override. It also has no Premium field. Confirm current eligibility
-inside X before approval. Preserve any rejection reason for the operator.
+inside X before approval. Save any rejection reason for the operator.
 
 Review the [X Communities moderator playbook](https://help.x.com/en/using-x/communities-moderator-playbook)
 before assigning the owner. It explains creator, admin, moderator, and member
@@ -375,7 +375,7 @@ responsibilities. Store the chosen account with the approved community brief.
 
 ## Plan community rules and membership
 
-Define community rules before creating the container. Rules should describe
+Define community rules before creating the community. Rules should describe
 the topic, allowed behavior, and moderation response. Do not place temporary
 campaign instructions in the public description. Keep the full rule set in
 the team's approved moderation record.
@@ -424,7 +424,7 @@ Use the community ID as the stable integration key. Do not key integrations by
 the editable display name. Store a verified community URL only after the read
 route confirms the new ID.
 
-## Answer common community creation questions
+## Community creation questions
 
 ### Do X communities still exist?
 
@@ -440,7 +440,7 @@ submitting a billable write.
 
 ### Can the API add rules, members, or moderators?
 
-No. The canonical request accepts `account`, `name`, and `description`. Set
+No. The request accepts `account`, `name`, and `description`. Set
 community rules, membership type, invitations, and moderator roles after
 creation. Never send undocumented fields.
 
@@ -479,9 +479,9 @@ Run these checks before inviting members:
 Repeat the information request after a temporary read failure. Keep the same
 key only when every input remains unchanged.
 
-## Handle creation failures safely
+## Handle creation failures
 
-Treat each response by its actual cause. Fix invalid names or missing accounts
+Fix invalid names or missing accounts
 before sending another write. Restore credits before retrying a `402` response.
 Reconnect the owner after `403`.
 
@@ -489,12 +489,12 @@ A `409` means the key already identifies another request. Compare both request
 bodies. Reuse the key only when every creation input matches.
 Generate a new key after any approved field changes.
 
-For `422`, preserve the rejected request and returned reason. Do not rewrite
-the community brief automatically. Return it to the operator for review. For
+For `422`, save the rejected request and returned reason. Do not rewrite
+the community brief in code. Return it to the operator for review. For
 `429`, respect the retry guidance and keep the same approved intent.
 
 After `503`, check the write lifecycle before retrying. A disconnected client
-does not prove failure. Duplicate creation costs more than delayed verification.
+does not prove failure. A retry can create a 2nd community.
 
 | Community creation record | Request or response source       | Completion rule                |
 | ------------------------- | -------------------------------- | ------------------------------ |

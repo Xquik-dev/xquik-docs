@@ -1,7 +1,7 @@
 ---
 title: "Update Twitter webhook endpoint & event filters"
 sidebarTitle: "Update webhook"
-description: "Change a webhook's HTTPS URL, tweet, follower, profile, relationship, or keyword event filters, and active delivery state. Includes exact API examples."
+description: "Change a webhook's HTTPS URL, its tweet and profile event filters, or its active delivery state. The signing secret stays the same. The call costs no credits."
 api: "PATCH /webhooks/{id}"
 keywords: ["webhook", "update", "url", "event types"]
 ---
@@ -247,19 +247,19 @@ func main() {
 
 </CodeGroup>
 
-These snippets shape a reconfiguration row. Store the current webhook
-configuration with its test and delivery-log endpoints instead of printing the
+These snippets build a reconfiguration row. Store the current webhook
+configuration with its test and delivery-log endpoints. Do not print the
 full update response.
 
-| Webhook update column | Request or response source        | Verification rule                                   |
-| --------------------- | --------------------------------- | --------------------------------------------------- |
-| Webhook ID            | Path `{id}` and response `id`     | Require both IDs to match.                          |
-| Receiver URL          | Request and response `url`        | Confirm the intended HTTPS endpoint.                |
-| Event filter          | Request and response `eventTypes` | Confirm the complete replacement list.              |
-| Active state          | Request and response `isActive`   | Verify the intended pause or activation.            |
-| Failure count         | Response `consecutiveFailures`    | Confirm whether activation reset failures.          |
-| Delivery state        | Response `deliveryStatus`         | Route active, paused, or needs-attention receivers. |
-| Failure cap           | Response `failureHardCap`         | Preserve the receiver recovery threshold.           |
+| Webhook update column | Request or response source        | Verification rule                                                |
+| --------------------- | --------------------------------- | ---------------------------------------------------------------- |
+| Webhook ID            | Path `{id}` and response `id`     | Require both IDs to match.                                       |
+| Receiver URL          | Request and response `url`        | Confirm the intended HTTPS endpoint.                             |
+| Event filter          | Request and response `eventTypes` | Confirm the complete replacement list.                           |
+| Active state          | Request and response `isActive`   | Verify the intended pause or activation.                         |
+| Failure count         | Response `consecutiveFailures`    | Confirm whether activation reset failures.                       |
+| Delivery state        | Response `deliveryStatus`         | Handle active, paused, and needs-attention receivers separately. |
+| Failure cap           | Response `failureHardCap`         | Record the failure cap.                                          |
 
 ## Path parameters
 
@@ -323,7 +323,7 @@ Valid types: `tweet.new`, `tweet.quote`, `tweet.reply`, `tweet.retweet`,
   <Card title="tweet.quote" icon="quote">
 
     Quote tweet from an account monitor or matching keyword monitor. Keep this
-    only when downstream systems handle quote payloads.
+    only when your systems handle quote payloads.
 
   </Card>
   <Card title="tweet.reply" icon="message-circle">
@@ -342,7 +342,7 @@ Valid types: `tweet.new`, `tweet.quote`, `tweet.reply`, `tweet.retweet`,
 
 <Note>
 
-`webhook.test` is generated only by the [Test Webhook](/api-reference/webhooks/test) endpoint. It cannot be added to a webhook subscription.
+Only the [Test Webhook](/api-reference/webhooks/test) endpoint generates `webhook.test`. You cannot add it to a webhook subscription.
 
 </Note>
 
@@ -376,7 +376,7 @@ Event types this webhook is subscribed to.
 </ResponseField>
 <ResponseField name="isActive" type="boolean">
 
-Whether the webhook is currently active.
+Whether the webhook is active.
 
 </ResponseField>
 <ResponseField name="consecutiveFailures" type="number">
@@ -496,8 +496,8 @@ endpoint.
 
     `isActive: true` resumes delivery for matching future monitor events. Test
     the receiver after resuming. Use
-    [Resume Webhook](/api-reference/webhooks/resume) when the receiver needs a
-    signed test gate first.
+    [Resume Webhook](/api-reference/webhooks/resume) when the receiver must pass a
+    signed test first.
 
   </Card>
 
@@ -528,7 +528,7 @@ endpoint.
 
 <Note>
 
-This endpoint supports dual authentication. Send an API key in the `x-api-key` header or a session cookie from the dashboard.
+This endpoint accepts 2 auth methods. Send an API key in the `x-api-key` header or a session cookie from the dashboard.
 
 **Related.** [List Webhooks](/api-reference/webhooks/list) &middot; [Test Webhook](/api-reference/webhooks/test) &middot; [Resume Webhook](/api-reference/webhooks/resume) &middot; [List Deliveries](/api-reference/webhooks/deliveries) &middot; [Get Event](/api-reference/events/get) &middot; [Delete Webhook](/api-reference/webhooks/delete)
 

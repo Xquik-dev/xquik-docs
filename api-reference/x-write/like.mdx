@@ -1,7 +1,7 @@
 ---
 title: "Twitter like API: like a tweet by ID with status"
 sidebarTitle: "Like tweet"
-description: "Use the Twitter Like API to like one tweet by ID. Store the connected account, durable action, terminal result, billed credits, and safe retry decision."
+description: "Like one tweet by ID from a connected X account. Store the write action, terminal result, and billed credits. Retry only when safeToRetry is true. 10 credits."
 api: "POST /x/tweets/{id}/like"
 keywords:
   [
@@ -183,11 +183,11 @@ import WriteActionLifecycleResponse from "/snippets/write-action-lifecycle-respo
 
 </Callout>
 
-Use this Twitter Like API to like 1 tweet by ID.
-This Twitter API like Tweet request uses 1 connected X account.
+Each request likes 1 tweet by ID.
+Each request uses 1 connected X account.
 Save user approval before sending the request.
 Create a unique `Idempotency-Key` for the intended like.
-Store the durable write action and poll `statusUrl` when needed.
+Store the returned write action and poll `statusUrl` when needed.
 Confirm the returned target matches the requested Tweet ID.
 
 X documents its separate [Like Post endpoint](https://docs.x.com/x-api/users/like-post).
@@ -391,7 +391,7 @@ Put the connected account username or ID in the body.
 That account performs the like.
 
 Copy Tweet IDs as strings.
-JavaScript numbers cannot safely represent every X identifier.
+JavaScript numbers cannot represent every X identifier exactly.
 Keep the selected Tweet ID beside the approving user.
 
 This endpoint accepts 1 Tweet ID per request.
@@ -426,9 +426,9 @@ The official X endpoint uses a user access token.
 Its authentication differs from the Xquik contract.
 Read X's [Like Post guide](https://docs.x.com/x-api/users/like-post) for that endpoint.
 
-## Save a durable like receipt
+## Save a like receipt
 
-Never treat a transport response as sufficient proof.
+An HTTP response alone does not prove the write.
 Save the action first. Then update your like record.
 Keep the request and response identities together.
 
@@ -438,15 +438,15 @@ Keep the request and response identities together.
 | `tweet_id`           | Path `id`              | Use the stable Tweet ID selected by review.        |
 | `approval_reference` | Workflow value         | Store the user's approval ID with this like.       |
 | `idempotency_key`    | Request header         | Generate one key for this account and Tweet ID.    |
-| `write_action_id`    | Response `id`          | Store the durable action before polling.           |
+| `write_action_id`    | Response `id`          | Store the action before polling.                   |
 | `status`             | Response `status`      | Keep queued, completed, and failed likes distinct. |
 | `terminal`           | Response `terminal`    | Mark the like complete only when `true`.           |
 | `safe_to_retry`      | Response `safeToRetry` | Retry when this value is `true`.                   |
 | `requested_at`       | Integration timestamp  | Record when the user approved this like.           |
 
-Persist these response fields:
+Store these response fields:
 
-- Store `id` as the durable write action ID.
+- Store `id` as the write action ID.
 - Store `request.hash` for exact request matching.
 - Store `account` for the connected X account.
 - Store `targetId` or `result.id` for the liked Tweet ID.
@@ -462,19 +462,19 @@ Poll `statusUrl` until `terminal` becomes `true`.
 
 Do not submit another like while the first action remains active.
 After success, confirm the result matches the requested Tweet ID.
-Preserve an already-liked terminal result as successful convergence.
+Treat an already-liked terminal result as success.
 
 Use [User Likes](/api-reference/x/user-likes) only when current read proof matters.
 Store the read time separately from the action time.
-Read visibility can limit independent verification.
+X hides most likes from other accounts, so a read may not confirm the like.
 
-| Like outcome      | Evidence                  | Ledger update                                            |
-| ----------------- | ------------------------- | -------------------------------------------------------- |
-| Queued            | `terminal: false`         | Keep the row pending and poll `statusUrl`.               |
-| Completed         | Terminal success          | Record the completed like for this account and Tweet ID. |
-| Already liked     | Converged terminal result | Complete without submitting another like.                |
-| Retryable failure | `safeToRetry: true`       | Keep the receipt. Follow its retry fields.               |
-| Final failure     | Terminal failure          | Store the error and keep the ledger unchanged.           |
+| Like outcome      | Evidence                                      | Ledger update                                            |
+| ----------------- | --------------------------------------------- | -------------------------------------------------------- |
+| Queued            | `terminal: false`                             | Keep the row pending and poll `statusUrl`.               |
+| Completed         | Terminal success                              | Record the completed like for this account and Tweet ID. |
+| Already liked     | Terminal result that reports an existing like | Complete without submitting another like.                |
+| Retryable failure | `safeToRetry: true`                           | Keep the receipt. Follow its retry fields.               |
+| Final failure     | Terminal failure                              | Store the error and keep the ledger unchanged.           |
 
 ## Prevent duplicate tweet likes
 
@@ -482,18 +482,18 @@ Create 1 idempotency key for the intended account and Tweet ID.
 Reuse that key only after an interrupted response.
 Never reuse it for a different account or tweet.
 
-An HTTP `409` means the key already protects another payload.
+An HTTP `409` means the key already belongs to another payload.
 Keep the original action and inspect its request hash.
 Create a new key only for a new user-approved intent.
 
-Idempotency prevents duplicate submissions inside the Xquik workflow.
+The idempotency key stops duplicate submissions to Xquik.
 Still check approval, terminal status, and the acting account.
 
 ## Handle Twitter like API errors
 
 Never infer failure from a client timeout.
 Poll a returned action before sending another request.
-Follow `safeToRetry` for ambiguous write outcomes.
+Follow `safeToRetry` when the outcome is unclear.
 
 - For `400`, correct the Tweet ID or account value.
 - For `401`, replace invalid Xquik authentication.
@@ -523,7 +523,7 @@ Use read endpoints when no engagement action is needed.
 | Repost one tweet                 | `POST /x/tweets/{id}/retweet`   | Creates a separate repost action.           |
 
 Liking does not create a repost, reply, bookmark, or follow.
-Choose each action explicitly during approval.
+Approve each action separately.
 
 ## Twitter like API questions
 
@@ -547,7 +547,7 @@ Never send an X password.
 
 ### How should a Twitter API like tweet retry work?
 
-Store the durable action first.
+Store the action first.
 Poll while `terminal` is `false`.
 Retry only when `safeToRetry` is `true`.
 

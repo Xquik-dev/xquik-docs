@@ -107,7 +107,7 @@ describe("support ticket list documentation", (): void => {
         '"support ticket API"',
         '"list support tickets"',
         '"support ticket status"',
-        "## Read the support ticket inventory",
+        "## Read the support ticket list",
         "## Build a support ticket review queue",
       ].every((snippet) => page.includes(snippet)),
     ).toBe(true);

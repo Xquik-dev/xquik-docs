@@ -1,7 +1,7 @@
 ---
 title: "How do you remove a Twitter follower? Xquik API"
 sidebarTitle: "Remove follower"
-description: "Remove one unwanted Twitter follower by X user ID. Approve the connected account, poll the durable action, verify the inbound relationship, and handle errors."
+description: "Remove one unwanted Twitter follower by X user ID. Approve the connected account, poll the write action, verify the inbound relationship, and handle errors."
 api: "POST /x/users/{id}/remove-follower"
 keywords:
   [
@@ -299,10 +299,9 @@ The body field `account` identifies whose follower list will change.
 
 Never infer spam from a username, avatar, or missing profile field.
 Choose the unwanted follower with your approved moderation rule.
-This helps you identify and remove the right account.
 Store the reviewer, reason, and evidence outside this public request.
 
-## Remove followers on Twitter safely
+## Remove followers one request at a time
 
 Create 1 idempotency key for each intended removal.
 Reuse that key only after an interrupted network request.
@@ -310,22 +309,21 @@ Never reuse it for another follower or connected account.
 
 This route accepts 1 follower ID per request.
 It provides no bulk body for mass follower removal.
-Queue approved follower IDs as separate write actions instead.
+Queue approved follower IDs as separate write actions.
 Each row needs its own reason, approval, and idempotency key.
 
-A social media team can review the queue before dispatch.
-Use the queue to manage your Twitter account safely.
-Do not let a temporary failure erase successful removals.
+A team can review the queue before dispatch.
+A temporary failure must not erase the record of successful removals.
 Store each returned action ID beside its target follower ID.
 
 ## Poll and verify the removal
 
-Store `id`, `request.hash`, `billing`, and `statusUrl` immediately.
+Store `id`, `request.hash`, `billing`, and `statusUrl` from the response.
 An HTTP `200` response represents a terminal write action.
 An HTTP `202` response represents an active write action.
 Poll the same `statusUrl` while `terminal` remains `false`.
 
-Never submit another removal just because the first action is active.
+Never submit another removal while the first action is active.
 A second request could add a duplicate job.
 Keep the original idempotency key for an exact network replay.
 
@@ -358,9 +356,9 @@ Check profiles and follower relationships before you approve a removal.
 Never treat a protected profile as proof of abusive behavior.
 
 Private and public accounts use the same Xquik request shape.
-However, X controls whether the removed account can follow again.
+X controls whether the removed account can follow again.
 
-Do not promise a permanent audience restriction from this write.
+This write does not block the account for good.
 Store the terminal result, then verify the live follower relationship.
 For multiple targets, process one approved queue row at a time.
 Throttle the queue to every documented rate limit.

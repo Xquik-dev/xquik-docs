@@ -1,7 +1,7 @@
 ---
 title: "Twitter webhook API | create signed endpoint"
 sidebarTitle: "Create webhook"
-description: "Register an HTTPS endpoint for signed tweet, follower, profile, relationship, or keyword monitor events with selected filters. Includes request fields."
+description: "Register an HTTPS endpoint for signed tweet and profile change events from account and keyword monitors. Choose event types. Xquik returns the secret once."
 api: "POST /webhooks"
 keywords: ["webhook", "create", "register", "endpoint", "monitor events"]
 ---
@@ -236,7 +236,7 @@ Valid types: `tweet.new`, `tweet.quote`, `tweet.reply`, `tweet.retweet`,
 
 <Note>
 
-`webhook.test` is sent only by the [Test Webhook](/api-reference/webhooks/test) endpoint. It is not a subscribable `eventTypes` value.
+Only the [Test Webhook](/api-reference/webhooks/test) endpoint sends `webhook.test`. You cannot subscribe to it in `eventTypes`.
 
 </Note>
 
@@ -244,7 +244,7 @@ Valid types: `tweet.new`, `tweet.quote`, `tweet.reply`, `tweet.retweet`,
 
 Use this endpoint after creating an account monitor with [`POST /monitors`](/api-reference/monitors/create) or a keyword monitor with [`POST /monitors/keywords`](/api-reference/monitors/create-keyword). The webhook stores the HTTPS endpoint and event-type filter. Active monitors produce the events; webhook delivery is included with monitor billing.
 
-Store these fields immediately after creation:
+Store these fields right after creation:
 
 <CardGroup cols={2}>
 
@@ -274,7 +274,7 @@ Store these fields immediately after creation:
   </Card>
   <Card title="Created at" icon="calendar-clock">
 
-    Store `createdAt` for audit logs and configuration drift checks.
+    Store `createdAt` for audit logs and later configuration checks.
 
   </Card>
   <Card title="Delivery payload" icon="webhook">
@@ -288,10 +288,10 @@ Store these fields immediately after creation:
 
 Every delivery includes `X-Xquik-Signature`, `X-Xquik-Timestamp`, and
 `X-Xquik-Nonce` headers. Use `deliveryId` as the per-endpoint idempotency key
-and `streamEventId` when one monitor event must be processed once across retries
+and `streamEventId` when you must process one monitor event once across retries
 or endpoints.
 
-Test the endpoint with [`POST /webhooks/{id}/test`](/api-reference/webhooks/test) before routing production events. Return a `2xx` response within 10 seconds, then process slow Slack, CRM, warehouse, or queue work asynchronously. Use [Signature Verification](/webhooks/verification) to validate the raw request body before processing.
+Test the endpoint with [`POST /webhooks/{id}/test`](/api-reference/webhooks/test) before routing production events. Return a `2xx` response within 10 seconds, then process slow Slack, CRM, warehouse, or queue work afterward. Use [Signature Verification](/webhooks/verification) to validate the raw request body before processing.
 
 ## Response
 
@@ -314,7 +314,7 @@ Event types this webhook is subscribed to.
 </ResponseField>
 <ResponseField name="secret" type="string">
 
-HMAC signing secret (64-character hex string). Store securely. Returned only at creation time.
+HMAC signing secret (64-character hex string). Xquik returns it only at creation. Store it in a secret manager.
 
 </ResponseField>
 <ResponseField name="createdAt" type="string">
@@ -335,7 +335,7 @@ ISO 8601 creation timestamp.
 
 <Warning>
 
-The API returns `secret` **only once**. Store it securely. You need it to [verify webhook signatures](/webhooks/verification). You cannot retrieve it again.
+The API returns `secret` **once**. Store it in a secret manager. You need it to [verify webhook signatures](/webhooks/verification). You cannot retrieve it again.
 
 </Warning>
 
@@ -369,7 +369,7 @@ Too many requests. Wait for the `Retry-After` header before retrying.
 
 <Note>
 
-This endpoint supports dual authentication. Send an API key in the `x-api-key` header or a session cookie from the dashboard.
+This endpoint accepts 2 auth methods. Send an API key in the `x-api-key` header or a session cookie from the dashboard.
 
 **Next steps.** [List Webhooks](/api-reference/webhooks/list) &middot; [Signature Verification](/webhooks/verification) &middot; [Webhooks Overview](/webhooks/overview)
 

@@ -1,7 +1,7 @@
 ---
 title: "Twitter retweet API: repost one tweet by ID"
 sidebarTitle: "Retweet"
-description: "Repost a tweet by ID with the Twitter Retweet API. Approve the account, use an idempotency key, poll the action, then store billed credits and final result."
+description: "Repost one tweet by ID from a connected X account. Approve the account, send an idempotency key, poll the action, then store billed credits and the result."
 api: "POST /x/tweets/{id}/retweet"
 keywords:
   [
@@ -182,8 +182,8 @@ import WriteActionLifecycleResponse from "/snippets/write-action-lifecycle-respo
 
 </Callout>
 
-Use this Twitter Retweet API to repost 1 tweet by ID.
-Each Twitter API retweet request names 1 connected X account.
+Each request reposts 1 tweet by ID.
+Each request names 1 connected X account.
 Review the source tweet before sending the write.
 Then store the action and poll `statusUrl` until `terminal` is `true`.
 
@@ -285,7 +285,7 @@ Name 1 connected X account in the request body.
 Connect that account before scheduling or approving a repost.
 Never send an X password or session cookie.
 
-Review the source tweet immediately before approval.
+Review the source tweet just before approval.
 Show its author, text, media, Tweet ID, and current availability.
 Also show the X account that will publish the repost.
 Use this review to avoid sharing from the wrong account.
@@ -295,7 +295,7 @@ Store these approval fields with the request:
 | Approval field  | Source            | Purpose                                     |
 | --------------- | ----------------- | ------------------------------------------- |
 | Acting account  | Request `account` | Identify the account publishing the repost. |
-| Source Tweet ID | Path `id`         | Preserve the approved tweet identifier.     |
+| Source Tweet ID | Path `id`         | Keep the approved Tweet ID.                 |
 | Source author   | Tweet lookup      | Keep original attribution in the review.    |
 | Approval time   | Workflow clock    | Record when the user approved distribution. |
 | Approval owner  | Workflow identity | Record who approved the repost.             |
@@ -305,7 +305,7 @@ Store these approval fields with the request:
 
 Resolve the Tweet ID before approval.
 Show the source tweet, author, media, and acting account.
-This endpoint preserves the original tweet and attribution.
+A repost keeps the original tweet and its author.
 
 Assign a unique idempotency key to that repost decision.
 Reuse it only after an interrupted response.
@@ -325,21 +325,21 @@ Poll the lifecycle state while the action remains active.
 | -------------------- | --------------------- | -------------------------------------------------------- |
 | `acting_account`     | Request `account`     | Keep the connected account with the repost decision.     |
 | `tweet_id`           | Path `id`             | Use the exact source Tweet ID approved for distribution. |
-| `source_author_id`   | Review context        | Preserve the original tweet author when available.       |
+| `source_author_id`   | Review context        | Store the original tweet author when available.          |
 | `approval_reference` | Workflow value        | Link the repost to its campaign or moderation decision.  |
 | `idempotency_key`    | Request header        | Generate one key for this account and Tweet ID.          |
-| `write_action_id`    | Response `id`         | Store the durable repost action before polling.          |
+| `write_action_id`    | Response `id`         | Store the repost action before polling.                  |
 | `status`             | Response `status`     | Keep queued, completed, and failed reposts distinct.     |
 | `terminal`           | Response `terminal`   | Mark distribution complete only when `true`.             |
 | Request time         | Integration timestamp | Save when the repost request starts.                     |
 
-| Repost outcome   | Evidence                  | Campaign action                                               |
-| ---------------- | ------------------------- | ------------------------------------------------------------- |
-| Queued           | `terminal: false`         | Poll `statusUrl`. Do not count the repost yet.                |
-| Completed        | Terminal success          | Record the account, source Tweet ID, and completion time.     |
-| Already reposted | Converged terminal result | Complete without another repost request.                      |
-| Retry allowed    | `safeToRetry: true`       | Keep the receipt. Follow `nextAction`.                        |
-| Final failure    | Terminal failure          | Store the error and exclude the repost from completed totals. |
+| Repost outcome   | Evidence                                        | Campaign action                                               |
+| ---------------- | ----------------------------------------------- | ------------------------------------------------------------- |
+| Queued           | `terminal: false`                               | Poll `statusUrl`. Do not count the repost yet.                |
+| Completed        | Terminal success                                | Record the account, source Tweet ID, and completion time.     |
+| Already reposted | Terminal result that reports an existing repost | Complete without another repost request.                      |
+| Retry allowed    | `safeToRetry: true`                             | Keep the receipt. Follow `nextAction`.                        |
+| Final failure    | Terminal failure                                | Store the error and exclude the repost from completed totals. |
 
 ## Choose a repost or new tweet
 
@@ -357,7 +357,7 @@ A reply needs `reply_to_tweet_id`.
 | Remove a repost                   | `DELETE /x/tweets/{id}/retweet` | Source tweet ID and connected account |
 
 Show the source tweet during approval.
-Preserve its author, text, media, and Tweet ID.
+Store its author, text, media, and Tweet ID.
 Never replace that ID with a search-result position.
 
 ## Reconcile retweet automation
@@ -370,8 +370,8 @@ Mark an already-reposted outcome complete.
 It does not create a second repost.
 
 Use [Unretweet](/api-reference/x-write/unretweet) for an approved rollback.
-The rollback needs a new idempotency key. Preserve both action IDs so the
-campaign record shows distribution and later removal.
+The rollback needs a new idempotency key. Store both action IDs so the
+campaign record shows the repost and its later removal.
 
 ## Schedule retweets without duplicate posts
 
@@ -380,7 +380,7 @@ Use your scheduler when a repost must run later.
 Store the Tweet ID, account, time zone, and approval together.
 Recheck the source tweet before dispatch.
 
-Create the idempotency key when the schedule becomes immutable.
+Create the idempotency key once the schedule is final.
 Reuse that key after a network interruption.
 Never reuse it for another account, Tweet ID, or scheduled time.
 
@@ -395,7 +395,7 @@ Delay the existing job instead of creating a duplicate.
 
 ## Verify repost completion and attribution
 
-Store `id` as the durable write action ID.
+Store `id` as the write action ID.
 Store `request.hash` with the submitted account and Tweet ID.
 Keep `status`, `terminal`, `statusUrl`, and `safeToRetry` together.
 Store `billing.chargedCredits` after billing settles.
@@ -416,7 +416,7 @@ Keep read time separate from repost completion time.
 ## Handle Twitter retweet API errors
 
 Keep every error beside the request hash and action ID.
-Never replace the approved Tweet ID as an automatic fallback.
+Never swap in another Tweet ID as a fallback.
 
 - `400`: Correct the Tweet ID or account value.
 - `401`: Replace invalid Xquik authentication.
@@ -445,7 +445,7 @@ Never count an accepted action as completed.
 
 Inspect unavailable tweets instead of substituting new content.
 Keep deleted or restricted source tweets as distinct outcomes.
-Do not convert a failed repost into an original tweet automatically.
+Do not turn a failed repost into an original tweet in code.
 
 Store the approval, request, action, billing, and final result.
 These records support audits without exposing account credentials.
@@ -455,7 +455,7 @@ These records support audits without exposing account credentials.
 ### How do I automate a retweet through an API?
 
 Approve the Tweet ID and connected account.
-Send this request, then poll the durable action until terminal.
+Send this request, then poll the write action until terminal.
 
 ### How do I authenticate a Twitter API retweet?
 

@@ -1,7 +1,7 @@
 ---
 title: "X account reauthentication API & login recovery"
 sidebarTitle: Reauthenticate X account
-description: "Restore a connected X account by reusing its saved Authenticator App TOTP secret or sending a replacement for the login challenge. See request fields."
+description: "Restore a connected X account with its current password. Xquik reuses the saved Authenticator App TOTP secret unless you send a replacement. The call is free."
 api: "POST /x/accounts/{id}/reauth"
 keywords: ["x accounts", "re-authenticate", "reauth", "session expired", "2fa"]
 ---
@@ -121,8 +121,8 @@ changed or rejected the saved key.
 
 <Info>
 
-Re-authentication does not guarantee the same public IP. Custom or fixed
-per-account proxy assignment is not supported.
+Re-authentication does not guarantee the same public IP. Xquik does not support custom or fixed
+per-account proxy assignment.
 
 </Info>
 
@@ -221,16 +221,16 @@ curl -X POST https://xquik.com/api/v1/x/accounts/3/reauth \
 
 </Accordion>
 
-| X account recovery column | Request or response source    | Recovery rule                                  |
-| ------------------------- | ----------------------------- | ---------------------------------------------- |
-| Account ID                | Path `{id}` and response `id` | Require both IDs to match.                     |
-| Current password          | Request `password`            | Send it only to this reauthentication request. |
-| Saved TOTP key            | Omitted `totp_secret`         | Reuse the stored authenticator secret.         |
-| Replacement TOTP key      | Request `totp_secret`         | Send the base32 key, never a 6-digit code.     |
-| X username                | Response `xUsername`          | Confirm the recovered profile.                 |
-| X user ID                 | Response `xUserId`            | Preserve the stable account identity.          |
-| Account state             | Response `status`             | Require `active` before write actions.         |
-| Login health              | Response `health`             | Require `healthy` before durable actions.      |
+| X account recovery column | Request or response source    | Recovery rule                                          |
+| ------------------------- | ----------------------------- | ------------------------------------------------------ |
+| Account ID                | Path `{id}` and response `id` | Require both IDs to match.                             |
+| Current password          | Request `password`            | Send it only to this reauthentication request.         |
+| Saved TOTP key            | Omitted `totp_secret`         | Reuse the stored authenticator secret.                 |
+| Replacement TOTP key      | Request `totp_secret`         | Send the base32 key, never a 6-digit code.             |
+| X username                | Response `xUsername`          | Confirm the recovered profile.                         |
+| X user ID                 | Response `xUserId`            | Store it. It stays the same when the username changes. |
+| Account state             | Response `status`             | Require `active` before write actions.                 |
+| Login health              | Response `health`             | Require `healthy` before durable actions.              |
 
 ## Path parameters
 
@@ -306,14 +306,14 @@ If you never saved the secret key, or X rejects the current one, reset the authe
 2. Open **Two-Step Verification > Authentication App**.
 3. Turn Authentication App off, then turn it on again.
 4. When the QR code appears, choose **Can't scan the QR code?** to reveal the text secret.
-5. Copy the long secret key and store it safely before leaving the setup screen.
+5. Copy the long secret key and store it in a password manager before leaving the setup screen.
 6. Add that key to your authenticator app if you are setting it up fresh.
 7. Finish enabling 2FA on X by entering the current 6-digit code from your authenticator app.
 8. Send the new long key in `totp_secret` when you call Xquik.
 
 <Warning>
 
-Finish the X-side 2FA confirmation after copying the secret key. If setup is abandoned before confirmation, re-authentication cannot use that key.
+Finish the X-side 2FA confirmation after copying the secret key. If you abandon setup before confirmation, re-authentication cannot use that key.
 
 </Warning>
 

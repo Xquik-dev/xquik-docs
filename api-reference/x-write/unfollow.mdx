@@ -1,7 +1,7 @@
 ---
 title: "Twitter unfollow API: unfollow one X user by ID"
 sidebarTitle: "Unfollow user"
-description: "Use the Twitter Unfollow API to unfollow one X user by ID. Approve the connected account, poll the action, handle limits, and verify the relationship."
+description: "Unfollow one X user by ID from a connected account. Poll the write action, respect the 20 per minute and 400 per day limits, and verify the relationship."
 api: "DELETE /x/users/{id}/follow"
 keywords:
   [
@@ -179,8 +179,8 @@ import WriteActionLifecycleResponse from "/snippets/write-action-lifecycle-respo
 
 ## Unfollow one Twitter user by ID
 
-Use this Twitter unfollow API endpoint for 1 target user ID.
-Each Twitter API unfollow request names 1 connected X account.
+Each request unfollows 1 target user ID.
+Each request names 1 connected X account.
 Verify the target user ID and acting account before approval.
 
 Compare X's separate [Unfollow User endpoint](https://docs.x.com/x-api/users/unfollow-user).
@@ -295,29 +295,27 @@ Keep the username and profile name as review labels.
 Show both profiles before a user approves the write action.
 
 The profile page and unfollow button are manual X controls.
-This endpoint supports an approved Twitter management workflow.
+This endpoint does the same from code, after approval.
 
-## Unfollow Twitter accounts safely
+## Unfollow Twitter accounts one request at a time
 
 Create a new idempotency key whenever the relationship changes.
 Never reuse the key from an earlier follow action.
 Reuse the unfollow key only after an interrupted network request.
 
-Store the returned action ID, request hash, and `statusUrl` immediately.
+Store the returned action ID, request hash, and `statusUrl` from the response.
 Poll the same action while `terminal` remains `false`.
-Never submit a second write just because the first action is active.
+Never submit a second write while the first action is active.
 
 The endpoint accepts 1 target user ID per request.
 It exposes no mass unfollow body or bulk unfollow feature.
 Queue approved targets separately when you unfollow Twitter accounts in bulk.
 Each row needs its own target, reason, approval, and idempotency key.
 
-Separate rows isolate failures across multiple Twitter accounts.
-A failed row must not erase successful unfollow actions.
-Batch queues save time while preserving individual approvals.
-Review unfollowing accounts before sending any write.
-A social media team can stage approved rows for later processing.
-For accounts on Twitter, store each acting account and target ID separately.
+With separate rows, one failure does not affect other accounts.
+A failed row must not erase the record of successful unfollow actions.
+A team can stage approved rows for later processing.
+Store each acting account and target ID separately.
 
 Respect X's terms of service and every returned rate limit.
 Unfollow people only after a clear user or workflow decision.
@@ -335,14 +333,14 @@ Then send 1 approved unfollow action for each relationship.
 
 ## Verify the Twitter unfollow API result
 
-Poll `statusUrl` until the durable action becomes terminal.
+Poll `statusUrl` until the action becomes terminal.
 Store the final status, billing fields, and request identifiers.
-Use [Check Follower](/api-reference/x/check-follower) when current proof matters.
+Use [Check Follower](/api-reference/x/check-follower) when you need current proof.
 Check Following to confirm the target disappeared from the outbound list.
 
 No response field says whether X sent a notification.
 Do not claim whether X notified the target account.
-Verify the relationship instead of inferring client behavior.
+Verify the relationship itself.
 
 ## Choose unfollow or remove follower
 
@@ -350,9 +348,9 @@ Unfollow stops the connected account from following the target profile.
 [Remove Follower](/api-reference/x-write/remove-follower) ends one inbound relationship.
 Use Remove Follower when someone should stop following the connected account.
 
-Unretweet removes one repost but preserves every follow relationship.
-Delete Tweet removes one post but preserves follower relationships.
-Don't mix these write actions in one management tool flow.
+Unretweet removes one repost and changes no follow relationship.
+Delete Tweet removes one post and changes no follow relationship.
+Keep these write actions in separate steps.
 
 ## Handle Twitter API unfollow errors
 
@@ -384,7 +382,6 @@ Confirm only the outbound relationship change.
 
 No. Use any HTTP client or the cURL, Node.js, Python, and Go examples.
 A third-party service still needs an approved connected account.
-Some HTTP clients offer free plans, but Xquik credits still apply.
 
 ### How do I manage several connected accounts?
 

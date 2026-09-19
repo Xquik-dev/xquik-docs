@@ -1,7 +1,7 @@
 ---
 title: "Twitter webhook test & signed delivery check"
 sidebarTitle: "Test webhook"
-description: "Send a signed test event to a webhook URL. Verify HTTPS reachability, response status, signature handling, and delivery timing. Includes API examples."
+description: "Send a signed test event to a webhook URL. Verify HTTPS reachability, response status, and signature handling. The test changes no webhook state and is free."
 api: "POST /webhooks/{id}/test"
 keywords: ["webhook", "test", "verify", "endpoint", "health check"]
 ---
@@ -173,8 +173,8 @@ func main() {
 
 </CodeGroup>
 
-These snippets shape a small deployment-check record. Store `accepted`,
-`status_code`, and `error` with the webhook ID instead of printing the full
+These snippets build a small deployment-check record. Store `accepted`,
+`status_code`, and `error` with the webhook ID. Do not print the full
 test response.
 
 ## Path parameters
@@ -209,8 +209,8 @@ Xquik sends a `webhook.test` event to your endpoint, HMAC-signed with the webhoo
 
 The signed request includes the `X-Xquik-Signature`, `X-Xquik-Timestamp`, and
 `X-Xquik-Nonce` headers. Verify the signature against the raw request body
-before parsing JSON, reject stale timestamps, and de-dupe recent nonces exactly
-as you do for production monitor deliveries.
+before parsing JSON, reject stale timestamps, and reject reused nonces, the same
+way you do for production monitor deliveries.
 
 You can test active, paused, or needs-attention webhooks. This endpoint reports
 whether the receiver accepted the signed test request, but it does not change
@@ -225,7 +225,7 @@ headers out of deployment logs.
 
 `webhook.test` payloads include `eventType`, `data`, and `timestamp`. They do
 not include `deliveryId` or `streamEventId`, so use them for reachability and
-signature checks rather than receiver idempotency checks.
+signature checks. They cannot test receiver idempotency.
 
 ## Response
 
@@ -348,7 +348,7 @@ after changing webhook code, secrets, firewall rules, or queue routing.
 
   <Card title="Paused or needs attention" icon="toggle-left">
 
-    Tests are still sent to paused and needs-attention webhooks. A passing test
+    Xquik still sends tests to paused and needs-attention webhooks. A passing test
     proves reachability only. Use [Resume Webhook](/api-reference/webhooks/resume)
     when delivery should resume after the test.
 
@@ -390,7 +390,7 @@ after changing webhook code, secrets, firewall rules, or queue routing.
 
 <Note>
 
-This endpoint supports dual authentication. Send an API key in the `x-api-key` header or a session cookie from the dashboard.
+This endpoint accepts 2 auth methods. Send an API key in the `x-api-key` header or a session cookie from the dashboard.
 
 **Related.** [List Webhooks](/api-reference/webhooks/list) &middot; [Resume Webhook](/api-reference/webhooks/resume) &middot; [List Deliveries](/api-reference/webhooks/deliveries) &middot; [Get Event](/api-reference/events/get) &middot; [Webhook Verification](/webhooks/verification)
 
