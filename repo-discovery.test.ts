@@ -11893,7 +11893,7 @@ const REQUIRED_XANGUARD_ALTERNATIVE_SNIPPETS = [
   "RT 25 at USD 49/month for 25 tracked accounts",
   "RT 100 at USD 149/month for 100 tracked accounts",
   "RT 500 at USD 499/month for 500 tracked accounts",
-  "plans are payable with SOL and Telegram Stars",
+  "you pay with SOL or Telegram Stars",
 ] as const;
 
 const REQUIRED_HOOTSUITE_ALTERNATIVE_SNIPPETS = [
