@@ -29,7 +29,7 @@ const REQUIRED_PAGE_COPY = [
   "Returns 10 source facts and 4 follow-up questions.",
   '<ResponseField name="radarRecommendations" type="object[]" required>',
   "Deprecated compatibility field. Always empty.",
-  "Checks that the draft contains text.",
+  "It checks that the draft contains text.",
   "Runs one deterministic input check.",
   "Ranking stays viewer-specific.",
   "Every `weight` is `null`.",
