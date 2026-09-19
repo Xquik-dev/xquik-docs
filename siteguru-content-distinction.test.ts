@@ -136,7 +136,7 @@ const CONTENT_REQUIREMENTS: readonly ContentRequirement[] = [
       "Search decision",
       "Compare latest and top results without mixing datasets",
       "Build a live community review queue",
-      "Preserve decisions across a live moderation queue",
+      "Keep decisions across a live moderation queue",
       "Build a query-specific community review batch",
       "Separate search matches from community feed coverage",
     ],

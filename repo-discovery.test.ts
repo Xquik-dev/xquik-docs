@@ -4938,7 +4938,7 @@ const REQUIRED_COMMUNITY_SEARCH_API_HANDOFF_SNIPPETS = [
   '"created_at": tweet.get("createdAt")',
   '"media_urls": [',
   'next_cursor = data["next_cursor"] if data["has_next_page"] else None',
-  "shape one durable row per matching community",
+  "build one row per matching community",
   "with the same `communityId`, `q`, `queryType`, and `pageSize`.",
   "`community_id`, `search_query`, `query_type`, `tweet_id`,",
   "`author_followers`, `author_verified`,",
