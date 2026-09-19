@@ -5508,7 +5508,7 @@ const REQUIRED_SEARCH_USERS_API_HANDOFF_SNIPPETS = [
   '"result_rank": index + 1',
   '"user_id": user["id"]',
   '"profile_image_url": user.get("profilePicture")',
-  "shape durable search-result rows instead of",
+  "snippets build search-result rows. They do not",
   "`search_query`, `result_rank`, `user_id`,",
   "`has_next_page`,",
   "`next_cursor`",
