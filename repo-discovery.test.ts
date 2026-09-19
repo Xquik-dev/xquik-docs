@@ -8529,7 +8529,7 @@ const REQUIRED_TWITTER_GIVEAWAY_PICKER_SNIPPETS = [
 const REQUIRED_TWITTER_COMMENT_RETWEET_PICKER_SNIPPETS = [
   'title: "Twitter comment picker & retweet giveaway API"',
   'sidebarTitle: "Comment & retweet picker"',
-  "Preserve cursors, user IDs, filters, and selection proof.",
+  "Keep all cursors, user IDs, filters, and selection proof.",
   "## How does a Twitter comment picker work?",
   "[Get Tweet Replies](/api-reference/x/tweet-replies)",
   "A random comment picker selects winners from the remaining stable user IDs.",
