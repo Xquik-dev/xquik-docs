@@ -1,7 +1,7 @@
 ---
 title: "List Twitter webhook endpoints & event filters"
 sidebarTitle: "List webhooks"
-description: "List registered webhook endpoints with URLs, event filters, active states, failure counts, delivery timestamps, and creation times. See request fields."
+description: "List up to 200 webhook endpoints with URLs, event filters, active states, delivery status, failure counts, and creation times. The signing secret never appears."
 api: "GET /webhooks"
 keywords: ["webhook", "list", "all webhooks"]
 ---
@@ -227,7 +227,7 @@ func main() {
 
 </CodeGroup>
 
-These examples shape one inventory row per webhook instead of printing the full
+These examples build one row per webhook. They do not print the full
 response page. Split the rows by `is_active` and `delivery_status`, then store
 update, delete, test, resume, and delivery-log endpoints with each receiver.
 List responses never include the signing secret. Keep the one-time `secret` from
@@ -267,7 +267,7 @@ List of webhook objects for your account. Returns up to 200 webhooks.
     </ResponseField>
     <ResponseField name="isActive" type="boolean">
 
-      Whether the webhook is currently active.
+      Whether the webhook is active.
 
     </ResponseField>
     <ResponseField name="consecutiveFailures" type="number">
@@ -345,7 +345,7 @@ Too many requests. Wait for the `Retry-After` header before retrying.
 ## Inventory handoff
 
 Use this endpoint when an ops job, CRM integration, alert worker, or agent needs
-to reconcile which signed webhook endpoints are configured for the account.
+to check which signed webhook endpoints the account has configured.
 
 | Webhook inventory column | Response source                  | Reconciliation rule                             |
 | ------------------------ | -------------------------------- | ----------------------------------------------- |
@@ -353,10 +353,10 @@ to reconcile which signed webhook endpoints are configured for the account.
 | Receiver URL             | `webhooks[].url`                 | Confirm the intended HTTPS destination.         |
 | Event filter             | `webhooks[].eventTypes`          | Match account and keyword monitor event types.  |
 | Active state             | `webhooks[].isActive`            | Separate active and inactive delivery targets.  |
-| Delivery status          | `webhooks[].deliveryStatus`      | Route needs-attention receivers for recovery.   |
+| Delivery status          | `webhooks[].deliveryStatus`      | Send needs-attention receivers to recovery.     |
 | Consecutive failures     | `webhooks[].consecutiveFailures` | Alert before the receiver reaches its hard cap. |
 | Failure cap              | `webhooks[].failureHardCap`      | Record the recovery threshold.                  |
-| Creation time            | `webhooks[].createdAt`           | Detect configuration age and drift.             |
+| Creation time            | `webhooks[].createdAt`           | Track how old each configuration is.            |
 
 <CardGroup cols={2}>
 
@@ -383,7 +383,7 @@ to reconcile which signed webhook endpoints are configured for the account.
 
   <Card title="Active state" icon="toggle-right">
 
-    Store `webhooks[].isActive`; inactive webhooks do not receive monitor
+    Store `webhooks[].isActive`. Inactive webhooks do not receive monitor
     events. Use `deliveryStatus` to distinguish paused from needs-attention
     receivers.
 
@@ -399,7 +399,7 @@ to reconcile which signed webhook endpoints are configured for the account.
   <Card title="Failure counter" icon="activity">
 
     Store `webhooks[].consecutiveFailures` and `webhooks[].failureHardCap` for
-    alerting before the receiver reaches the recovery gate.
+    alerting before the receiver reaches the failure cap.
 
   </Card>
 
@@ -438,13 +438,13 @@ to reconcile which signed webhook endpoints are configured for the account.
 
   <Card title="Created at" icon="calendar-clock">
 
-    Store `webhooks[].createdAt` for audit logs and configuration drift checks.
+    Store `webhooks[].createdAt` for audit logs and later configuration checks.
 
   </Card>
 
   <Card title="Signing secret" icon="shield-check">
 
-    The signing `secret` is not listed. Store it from
+    The list omits the signing `secret`. Store it from
     [Create Webhook](/api-reference/webhooks/create), then verify deliveries
     with [Signature Verification](/webhooks/verification).
 
@@ -453,7 +453,7 @@ to reconcile which signed webhook endpoints are configured for the account.
 
 <Note>
 
-This endpoint supports dual authentication. Send an API key in the `x-api-key` header or a session cookie from the dashboard.
+This endpoint accepts 2 auth methods. Send an API key in the `x-api-key` header or a session cookie from the dashboard.
 
 **Next steps.** [Create Webhook](/api-reference/webhooks/create) &middot; [Update Webhook](/api-reference/webhooks/update) &middot; [Test Webhook](/api-reference/webhooks/test) &middot; [Resume Webhook](/api-reference/webhooks/resume) &middot; [List Deliveries](/api-reference/webhooks/deliveries) &middot; [Get Event](/api-reference/events/get) &middot; [Delete Webhook](/api-reference/webhooks/delete)
 
