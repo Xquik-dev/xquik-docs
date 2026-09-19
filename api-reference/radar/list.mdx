@@ -89,8 +89,8 @@ consumes no credits.
 
 ## What is a social media monitoring API?
 
-A social media monitoring API turns public posts and trend signals into
-application-ready records. Radar exposes those records through one REST API
+A social media monitoring API returns public posts and trends as
+structured records. Radar exposes those records through one REST API
 endpoint. Each response uses structured JSON and stable field names.
 
 Radar gives every supported public source the same `RadarItem` shape. The
@@ -102,8 +102,8 @@ network. It also does not return X tweets, replies, followers, or timelines.
 For X-specific monitoring, [Search Tweets](/api-reference/x/search-tweets)
 finds brand mentions, hashtags, replies, and keyword matches.
 
-Use stable fields to compare titles, regions, timestamps, and scores. Avoid
-building separate source adapters. Compare trends across sources with Radar.
+Use stable fields to compare titles, regions, timestamps, and scores. You need
+no separate adapter per source.
 Keep full social listening data in a dedicated platform API.
 
 Radar is not a social listening API for every major social platform. It does
@@ -126,8 +126,8 @@ separately.
 6. Continue with `nextCursor` while `hasMore` stays `true`.
 
 Use `source=reddit` for Reddit posts. Use `source=github` for trending
-repositories. Other source identifiers follow the same pattern. This API
-access keeps one integration path across every supported feed.
+repositories. Other source identifiers work the same way. One
+request format covers every supported feed.
 
 ## Is Radar real-time for monitoring trending topics?
 
@@ -139,8 +139,8 @@ pages within that poll. The contract guarantees neither cross-poll cursor
 lifetime nor snapshots. Deduplicate records by `items[].id`. Never use an item
 ID to order separate polling runs.
 
-Respect every `429` rate limit response. Wait before the next poll. This
-pattern tracks recent changes without promising a delivery deadline.
+Respect every `429` rate limit response. Wait before the next poll. Polling
+tracks recent changes. It promises no delivery deadline.
 
 ## Can Radar track brand mentions and sentiment?
 
@@ -152,8 +152,8 @@ Radar does not analyze sentiment. The `score` value measures relevance, not
 sentiment. Do not classify a high score as positive or negative sentiment.
 
 Use [Search Tweets](/api-reference/x/search-tweets) to query exact X mentions.
-Use Radar for ranked cross-source topics. This split prevents false
-assumptions about brand-mention coverage.
+Use Radar for ranked cross-source topics. Radar does not cover
+every brand mention.
 
 ## How do you evaluate Radar topic accuracy?
 
@@ -173,7 +173,7 @@ or customer-facing dashboard entry.
 
 ## Integrate Radar into a monitoring dashboard
 
-Keep the dashboard pipeline simple. Request one page, validate the response,
+Request one page, validate the response,
 and render each `RadarItem`. Save the item ID, source, source ID, score, region,
 and timestamps.
 
@@ -186,8 +186,7 @@ cursor. Keep it with matching filters during one pagination run. Changing
 `source`, `category`, `region`, or `hours` starts a different result set.
 
 Choose a searchable news API for exact keyword or domain matching. Use Radar
-for normalized records from its documented sources. This prevents claims about
-unsupported source coverage.
+for normalized records from its documented sources only.
 
 ## Headers
 
@@ -242,7 +241,7 @@ Cursor for pagination. Pass `nextCursor` from the previous response. Treat curso
 | Radar monitoring column | Response source                         | Queue rule                                             |
 | ----------------------- | --------------------------------------- | ------------------------------------------------------ |
 | Item ID                 | `items[].id`                            | Deduplicate one indexed Radar item.                    |
-| Source record           | `items[].source` and `items[].sourceId` | Preserve the original stream identity.                 |
+| Source record           | `items[].source` and `items[].sourceId` | Keep the original source and its record ID.            |
 | Topic                   | `items[].title`                         | Display the concrete trend or discussion.              |
 | Category                | `items[].category`                      | Route technology, business, culture, or other topics.  |
 | Region                  | `items[].region`                        | Keep the market with every queue row.                  |
@@ -384,10 +383,10 @@ still identify `sourceFormat` as `json` or `rss`.
 | `numberCrossposts`, `viewCount`, `distinguished`, `editedAt`, `galleryImageUrls`, `redditVideo`                                                                   | Additional fields retained on legacy JSON rows                                |
 | `archived`, `contestMode`, `isCrosspostable`, `isMeta`, `isNsfw`, `isOriginalContent`, `isRobotIndexable`, `isSelf`, `isSpoiler`, `isVideo`, `locked`, `stickied` | Post state flags                                                              |
 
-Exact public upvote and downvote counts are unavailable. Treat
+Reddit does not publish exact upvote and downvote counts. Treat
 `estimatedUpvotes` and `estimatedDownvotes` as estimates because Reddit may fuzz
-the public score and ratio. `numberComments` is a count. Comment bodies are not
-returned.
+the public score and ratio. `numberComments` is a count. Radar returns no comment
+bodies.
 
 ### Startup growth
 
@@ -626,6 +625,6 @@ for {
 
 <Note>
 
-**Next steps.** [Trends guide](/guides/trends) for content strategy workflows &middot; [Create Tweet](/api-reference/x-write/create-tweet) to post about trending topics &middot; [Compose](/api-reference/compose/create) to generate AI-drafted tweets from radar items
+**Next steps.** [Trends guide](/guides/trends) for content strategy workflows &middot; [Create Tweet](/api-reference/x-write/create-tweet) to post about trending topics &middot; [Compose](/api-reference/compose/create) to plan and check a draft about a Radar item
 
 </Note>
