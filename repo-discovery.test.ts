@@ -9349,7 +9349,7 @@ const REQUIRED_KEYWORD_MONITOR_DELETE_API_HANDOFF_SNIPPETS = [
   "`isActive: false` when you only need to pause alerts",
   '<Card title="Permanent remove" icon="trash-2">',
   "Delete stops the monitor immediately. Poll `statusUrl` until it returns",
-  "`404`. The deleted ID cannot be updated or resumed.",
+  "`404`. You cannot update or resume the deleted ID.",
   '<Card title="Stored history" icon="database">',
   "Xquik removes stored events and webhook delivery records for this monitor",
   '<Card title="Pause instead" icon="circle-pause">',
