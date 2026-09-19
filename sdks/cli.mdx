@@ -19,7 +19,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Use the CLI when a shell script, cron job, CI workflow, or operations runbook needs X API data without an application wrapper. It can search tweets, scrape tweets to JSON Lines, CSV, or XLSX, export follower data, upload media, post media tweets, post tweet replies, send direct messages, monitor tweets, and hand results to `jq`, Python, a warehouse loader, or a queue worker.
+Use the CLI when a shell script, cron job, CI workflow, or operations runbook needs X API data without an application wrapper. It can search tweets, scrape tweets to JSON Lines, CSV, or XLSX, and export follower data. It can upload media, post media tweets, post tweet replies, send direct messages, and monitor tweets. Hand results to `jq`, Python, a warehouse loader, or a queue worker.
 
 ## Install
 
@@ -161,7 +161,7 @@ done
 
 The response includes `.tweets[]`, `.has_next_page`, and `.next_cursor`. Each tweet can include `id`, `text`, `createdAt`, engagement counts, `bookmarkCount`, `isNoteTweet`, `author`, `media`, `quoted_tweet`, and `retweeted_tweet`, depending on what X returns for the result.
 
-Project `.tweets[]` into `xquik-tweet-search.jsonl` and `xquik-tweet-search.csv` rows with `tweet_id`, `author_username`, engagement counts, `page_index`, `page_cursor`, `next_cursor`, and `has_next_page` so scripts can resume safely or load the same records into XLSX, CRM, warehouse, or agent workflows.
+Project `.tweets[]` into `xquik-tweet-search.jsonl` and `xquik-tweet-search.csv` rows with `tweet_id`, `author_username`, engagement counts, `page_index`, `page_cursor`, `next_cursor`, and `has_next_page`. Scripts can then resume or load the same records into XLSX, CRM, warehouse, or agent workflows.
 
 ```bash
 python3 - <<'PY'
@@ -205,7 +205,7 @@ tail -n 1 xquik-tweet-search.jsonl | jq '{query, page_index, next_cursor, has_ne
 
 Use `--limit` as a 1 to 200 upper bound for a bounded pull. When `.has_next_page` is true, keep the same `--q`, filters, `--query-type`, and `--limit`. Only `--cursor` changes.
 
-Tweet search costs 1 credit per tweet returned. If remaining credits cannot cover a bounded `--limit` request, the API can return fewer tweets. If 0 paid results are affordable, it returns `402 insufficient_credits`. For bounded pulls that return fewer tweets than the requested `--limit`, pass `.next_cursor` back as `--cursor` with the same query, filters, `--query-type`, and `--limit`. Use `--format-error json` so batch jobs can branch on `status` and `code`, and retry `429` or temporary `5xx` responses with backoff.
+Tweet search costs 1 credit per tweet returned. If remaining credits cannot cover a bounded `--limit` request, the API can return fewer tweets. If 0 paid results are affordable, it returns `402 insufficient_credits`. For bounded pulls that return fewer tweets than the requested `--limit`, pass `.next_cursor` back as `--cursor` with the same query, filters, `--query-type`, and `--limit`. Use `--format-error json` so batch jobs can branch on `status` and `code`. Retry `429` or temporary `5xx` responses with backoff.
 
 For XLSX handoff, keep `xquik-tweet-search.jsonl` as the master file and convert the same projected rows in your pipeline when account managers need a workbook.
 
@@ -365,7 +365,7 @@ x-twitter-scraper x:tweets create \
   --format-error json > posted-tweet.json
 ```
 
-To reply with media, add the parent tweet ID. The `--reply-to-tweet-id` flag maps to `reply_to_tweet_id`, and `--media` maps to the public URL array on `POST /x/tweets`.
+To reply with media, add the parent tweet ID. The `--reply-to-tweet-id` flag maps to `reply_to_tweet_id`. `--media` maps to the public URL array on `POST /x/tweets`.
 
 ```bash
 x-twitter-scraper x:tweets create \
@@ -427,7 +427,7 @@ jq -c --arg media_id "$media_id" '{
 }' sent-dm.json > dm-handoff.jsonl
 ```
 
-The `--media-id` flag maps to the REST `media_ids` body field. DMs accept exactly 1 uploaded media ID. Store `messageId` from the DM response on the support ticket, CRM record, queue job, or agent memory. Keep DM body text in private systems. Shared logs, public artifacts, queue status, and agent handoffs should store `message_id`, optional `media_id`, recipient/account identifiers from your job context, and send status instead of full DM bodies. Uploading media costs 10 credits, and sending the DM costs 10 credits.
+The `--media-id` flag maps to the REST `media_ids` body field. DMs accept exactly 1 uploaded media ID. Store `messageId` from the DM response on the support ticket, CRM record, queue job, or agent memory. Keep DM body text in private systems. Shared logs, public artifacts, queue status, and agent handoffs should store `message_id`, optional `media_id`, recipient and account identifiers from your job context, and send status instead of full DM bodies. Uploading media costs 10 credits. Sending the DM costs 10 credits.
 
 Do not pass `--reply-to-message-id` to `x:dm send`. The REST endpoint rejects `reply_to_message_id`. Start a new DM with `--user-id`, `--account`, `--text`, and optional one-item `--media-id` instead.
 
