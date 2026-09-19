@@ -1766,7 +1766,7 @@ const REQUIRED_MCP_CONTRACT_SNIPPETS = [
   "https://xquik.com/.well-known/mcp.json",
   "`GET` and `POST` on `/.well-known/mcp.json` return a compatibility document",
   "`/.well-known/mcp/server-card.json` return the same document.",
-  "they are not MCP Registry or experimental MCP Server Card fields.",
+  "They are not MCP Registry or experimental MCP Server Card fields.",
   "can also read `GET /.well-known/oauth-protected-resource/.well-known/mcp.json`",
   "`Authorization: Bearer {XQUIK_API_KEY}`",
   "`https://dashboard.xquik.com/en/account?tab=api-keys`",

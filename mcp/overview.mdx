@@ -29,7 +29,7 @@ search, use the [Docs MCP server](/mcp/docs-mcp) at `https://docs.xquik.com/mcp`
 
 <Warning>
 
-Codex CLI 0.147.0 and newer preserve the RFC 9207 `iss` value. Older Codex
+Codex CLI 0.147.0 and newer keep the RFC 9207 `iss` value. Older Codex
 and affected Goose releases may discard it before token exchange. Follow
 [Codex and Goose OAuth issuer validation](/guides/troubleshooting#codex-oauth-issuer-validation-error)
 to upgrade Codex or use an environment-backed API key.
@@ -67,7 +67,7 @@ Supported browsers expose a read-only WebMCP tool on the homepage. It searches t
 
 `GET` and `POST` on `/.well-known/mcp.json` return a compatibility document derived from the MCP Registry manifest.
 `/server.json` and `/.well-known/mcp/server-card.json` return the same document. Its standard `remotes` entry identifies the `streamable-http` endpoint.
-Extra top-level convenience fields support older clients. For clarity, they are not MCP Registry or experimental MCP Server Card fields.
+Extra top-level convenience fields support older clients. They are not MCP Registry or experimental MCP Server Card fields.
 OAuth clients read `GET /.well-known/oauth-protected-resource/mcp` for protected-resource metadata.
 Compatibility clients can also read `GET /.well-known/oauth-protected-resource/.well-known/mcp.json`. It redirects to the canonical metadata URL.
 
@@ -214,7 +214,7 @@ Pass `result_id` to project saved data through `xquik.result`.
 [Recover oversized results](/mcp/tools#recover-oversized-results) without repeating paid requests.
 See the complete [execute contract](/mcp/tools#execute).
 
-Authentication and required idempotency headers are injected automatically. The server reuses each generated key for bounded transient retries. Verify unresolved writes. Retry only when `safe_to_retry` is true.
+The server injects authentication and required idempotency headers. The server reuses each generated key for bounded transient retries. Verify unresolved writes. Retry only when `safe_to_retry` is true.
 
 An `execute` call can run for up to 55 seconds. Sandbox API requests stop after 54 seconds. The reserve lets completed work return. Disconnecting cancels the call. Timeouts do not cancel durable extraction jobs. Find the job through `GET /extractions`, then resume with its stored ID. Rejections include `error.status` when available.
 
@@ -229,7 +229,7 @@ The REST contract documents 129 operations. Full credentials expose 118 JSON or 
 
 Guest wallet credential routes remain direct REST only. MCP cannot execute `POST /api/v1/guest-wallets`, `POST /api/v1/guest-wallets/topups`, or `GET /api/v1/guest-wallets/status`. Follow the [accountless guest wallet guide](/guides/guest-wallets) for confirmation, checkout, polling, and top-up steps.
 
-A guest `paid_reads` MCP session exposes exactly the [33 eligible paid-read routes](/guides/guest-wallets#eligible-paid-read-routes). It cannot execute mutations or noneligible routes.
+A guest `paid_reads` MCP session exposes exactly the [33 eligible paid-read routes](/guides/guest-wallets#eligible-paid-read-routes). It cannot execute writes or any other route.
 
 Never start checkout, top-up, subscription, or billing actions because another call returned `402`. Report the choices, ask the user to select an amount and option, then wait for explicit confirmation. After confirmation, MCP may execute only an account checkout action present in the full catalog. Guest wallet actions remain direct REST.
 
@@ -246,7 +246,7 @@ MCP follows REST authentication, authorization, billing, and response contracts 
   </Card>
   <Card title="REST API" icon="route">
 
-    Best for backend services, automation scripts, guest wallet credential routes, and direct programmatic access. The REST contract documents all 129 operations and file download responses.
+    Use REST for backend services, automation scripts, guest wallet credential routes, and direct access. The REST contract documents all 129 operations and file download responses.
 
   </Card>
 </CardGroup>
@@ -265,21 +265,21 @@ Start with [Claude.ai](https://claude.ai) for OAuth login or [Claude Code](#setu
 
 Choose the authentication path that your current client can complete. Xquik keeps OAuth issuer, redirect, resource, and Proof Key for Code Exchange (PKCE) validation enabled for every client.
 
-| Client                                                                                                         | API MCP authentication today            | Registration and behavior                                                                                  |
-| -------------------------------------------------------------------------------------------------------------- | --------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| [Claude Code](https://docs.anthropic.com/en/docs/claude-code/mcp)                                              | OAuth 2.1                               | Uses Client ID Metadata Documents (CIMD), secure token storage, and automatic refresh                      |
-| [OpenCode](https://opencode.ai/docs/mcp-servers/)                                                              | OAuth 2.1                               | Uses Dynamic Client Registration (DCR) and refreshes tokens                                                |
-| [Gemini CLI](https://geminicli.com/docs/tools/mcp-server/)                                                     | OAuth 2.1                               | Uses automatic OAuth discovery and DCR. Streamable HTTP configuration uses `httpUrl`                       |
-| [Cursor](https://docs.cursor.com/context/model-context-protocol)                                               | OAuth 2.1                               | Supports remote MCP OAuth and `cursor-agent mcp login`                                                     |
-| [GitHub Copilot CLI](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-mcp-servers) | OAuth 2.1                               | Uses the browser authorization code flow and DCR                                                           |
-| [Cline](https://docs.cline.bot/cli/cli-reference)                                                              | OAuth 2.1                               | Completes OAuth from its MCP configuration flow                                                            |
-| [Qwen Code](https://github.com/QwenLM/qwen-code)                                                               | OAuth 2.1                               | Uses DCR and its `httpUrl` Streamable HTTP field                                                           |
-| [Codex](https://learn.chatgpt.com/docs/extend/mcp)                                                             | OAuth 2.1 or environment-backed API key | Codex CLI 0.147.0 and newer preserve RFC 9207 `iss`. Older or failing builds use an environment-backed key |
-| [Goose](https://goose-docs.ai/docs/getting-started/using-extensions/)                                          | Environment-backed API key              | Affected releases can discard the required RFC 9207 `iss` callback value                                   |
-| [Roo Code](https://github.com/RooCodeInc/Roo-Code)                                                             | Environment-backed API key              | Roo Code's archived final release has Streamable HTTP but no MCP OAuth provider                            |
-| [Pi](https://github.com/earendil-works/pi/tree/main/packages/coding-agent)                                     | No native MCP path                      | Pi requires a separately installed and tested MCP adapter                                                  |
+| Client                                                                                                         | API MCP authentication today            | Registration and behavior                                                                              |
+| -------------------------------------------------------------------------------------------------------------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| [Claude Code](https://docs.anthropic.com/en/docs/claude-code/mcp)                                              | OAuth 2.1                               | Uses Client ID Metadata Documents (CIMD), secure token storage, and automatic refresh                  |
+| [OpenCode](https://opencode.ai/docs/mcp-servers/)                                                              | OAuth 2.1                               | Uses Dynamic Client Registration (DCR) and refreshes tokens                                            |
+| [Gemini CLI](https://geminicli.com/docs/tools/mcp-server/)                                                     | OAuth 2.1                               | Uses automatic OAuth discovery and DCR. Streamable HTTP configuration uses `httpUrl`                   |
+| [Cursor](https://docs.cursor.com/context/model-context-protocol)                                               | OAuth 2.1                               | Supports remote MCP OAuth and `cursor-agent mcp login`                                                 |
+| [GitHub Copilot CLI](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-mcp-servers) | OAuth 2.1                               | Uses the browser authorization code flow and DCR                                                       |
+| [Cline](https://docs.cline.bot/cli/cli-reference)                                                              | OAuth 2.1                               | Completes OAuth from its MCP configuration flow                                                        |
+| [Qwen Code](https://github.com/QwenLM/qwen-code)                                                               | OAuth 2.1                               | Uses DCR and its `httpUrl` Streamable HTTP field                                                       |
+| [Codex](https://learn.chatgpt.com/docs/extend/mcp)                                                             | OAuth 2.1 or environment-backed API key | Codex CLI 0.147.0 and newer keep RFC 9207 `iss`. Older or failing builds use an environment-backed key |
+| [Goose](https://goose-docs.ai/docs/getting-started/using-extensions/)                                          | Environment-backed API key              | Affected releases can discard the required RFC 9207 `iss` callback value                               |
+| [Roo Code](https://github.com/RooCodeInc/Roo-Code)                                                             | Environment-backed API key              | Roo Code's archived final release has Streamable HTTP but no MCP OAuth provider                        |
+| [Pi](https://github.com/earendil-works/pi/tree/main/packages/coding-agent)                                     | No native MCP path                      | Pi requires a separately installed and tested MCP adapter                                              |
 
-Clients that ignore the optional RFC 9207 `iss` response parameter can still complete OAuth. Codex CLI 0.147.0 and newer preserve the value. Older Codex and affected Goose releases may require the parameter after discarding it, so retrying OAuth cannot repair those callbacks. Xquik does not weaken issuer validation.
+Clients that ignore the optional RFC 9207 `iss` response parameter can still complete OAuth. Codex CLI 0.147.0 and newer keep the value. Older Codex and affected Goose releases may require the parameter after discarding it, so retrying OAuth cannot repair those callbacks. Xquik does not weaken issuer validation.
 
 ## Setup
 
@@ -421,7 +421,7 @@ Restart Codex, then run `codex mcp list`. Do not run `codex mcp login xquik` whi
     ```
 
     Cursor starts OAuth when the server first returns `401`. You can also run
-    `cursor-agent mcp login xquik`. Cursor currently lists MCP access on its
+    `cursor-agent mcp login xquik`. Cursor lists MCP access on its
     paid Individual, Teams, and Enterprise plans.
 
   </Tab>
@@ -637,22 +637,22 @@ configuration file, or commit a key.
 
 Once connected, ask:
 
-**Monitoring & Events**
+**Monitoring & events**
 
 - Start watching @elonmusk for new tweets and replies.
-- List the accounts I am currently monitoring.
+- List the accounts I am monitoring.
 - Show monitored account activity from today.
 - Replay stored events for monitor mon_123 using the last next_cursor as cursor.
 - Stop tracking @elonmusk.
 
-**Search & Lookup**
+**Search & lookup**
 
 - Search recent X posts about TypeScript.
 - Find recent tweets from @vercel.
 - Read this tweet: `https://x.com/elonmusk/status/1893456789012345678`
 - Get metrics for this tweet: `https://x.com/vercel/status/1893704267862470862`
 
-**User Profiles & Follows**
+**User profiles & follows**
 
 - Get @username follower count.
 - Read @openai profile bio.
@@ -665,7 +665,7 @@ Once connected, ask:
 - Show top trending topics in the US.
 - Check whether AI is trending today.
 
-**Radar & News**
+**Radar & news**
 
 - Show current Radar trends.
 - Show current Reddit posts with text, links, media, and engagement signals.
@@ -696,7 +696,7 @@ Once connected, ask:
 - List configured webhook endpoints.
 - Remove the webhook pointing to my old server.
 
-**Tweet Composition**
+**Tweet composition**
 
 - Write a casual launch tweet for my new product.
 - Research a fresh angle from Compose's Radar recommendations.
@@ -704,7 +704,7 @@ Once connected, ask:
 - Score this draft: Just shipped v2.0 of our API. What do you think?
 - Improve this tweet to get more replies.
 
-**Style Analysis & Drafts**
+**Style analysis & drafts**
 
 - Analyze how @elonmusk tweets.
 - Compare @vercel and @nextjs tweeting styles.
@@ -713,7 +713,7 @@ Once connected, ask:
 - Show all saved drafts.
 - Set my X account to @myusername.
 
-**X Write Actions**
+**X write actions**
 
 - Post a tweet saying: Just shipped v2.0!
 - Like this tweet: `https://x.com/vercel/status/1893704267862470862`
@@ -722,7 +722,7 @@ Once connected, ask:
 - Send a DM to user ID 44196397 saying hello.
 - Post a tweet saying: New feature! Use public image URL `https://example.com/launch.png`.
 
-**Account & Usage**
+**Account & usage**
 
 - Show my plan and month-to-date usage.
 - Check whether I have enough budget left for a large extraction.
@@ -759,7 +759,7 @@ Build agents with Xquik's MCP tools in your preferred framework:
 
 ## AI agent skill
 
-The [Xquik Skill](https://github.com/Xquik-dev/x-twitter-scraper) gives AI coding agents deep knowledge of the Xquik API without requiring an MCP connection. Install it to let your agent write API integrations, set up webhooks, and configure MCP connections using Xquik best practices.
+The [Xquik Skill](https://github.com/Xquik-dev/x-twitter-scraper) documents the Xquik API for AI coding agents. It needs no MCP connection. Install it so your agent can write API integrations, set up webhooks, and configure MCP connections.
 
 Works with Claude Code, Cursor, GitHub Copilot, Codex, Windsurf, VS Code, Gemini CLI, and other Skill-capable agents. It covers MCP tools and 129 REST API operations.
 
