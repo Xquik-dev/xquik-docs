@@ -3284,10 +3284,10 @@ const FORBIDDEN_PUBLIC_DM_REPLY_FIELD_EXAMPLES = [
 const REQUIRED_WRITE_ACTION_STATUS_API_SNIPPETS = [
   'title: "Twitter API errors & X write action status"',
   '"Twitter API error handling"',
-  "Every X write returns a durable `x_write_action` record.",
+  "Every X write returns a stored `x_write_action` record.",
   "Trust `terminal`, `safeToRetry`, and `nextAction`.",
   "## Handle Twitter API errors",
-  "Use this endpoint for Twitter API error handling after an Xquik write.",
+  "Use this endpoint to handle errors after an Xquik write.",
   "[response codes and errors](https://docs.x.com/x-api/fundamentals/response-codes-and-errors)",
   "An error message does not prove that a write failed.",
   "## Agent algorithm",
@@ -3333,7 +3333,7 @@ const REQUIRED_WRITE_ACTION_STATUS_API_SNIPPETS = [
   "## Retry rules",
   "`retryable: true`, `safeToRetry: false`: verify the result first.",
   "`safeToRetry: true`: request approval and retry using a new key.",
-  "Idempotency replay protection remains active for at least 90 days.",
+  "Xquik keeps idempotency replay protection for at least 90 days.",
 ] as const;
 
 const FORBIDDEN_WRITE_ACTION_STATUS_API_SNIPPETS = [
