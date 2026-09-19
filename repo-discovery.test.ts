@@ -7507,7 +7507,7 @@ const REQUIRED_WEBHOOK_TEST_API_SNIPPETS = [
   "Store the event",
   "`monitorId`, `monitorType`, `type`, `occurredAt`, and `data`",
   '<Card title="Paused or needs attention" icon="toggle-left">',
-  "Tests are still sent to paused and needs-attention webhooks.",
+  "Xquik still sends tests to paused and needs-attention webhooks.",
 ] as const;
 
 const FORBIDDEN_WEBHOOK_TEST_RAW_OUTPUT_SNIPPETS = [
