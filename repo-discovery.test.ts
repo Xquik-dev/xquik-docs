@@ -11545,7 +11545,7 @@ const REQUIRED_MELTWATER_ALTERNATIVE_SNIPPETS = [
   "coverage across major social networks, blogs, forums, podcasts, online news, reviews, owned channels, and public social content",
   "Boolean-style searches, sentiment views, share-of-voice and benchmarking metrics, dashboards, reports, real-time alerts, exportable charts, visual enrichments, influencer discovery",
   "Export API for exporting media articles and social mentions from existing searches",
-  "demo-led suite motion instead of published self-serve prices",
+  "offer a demo and publish no self-serve prices",
   "Instagram, TikTok, X, Facebook, Bluesky, LinkedIn, YouTube, and Reddit among covered channels",
   "400,000+ traditional media sources, 200M+ online publications",
   "workflow integrations with Slack, Microsoft Teams, business intelligence platforms, APIs, and custom integrations",
