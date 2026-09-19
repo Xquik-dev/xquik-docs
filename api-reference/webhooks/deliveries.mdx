@@ -276,7 +276,7 @@ This endpoint returns delivery attempt metadata only. It does not return the
 webhook URL, event type filter, signing secret, raw payload body, raw signature,
 or full request headers.
 
-Do not depend on a `nextRetryAt` field. The response has none, so triage incidents from `status`, `attempts`, `lastStatusCode`, `lastError`, `createdAt`, and `deliveredAt`.
+Do not depend on a `nextRetryAt` field. The response has none. Triage incidents from `status`, `attempts`, `lastStatusCode`, `lastError`, `createdAt`, and `deliveredAt`.
 
 | Webhook delivery incident column | Response source               | Triage rule                                                       |
 | -------------------------------- | ----------------------------- | ----------------------------------------------------------------- |
@@ -387,7 +387,7 @@ Use one row per delivery when the receiver owner must act. Ignore
   </Card>
 </CardGroup>
 
-Failures retry up to 10 attempts with exponential backoff, starting at 1 second and capped at 60 seconds. A `410 Gone` response marks the delivery `exhausted` immediately. Other non-`2xx` responses and network failures stay `failed` until they are delivered or exhaust all attempts.
+Failures retry up to 10 attempts with exponential backoff, starting at 1 second and capped at 60 seconds. A `410 Gone` response marks the delivery `exhausted` immediately. Other non-`2xx` responses and network failures stay `failed` until Xquik delivers them or they exhaust all attempts.
 
 For incident response, page on `exhausted`, warn on repeated `failed`, and ignore `delivered`. Fix the receiving endpoint, then use [`POST /webhooks/{id}/test`](/api-reference/webhooks/test) to confirm it accepts signed requests before waiting for the next production event.
 
@@ -411,8 +411,8 @@ own queue after you fix the receiver.
 ```
 
 Store `nextCursor` after every event page. Continue
-`GET /api/v1/events?limit=100&cursor={nextCursor}` until `hasMore` is `false`,
-then compare each event `id` with delivery `streamEventId` values before
+`GET /api/v1/events?limit=100&cursor={nextCursor}` until `hasMore` is `false`.
+Then compare each event `id` with delivery `streamEventId` values before
 replaying your own work. Add `monitorId` when replaying one account
 monitor, or `keywordMonitorId` when replaying one keyword monitor.
 
