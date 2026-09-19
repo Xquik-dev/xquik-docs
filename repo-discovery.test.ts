@@ -11648,7 +11648,7 @@ const REQUIRED_POST_BRIDGE_ALTERNATIVE_SNIPPETS = [
   "upload video content once, connect each social media account, and Post Bridge distributes the content to connected platforms",
   "you must upload content directly through Post Bridge",
   "does not support reposting Instagram collaborative reels, already-live social posts, or videos from other platforms or channels",
-  "does not currently support Twitter/X threads, Instagram Threads threaded posts, or split tweets",
+  "does not support Twitter/X threads, Instagram Threads threaded posts, or split tweets",
   "schedule individual posts to X and Instagram Threads",
   "100 scheduled posts/hour per user",
   "MP4 or MOV videos in 9:16, 16:9, 1:1, and 4:3 ratios",
