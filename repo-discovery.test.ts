@@ -6689,7 +6689,7 @@ const REQUIRED_DRAW_HISTORY_SNIPPETS = [
   "Do not label `validEntries` as a winner count.",
   "Winner rows exist only in the detail response.",
   "## Build a Twitter giveaway audit handoff",
-  "Preserve winner",
+  "Keep winner",
   "position and `isBackup`.",
   '<ParamField header="Authorization" type="string">',
   "Send `Bearer <token>` instead of `x-api-key` when using OAuth 2.1.",
