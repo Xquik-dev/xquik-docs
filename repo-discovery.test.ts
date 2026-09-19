@@ -2776,7 +2776,7 @@ const REQUIRED_EVENT_GET_API_HANDOFF_SNIPPETS = [
   "json.NewEncoder(os.Stdout).Encode(row)",
   "convert one event into an audit row",
   "`event_detail_endpoint`, and",
-  "`delivery_join_key`; keyword monitor events use",
+  "`delivery_join_key`. Keyword monitor events use",
   "## Event detail handoff",
   '<Card title="Detail row" icon="fingerprint">',
   "Keep `event_id` as the Xquik event identifier.",
