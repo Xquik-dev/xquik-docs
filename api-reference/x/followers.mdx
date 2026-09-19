@@ -1,7 +1,7 @@
 ---
 title: "Twitter followers API, profile export & cursors"
 sidebarTitle: "Get followers"
-description: "Get an X account's followers by username or user ID with cursor pagination for CRM, warehouse, audience, and agent workflows. Includes request fields."
+description: "Get an X account's followers by username or user ID with cursor pagination for CRM, warehouse, audience, and agent workflows. Costs 1 credit per result."
 api: "GET /x/users/{id}/followers"
 keywords:
   [
@@ -168,7 +168,7 @@ import UserResultFilterParams from "/snippets/user-result-filter-params.mdx";
 
 <Info>
 
-Get followers returns follower profiles for one X account by username or numeric user ID. It is also useful as a Follower Export API, X followers API, or Twitter followers API. The canonical endpoint remains `GET /api/v1/x/users/{id}/followers`.
+Get followers returns follower profiles for one X account by username or numeric user ID. The endpoint is `GET /api/v1/x/users/{id}/followers`.
 
 </Info>
 
@@ -296,8 +296,8 @@ for page_index in range(3):
 
 </CodeGroup>
 
-The Node.js and Python snippets write JSON Lines import rows instead of raw
-follower pages. Persist each mapped row and the latest `next_cursor` in your
+The Node.js and Python snippets write JSON Lines import rows, not raw
+follower pages. Store each mapped row and the latest `next_cursor` in your
 sync job so it can resume from the last completed page.
 
 ## Direct follower handoff
@@ -379,11 +379,11 @@ CSV/JSON/XLSX files after completion.
 </CardGroup>
 
 Automatic `pageSize` accepts 20 to 300. Standard mode accepts 20 to 200.
-Paid calls can return fewer rows. Treat `users.length` as the billable row count.
+Paid calls can return fewer rows. `users.length` is the billable row count.
 Zero affordable results return
 `402 insufficient_credits`.
 
-For high-volume follower pulls, de-duplicate profiles by `id`, continue through empty pages when the cursor advances, and stop with a partial-result status when `next_cursor` is missing or repeats.
+For high-volume follower pulls, deduplicate profiles by `id`. Continue through empty pages while the cursor advances. Stop with a partial-result status when `next_cursor` is missing or repeats.
 
 ## Build a Twitter follower tracker
 
@@ -395,8 +395,8 @@ followers. Classify IDs missing from the latest complete snapshot as removed
 followers. Do not compare partial exports.
 
 Keep username, profile name, verification state, follower counts, and profile
-image beside each ID. These fields make review easier. Use the numeric ID for
-the actual comparison because usernames can change.
+image beside each ID. Reviewers read those fields. Compare on the numeric ID,
+because usernames can change.
 
 Save every cursor page before marking a snapshot complete. Record the final
 row count and completion time. A failed or credit-limited run should remain
@@ -406,21 +406,21 @@ partial.
 | ----------------------- | ------------------------------------- | ------------------------------------------------------------- |
 | `source_x_user_id`      | Resolve the requested account once    | Keep the source account stable across snapshots.              |
 | `snapshot_id`           | Generate for each complete collection | Compare rows only inside the intended snapshot pair.          |
-| `collected_at`          | Set when each cursor page is stored   | Preserve collection order and snapshot recency.               |
+| `collected_at`          | Set when each cursor page is stored   | Keep collection order and snapshot recency.                   |
 | `x_user_id`             | `users[].id`                          | Use as the stable follower identity.                          |
 | `x_username`            | `users[].username`                    | Display the current handle, but never use it as the join key. |
-| `follower_count`        | `users[].followers`                   | Preserve the observed audience size for segmentation.         |
-| `verified`              | `users[].verified`                    | Preserve the observed verification state for filtering.       |
+| `follower_count`        | `users[].followers`                   | Keep the observed audience size for segmentation.             |
+| `verified`              | `users[].verified`                    | Keep the observed verification state for filtering.           |
 | `profile_picture_url`   | `users[].profilePicture`              | Use in review queues and CRM profile previews.                |
 | `snapshot_complete`     | Set after the final cursor page       | Compare removals only when both snapshots are complete.       |
 | `row_count`             | Sum the stored `users.length` values  | Reconcile stored followers with the completed export.         |
 
-| Snapshot result         | ID condition                                  | Tracker action                                                    |
-| ----------------------- | --------------------------------------------- | ----------------------------------------------------------------- |
-| Newly observed follower | Present only in the latest complete snapshot  | Add the first-seen time and latest follower profile fields.       |
-| Continuing follower     | Present in both complete snapshots            | Update mutable username, profile, count, and verification fields. |
-| Removed follower        | Present only in the earlier complete snapshot | Add the last-seen time. Do not delete the historical row.         |
-| Unknown change          | Either snapshot is partial                    | Preserve both snapshots and defer follower-change classification. |
+| Snapshot result         | ID condition                                  | Tracker action                                                |
+| ----------------------- | --------------------------------------------- | ------------------------------------------------------------- |
+| Newly observed follower | Present only in the latest complete snapshot  | Add the first-seen time and latest follower profile fields.   |
+| Continuing follower     | Present in both complete snapshots            | Update the username, profile, count, and verification fields. |
+| Removed follower        | Present only in the earlier complete snapshot | Add the last-seen time. Do not delete the historical row.     |
+| Unknown change          | Either snapshot is partial                    | Keep both snapshots and defer follower-change classification. |
 
 ## Which follower endpoint?
 
