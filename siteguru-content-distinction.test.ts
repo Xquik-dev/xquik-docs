@@ -49,7 +49,7 @@ const CONTENT_REQUIREMENTS: readonly ContentRequirement[] = [
       "Qualify a community before collecting profiles or tweets",
       "Create a community qualification manifest",
       "Use community metadata to choose the next route",
-      "Detect community metadata drift",
+      "Detect community metadata changes",
     ],
   },
   {

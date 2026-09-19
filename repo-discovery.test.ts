@@ -4742,7 +4742,7 @@ const REQUIRED_COMMUNITY_INFO_API_HANDOFF_SNIPPETS = [
   '"moderator_count": community.get("moderator_count")',
   '"primary_topic_name": (community.get("primary_topic") or {}).get("name")',
   '"rule_count": len(community.get("rules") or [])',
-  "one durable community",
+  "needs one community",
   "`community_id`, `community_name`, `description`,",
 ] as const;
 
