@@ -11870,7 +11870,7 @@ const REQUIRED_TRYPOST_ALTERNATIVE_SNIPPETS = [
   "Instagram, Facebook, LinkedIn personal and company pages, X (Twitter), TikTok, YouTube Shorts, Pinterest, Threads, Bluesky, and Mastodon",
   "TryPost bills each additional workspace separately. It prices 3 workspaces at USD 48/month",
   "cloud-hosted SaaS and self-hosted open-source software",
-  "FSL-1.1-MIT, self-hosting costs nothing",
+  "FSL-1.1-MIT and self-hosting costs nothing",
   "scheduling and auto-publishing across multiple platforms, a drag-and-drop visual calendar",
   "REST API. They also list Build with AI for connecting AI assistants through MCP.",
   "## Connect a TryPost schedule to Xquik reads",
