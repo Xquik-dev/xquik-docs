@@ -5462,7 +5462,7 @@ const REQUIRED_BOOKMARK_FOLDERS_API_HANDOFF_SNIPPETS = [
   '"folder_name": folder["name"]',
   '"bookmarks_endpoint": f"/x/bookmarks?folderId={folder',
   '"has_more_folders": data["has_next_page"]',
-  "shape durable bookmark folder rows instead of",
+  "snippets build bookmark folder rows. They do not",
   "`folderRows` or `folder_rows`",
   "pass `folder_id` into `GET /x/bookmarks?folderId=...`",
   "## Twitter bookmark folder workflow",
