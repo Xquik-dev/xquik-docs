@@ -5697,7 +5697,7 @@ const REQUIRED_FOLLOWERS_YOU_KNOW_API_HANDOFF_SNIPPETS = [
   "mutual_rows = [",
   '"target_user_id": user_id',
   "snippets build mutual follower rows. They do not",
-  "worker can resume pagination with `next_cursor`",
+  "worker can then resume pagination with `next_cursor`",
   "## Direct mutual followers handoff",
   "`GET /x/users/{id}/followers-you-know`",
   "sales, community, recruiting, support, CRM, or agent workflow",
