@@ -11027,7 +11027,7 @@ const REQUIRED_LANGCHAIN_GUIDE_SNIPPETS = [
   "### How do I authenticate with the Twitter API using Python?",
   "### How do I prevent an agent from posting automatically?",
   "### How do I post a tweet using Python with LangChain?",
-  "They are not guaranteed real time.",
+  "Xquik does not guarantee real-time delivery.",
   "### How do I handle Twitter API rate limits in Python?",
 ] as const;
 

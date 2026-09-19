@@ -31,14 +31,14 @@ services. LangGraph adds durable state, resumable jobs, and human approval.
 
 Choose a narrow route for each Twitter agent task.
 
-| Agent task            | Xquik route                   | Keep for the next step                            |
-| --------------------- | ----------------------------- | ------------------------------------------------- |
-| Search tweets         | `GET /api/v1/x/tweets/search` | Query, tweet IDs, authors, `created`, and cursor  |
-| Inspect a profile     | `GET /api/v1/x/users/{id}`    | User ID, username, biography, and follower count  |
-| Export followers      | `POST /api/v1/extractions`    | Extraction ID, status, poll URL, and export state |
-| Watch keywords        | `POST /api/v1/monitors`       | Monitor ID, event types, and next billing time    |
-| Replay monitor events | `GET /api/v1/events`          | Event IDs, `has_more`, and `next_cursor`          |
-| Post or reply         | The matching X write route    | Tweet ID, action ID, status, and charged credits  |
+| Agent task            | Xquik route                      | Keep for the next step                            |
+| --------------------- | -------------------------------- | ------------------------------------------------- |
+| Search tweets         | `GET /api/v1/x/tweets/search`    | Query, tweet IDs, authors, `created`, and cursor  |
+| Inspect a profile     | `GET /api/v1/x/users/{id}`       | User ID, username, biography, and follower count  |
+| Export followers      | `POST /api/v1/extractions`       | Extraction ID, status, poll URL, and export state |
+| Watch keywords        | `POST /api/v1/monitors/keywords` | Monitor ID, event types, and next billing time    |
+| Replay monitor events | `GET /api/v1/events`             | Event IDs, `has_more`, and `next_cursor`          |
+| Post or reply         | The matching X write route       | Tweet ID, action ID, status, and charged credits  |
 
 Use LangChain for short tool-calling conversations. Use LangGraph when work must
 resume after failures, approvals, or process restarts. Both use the same MCP
@@ -192,7 +192,7 @@ Wait for `result = await`, then read `structured_response`.
 `MultiServerMCPClient` loads the `docs`, `search`, and `execute` tools. The client is
 stateless by default. Save every cursor, job ID, and write status externally.
 
-The `execute` tool executes a bounded sandbox function. That function calls
+The `execute` tool runs a bounded sandbox function. That function calls
 `xquik.request(path, { method, body, query })`. The sandbox injects authentication.
 Use `search` first when the agent does not know a route or parameter.
 Each call uses the documented Xquik route and response fields.
@@ -459,8 +459,8 @@ idempotency key, and store the returned tweet or write-action ID.
 
 ### How do I authenticate with the Twitter API using Python?
 
-Send an Xquik API key in the MCP `x-api-key` header. X Developer keys are not
-required. Some private reads and writes require a connected Twitter account.
+Send an Xquik API key in the MCP `x-api-key` header. You need no X Developer
+keys. Some private reads and writes require a connected Twitter account.
 
 ### Should I use LangChain or LangGraph for tweet search?
 
@@ -501,7 +501,7 @@ after completion. Store the source user and requested format together.
 
 Yes. Create a monitor and webhook, then store their IDs. Replay missed events
 through `GET /api/v1/events` using `cursor` pagination.
-Monitor events are asynchronous. They are not guaranteed real time.
+Monitor events are asynchronous. Xquik does not guarantee real-time delivery.
 
 ## Next steps
 
