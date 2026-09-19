@@ -4324,7 +4324,7 @@ const FORBIDDEN_GET_USER_API_RAW_OUTPUT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_NOTIFICATIONS_API_HANDOFF_SNIPPETS = [
-  'description: "Retrieve authenticated X account notifications, store triage rows, and route mentions, verified activity, and older pages with next_cursor. See costs."',
+  `description: "Retrieve a connected X account's notifications. Filter mentions or verified activity, store triage rows, and page older rows with next_cursor. 1 credit each."`,
   "Get notifications reads the connected account inbox.",
   "Use `type=Mentions` for",
   "mention triage, `type=Verified` for verified-account activity",
@@ -4356,7 +4356,7 @@ const REQUIRED_NOTIFICATIONS_API_HANDOFF_SNIPPETS = [
   '<Card title="Private text" icon="lock-keyhole">',
   "## Poll Twitter notifications with the API",
   "### Build a Twitter API mentions queue",
-  "### Resume notification pages safely",
+  "### Resume notification pages",
   "### Choose polling or webhook delivery",
   "## Twitter notification API questions",
   "### Why are Twitter API notifications delayed?",
