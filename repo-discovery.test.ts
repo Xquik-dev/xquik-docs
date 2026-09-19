@@ -11543,7 +11543,7 @@ const REQUIRED_MELTWATER_ALTERNATIVE_SNIPPETS = [
   "search tweets, export followers, monitor accounts or keywords, send webhooks",
   "## Source-backed Meltwater scope",
   "coverage across major social networks, blogs, forums, podcasts, online news, reviews, owned channels, and public social content",
-  "Boolean-style searches, sentiment views, share-of-voice and benchmarking metrics, dashboards, reports, real-time alerts, exportable charts, visual enrichments, influencer discovery",
+  "They list dashboards, reports, real-time alerts, exportable charts, visual enrichments, influencer discovery",
   "Export API for exporting media articles and social mentions from existing searches",
   "offer a demo and publish no self-serve prices",
   "Instagram, TikTok, X, Facebook, Bluesky, LinkedIn, YouTube, and Reddit among covered channels",
