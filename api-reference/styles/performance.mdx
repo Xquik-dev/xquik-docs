@@ -214,7 +214,7 @@ func main() {
 
 ## Use an analyzed X username
 
-The `{id}` name comes from a shared style path. This handler uses it as a
+The path names the value `{id}`. The route reads it as a
 lowercase cache key, not a numeric database ID.
 
 Use an analyzed X username whose samples contain live Tweet IDs. A custom style
@@ -236,16 +236,16 @@ The route processes at most 100 cached Tweet records. Use
 The response returns one row per refreshed Tweet. Each count is cumulative at
 request time.
 
-| Field           | Meaning                         | Analytics use                                |
-| --------------- | ------------------------------- | -------------------------------------------- |
-| `id`            | Live Tweet ID                   | Join snapshots without numeric conversion.   |
-| `text`          | Current Tweet text              | Preserve the measured post with its counts.  |
-| `likeCount`     | Likes                           | Measure explicit appreciation.               |
-| `replyCount`    | Replies                         | Measure conversation activity.               |
-| `retweetCount`  | Reposts without comments        | Measure direct redistribution.               |
-| `quoteCount`    | Quote posts with comments       | Measure annotated redistribution.            |
-| `bookmarkCount` | Bookmarks                       | Measure private saves as an aggregate count. |
-| `viewCount`     | Public view or impression count | Use as exposure, not unique people.          |
+| Field           | Meaning                         | Analytics use                                  |
+| --------------- | ------------------------------- | ---------------------------------------------- |
+| `id`            | Live Tweet ID                   | Join snapshots without numeric conversion.     |
+| `text`          | Current Tweet text              | Store the measured post with its counts.       |
+| `likeCount`     | Likes                           | Count likes.                                   |
+| `replyCount`    | Replies                         | Count replies.                                 |
+| `retweetCount`  | Reposts without comments        | Count reposts without comment.                 |
+| `quoteCount`    | Quote posts with comments       | Count reposts with comment.                    |
+| `bookmarkCount` | Bookmarks                       | Count private saves. X reports only the total. |
+| `viewCount`     | Public view or impression count | Use as exposure, not unique people.            |
 
 Reposts and quote posts are separate counts. Do not add quotes into
 `retweetCount` twice.
@@ -253,7 +253,7 @@ Reposts and quote posts are separate counts. Do not add quotes into
 `viewCount` is not a unique-audience field. Repeat exposure can increase the
 count. See the [X public metric definitions](https://docs.x.com/x-api/fundamentals/metrics).
 
-## Store reproducible tweet analytics snapshots
+## Store tweet analytics snapshots
 
 The response does not provide a measurement timestamp or historical baseline.
 Record the client request time beside every successful response.
@@ -286,10 +286,10 @@ deltas only between snapshots for the same Tweet ID.
 }
 ```
 
-## Calculate useful tweet engagement rates
+## Calculate tweet engagement rates
 
-Xquik returns counts. Your application can derive rates for consistent
-comparisons. Label them as application metrics, not fields returned by Xquik.
+Xquik returns counts. Your application can derive rates to compare
+tweets. Label them as application metrics, not fields returned by Xquik.
 
 Let `views` equal `viewCount`. Use `null` when `views` equals zero.
 
@@ -298,7 +298,7 @@ Let `views` equal `viewCount`. Use `null` when `views` equals zero.
 | Public interactions | `likes + replies + reposts + quotes + bookmarks` | Total counted interaction actions |
 | Interaction rate    | `public interactions / views`                    | Counted actions per view          |
 | Conversation rate   | `replies / views`                                | Replies per view                  |
-| Amplification rate  | `(reposts + quotes) / views`                     | Redistributing posts per view     |
+| Amplification rate  | `(reposts + quotes) / views`                     | Reposts and quotes per view       |
 | Save rate           | `bookmarks / views`                              | Bookmarks per view                |
 | Like rate           | `likes / views`                                  | Likes per view                    |
 
@@ -359,12 +359,12 @@ an unavailable Tweet ID with another post during snapshot reconciliation.
 | ------ | ---------------------- | -------------------------------------- | ---------------------------------------- |
 | `200`  | None                   | Current metrics are available          | Store counts with a client timestamp.    |
 | `401`  | `unauthenticated`      | The credential is missing or invalid   | Replace the API key or bearer token.     |
-| `402`  | `insufficient_credits` | The balance cannot fund the request    | Top up, then retry intentionally.        |
+| `402`  | `insufficient_credits` | The balance cannot cover the request   | Top up, then retry.                      |
 | `404`  | `style_not_found`      | No valid cached profile matches `{id}` | Analyze the username first.              |
 | `429`  | `rate_limit_exceeded`  | The request exceeded the rate limit    | Wait for `Retry-After`, then retry once. |
 
-The response widget includes every status in the canonical OpenAPI contract.
-Do not invent partial-success or asynchronous job responses.
+The response widget lists every status in the OpenAPI contract.
+The route returns no partial-success or asynchronous job responses.
 
 ## Path parameters
 
@@ -446,7 +446,7 @@ Authentication failed. Replace the missing or invalid credential.
 }
 ```
 
-The balance cannot fund the request. Top up through the
+The balance cannot cover the request. Top up through the
 [billing page](https://dashboard.xquik.com/en/account?tab=subscription).
 
 ### 404 Style not found
@@ -498,6 +498,6 @@ Analyze Style, then retry with the returned `xUsername`.
 <Note>
 
 **Related.** [Get Style](/api-reference/styles/get) inspects cached Tweet IDs.
-[List Styles](/api-reference/styles/list) inventories analyzed profiles.
+[List Styles](/api-reference/styles/list) lists analyzed profiles.
 
 </Note>
