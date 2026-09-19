@@ -11704,7 +11704,7 @@ const REQUIRED_HYPEFURY_ALTERNATIVE_SNIPPETS = [
   "## Source-backed Hypefury scope",
   "Starter costs USD 29/month and schedules up to 1 month for 6 social accounts, including 1 X account",
   "1 Auto-DM tweet per week with a 100 DMs/day limit",
-  "Creator is USD 65/month and includes scheduling up to 3 months, 30 social accounts with 5 X accounts",
+  "It includes scheduling up to 3 months, 30 social accounts with 5 X accounts",
   "Business is USD 97/month with 60 social accounts, 10 X accounts, 300 Auto-DMs/day",
   "Agency is USD 199/month with 90 social accounts, 15 X accounts, 400 Auto-DMs/day",
   "Hypefury no longer offers a free plan, but offers a 7-day trial on Starter",
