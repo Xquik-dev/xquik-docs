@@ -11886,7 +11886,7 @@ const REQUIRED_XANGUARD_ALTERNATIVE_SNIPPETS = [
   "Telegram, REST API, HMAC-signed webhooks, and WebSocket streaming on B2B plans",
   "14 REST API endpoints, 4 delivery channels, HMAC-SHA256 webhook signatures",
   "plans from USD 19/month paid in SOL",
-  "keyword filters, mute rules, reply and repost exclusions, contract detection",
+  "keyword filters, mute rules, and reply and repost exclusions",
   "4 real-time modules in one connection: tweets, follows, profile changes, and community monitoring",
   "full untruncated text, media URLs, quoted tweet content, and contract address extraction",
   "wss://api.xanguard.tech/v1/dt/realtime/ws",
