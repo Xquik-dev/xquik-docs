@@ -187,7 +187,7 @@ The generated params map directly to the REST endpoint:
   </Card>
 </CardGroup>
 
-Project `page.tweets` into JSON Lines rows in `xquik-tweet-search.jsonl` for queues and data lakes, transform the same projected records into CSV for analysts, or produce XLSX from those rows when account teams need spreadsheets. Store `tweet_id`, `author_username`, engagement counts, `page_index`, `page_cursor`, `next_cursor`, and `has_next_page` so a worker can resume from the last saved cursor without replaying raw SDK objects. For explicit `limit` pulls, resume with the same query, filters, `queryType`, and `limit`; only `cursor` changes.
+Project `page.tweets` into JSON Lines rows in `xquik-tweet-search.jsonl` for queues and data lakes, transform the same projected records into CSV for analysts, or produce XLSX from those rows when account teams need spreadsheets. Store `tweet_id`, `author_username`, engagement counts, `page_index`, `page_cursor`, `next_cursor`, and `has_next_page` so a worker can resume from the last saved cursor without replaying raw SDK objects. For explicit `limit` pulls, resume with the same query, filters, `queryType`, and `limit`. Only `cursor` changes.
 
 ## Workflow: follower export to CSV, JSON, or XLSX
 
@@ -270,11 +270,11 @@ const xlsx = await client.extractions.exportResults(job.id, { format: "xlsx" });
 await writeFile("xquik-followers.xlsx", Buffer.from(await xlsx.arrayBuffer()));
 ```
 
-`follower_explorer` requires `targetUsername`. Store `job.id`, `targetUsername`, `estimate.estimatedResults`, and `estimate.source` before polling so a queue retry, worker restart, or agent handoff can resume the same export. `client.extractions.retrieve` returns `results`, `hasMore`, and `nextCursor`, so pass `nextCursor` back as `cursor` when you need stored JSON pages before exporting files. Use `xquik-followers.jsonl` for queue replay or warehouse loads, `xquik-followers.json` for app ingestion, `xquik-followers.csv` for CRM import, and `xquik-followers.xlsx` for analyst handoff. Map exported `User ID` or row `xUserId` as the CRM unique key. Cost: 1 credit per follower extracted or returned. Exports are free after the extraction job exists.
+`follower_explorer` requires `targetUsername`. Store `job.id`, `targetUsername`, `estimate.estimatedResults`, and `estimate.source` before polling so a queue retry, worker restart, or agent handoff can resume the same export. `client.extractions.retrieve` returns `results`, `hasMore`, and `nextCursor`. Pass `nextCursor` back as `cursor` when you need stored JSON pages before exporting files. Use `xquik-followers.jsonl` for queue replay or warehouse loads, `xquik-followers.json` for app ingestion, `xquik-followers.csv` for CRM import, and `xquik-followers.xlsx` for analyst handoff. Map exported `User ID` or row `xUserId` as the CRM unique key. Cost: 1 credit per follower extracted or returned. Exports are free after the extraction job exists.
 
 ## Workflow: tweet replies to CSV, JSON, or XLSX
 
-Use this workflow when a TypeScript worker needs every reply under one tweet as a saved extraction, JSON Lines handoff, or CSV/JSON/XLSX export. It uses `client.extractions.estimateCost`, `run`, `retrieve`, and `exportResults`.
+Use this workflow when a TypeScript worker needs every reply under one tweet as a saved extraction, JSON Lines handoff, or CSV, JSON, or XLSX export. It uses `client.extractions.estimateCost`, `run`, `retrieve`, and `exportResults`.
 
 Reuse the polling, JSON Lines pagination, and export structure from the follower workflow. Only the tool type, target field, and filenames change:
 
@@ -355,7 +355,7 @@ function createTweetHandoff(
 }
 ```
 
-Capture the durable write action from the raw response. Send a unique `Idempotency-Key`, store `id`, `request.hash`, `billing`, `result`, and `statusUrl`, then poll while `terminal` is false. Retry only when `safeToRetry` is true, using a new key.
+Capture the durable write action from the raw response. Send a unique `Idempotency-Key`. Store `id`, `request.hash`, `billing`, `result`, and `statusUrl`. Poll while `terminal` is false. Retry only when `safeToRetry` is true, using a new key.
 
 ```ts
 const tweet = (await client.x.tweets.create({
@@ -418,11 +418,11 @@ const dmHandoff = {
 process.stdout.write(`${JSON.stringify(dmHandoff)}\n`);
 ```
 
-`client.x.tweets.create` returns `tweet.tweetId` for confirmed posts or the pending write fields above when confirmation is still running. `client.x.media.upload` returns `media.mediaId` for DM attachments, and `client.x.dm.send` returns `dm.messageId` for support tickets, CRM records, queue jobs, or agent memory.
+`client.x.tweets.create` returns `tweet.tweetId` for confirmed posts or the pending write fields above when confirmation is still running. `client.x.media.upload` returns `media.mediaId` for DM attachments. `client.x.dm.send` returns `dm.messageId` for support tickets, CRM records, queue jobs, or agent memory.
 
-Keep DM body text in private systems. Shared logs, public artifacts, queue status, and agent handoffs should store `message_id`, optional `media_id`, `account`, `user_id`, and send status instead of full DM bodies. Leave `reply_to_message_id` unset even if generated SDK types expose it; the REST endpoint rejects DM reply threading.
+Keep DM body text in private systems. Shared logs, public artifacts, queue status, and agent handoffs should store `message_id`, optional `media_id`, `account`, `user_id`, and send status instead of full DM bodies. Leave `reply_to_message_id` unset even if generated SDK types expose it. The REST endpoint rejects DM reply threading.
 
-Text-only tweet and reply writes cost 30 credits. Tweet media adds 2 credits per started MB across attached files. Uploading media costs 10 credits, and sending the DM costs 10 credits. Do not pass uploaded `media.mediaId` values to `client.x.tweets.create`. That method uses `media` with public media URLs.
+Text-only tweet and reply writes cost 30 credits. Tweet media adds 2 credits per started MB across attached files. Uploading media costs 10 credits. Sending the DM costs 10 credits. Do not pass uploaded `media.mediaId` values to `client.x.tweets.create`. That method uses `media` with public media URLs.
 
 Useful endpoints:
 
@@ -500,9 +500,9 @@ The client retries connection errors, 408, 409, 429, and 5xx responses by defaul
 
 ## Cost, limits & retries
 
-Tweet search costs 1 credit per tweet returned. If remaining credits cannot cover a bounded `limit` request, the API can return fewer tweets. If 0 paid results are affordable, it returns `402 insufficient_credits`. Read calls are rate-limited, and `429` responses include `Retry-After`.
+Tweet search costs 1 credit per tweet returned. If remaining credits cannot cover a bounded `limit` request, the API can return fewer tweets. If 0 paid results are affordable, it returns `402 insufficient_credits`. Xquik rate-limits read calls. `429` responses include `Retry-After`.
 
-The client retries connection errors, 408, 409, 429, and 5xx responses by default. Handle `RateLimitError` with backoff, and fix 400, 401, 403, 404, or 422 responses before retrying.
+The client retries connection errors, 408, 409, 429, and 5xx responses by default. Handle `RateLimitError` with backoff. Fix 400, 401, 403, 404, or 422 responses before retrying.
 
 ## Pagination
 
