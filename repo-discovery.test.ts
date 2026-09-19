@@ -8800,7 +8800,7 @@ const REQUIRED_TWEET_PROFILE_API_FIELDS_SNIPPETS = [
   '"Twitter API pagination"',
   "Use this guide to get tweet metadata from Xquik responses.",
   "It maps Twitter API fields for tweets, user profiles, media files, and replies.",
-  "Quick answer: treat IDs as strings.",
+  "In short, treat IDs as strings.",
   "## Choose the object before mapping fields",
   "| Reply or thread relationship | Tweet | `conversationId` and `inReplyToId` |",
   "| Quote context | `quoted_tweet` | Nested tweet `id` |",
