@@ -11671,7 +11671,7 @@ const REQUIRED_OUTSTAND_ALTERNATIVE_SNIPPETS = [
   "`create_post`, `list_posts`, `get_post`, `get_post_analytics`, `delete_post`, `create_reply`, and `get_replies`",
   "`scheduled_at` up to 30 days ahead",
   "uses `upload_media`, HTTP PUT to the upload URL, `confirm_media_upload`, then `create_post` with the media ID",
-  "Confirmed media files are retained for 60 days",
+  "Outstand retains confirmed media files for 60 days",
   "per-account `status`, `error`, `platformPostId`, and `publishedAt`",
   "scheduled publishing starts at the scheduled time with a 30-second tolerance",
   "`post.published` and `post.error` events plus an account re-authentication event",
