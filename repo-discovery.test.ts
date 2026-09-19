@@ -11604,7 +11604,7 @@ const REQUIRED_ZERNIO_ALTERNATIVE_SNIPPETS = [
   "same API, team, webhooks, `/api/v1` endpoints, route parameters, and response schemas",
   "`getlate.dev` redirects to `zernio.com`",
   "Bearer authentication, profile creation, scheduled posts, immediate posts, and cross-posting to multiple accounts",
-  "first 2 connected accounts are free, accounts 3-10 cost USD 6/account/month, accounts 11-100 cost USD 3/account/month, accounts 101-2,000 cost USD 1/account/month",
+  "Accounts 3-10 cost USD 6/account/month, accounts 11-100 cost USD 3/account/month, and accounts 101-2,000 cost USD 1/account/month",
   "analytics, comments, DMs, ads, webhooks, MCP server, CLI, SDKs, dashboard, and team members are included per connected account",
   "Zernio bills X/Twitter usage separately at USD 0.005/read, USD 0.010/write, and USD 0.015/DM",
   "Twitter/X limitations for DMs and cached reply search",
