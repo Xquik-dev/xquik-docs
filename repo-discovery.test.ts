@@ -5208,7 +5208,7 @@ const REQUIRED_LIST_FOLLOWERS_API_HANDOFF_SNIPPETS = [
   '<Card title="Next page" icon="arrow-right">',
   '<Card title="Default page" icon="rows-3">',
   '<Card title="Saved export" icon="file-spreadsheet">',
-  "`users.length` as the row count returned for this page.",
+  "`users.length` is the row count for this page.",
   "## Which list endpoint?",
   '<Card title="List followers" icon="user-plus">',
   '<Card title="List members" icon="users">',
