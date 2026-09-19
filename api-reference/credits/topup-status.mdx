@@ -1,7 +1,7 @@
 ---
 title: "Check X API credit top-up payment status API"
 sidebarTitle: "Get top-up status"
-description: "Poll a credit checkout session for pending, paid, expired, or failed status before starting tweet, follower, monitor, or write requests. See examples."
+description: "Poll a credit checkout session for processing, paid, expired, or failed status before starting tweet, follower, monitor, or write requests. Polling is free."
 api: "GET /credits/topup/status"
 keywords: ["credits", "top-up", "checkout", "status", "billing"]
 ---
@@ -154,14 +154,14 @@ func main() {
 
 </CodeGroup>
 
-## Gate queued API work on the checkout result
+## Hold queued API work until checkout is paid
 
 Store the checkout session ID when creating a standard top-up. Associate it
 with the intended tweet, follower, reply, monitor, or write workload. Never
 substitute a session from another account or purchase.
 
-Poll this endpoint before releasing credit-dependent work. Interpret the
-returned status as a state machine:
+Poll this endpoint before you start work that needs the credits. Act on the
+returned status:
 
 - `processing` keeps the workload paused.
 - `paid` allows a fresh credit-balance check.
@@ -173,20 +173,19 @@ confirms that Xquik granted credits. Then call
 [Get Credits](/api-reference/credits/get). Compare the balance with the planned
 request cost.
 
-Keep processing polls bounded. Wait between requests and honor
-`Retry-After` after rate limiting. Several rapid polls cannot accelerate the
-payment result.
+Limit polls while the status is `processing`. Wait between requests and honor
+`Retry-After` after rate limiting. Faster polling does not speed up
+payment.
 
 Store the last observed status and check time with the session ID. This lets
 another worker resume polling without creating a second purchase.
 
-Handle terminal states explicitly. A failed or expired checkout must not be
-retried as though payment were still processing. Create a new checkout only
+`failed` and `expired` are final. Stop polling that session. Create a new checkout only
 after the user or approved billing workflow requests it.
 
-When `paid` appears, release only the workload tied to that checkout. Keep
-unrelated queues behind their own credit and approval checks. This prevents
-one top-up from silently authorizing broader activity.
+When `paid` appears, start only the workload tied to that checkout. Keep
+unrelated queues behind their own credit and approval checks. One top-up
+then cannot start unrelated work.
 
 ## Headers
 

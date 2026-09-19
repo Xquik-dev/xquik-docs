@@ -1,7 +1,7 @@
 ---
 title: "Twitter monitoring alerts: how to set Twitter alerts"
 sidebarTitle: "Update monitor"
-description: "Update Twitter account alert settings by replacing tweet and profile filters, pausing or resuming monitoring, and safely handling unavailable X profiles."
+description: "Update Twitter account alert settings by replacing tweet and profile filters or pausing and resuming a monitor. Returns 409 when the X profile is unavailable."
 api: "PATCH /monitors/{id}"
 keywords:
   [
@@ -107,8 +107,8 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 </Callout>
 
-Learn how to set Twitter alerts for one saved X profile. This Twitter
-monitoring tool replaces tweet and profile filters. It can also pause or resume
+Set Twitter alerts for one saved X profile. This route
+replaces tweet and profile filters. It can also pause or resume
 the same monitor. The response shows the updated account and event filter.
 
 This route cannot change the profile, keyword query, webhook URL, alert
@@ -389,7 +389,7 @@ Update the account filter, then compare it with
 required event type. Run [Test Webhook](/api-reference/webhooks/test) before
 waiting for account activity.
 
-Validate each signature and acknowledge valid requests quickly. Process slower
+Validate each signature, then acknowledge valid requests before slow work. Process slower
 Slack or CRM work after acknowledgment. [List Events](/api-reference/events/list)
 confirms event storage. [List Deliveries](/api-reference/webhooks/deliveries)
 confirms delivery attempts.
@@ -409,14 +409,14 @@ Join delivery attempts to stored events with `streamEventId`.
 Use this endpoint to change event scope. You can also pause or resume an
 account alert without creating another monitor ID.
 
-| Account monitor update column | Request or response source               | Verification rule                           |
-| ----------------------------- | ---------------------------------------- | ------------------------------------------- |
-| Monitor ID                    | Path `{id}` and response `id`            | Require both IDs to match.                  |
-| Event filter                  | `eventTypes` in the request and response | Match every event type.                     |
-| Polling state                 | `isActive` in the request and response   | Match the pause or resume choice.           |
-| X username                    | Response `username`                      | Confirm the tracked profile did not change. |
-| X user ID                     | Response `xUserId`                       | Preserve the stable account join.           |
-| Webhook alignment             | `GET /webhooks`                          | Match subscriptions before trusting alerts. |
+| Account monitor update column | Request or response source               | Verification rule                                    |
+| ----------------------------- | ---------------------------------------- | ---------------------------------------------------- |
+| Monitor ID                    | Path `{id}` and response `id`            | Require both IDs to match.                           |
+| Event filter                  | `eventTypes` in the request and response | Match every event type.                              |
+| Polling state                 | `isActive` in the request and response   | Match the pause or resume choice.                    |
+| X username                    | Response `username`                      | Confirm the tracked profile did not change.          |
+| X user ID                     | Response `xUserId`                       | Join account records on this ID. It does not change. |
+| Webhook alignment             | `GET /webhooks`                          | Match subscriptions before you rely on alerts.       |
 
 <CardGroup cols={2}>
 
@@ -483,7 +483,7 @@ account alert without creating another monitor ID.
   </Card>
 </CardGroup>
 
-## Change one account monitor safely
+## Change one account monitor
 
 Read the current monitor first. Send every approved `eventTypes` value. Use
 `isActive: false` for a temporary stop. Check credits before sending `true`.
@@ -509,8 +509,8 @@ This does not change past account events.
 ## Verify the first event after resuming
 
 Read the monitor and confirm `isActive: true`. Then inspect the first matching
-event's type and timestamp. Check deliveries separately. A successful PATCH is
-not delivery proof.
+event's type and timestamp. Check deliveries separately. A successful PATCH does
+not prove delivery.
 
 ## Response
 

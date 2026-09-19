@@ -1,7 +1,7 @@
 ---
 title: "Twitter scraping cost estimator & credit quote"
 sidebarTitle: "Scraping cost estimate"
-description: "Estimate API credits before exporting tweet searches, replies, followers, following, profiles, communities, or lists. Plan every extraction before it starts."
+description: "Estimate API credits before exporting tweet searches, replies, followers, following, profiles, communities, or lists. The quote is free and starts no job."
 api: "POST /extractions/estimate"
 keywords: ["extraction", "estimate", "cost", "usage", "quota"]
 ---
@@ -192,7 +192,7 @@ func main() {
 
 Request a free credit quote before starting any extraction. The response estimates results and required credits. It also checks your available credit balance. A quote never starts a scraping job.
 
-Use the same request fields for estimation and extraction. Keep `toolType`, target fields, filters, and `resultsLimit` unchanged. This pairing makes the API cost estimate useful during approval and budgeting.
+Use the same request fields for estimation and extraction. Keep `toolType`, target fields, filters, and `resultsLimit` unchanged. The quote then matches the job you run.
 
 ### Match each scraping task
 
@@ -215,7 +215,7 @@ Other supported tools estimate likes, media, mentions, quotes, reposts, threads,
 
 Narrow tweet search estimates with dates, authors, languages, engagement thresholds, or media filters. Reuse those filters when creating the extraction. Changed filters can produce a different estimate.
 
-The `source` field explains the result-count signal. Examples include `followers`, `following`, `paginationCap`, `replyCount`, `quoteCount`, `retweetCount`, and `resultsLimit`. Save this field beside the credit quote.
+The `source` field names the count behind the estimate. Examples include `followers`, `following`, `paginationCap`, `replyCount`, `quoteCount`, `retweetCount`, and `resultsLimit`. Save this field beside the credit quote.
 
 Post estimates use the supported 1,000-row cap. They skip live profile lookup.
 
@@ -227,7 +227,7 @@ Check these response fields before creating the extraction:
 - `creditsRequired` states the projected credit charge.
 - `creditsAvailable` states the current balance.
 - `allowed` confirms whether that balance covers the estimate.
-- `source` identifies the signal behind the projected result count.
+- `source` names the count behind the estimate.
 
 When `allowed` is `false`, reduce the requested result count. You can also narrow filters or add credits. Request another quote before creating the extraction.
 
@@ -302,7 +302,7 @@ When `allowed` is `false`, credits required exceed the available balance:
 { "error": "invalid_input" }
 ```
 
-Request body is missing or malformed. Ensure `toolType` and the corresponding target field are present.
+The request body is missing or malformed. Send `toolType` and its matching target field.
 
 ### 400 Invalid tool type
 
@@ -356,7 +356,7 @@ Wait for the `Retry-After` value before requesting another estimate.
 
 ## Decision handoff
 
-Treat the `200 OK` response as a planning checkpoint, not a running extraction. Store the estimate with the request you plan to run:
+A `200 OK` response is a quote. It starts no extraction. Store the estimate with the request you plan to run:
 
 ```json
 {
@@ -389,7 +389,7 @@ Treat the `200 OK` response as a planning checkpoint, not a running extraction. 
   </Card>
   <Card title="Source signal" icon="gauge">
 
-    Store `source` so operators know whether the estimate came from `replyCount`, `followers`, `resultsLimit`, `paginationCap`, or another supported signal.
+    Store `source` so operators know whether the estimate came from `replyCount`, `followers`, `resultsLimit`, `paginationCap`, or another supported count.
 
   </Card>
   <Card title="Audit fields" icon="clipboard-check">
@@ -401,7 +401,7 @@ Treat the `200 OK` response as a planning checkpoint, not a running extraction. 
 
 <Note>
 
-**Always call this endpoint before running an extraction.** This prevents avoidable credit errors. If `allowed` is `false`, Create Extraction returns a `402` error. Check your current usage on the [dashboard](https://xquik.com/dashboard).
+**Call this endpoint before every extraction.** It catches credit shortfalls before the job starts. If `allowed` is `false`, Create Extraction returns a `402` error. Check your current usage on the [dashboard](https://xquik.com/dashboard).
 
 </Note>
 

@@ -35,7 +35,7 @@ describe("get tweet draft documentation", (): void => {
         page.includes(`<ResponseField name="${field}"`),
       ),
       mediaDenied: normalizedPage.includes(
-        "The canonical draft object contains no media, reply target, or tweet ID.",
+        "The draft object contains no media, reply target, or tweet ID.",
       ),
       threadDenied: normalizedPage.includes(
         "It does not return thread order, media attachments, reply targets, or publishing results.",
@@ -77,7 +77,7 @@ describe("get tweet draft documentation", (): void => {
         '"retrieve tweet draft"',
         "## Read the tweet draft fields",
         "## Build a tweet draft review workflow",
-        "## Answer tweet draft retrieval questions",
+        "## Tweet draft retrieval questions",
       ].every((snippet) => page.includes(snippet)),
     ).toBe(true);
   });

@@ -85,7 +85,7 @@ credits and new balance are ready. `requires_action` means the client must
 complete payment authentication. `declined` means the saved method failed.
 `no_payment_method` means the account has no reusable payment method.
 
-Never print or persist `clientSecret`. Pass it directly to the payment
+Never print or store `clientSecret`. Pass it directly to the payment
 confirmation flow. Log only the outcome, added credits, and resulting balance
 after a successful charge.
 
@@ -120,15 +120,15 @@ if (result.outcome === "charged") {
 
 </CodeGroup>
 
-| Credit top-up outcome   | Response fields                | Next action                                    |
-| ----------------------- | ------------------------------ | ---------------------------------------------- |
-| Immediate charge        | `outcome: "charged"`           | Store `credits` and the updated `balance`.     |
-| Payment authentication  | `outcome: "requires_action"`   | Complete the billing confirmation flow.        |
-| Missing payment method  | `outcome: "no_payment_method"` | Create a checkout top-up instead.              |
-| Declined payment method | `outcome: "declined"`          | Ask for another payment method.                |
-| Added credits           | `credits`                      | Treat the bigint value as a string.            |
-| Updated balance         | `balance`                      | Gate the next tweet, follower, or monitor job. |
-| Confirmation secret     | `clientSecret`                 | Send it only to the billing confirmation flow. |
+| Credit top-up outcome   | Response fields                | Next action                                               |
+| ----------------------- | ------------------------------ | --------------------------------------------------------- |
+| Immediate charge        | `outcome: "charged"`           | Store `credits` and the updated `balance`.                |
+| Payment authentication  | `outcome: "requires_action"`   | Complete the billing confirmation flow.                   |
+| Missing payment method  | `outcome: "no_payment_method"` | Create a checkout top-up instead.                         |
+| Declined payment method | `outcome: "declined"`          | Ask for another payment method.                           |
+| Added credits           | `credits`                      | Treat the bigint value as a string.                       |
+| Updated balance         | `balance`                      | Check it before the next tweet, follower, or monitor job. |
+| Confirmation secret     | `clientSecret`                 | Send it only to the billing confirmation flow.            |
 
 ## Headers
 
@@ -155,7 +155,7 @@ Use hosted checkout for `declined` or `no_payment_method`.
 
 ### 200 Charged
 
-Payment succeeded immediately. Credits added to your balance.
+The payment succeeded. Xquik added the credits to your balance.
 
 <ResponseField name="outcome" type="string">
   Always `"charged"`.
@@ -195,7 +195,7 @@ Payment requires more authentication, such as 3D Secure. Use the returned client
 
 ### 200 No payment method
 
-No saved payment method on file. Redirect the user to add one in the billing portal, or use the standard [top-up endpoint](/api-reference/credits/topup) instead.
+The account has no saved payment method. Redirect the user to add one in the billing portal, or use the standard [top-up endpoint](/api-reference/credits/topup) instead.
 
 <ResponseField name="outcome" type="string">
   Always `"no_payment_method"`.
@@ -235,7 +235,7 @@ The request body is missing a numeric `dollars` value or includes too many decim
 { "error": "unauthenticated" }
 ```
 
-Missing or invalid API key.
+Missing or expired dashboard session. This route does not accept API keys.
 
 ### 429 Rate limited
 

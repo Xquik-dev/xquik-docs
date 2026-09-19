@@ -223,7 +223,7 @@ connected account's X posting rules before a separate write request.
 
 ## Read the created draft
 
-A successful request returns `201 Created` and one canonical draft object.
+A successful request returns `201 Created` and one draft object.
 
 | Field       | Meaning                     | Next action                                 |
 | ----------- | --------------------------- | ------------------------------------------- |
@@ -242,7 +242,7 @@ schedule, publishing status, or public tweet ID.
 
 ## Build a tweet draft review workflow
 
-Draft creation supports a human or agent approval checkpoint.
+Create a draft when a person or agent must approve text before publishing.
 
 1. Prepare one exact tweet text string.
 2. Add a short topic when reviewers need context.
@@ -258,7 +258,7 @@ This route provides no edit operation. Create a replacement draft when text
 must change. Keep the old ID until reviewers approve the replacement.
 
 This route also provides no idempotency key. Repeating the same successful
-request creates another draft record. Persist every `201` before creating
+request creates another draft record. Store every `201` response before creating
 again. After a lost response, list and reconcile drafts before retrying.
 
 Use [List Drafts](/api-reference/drafts/list) to reconcile duplicate records.
@@ -287,12 +287,12 @@ your publishing workflow. Do not assume the draft response contains them.
 
 ## Recover from draft creation errors
 
-| Status | Error                 | Cause                                              | Fix                                           |
-| ------ | --------------------- | -------------------------------------------------- | --------------------------------------------- |
-| `201`  | Draft object          | Xquik stored the draft                             | Save the returned ID.                         |
-| `400`  | `invalid_input`       | `text` is missing, empty, non-string, or oversized | Send 1 to 25,000 characters.                  |
-| `401`  | `unauthenticated`     | The credential is missing or invalid               | Replace the API key or bearer token.          |
-| `429`  | `rate_limit_exceeded` | Too many requests reached the route                | Wait for `Retry-After`, then retry carefully. |
+| Status | Error                 | Cause                                              | Fix                                      |
+| ------ | --------------------- | -------------------------------------------------- | ---------------------------------------- |
+| `201`  | Draft object          | Xquik stored the draft                             | Save the returned ID.                    |
+| `400`  | `invalid_input`       | `text` is missing, empty, non-string, or oversized | Send 1 to 25,000 characters.             |
+| `401`  | `unauthenticated`     | The credential is missing or invalid               | Replace the API key or bearer token.     |
+| `429`  | `rate_limit_exceeded` | Too many requests reached the route                | Wait for `Retry-After`, then retry once. |
 
 Never retry `400` without changing the body. Never retry `401` without
 replacing the credential.
@@ -300,7 +300,7 @@ replacing the credential.
 After `429`, preserve the submitted text. Retry only after the server's delay.
 Reconcile the list when the original request may have succeeded.
 
-## Answer tweet draft creation questions
+## Tweet draft creation questions
 
 ### How can I save a tweet draft through an API?
 
@@ -323,7 +323,7 @@ your publishing workflow.
 
 ### Can I attach media or a reply target?
 
-No. The canonical draft fields contain no media or reply target. Add those
+No. Draft fields contain no media or reply target. Add those
 details during a separate publishing request.
 
 ### Can I update a saved tweet draft?
@@ -442,6 +442,6 @@ Too many requests reached the route. Wait for `Retry-After` before retrying.
 
 <Note>
 
-**Next steps.** [List Drafts](/api-reference/drafts/list) to inventory saved text, [Get Draft](/api-reference/drafts/get) to retrieve one record, or [Delete Draft](/api-reference/drafts/delete) to remove it.
+**Next steps.** [List Drafts](/api-reference/drafts/list) to list saved text, [Get Draft](/api-reference/drafts/get) to retrieve one record, or [Delete Draft](/api-reference/drafts/delete) to remove it.
 
 </Note>

@@ -57,7 +57,7 @@ describe("create tweet draft documentation", (): void => {
         '"create tweet draft"',
         "## Choose the tweet draft fields",
         "## Build a tweet draft review workflow",
-        "## Answer tweet draft creation questions",
+        "## Tweet draft creation questions",
       ].every((snippet) => page.includes(snippet)),
     ).toBe(true);
   });

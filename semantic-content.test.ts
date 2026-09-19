@@ -229,7 +229,7 @@ const REQUIRED_OPERATIONAL_CONTENT = [
     file: "api-reference/monitors/list-keywords.mdx",
     snippets: [
       "| Keyword monitor inventory column | Response source | Reconciliation rule |",
-      "| X search query | `monitors[].query` | Preserve the exact stored keyword expression. |",
+      "| X search query | `monitors[].query` | Keep the exact stored query text. |",
     ],
   },
   {
@@ -251,7 +251,7 @@ const REQUIRED_OPERATIONAL_CONTENT = [
     file: "api-reference/monitors/update.mdx",
     snippets: [
       "| Account monitor update column | Request or response source | Verification rule |",
-      "| Webhook alignment | `GET /webhooks` | Match subscriptions before trusting alerts. |",
+      "| Webhook alignment | `GET /webhooks` | Match subscriptions before you rely on alerts. |",
       "How to set Twitter alerts for an existing account monitor",
       "Which Twitter alert settings can this endpoint change?",
       "How do Twitter account alert settings work in this Twitter monitoring tool?",
@@ -265,7 +265,7 @@ const REQUIRED_OPERATIONAL_CONTENT = [
     file: "api-reference/monitors/update-keyword.mdx",
     snippets: [
       "| Keyword monitor update column | Request or response source | Verification rule |",
-      "| X search query | Response `query` | Confirm the immutable query stayed unchanged. |",
+      "| X search query | Response `query` | Confirm the query did not change. |",
     ],
   },
   {
@@ -314,7 +314,7 @@ const REQUIRED_OPERATIONAL_CONTENT = [
     file: "api-reference/extractions/twitter-extraction-results.mdx",
     snippets: [
       "| Extraction result page column | Response source | Export rule |",
-      "| X user ID | `results[].xUserId` | Preserve the stable profile join. |",
+      "| X user ID | `results[].xUserId` | Join profile records on this ID. It does not change. |",
     ],
   },
   {

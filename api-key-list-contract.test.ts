@@ -72,7 +72,7 @@ describe("API key list documentation", (): void => {
         '"API key management"',
         '"list API keys"',
         "## Distinguish Xquik keys from official X credentials",
-        "## Rotate an Xquik API key safely",
+        "## Rotate an Xquik API key",
       ].every((snippet) => page.includes(snippet)),
     ).toBe(true);
   });

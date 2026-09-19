@@ -1,7 +1,7 @@
 ---
 title: "Twitter giveaway picker API & random winner draw"
 sidebarTitle: "Create draw"
-description: "Select random giveaway winners from a tweet's replies, reposts, likes, quotes, or followers with eligibility and exclusion rules. See response fields."
+description: "Select random giveaway winners from a tweet's replies. Filter by repost, follow, keyword, hashtag, mention, language, and account age. Returns backup winners."
 api: "POST /draws"
 keywords:
   [
@@ -130,7 +130,7 @@ Use this Twitter giveaway picker API to select primary and backup winners. Filte
 
 <Note>
 
-Remaining credits cap how many replies and retweeters Xquik can inspect before filters run. `totalEntries` and `validEntries` describe that inspected candidate set, not necessarily every reply on the source tweet.
+Remaining credits cap how many replies and retweeters Xquik can inspect before filters run. `totalEntries` and `validEntries` count the inspected replies. The source tweet can have more.
 
 </Note>
 
@@ -238,16 +238,16 @@ func main() {
 
 </CodeGroup>
 
-| Giveaway draw column | Request or response source | Audit rule                                 |
-| -------------------- | -------------------------- | ------------------------------------------ |
-| Draw ID              | Response `id`              | Use this public ID for review and export.  |
-| Source tweet         | Response `tweetId`         | Preserve the giveaway tweet identifier.    |
-| Inspected entries    | Response `totalEntries`    | Record the credit-bounded candidate count. |
-| Eligible entries     | Response `validEntries`    | Compare this count with every filter.      |
-| Winner order         | `winners[].position`       | Preserve the original selection order.     |
-| Winner username      | `winners[].authorUsername` | Store the selected X account.              |
-| Winning reply        | `winners[].tweetId`        | Retain the qualifying reply identifier.    |
-| Backup state         | `winners[].isBackup`       | Separate primary and backup winners.       |
+| Giveaway draw column | Request or response source | Audit rule                                |
+| -------------------- | -------------------------- | ----------------------------------------- |
+| Draw ID              | Response `id`              | Use this public ID for review and export. |
+| Source tweet         | Response `tweetId`         | Preserve the giveaway tweet identifier.   |
+| Inspected entries    | Response `totalEntries`    | Record how many replies Xquik inspected.  |
+| Eligible entries     | Response `validEntries`    | Compare this count with every filter.     |
+| Winner order         | `winners[].position`       | Preserve the original selection order.    |
+| Winner username      | `winners[].authorUsername` | Store the selected X account.             |
+| Winning reply        | `winners[].tweetId`        | Retain the qualifying reply identifier.   |
+| Backup state         | `winners[].isBackup`       | Separate primary and backup winners.      |
 
 ## Headers
 
@@ -285,7 +285,7 @@ Number of backup winners to draw. Xquik selects backup winners in case you disqu
 
 <ParamField body="uniqueAuthorsOnly" type="boolean">
 
-When `true`, each author can only win once regardless of how many replies they posted.
+When `true`, each author can win once, however many replies they posted.
 
 </ParamField>
 
@@ -412,7 +412,7 @@ Selected winners and backup winners.
 { "error": "invalid_input", "message": "Missing or malformed request body" }
 ```
 
-Missing or malformed request body. Ensure `tweetUrl` is a string.
+Missing or malformed request body. Send `tweetUrl` as a string.
 
 ### 400 Invalid tweet URL
 
@@ -439,7 +439,7 @@ Missing or invalid API key / session cookie.
 }
 ```
 
-The available balance cannot cover the minimum draw cost. A later final deduction failure also returns `insufficient_credits`. Xquik persists no draw result after that failure. Check your [credit balance](/api-reference/account/get).
+The available balance cannot cover the minimum draw cost. A later final deduction failure also returns `insufficient_credits`. Xquik stores no draw result after that failure. Check your [credit balance](/api-reference/account/get).
 
 ### 404 Not found
 

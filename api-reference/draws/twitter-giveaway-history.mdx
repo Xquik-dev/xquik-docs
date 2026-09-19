@@ -110,7 +110,7 @@ source tweet and inspected candidate counts.
   </Card>
 </CardGroup>
 
-Use list results for discovery. Use detail results for winner verification.
+Use list results to find draws. Use detail results to verify winners.
 Use exports for review, customer support, or campaign archives.
 
 <CodeGroup>
@@ -247,7 +247,7 @@ passed the configured filters. Winner rows exist only in the detail response.
 ## Build a Twitter giveaway audit handoff
 
 Store one summary row per draw. Keep the public draw ID as the join key.
-Preserve the source tweet URL instead of extracting a mutable username.
+Store the source tweet URL. Usernames can change.
 
 ```json
 {
@@ -263,9 +263,9 @@ Preserve the source tweet URL instead of extracting a mutable username.
 }
 ```
 
-Fetch detail rows before publishing past giveaway winners. Preserve winner
-position and `isBackup`. This prevents backup winners from appearing as primary
-winners in dashboards or announcements.
+Fetch detail rows before publishing past giveaway winners. Keep winner
+position and `isBackup`. Dashboards and announcements then cannot show a backup
+winner as a primary winner.
 
 ## Query parameters
 
@@ -331,7 +331,7 @@ List of draw objects ordered by creation date (newest first).
     </ResponseField>
     <ResponseField name="createdAt" type="string">
 
-      ISO 8601 timestamp of when the draw was created.
+      ISO 8601 creation timestamp.
 
     </ResponseField>
     <ResponseField name="drawnAt" type="string">
@@ -417,9 +417,9 @@ curl --fail-with-body "https://xquik.com/api/v1/draws?limit=10&cursor=MjAyNi0wMi
 
 </CodeGroup>
 
-Continue fetching pages until `hasMore` is `false`. Cursors are opaque strings. Do not parse or construct them manually.
+Continue fetching pages until `hasMore` is `false`. Cursors are opaque strings. Do not parse or build them.
 
-Use a stable loop for a complete history export:
+Use this loop to export the complete history:
 
 ```javascript Node.js
 const seenCursors = new Set();
@@ -452,7 +452,7 @@ do {
 process.stdout.write(`${JSON.stringify(draws)}\n`);
 ```
 
-Save the last accepted cursor after each durable batch. Restart from that
+Save the last accepted cursor after you store each batch. Restart from that
 cursor after a worker failure. Never build a cursor from timestamps or draw
 IDs.
 
@@ -505,7 +505,7 @@ entries that passed the draw filters. Neither field reports the winner count.
 ### How do I audit a Twitter giveaway result?
 
 Store the list summary and draw ID. Fetch draw details and preserve winner
-order. Export entries when the review needs candidate-level evidence.
+order. Export entries when the review needs every inspected reply.
 
 ### Does listing giveaway draws consume credits?
 

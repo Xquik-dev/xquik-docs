@@ -31,9 +31,9 @@ const CONTENT_REQUIREMENTS: readonly ContentRequirement[] = [
   {
     file: "api-reference/monitors/list-keywords.mdx",
     phrases: [
-      "Reconcile the entire keyword monitor portfolio",
-      "Portfolio check",
-      "Review a portfolio of tracked search rules",
+      "Reconcile every keyword monitor",
+      "Monitor list check",
+      "Review every tracked search",
       "Prepare a keyword monitor budget report",
     ],
   },
@@ -56,18 +56,18 @@ const CONTENT_REQUIREMENTS: readonly ContentRequirement[] = [
     file: "api-reference/monitors/list.mdx",
     phrases: [
       "Inventory every Twitter account monitor",
-      "complete account-monitor inventory",
+      "every account monitor in one response",
       "Reconcile an account monitor inventory",
       "Assign account monitor ownership",
-      "Prepare safe bulk account monitor cleanup",
+      "Prepare a bulk account monitor cleanup",
     ],
   },
   {
     file: "api-reference/monitors/twitter-account-monitor-status.mdx",
     phrases: [
       "Check one Twitter account activity tracker",
-      "A healthy account alert",
-      "requires four aligned layers.",
+      "A working account alert",
+      "needs 4 checks to pass.",
       "Followers and following are not monitor event types.",
       "How do Twitter analytics tools differ from monitor status?",
       "What should a Twitter account activity audit store?",
@@ -144,7 +144,7 @@ const CONTENT_REQUIREMENTS: readonly ContentRequirement[] = [
   {
     file: "api-reference/monitors/update.mdx",
     phrases: [
-      "Change one account monitor safely",
+      "Change one account monitor",
       "Prepare a reversible account monitor change",
       "Separate pausing, filtering, and deletion",
       "Verify the first event after resuming",
@@ -177,7 +177,7 @@ const CONTENT_REQUIREMENTS: readonly ContentRequirement[] = [
   },
   {
     file: "api-reference/credits/topup-status.mdx",
-    phrases: ["Gate queued API work on the checkout result"],
+    phrases: ["Hold queued API work until checkout is paid"],
   },
   {
     file: "api-reference/x-write/follow.mdx",

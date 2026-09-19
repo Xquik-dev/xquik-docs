@@ -1,7 +1,7 @@
 ---
 title: "Delete Twitter account monitor & stop monitoring"
 sidebarTitle: "Delete account monitor"
-description: "Stop one Xquik account monitor and future checks. Remove stored events in bounded batches. Poll the status URL until deletion finishes. Keep X unchanged."
+description: "Stop one Xquik account monitor and future checks. Xquik removes stored events in batches. Poll the status URL until it returns 404. The X account stays as is."
 api: "DELETE /monitors/{id}"
 keywords:
   [
@@ -84,7 +84,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 <LlmsDirective />
 
 This endpoint stops one account monitor immediately. It then removes stored
-events and linked webhook deliveries in bounded batches. The tracked X account
+events and linked webhook deliveries in batches. The tracked X account
 and its public data remain unchanged.
 
 <Warning>
@@ -231,7 +231,7 @@ The examples store a deletion receipt. Poll `verify_endpoint` while it returns
 `200`. Deletion finishes when it returns `404`. Respect `Retry-After` between
 requests.
 
-## Delete a Twitter account monitor safely
+## Before you delete an account monitor
 
 Delete only when the account monitor should never run again. Confirm the
 monitor ID, X username, X user ID, and event types first.
@@ -337,7 +337,7 @@ Monitor](/api-reference/monitors/update). Pausing preserves the monitor ID,
 profile, event filters, and stored history. It stops future checks, deliveries,
 and hourly monitor billing.
 
-Delete when monitoring is permanently retired. Deletion removes the saved
+Delete when monitoring will never resume. Deletion removes the saved
 monitor and its stored history. A replacement monitor receives another ID.
 
 | Decision       | Use it when                                         | Result                         |
@@ -364,7 +364,7 @@ monitors remain active.
 4. List monitors and confirm the ID is absent.
 5. Treat another `DELETE` response of `404` as already removed.
 
-Do not treat a network timeout as deletion proof. Confirm the monitor state
+A network timeout does not prove deletion. Confirm the monitor state
 before another deletion request. Wait for `Retry-After` after a `429` response.
 
 ## Deletion handoff
@@ -384,12 +384,12 @@ you only need to pause alerts and keep the monitor available.
 
 ## Plan retention before monitor deletion
 
-Cleanup removes stored events and linked delivery records in bounded batches.
+Cleanup removes stored events and linked delivery records in batches.
 Decide which records your team must keep before sending `DELETE`.
 
-Export required tweet events, profile events, and relationship events first. Keep
-each event's `id`, `type`, `monitorId`, `username`, and `occurredAt`. Preserve
-the complete `data` object for downstream tweet or profile processing.
+Export required tweet events and profile events first. Keep
+each event's `id`, `type`, `monitorId`, `username`, and `occurredAt`. Keep
+the complete `data` object for later tweet or profile processing.
 
 Support teams may also need webhook delivery evidence. Save delivery status,
 attempt counts, receiver responses, errors, and timestamps before deletion.
@@ -411,8 +411,8 @@ Delete account monitors and keyword monitors through their matching routes. Use
 [Delete Keyword Monitor](/api-reference/monitors/delete-keyword) for a keyword
 query. Never send a keyword monitor ID to this account monitor endpoint.
 
-The route deletes by Xquik monitor ID. It does not delete by X username. This
-boundary prevents an account name from selecting several monitor records.
+The route deletes by Xquik monitor ID. It does not delete by X username. One
+account name then cannot select several monitor records.
 
 ## Preserve tweet and profile events
 
@@ -422,11 +422,11 @@ to include older tweet and profile events.
 
 Use [Get Event](/api-reference/events/get) for every event needing full detail.
 Keep `event.id` as the stable Xquik event identifier. Keep `event.type` to
-separate tweets, followers, profile changes, and relationship changes.
+separate tweet events from profile changes.
 
 Store `occurredAt` with each event payload. It records when Xquik observed the
-event. Keep the monitor ID with every exported row. This association supports
-later reconciliation after the monitor record disappears.
+event. Keep the monitor ID with every exported row. You can then
+reconcile rows after the monitor record disappears.
 
 Validate the export before deletion. Compare exported IDs with the final list
 response. Retry incomplete pages before approving monitor removal.
@@ -495,7 +495,7 @@ Existing webhook endpoints remain available. Confirm their event subscriptions
 before connecting the replacement monitor. Run [Test Webhook](/api-reference/webhooks/test)
 to validate receiver access and response handling.
 
-Update downstream jobs with the new monitor ID. Replace stored event filters,
+Update dependent jobs with the new monitor ID. Replace stored event filters,
 verification links, and support references. The deleted ID will continue
 returning `404`.
 
@@ -509,7 +509,7 @@ returning `404`.
 6. Send `DELETE` and require `202` with `success: true`.
 7. Poll `statusUrl` and require `404 not_found`.
 8. List monitors and confirm that the ID is absent.
-9. Update downstream references to the removed monitor.
+9. Update references to the removed monitor in other systems.
 
 Pause with `isActive: false` when monitoring may resume. Delete only after the
 retention, approval, and verification steps finish.
