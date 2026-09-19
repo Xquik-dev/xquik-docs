@@ -157,7 +157,7 @@ const REQUIRED_OPERATIONAL_CONTENT = [
     file: "api-reference/x-write/like.mdx",
     snippets: [
       "| Like action column | Source | Engagement rule |",
-      "| Already liked | Converged terminal result |",
+      "| Already liked | Terminal result that reports an existing like |",
     ],
   },
   {
