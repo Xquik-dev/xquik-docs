@@ -1,7 +1,7 @@
 ---
 title: "Twitter webhook deliveries & retry history"
 sidebarTitle: "List deliveries"
-description: "Inspect a webhook's tweet, follower, profile, relationship, or keyword event delivery attempts, HTTP statuses, errors, and retry times. See event fields."
+description: "Inspect a webhook's 100 most recent tweet and profile event deliveries with attempts, HTTP statuses, errors, and timestamps. Listing deliveries is free."
 api: "GET /webhooks/{id}/deliveries"
 keywords: ["webhook", "deliveries", "attempts", "status", "retry"]
 ---
@@ -268,25 +268,25 @@ Your API key.
 
 ## Operational handoff
 
-Use this endpoint when your queue, CRM, warehouse, or alerting system needs to reconcile webhook delivery health. It returns the 100 most recent delivery records for one webhook, newest first.
+Use this endpoint when your queue, CRM, warehouse, or alerting system needs to check webhook delivery status. It returns the 100 most recent delivery records for one webhook, newest first.
 
-Map each delivery into a small incident row before sending it downstream. Keep `id`, `streamEventId`, `status`, `attempts`, receiver status, timestamps, and the chosen action, and avoid dumping the full response into logs.
+Map each delivery to a small incident row before you pass it on. Keep `id`, `streamEventId`, `status`, `attempts`, receiver status, timestamps, and the chosen action. Do not write the full response to logs.
 
 This endpoint returns delivery attempt metadata only. It does not return the
 webhook URL, event type filter, signing secret, raw payload body, raw signature,
 or full request headers.
 
-Do not depend on a `nextRetryAt` field. The response does not expose one, so route incidents from `status`, `attempts`, `lastStatusCode`, `lastError`, `createdAt`, and `deliveredAt`.
+Do not depend on a `nextRetryAt` field. The response has none, so triage incidents from `status`, `attempts`, `lastStatusCode`, `lastError`, `createdAt`, and `deliveredAt`.
 
-| Webhook delivery incident column | Response source               | Triage rule                                          |
-| -------------------------------- | ----------------------------- | ---------------------------------------------------- |
-| Delivery ID                      | `deliveries[].id`             | Use this ID for idempotency and support lookup.      |
-| Monitor event ID                 | `deliveries[].streamEventId`  | Join the delivery to `GET /events/{id}`.             |
-| Delivery state                   | `deliveries[].status`         | Route pending, failed, exhausted, or delivered rows. |
-| Attempt count                    | `deliveries[].attempts`       | Identify early, repeated, or terminal failures.      |
-| Receiver status                  | `deliveries[].lastStatusCode` | Separate HTTP failures from unreachable receivers.   |
-| Failure reason                   | `deliveries[].lastError`      | Show the latest receiver error to operators.         |
-| Delivery timing                  | `createdAt` and `deliveredAt` | Measure queue and recovery latency.                  |
+| Webhook delivery incident column | Response source               | Triage rule                                                       |
+| -------------------------------- | ----------------------------- | ----------------------------------------------------------------- |
+| Delivery ID                      | `deliveries[].id`             | Use this ID for idempotency and support lookup.                   |
+| Monitor event ID                 | `deliveries[].streamEventId`  | Join the delivery to `GET /events/{id}`.                          |
+| Delivery state                   | `deliveries[].status`         | Handle pending, failed, exhausted, and delivered rows separately. |
+| Attempt count                    | `deliveries[].attempts`       | Identify early, repeated, or terminal failures.                   |
+| Receiver status                  | `deliveries[].lastStatusCode` | Separate HTTP failures from unreachable receivers.                |
+| Failure reason                   | `deliveries[].lastError`      | Show the latest receiver error to operators.                      |
+| Delivery timing                  | `createdAt` and `deliveredAt` | Measure queue time and recovery time.                             |
 
 Store these fields for support and retry triage:
 
@@ -336,8 +336,8 @@ Store these fields for support and retry triage:
 
 ## Incident response handoff
 
-Use one compact handoff row when a delivery needs receiver-owner action. Route
-`delivered` rows out of the incident path, track `pending`, warn on repeated
+Use one row per delivery when the receiver owner must act. Ignore
+`delivered` rows, track `pending`, warn on repeated
 `failed`, and page on `exhausted`.
 
 ```json
@@ -395,7 +395,7 @@ For incident response, page on `exhausted`, warn on repeated `failed`, and ignor
 
 This endpoint returns the latest 100 delivery rows for one webhook. Use those
 rows to identify receiver failures, then use stored event pages to rebuild your
-own downstream queue after the receiver is fixed.
+own queue after you fix the receiver.
 
 ```json
 {
@@ -413,7 +413,7 @@ own downstream queue after the receiver is fixed.
 Store `nextCursor` after every event page. Continue
 `GET /api/v1/events?limit=100&cursor={nextCursor}` until `hasMore` is `false`,
 then compare each event `id` with delivery `streamEventId` values before
-replaying your own downstream work. Add `monitorId` when replaying one account
+replaying your own work. Add `monitorId` when replaying one account
 monitor, or `keywordMonitorId` when replaying one keyword monitor.
 
 ## Response
@@ -551,7 +551,7 @@ Too many requests. Wait for the `Retry-After` header before retrying.
 
   <Card title="pending" icon="clock">
 
-    Delivery is queued and waiting for the next attempt.
+    The delivery waits in the queue for its next attempt.
 
   </Card>
   <Card title="delivered" icon="circle-check">
@@ -567,7 +567,7 @@ Too many requests. Wait for the `Retry-After` header before retrying.
   </Card>
   <Card title="exhausted" icon="circle-x">
 
-    All retry attempts have been used. Xquik will not retry this delivery.
+    Xquik used every retry attempt and will not retry this delivery.
     Check the receiver endpoint, then use
     [Resume Webhook](/api-reference/webhooks/resume) if the webhook needs
     attention before new deliveries continue.
@@ -575,7 +575,7 @@ Too many requests. Wait for the `Retry-After` header before retrying.
   </Card>
 </CardGroup>
 
-Deliveries follow an exponential backoff retry schedule. After each failed attempt, the wait time increases. After the last retry, the status changes to `exhausted`. Xquik makes no further attempts.
+Xquik retries deliveries with exponential backoff. The wait grows after each failed attempt. After the last retry, the status changes to `exhausted`. Xquik makes no further attempts.
 
 <Note>
 
