@@ -11751,7 +11751,7 @@ const REQUIRED_CHIRRAPP_ALTERNATIVE_SNIPPETS = [
   "queues default to 9 am, noon, and 4 pm, and you can adjust them by day",
   "add up to 4 images to each tweet",
   "add a GIF or video, quote tweets, add emojis, and automatically number new tweets in a thread",
-  "published threads can be cross-posted to LinkedIn, but LinkedIn scheduling is not currently supported there",
+  "users can cross-post published threads to LinkedIn. It does not support LinkedIn scheduling",
   "offers LinkedIn cross-posts but not Instagram or Facebook cross-posts",
   "analytics show an engagement heatmap and can schedule against that timing",
   "show queue, week, or month views",
