@@ -1,7 +1,7 @@
 ---
 title: "Twitter webhook signature verification | monitor API"
 sidebarTitle: "Signature verification"
-description: "Verify HMAC-SHA256 signatures before processing account or keyword monitor webhooks. Preserve raw bodies and compare signatures safely. See event fields."
+description: "Verify HMAC-SHA256 signatures before processing account or keyword monitor webhooks. Keep raw bodies and compare signatures in constant time. See examples."
 keywords:
   [
     "signature verification",
@@ -17,7 +17,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 <LlmsDirective />
 
 Xquik signs every webhook delivery with HMAC-SHA256 over a string built from a
-timestamp, nonce, and the raw body. Always verify the signature AND reject
+timestamp, nonce, and the raw body. Verify the signature and reject
 stale or replayed requests before processing events.
 
 | Verification checkpoint | Exact source           | Reject when                                                  |
@@ -31,8 +31,8 @@ stale or replayed requests before processing events.
 
 ## Headers sent with every delivery
 
-Read these headers from each webhook `POST` before parsing the JSON body. The
-signature is the trust boundary. Use `Content-Type` and `User-Agent` only for
+Read these headers from each webhook `POST` before parsing the JSON body. Trust
+only the signature. Use `Content-Type` and `User-Agent` only for
 handler routing and logs.
 
 <CardGroup cols={2}>
@@ -354,7 +354,7 @@ func webhookHandler(w http.ResponseWriter, r *http.Request) {
   </Accordion>
   <Accordion title="Respond quickly">
 
-    We recommend responding within 10 seconds. Process events asynchronously if your handler is slow.
+    Respond within 10 seconds. Process events asynchronously if your handler is slow.
 
   </Accordion>
 </AccordionGroup>
@@ -363,7 +363,7 @@ func webhookHandler(w http.ResponseWriter, r *http.Request) {
 
 Xquik retries failed webhook deliveries, so your endpoint may receive the same event multiple times. Production monitor deliveries include `deliveryId` and `streamEventId`. Use `deliveryId` as the webhook delivery idempotency key. Use `streamEventId` when your system should process one monitor event only once across webhook retries or endpoint changes. Do not hash the raw request body when `deliveryId` is available.
 
-`webhook.test` deliveries include `eventType`, `data`, and `timestamp`; they omit monitor idempotency fields. Use them to verify signatures and receiver reachability, then skip production event de-dupe for the test request.
+`webhook.test` deliveries include `eventType`, `data`, and `timestamp`. They omit monitor idempotency fields. Use them to verify signatures and receiver reachability, then skip production event deduplication for the test request.
 
 ### Production store contract
 
@@ -545,6 +545,6 @@ func processSignedWebhook(w http.ResponseWriter, r *http.Request) {
 
 <Warning>
 
-The in-memory examples above work for single-process servers. In production, use a persistent store (database, Redis) to track processed delivery IDs and event IDs across restarts and multiple instances.
+The in-memory examples above work for single-process servers. In production, use a persistent store such as a database or Redis to track processed delivery IDs and event IDs across restarts and multiple instances.
 
 </Warning>

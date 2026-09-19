@@ -15,7 +15,9 @@ describe("hosted MCP idempotency contract", () => {
     const handoff = read("mcp/agent-handoff.mdx");
     const skill = read("skill.md");
 
-    expect(overview).toMatch(/required idempotency headers (?:are )?injected/);
+    expect(overview).toMatch(
+      /injects authentication and required idempotency headers|required idempotency headers (?:are )?injected/,
+    );
     expect(tools).toMatch(/required idempotency headers (?:are )?injected/);
     expect(handoff).toContain(
       "Hosted MCP injects authentication and required idempotency headers.",

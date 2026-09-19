@@ -249,7 +249,7 @@ describe("read data richness documentation", (): void => {
   it("keeps agent guidance and discovery links public", (): void => {
     expect.assertions(9);
 
-    expect(MCP_TOOLS).toContain("preserves every safe field");
+    expect(MCP_TOOLS).toContain("keeps every safe field");
     expect(MCP_TOOLS).toContain("replies_incomplete");
     expect(MCP_TOOLS).toContain("mode=complete&limit=25000");
     expect(MCP_TOOLS).toContain("/guides/tweet-profile-api-fields");
