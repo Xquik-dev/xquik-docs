@@ -471,7 +471,7 @@ const REQUIRED_OPERATIONAL_CONTENT = [
     snippets: [
       "How to leave a community on Twitter via API",
       "## Archive community posts before leaving",
-      "## How to leave Twitter community membership safely",
+      "## Leave a Twitter community step by step",
       "## Verify the Twitter community departure",
       "### Can this API cancel a pending join request?",
       "### Is a Twitter group chat the same as a community?",

@@ -1,7 +1,7 @@
 ---
 title: "How to leave a community on Twitter via API"
 sidebarTitle: "Leave community"
-description: "Learn how to leave a Twitter Community by ID with one connected account. Track every API response, keep existing posts, and verify membership removal safely."
+description: "Leave a Twitter Community by ID with one connected account. Existing posts stay. Poll the write action, then verify membership removal. Costs 10 credits."
 api: "DELETE /x/communities/{id}/join"
 keywords:
   [
@@ -291,9 +291,6 @@ func main() {
 
 ## How to leave a Twitter community with Xquik
 
-This section explains how to leave a Twitter Community through Xquik. It also
-shows how to leave Twitter Community membership while keeping the group active.
-
 Resolve and review the numeric Community ID. Call
 [Community Info](/api-reference/x/community-info) to confirm its name, rules,
 creator, and description.
@@ -333,7 +330,7 @@ No request field sends a notification. Notify members through a separate
 approved workflow when a handoff requires notice. Never claim that this API
 sends a farewell post, direct message, or moderator alert.
 
-## How to leave Twitter community membership safely
+## Leave a Twitter community step by step
 
 Create one idempotency key for this departure. Send the Community ID in the
 path. Send the connected username through `account`.
@@ -344,7 +341,7 @@ Use this sequence:
 2. Archive required Community posts and member evidence.
 3. Approve one membership-removal request.
 4. Submit `DELETE /x/communities/{id}/join` once.
-5. Store the returned action ID immediately.
+5. Store the returned action ID.
 6. Poll until the action reaches a terminal result.
 7. Verify the account no longer appears as a member.
 
@@ -385,7 +382,7 @@ Read the official [X Communities guide](https://help.x.com/en/using-x/communitie
 for current interface behavior. X can change its buttons without changing
 Xquik's documented request.
 
-## Answer common community departure questions
+## Community departure questions
 
 ### Do my community posts disappear after I leave?
 
@@ -401,7 +398,7 @@ Rejoining needs another approval and idempotency key.
 
 ### Can this API cancel a pending join request?
 
-No. This route removes existing membership. The canonical API has no
+No. This route removes existing membership. The API has no
 cancel-pending-request field or separate cancellation endpoint.
 
 ### Does leaving delete the community?
@@ -440,17 +437,17 @@ Fix malformed IDs or bodies after `400`. Replace invalid credentials after
 `401`. Restore credits after `402`. Reconnect the selected account after `403`.
 
 Check both the account and Community after `404`. A missing account differs
-from a missing Community. Preserve that distinction in operator messages.
+from a missing Community. Tell the operator which one is missing.
 
 For `409`, compare the saved account, Community ID, and request body. Keep the
 key only for identical inputs. Changed inputs need fresh approval.
 
-Preserve `422` rejection details. Do not delete the Community as a fallback.
+Save `422` rejection details. Do not delete the Community as a fallback.
 After `429`, wait for `Retry-After`. Keep the approved inputs unchanged.
 
 After `500` or `503`, inspect `safeToRetry` and the existing lifecycle. Never
-infer failure from a dropped connection. Verification prevents duplicate
-membership writes.
+infer failure from a dropped connection. Verify first to avoid a duplicate
+membership write.
 
 ## Headers
 
