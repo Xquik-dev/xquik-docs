@@ -5121,7 +5121,7 @@ const FORBIDDEN_CHECK_FOLLOWER_RENDER_RISK_SNIPPETS = [
 ] as const;
 
 const REQUIRED_CHECK_FOLLOWER_API_HANDOFF_SNIPPETS = [
-  'description: "Check whether one X user follows another in either direction for giveaway eligibility, campaign proof, CRM flags, and relationship audits. See fields."',
+  'description: "Check whether one X user follows another in either direction for giveaway eligibility, campaign proof, CRM flags, and relationship audits. 5 credits per call."',
   "Check follower verifies one known relationship without exporting a follower",
   "`isFollowing` for source-to-target proof and `isFollowedBy` for",
   "async function buildFollowCheckAudit()",
@@ -5144,11 +5144,11 @@ const REQUIRED_CHECK_FOLLOWER_API_HANDOFF_SNIPPETS = [
   '<Card title="Both directions" icon="repeat-2">',
   '<Card title="Accepted inputs" icon="at-sign">',
   "Pass a username, `@username`, or supported X or Twitter profile URL.",
-  "Numeric user IDs are not accepted.",
+  "The route does not accept numeric user IDs.",
   '<Card title="Audit row" icon="clipboard-check">',
   '<Card title="Stopped audit" icon="coins">',
-  "Canonical lowercase username resolved from `source`.",
-  "Canonical lowercase username resolved from `target`.",
+  "Lowercase username resolved from `source`.",
+  "Lowercase username resolved from `target`.",
   '"message": "Both source and target usernames are required."',
   '"error": "invalid_username"',
   "## Which verification endpoint?",
