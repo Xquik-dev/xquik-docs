@@ -6733,7 +6733,7 @@ const REQUIRED_DRAW_DETAIL_SNIPPETS = [
   '<Card title="Backup winner" icon="shield-plus">',
   '<Card title="Winning reply" icon="reply">',
   '<Card title="Winner account" icon="at-sign">',
-  "## Preserve eligibility rules separately",
+  "## Keep eligibility rules separately",
   "required repost and followed-account rules",
   "minimum account age and follower count",
   "primary, backup, and unique-author settings",
