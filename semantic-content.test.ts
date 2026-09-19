@@ -265,7 +265,7 @@ const REQUIRED_OPERATIONAL_CONTENT = [
     file: "api-reference/monitors/update-keyword.mdx",
     snippets: [
       "| Keyword monitor update column | Request or response source | Verification rule |",
-      "| X search query | Response `query` | Confirm the immutable query stayed unchanged. |",
+      "| X search query | Response `query` | Confirm the query did not change. |",
     ],
   },
   {
