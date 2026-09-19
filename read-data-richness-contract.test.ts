@@ -286,7 +286,7 @@ describe("read data richness documentation", (): void => {
   });
   it("distinguishes direct coverage from nested reply exhaustion", (): void => {
     expect.assertions(3);
-    expect(TWEET_REPLIES).toContain("It does not prove every nested reply was returned.");
+    expect(TWEET_REPLIES).toContain("It does not prove that Xquik returned every nested reply.");
     expect(TWEET_REPLIES).toContain(
       "follows queued live cursors even after meeting direct coverage",
     );
