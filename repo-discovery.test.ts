@@ -2803,7 +2803,7 @@ const REQUIRED_DRAFT_TYPES_GUIDE_SNIPPETS = [
   "interface Draft",
   "updatedAt: string;",
   "List, create, and get responses include `id`, `text`, `createdAt`, and `updatedAt`.",
-  "Optional `topic` and `goal` fields are omitted when not set. They are never `null`.",
+  "The API omits optional `topic` and `goal` fields when unset. They are never `null`.",
   "Use `nextCursor` with the `afterCursor` query parameter to fetch subsequent pages.",
 ] as const;
 
