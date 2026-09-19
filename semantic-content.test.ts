@@ -171,7 +171,7 @@ const REQUIRED_OPERATIONAL_CONTENT = [
     file: "api-reference/x-write/retweet.mdx",
     snippets: [
       "| Repost action column | Source | Distribution rule |",
-      "| Already reposted | Converged terminal result |",
+      "| Already reposted | Terminal result that reports an existing repost |",
       "| Publishing intent | API route | Required content |",
       "Use [Unretweet](/api-reference/x-write/unretweet) for an approved rollback.",
     ],
