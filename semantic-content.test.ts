@@ -251,7 +251,7 @@ const REQUIRED_OPERATIONAL_CONTENT = [
     file: "api-reference/monitors/update.mdx",
     snippets: [
       "| Account monitor update column | Request or response source | Verification rule |",
-      "| Webhook alignment | `GET /webhooks` | Match subscriptions before trusting alerts. |",
+      "| Webhook alignment | `GET /webhooks` | Match subscriptions before you rely on alerts. |",
       "How to set Twitter alerts for an existing account monitor",
       "Which Twitter alert settings can this endpoint change?",
       "How do Twitter account alert settings work in this Twitter monitoring tool?",

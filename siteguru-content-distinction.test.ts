@@ -144,7 +144,7 @@ const CONTENT_REQUIREMENTS: readonly ContentRequirement[] = [
   {
     file: "api-reference/monitors/update.mdx",
     phrases: [
-      "Change one account monitor safely",
+      "Change one account monitor",
       "Prepare a reversible account monitor change",
       "Separate pausing, filtering, and deletion",
       "Verify the first event after resuming",
