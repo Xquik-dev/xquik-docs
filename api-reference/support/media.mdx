@@ -1,7 +1,7 @@
 ---
 title: "Xquik support ticket API | upload request media"
 sidebarTitle: "Support media"
-description: "Upload or download private support ticket screenshots and videos with authenticated multipart requests and attachment IDs. Includes exact API examples."
+description: "Upload or download private support ticket screenshots and videos with authenticated multipart requests and attachment IDs. Video downloads accept 1 byte range."
 api: "GET /support/attachments/{id}"
 keywords: ["support", "attachment", "image", "video", "agent"]
 ---
@@ -141,9 +141,9 @@ One standard byte range for video seeking or resumable downloads. Example: `byte
 | Image | JPEG, PNG, GIF, WebP |          10 MB |
 | Video | MP4, MOV, WebM       |          25 MB |
 
-Each message accepts up to 4 files and 30 MB combined. Additional per-account upload limits protect service availability. A `429` response includes `Retry-After`.
+Each message accepts up to 4 files and 30 MB combined. Per-account upload limits also apply. A `429` response includes `Retry-After`.
 
-Xquik validates file signatures instead of trusting the declared content type. Rename-only format changes fail validation.
+Xquik validates file signatures and ignores the declared content type. A renamed file with the wrong format fails validation.
 
 ## Agent workflow
 
@@ -153,9 +153,9 @@ Xquik validates file signatures instead of trusting the declared content type. R
 4. Treat `failed` as unavailable and ask the user to retry.
 5. Fetch the ticket before downloading media.
 6. Use the returned authenticated `url` unchanged.
-7. Reuse the submission `Idempotency-Key` when a network retry is required.
+7. Reuse the submission `Idempotency-Key` when you retry after a network failure.
 
-Ticket and reply retries return the original media receipts. This prevents duplicate tickets, messages, and stored files after a lost response.
+Ticket and reply retries return the original media receipts. A lost response then creates no duplicate ticket, message, or stored file.
 
 Never convert the relative `url` into a public link. It requires the same account authentication as the ticket.
 
