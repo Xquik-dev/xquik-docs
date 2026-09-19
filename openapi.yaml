@@ -5187,10 +5187,9 @@ paths:
       operationId: getTweetFavoriters
       summary: List visible users who liked a tweet
       description: >
-        Returns liker profiles that X makes visible for the post. X can withhold
-        liker identities even when the post reports likes. In that case this
-        endpoint returns 424 `favoriters_unavailable` instead of a misleading
-        empty success.
+        Returns liker profiles that X makes visible. X can withhold them even
+        when the post reports likes. This endpoint then returns 424
+        `favoriters_unavailable`.
       tags:
         - Tweets
       security: [{ apiKey: [] }, { oauthBearer: [] }, {}]
@@ -5416,7 +5415,9 @@ paths:
   /x/users/{id}/likes:
     get:
       operationId: getUserLikes
-      description: Returns visible tweets liked by the selected user.
+      description: >
+        Returns liked tweets that X makes visible. X shows likes only to their
+        owner. Other accounts get 424 `likes_unavailable`.
       summary: List tweets liked by a user
       tags:
         - Users
@@ -6424,8 +6425,8 @@ paths:
       x-mcp-return-body-statuses: [404, 424]
       summary: List replies to a tweet
       description: >
-        Returns direct replies with automatic maximum coverage and pagination.
-        A retweet ID returns replies to the original post. Complete mode adds
+        Returns direct replies with automatic maximum coverage and pagination. A
+        retweet ID returns replies to the original post. Complete mode adds
         nested replies, diagnostics, and a 424 below 80% coverage.
       tags:
         - Tweets
@@ -8040,8 +8041,8 @@ components:
             message: 'X data source temporarily unavailable. Try again later.'
     FavoritersUnavailable:
       description: >
-        X reports likes for the post but does not expose the corresponding user
-        identities. Returns error code `favoriters_unavailable`.
+        X reports likes for the post and withholds the users. Returns error code
+        `favoriters_unavailable`.
       content:
         application/json:
           schema: *error-schema
@@ -10357,6 +10358,7 @@ components:
                 - invalid_payment_amount
                 - invalid_range
                 - invalid_reply_options
+                - likes_unavailable
                 - login_rate_limited
                 - login_service_unavailable
                 - missing_idempotency_key
