@@ -112,7 +112,7 @@ const CONTENT_REQUIREMENTS: readonly ContentRequirement[] = [
       "Where can I find analytics for X community posts?",
       "Can this API schedule or moderate community posts?",
       "Audit a cursor-based community feed",
-      "Preserve community tweet authors and media",
+      "Keep community tweet authors and media",
       "Compare community timeline snapshots",
       "Direct community tweet handoff",
       "Which community endpoint?",
