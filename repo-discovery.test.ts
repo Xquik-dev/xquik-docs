@@ -11477,7 +11477,7 @@ const REQUIRED_WORKFLOW_SHORTLIST_SNIPPETS = [
   '<Card title="PhantomBuster" icon="timer" href="/alternatives/phantombuster">',
   "tweet search",
   "signed monitor webhooks",
-  "CSV/JSON/XLSX exports",
+  "CSV, JSON, or XLSX exports",
 ] as const;
 
 const REQUIRED_PHANTOMBUSTER_ALTERNATIVE_SNIPPETS = [
@@ -11517,7 +11517,7 @@ const REQUIRED_ALTERNATIVES_SECTOR_SNIPPETS = [
   "[Meltwater](/alternatives/meltwater)",
   "[Talkwalker](/alternatives/talkwalker)",
   "signed webhooks",
-  "CSV/JSON/XLSX exports",
+  "CSV, JSON, or XLSX exports",
   "Test MCP tool result, tweet search records, user profile fields, and compose score.",
 ] as const;
 
