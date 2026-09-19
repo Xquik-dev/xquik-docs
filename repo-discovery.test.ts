@@ -11779,7 +11779,7 @@ const REQUIRED_BLACK_MAGIC_ALTERNATIVE_SNIPPETS = [
   "Personal at USD 16.25/month with USD 195 billed annually",
   "Professional at USD 32.41/month with USD 389 billed annually",
   "Business at USD 124.91/month with USD 1499 billed annually",
-  "Professional includes engagement tracking, active followers tracking, real-time tweet metrics, engagement heatmap, tweet replies search, quick reply, schedule tweets, schedule threads",
+  "Professional includes engagement tracking, active followers tracking, real-time tweet metrics, engagement heatmap, and tweet replies search.",
   "Business adds priority support, data export, and custom setup plus reports",
   "extra Twitter accounts are not included in Personal",
   "Professional lists additional accounts at USD 19.99/month per account or USD 179.91 annually",
