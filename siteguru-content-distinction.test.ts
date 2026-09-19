@@ -173,7 +173,7 @@ const CONTENT_REQUIREMENTS: readonly ContentRequirement[] = [
   },
   {
     file: "api-reference/support/reply.mdx",
-    phrases: ["Send a durable support reply"],
+    phrases: ["Send a support reply once"],
   },
   {
     file: "api-reference/credits/topup-status.mdx",

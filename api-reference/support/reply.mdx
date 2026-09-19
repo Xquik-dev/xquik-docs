@@ -1,7 +1,7 @@
 ---
 title: "Xquik support ticket API | reply to request"
 sidebarTitle: "Reply to ticket"
-description: "Reply to a support ticket with text, screenshots, or videos. Attach private media IDs and inspect the saved conversation message. See response fields."
+description: "Reply to a support ticket with text, screenshots, or videos. Attach private media and read the saved message receipt. An idempotency key makes retries safe."
 api: "POST /support/tickets/{id}/messages"
 keywords: ["support", "ticket", "reply", "message"]
 ---
@@ -193,13 +193,13 @@ func main() {
 
 </CodeGroup>
 
-## Send a durable support reply
+## Send a support reply once
 
 Read the ticket before composing a response. Confirm its public ID, status,
-latest sender, and most recent message. This prevents a reply from repeating
-an answer already added by another operator.
+latest sender, and most recent message. Another operator may
+have answered already.
 
-Choose the request format from the actual content. Send JSON for text only.
+Choose the request format by content. Send JSON for text only.
 Use multipart form fields when screenshots or videos are required.
 
 Write a specific message body. Reference the observed problem, completed
@@ -214,9 +214,9 @@ Generate one idempotency key after the text and attachments are final. Reuse
 it only when the identical request loses its response. Changed text or files
 require a new key.
 
-Interpret reply outcomes precisely:
+Read each reply status:
 
-- `201` means the new message was created.
+- `201` means Xquik created the new message.
 - `200` with `Idempotency-Replayed` returns the earlier message.
 - `409` means the key already represents different content.
 - `404` means the ticket is missing or belongs elsewhere.
