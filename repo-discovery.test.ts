@@ -11455,7 +11455,7 @@ const REQUIRED_MAKE_ALTERNATIVE_SNIPPETS = [
   "## Source-backed Make scope",
   "Make's official pricing page says each module action in a scenario counts as one credit, Free includes 1,000 credits/month",
   "Make's official HTTP app documentation says the HTTP app can call services without a native Make integration",
-  "offset, page, URL/link, or cursor-style pagination",
+  "offset, page, URL, link, or cursor-style pagination",
   "instant webhooks, custom webhooks, webhook queues, response handling",
   "action, search, polling trigger, instant trigger, universal, and responder module types",
   "## Monitor webhook receiver handoff",
