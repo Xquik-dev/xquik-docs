@@ -8522,7 +8522,7 @@ const REQUIRED_TWITTER_GIVEAWAY_PICKER_SNIPPETS = [
   "## How do I prove giveaway winners were eligible?",
   "Export `type=entries` and `type=winners` after the draw completes.",
   "## What should I publish with the winner?",
-  "Never publish hidden rules because hidden rules should never exist.",
+  "Never apply a rule that participants could not see.",
   'href="/guides/twitter-comment-retweet-picker"',
 ] as const;
 
