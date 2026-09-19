@@ -8810,7 +8810,7 @@ const REQUIRED_TWEET_PROFILE_API_FIELDS_SNIPPETS = [
   '<Card title="Optional fields" icon="circle-dashed">',
   '<Card title="String IDs" icon="fingerprint">',
   '<Card title="Count snapshots" icon="chart-no-axes-column">',
-  "A zero tweet metric can mean X did not report that count.",
+  "A 0 tweet metric can mean X did not report that count.",
   "## Tweet fields",
   "- Identity and publishing: `id`, `type`, `url`, `createdAt`, `lang`, and `source`",
   "- Quote and repost context: `isQuoteStatus`, `quoted_tweet`, `quotedTweetId`, `retweeted_tweet`, and `isNoteTweet`",
