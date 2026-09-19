@@ -5802,7 +5802,7 @@ const REQUIRED_TWEET_SEARCH_EXPORT_SNIPPETS = [
 
 const REQUIRED_SEARCH_TWEETS_API_HANDOFF_SNIPPETS = [
   "Search tweets by keyword, ID, or URL. Return text, authors, replies, metrics, media, and cursors for CRM, agents, or exports.",
-  "Use Search Tweets as an advanced Twitter search API for keywords, hashtags,",
+  "Search Tweets accepts keywords, hashtags,",
   "operators, dates, authors, media, and engagement filters.",
   "send a Tweet ID or X status URL",
   "with no time params",
@@ -5848,7 +5848,7 @@ const REQUIRED_SEARCH_TWEETS_API_HANDOFF_SNIPPETS = [
   "`queryType`, and `limit` unchanged when resuming with `cursor=next_cursor`.",
   "Continue while `has_next_page` is true. Deduplicate IDs and reject repeated cursors.",
   "Explicit `mode=coverage` returns retained rows when its request window expires.",
-  "Check `diagnostic.deadlineReached` and `diagnostic.complete`; partial coverage does not mean exhaustion.",
+  "Check `diagnostic.deadlineReached` and `diagnostic.complete`. Partial coverage does not mean the source ran out of tweets.",
   "For account date windows, `sinceTime` and `untilTime` append",
   "`q=from:username&sinceTime=2026-05-01&untilTime=2026-05-02` behaves like",
   "ranked search",
