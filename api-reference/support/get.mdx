@@ -1,7 +1,7 @@
 ---
 title: "Xquik support ticket API | get request details"
 sidebarTitle: "Get ticket"
-description: "Retrieve one support ticket by ID with subject, open or resolved status, complete message history, private attachments, and timestamps. See API fields."
+description: "Retrieve one support ticket by ID with its subject, status, complete message history, private attachments, and timestamps. Reading a ticket costs no credits."
 api: "GET /support/tickets/{id}"
 keywords: ["support", "ticket", "get", "messages"]
 ---
@@ -75,7 +75,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 {/* GENERATED RESPONSE EXAMPLES END */}
 <LlmsDirective />
 
-## Choose one ticket history
+## When to read one ticket
 
 Use this route when one ticket ID needs full message history. Use list for summaries across tickets. Use reply or update only when the conversation or status must change.
 
@@ -152,15 +152,15 @@ func main() {
 
 </CodeGroup>
 
-| Support ticket history column | Response source                   | Review rule                                           |
-| ----------------------------- | --------------------------------- | ----------------------------------------------------- |
-| Ticket ID                     | `publicId`                        | Match the requested ticket before processing.         |
-| Ticket subject                | `subject`                         | Keep the reported workflow visible.                   |
-| Current state                 | `status`                          | Route open, in-progress, resolved, or closed tickets. |
-| Message author                | `messages[].sender`               | Separate user and support replies.                    |
-| Message text                  | `messages[].body`                 | Preserve the chronological investigation record.      |
-| Attachment state              | `messages[].attachments[].status` | Download only ready attachments.                      |
-| Updated at                    | `updatedAt`                       | Stop polling after the expected state arrives.        |
+| Support ticket history column | Response source                   | Review rule                                                        |
+| ----------------------------- | --------------------------------- | ------------------------------------------------------------------ |
+| Ticket ID                     | `publicId`                        | Match the requested ticket before processing.                      |
+| Ticket subject                | `subject`                         | Keep the reported workflow visible.                                |
+| Current state                 | `status`                          | Handle open, in-progress, resolved, and closed tickets separately. |
+| Message author                | `messages[].sender`               | Separate user and support replies.                                 |
+| Message text                  | `messages[].body`                 | Keep messages in time order.                                       |
+| Attachment state              | `messages[].attachments[].status` | Download only ready attachments.                                   |
+| Updated at                    | `updatedAt`                       | Stop polling after the expected state arrives.                     |
 
 ## Path parameters
 
@@ -207,7 +207,7 @@ Your API key. Session cookie authentication is also supported. Generate a key fr
   Who sent the message: `user` or `support`.
 </ResponseField>
 <ResponseField name="messages[].createdAt" type="string">
-  ISO 8601 timestamp of when the message was sent.
+  ISO 8601 timestamp of when the sender posted the message.
 </ResponseField>
 <ResponseField name="messages[].attachments" type="object[]">
   Private image and video attachments.
