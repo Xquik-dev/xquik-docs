@@ -972,7 +972,7 @@ const REQUIRED_CSHARP_SDK_WORKFLOW_SNIPPETS = [
   'File.WriteAllTextAsync("xquik-followers.json", await jsonResponse.ReadAsString())',
   "new ExtractionExportResultsParams { Format = Format.Xlsx }",
   'File.Create("xquik-followers.xlsx")',
-  "Persist `job.ID`, `targetUsername`, `estimate.EstimatedResults`, and `estimate.Source` before polling",
+  "Store `job.ID`, `targetUsername`, `estimate.EstimatedResults`, and `estimate.Source` before polling",
   "map exported `User ID` or row `xUserId` as the CRM unique key.",
   "`xquik-followers.jsonl` for queue replay or warehouse loads",
   "`xquik-followers.json` for app ingestion",
