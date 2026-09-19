@@ -1,7 +1,7 @@
 ---
 title: "Twitter user likes API & liked tweet export"
 sidebarTitle: "Get user likes"
-description: "Retrieve tweets liked by one X user with authors, full text, attached media, replies, reposts, quotes, views, and cursor pagination. See request fields."
+description: "Retrieve liked tweets that X makes visible for one user, with authors, text, media, and metrics. X shows likes only to their owner. Others get a 424 error."
 api: "GET /x/users/{id}/likes"
 keywords: ["likes", "user likes", "favorites", "x api"]
 ---
@@ -115,9 +115,11 @@ import TweetResultFilterParams from "/snippets/tweet-result-filter-params.mdx";
 <TweetReadApiLinks />
 <ConnectedAccountApiLinks />
 
-## Choose liked tweets
+## When to read liked tweets
 
-Use this route for tweets liked by one user. The output is tweet rows with engagement and pagination. Use media or timeline routes when authored posts are required.
+Use this route for liked tweets that X makes visible for one user. X has shown likes only to their owner since 2024. When a profile reports likes and X hides them, the route returns `424 likes_unavailable`. It does not return an empty `200`.
+
+The output is tweet rows with engagement and pagination. Use media or timeline routes when you need posts the user wrote.
 
 <Note>
 
@@ -262,16 +264,16 @@ Store fields that support review:
 - Photo, video, or animated GIF URLs.
 - Source profile ID, cursor, and collection time.
 
-Liked tweets reflect a public account action. They do not prove agreement,
-ownership, or endorsement. Preserve the original author separately.
+A like does not prove agreement,
+ownership, or endorsement. Store the original author separately.
 
-For repeated collection, compare tweet IDs between snapshots. New IDs indicate
-newly observed likes. Missing IDs need careful interpretation because paging
-depth and source availability can change.
+For repeated collection, compare tweet IDs between snapshots. New IDs are
+newly observed likes. A missing ID proves little, because paging
+depth and like visibility can change.
 
 Use user media when the workflow needs tweets containing media from the
-profile itself. Use user tweets for the profile timeline. These feeds answer
-different questions.
+profile itself. Use user tweets for the profile timeline. Each feed returns
+different tweets.
 
 ## Compare liked-feed snapshots
 
@@ -288,33 +290,33 @@ Tweet deletion or availability changes can produce the same observation.
 For review queues, link each row to the source tweet. Keep the liking profile
 separate from the tweet author.
 
-Store reviewer labels outside the tweet response. Use explicit values such as
+Store reviewer labels outside the tweet response. Use fixed values such as
 relevant, irrelevant, or needs review.
 
-Do not overwrite the original tweet text with notes. Preserve both values in
+Do not overwrite the original tweet text with notes. Keep both values in
 separate fields.
 
-| Liked-tweet library column | Response source             | Library rule                                                |
-| -------------------------- | --------------------------- | ----------------------------------------------------------- |
-| `liked_by_x_user_id`       | Resolved source profile ID  | Keep the liking profile separate from the tweet author.     |
-| `tweet_id`                 | `tweets[].id`               | Use as the stable liked-tweet upsert key.                   |
-| `tweet_url`                | `tweets[].url`              | Open the original tweet during review.                      |
-| `text`                     | `tweets[].text`             | Preserve the original tweet body without reviewer edits.    |
-| `author_id`                | `tweets[].author.id`        | Keep the original author as a stable identity.              |
-| `author_username`          | `tweets[].author.username`  | Display the author handle observed during collection.       |
-| `created_at`               | `tweets[].createdAt`        | Preserve when the tweet was created, not when it was liked. |
-| `like_count`               | `tweets[].likeCount`        | Store the visible tweet count observed during collection.   |
-| `media_urls`               | `tweets[].media[].mediaUrl` | Preserve image, video, or animated GIF URLs.                |
-| `snapshot_id`              | Integration value           | Group liked-tweet pages from the same collection run.       |
-| `snapshot_complete`        | Integration value           | Compare disappearance only across complete snapshots.       |
-| `collected_at`             | Integration timestamp       | Keep first-seen and last-seen observations auditable.       |
+| Liked-tweet library column | Response source             | Library rule                                              |
+| -------------------------- | --------------------------- | --------------------------------------------------------- |
+| `liked_by_x_user_id`       | Resolved source profile ID  | Keep the liking profile separate from the tweet author.   |
+| `tweet_id`                 | `tweets[].id`               | Use as the stable liked-tweet upsert key.                 |
+| `tweet_url`                | `tweets[].url`              | Open the original tweet during review.                    |
+| `text`                     | `tweets[].text`             | Keep the original tweet body without reviewer edits.      |
+| `author_id`                | `tweets[].author.id`        | Keep the original author as a stable identity.            |
+| `author_username`          | `tweets[].author.username`  | Display the author handle observed during collection.     |
+| `created_at`               | `tweets[].createdAt`        | This is the tweet's creation time, not the like time.     |
+| `like_count`               | `tweets[].likeCount`        | Store the visible tweet count observed during collection. |
+| `media_urls`               | `tweets[].media[].mediaUrl` | Keep image, video, or animated GIF URLs.                  |
+| `snapshot_id`              | Integration value           | Group liked-tweet pages from the same collection run.     |
+| `snapshot_complete`        | Integration value           | Compare disappearance only across complete snapshots.     |
+| `collected_at`             | Integration timestamp       | Record first-seen and last-seen times for audits.         |
 
 | Snapshot comparison | Tweet ID condition                                        | Safe interpretation                                           |
 | ------------------- | --------------------------------------------------------- | ------------------------------------------------------------- |
 | Newly observed      | Present only in the latest complete snapshot              | The tweet was newly observed in the liked feed.               |
 | Still observed      | Present in both complete snapshots                        | The tweet remained visible at both collection times.          |
 | No longer observed  | Present only in the earlier complete snapshot             | Availability changed. Do not claim the user removed the like. |
-| Unknown             | Either snapshot is partial or uses different paging depth | Defer classification and preserve both collection records.    |
+| Unknown             | Either snapshot is partial or uses different paging depth | Do not classify. Keep both collection records.                |
 
 ## Path parameters
 
@@ -512,7 +514,7 @@ You exceeded your tier rate limit. Wait for the `Retry-After` header before retr
 { "error": "x_api_unavailable" }
 ```
 
-The normalized v1 response contract can return 424 when the read service is unavailable.
+The route returns `424 likes_unavailable` when the profile reports likes and X hides them from other accounts. Retrying does not help. It returns `424 x_api_unavailable` when the read service is unavailable.
 
 <Note>
 
