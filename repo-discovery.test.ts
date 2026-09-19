@@ -298,7 +298,7 @@ const REQUIRED_TYPESCRIPT_SDK_WORKFLOW_SNIPPETS = [
   'await writeFile("xquik-followers.csv", Buffer.from(await csv.arrayBuffer()))',
   'await writeFile("xquik-followers.json", Buffer.from(await json.arrayBuffer()))',
   'await writeFile("xquik-followers.xlsx", Buffer.from(await xlsx.arrayBuffer()))',
-  "Persist `job.id`, `targetUsername`, `estimate.estimatedResults`, and `estimate.source` before polling",
+  "Store `job.id`, `targetUsername`, `estimate.estimatedResults`, and `estimate.source` before polling",
   "pass `nextCursor` back as `cursor`",
   "`xquik-followers.jsonl` for queue replay or warehouse loads",
   "`xquik-followers.json` for app ingestion",
