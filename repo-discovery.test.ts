@@ -6667,7 +6667,7 @@ const REQUIRED_EXTRACTION_EXPORT_RESPONSE_SNIPPETS = [
   "`format=txt` returns `text/plain; charset=utf-8` with filenames like",
   '<Card title="XLSX" icon="file-spreadsheet">',
   "`application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`",
-  "Results are capped at 100,000 rows (10,000 for PDF).",
+  "Exports stop at 100,000 rows (10,000 for PDF).",
 ] as const;
 
 const REQUIRED_DRAW_HISTORY_SNIPPETS = [
@@ -6830,9 +6830,9 @@ const FORBIDDEN_DRAW_EXPORT_RESPONSE_SNIPPETS = [
 ] as const;
 
 const REQUIRED_EXTRACTION_EXPORT_COLUMNS_SNIPPETS = [
-  "File format changes serialization only. The selected columns depend on the",
-  "extraction tool type. Default exports include 29 columns; `article_extractor`",
-  "exports 10 article-focused columns.",
+  "The file format changes only the encoding. The extraction tool type decides",
+  "the columns. Default exports include 29 columns. `article_extractor`",
+  "exports 10 article columns.",
   "All extraction tools except `article_extractor` use the default result column set.",
   "Some enrichment columns may be empty when the result does not include that data.",
   '<Card title="User identity" icon="user">',
@@ -6850,7 +6850,7 @@ const REQUIRED_EXTRACTION_EXPORT_COLUMNS_SNIPPETS = [
   "`Language`, `Source`, and `Conversation ID`.",
   '<Card title="Article metadata" icon="file-text">',
   "`Article Title`, `Article Preview`, and `Article Body`.",
-  "`article_extractor` uses a shorter article-focused column set.",
+  "`article_extractor` uses a shorter column set for articles.",
   '<Card title="Article identity" icon="file-text">',
   "`Article Title`, `Cover Image`, and `Article Body`.",
   '<Card title="Author identity" icon="user">',
