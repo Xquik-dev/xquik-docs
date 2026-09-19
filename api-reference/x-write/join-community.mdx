@@ -338,8 +338,7 @@ API cannot override that relationship.
 X says an admin account must have a verified email address or phone number.
 This verified-contact requirement applies only to admins.
 
-Twitter Communities offer topic-focused spaces for members.
-Members use a dedicated space for one shared topic.
+Each Twitter Community covers one shared topic.
 The contract defines no separate community account. Store the connected account
 and Community ID as separate fields.
 
@@ -355,7 +354,7 @@ Following, Lists, group messages, and Community Notes cannot change membership.
 
 ## Plan post-join reading and publishing
 
-Joining adds one connected account to one social media Community. It does not
+Joining adds one connected account to one Community. It does not
 create posts, invitations, or moderator changes.
 
 Read [Community Tweets](/api-reference/x/community-tweets) after confirmation.
@@ -376,16 +375,14 @@ approval.
 
 Keep enough evidence to explain every membership request.
 
-| Approval evidence  | Store                                                    | Purpose                                              |
-| ------------------ | -------------------------------------------------------- | ---------------------------------------------------- |
-| Intended Community | Numeric ID, display name, and direct URL                 | Prevent membership in a similarly named Community    |
-| Connected account  | Username, stable user ID, and connection status          | Bind consent to one Twitter account                  |
-| Membership review  | Mode, rules, and moderator status                        | Explain an open, pending, or rejected request        |
-| API action         | Idempotency key, action ID, status URL, and final status | Prevent duplicate writes and preserve recovery state |
+| Approval evidence  | Store                                                    | Purpose                                                         |
+| ------------------ | -------------------------------------------------------- | --------------------------------------------------------------- |
+| Intended Community | Numeric ID, display name, and direct URL                 | Prevent membership in a similarly named Community               |
+| Connected account  | Username, stable user ID, and connection status          | Bind consent to one Twitter account                             |
+| Membership review  | Mode, rules, and moderator status                        | Explain an open, pending, or rejected request                   |
+| API action         | Idempotency key, action ID, status URL, and final status | Prevent duplicate writes and keep the state needed for recovery |
 
-## How to join Twitter community membership safely
-
-The steps below explain how to join Twitter Community membership through Xquik.
+## Join a Twitter community step by step
 
 1. Review the numeric Community ID and connected account.
 2. Create one pair-specific `Idempotency-Key`.
@@ -404,7 +401,7 @@ account, Community ID, or approval requires a new key.
 ## Join communities in controlled batches
 
 Assign one `Idempotency-Key` per approved pair. Process retries serially. Record
-each result, action ID, and approval in one durable ledger row. Pause only the
+each result, action ID, and approval in one stored row. Pause only the
 affected account after errors.
 
 ## Verify visible membership
@@ -429,7 +426,7 @@ Community membership is not a private audience. A Community post can appear on
 the Community page, its author's profile, timelines, and search. Review that
 visibility before approving a post.
 
-## Answer common Twitter community questions
+## Twitter community questions
 
 ### How to join a Twitter community with Xquik?
 
@@ -440,7 +437,7 @@ action, then verify Community Members.
 
 For an invite-only Community, X still requires an invitation.
 Confirm you are logged in to your account on X. This endpoint cannot accept
-invitations. Preserve any `422` rejection.
+invitations. Save any `422` rejection.
 
 ### What happens when you join a Twitter community?
 
@@ -502,11 +499,11 @@ Join Community cannot moderate, invite, or grow members.
 
 Fix input after `400`. Replace credentials after `401`. Restore credits after
 `402`. Reconnect the account after `403`. Check both IDs after `404`. Reuse the
-same key only for identical input after `409`. Preserve `422` rejections. Honor
+same key only for identical input after `409`. Save `422` rejections. Honor
 `Retry-After` after `429`. Inspect `safeToRetry` after `500` or `503`.
 
 If a connection drops after submission, poll the existing action. Never create
-a replacement action from network uncertainty. Preserve the original action
+a replacement action after a network error. Keep the original action
 after `409`. Store X membership rejections after `422`. Wait for `Retry-After`
 after `429`.
 
