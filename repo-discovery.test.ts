@@ -11852,7 +11852,7 @@ const REQUIRED_POSTWISE_ALTERNATIVE_SNIPPETS = [
   "5 social accounts, 1,000 AI-generated posts/month, 12 months scheduling",
   "The top visible plan costs USD 97/month",
   "no social-account cap, no AI-generated-post cap, no scheduling cap",
-  "GhostWriter AI on all plans, Basic, Advanced, and Enterprise-grade analytics tiers",
+  "It lists Basic, Advanced, and Enterprise-grade analytics tiers",
   "annual subscriptions receive a 20% discount",
   "the 7-day trial converts to the selected plan",
   "AI content creation, scheduling across platforms, viral post repurposing, engagement tracking, and a multi-platform dashboard",
