@@ -3188,7 +3188,7 @@ const REQUIRED_UNFOLLOW_TWITTER_API_SNIPPETS = [
   "Each request unfollows 1 target user ID.",
   "Each request names 1 connected X account.",
   "[Unfollow User endpoint](https://docs.x.com/x-api/users/unfollow-user)",
-  "**20 requests per minute** and **400 per day**",
+  "20 requests per minute and 400 per day",
   "const unfollowReceipt = await response.json();",
   "unfollow_receipt = response.json()",
   "var unfollowReceipt map[string]interface{}",
