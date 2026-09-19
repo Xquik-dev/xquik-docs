@@ -3461,7 +3461,7 @@ const REQUIRED_X_ACCOUNTS_BULK_RETRY_SNIPPETS = [
   "Bulk retry clears only `transient` and `automated` login-failure states.",
   "It does not update passwords, TOTP secret keys, passkeys, email challenges, locked accounts, or suspended accounts.",
   "Use re-authentication or reconnect for credential and 2FA fixes",
-  "resolve locks or suspensions on X first.",
+  "Resolve locks or suspensions on X first.",
   "## What gets retried",
   "<CardGroup cols={1}>",
   '<Card title="Xquik clears temporary issues" icon="refresh-cw">',
