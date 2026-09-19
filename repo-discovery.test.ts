@@ -7493,7 +7493,7 @@ const REQUIRED_WEBHOOK_TEST_API_SNIPPETS = [
   "`X-Xquik-Nonce` on the raw request body",
   "The test endpoint does not return or rotate the signing secret.",
   "[Create Webhook](/api-reference/webhooks/create)",
-  "keep raw request bodies, raw signatures, and full",
+  "Keep raw request bodies, raw signatures, and full",
   "headers out of deployment logs.",
   "`webhook.test` payloads include `eventType`, `data`, and `timestamp`.",
   "They do not include `deliveryId` or `streamEventId`.",
