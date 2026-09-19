@@ -6006,7 +6006,7 @@ const REQUIRED_BOOKMARKS_API_HANDOFF_SNIPPETS = [
   "[Bookmark Folders](/api-reference/x/bookmark-folders)",
   '<Card title="Cursor checkpoint" icon="arrow-right">',
   '<Card title="Account-scoped queue" icon="lock-keyhole">',
-  "Keep saved-tweet rows in account-scoped research, CRM, or agent memory",
+  "Store saved-tweet rows only in systems scoped to that account.",
   "## Which saved-feed endpoint?",
   '<Card title="Saved tweets" icon="bookmark">',
   '<Card title="Bookmark folders" icon="folder">',
