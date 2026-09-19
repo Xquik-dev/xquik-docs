@@ -6596,7 +6596,7 @@ const REQUIRED_EXTRACTION_ESTIMATE_HANDOFF_SNIPPETS = [
   "A quote never starts a scraping job.",
   "The estimator adjusts `creditsRequired` for that projected count.",
   "## Decision handoff",
-  "Treat the `200 OK` response as a planning checkpoint, not a running extraction.",
+  "A `200 OK` response is a quote. It starts no extraction.",
   '"checkpoint_type": "extraction_estimate"',
   '"estimatedResults": 500',
   '"creditsRequired": "500"',
