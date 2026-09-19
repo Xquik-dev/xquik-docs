@@ -11686,7 +11686,7 @@ const REQUIRED_SOCIALCRAWL_ALTERNATIVE_SNIPPETS = [
   "`engagement_rate`, `language`, `content_category`, and `estimated_reach`",
   "requests use the `x-api-key` header",
   "`401 MISSING_API_KEY` or `401 INVALID_API_KEY`",
-  "accounts can keep up to 5 active keys",
+  "Accounts can keep up to 5 active keys",
   "credit-based pay-as-you-go billing with a 50 concurrent request ceiling per credential",
   "Standard requests cost 1 credit across 84 endpoints, Advanced requests cost 5 credits across 18 endpoints, and Premium requests cost 10 credits across 6 endpoints",
   "`success`, `platform`, `endpoint`, `data`, `credits_used`, `credits_remaining`, `request_id`, and `cached`",
