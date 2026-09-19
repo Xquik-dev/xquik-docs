@@ -64,7 +64,7 @@ handler routing and logs.
   <Card title="Sender logs" icon="radio">
 
     `User-Agent` is `xquik-webhooks/1.0 (+https://xquik.com)`. Log it for
-    diagnostics, but never trust it instead of the signature.
+    diagnostics. Never trust it instead of the signature.
 
   </Card>
 </CardGroup>
@@ -130,7 +130,7 @@ idempotency, and incident routing visible in one review record.
 
   <Card title="Secret hygiene" icon="shield-check">
 
-    Store the webhook secret once, use it only for HMAC checks, and never write
+    Store the webhook secret once. Use it only for HMAC checks. Never write
     it to logs, queues, traces, or incident rows.
 
   </Card>
@@ -361,16 +361,16 @@ func webhookHandler(w http.ResponseWriter, r *http.Request) {
 
 ## Idempotency
 
-Xquik retries failed webhook deliveries, so your endpoint may receive the same event multiple times. Production monitor deliveries include `deliveryId` and `streamEventId`. Use `deliveryId` as the webhook delivery idempotency key. Use `streamEventId` when your system should process one monitor event only once across webhook retries or endpoint changes. Do not hash the raw request body when `deliveryId` is available.
+Xquik retries failed webhook deliveries. Your endpoint may receive the same event multiple times. Production monitor deliveries include `deliveryId` and `streamEventId`. Use `deliveryId` as the webhook delivery idempotency key. Use `streamEventId` when your system should process one monitor event only once across webhook retries or endpoint changes. Do not hash the raw request body when `deliveryId` is available.
 
-`webhook.test` deliveries include `eventType`, `data`, and `timestamp`. They omit monitor idempotency fields. Use them to verify signatures and receiver reachability, then skip production event deduplication for the test request.
+`webhook.test` deliveries include `eventType`, `data`, and `timestamp`. They omit monitor idempotency fields. Use them to verify signatures and receiver reachability. Skip production event deduplication for the test request.
 
 ### Production store contract
 
 Use a persistent store before acknowledging production events. Scope nonce,
-delivery, and event keys by webhook ID so retries for one endpoint never block
+delivery, and event keys by webhook ID. Retries for one endpoint then never block
 another endpoint. Duplicate `deliveryId` or `streamEventId` checks should
-return `2xx` after verification, because the receiver has already accepted the
+return `2xx` after verification. The receiver has already accepted the
 work.
 
 ```json
@@ -400,8 +400,8 @@ work.
 Keep raw request bytes only for signature verification. Store the nonce cache
 marker, delivery key, event key, join route, and processing status in the
 shared table or queue. Return `2xx` only after verification and a durable queue
-write. Move slow enrichment, exports, CRM sync, or alerting to an async worker
-so the receiver can finish within the 10-second delivery timeout.
+write. Move slow enrichment, exports, CRM sync, or alerting to an async worker.
+The receiver can then finish within the 10-second delivery timeout.
 
 <CodeGroup>
 
