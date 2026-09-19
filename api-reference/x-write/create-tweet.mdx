@@ -1,7 +1,7 @@
 ---
 title: "Twitter post API for tweet & reply automation"
 sidebarTitle: "Create tweet"
-description: "Post tweets and replies from a connected X account with public image URLs or 1 MP4 video URL, write-status polling, and audit handoff. See action fields."
+description: "Post tweets and replies from a connected X account with public image URLs or 1 MP4 video URL. Poll the write status. Text-only posts cost 30 credits each."
 api: "POST /x/tweets"
 keywords:
   [
@@ -189,15 +189,15 @@ import WriteActionLifecycleResponse from "/snippets/write-action-lifecycle-respo
 </Callout>
 
 Create a tweet or reply from one connected X account.
-This Twitter API for posting tweets accepts text and public media URLs.
+The route accepts text and public media URLs.
 Put public HTTPS images or one MP4 URL in `media`.
 When `POST /x/media` hosts a local file, use its `mediaUrl`.
 Never send `mediaId` or `media_ids` to this endpoint.
 Send a unique `Idempotency-Key`.
-Store the durable action.
+Store the returned write action.
 Poll `statusUrl` while `terminal` is `false`.
 X's [Create Post guide](https://docs.x.com/x-api/posts/create-post) covers its separate endpoint.
-Use Xquik authentication. Store its durable write fields.
+Authenticate with Xquik credentials. Store the write fields listed below.
 
 <CodeGroup>
 
@@ -377,7 +377,7 @@ Choose among 6 tweet request formats. Include only the fields required below.
 | Video tweet     | `account`, optional `text`, and 1 MP4 URL in `media`         | Keep the public MP4 at 100 MB or less. Do not mix video and images.    |
 | Note tweet      | `account`, `text`, and `is_note_tweet: true`                 | Keep note tweet text at 25,000 characters or fewer.                    |
 
-Create one `Idempotency-Key` for each automatic Twitter posting request.
+Create one `Idempotency-Key` for each posting request.
 Reuse that key only when replaying the same network request. A new
 tweet, reply, caption, media URL, account, or community requires a new key.
 
@@ -393,7 +393,7 @@ See [write error recovery](/guides/error-handling).
 
 ## Store the tweet write receipt
 
-Persist the write receipt before another worker posts. Keep these field groups:
+Store the write receipt before another worker posts. Keep these field groups:
 
 - Store `id` and `request.hash` for request matching.
 - Store `account` and `target` for the selected account and destination.
@@ -409,7 +409,7 @@ For local files, call [Upload Media](/api-reference/x-write/upload-media) first.
 Pass its returned `mediaUrl` in `media`.
 Send up to 4 image URLs or exactly 1 MP4 URL.
 Keep the MP4 at 100 MB or less.
-Never send `media_ids`; that field is for DMs only.
+Never send `media_ids`. That field is for DMs only.
 Attached media adds 2 credits per started MB across all files.
 
 <CodeGroup>

@@ -2859,7 +2859,7 @@ const REQUIRED_ERROR_HANDLING_WRITE_STATUS_SNIPPETS = [
 ] as const;
 
 const REQUIRED_CREATE_TWEET_API_SNIPPETS = [
-  "Post tweets and replies from a connected X account with public image URLs or 1 MP4 video URL, write-status polling, and audit handoff",
+  "Post tweets and replies from a connected X account with public image URLs or 1 MP4 video URL. Poll the write status.",
   '"post tweet replies"',
   "`reply_to_tweet_id`",
   "`media`",
@@ -2867,10 +2867,10 @@ const REQUIRED_CREATE_TWEET_API_SNIPPETS = [
   "Put public HTTPS images or one MP4 URL in `media`.",
   "Never send `mediaId` or `media_ids` to this endpoint.",
   "Send a unique `Idempotency-Key`.",
-  "Store the durable action.",
+  "Store the returned write action.",
   "Poll `statusUrl` while `terminal` is `false`.",
   "X's [Create Post guide](https://docs.x.com/x-api/posts/create-post) covers its separate endpoint.",
-  "Use Xquik authentication. Store its durable write fields.",
+  "Authenticate with Xquik credentials. Store the write fields listed below.",
   "Choose among 6 tweet request formats.",
   "Check the account can post in that X Community.",
   "publishes 1 tweet on X.",
@@ -2900,7 +2900,7 @@ const REQUIRED_CREATE_TWEET_API_SNIPPETS = [
   "## Post with public media URLs",
   "Use `media` for an image or MP4 at a public HTTPS URL.",
   "Send up to 4 image URLs or exactly 1 MP4 URL.",
-  "Never send `media_ids`; that field is for DMs only.",
+  "Never send `media_ids`. That field is for DMs only.",
   '"account": "brand_account"',
   '"media": ["https://cdn.example.com/product-screenshot.png"]',
   '"media": ["https://cdn.example.com/product-demo.mp4"]',
