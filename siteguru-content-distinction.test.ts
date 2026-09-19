@@ -31,9 +31,9 @@ const CONTENT_REQUIREMENTS: readonly ContentRequirement[] = [
   {
     file: "api-reference/monitors/list-keywords.mdx",
     phrases: [
-      "Reconcile the entire keyword monitor portfolio",
-      "Portfolio check",
-      "Review a portfolio of tracked search rules",
+      "Reconcile every keyword monitor",
+      "Monitor list check",
+      "Review every tracked search",
       "Prepare a keyword monitor budget report",
     ],
   },

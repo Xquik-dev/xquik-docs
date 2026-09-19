@@ -229,7 +229,7 @@ const REQUIRED_OPERATIONAL_CONTENT = [
     file: "api-reference/monitors/list-keywords.mdx",
     snippets: [
       "| Keyword monitor inventory column | Response source | Reconciliation rule |",
-      "| X search query | `monitors[].query` | Preserve the exact stored keyword expression. |",
+      "| X search query | `monitors[].query` | Keep the exact stored query text. |",
     ],
   },
   {
