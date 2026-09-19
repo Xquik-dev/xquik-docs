@@ -11567,7 +11567,7 @@ const REQUIRED_TALKWALKER_ALTERNATIVE_SNIPPETS = [
   "search tweets, export followers, monitor accounts or keywords, send webhooks",
   "## Source-backed Talkwalker scope",
   "tracking keywords and mentions across 30 social networks, 150+ million websites, videos, images, podcasts, reviews, surveys, and support interactions",
-  "visual listening, customizable dashboards, real-time alerts, conversation clusters, sentiment analysis, AI summaries, virality maps",
+  "visual listening, customizable dashboards, real-time alerts, conversation clusters, and sentiment analysis",
   "Social Listening, Social Benchmarking, Media Monitoring, Customer Feedback Analytics",
   "Consumer intelligence, social listening, and social media analytics platform.",
   "tweet search, follower exports, monitor events, signed webhook payloads, CSV/JSON/XLSX exports",
