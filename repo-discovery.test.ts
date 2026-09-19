@@ -11748,7 +11748,7 @@ const REQUIRED_CHIRRAPP_ALTERNATIVE_SNIPPETS = [
   "import article text with the browser extension",
   "autosave drafts",
   "schedule at a specific date and time, add content to a fixed queue, share next, or pick a scheduled slot",
-  "queues default to 9 am, noon, and 4 pm and can be adjusted by day",
+  "queues default to 9 am, noon, and 4 pm, and you can adjust them by day",
   "add up to 4 images to each tweet",
   "add a GIF or video, quote tweets, add emojis, and automatically number new tweets in a thread",
   "published threads can be cross-posted to LinkedIn, but LinkedIn scheduling is not currently supported there",
