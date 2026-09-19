@@ -6765,7 +6765,7 @@ const FORBIDDEN_DRAW_DETAIL_SNIPPETS = [
 const REQUIRED_DRAW_EXPORT_RESPONSE_SNIPPETS = [
   'title: "Twitter giveaway CSV export API & winner lists"',
   'sidebarTitle: "Export draw"',
-  'description: "Export selected Twitter giveaway winners or inspected reply entries as CSV, XLSX, JSON, Markdown, PDF, or text. Preserve columns, order, and filenames."',
+  'description: "Export selected Twitter giveaway winners or inspected reply entries as CSV, XLSX, JSON, Markdown, PDF, or text. Keep all columns, order, and filenames."',
   'keywords: [ "Twitter giveaway CSV", "giveaway winner export", "Twitter giveaway winner list", "X giveaway results export", "contest entries export", "download giveaway winners", "giveaway audit file", ]',
   "## Export Twitter giveaway winners or entries",
   "Use `type=winners` for selected primary and backup winners.",
