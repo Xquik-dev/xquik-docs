@@ -1,7 +1,7 @@
 ---
 title: "Tweet writing style API for cached X profile samples"
 sidebarTitle: "Analyze & cache style"
-description: "Cache recent tweet writing samples for one X username. Reuse fresh profiles, refresh stale samples, inspect authors, timestamps, and exact Tweet IDs safely."
+description: "Cache recent tweet writing samples for one X username. Reuse fresh profiles, refresh stale samples, and read authors, timestamps, and exact Tweet IDs."
 api: "POST /styles"
 keywords:
   [
@@ -220,12 +220,12 @@ func main() {
 
 The HTTP status explains the cache action. Always inspect `fetchedAt` too.
 
-| Status | Cache condition                                   | X request | Credit result                 |
-| ------ | ------------------------------------------------- | --------- | ----------------------------- |
-| `200`  | Profile is under 7 days old                       | No        | Free cached response          |
-| `200`  | Profile is older, but refresh cannot be funded    | No        | Existing stale cache returned |
-| `201`  | Profile is missing or older and refresh is funded | Yes       | 1 credit per returned Tweet   |
-| `402`  | No cache exists and refresh cannot be funded      | No        | `no_cached_style` returned    |
+| Status | Cache condition                                          | X request | Credit result                 |
+| ------ | -------------------------------------------------------- | --------- | ----------------------------- |
+| `200`  | Profile is under 7 days old                              | No        | Free cached response          |
+| `200`  | Profile is older, and credits cannot cover a refresh     | No        | Existing stale cache returned |
+| `201`  | Profile is missing or older, and credits cover a refresh | Yes       | 1 credit per returned Tweet   |
+| `402`  | No cache exists, and credits cannot cover a refresh      | No        | `no_cached_style` returned    |
 
 A `200` response does not guarantee a recent refresh. Compare `fetchedAt` with
 your freshness policy before using the samples.
@@ -250,7 +250,7 @@ The request body accepts one field only:
 | ---------- | ------ | -------- | ------------------------------ |
 | `username` | string | Yes      | Send the X handle without `@`. |
 
-Missing, empty, or non-string values return `400 invalid_input`. Preserve the
+Missing, empty, or non-string values return `400 invalid_input`. Keep the
 returned `xUsername` value for Get, Compare, Delete, and Performance requests.
 
 ## Read the cached tweet writing samples
@@ -281,8 +281,8 @@ Each public `tweets[]` entry contains these fields:
 | `authorUsername` | No       | Tweet author's X username  |
 | `createdAt`      | No       | ISO 8601 publication time  |
 
-Keep Tweet IDs as strings. JavaScript numbers cannot safely represent every X
-Tweet ID.
+Keep Tweet IDs as strings. JavaScript numbers cannot represent every X
+Tweet ID exactly.
 
 The public Style Profile contract does not include cached media objects. Use a
 Tweet or media endpoint when your workflow requires images, videos, or GIFs.
@@ -314,7 +314,7 @@ features before assigning subjective voice or tone labels.
 | Post length     | Median `text.length`                 | Does the profile prefer short tweets?      |
 | Questions       | Samples containing `?`               | How often does the profile invite replies? |
 | Links           | Samples containing an HTTP URL       | How often does it cite another page?       |
-| Hashtags        | Count `#` tokens                     | Does it label topics explicitly?           |
+| Hashtags        | Count `#` tokens                     | Does it label topics with hashtags?        |
 | Openings        | Compare first sentences              | Which hooks recur?                         |
 | Vocabulary      | Count repeated meaningful words      | Which specific terms define the sample?    |
 | Cadence         | Compare available `createdAt` values | How closely were samples published?        |
@@ -322,13 +322,13 @@ features before assigning subjective voice or tone labels.
 Do not infer future engagement from writing samples. Refresh public metrics
 through Analyze Performance when outcome comparisons are required.
 
-## Build a safe Twitter brand voice workflow
+## Build a Twitter brand voice workflow
 
 1. Set the [X identity](/api-reference/account/x-identity) before refreshing.
 2. Send one public X username to this endpoint.
 3. Branch on HTTP `200` or `201`.
 4. Store `xUsername`, `fetchedAt`, and `tweetCount`.
-5. Preserve every Tweet ID and text value.
+5. Store every Tweet ID and text value.
 6. Review observable patterns with a human editor.
 7. Keep current product claims out of copied historical tweets.
 
@@ -356,16 +356,16 @@ cache with `200`. It does not delete the existing writing samples.
 
 ## Handle style cache errors
 
-| Status | Error                 | Meaning                                      | Recovery                                 |
-| ------ | --------------------- | -------------------------------------------- | ---------------------------------------- |
-| `200`  | None                  | Cached profile returned                      | Inspect `fetchedAt` before use.          |
-| `201`  | None                  | Profile fetched and stored                   | Record `tweetCount` for billing.         |
-| `400`  | `invalid_input`       | Username is missing, empty, or not a string  | Send one username string.                |
-| `401`  | `unauthenticated`     | Credential is missing or invalid             | Replace the API key or bearer token.     |
-| `402`  | `no_cached_style`     | No cache exists and refresh cannot be funded | Top up or save approved examples.        |
-| `429`  | `rate_limit_exceeded` | Request exceeded the rate limit              | Wait for `Retry-After`, then retry once. |
+| Status | Error                 | Meaning                                             | Recovery                                 |
+| ------ | --------------------- | --------------------------------------------------- | ---------------------------------------- |
+| `200`  | None                  | Cached profile returned                             | Inspect `fetchedAt` before use.          |
+| `201`  | None                  | Profile fetched and stored                          | Record `tweetCount` for billing.         |
+| `400`  | `invalid_input`       | Username is missing, empty, or not a string         | Send one username string.                |
+| `401`  | `unauthenticated`     | Credential is missing or invalid                    | Replace the API key or bearer token.     |
+| `402`  | `no_cached_style`     | No cache exists, and credits cannot cover a refresh | Top up or save approved examples.        |
+| `429`  | `rate_limit_exceeded` | Request exceeded the rate limit                     | Wait for `Retry-After`, then retry once. |
 
-The response widget includes every status in the canonical OpenAPI contract.
+The response widget lists every status in the OpenAPI contract.
 
 ## Headers
 
@@ -396,7 +396,7 @@ Non-empty X username without `@`. Xquik lowercases the value.
 
 ### 200 OK
 
-Returns a cached profile. It can be fresh or an unfunded stale fallback.
+Returns a cached profile. It can be fresh, or stale when credits cannot cover a refresh.
 
 ### 201 Created
 
@@ -445,7 +445,7 @@ Authentication failed. Replace the missing or invalid credential.
 }
 ```
 
-No cache exists and the refresh cannot be funded. Top up through the
+No cache exists, and credits cannot cover a refresh. Top up through the
 [billing page](https://dashboard.xquik.com/en/account?tab=subscription), or
 save approved tweet examples with [Save Custom Style](/api-reference/styles/save).
 
@@ -473,18 +473,18 @@ does not return generated style labels or scores.
 
 ### Why did analyze style return 200 instead of 201?
 
-The route reused an existing cache. Check `fetchedAt`. A `200` can also be a
-stale fallback when refresh funding is unavailable.
+The route reused an existing cache. Check `fetchedAt`. A `200` can also return
+a stale cache when credits cannot cover a refresh.
 
 ### Can I force a Twitter style refresh?
 
-No force parameter exists. Fresh profiles return from cache. Delete and
-recreate a profile only when that destructive workflow is appropriate.
+No force parameter exists. Fresh profiles return from cache. To refresh early, delete the
+profile and create it again. Deletion is permanent.
 
 ### Can I analyze another Twitter account?
 
-Yes, for recent public tweets. The cached profile remains isolated to your
-authenticated Xquik account.
+Yes, for recent public tweets. Only your
+authenticated Xquik account can read the cached profile.
 
 <Note>
 

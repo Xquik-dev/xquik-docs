@@ -34,13 +34,13 @@ describe("analyze tweet writing style documentation", (): void => {
         "| `200` | Profile is under 7 days old | No | Free cached response |",
       ),
       refresh201: table.includes(
-        "| `201` | Profile is missing or older and refresh is funded | Yes | 1 credit per returned Tweet |",
+        "| `201` | Profile is missing or older, and credits cover a refresh | Yes | 1 credit per returned Tweet |",
       ),
       staleFallback200: table.includes(
-        "| `200` | Profile is older, but refresh cannot be funded | No | Existing stale cache returned |",
+        "| `200` | Profile is older, and credits cannot cover a refresh | No | Existing stale cache returned |",
       ),
       unfundedMissing402: table.includes(
-        "| `402` | No cache exists and refresh cannot be funded | No | `no_cached_style` returned |",
+        "| `402` | No cache exists, and credits cannot cover a refresh | No | `no_cached_style` returned |",
       ),
     }).toStrictEqual({
       freshCache200: true,
