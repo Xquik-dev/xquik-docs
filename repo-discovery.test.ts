@@ -11784,7 +11784,7 @@ const REQUIRED_BLACK_MAGIC_ALTERNATIVE_SNIPPETS = [
   "extra Twitter accounts are not included in Personal",
   "Professional lists additional accounts at USD 19.99/month per account or USD 179.91 annually",
   "Business lists additional accounts at USD 69.99/month per account or USD 629.91 annually",
-  "Personal does not list schedule tweets or schedule threads; Professional and Business include them.",
+  "Personal does not list schedule tweets or schedule threads. Professional and Business include them.",
   "Search tweets and follower exports cost 1 credit/result, with CSV, JSON, XLSX, Markdown, API, SDK, and MCP handoff options.",
 ] as const;
 
