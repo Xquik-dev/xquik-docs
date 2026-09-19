@@ -11526,7 +11526,7 @@ const REQUIRED_BRANDWATCH_ALTERNATIVE_SNIPPETS = [
   "search tweets, export followers, monitor accounts or keywords, send webhooks",
   "## Source-backed Brandwatch scope",
   "official firehose access to Twitter, Tumblr, and Reddit",
-  "dashboards, audience demographics, influencers, image analysis, Signals alerts, Excel/PPT/PDF exports, and Brandwatch API access",
+  "dashboards, audience demographics, influencers, image analysis, Signals alerts, Excel, PPT & PDF exports, and Brandwatch API access",
   "content calendar, publishing workflows, approval flows, an Engage inbox, sentiment and spam detection, helpdesk integration",
   "Consumer intelligence and social media management suite.",
   "tweet search, follower exports, monitor events, signed webhook payloads, CSV, JSON & XLSX exports",
