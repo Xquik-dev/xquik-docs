@@ -154,19 +154,19 @@ func main() {
 
 </CodeGroup>
 
-## Read the support ticket inventory
+## Read the support ticket list
 
-Use the list as a compact support queue. Store ticket IDs and timestamps before
+Use the list as a support queue. Store ticket IDs and timestamps before
 requesting any detailed history.
 
-| Support queue column | Response field | Review rule                                                  |
-| -------------------- | -------------- | ------------------------------------------------------------ |
-| Ticket ID            | `publicId`     | Use this stable ID for details, replies, and status changes. |
-| Reported issue       | `subject`      | Keep the affected Xquik workflow visible.                    |
-| Current state        | `status`       | Route open, in-progress, resolved, and closed cases.         |
-| Conversation size    | `messageCount` | Compare with the previously stored count.                    |
-| Opened time          | `createdAt`    | Measure the ticket's age.                                    |
-| Latest activity      | `updatedAt`    | Process recently changed tickets first.                      |
+| Support queue column | Response field | Review rule                                                      |
+| -------------------- | -------------- | ---------------------------------------------------------------- |
+| Ticket ID            | `publicId`     | Use this stable ID for details, replies, and status changes.     |
+| Reported issue       | `subject`      | Keep the affected Xquik workflow visible.                        |
+| Current state        | `status`       | Handle open, in-progress, resolved, and closed cases separately. |
+| Conversation size    | `messageCount` | Compare with the previously stored count.                        |
+| Opened time          | `createdAt`    | Measure the ticket's age.                                        |
+| Latest activity      | `updatedAt`    | Process recently changed tickets first.                          |
 
 The endpoint returns up to 200 tickets. It sorts the newest `updatedAt` value
 first. The request has no pagination, search, or status query parameter. Ask
@@ -195,14 +195,14 @@ sets `in_progress`. Do not invent another state in client code.
 1. Call `GET /support/tickets` with one Xquik API key.
 2. Save the returned `publicId` and `updatedAt` values.
 3. Keep the response order for a recent-activity queue.
-4. Compare each `messageCount` with your previous inventory.
+4. Compare each `messageCount` with your previous list.
 5. Fetch ticket details when the count or timestamp changes.
 6. Read each message and attachment status before replying.
 7. Update the ticket only after confirming the intended state.
 
 Use [Reply to Ticket](/api-reference/support/reply) for new investigation
 details. Use [Update Ticket Status](/api-reference/support/update) for workflow
-state changes. These routes preserve the existing ticket ID.
+state changes. Both routes keep the existing ticket ID.
 
 Do not create a duplicate ticket for every retry. Reuse the original
 `publicId` while the subject describes the same problem.
@@ -224,9 +224,9 @@ The list response does not explain the failure. Fetch the matching ticket
 before making a product decision.
 
 For a `429` response, wait for `Retry-After`. Reuse the last successful
-inventory during that pause.
+list during that pause.
 
-## Answer support ticket API questions
+## Support ticket API questions
 
 ### Does the list include ticket messages?
 
