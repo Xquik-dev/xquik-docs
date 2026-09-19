@@ -4085,7 +4085,7 @@ const REQUIRED_TWEET_REPLIES_API_HANDOFF_SNIPPETS = [
   "| `in_reply_to_id` | `tweets[].inReplyToId` |",
   "| Page identity | `page_index` and `page_cursor` |",
   "Use [`reply_extractor`](/guides/tweet-replies-export) instead when a team needs",
-  "an estimate, durable extraction ID, stored result pages, or CSV, JSON, and XLSX",
+  "an estimate, a reusable extraction ID, stored result pages, or CSV, JSON, and XLSX",
   "`sinceTime` and `untilTime`, in Unix seconds",
   "Direct replies use the default paid page size",
   "Tweet author profile. Omitted if unavailable.",
