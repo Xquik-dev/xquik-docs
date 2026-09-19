@@ -1,7 +1,7 @@
 ---
 title: "Twitter keyword monitor status & query checks"
 sidebarTitle: "Get keyword monitor"
-description: "Get one keyword monitor's X query, tracked event types, active state, polling interval, creation time, and latest event checkpoint. See request fields."
+description: "Get one keyword monitor's X query, tracked event types, active state, creation time, and next billing time. Use it before you pause, edit, or debug alerts."
 api: "GET /monitors/keywords/{id}"
 keywords: ["keyword monitor", "get", "details", "status"]
 ---
@@ -87,7 +87,7 @@ Use this route when a workflow already stores one keyword monitor ID. It
 returns the exact X search query, tracked tweet events, active state, creation
 time, and next billing checkpoint. Use the list route when the ID is unknown.
 
-Check `query` before routing new matches. It preserves the Twitter keyword
+Check `query` before routing new matches. It holds the Twitter keyword
 search that created the monitor. Check `eventTypes` before assuming replies,
 quotes, reposts, or other tweet events are enabled.
 
@@ -101,7 +101,7 @@ quotes, reposts, or other tweet events are enabled.
 
 Store `id`, `query`, `eventTypes`, `isActive`, and `nextBillingAt` together.
 Pass the same monitor ID to event filters, updates, deletion, and webhook
-workflows. This keeps every Twitter monitor handoff tied to one tracked search.
+workflows. Every step then refers to the same tracked search.
 
 Use this status check before pausing or editing a monitor. A successful read
 does not prove a matching tweet exists. Read the events endpoint for captured
@@ -277,7 +277,7 @@ monitor for your account only, so deleted or cross-account IDs return `404`.
 | X search query         | `query`         | Compare the stored query with the intended search.  |
 | Tweet event filter     | `eventTypes`    | Align webhook subscriptions with these event types. |
 | Polling state          | `isActive`      | Resume only when future tweet checks are required.  |
-| Creation time          | `createdAt`     | Preserve the monitor configuration timestamp.       |
+| Creation time          | `createdAt`     | Keep the monitor creation timestamp.                |
 | Billing checkpoint     | `nextBillingAt` | Review credits before the next active charge.       |
 | Missing monitor        | `404 not_found` | Stop changes for deleted or cross-account IDs.      |
 
@@ -285,7 +285,7 @@ monitor for your account only, so deleted or cross-account IDs return `404`.
 
   <Card title="Current filter" icon="funnel">
 
-    Treat `query` and `eventTypes` as the active matching contract. Mirror
+    `query` and `eventTypes` decide which tweets match. Copy
     `eventTypes` into [List Webhooks](/api-reference/webhooks/list) before
     relying on signed alerts.
 
@@ -300,7 +300,7 @@ monitor for your account only, so deleted or cross-account IDs return `404`.
   <Card title="Billing check" icon="coins">
 
     Read `nextBillingAt` before credit alerts, budget checks, or account
-    handoffs. Paused monitors stay visible but do not add hourly monitor burn.
+    handoffs. Paused monitors stay visible but add no hourly charge.
 
   </Card>
   <Card title="Event join" icon="link">
@@ -330,15 +330,15 @@ monitor for your account only, so deleted or cross-account IDs return `404`.
 ## Verify one alert before incident review
 
 Inspect one stored monitor before investigating a missed or unexpected alert.
-Start with the monitor ID recorded by the alerting system. A list response can
-hide which row the workflow actually used.
+Start with the monitor ID recorded by the alerting system. A list response does
+not show which row the workflow used.
 
 Compare the returned `query` with the intended Twitter search expression.
 Check capitalization, quoted phrases, exclusions, and operators. Store the
 returned value as evidence. Do not reconstruct it from a dashboard label.
 
 Next, compare `eventTypes` with the event under review. A monitor configured
-only for `tweet.new` cannot explain an expected profile-change alert. Update
+only for `tweet.new` cannot explain an expected reply alert. Update
 the filter only after recording its current value.
 
 Read `isActive` before examining an empty event window. A paused monitor stays
@@ -354,10 +354,10 @@ Use the returned ID to query stored events. Keep these outcomes separate:
 - A stored event exists, but its webhook delivery needs inspection.
 
 Open the matching event before diagnosing webhook delivery. Then join its
-event ID with `streamEventId` from delivery records. This separates search
-matching from notification transport.
+event ID with `streamEventId` from delivery records. You can then tell a matching
+problem from a delivery problem.
 
-Finish with a compact incident note. Record the monitor ID, exact query,
+Finish with a short incident note. Record the monitor ID, exact query,
 active state, event types, event ID, and delivery result. That record lets
 another operator repeat the check without listing every monitor.
 
@@ -373,21 +373,21 @@ Do not edit the monitor during diagnosis. Capture its previous state before any 
 
 ## Prove a keyword alert with stored evidence
 
-Build one evidence chain for the alert under review. Start with this endpoint's
-monitor response. Preserve its ID, exact query, active state, and event types.
+Collect evidence for the alert in 3 steps. Start with this endpoint's
+monitor response. Save its ID, exact query, active state, and event types.
 
 Run the exact query through [Tweet Search](/api-reference/x/search-tweets).
 Save matching Tweet IDs and creation times. A search match proves query
 coverage. It does not prove that a monitor stored an event.
 
 Next, list stored events for the same keyword monitor ID. Match the expected
-Tweet ID when the event payload exposes it. Preserve the event ID and event
-timestamp. An event proves monitor ingestion. It does not prove webhook
+Tweet ID when the event payload exposes it. Save the event ID and event
+timestamp. An event proves the monitor stored the tweet. It does not prove webhook
 delivery.
 
 Finally, inspect deliveries for the subscribed webhook. Join each delivery's
 `streamEventId` to the stored event ID. Record its status and attempt time. A
-delivery record proves notification handling.
+delivery record proves Xquik sent the notification.
 
 Keep three outcomes separate:
 
@@ -395,16 +395,16 @@ Keep three outcomes separate:
 - A monitor event exists, but no delivery references it.
 - A delivery exists, but the receiving application rejected it.
 
-Never report those outcomes as one generic alert failure. Each outcome needs a
+Report each outcome separately. Each outcome needs a
 different correction. Query changes affect matching. Monitor state affects
-future event creation. Webhook work affects notification transport.
+future event creation. Webhook changes affect delivery.
 
 Record the investigation window in UTC. Compare tweet, event, and delivery
 timestamps inside that window. Avoid using dashboard refresh time as evidence.
 
-Finish with one durable incident record. Include monitor ID, query, Tweet ID,
+Finish with one incident record. Include monitor ID, query, Tweet ID,
 event ID, webhook ID, and delivery result. Link every conclusion to a returned
-field. This makes another operator's review repeatable.
+field. Another operator can then repeat the review.
 
 ## Distinguish configuration drift from missing tweets
 
@@ -416,8 +416,8 @@ Compare `eventTypes` with the approved event scope. Keep the full returned
 array. Do not summarize several values as a broad monitoring label.
 
 Check `isActive` and `nextBillingAt` together. A stored monitor can remain
-visible while paused. A future billing timestamp supports the next budget
-review. Neither field proves that a specific tweet created an event.
+visible while paused. A future billing timestamp tells you when the next charge
+is due. Neither field proves that a specific tweet created an event.
 
 Use [Update Account Monitor](/api-reference/monitors/update) only for account
 monitors. Keyword monitors use their dedicated update route. Keep monitor types
@@ -453,7 +453,7 @@ Your API key. Session cookie authentication is also supported. Generate a key fr
   Subscribed event types.
 </ResponseField>
 <ResponseField name="isActive" type="boolean">
-  Whether the monitor is currently active.
+  Whether the monitor is active.
 </ResponseField>
 <ResponseField name="createdAt" type="string">
   ISO 8601 creation timestamp.
