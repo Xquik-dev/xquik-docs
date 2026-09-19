@@ -60,7 +60,7 @@ This approach keeps exports moving without browser evasion, rotating identities,
 
 Use the live Twitter search route for immediate cursor pages. Use tweet_search_extractor for estimates, durable job IDs, and status polling. It also provides saved rows and CSV, JSON, or XLSX files.
 
-Use a monitor when a keyword or account match must create a stored event. Every path should preserve Tweet IDs, author IDs, text, and timestamps. Add engagement counts, media, query filters, and page state.
+Use a monitor when a keyword or account match must create a stored event. Every path should keep Tweet IDs, author IDs, text, and timestamps. Add engagement counts, media, query filters, and page state.
 
 Keep the API key in a secret manager. Respect rate limits and documented error recovery.
 
@@ -106,7 +106,7 @@ Keep orchestration, API access, tweet row shaping, and destination writes in sep
 
 One function estimates and creates the extraction. Another polls the stored ID. A final function validates and writes tweet rows.
 
-Use typed models for Tweet ID, author ID, text, and creation time. Include engagement counts, media URLs, query, and extraction ID. Persist status before every retry. Honor retryAfter for rate limits.
+Use typed models for Tweet ID, author ID, text, and creation time. Include engagement counts, media URLs, query, and extraction ID. Store status before every retry. Honor retryAfter for rate limits.
 
 Use exponential backoff for documented temporary failures. Upsert by Tweet ID in the destination. Commit the next window only after the file or transaction succeeds. This structure makes reruns safe and testable.
 
@@ -136,7 +136,7 @@ Python pipelines can use the Python SDK for direct pages. They can also call the
 
 Save the complete request before evaluating search results. Include the query, operators, language, date window, result limit, and export format. Two files with different filters should never share one comparison label.
 
-Count unique Tweet IDs after every export. Duplicate IDs may appear when date windows overlap or a retry restarts from an earlier cursor. Keep one canonical row for each Tweet ID. Preserve the newest complete author and engagement fields.
+Count unique Tweet IDs after every export. Duplicate IDs may appear when date windows overlap or a retry restarts from an earlier cursor. Keep one canonical row for each Tweet ID. Keep the newest complete author and engagement fields.
 
 Check the first and last tweet creation times. Compare them with the requested window. A bounded Twitter search can return fewer tweets than its result limit. This does not prove the job failed.
 
@@ -236,7 +236,7 @@ Retry a documented 424 or 502 failure with exponential backoff and jitter. Keep 
 
 Honor retryAfter after a 429 response. Pause only the affected worker. Do not start parallel requests for the same cursor page. Cap retries and send exhausted requests to review with their response status, request ID, and unchanged input.
 
-Treat a failed extraction status as terminal for that job. Save its returned error before deciding whether to create another extraction. Mark every interrupted export as partial. Preserve completed pages, unique Tweet IDs, and the last durable cursor.
+Treat a failed extraction status as terminal for that job. Save its returned error before deciding whether to create another extraction. Mark every interrupted export as partial. Keep completed pages, unique Tweet IDs, and the last durable cursor.
 
 Validate the downloaded file before advancing any schedule checkpoint. Reject empty files when the completed job reported rows. Reject malformed CSV, JSON, or XLSX output. Keep the previous window open until the verified file reaches its destination.
 
@@ -246,7 +246,7 @@ Hand off the exact searchQuery, structured filters, advancedQuery, language, sin
 
 Record the terminal status, export format, file name, checksum, byte size, row count, and unique Tweet count. Add the earliest and latest tweet creation times. Mark capped, credit-bounded, interrupted, and partial exports explicitly.
 
-Preserve Tweet ID, text, author ID, username, display name, and creation time. Keep replies, reposts, likes, quotes, views, bookmarks, permalinks, and media URLs when returned. Join refreshed profiles through stable author ID, not username.
+Keep Tweet ID, text, author ID, username, display name, and creation time. Keep replies, reposts, likes, quotes, views, bookmarks, permalinks, and media URLs when returned. Join refreshed profiles through stable author ID, not username.
 
 Name the downstream owner and destination. State whether the receiver expects CSV, JSON, XLSX, or JSON Lines. Document its duplicate key, required columns, timezone, and retry behavior.
 

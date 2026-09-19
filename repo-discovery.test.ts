@@ -5795,7 +5795,7 @@ const REQUIRED_TWEET_SEARCH_EXPORT_SNIPPETS = [
   "Mark every interrupted export as partial.",
   "## Handoff checklist",
   "Record the terminal status, export format, file name, checksum, byte size, row count, and unique Tweet count.",
-  "Preserve Tweet ID, text, author ID, username, display name, and creation time.",
+  "Keep Tweet ID, text, author ID, username, display name, and creation time.",
   "Name the downstream owner and destination.",
   "Advance the checkpoint only after this final confirmation.",
 ] as const;
