@@ -8892,7 +8892,7 @@ const REQUIRED_REQUEST_EFFICIENT_API_USAGE_SNIPPETS = [
   "| Tweet search | `limit` | 1 to 10,000 tweets. Default 20 |",
   "| User tweets and replies | `pageSize` | Automatic 1 to 300. Standard 1 to 100. Default 20 |",
   "| Followers and following | `pageSize` | Automatic 20 to 300. Standard 20 to 200. Default 200 |",
-  "| Extraction results | `limit` | 1 to 1,000 stored rows. Default 10 |",
+  "| Extraction results | `limit` | 1 to 1,000 stored rows. Default 100 |",
   "## Use extraction jobs for saved files",
   "Pass `nextCursor` back through `cursor` for more stored rows.",
   "## Store cursor checkpoints",
