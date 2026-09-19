@@ -152,7 +152,7 @@ Choose one option for the required alert scope.
 | Historical or on-demand tweet results     | [Search Tweets](/api-reference/x/search-tweets)                  | One paginated result set without continuous alerts.   |
 
 Do not replace one option with another after collection starts.
-Store the chosen monitor type beside every downstream alert.
+Store the chosen monitor type with every alert.
 
 ## How do I monitor a Twitter account with an API?
 
@@ -161,7 +161,7 @@ Send the username without `@` and choose exact event types.
 Xquik resolves the username to one stable X user ID.
 Store both the monitor ID and resolved user ID.
 
-Teams can monitor Twitter account activity without maintaining a stream connection.
+Your application needs no open stream connection.
 The account monitor checks selected changes every second.
 Real-time Twitter alerts start after connecting a signed webhook.
 Stored events remain available for later inspection through the Events API.
@@ -175,14 +175,14 @@ Never use a display name as the account key.
 Select `tweet.new` for original posts from the monitored account.
 Add `tweet.reply`, `tweet.quote`, or `tweet.retweet` for conversation activity.
 Use format events for media, links, polls, mentions, hashtags, and long posts.
-Each selected event type creates a focused alert stream.
+Each selected event type produces its own alerts.
 
 Profile events cover names, usernames, bios, locations, URLs, avatars, and banners.
 They also cover verification, protection, pinned posts, and account availability.
 Use `profile.unavailable.changed` when account availability affects a workflow.
 Keep previous and current profile values with the stored event.
 
-Choose only events that trigger a real downstream action.
+Choose only events that trigger an action.
 Extra event types create alerts that workers must still review.
 Update the monitor when the required event set changes.
 Do not infer unselected changes from tweet or profile counts.
@@ -211,14 +211,14 @@ Track new tweets, replies, quotes, reposts, links, and media.
 Add profile events for bio, username, avatar, banner, and pinned-post changes.
 Store each event type, timestamp, monitor ID, and X user ID.
 
-This workflow records concrete account changes.
+This workflow records account changes.
 It does not calculate sentiment, brand reputation, or share of voice.
 Use a keyword monitor for mentions across unrelated accounts.
 Use tweet search for a retrospective competitor query.
 
 Keep competitor alerts separate from your own account alerts.
 Route each monitor ID to its intended queue or workspace.
-That separation prevents one competitor event from triggering unrelated jobs.
+A competitor event then cannot trigger unrelated jobs.
 
 ## How do I monitor multiple Twitter accounts?
 
@@ -230,10 +230,10 @@ Store every returned monitor ID before creating the next request.
 An active duplicate returns `409 monitor_already_exists`.
 Use [List Monitors](/api-reference/monitors/list) to recover its stored ID.
 Use [Update Monitor](/api-reference/monitors/update) to change events or active state.
-Do not create replacement monitors when a pause is sufficient.
+Pause a monitor when you can. Do not create a replacement.
 
 Store each resolved X user ID beside the current username.
-This join remains stable when a username-change event arrives.
+The user ID stays the same when a username-change event arrives.
 Review `nextBillingAt` before keeping large monitor sets active.
 
 ## What does an account monitor not track?
@@ -248,7 +248,7 @@ Use [Following](/api-reference/x/following) for paginated following snapshots.
 Use [User Tweets](/api-reference/x/user-tweets) for timeline retrieval.
 Use [Create Keyword Monitor](/api-reference/monitors/create-keyword) for matching queries.
 
-Never substitute aggregate counts for missing participant or relationship records.
+Do not use aggregate counts in place of participant or relationship records.
 Choose the endpoint that returns the required tweets, profiles, or relationships.
 
 ## How do I recover from monitor and webhook failures?
@@ -264,7 +264,7 @@ Check the username after a `404 user_not_found` response.
 Reuse the existing monitor after a `409` duplicate response.
 Respect `Retry-After` before repeating a `429` request.
 
-Webhook failures do not require replacing a healthy monitor.
+A webhook failure does not require a new monitor.
 Fix the receiver, verify its signature code, and send another signed test.
 Then inspect delivery attempts and join `streamEventId` to the stored event.
 
@@ -475,11 +475,11 @@ production alerts.
 
 | Created monitor column | Response source | Setup rule                                          |
 | ---------------------- | --------------- | --------------------------------------------------- |
-| Monitor ID             | `id`            | Store this ID before configuring downstream alerts. |
+| Monitor ID             | `id`            | Store this ID before configuring alerts.            |
 | X username             | `username`      | Store the normalized username without `@`.          |
 | X user ID              | `xUserId`       | Use this stable ID for account joins.               |
 | Event filter           | `eventTypes`    | Align webhook subscriptions with these event types. |
-| Polling state          | `isActive`      | Route only active monitors into alert checks.       |
+| Polling state          | `isActive`      | Run alert checks only for active monitors.          |
 | Creation time          | `createdAt`     | Store this timestamp with each monitor audit.       |
 | Billing checkpoint     | `nextBillingAt` | Review available credits before this time.          |
 
@@ -497,7 +497,7 @@ production alerts.
   <Card title="Stored account" icon="user">
 
     Store `username` after trimming the `@` prefix. Store `xUserId` for stable
-    joins, dedupe, and downstream account mapping.
+    joins, deduplication, and account mapping.
 
   </Card>
   <Card title="Event filter" icon="funnel">
@@ -509,7 +509,7 @@ production alerts.
   <Card title="Active state" icon="clock">
 
     Read `isActive` and `nextBillingAt` before enabling alerts or estimating
-    hourly monitor burn.
+    hourly monitor cost.
 
   </Card>
   <Card title="Stored event join" icon="link">
@@ -525,7 +525,7 @@ production alerts.
     [List Deliveries](/api-reference/webhooks/deliveries) for delivery
     attempts. Join `streamEventId` to event IDs, and do not use `x_event_id` as the
     delivery join key. Store `eventType`, `occurredAt`, and `data` with the
-    downstream job.
+    job.
 
   </Card>
 </CardGroup>
@@ -534,8 +534,8 @@ production alerts.
 
 Save the monitor ID, username, user ID, event type, event time, and delivery ID.
 Use the monitor ID to group alerts for one account. Use the delivery ID to stop
-the same job twice. Keep the event ID for later checks. These fields help with
-replay, audits, retries, and clear alert ownership.
+the same job twice. Keep the event ID for later checks. These fields support
+replay, audits, retries, and alert routing.
 
 Active account monitors check every 1 second. Each active hour costs 21 credits.
 You need 22 available credits to create or restore a monitor. That total includes a 1-credit username lookup and the first active hour. Pause the monitor through
@@ -644,7 +644,7 @@ Account monitors do not emit follower-gained or follower-lost events. Use
   Event types this monitor is subscribed to.
 </ResponseField>
 <ResponseField name="isActive" type="boolean">
-  Whether the monitor is currently active.
+  Whether the monitor is active.
 </ResponseField>
 <ResponseField name="createdAt" type="string">
   Xquik records the creation time in ISO 8601 format.

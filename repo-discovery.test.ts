@@ -9382,7 +9382,7 @@ const REQUIRED_ACCOUNT_MONITOR_API_HANDOFF_SNIPPETS = [
   "signed webhooks",
   "## Choose the right Twitter monitoring option",
   "## How do I monitor a Twitter account with an API?",
-  "Teams can monitor Twitter account activity without maintaining a stream connection.",
+  "Your application needs no open stream connection.",
   "## Which Twitter account activity can trigger alerts?",
   "## How do real-time Twitter alerts reach my application?",
   "Use `deliveryId` for delivery-level idempotency.",
