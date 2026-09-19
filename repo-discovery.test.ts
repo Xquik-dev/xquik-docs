@@ -8516,7 +8516,7 @@ const REQUIRED_TWITTER_GIVEAWAY_PICKER_SNIPPETS = [
   "[Create Draw](/api-reference/draws/create)",
   "## Programmatic Twitter giveaway draw checklist",
   "## How do I pick a winner from replies and retweets?",
-  "Run every published check before any participant is selected randomly.",
+  "Run every published check before the draw selects any participant.",
   "## How does a Twitter random giveaway picker choose winners?",
   "A Twitter random giveaway picker filters entries before random selection.",
   "## How do I prove giveaway winners were eligible?",
