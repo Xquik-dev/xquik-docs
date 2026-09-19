@@ -59,14 +59,14 @@ describe("connected X accounts list documentation", (): void => {
         "The response contains only connections owned by the authenticated Xquik",
       ),
       earliestFirst: source.includes(
-        "Accounts are ordered by `createdAt` from earliest to latest.",
+        "The API orders accounts by `createdAt` from earliest to latest.",
       ),
       emptyList: source.includes('receives `{"accounts": [], "hasMore": false}`'),
       pagination: source.includes(
         "Pass `nextCursor` unchanged as `cursor` while `hasMore` is true.",
       ),
       legacyCompatible: source.includes(
-        "Legacy calls without `limit` or `cursor` return up to 10,000 connections.",
+        "Calls without `limit` or `cursor` return up to 10,000 connections",
       ),
       xUserIdBoundary: source.includes(
         "Do not send `xUserId` where a write endpoint requires `accountId`.",
@@ -93,7 +93,7 @@ describe("connected X accounts list documentation", (): void => {
         "locked",
         "suspended",
       ].every((health) => source.replaceAll(/[ \t]+/gu, " ").includes(`| \`${health}\` |`)),
-      statusIsInsufficient: source.includes("The `status` field alone is insufficient."),
+      statusIsInsufficient: source.includes("The `status` field alone is not enough."),
       retryBoundary: source.includes(
         "Use [Bulk Retry](/api-reference/x-accounts/bulk-retry) only for eligible temporary\nfailures.",
       ),

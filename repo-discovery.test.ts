@@ -3355,7 +3355,7 @@ const REQUIRED_X_ACCOUNTS_LIST_API_SNIPPETS = [
   "| `needsReauth` | Blocked |",
   "| `locked` | Blocked |",
   "| `suspended` | Blocked |",
-  "The `status` field alone is insufficient.",
+  "The `status` field alone is not enough.",
   "`needsReauth` covers credentials, TOTP, email",
   "[reauth](/api-reference/x-accounts/reauth)",
   "`locked` can require account-side verification.",
