@@ -6093,9 +6093,9 @@ const FORBIDDEN_TIMELINE_API_RAW_SNIPPETS = [
 
 const REQUIRED_USER_TWEETS_API_HANDOFF_SNIPPETS = [
   'title: "Search user tweets, profile timeline & cursors"',
-  "Search user tweets returns the public profile timeline for one Twitter or X",
-  '"user tweets," "profile',
-  'account. Use it for "user tweets," "profile timeline," or "X user timeline"',
+  "This route returns the public profile timeline for one Twitter or X",
+  "account. The route is",
+  "Protected accounts return HTTP 403 with `x_account_protected`.",
   "`GET /api/v1/x/users/{id}/tweets`",
   "# Username profile timeline",
   "https://xquik.com/api/v1/x/users/elonmusk/tweets",

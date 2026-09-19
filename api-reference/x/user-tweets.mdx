@@ -1,7 +1,7 @@
 ---
 title: "Search user tweets, profile timeline & cursors"
 sidebarTitle: "Get user timeline"
-description: "Search one Twitter or X profile's tweets with full text, replies, reposts, likes, quotes, views, attached media, and cursor pagination. See API fields."
+description: "Read one Twitter or X profile's tweets with full text, replies, reposts, likes, quotes, views, attached media, and cursor pagination. 1 credit per tweet."
 api: "GET /x/users/{id}/tweets"
 keywords:
   [
@@ -188,9 +188,8 @@ Requested result counts are upper bounds for paid authenticated calls. When rema
 
 <Info>
 
-Search user tweets returns the public profile timeline for one Twitter or X
-account. Use it for "user tweets," "profile timeline," or "X user timeline"
-searches. Keep the canonical route as
+This route returns the public profile timeline for one Twitter or X
+account. The route is
 `GET /api/v1/x/users/{id}/tweets`.
 
 Protected accounts return HTTP 403 with `x_account_protected`. Choose a public account.
@@ -343,7 +342,7 @@ text, author ID, username, display name, follower count, verified state, profile
 image URL, reply context, engagement counts, media URLs, and cursor fields so a
 worker can resume from the last saved `next_cursor`.
 
-For high-volume timeline pulls, de-duplicate tweets by `id`, continue through empty filtered pages when the cursor advances, and stop with a partial-result status when `next_cursor` is missing or repeats.
+For high-volume timeline pulls, deduplicate tweets by `id`. Continue through empty filtered pages while the cursor advances. Stop with a partial-result status when `next_cursor` is missing or repeats.
 
 ## Build a profile timeline job
 
@@ -426,23 +425,23 @@ Use tweet search when the workflow starts with keywords, dates, or operators.
 Use user replies when replies need their own feed. Use user media when only
 photo, video, or animated GIF tweets matter.
 
-Do not treat row order as durable identity. New tweets can change the first
+Row order does not identify a tweet. New tweets can change the first
 page. Use tweet IDs for updates and deduplication.
 
-| Profile timeline column | Response source                | Archive rule                                                        |
-| ----------------------- | ------------------------------ | ------------------------------------------------------------------- |
-| `source_x_user_id`      | Resolved profile ID            | Keep one stable source ID across username changes.                  |
-| `source_username`       | Requested or resolved username | Preserve the readable profile handle observed during collection.    |
-| `tweet_id`              | `tweets[].id`                  | Use as the stable tweet upsert and deduplication key.               |
-| `tweet_url`             | `tweets[].url`                 | Open the original X post during review.                             |
-| `text`                  | `tweets[].text`                | Preserve the complete tweet or note-tweet text returned by the API. |
-| `created_at`            | `tweets[].createdAt`           | Order archived tweets by creation time, not cursor position.        |
-| `is_reply`              | `tweets[].isReply`             | Separate original profile posts from replies.                       |
-| `in_reply_to_id`        | `tweets[].inReplyToId`         | Join a reply to its immediate parent when returned.                 |
-| `conversation_id`       | `tweets[].conversationId`      | Group tweets from one conversation thread.                          |
-| `media_urls`            | `tweets[].media[].mediaUrl`    | Preserve image, video, or animated GIF URLs.                        |
-| `page_cursor`           | Request `cursor`               | Prove which profile timeline page produced the row.                 |
-| `collected_at`          | Integration timestamp          | Distinguish repeated profile timeline snapshots.                    |
+| Profile timeline column | Response source                | Archive rule                                                    |
+| ----------------------- | ------------------------------ | --------------------------------------------------------------- |
+| `source_x_user_id`      | Resolved profile ID            | Keep one stable source ID across username changes.              |
+| `source_username`       | Requested or resolved username | Keep the readable profile handle observed during collection.    |
+| `tweet_id`              | `tweets[].id`                  | Use as the stable tweet upsert and deduplication key.           |
+| `tweet_url`             | `tweets[].url`                 | Open the original X post during review.                         |
+| `text`                  | `tweets[].text`                | Keep the complete tweet or note-tweet text returned by the API. |
+| `created_at`            | `tweets[].createdAt`           | Order archived tweets by creation time, not cursor position.    |
+| `is_reply`              | `tweets[].isReply`             | Separate original profile posts from replies.                   |
+| `in_reply_to_id`        | `tweets[].inReplyToId`         | Join a reply to its immediate parent when returned.             |
+| `conversation_id`       | `tweets[].conversationId`      | Group tweets from one conversation thread.                      |
+| `media_urls`            | `tweets[].media[].mediaUrl`    | Keep image, video, or animated GIF URLs.                        |
+| `page_cursor`           | Request `cursor`               | Record which profile timeline page produced the row.            |
+| `collected_at`          | Integration timestamp          | Tell repeated profile timeline snapshots apart.                 |
 
 | Timeline requirement        | Route and parameters                       | Result shape                                                        |
 | --------------------------- | ------------------------------------------ | ------------------------------------------------------------------- |
