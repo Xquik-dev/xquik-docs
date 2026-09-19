@@ -120,7 +120,7 @@ timestamps. CamelCase reads work, including `favoriteCount` for `like_count`. Er
 
 Compact extraction results retain `like_count`, `retweet_count`, `reply_count`, `quote_count`, `view_count`, and `bookmark_count`. They omit profile images and nested enrichment.
 
-MCP preserves every safe field that X supplies. Optional fields stay absent. See [Read Data Richness](/guides/tweet-profile-api-fields) for the REST field map.
+MCP keeps every safe field that X supplies. Optional fields stay absent. See [Read Data Richness](/guides/tweet-profile-api-fields) for the REST field map.
 
 Missing response-field reads return `undefined` and produce `warnings`.
 Each warning maps a missing field to available response keys.
@@ -130,7 +130,7 @@ The combined output follows the existing 24,000-character limit.
 
 List and search responses use `has_more` and `next_cursor`, even when REST shows `has_next_page` or `hasMore`. Pass `next_cursor` unchanged as `cursor` for X reads, draws, extractions, and events. Never replace an extraction cursor with `offset`. Use `after` for `/api/v1/radar` and `afterCursor` for drafts.
 
-Hosted MCP preserves each requested `limit`. REST enforces documented bounds.
+Hosted MCP keeps each requested `limit`. REST enforces documented bounds.
 
 Omit `mode` for tweet search, replies, followers, following, and verified
 followers. Those operations use automatic maximum coverage. Pass
@@ -142,7 +142,7 @@ For advanced nested-reply diagnostics, call
 `/api/v1/x/tweets/<tweet_id>/replies?mode=complete&limit=25000`.
 Complete mode combines timelines, rankings, cursors, hidden branches, and
 search. Direct replies match `inReplyToId`. Keep `nested_replies` separate.
-Trust `diagnostic.complete`. HTTP 424 `replies_incomplete` preserves rows.
+Trust `diagnostic.complete`. HTTP 424 `replies_incomplete` keeps rows.
 MCP returns that documented body instead of a tool error.
 Inspect `coveragePercentage`, strategy results, cursor failures, missing
 modules, `recommendedFallback`, and X-dependent coverage limits.
@@ -154,7 +154,7 @@ Write and media results follow the same contract. Read `tweet_id`, `write_action
 Both `search` and `execute` return compact JSON within 24,000 characters. Whitespace inside strings stays unchanged. Native API tools apply the same limit to successful & failed responses.
 The limit bounds tool output, not catalog access or available results. Large schema selections can exceed it. Oversized output returns `isError: true` with a recoverable `response_too_large` diagnostic. It includes size, limit, and retry guidance, never partial JSON. An ordinary result containing an `error` field is not a tool failure.
 Output errors do not undo completed API actions or charges.
-Use REST, SDKs, or extraction exports to persist every row.
+Use REST, SDKs, or extraction exports to store every row.
 
 ### Cursor pages and response size
 
@@ -456,7 +456,7 @@ async () => {
 ```
 
 Store `message_id` with the uploaded `media_id`. Keep full DM bodies out of
-shared MCP outputs; return IDs, status, media references, and source filenames
+shared MCP outputs. Return IDs, status, media references, and source filenames
 instead. Leave `reply_to_message_id` unset because the DM send endpoint rejects
 reply threading.
 
@@ -661,7 +661,7 @@ Avoid raw pages when later workers need durable rows.
   </Card>
   <Card title="Monitor tweets to webhooks" icon="radio">
 
-    Call `POST /api/v1/monitors` or `POST /api/v1/monitors/keywords`, then `POST /api/v1/webhooks`. Store `monitor.id`, `event_types`, `next_billing_at`, `webhook.id`, webhook URL, and the one-time `webhook.secret`, then run `POST /api/v1/webhooks/{id}/test` before routing production events. Verify `X-Xquik-Signature`, de-dupe production payloads with `deliveryId` and `streamEventId`, and inspect `GET /api/v1/webhooks/{id}/deliveries` for retry status rows. Each payload contains one monitor event, so process multiple POSTs when one check catches multiple new matching tweets. Cost: 21 credits per active monitor-hour. Webhook delivery is included.
+    Call `POST /api/v1/monitors` or `POST /api/v1/monitors/keywords`, then `POST /api/v1/webhooks`. Store `monitor.id`, `event_types`, `next_billing_at`, `webhook.id`, webhook URL, and the one-time `webhook.secret`, then run `POST /api/v1/webhooks/{id}/test` before routing production events. Verify `X-Xquik-Signature`, deduplicate production payloads with `deliveryId` and `streamEventId`, and inspect `GET /api/v1/webhooks/{id}/deliveries` for retry status rows. Each payload contains one monitor event, so process multiple POSTs when one check catches multiple new matching tweets. Cost: 21 credits per active monitor-hour. Webhook delivery is included.
 
   </Card>
   <Card title="Replay monitor events" icon="activity">
@@ -719,7 +719,7 @@ async () => {
 
 > Subscribe (free, returns checkout or billing portal URL)
 
-Run this mutation only after the user explicitly asks to subscribe or open billing.
+Run this call only after the user explicitly asks to subscribe or open billing.
 
 ```javascript
 async () => {
@@ -808,7 +808,7 @@ With a guest `paid_reads` key, `search` and `execute` expose exactly 33 `twitter
 
 <Warning>
 
-Never combine free and paid endpoints in a single `Promise.all`. A 402 error on one call kills all results. Call free endpoints first, then paid ones separately.
+Never combine free and paid endpoints in a single `Promise.all`. A 402 error on one call fails every result. Call free endpoints first, then paid ones separately.
 
 </Warning>
 
@@ -817,7 +817,7 @@ Never combine free and paid endpoints in a single `Promise.all`. A 402 error on 
 - **402 / `no_subscription` / `subscription_inactive`.** Report the billing state and available account actions. Existing available credits can still fund metered calls. Ask the user to choose and confirm before calling `POST /api/v1/subscribe`.
 - **402 / `no_credits` / `insufficient_credits`.** Report `payment_options`. Full account sessions may create account checkout after confirmation. Guest sessions may explain the direct REST top-up flow, but MCP cannot execute it.
 - **429 / `rate_limit_exceeded`.** Respect `error.retry_after`, then retry safe reads with backoff.
-- **424 dependency errors.** Report `error.code`, preserve partial aggregates, and retry only when `error.retryable` allows it.
+- **424 dependency errors.** Report `error.code`, keep partial aggregates, and retry only when `error.retryable` allows it.
 - **Validation errors.** Fix the path, query, or body before retrying.
 
 The MCP server never starts subscriptions, checkout, top-up, or other billing mutations in response to an API error. Guest credential routes are never executable through MCP.
