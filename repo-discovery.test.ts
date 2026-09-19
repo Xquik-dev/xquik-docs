@@ -12105,7 +12105,7 @@ const REQUIRED_X_API_ALTERNATIVE_SNIPPETS = [
 const REQUIRED_TWITTER_API_PRO_ALTERNATIVE_SNIPPETS = [
   "Twitter API Pro alternative",
   "## Source-backed Twitter API Pro scope",
-  "X API v2 as the recommended API version for new projects",
+  "recommend X API v2 for new projects",
   'Treat "Twitter API Pro" as a legacy comparison term',
   "programmatic access for reading posts, publishing content, managing users",
   "Bearer Token access for reading public data",
