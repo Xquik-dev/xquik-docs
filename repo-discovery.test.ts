@@ -4314,7 +4314,7 @@ const REQUIRED_GET_USER_API_HANDOFF_SNIPPETS = [
   '<Card title="Follow check" icon="user-check">',
   "[`GET /x/followers/check`](/api-reference/x/check-follower)",
   '<Card title="Saved exports" icon="file-spreadsheet">',
-  "saved CSV/JSON/XLSX jobs",
+  "saved CSV, JSON, or XLSX jobs",
 ] as const;
 
 const FORBIDDEN_GET_USER_API_RAW_OUTPUT_SNIPPETS = [
