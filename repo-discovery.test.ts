@@ -5902,7 +5902,7 @@ const REQUIRED_TWEET_LIST_FILTER_SNIPPETS = [
   'import TweetResultFilterParams from "/snippets/tweet-result-filter-params.mdx";',
   "### Tweet result filters",
   "These optional filters apply to `tweets[]` returned by this route.",
-  "filter rows after each page is fetched",
+  "Xquik filters rows after it fetches each page",
   "<TweetResultFilterParams />",
 ] as const;
 
