@@ -1,7 +1,7 @@
 ---
 title: "Test Twitter webhooks, signatures & retry events"
 sidebarTitle: "Webhook testing"
-description: "Test signed tweet, follower, profile, relationship, and keyword monitor webhook deliveries with a local server, ngrok, or webhook.site. Follow exact steps."
+description: "Test signed tweet, profile, and keyword monitor webhook deliveries with a local server, ngrok, or webhook.site. Verify HMAC signatures. Follow exact steps."
 keywords:
   [
     "webhook testing",
@@ -23,9 +23,9 @@ Test your webhook integration before deploying to production. Use Xquik's signed
 
 Use the [Test Webhook](/api-reference/webhooks/test) endpoint after you create a webhook. Xquik sends a real `webhook.test` delivery to the configured URL with the same `X-Xquik-Signature`, `X-Xquik-Timestamp`, and `X-Xquik-Nonce` headers used for production monitor events.
 
-`webhook.test` payloads contain `eventType`, `data.message`, and `timestamp`;
-they omit `deliveryId` and `streamEventId`, so use them for reachability and
-signature checks, not production de-dupe.
+`webhook.test` payloads contain `eventType`, `data.message`, and `timestamp`.
+They omit `deliveryId` and `streamEventId`. Use them for reachability and
+signature checks, not production deduplication.
 
 ```bash
 curl -X POST https://xquik.com/api/v1/webhooks/15/test \
@@ -117,9 +117,9 @@ production monitor deliveries to prove idempotency and storage behavior.
 
   </Card>
 
-  <Card title="Production de-dupe" icon="copy-check">
+  <Card title="Production deduplication" icon="copy-check">
 
-    Use `deliveryId` for receiver retry de-dupe. Use `streamEventId` when one
+    Use `deliveryId` for receiver retry deduplication. Use `streamEventId` when one
     monitor event should process once across endpoint changes.
 
   </Card>
@@ -145,7 +145,7 @@ production monitor deliveries to prove idempotency and storage behavior.
 
 Store signed test deliveries separately from production delivery rows. A
 `webhook.test` row proves reachability and HMAC verification only. Production
-rows carry the IDs your receiver needs for retry de-dupe, event de-dupe, and
+rows carry the IDs your receiver needs for retry deduplication, event deduplication, and
 event detail joins.
 
 ```json
@@ -169,7 +169,7 @@ event detail joins.
 ```
 
 Use this row after verification succeeds and before slow downstream work. Keep
-the raw body available for the HMAC check, then store only the de-dupe IDs,
+the raw body available for the HMAC check, then store only the deduplication IDs,
 join route, verification state, and sanitized delivery context in shared
 systems.
 
@@ -196,7 +196,7 @@ systems.
   </Step>
   <Step title="Start your local server">
 
-    Run your webhook handler on a local port (e.g. `:3000`):
+    Run your webhook handler on a local port such as `:3000`:
 
     ```bash
     node server.js
@@ -352,7 +352,7 @@ curl -X POST http://localhost:3000/webhook \
 }
 ```
 
-Include `deliveryId` and `streamEventId` in offline fixtures so receiver idempotency tests match production deliveries. Test all event types by changing the `eventType` field: `tweet.new`, `tweet.reply`, `tweet.quote`, `tweet.retweet`.
+Include `deliveryId` and `streamEventId` in offline fixtures so receiver idempotency tests match production deliveries. Test other event types by changing the `eventType` field, for example to `tweet.reply`, `tweet.quote`, or `tweet.retweet`.
 
 ## Debugging delivery failures
 
@@ -453,12 +453,12 @@ your own downstream work.
 
   <Accordion title="Slow response">
 
-    We recommend responding within 10 seconds. If your handler is slow, return `200` immediately and process the event asynchronously using a background job queue.
+    Respond within 10 seconds. If your handler is slow, return `200` immediately and process the event asynchronously using a background job queue.
 
   </Accordion>
   <Accordion title="Non-2xx response">
 
-    Any response outside the 200-299 range counts as a failure. Check your server logs for unhandled exceptions or validation errors in your handler. Common causes include missing middleware (e.g. `express.raw()`), JSON parse errors, or database connection failures.
+    Any response outside the 200-299 range counts as a failure. Check your server logs for unhandled exceptions or validation errors in your handler. Common causes include missing middleware such as `express.raw()`, JSON parse errors, or database connection failures.
 
   </Accordion>
   <Accordion title="DNS resolution failure">
