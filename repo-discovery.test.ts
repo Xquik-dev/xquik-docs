@@ -4529,7 +4529,7 @@ const REQUIRED_GET_ARTICLE_API_HANDOFF_SNIPPETS = [
   '"block_types": [block.get("type") for block in content_blocks]',
   '"formatted_blocks": formatted_blocks',
   '"media_urls": [block["url"] for block in media_blocks]',
-  "shape durable article handoff rows",
+  "build article rows, not raw lookup dumps",
   "## Direct article handoff",
   "`404 article_not_found`",
   '<Card title="Article row" icon="file-text">',

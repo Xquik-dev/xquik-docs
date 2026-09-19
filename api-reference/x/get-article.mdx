@@ -1,7 +1,7 @@
 ---
 title: "X article API for long-form tweet & post content"
 sidebarTitle: "Get X article"
-description: "Retrieve one long-form X Article by tweet ID with title, body blocks, cover image, author profile, publication time, and engagement metrics. See costs."
+description: "Retrieve one long-form X Article by tweet ID with title, body blocks, cover image, author profile, publication time, and engagement metrics. 5 credits per call."
 api: "GET /x/articles/{tweetId}"
 keywords:
   [
@@ -12,6 +12,7 @@ keywords:
     "tweet article API",
     "long-form Twitter posts",
     "article body",
+    "article body endpoint",
     "cover image",
     "CSV export",
   ]
@@ -145,9 +146,7 @@ import TweetReadApiLinks from "/snippets/x-tweet-read-api-links.mdx";
 
 <Info>
 
-Get X Article returns one long-form X Article by wrapper tweet ID. It is also
-useful as an X article API, Twitter article API, tweet article API, long-form
-post API, or article body endpoint. The canonical endpoint remains
+Get X Article returns one long-form X Article by wrapper tweet ID. The endpoint is
 `GET /api/v1/x/articles/{tweetId}`.
 
 </Info>
@@ -239,12 +238,12 @@ print(json.dumps(handoff))
 
 </CodeGroup>
 
-The examples shape durable article handoff rows instead of raw lookup dumps.
+The examples build article rows, not raw lookup dumps.
 Use `GET /api/v1/x/articles/{tweetId}` when a workflow needs one long-form post
 body plus article metadata. Store `tweet_id`,
 `article_title`, `preview_text`, `author_id`, `author_username`, `author_name`,
 `author_profile_picture`, `created_at`, `cover_image_url`, and `body_text` with
-the downstream record. Store `block_count`, `block_types`, `formatted_blocks`,
+the record you pass on. Store `block_count`, `block_types`, `formatted_blocks`,
 and `media_urls` when your archive, article index, or agent handoff needs
 block-level completeness and formatting checks.
 
@@ -330,7 +329,7 @@ an X Article URL. A normal tweet ID can be valid and still return
   </Card>
   <Card title="Not an article" icon="circle-alert">
 
-    Treat `article_not_found` as a terminal lookup result for that tweet ID.
+    `article_not_found` is final for that tweet ID.
     Ask for an X Article URL or use a tweet/thread endpoint.
 
   </Card>
@@ -344,25 +343,25 @@ an X Article URL. A normal tweet ID can be valid and still return
 
 ## Store an X article archive
 
-Preserve the wrapper Tweet ID, article fields, structured content blocks,
+Keep the wrapper Tweet ID, article fields, structured content blocks,
 author, cover image, and collection time. Keep `article.contents[]` when the
 archive must reconstruct headings, lists, quotes, media, dividers, or code.
 
-| Article archive column | Response source                   | Archive rule                                                    |
-| ---------------------- | --------------------------------- | --------------------------------------------------------------- |
-| `wrapper_tweet_id`     | Requested `tweetId`               | Use as the stable article lookup key.                           |
-| `article_title`        | `article.title`                   | Preserve the returned X Article title.                          |
-| `preview_text`         | `article.previewText`             | Store the short article preview when returned.                  |
-| `body_text`            | Derived from `article.contents[]` | Build searchable text without discarding structured blocks.     |
-| `content_blocks`       | `article.contents[]`              | Preserve block order, type, text, styles, and media references. |
-| `cover_image_url`      | `article.coverImageUrl`           | Keep the article cover asset with its source record.            |
-| `author_id`            | `author.id`                       | Use as the stable article-author key.                           |
-| `author_username`      | `author.username`                 | Display the current author handle.                              |
-| `created_at`           | `article.createdAt`               | Preserve the article publication time.                          |
-| `media_urls`           | Media block URLs                  | Keep inline images or videos with their block positions.        |
-| `collected_at`         | Integration timestamp             | Audit when the article body was retrieved.                      |
+| Article archive column | Response source                   | Archive rule                                                |
+| ---------------------- | --------------------------------- | ----------------------------------------------------------- |
+| `wrapper_tweet_id`     | Requested `tweetId`               | Use as the stable article lookup key.                       |
+| `article_title`        | `article.title`                   | Keep the returned X Article title.                          |
+| `preview_text`         | `article.previewText`             | Store the short article preview when returned.              |
+| `body_text`            | Derived from `article.contents[]` | Build searchable text and keep the structured blocks.       |
+| `content_blocks`       | `article.contents[]`              | Keep block order, type, text, styles, and media references. |
+| `cover_image_url`      | `article.coverImageUrl`           | Keep the article cover asset with its source record.        |
+| `author_id`            | `author.id`                       | Use as the stable article-author key.                       |
+| `author_username`      | `author.username`                 | Display the current author handle.                          |
+| `created_at`           | `article.createdAt`               | Keep the article publication time.                          |
+| `media_urls`           | Media block URLs                  | Keep inline images or videos with their block positions.    |
+| `collected_at`         | Integration timestamp             | Audit when the article body was retrieved.                  |
 
-| Article block | Text projection     | Structured value to preserve       |
+| Article block | Text projection     | Structured value to keep           |
 | ------------- | ------------------- | ---------------------------------- |
 | Heading       | Heading text        | Heading level and inline styles    |
 | Paragraph     | Paragraph text      | Inline links, mentions, and styles |
