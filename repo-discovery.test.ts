@@ -1550,7 +1550,7 @@ const REQUIRED_TERRAFORM_PROVIDER_WORKFLOW_SNIPPETS = [
   "It requires `id` and returns `type`, `username`, `monitor_id`, `occurred_at`, `x_event_id`, and `data`.",
   "Production webhook payloads include `deliveryId` and `streamEventId`.",
   "Store `deliveryId` for receiver idempotency.",
-  "Store `streamEventId` when one monitor event must be processed once across retries or endpoint changes.",
+  "Store `streamEventId` when you must process one monitor event once across retries or endpoint changes.",
   "`GET /webhooks/{id}/deliveries`",
   "`tweet.new`",
   "`tweet.reply`",
