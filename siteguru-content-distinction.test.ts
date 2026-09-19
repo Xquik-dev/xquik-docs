@@ -177,7 +177,7 @@ const CONTENT_REQUIREMENTS: readonly ContentRequirement[] = [
   },
   {
     file: "api-reference/credits/topup-status.mdx",
-    phrases: ["Gate queued API work on the checkout result"],
+    phrases: ["Hold queued API work until checkout is paid"],
   },
   {
     file: "api-reference/x-write/follow.mdx",
