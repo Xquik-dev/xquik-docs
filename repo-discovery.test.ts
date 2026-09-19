@@ -2665,8 +2665,8 @@ const REQUIRED_EVENT_TYPES_GUIDE_SNIPPETS = [
   "query?: string;",
   "keywordMonitorId?: string;",
   "xEventId?: string;",
-  "`monitorType` is `account` or `keyword`; `monitorId` points to the source monitor.",
-  "Account events include `username`; keyword events include `query` and `keywordMonitorId`.",
+  "`monitorType` is `account` or `keyword`. `monitorId` points to the source monitor.",
+  "Account events include `username`. Keyword events include `query` and `keywordMonitorId`.",
   "Use `nextCursor` with the `cursor` query parameter for subsequent pages.",
 ] as const;
 
@@ -2803,7 +2803,7 @@ const REQUIRED_DRAFT_TYPES_GUIDE_SNIPPETS = [
   "interface Draft",
   "updatedAt: string;",
   "List, create, and get responses include `id`, `text`, `createdAt`, and `updatedAt`.",
-  "Optional `topic` and `goal` fields are omitted (not null) when not set.",
+  "Optional `topic` and `goal` fields are omitted when not set. They are never `null`.",
   "Use `nextCursor` with the `afterCursor` query parameter to fetch subsequent pages.",
 ] as const;
 
