@@ -5523,7 +5523,7 @@ const FORBIDDEN_SEARCH_USERS_API_RAW_OUTPUT_SNIPPETS = [
 
 const REQUIRED_USER_MENTIONS_API_HANDOFF_SNIPPETS = [
   'title: "Twitter mentions timeline API & profile alerts"',
-  "Twitter mentions timeline API returns tweets that mention one X account.",
+  "This route returns tweets that mention one X account.",
   "brand mentions, support inboxes, lead routing, and agent handoffs",
   "`GET /api/v1/x/users/{id}/mentions`",
   "# Username mentions timeline",
@@ -5537,7 +5537,7 @@ const REQUIRED_USER_MENTIONS_API_HANDOFF_SNIPPETS = [
   "`GET /x/users/{id}/mentions`",
   "support, community, brand monitoring,",
   "This mentions timeline endpoint accepts either a username or numeric user ID",
-  "[`mentions`](/api-reference/extractions/create)",
+  "[`mention_extractor`](/api-reference/extractions/create)",
   "CSV/JSON/XLSX file export",
   "## Which timeline endpoint?",
   "Use `GET /api/v1/x/users/{id}/mentions` for one user's mentions timeline.",
@@ -5591,7 +5591,7 @@ const REQUIRED_USER_MENTIONS_API_HANDOFF_SNIPPETS = [
   "`402 insufficient_credits`",
   "## Build a mentions triage job",
   "support inbox, lead queue, campaign report, or",
-  "bounded mention pages with resumable cursor state",
+  "mention pages for a fixed time window, with a cursor to resume",
   '<Card title="Resolve the target" icon="user-round">',
   '<Card title="Bound the window" icon="calendar-range">',
   '<Card title="Route the row" icon="git-branch">',
