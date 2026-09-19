@@ -2526,7 +2526,7 @@ const FORBIDDEN_API_KEYS_CREATE_LOG_SNIPPETS = [
 ] as const;
 
 const REQUIRED_ACCOUNT_API_SNIPPETS = [
-  "Number of currently active account monitors and keyword monitors.",
+  "Number of active account monitors and keyword monitors.",
   "`monitorsUsed`, `monitorBilling.activeHourlyBurn`, and `monitorBilling.activeDailyEstimate` include active account monitors and active keyword monitors.",
 ] as const;
 
