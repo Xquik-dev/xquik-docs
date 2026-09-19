@@ -1113,7 +1113,7 @@ const REQUIRED_PHP_SDK_WORKFLOW_SNIPPETS = [
   "'xquik-followers.json'",
   "format: ExportFormat::XLSX",
   "'xquik-followers.xlsx'",
-  "Persist `$job->id`, `$targetUsername`, `$estimate->estimatedResults`, and `$estimate->source` before polling",
+  "Store `$job->id`, `$targetUsername`, `$estimate->estimatedResults`, and `$estimate->source` before polling",
   "pass `$page->nextCursor` back as `cursor`",
   "Map exported `User ID` or row `xUserId` as the CRM unique key.",
   "`xquik-followers.jsonl` for queue replay or warehouse loads",
