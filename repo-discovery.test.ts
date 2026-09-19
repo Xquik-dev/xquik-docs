@@ -9876,7 +9876,7 @@ const REQUIRED_ACCOUNT_MONITOR_DELETE_API_HANDOFF_SNIPPETS = [
   "`isActive: false` when",
   "you only need to pause alerts",
   "## Plan retention before monitor deletion",
-  "Cleanup removes stored events and linked delivery records in bounded batches.",
+  "Cleanup removes stored events and linked delivery records in batches.",
   "Never place API keys in exports.",
   "## Select the exact Twitter account monitor",
   "Delete account monitors and keyword monitors through their matching routes.",
