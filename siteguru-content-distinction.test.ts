@@ -88,7 +88,7 @@ const CONTENT_REQUIREMENTS: readonly ContentRequirement[] = [
     phrases: [
       "Build a reviewable community brief",
       "Validate the new community",
-      "Handle creation failures safely",
+      "Handle creation failures",
     ],
   },
   {
