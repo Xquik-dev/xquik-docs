@@ -3529,14 +3529,14 @@ const FORBIDDEN_X_ACCOUNT_PUBLIC_CONTRACT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_X_ACCOUNTS_DISCONNECT_SNIPPETS = [
-  'description: "Delete the stored Xquik connection only; the X account stays unchanged, old IDs return 404, and reconnecting creates a new ID. Includes request fields."',
+  'description: "Delete the stored Xquik connection for one X account. The X account stays unchanged. The old ID then returns 404, and reconnecting creates a new account ID."',
   "It deletes only the stored Xquik connection for that account ID.",
   "It does not change the X account itself.",
   "After success, the old Xquik account ID returns `404`; reconnect the account to get a new ID.",
   "## What disconnect does",
   "<CardGroup cols={1}>",
   '<Card title="Removes this connection" icon="trash-2">',
-  "The stored connection row is removed from your Xquik account.",
+  "Xquik removes the stored connection row from your account.",
   "Future `GET /x/accounts/{id}` calls for the same ID return `404`.",
   '<Card title="Stops writes immediately" icon="send">',
   "The dashboard Disconnect button uses the same endpoint",
@@ -3546,7 +3546,7 @@ const REQUIRED_X_ACCOUNTS_DISCONNECT_SNIPPETS = [
   "does not remove monitors that track that username.",
   '<Card title="Reconnect with a new ID" icon="refresh-cw">',
   "[Connect X Account](/api-reference/x-accounts/connect)",
-  "Store the new account `id` from the connect response instead of reusing the deleted ID.",
+  "Store the new account `id` from the connect response. Do not reuse the deleted ID.",
 ] as const;
 
 const REQUIRED_SERVICE_ERROR_GUIDE_SNIPPETS = [
