@@ -7795,7 +7795,7 @@ const REQUIRED_WEBHOOK_VERIFICATION_SNIPPETS = [
   '<Card title="Incident fields" icon="activity">',
   "`status`, `attempts`, `lastStatusCode`, `lastError`, `createdAt`, and",
   "Production monitor deliveries include `deliveryId` and `streamEventId`.",
-  "`webhook.test` deliveries include `eventType`, `data`, and `timestamp`; they omit monitor idempotency fields.",
+  "`webhook.test` deliveries include `eventType`, `data`, and `timestamp`. They omit monitor idempotency fields.",
   "Use `deliveryId` as the webhook delivery idempotency key.",
   "Use `streamEventId` when your system should process one monitor event only once across webhook retries or endpoint changes.",
   "Do not hash the raw request body when `deliveryId` is available.",
