@@ -72,12 +72,12 @@ describe("delete tweet draft documentation", (): void => {
 
     expect(
       [
-        'title: "Delete tweet drafts safely with the Xquik API"',
+        'title: "Delete saved tweet drafts by ID with the Xquik API"',
         '"tweet draft"',
         '"delete tweet draft"',
         "## Handle 204 no content",
         "## Recover from draft deletion errors",
-        "## Answer tweet draft deletion questions",
+        "## Tweet draft deletion questions",
       ].every((snippet) => page.includes(snippet)),
     ).toBe(true);
   });
