@@ -2104,7 +2104,7 @@ const REQUIRED_DOCS_MCP_SERVER_SNIPPETS = [
   "A question about how draw filters work hits the docs server.",
   "A request to run a draw hits the API server.",
   "## What gets searched",
-  "API reference (130 documented operations)",
+  "API reference (129 documented operations)",
   "Webhook documentation (overview, signature verification)",
   "MCP server setup and tools reference",
   "OAuth 2.1 documentation",
@@ -7920,7 +7920,7 @@ const REQUIRED_WEBHOOK_ARCHITECTURE_SNIPPETS = [
 
 const REQUIRED_ARCHITECTURE_COMPONENT_SNIPPETS = [
   '<Card title="REST API" icon="braces">',
-  "131 documented operations at `https://xquik.com/api/v1/*`",
+  "129 documented operations at `https://xquik.com/api/v1/*`",
   '<Card title="MCP server" icon="bot">',
   "3 tools, `docs`, `search`, and `execute`, at `https://xquik.com/mcp`",
   '<Card title="Dashboard" icon="layout-dashboard">',
