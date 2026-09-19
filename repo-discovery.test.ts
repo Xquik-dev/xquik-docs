@@ -5250,7 +5250,7 @@ const REQUIRED_LIST_MEMBERS_API_HANDOFF_SNIPPETS = [
   '<Card title="Next page" icon="arrow-right">',
   '<Card title="Page size" icon="rows-3">',
   '<Card title="Saved export" icon="file-spreadsheet">',
-  "Treat the returned `users.length` as the row",
+  "`users.length` is the row count for the page.",
   "## Which list endpoint?",
   '<Card title="List members" icon="users">',
   '<Card title="List followers" icon="user-plus">',
