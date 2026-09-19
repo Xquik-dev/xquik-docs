@@ -2671,7 +2671,7 @@ const REQUIRED_EVENT_TYPES_GUIDE_SNIPPETS = [
 ] as const;
 
 const REQUIRED_EVENT_LIST_API_HANDOFF_SNIPPETS = [
-  'description: "Query stored tweet, follower, following, profile, and keyword monitor events by monitor, event type, time range, and cursor. Includes response fields."',
+  'description: "Query stored tweet and profile change events from account and keyword monitors. Filter by monitor or event type and paginate with a cursor. Listing is free."',
   "jq '. as $page | .events[] | {",
   "event_id: .id",
   "monitor_type: .monitorType",
