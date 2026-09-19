@@ -562,7 +562,7 @@ const REQUIRED_PYTHON_SDK_WORKFLOW_SNIPPETS = [
   'Path("xquik-followers.csv")',
   'Path("xquik-followers.json")',
   'Path("xquik-followers.xlsx")',
-  "Persist `job.id`, `target_username`, `estimate.estimated_results`, and `estimate.source` before polling",
+  "Store `job.id`, `target_username`, `estimate.estimated_results`, and `estimate.source` before polling",
   "pass `next_cursor` back as `cursor`",
   "`xquik-followers.jsonl` for queue replay or warehouse loads",
   "`xquik-followers.json` for app ingestion",
@@ -614,9 +614,9 @@ const REQUIRED_PYTHON_SDK_WORKFLOW_SNIPPETS = [
   "Shared logs, public artifacts, queue status, and agent handoffs should store `message_id`, optional `media_id`, `account`, `user_id`, and send status instead of full DM bodies.",
   "Leave `reply_to_message_id` unset even if generated SDK types expose it; the REST endpoint rejects DM reply threading.",
   "Do not pass uploaded `media.media_id` values to `client.x.tweets.create`",
-  "Throws `BadRequestError`.",
-  "Throws `RateLimitError`.",
-  "Throws `InternalServerError`.",
+  "Raises `BadRequestError`.",
+  "Raises `RateLimitError`.",
+  "Raises `InternalServerError`.",
 ] as const;
 
 const FORBIDDEN_PYTHON_SDK_RAW_SEARCH_SNIPPETS = [
@@ -699,7 +699,7 @@ const REQUIRED_RUBY_SDK_WORKFLOW_SNIPPETS = [
   'File.binwrite("xquik-followers.json", json_response.read)',
   "format_: :xlsx",
   'File.binwrite("xquik-followers.xlsx", xlsx_response.read)',
-  "Persist `job.id`, `target_username`, `estimate.estimated_results`, and `estimate.source` before polling",
+  "Store `job.id`, `target_username`, `estimate.estimated_results`, and `estimate.source` before polling",
   "pass `next_cursor` back as `cursor`",
   "Map exported `User ID` or row `xUserId` as the CRM unique key.",
   "`xquik-followers.jsonl` for queue replay or warehouse loads",
@@ -754,9 +754,9 @@ const REQUIRED_RUBY_SDK_WORKFLOW_SNIPPETS = [
   "Shared logs, public artifacts, queue status, and agent handoffs should store `message_id`, optional `media_id`, `account`, `user_id`, and send status instead of full DM bodies.",
   "Leave generated `reply_to_message_id` unset even if SDK params expose it; the REST endpoint rejects DM reply threading.",
   "Do not pass uploaded `media.media_id` values to `client.x.tweets.create`",
-  "Throws `BadRequestError`.",
-  "Throws `RateLimitError`.",
-  "Throws `InternalServerError`.",
+  "Raises `BadRequestError`.",
+  "Raises `RateLimitError`.",
+  "Raises `InternalServerError`.",
 ] as const;
 
 const FORBIDDEN_RUBY_SDK_WEAK_SEARCH_SNIPPETS = [
