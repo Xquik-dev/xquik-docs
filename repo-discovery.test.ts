@@ -4138,7 +4138,7 @@ const REQUIRED_TWEET_QUOTES_API_HANDOFF_SNIPPETS = [
   "`GET /api/v1/x/tweets/{id}/quotes`",
   "quote tweets API",
   "tweet quotes API",
-  "Use this Twitter API to view quote tweets",
+  "This route returns quote tweets",
   "```bash First page",
   "```bash Next page with filters",
   '--data-urlencode "includeReplies=false"',
@@ -4197,7 +4197,7 @@ const REQUIRED_TWEET_QUOTES_API_HANDOFF_SNIPPETS = [
   '<ResponseField name="verified" type="boolean">Whether the author is verified.',
   '<ResponseField name="profilePicture" type="string">Author profile image URL.',
   "`sinceTime`, `untilTime`, `includeReplies`, and tweet result",
-  "filters to bound the quote set",
+  "filters to narrow the quote set",
 ] as const;
 
 const FORBIDDEN_TWEET_QUOTES_API_RAW_OUTPUT_SNIPPETS = [
