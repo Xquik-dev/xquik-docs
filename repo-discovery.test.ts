@@ -6807,7 +6807,7 @@ const REQUIRED_DRAW_EXPORT_RESPONSE_SNIPPETS = [
   "Entry exports use the same suffix pattern with `draw-entries-*` filenames.",
   "**Winner export columns.** Position, Username, Text, Backup",
   "**Entry export columns.** Username, Text, Passed Filter, Language",
-  "Entry exports are capped at 100,000 rows (10,000 for PDF).",
+  "Entry exports stop at 100,000 rows (10,000 for PDF).",
   "### 400 Invalid parameters",
   '"error": "invalid_input"',
   "## Handle giveaway export responses",
