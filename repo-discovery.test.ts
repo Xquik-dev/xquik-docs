@@ -1564,7 +1564,7 @@ const REQUIRED_TERRAFORM_PROVIDER_WORKFLOW_SNIPPETS = [
   "`POST /x/tweets`",
   'media             = ["https://example.com/product-demo.mp4"]',
   "launch_reply_tweet_id",
-  "Text-only tweets and replies cost 30 credits, and attached media adds 2 credits per started MB.",
+  "Text-only tweets and replies cost 30 credits. Attached media adds 2 credits per started MB.",
   "Do not pass uploaded media IDs to this resource",
   "Generated provider docs may list `media_ids` on `x-twitter-scraper_x_tweet`, but `POST /x/tweets` rejects `media_ids`.",
   "Use `media` with public image or MP4 URLs for tweets.",
