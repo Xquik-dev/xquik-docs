@@ -12121,7 +12121,7 @@ const REQUIRED_TWITTER_API_PRO_ALTERNATIVE_SNIPPETS = [
 const REQUIRED_AUDIENSE_ALTERNATIVE_SNIPPETS = [
   "audience intelligence, influencer discovery, tweet search, follower export, account or keyword monitoring, signed webhooks, API access, and agent handoff",
   "## Source-backed Audiense scope",
-  "Audiense's official Insights page describes audience intelligence for customer insights, creative decisions, influencer discovery, consumer segments, cultural insights, affinities, demographics, interests, personas, advertising targeting, SEO and keyword research, content ideation, and influencer outreach.",
+  "Audiense's official Insights page describes audience intelligence for customer insights, creative decisions, influencer discovery, and consumer segments.",
   "Its current public pricing page lists a Social Intelligence Insights monthly plan with 5 reports per month, an annual plan with 60 reports per year, onboarding, a dedicated account manager, and refresher trainings.",
   "Audiense official pages describe audience segments, cultural insights, affinities, demographics, interests, personas, influencer discovery, report exports, audience member XLS exports, influencer XLS exports, and targeting-pack downloads.",
   "## Audience & influencer handoff",
