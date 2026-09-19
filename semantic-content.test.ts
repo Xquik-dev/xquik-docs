@@ -627,7 +627,7 @@ const REQUIRED_OPERATIONAL_CONTENT = [
     file: "x-api-quickstart.mdx",
     snippets: [
       "| Integration step | Exact API call | Save for the next step |",
-      "| Monitor tweets and replies | `POST /monitors` | Monitor `id`, `username`, `eventTypes`, and `enabled` |",
+      "| Monitor tweets and replies | `POST /monitors` | Monitor `id`, `username`, `eventTypes`, and `isActive` |",
     ],
   },
 ] as const;

@@ -144,7 +144,7 @@ const REQUIRED_QUICKSTART_SNIPPETS = [
   "`POST /monitors`",
   "`POST /webhooks`",
   '<Step title="Fund your account">',
-  "An active plan is not required while sufficient credits remain.",
+  "You need no active plan while enough credits remain.",
   '"isActive": true',
   '"nextBillingAt": "2026-02-24T10:30:00.000Z"',
   "const webhookSecret = webhook.secret;",
@@ -1653,7 +1653,7 @@ const PUBLIC_READ_RATE_LIMIT_EXPECTATIONS = [
   },
   {
     file: "x-api-quickstart.mdx",
-    required: ["300 reads/1s, 120 writes/60s, and 60 deletes/60s"],
+    required: ["300 reads per 1 second, 120 writes per 60 seconds, and 60 deletes per 60 seconds"],
     forbidden: ["60 reads/1s, 30 writes/60s, 15 deletes/60s"],
   },
   {
