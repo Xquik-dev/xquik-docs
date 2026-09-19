@@ -10808,7 +10808,7 @@ const REQUIRED_GOOGLE_ADK_GUIDE_SNIPPETS = [
   "Store each trend `name`, `rank`, `query`, and `description`. Keep response `count`, `woeid`, and the requested region with the run checkpoint.",
   '<Card title="Monitor and webhook setup" icon="radio">',
   "Store the returned monitor `id` as `monitor_id`, `event_types`, `next_billing_at`, the returned webhook `id` as `webhook_id`, `url`, and the one-time `secret` in a secret manager.",
-  "On production deliveries, store `delivery_id` for receiver retry deduplication and `stream_event_id` when one monitor event should process once across endpoint changes.",
+  "On production deliveries, store `delivery_id` for receiver retry deduplication. Store `stream_event_id` when one monitor event should process once across endpoint changes.",
   '<Card title="Stored event replay" icon="activity">',
   "Store `event_id`, `type`, `monitor_id`, `monitor_type`, `occurred_at`, `has_more`, `next_cursor`, and the `cursor` query for the next page.",
   '<Card title="Extraction jobs" icon="database">',
