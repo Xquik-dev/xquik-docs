@@ -10054,7 +10054,7 @@ const REQUIRED_ZAPIER_GUIDE_SNIPPETS = [
   "`performList` and live `perform` return identical snake_case fields.",
   '<Card title="Search action" icon="search">',
   "Search returns stable tweet IDs, authors, timestamps, URLs, and cursors.",
-  '<Card title="Raw-Body signature" icon="shield-check">',
+  '<Card title="Raw-body signature" icon="shield-check">',
   "Changing one raw body byte makes HMAC verification fail.",
   '<Card title="Stale timestamp" icon="clock-alert">',
   "The relay rejects a timestamp outside 5 minutes before JSON parsing.",
