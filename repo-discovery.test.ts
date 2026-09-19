@@ -2843,7 +2843,7 @@ const REQUIRED_ERROR_HANDLING_WRITE_STATUS_SNIPPETS = [
   '<Card title="Retry-After header" icon="timer">',
   "The `Retry-After` header gives seconds to wait before sending the same",
   '<Card title="x_write_ambiguous" icon="activity">',
-  "Completion could not be confirmed. Poll the durable action, then verify",
+  "Xquik could not confirm completion. Poll the durable action, then verify",
   '<Card title="x_transient_error" icon="rotate-ccw">',
   "Temporary write failure. Retry only when `safeToRetry` is `true`.",
   "## Write lifecycle recovery",
