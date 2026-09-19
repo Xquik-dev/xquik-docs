@@ -72,7 +72,7 @@ async () => spec.components.schemas.PaginatedTweets.properties;
 
 ## execute
 
-Execute API calls allowed by the authenticated credential. Full account keys and OAuth tokens keep their existing account capabilities. Guest keys can execute only the 33 eligible GET reads. Authentication and required idempotency headers are injected automatically.
+Execute API calls allowed by the authenticated credential. Full account keys and OAuth tokens keep their existing account capabilities. Guest keys can execute only the 33 eligible GET reads. The server injects authentication and required idempotency headers.
 
 **Input.**
 
@@ -136,7 +136,7 @@ Omit `mode` for tweet search, replies, followers, following, and verified
 followers. Those operations use automatic maximum coverage. Pass
 `next_cursor` back unchanged. Use `mode=standard` only for legacy pagination.
 
-Continue through empty filtered pages while `has_more` is true and the cursor advances. Stop when you reach the requested total or `has_more` becomes false. Treat a missing or repeated `next_cursor` while `has_more` is true as stalled pagination and return the partial count plus a clear stop reason.
+Continue through empty filtered pages while `has_more` is true and the cursor advances. Stop when you reach the requested total or `has_more` becomes false. Treat a missing or repeated `next_cursor` while `has_more` is true as stalled pagination. Return the partial count plus a stop reason.
 
 For advanced nested-reply diagnostics, call
 `/api/v1/x/tweets/<tweet_id>/replies?mode=complete&limit=25000`.
@@ -147,7 +147,7 @@ MCP returns that documented body instead of a tool error.
 Inspect `coveragePercentage`, strategy results, cursor failures, missing
 modules, `recommendedFallback`, and X-dependent coverage limits.
 
-Errors use `error.type`, `error.code`, and `error.message`, with fields such as `error.retryable` or `error.retry_after` when available. Invalid routes stay blocked without suggesting or calling a different operation. Find the exact method and path in `spec.paths` before retrying. Dependency failures use HTTP `424` in this contract. Fix validation errors before retrying, and respect `retry_after` on `429`.
+Errors use `error.type`, `error.code`, and `error.message`, with fields such as `error.retryable` or `error.retry_after` when available. Invalid routes stay blocked without suggesting or calling a different operation. Find the exact method and path in `spec.paths` before retrying. Dependency failures use HTTP `424` in this contract. Fix validation errors before retrying. Respect `retry_after` on `429`.
 
 Write and media results follow the same contract. Read `tweet_id`, `write_action_id`, `charged_credits`, `media_id`, `media_url`, and `message_id` from `response.result`.
 
@@ -636,7 +636,7 @@ Avoid raw pages when later workers need durable rows.
   </Card>
   <Card title="Scrape tweet replies to files" icon="messages-square">
 
-    Call `POST /api/v1/extractions` with `reply_extractor` and `targetTweetId`. The create route handles required preflight. Poll `GET /api/v1/extractions/{id}`, export CSV/JSON/XLSX with `GET /api/v1/extractions/{id}/export`, and store reply rows plus `has_more` and `next_cursor`. Cost: 1 credit per reply extracted or returned.
+    Call `POST /api/v1/extractions` with `reply_extractor` and `targetTweetId`. The create route handles required preflight. Poll `GET /api/v1/extractions/{id}`, export CSV, JSON, or XLSX with `GET /api/v1/extractions/{id}/export`, and store reply rows plus `has_more` and `next_cursor`. Cost: 1 credit per reply extracted or returned.
 
   </Card>
   <Card title="Export followers to CRM" icon="users">
@@ -661,7 +661,7 @@ Avoid raw pages when later workers need durable rows.
   </Card>
   <Card title="Monitor tweets to webhooks" icon="radio">
 
-    Call `POST /api/v1/monitors` or `POST /api/v1/monitors/keywords`, then `POST /api/v1/webhooks`. Store `monitor.id`, `event_types`, `next_billing_at`, `webhook.id`, webhook URL, and the one-time `webhook.secret`, then run `POST /api/v1/webhooks/{id}/test` before routing production events. Verify `X-Xquik-Signature`, deduplicate production payloads with `deliveryId` and `streamEventId`, and inspect `GET /api/v1/webhooks/{id}/deliveries` for retry status rows. Each payload contains one monitor event, so process multiple POSTs when one check catches multiple new matching tweets. Cost: 21 credits per active monitor-hour. Webhook delivery is included.
+    Call `POST /api/v1/monitors` or `POST /api/v1/monitors/keywords`, then `POST /api/v1/webhooks`. Store `monitor.id`, `event_types`, `next_billing_at`, `webhook.id`, webhook URL, and the one-time `webhook.secret`. Run `POST /api/v1/webhooks/{id}/test` before routing production events. Verify `X-Xquik-Signature`. Deduplicate production payloads with `deliveryId` and `streamEventId`. Inspect `GET /api/v1/webhooks/{id}/deliveries` for retry status rows. Each payload contains one monitor event. Process multiple POSTs when one check catches multiple new matching tweets. Cost: 21 credits per active monitor-hour. The rate includes webhook delivery.
 
   </Card>
   <Card title="Replay monitor events" icon="activity">

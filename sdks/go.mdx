@@ -205,7 +205,7 @@ The example builds an `XTweetSearchParams` request so the Go fields stay aligned
   </Card>
 </CardGroup>
 
-Write `Tweets` as JSON Lines to `xquik-tweet-search.jsonl` for queues and data lakes, transform the projected records into CSV for analysts, or produce XLSX from those rows when account teams need spreadsheets. Pass `ID`, `Text`, `Author.Username`, `CreatedAt`, and engagement counts into your CRM or enrichment pipeline. For explicit `Limit` pulls, resume with the same query, filters, `QueryType`, and `Limit`; only `Cursor` changes.
+Write `Tweets` as JSON Lines to `xquik-tweet-search.jsonl` for queues and data lakes, transform the projected records into CSV for analysts, or produce XLSX from those rows when account teams need spreadsheets. Pass `ID`, `Text`, `Author.Username`, `CreatedAt`, and engagement counts into your CRM or enrichment pipeline. For explicit `Limit` pulls, resume with the same query, filters, `QueryType`, and `Limit`. Only `Cursor` changes.
 
 ## Workflow: follower export to CSV, JSON, or XLSX
 
@@ -350,11 +350,11 @@ func writeExport(
 }
 ```
 
-`follower_explorer` requires `TargetUsername`. Store `job.ID`, `targetUsername`, `estimate.EstimatedResults`, and `estimate.Source` before polling so a worker restart can resume the same follower export. `client.Extractions.Get` returns `Results`, `HasMore`, and `NextCursor`; pass `NextCursor` back as `Cursor` when you need stored JSON pages before exporting files. Use `xquik-followers.jsonl` for queue replay or warehouse loads, `xquik-followers.json` for app ingestion, `xquik-followers.csv` for CRM import, and `xquik-followers.xlsx` for analyst handoff. Map exported `User ID` or row `xUserId` as the CRM unique key. Cost: 1 credit per follower extracted or returned. Exports are free after the extraction job exists.
+`follower_explorer` requires `TargetUsername`. Store `job.ID`, `targetUsername`, `estimate.EstimatedResults`, and `estimate.Source` before polling so a worker restart can resume the same follower export. `client.Extractions.Get` returns `Results`, `HasMore`, and `NextCursor`. Pass `NextCursor` back as `Cursor` when you need stored JSON pages before exporting files. Use `xquik-followers.jsonl` for queue replay or warehouse loads, `xquik-followers.json` for app ingestion, `xquik-followers.csv` for CRM import, and `xquik-followers.xlsx` for analyst handoff. Map exported `User ID` or row `xUserId` as the CRM unique key. Cost: 1 credit per follower extracted or returned. Exports are free after the extraction job exists.
 
 ## Workflow: tweet replies to CSV, JSON, or XLSX
 
-Use this workflow when a Go worker, queue consumer, or agent service needs every reply under one tweet as a saved extraction, JSON Lines handoff, or CSV/JSON/XLSX file export. It calls `POST /extractions/estimate` through `client.Extractions.EstimateCost`, creates the job with `client.Extractions.Run`, reads rows with `client.Extractions.Get`, and downloads files with `client.Extractions.ExportResults`.
+Use this workflow when a Go worker, queue consumer, or agent service needs every reply under one tweet as a saved extraction, JSON Lines handoff, or CSV, JSON, or XLSX file export. It calls `POST /extractions/estimate` through `client.Extractions.EstimateCost`, creates the job with `client.Extractions.Run`, reads rows with `client.Extractions.Get`, and downloads files with `client.Extractions.ExportResults`.
 
 Reuse the polling, `writeRows`, and `writeExport` helpers from the follower workflow. Only the tool type, target field, and output filenames change:
 
@@ -387,7 +387,7 @@ writeExport(ctx, client, job.ID, xtwitterscraper.ExtractionExportResultsParamsFo
 writeExport(ctx, client, job.ID, xtwitterscraper.ExtractionExportResultsParamsFormatXlsx, "xquik-replies.xlsx")
 ```
 
-`reply_extractor` requires `TargetTweetID`. `client.Extractions.Get` returns `Results`, `HasMore`, and `NextCursor`, and the shared `writeRows` helper passes `NextCursor` back as `Cursor` until all stored rows are written. Use `xquik-replies.jsonl` for queue replay or warehouse loads, `xquik-replies.json` for app ingestion, `xquik-replies.csv` for CRM import, and `xquik-replies.xlsx` for analyst handoff. `client.Extractions.ExportResults` supports CSV, JSON, and XLSX for file handoff. Cost: 1 credit per reply extracted or returned.
+`reply_extractor` requires `TargetTweetID`. `client.Extractions.Get` returns `Results`, `HasMore`, and `NextCursor`. The shared `writeRows` helper passes `NextCursor` back as `Cursor` until all stored rows are written. Use `xquik-replies.jsonl` for queue replay or warehouse loads, `xquik-replies.json` for app ingestion, `xquik-replies.csv` for CRM import, and `xquik-replies.xlsx` for analyst handoff. `client.Extractions.ExportResults` supports CSV, JSON, and XLSX for file handoff. Cost: 1 credit per reply extracted or returned.
 
 ## Workflow: post media tweets and DM attachments
 
@@ -452,7 +452,7 @@ func createTweetHandoff(action tweetCreatePayload, base map[string]any) map[stri
 }
 ```
 
-Use `option.WithResponseBodyInto` to capture the durable write action. Send a unique `Idempotency-Key`, store `id`, `request.hash`, `billing`, `result`, and `statusUrl`, then poll while `terminal` is false. Retry only when `safeToRetry` is true, using a new key.
+Use `option.WithResponseBodyInto` to capture the durable write action. Send a unique `Idempotency-Key`. Store `id`, `request.hash`, `billing`, `result`, and `statusUrl`. Poll while `terminal` is false. Retry only when `safeToRetry` is true, using a new key.
 
 ```go
 ctx := context.Background()
@@ -537,21 +537,21 @@ if err := json.NewEncoder(os.Stdout).Encode(dmHandoff); err != nil {
 }
 ```
 
-`client.X.Tweets.New` returns `TweetID` for confirmed posts. Raw create responses can also include the pending write fields above when confirmation is still running. `client.X.Media.Upload` returns `media.MediaID` for DM attachments, and `client.X.Dm.Send` returns `dm.MessageID` for support tickets, CRM records, queue jobs, or agent memory.
+`client.X.Tweets.New` returns `TweetID` for confirmed posts. Raw create responses can also include the pending write fields above when confirmation is still running. `client.X.Media.Upload` returns `media.MediaID` for DM attachments. `client.X.Dm.Send` returns `dm.MessageID` for support tickets, CRM records, queue jobs, or agent memory.
 
-Keep DM body text in private systems. Shared logs, public artifacts, queue status, and agent handoffs should store `message_id`, optional `media_id`, `account`, `user_id`, and send status instead of full DM bodies. Leave `ReplyToMessageID` unset even if generated SDK params expose it; the REST endpoint rejects DM reply threading.
+Keep DM body text in private systems. Shared logs, public artifacts, queue status, and agent handoffs should store `message_id`, optional `media_id`, `account`, `user_id`, and send status instead of full DM bodies. Leave `ReplyToMessageID` unset even if generated SDK params expose it. The REST endpoint rejects DM reply threading.
 
-Text-only tweet and reply writes cost 30 credits. Tweet media adds 2 credits per started MB across attached files. Uploading media costs 10 credits, and sending the DM costs 10 credits. Do not pass uploaded `MediaID` values to `client.X.Tweets.New`. That method uses `Media` with public media URLs.
+Text-only tweet and reply writes cost 30 credits. Tweet media adds 2 credits per started MB across attached files. Uploading media costs 10 credits. Sending the DM costs 10 credits. Do not pass uploaded `MediaID` values to `client.X.Tweets.New`. That method uses `Media` with public media URLs.
 
 ## Cost, limits & retries
 
-Tweet search costs 1 credit per tweet returned. If remaining credits cannot cover the requested page, the API can return fewer tweets than `Limit`. If 0 paid results are affordable, it returns `402 insufficient_credits`. Read calls are rate-limited, and `429` responses include `Retry-After`.
+Tweet search costs 1 credit per tweet returned. If remaining credits cannot cover the requested page, the API can return fewer tweets than `Limit`. If 0 paid results are affordable, it returns `402 insufficient_credits`. Xquik rate-limits read calls. `429` responses include `Retry-After`.
 
-Generated Go methods return `error` for connection failures and non-success responses. Retry connection errors, 408, 409, 429, and 5xx responses with backoff. Do not retry 400, 401, 403, 404, or 422 until the request, authentication, permission, or input issue is fixed.
+Generated Go methods return `error` for connection failures and non-success responses. Retry connection errors, 408, 409, 429, and 5xx responses with backoff. Do not retry 400, 401, 403, 404, or 422 until you fix the request, authentication, permission, or input issue.
 
 ## Error handling
 
-Generated Go methods return `error` for connection failures and non-success API responses. Check the concrete error type from the SDK when you need status-code specific handling, and use the [error handling guide](/guides/error-handling) for response semantics.
+Generated Go methods return `error` for connection failures and non-success API responses. Check the concrete error type from the SDK when you need status-code specific handling. Use the [error handling guide](/guides/error-handling) for response semantics.
 
 Common retryable cases are connection errors, 408, 409, 429, and 5xx responses.
 

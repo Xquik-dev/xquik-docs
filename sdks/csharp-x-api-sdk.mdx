@@ -34,7 +34,7 @@ Use typed .NET Standard 2.0+ calls in services, workers, console tools, or ASP.N
 
 ## Install
 
-The current NuGet package excludes `GET /support/attachments/{id}`. Use REST
+The NuGet package excludes `GET /support/attachments/{id}`. Use REST
 for that binary download.
 
 ```bash
@@ -227,15 +227,15 @@ static async Task WriteCsvRow(StreamWriter writer, IEnumerable<object?> values)
 
 `client.X.Tweets.Search` returns `PaginatedTweets`. Use `page.Tweets` for the tweet array, `page.HasNextPage` to decide whether another page exists, and `page.NextCursor` as the checkpoint for the next request. For bounded pulls that return fewer tweets than `Limit`, pass `page.NextCursor` back as `Cursor` with the same query, filters, `QueryType`, and `Limit`.
 
-Each `SearchTweet` includes typed properties such as `ID`, `Text`, `Author`, `CreatedAt`, `LikeCount`, `ReplyCount`, `RetweetCount`, `QuoteCount`, `ViewCount`, `BookmarkCount`, and `IsNoteTweet` when available. Project `page.Tweets` into JSON Lines and CSV rows with `tweet_id`, `author_username`, engagement counts, `page_index`, `page_cursor`, `next_cursor`, and `has_next_page` so workers can resume safely or load the same records into XLSX, CRM, warehouse, or agent workflows.
+Each `SearchTweet` includes typed properties such as `ID`, `Text`, `Author`, `CreatedAt`, `LikeCount`, `ReplyCount`, `RetweetCount`, `QuoteCount`, `ViewCount`, `BookmarkCount`, and `IsNoteTweet` when available. Project `page.Tweets` into JSON Lines and CSV rows with `tweet_id`, `author_username`, engagement counts, `page_index`, `page_cursor`, `next_cursor`, and `has_next_page`. Workers can then resume or load the same records into XLSX, CRM, warehouse, or agent workflows.
 
-Tweet search costs 1 credit per tweet returned. If remaining credits cannot cover a bounded `Limit` request, the API can return fewer tweets. If 0 paid results are affordable, it returns `402 insufficient_credits`. The SDK retries connection errors, 408, 409, 429, and 5xx responses 2 times by default. For explicit `Limit` pulls, resume with the same query, filters, `QueryType`, and `Limit`; only `Cursor` changes.
+Tweet search costs 1 credit per tweet returned. If remaining credits cannot cover a bounded `Limit` request, the API can return fewer tweets. If 0 paid results are affordable, it returns `402 insufficient_credits`. The SDK retries connection errors, 408, 409, 429, and 5xx responses 2 times by default. For explicit `Limit` pulls, resume with the same query, filters, `QueryType`, and `Limit`. Only `Cursor` changes.
 
 ## Workflow: follower export to CSV, JSON, or XLSX
 
 Use this workflow when a .NET worker, console job, or ASP.NET background service needs an owned follower list for a CRM import, warehouse load, analyst CSV file, XLSX workbook, or resumable JSON handoff.
 
-`client.Extractions.EstimateCost` and `client.Extractions.Run` map to the extraction workflow. For follower exports, use `ExtractionEstimateCostParamsToolType.FollowerExplorer` and `ExtractionRunParamsToolType.FollowerExplorer`. `follower_explorer` requires `TargetUsername`. `client.Extractions.Retrieve` returns `Results`, `HasMore`, and `NextCursor` for pagination. `client.Extractions.ExportResults` returns an `HttpResponse`, so read CSV and JSON as strings, and copy XLSX from the response stream.
+`client.Extractions.EstimateCost` and `client.Extractions.Run` map to the extraction workflow. For follower exports, use `ExtractionEstimateCostParamsToolType.FollowerExplorer` and `ExtractionRunParamsToolType.FollowerExplorer`. `follower_explorer` requires `TargetUsername`. `client.Extractions.Retrieve` returns `Results`, `HasMore`, and `NextCursor` for pagination. `client.Extractions.ExportResults` returns an `HttpResponse`. Read CSV and JSON as strings, and copy XLSX from the response stream.
 
 <Info>
 
@@ -339,7 +339,7 @@ using FileStream xlsxFile = File.Create("xquik-followers.xlsx");
 await xlsxStream.CopyToAsync(xlsxFile);
 ```
 
-Cost: 1 credit per follower extracted or returned. Store `job.ID`, `targetUsername`, `estimate.EstimatedResults`, and `estimate.Source` before polling so a queue retry, Windows service restart, or worker restart can resume the same follower export. Keep `page.NextCursor` as the checkpoint when you stream followers to JSON Lines, and map exported `User ID` or row `xUserId` as the CRM unique key. Use `xquik-followers.jsonl` for queue replay or warehouse loads, `xquik-followers.json` for app ingestion, `xquik-followers.csv` for CRM import, and `xquik-followers.xlsx` for analyst handoff. Exports are free after the extraction job exists.
+Cost: 1 credit per follower extracted or returned. Store `job.ID`, `targetUsername`, `estimate.EstimatedResults`, and `estimate.Source` before polling so a queue retry, Windows service restart, or worker restart can resume the same follower export. Keep `page.NextCursor` as the checkpoint when you stream followers to JSON Lines. Map exported `User ID` or row `xUserId` as the CRM unique key. Use `xquik-followers.jsonl` for queue replay or warehouse loads, `xquik-followers.json` for app ingestion, `xquik-followers.csv` for CRM import, and `xquik-followers.xlsx` for analyst handoff. Exports are free after the extraction job exists.
 
 ## Workflow: tweet replies to CSV, JSON, or XLSX
 
@@ -391,7 +391,7 @@ Repeat the export with `new ExtractionExportResultsParams { Format = Format.Json
 
 ## Workflow: post media tweets and DM attachments
 
-Use this workflow when a .NET worker needs to publish a media tweet, reply with media, or send a direct message with an uploaded local file. `client.X.Tweets.Create` maps to `POST /x/tweets`. Pass public media URLs through `Media`. Send up to 4 image URLs or exactly 1 MP4 video URL up to 100 MB, and do not mix video with other media. For replies, set `ReplyToTweetID` to the parent tweet ID. `client.X.Media.Upload` maps to `POST /x/media`. Use `media.MediaID` only for the one-item `MediaIds` handoff on `client.X.Dm.Send`.
+Use this workflow when a .NET worker needs to publish a media tweet, reply with media, or send a direct message with an uploaded local file. `client.X.Tweets.Create` maps to `POST /x/tweets`. Pass public media URLs through `Media`. Send up to 4 image URLs or exactly 1 MP4 video URL up to 100 MB. Do not mix video with other media. For replies, set `ReplyToTweetID` to the parent tweet ID. `client.X.Media.Upload` maps to `POST /x/media`. Use `media.MediaID` only for the one-item `MediaIds` handoff on `client.X.Dm.Send`.
 
 ```csharp
 using System;
@@ -512,7 +512,7 @@ static async Task<Dictionary<string, object?>> CreateTweetHandoff(
 }
 ```
 
-Use `client.X.Tweets.WithRawResponse.Create` to capture the durable write action. Send a unique `Idempotency-Key`, store `id`, `request.hash`, `billing`, `result`, and `statusUrl`, then poll while `terminal` is false. Retry only when `safeToRetry` is true, using a new key.
+Use `client.X.Tweets.WithRawResponse.Create` to capture the durable write action. Send a unique `Idempotency-Key`. Store `id`, `request.hash`, `billing`, `result`, and `statusUrl`. Poll while `terminal` is false. Retry only when `safeToRetry` is true, using a new key.
 
 Keep DM body text in private systems. Shared logs and handoffs should store `message_id`, optional `media_id`, `account`, `user_id`, and lifecycle status. Leave `ReplyToMessageID` unset because the REST endpoint rejects DM reply threading.
 

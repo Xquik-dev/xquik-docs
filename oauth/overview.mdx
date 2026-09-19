@@ -39,12 +39,12 @@ Codex CLI 0.147.0 fixes `Authorization server response missing required issuer: 
 
 </Warning>
 
-- **Client ID Metadata Documents (CIMD).** Recommended for modern clients. The client's HTTPS metadata URL becomes its `client_id`. No registration request or client secret is required.
+- **Client ID Metadata Documents (CIMD).** Recommended for modern clients. The client's HTTPS metadata URL becomes its `client_id`. It needs no registration request or client secret.
 - **Dynamic Client Registration (DCR).** Compatibility fallback for clients that do not publish CIMD. The client registers itself once at `/api/oauth/register`.
 
 ## Discovery
 
-Xquik publishes standard OAuth discovery documents so MCP clients can auto-configure endpoints.
+Xquik publishes standard OAuth discovery documents. MCP clients use them to configure endpoints.
 
 ### Authorization server metadata
 
@@ -191,7 +191,7 @@ can show a concrete `client_id`.
     - Development: HTTP loopback callbacks may use `localhost`, `127.0.0.1`, or `::1`
     - HTTPS and supported native callbacks require exact matching
     - HTTP loopback callbacks may change only the ephemeral port. Scheme, host, path, and query must match
-    - Wildcards and subpath matching are not supported
+    - Xquik does not support wildcards or subpath matching
 
     **Client types.**
     - **Public** (`token_endpoint_auth_method: "none"`): Default. No client secret. Browser apps and MCP clients use it.
@@ -294,7 +294,7 @@ can show a concrete `client_id`.
 
     | Parameter | Default | Description |
     |-----------|---------|-------------|
-    | `scope` | `mcp:tools` | Only `mcp:tools` is supported |
+    | `scope` | `mcp:tools` | Xquik supports only `mcp:tools` |
     | `state` | | Opaque value for CSRF protection |
 
     These examples use `/mcp`. Direct REST clients use `https://xquik.com`.
@@ -504,9 +504,9 @@ This revokes the registration and every access token. Revoking one access token 
 
 ## Scopes
 
-| Scope       | Description                                                                                     |
-| ----------- | ----------------------------------------------------------------------------------------------- |
-| `mcp:tools` | Full access to all MCP tools (search tweets, manage monitors, run extractions, run draws, etc.) |
+| Scope       | Description                                                                          |
+| ----------- | ------------------------------------------------------------------------------------ |
+| `mcp:tools` | Full access to all MCP tools, such as tweet search, monitors, extractions, and draws |
 
 Xquik supports only `mcp:tools`. It offers no partial scopes or scope combinations.
 
@@ -570,16 +570,16 @@ optional `state`, and `iss=https://xquik.com` query parameters.
 
 ### Token errors
 
-| Error                    | When                                                                                                                              |
-| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------- |
-| `invalid_request`        | Missing `code`, `code_verifier`, `client_id`, or `refresh_token`                                                                  |
-| `invalid_grant`          | Code/token is invalid, expired, or already used. Also: `client_id` mismatch, `redirect_uri` mismatch, or PKCE verification failed |
-| `authorization_pending`  | The user has not completed the agent claim                                                                                        |
-| `slow_down`              | Claim polling exceeded the returned interval                                                                                      |
-| `access_denied`          | The agent claim was denied or revoked                                                                                             |
-| `expired_token`          | The claim token or user code expired                                                                                              |
-| `unsupported_grant_type` | Grant type is not advertised by discovery                                                                                         |
-| `invalid_target`         | Resource is not a published protected resource                                                                                    |
+| Error                    | When                                                                                                                                                  |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `invalid_request`        | Missing `code`, `code_verifier`, `client_id`, or `refresh_token`                                                                                      |
+| `invalid_grant`          | The code or token is invalid, expired, or already used. It also covers a `client_id` mismatch, a `redirect_uri` mismatch, or failed PKCE verification |
+| `authorization_pending`  | The user has not completed the agent claim                                                                                                            |
+| `slow_down`              | Claim polling exceeded the returned interval                                                                                                          |
+| `access_denied`          | The agent claim was denied or revoked                                                                                                                 |
+| `expired_token`          | The claim token or user code expired                                                                                                                  |
+| `unsupported_grant_type` | Grant type is not advertised by discovery                                                                                                             |
+| `invalid_target`         | Resource is not a published protected resource                                                                                                        |
 
 ### Registration errors
 

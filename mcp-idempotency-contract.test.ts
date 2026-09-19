@@ -18,7 +18,9 @@ describe("hosted MCP idempotency contract", () => {
     expect(overview).toMatch(
       /injects authentication and required idempotency headers|required idempotency headers (?:are )?injected/,
     );
-    expect(tools).toMatch(/required idempotency headers (?:are )?injected/);
+    expect(tools).toMatch(
+      /injects authentication and required idempotency headers|required idempotency headers (?:are )?injected/,
+    );
     expect(handoff).toContain(
       "Hosted MCP injects authentication and required idempotency headers.",
     );

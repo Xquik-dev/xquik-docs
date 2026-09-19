@@ -56,7 +56,7 @@ Prefer environment variables for credentials. If you pass credentials through Te
 
 Use this workflow when Terraform should own a production tweet monitor and the webhook endpoint that receives signed events for queues, incident tools, social listening dashboards, or CRM enrichment.
 
-The provider resources map to the REST API: `x-twitter-scraper_monitor` creates an account monitor through `POST /monitors`, and `x-twitter-scraper_webhook` creates a signed webhook through `POST /webhooks`. Both resources use Terraform snake_case arguments that map to the API request fields.
+The provider resources map to the REST API: `x-twitter-scraper_monitor` creates an account monitor through `POST /monitors`. `x-twitter-scraper_webhook` creates a signed webhook through `POST /webhooks`. Both resources use Terraform snake_case arguments that map to the API request fields.
 
 ```hcl
 variable "webhook_url" {
@@ -125,9 +125,9 @@ Tweet event types include `tweet.new`, `tweet.reply`, `tweet.quote`, and `tweet.
 
 ### Returned data & handoff
 
-After `terraform apply`, hand `monitor_id` to operators who need to pause, update, or delete the monitor through Terraform. Hand `webhook_id` to delivery dashboards and support playbooks. Store `webhook_secret` in a secret manager and use it to verify `X-Xquik-Signature`, `X-Xquik-Timestamp`, and `X-Xquik-Nonce` on every delivery.
+After `terraform apply`, hand `monitor_id` to operators who need to pause, update, or delete the monitor through Terraform. Hand `webhook_id` to delivery dashboards and support playbooks. Store `webhook_secret` in a secret manager. Use it to verify `X-Xquik-Signature`, `X-Xquik-Timestamp`, and `X-Xquik-Nonce` on every delivery.
 
-Production webhook payloads include `deliveryId` and `streamEventId`. Store `deliveryId` for receiver idempotency. Store `streamEventId` when you must process one monitor event once across retries or endpoint changes. Use `GET /webhooks/{id}/deliveries` to inspect retry state by webhook after apply. Synthetic `webhook.test` requests verify signing only and do not include those production idempotency fields.
+Production webhook payloads include `deliveryId` and `streamEventId`. Store `deliveryId` for receiver idempotency. Store `streamEventId` when you must process one monitor event once across retries or endpoint changes. Use `GET /webhooks/{id}/deliveries` to inspect retry state by webhook after apply. Synthetic `webhook.test` requests verify signing only. They omit those production idempotency fields.
 
 Webhook operations are free. Active monitors check every second and cost 21
 credits per monitor-hour. Creating one requires the username lookup cost and
@@ -135,7 +135,7 @@ the first monitor hour. Monitors may pause when credits run out.
 
 ### State & secrets
 
-Terraform state can contain the webhook `secret` returned at creation time. Use an encrypted backend, restrict state access, and mark every output that references the secret as `sensitive = true`. If the secret is lost or exposed, delete and recreate the webhook so Terraform receives a new signing secret.
+Terraform state can contain the webhook `secret` returned at creation time. Use an encrypted backend, restrict state access, and mark every output that references the secret as `sensitive = true`. If you lose or expose the secret, delete and recreate the webhook. Terraform then receives a new signing secret.
 
 ## Workflow: declare media tweets and replies
 
@@ -166,7 +166,7 @@ output "launch_reply_tweet_id" {
 
   <Card title="Media boundary" icon="image">
 
-    The `media` argument is for public image URLs or exactly one public MP4 URL. Text-only tweets and replies cost 30 credits, and attached media adds 2 credits per started MB. Do not pass uploaded media IDs to this resource. Uploaded media IDs are for direct messages through `POST /x/dm/{userId}`.
+    The `media` argument is for public image URLs or exactly 1 public MP4 URL. Text-only tweets and replies cost 30 credits. Attached media adds 2 credits per started MB. Do not pass uploaded media IDs to this resource. Uploaded media IDs are for direct messages through `POST /x/dm/{userId}`.
 
   </Card>
 </CardGroup>

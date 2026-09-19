@@ -142,7 +142,7 @@ Use this matrix before choosing code, webhooks, MCP, or exports.
     First call: `POST /webhooks`, then `POST /webhooks/{id}/test`.
     Returns: delivery status and signed event body.
     Handoff: queue, Slack, CRM, or warehouse endpoint.
-    Cost: webhook management and deliveries are included with active monitor billing.
+    Cost: active monitor billing includes webhook management and deliveries.
 
   </Accordion>
   <Accordion title="AI research agent">
@@ -227,7 +227,7 @@ Prioritize rows for analysts, IDs for systems of record, events for queues, and 
     Delivers new posts, replies, quotes, and retweets to queues without polling.
     First: `POST /monitors` for accounts or `POST /monitors/keywords` for search queries, then `POST /webhooks`.
     Handoff: signed payload with `deliveryId`, `streamEventId`, `eventType`, and tweet data.
-    Cost model: 21 credits per active monitor-hour. Webhook delivery is included.
+    Cost model: 21 credits per active monitor-hour. The rate includes webhook delivery.
 
   </Card>
   <Card title="5. Post media tweets or replies" icon="image">
@@ -314,11 +314,11 @@ curl -X POST https://xquik.com/api/v1/monitors \
   }' | jq
 ```
 
-For query alerts, call `POST /monitors/keywords` with `query` and `eventTypes` instead of `username`. Account and keyword monitors both check every 1 second while active, and both can deliver events to the same signed webhooks.
+For query alerts, call `POST /monitors/keywords` with `query` and `eventTypes` instead of `username`. Account and keyword monitors both check every 1 second while active. Both can deliver events to the same signed webhooks.
 
 Each POST has 1 event. Multiple matches produce multiple POSTs.
 
-Payloads include durable IDs. Store `deliveryId` for delivery-level idempotency. Store `streamEventId` when you must process the same monitor event once across retries or endpoints. Store the one-time `secret` returned by `POST /webhooks` and verify `X-Xquik-Signature` against the raw body before accepting the event. Return `2xx` before slow CRM, Slack, warehouse, or queue work starts.
+Payloads include durable IDs. Store `deliveryId` for delivery-level idempotency. Store `streamEventId` when you must process the same monitor event once across retries or endpoints. Store the one-time `secret` returned by `POST /webhooks`. Verify `X-Xquik-Signature` against the raw body before accepting the event. Return `2xx` before slow CRM, Slack, warehouse, or queue work starts.
 
 #### Receiver storage handoff
 
@@ -365,7 +365,7 @@ The response is a durable action record. Store `id`, `status`, `billing`, `resul
 
 ### 6. Send direct messages with returned IDs
 
-Use this when a support, sales, or agent workflow needs direct messages with audit trails. Look up the recipient user ID, pass the same connected sender as `account` for history reads and DM writes, then store returned message IDs.
+Use this when a support, sales, or agent workflow needs direct messages with audit trails. Look up the recipient user ID. Pass the same connected sender as `account` for history reads and DM writes. Then store returned message IDs.
 
 ```bash
 curl -G https://xquik.com/api/v1/x/dm/987654321/history \
@@ -373,7 +373,7 @@ curl -G https://xquik.com/api/v1/x/dm/987654321/history \
   -H "x-api-key: xq_YOUR_KEY_HERE" | jq
 ```
 
-History reads require `account`, and that connected account must participate in the conversation. Missing `account` returns `400 account_required`. A non-participant account returns `403 dm_not_permitted`.
+History reads require `account`. That connected account must participate in the conversation. Missing `account` returns `400 account_required`. A non-participant account returns `403 dm_not_permitted`.
 
 ```bash
 curl -X POST https://xquik.com/api/v1/x/dm/987654321 \
@@ -385,7 +385,7 @@ curl -X POST https://xquik.com/api/v1/x/dm/987654321 \
   }' | jq
 ```
 
-`GET /x/dm/{userId}/history` returns `messages`, `has_next_page`, and `next_cursor`. Pass `next_cursor` back as `cursor` for older messages. `POST /x/dm/{userId}` returns `messageId` and `success`, which you should store on the support ticket, CRM note, or agent state.
+`GET /x/dm/{userId}/history` returns `messages`, `has_next_page`, and `next_cursor`. Pass `next_cursor` back as `cursor` for older messages. `POST /x/dm/{userId}` returns `messageId` and `success`. Store both on the support ticket, CRM note, or agent state.
 
 ## Focused workflow pages
 
@@ -405,7 +405,7 @@ Choose a path, then open its examples, SDK guidance, and error recovery.
   </Card>
   <Card title="Follower CRM export" icon="users" href="/guides/follower-export-crm">
 
-    Estimate `follower_explorer`, export CSV/JSON/XLSX files, and map stable `x_user_id` fields.
+    Estimate `follower_explorer`, export CSV, JSON, or XLSX files, and map stable `x_user_id` fields.
 
   </Card>
   <Card title="Campaign verification" icon="badge-check" href="/guides/campaign-verification-workflow">
@@ -442,7 +442,7 @@ Choose a path, then open its examples, SDK guidance, and error recovery.
 
 ## Public draw results
 
-Completed giveaway draws have a public results page at `https://xquik.com/results/{drawId}`. No authentication required. Share the URL with participants for transparency.
+Completed giveaway draws have a public results page at `https://xquik.com/results/{drawId}`. The page needs no authentication. Share the URL with participants for transparency.
 
 <CardGroup cols={2}>
 
