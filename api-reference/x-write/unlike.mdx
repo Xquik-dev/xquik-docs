@@ -1,7 +1,7 @@
 ---
 title: "Remove Twitter likes API: unlike a tweet by ID"
 sidebarTitle: "Unlike tweet"
-description: "Use the Remove Twitter Likes API to unlike one tweet by ID. Store the acting account, durable action, terminal result, billed credits, and retry decision."
+description: "Unlike one tweet by ID from a connected X account. Store the acting account, write action, terminal result, and billed credits. Each call costs 10 credits."
 api: "DELETE /x/tweets/{id}/like"
 keywords:
   [
@@ -183,14 +183,10 @@ import WriteActionLifecycleResponse from "/snippets/write-action-lifecycle-respo
 
 </Callout>
 
-Use this Remove Twitter Likes API to unlike 1 tweet by ID.
-This Twitter unlike API changes 1 connected account's like state.
-Use it to delete Twitter likes 1 approved Tweet ID at a time.
-Use this route to delete likes on Twitter without deleting tweets.
-Clean up your Twitter likes without deleting tweets, replies, or reposts.
-It never deletes the tweet or another account's likes.
+Each request unlikes 1 tweet by ID.
+It changes 1 connected account's like state.
+It never deletes the tweet, replies, reposts, or another account's likes.
 
-Learn how to remove a like on Twitter through REST below.
 Compare X's separate [Unlike Post endpoint](https://docs.x.com/x-api/users/unlike-post).
 
 <CodeGroup>
@@ -226,17 +222,17 @@ Store the approver, approval time, and removal reason.
 Handle missing, private, or deleted tweets separately.
 Never replace an approved ID with another tweet.
 
-## Save a durable unlike receipt
+## Save an unlike receipt
 
 Save the action before changing your local like record.
 
 | Unlike action column | Source              | Removal rule                                   |
 | -------------------- | ------------------- | ---------------------------------------------- |
 | `acting_account`     | Request `account`   | Match the account that owns the original like. |
-| Tweet ID             | Path `id`           | Preserve the exact liked Tweet ID.             |
+| Tweet ID             | Path `id`           | Keep the exact liked Tweet ID.                 |
 | `removal_reason`     | Workflow value      | Record why the user removed the like.          |
 | `idempotency_key`    | Request header      | Create a fresh removal key.                    |
-| `write_action_id`    | Response `id`       | Store the durable removal action.              |
+| `write_action_id`    | Response `id`       | Store the removal action.                      |
 | `terminal`           | Response `terminal` | Change the local state only when `true`.       |
 
 ## Confirm like removal
@@ -256,7 +252,7 @@ Close already-unliked actions without another request.
 This route has no mass-delete request.
 Process approved Tweet IDs separately.
 Give each account and Tweet ID a unique key.
-Use [User Likes](/api-reference/x/user-likes) to collect candidate IDs.
+Use [User Likes](/api-reference/x/user-likes) to collect candidate IDs. X shows likes only to their owner, so that read can return `424 likes_unavailable`.
 Follow every cursor before approving the list.
 After `429`, wait for `Retry-After`.
 Never rotate accounts to bypass limits.
@@ -266,7 +262,7 @@ Review X's separate [Unlike rate limits](https://docs.x.com/x-api/fundamentals/r
 
 Create one idempotency key per account and Tweet ID.
 Reuse it only after an interrupted response.
-A `409` means that key protects another payload.
+A `409` means that key already belongs to another payload.
 Create a new key only for a new removal intent.
 
 ## Handle remove Twitter likes errors
@@ -297,7 +293,7 @@ Unlike never removes replies, follows, bookmarks, or accounts.
 ### How to remove a like on Twitter with an API?
 
 Send the Tweet ID and connected account.
-Poll the durable action until it becomes terminal.
+Poll the write action until it becomes terminal.
 
 ### Can I remove all Twitter likes at once?
 
