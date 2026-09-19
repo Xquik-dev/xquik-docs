@@ -11837,7 +11837,7 @@ const REQUIRED_TAPLIO_ALTERNATIVE_SNIPPETS = [
   "Pro costs USD 199/month or USD 149/month when billed yearly",
   "no AI credit cap, no comment credit cap, a dynamic 3M+ lead database",
   "dynamic 3M+ lead database, Auto-DM for likers and commenters, mass DMs to an audience, and automated connection requests",
-  "saved posts, draft Kanban, post scheduling, monthly and daily schedules, analytics, writer collaboration, organization management, Zapier integration",
+  "saved posts, draft Kanban, post scheduling, monthly and daily schedules, analytics, and writer collaboration",
   "7-day free trial gives Pro access during the trial and then switches to the originally selected plan",
   "Taplio X Chrome extension brings Taplio into LinkedIn with instant stats, high-performing posts, trending content, and quick saves",
   "Use current Taplio plan limits when the job is LinkedIn content or lead engagement.",
