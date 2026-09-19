@@ -274,9 +274,9 @@ static void writeCsvRow(BufferedWriter writer, List<?> values) throws IOExceptio
 
 `client.x().tweets().search` returns `PaginatedTweets`. Use `page.tweets()` for the tweet list, `page.hasNextPage()` to decide whether another page exists, and `page.nextCursor()` as the checkpoint for the next request. For bounded pulls that return fewer tweets than the requested `.limit()`, pass `page.nextCursor()` back as `.cursor()` with the same query, filters, `QueryType`, and `.limit()`.
 
-Each `SearchTweet` includes generated accessors such as `id()`, `text()`, `author()`, `createdAt()`, `likeCount()`, `replyCount()`, `retweetCount()`, `quoteCount()`, `viewCount()`, `bookmarkCount()`, and `isNoteTweet()` when available. Project `page.tweets()` into JSON Lines and CSV rows with `tweet_id`, `author_username`, engagement counts, `page_index`, `page_cursor`, `next_cursor`, and `has_next_page` so workers can resume safely or load the same records into XLSX, CRM, warehouse, or agent workflows.
+Each `SearchTweet` includes generated accessors such as `id()`, `text()`, `author()`, `createdAt()`, `likeCount()`, `replyCount()`, `retweetCount()`, `quoteCount()`, `viewCount()`, `bookmarkCount()`, and `isNoteTweet()` when available. Project `page.tweets()` into JSON Lines and CSV rows with `tweet_id`, `author_username`, engagement counts, `page_index`, `page_cursor`, `next_cursor`, and `has_next_page`. Workers can then resume or load the same records into XLSX, CRM, warehouse, or agent workflows.
 
-Tweet search costs 1 credit per tweet returned. If remaining credits cannot cover a bounded `.limit()` request, the API can return fewer tweets. If 0 paid results are affordable, it returns `402 insufficient_credits`. The SDK supports `withOptions()` for retry and request settings. For explicit `.limit()` pulls, resume with the same query, filters, `QueryType`, and `.limit()`; only `.cursor()` changes.
+Tweet search costs 1 credit per tweet returned. If remaining credits cannot cover a bounded `.limit()` request, the API can return fewer tweets. If 0 paid results are affordable, it returns `402 insufficient_credits`. The SDK supports `withOptions()` for retry and request settings. For explicit `.limit()` pulls, resume with the same query, filters, `QueryType`, and `.limit()`. Only `.cursor()` changes.
 
 ## Workflow: follower export to CSV, JSON, or XLSX
 
@@ -420,7 +420,7 @@ try (HttpResponse export = client.extractions().exportResults(
 }
 ```
 
-Store `job.id()`, `targetUsername`, `estimate.estimatedResults()`, and `estimate.source()` before polling so retries can resume the extraction. `client.extractions().retrieve` returns `results()`, `hasMore()`, and `nextCursor()`, so pass `nextCursor()` back as `cursor` to page through large follower lists. Map exported `User ID` or row `xUserId` as the CRM unique key. Use `xquik-followers.jsonl` for queue replay or warehouse loads, `xquik-followers.json` for app ingestion, `xquik-followers.csv` for CRM import, and `xquik-followers.xlsx` for analyst handoff. Cost: 1 credit per follower extracted or returned. Exports are free after the extraction job exists.
+Store `job.id()`, `targetUsername`, `estimate.estimatedResults()`, and `estimate.source()` before polling so retries can resume the extraction. `client.extractions().retrieve` returns `results()`, `hasMore()`, and `nextCursor()`. Pass `nextCursor()` back as `cursor` to page through large follower lists. Map exported `User ID` or row `xUserId` as the CRM unique key. Use `xquik-followers.jsonl` for queue replay or warehouse loads, `xquik-followers.json` for app ingestion, `xquik-followers.csv` for CRM import, and `xquik-followers.xlsx` for analyst handoff. Cost: 1 credit per follower extracted or returned. Exports are free after the extraction job exists.
 
 ## Workflow: tweet replies to CSV, JSON, or XLSX
 
@@ -481,7 +481,7 @@ Repeat the export with `ExtractionExportResultsParams.Format.JSON` to write `Pat
 
 ## Workflow: post media tweets and DM attachments
 
-Use this workflow when a JVM service needs to publish a media tweet, reply with media, or send a direct message with an uploaded local file. `client.x().tweets().create` maps to `POST /x/tweets`. Pass public media URLs through `.addMedia()` or `.media()`. Send up to 4 image URLs or exactly 1 MP4 video URL up to 100 MB, and do not mix video with other media. For replies, set `.replyToTweetId()` to the parent tweet ID. `client.x().media().upload` maps to `POST /x/media`. Use `media.mediaId()` only for the one-item DM `.addMediaId()` handoff.
+Use this workflow when a JVM service needs to publish a media tweet, reply with media, or send a direct message with an uploaded local file. `client.x().tweets().create` maps to `POST /x/tweets`. Pass public media URLs through `.addMedia()` or `.media()`. Send up to 4 image URLs or exactly 1 MP4 video URL up to 100 MB. Do not mix video with other media. For replies, set `.replyToTweetId()` to the parent tweet ID. `client.x().media().upload` maps to `POST /x/media`. Use `media.mediaId()` only for the one-item DM `.addMediaId()` handoff.
 
 ```java
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -595,7 +595,7 @@ System.out.println(objectMapper.writeValueAsString(replyHandoff));
 System.out.println(objectMapper.writeValueAsString(dmHandoff));
 ```
 
-Use `client.x().tweets().withRawResponse().create(...)` to capture the durable write action. Send a unique `Idempotency-Key`, store `id`, `request.hash`, `billing`, `result`, and `statusUrl`, then poll while `terminal` is false. Retry only when `safeToRetry` is true, using a new key.
+Use `client.x().tweets().withRawResponse().create(...)` to capture the durable write action. Send a unique `Idempotency-Key`. Store `id`, `request.hash`, `billing`, `result`, and `statusUrl`. Poll while `terminal` is false. Retry only when `safeToRetry` is true, using a new key.
 
 Keep DM body text in private systems. Shared logs and handoffs should store `message_id`, optional `media_id`, `account`, `user_id`, and lifecycle status. Leave `replyToMessageId` unset because the REST endpoint rejects DM reply threading.
 
