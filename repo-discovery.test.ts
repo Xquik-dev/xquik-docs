@@ -11125,7 +11125,7 @@ const REQUIRED_N8N_ALTERNATIVE_SNIPPETS = [
   "n8n's official X node docs list built-in operations for direct messages",
   "creating or replying to tweets, deleting tweets, searching tweets, liking tweets, retweeting tweets",
   "n8n's official HTTP Request node docs describe REST calls to any app or service with a REST API",
-  "query parameters, headers, form, form-data, JSON, binary-file, and raw request bodies",
+  "query parameters, headers, and form, form-data, JSON, binary-file, and raw request bodies",
   "production executions started automatically by triggers, schedules, or polling",
   "projects, sharing, external credential storage, log streaming, multi-main mode, SSO, and Git version control",
   "n8n HTTP Request node",
