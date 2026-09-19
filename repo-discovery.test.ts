@@ -8904,7 +8904,7 @@ const REQUIRED_REQUEST_EFFICIENT_API_USAGE_SNIPPETS = [
   "complete: false,",
   "next_cursor: cursor,",
   "## Guard high-volume Twitter API pagination",
-  "One large timeline should not starve every other target.",
+  "One large timeline should not block every other target.",
   "## Resume recurring tweet collection",
   "Never reuse a cursor after changing its query.",
   "https://docs.x.com/x-api/fundamentals/pagination",
