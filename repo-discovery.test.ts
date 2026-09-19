@@ -4258,7 +4258,7 @@ const REQUIRED_GET_TWEET_API_HANDOFF_SNIPPETS = [
   '"tweet_source": tweet.get("source")',
   '"quote_tweet_id": quoted_tweet.get("id")',
   '"media_urls": [item["mediaUrl"] for item in media]',
-  "shape durable tweet lookup rows instead of raw response dumps",
+  "build tweet lookup rows, not raw response dumps",
   "`tweet_id`, `text`, `author_id`,",
   "`author_username`, `author_followers`,",
   "`author_verified`, `author_profile_picture`, `created_at`, `conversation_id`,",
