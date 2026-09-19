@@ -46,7 +46,7 @@ Development Kit MCP client loads Xquik route schemas during startup.
 | Final response     | Pydantic `output_schema`                      | Reject malformed tweet rows and pagination state               |
 | Session continuity | `InMemoryRunner` or a durable session service | Resume with the same tweet IDs and cursors                     |
 | Agent handoff      | `output_key` and sub-agents                   | Separate research, review, and publishing                      |
-| X actions          | `require_confirmation`                        | Pause before the `execute` execution tool runs                 |
+| X actions          | `require_confirmation`                        | Pause before the `execute` tool runs                           |
 | Tenant credentials | `header_provider`                             | Resolve one Xquik key for each tenant                          |
 
 Choose ADK when Gemini already powers the surrounding workflow. Choose a
@@ -245,14 +245,14 @@ when `has_more` is false, the requested limit is met, or a cursor repeats.
 
 ## Separate tweet research from X actions
 
-Xquik exposes one `execute` execution tool by design. MCP tool-name filters
+Xquik exposes one `execute` tool by design. MCP tool-name filters
 cannot distinguish GET, POST, and DELETE requests inside that tool.
 
 This Google ADK multi agent pattern separates research from publishing. Use
 separate credentials and confirmation rules across multi agent systems.
 
 Use separate ADK agents. Let the research agent read tweets and profiles. Make
-the publishing agent confirm every `execute` execution.
+the publishing agent confirm every `execute` call.
 
 ```python
 import os
@@ -430,7 +430,7 @@ building retry logic. See [error handling](/guides/error-handling).
   </Card>
   <Card title="Monitor and webhook setup" icon="radio">
 
-    Store the returned monitor `id` as `monitor_id`, `event_types`, `next_billing_at`, the returned webhook `id` as `webhook_id`, `url`, and the one-time `secret` in a secret manager. On production deliveries, store `delivery_id` for receiver retry deduplication and `stream_event_id` when one monitor event should process once across endpoint changes.
+    Store the returned monitor `id` as `monitor_id`, `event_types`, `next_billing_at`, the returned webhook `id` as `webhook_id`, `url`, and the one-time `secret` in a secret manager. On production deliveries, store `delivery_id` for receiver retry deduplication. Store `stream_event_id` when one monitor event should process once across endpoint changes.
 
   </Card>
   <Card title="Stored event replay" icon="activity">
@@ -530,7 +530,7 @@ Private routes still require a connected X account.
 
 ### Can Google ADK post tweets and replies?
 
-Yes. A connected X account is required. Route every `execute` execution through
+Yes. It requires a connected X account. Route every `execute` call through
 ADK confirmation. Validate the selected account, text, reply ID, and media.
 
 See [create tweet](/api-reference/x-write/create-tweet) for the exact contract.

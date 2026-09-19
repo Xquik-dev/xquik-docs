@@ -262,7 +262,7 @@ describe("Plugin docs", (): void => {
       '<Card title="tweet_explore" icon="search">',
       "Search the bundled Xquik endpoint catalog without making an API call.",
       '<Card title="tweet_read" icon="book-open">',
-      "Call catalog-listed read-only endpoints after `XQUIK_API_KEY` is configured.",
+      "Call catalog-listed read-only endpoints after you configure `XQUIK_API_KEY`.",
       '<Card title="tweet_action" icon="shield-check">',
       "Call write-like or private endpoints only when `HERMES_TWEET_ENABLE_ACTIONS=true`.",
       "Hermes Tweet is Xquik's native Hermes Agent Twitter plugin.",
@@ -291,7 +291,7 @@ describe("Plugin docs", (): void => {
       "endpoints, then use `tweet_action` for `POST /api/v1/monitors` or",
       "`POST /api/v1/monitors/keywords` and `POST /api/v1/webhooks` only after",
       "Store the webhook `secret` in a secret manager.",
-      "verify `X-Xquik-Signature`, store `deliveryId` and `streamEventId`, return",
+      "verify `X-Xquik-Signature`. Store `deliveryId` and `streamEventId`. Return",
       "`2xx` for accepted duplicates",
       "Keep endpoint signing values and raw request bodies out of Hermes transcripts.",
       "Also exclude raw signatures and full headers from shared workflow outputs.",
@@ -337,7 +337,7 @@ describe("Plugin docs", (): void => {
       "### Hermes Agent vs OpenClaw: which plugin should I use?",
       "Choose Hermes Tweet for Hermes Agent. Choose TweetClaw for OpenClaw.",
       "### Is Hermes tweet an MCP server?",
-      "No X developer credentials are required.",
+      "It needs no X developer credentials.",
     ];
 
     expect(fileIncludes(guide, expected)).toStrictEqual([]);
