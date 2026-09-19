@@ -11637,7 +11637,7 @@ const REQUIRED_POSTPROXY_ALTERNATIVE_SNIPPETS = [
   "Enterprise starts at USD 699/month",
   "one published post counts as one post even when cross-posted to multiple platforms",
   "`post.processed`, `platform_post.published`, `platform_post.failed`, `platform_post.failed_waiting_for_retry`, `platform_post.insights`, `profile.disconnected`, `profile.connected`, and `media.failed`",
-  "BYO developer credentials guide says connecting X profiles with your own X developer credentials exempts those profiles from the shared 24-hour posting quota",
+  "Those profiles are exempt from the shared 24-hour posting quota",
 ] as const;
 
 const REQUIRED_POST_BRIDGE_ALTERNATIVE_SNIPPETS = [
