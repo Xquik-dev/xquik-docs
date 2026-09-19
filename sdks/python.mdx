@@ -251,7 +251,7 @@ The method accepts the same query inputs as the REST endpoint:
   </Card>
 </CardGroup>
 
-Project `page.tweets` into CSV rows for analysts and JSON Lines rows for queues and data lakes in `xquik-tweet-search.jsonl`. Load the same projected rows into pandas or openpyxl when account teams need an XLSX workbook. Store `tweet_id`, `author_username`, engagement counts, `page_index`, `page_cursor`, `next_cursor`, and `has_next_page` so a script can resume from the last saved cursor without replaying raw SDK models. For explicit `limit` pulls, resume with the same query, filters, `query_type`, and `limit`; only `cursor` changes.
+Project `page.tweets` into CSV rows for analysts and JSON Lines rows for queues and data lakes in `xquik-tweet-search.jsonl`. Load the same projected rows into pandas or openpyxl when account teams need an XLSX workbook. Store `tweet_id`, `author_username`, engagement counts, `page_index`, `page_cursor`, `next_cursor`, and `has_next_page` so a script can resume from the last saved cursor without replaying raw SDK models. For explicit `limit` pulls, resume with the same query, filters, `query_type`, and `limit`. Only `cursor` changes.
 
 ## Workflow: follower export to CSV, JSON, or XLSX
 
@@ -323,11 +323,11 @@ client.extractions.export_results(job.id, format="xlsx").write_to_file(
 )
 ```
 
-`follower_explorer` requires `target_username`. Store `job.id`, `target_username`, `estimate.estimated_results`, and `estimate.source` before polling so a notebook restart, queue retry, or worker restart can resume the same follower export. `client.extractions.retrieve` returns `results`, `has_more`, and `next_cursor`, so pass `next_cursor` back as `cursor` when you need stored JSON pages before exporting files. Use `xquik-followers.jsonl` for queue replay or warehouse loads, `xquik-followers.json` for app ingestion, `xquik-followers.csv` for CRM import, and `xquik-followers.xlsx` for analyst handoff. Map exported `User ID` or row `xUserId` as the CRM unique key. Cost: 1 credit per follower extracted or returned. Exports are free after the extraction job exists.
+`follower_explorer` requires `target_username`. Store `job.id`, `target_username`, `estimate.estimated_results`, and `estimate.source` before polling so a notebook restart, queue retry, or worker restart can resume the same follower export. `client.extractions.retrieve` returns `results`, `has_more`, and `next_cursor`. Pass `next_cursor` back as `cursor` when you need stored JSON pages before exporting files. Use `xquik-followers.jsonl` for queue replay or warehouse loads, `xquik-followers.json` for app ingestion, `xquik-followers.csv` for CRM import, and `xquik-followers.xlsx` for analyst handoff. Map exported `User ID` or row `xUserId` as the CRM unique key. Cost: 1 credit per follower extracted or returned. Exports are free after the extraction job exists.
 
 ## Workflow: tweet replies to CSV, JSON, or XLSX
 
-Use this workflow when a Python script, notebook, worker, or agent tool needs every reply under one tweet as a saved extraction, JSON Lines handoff, or CSV/JSON/XLSX file export. It uses `client.extractions.estimate_cost`, `run`, `retrieve`, and `export_results`.
+Use this workflow when a Python script, notebook, worker, or agent tool needs every reply under one tweet as a saved extraction, JSON Lines handoff, or CSV, JSON, or XLSX file export. It uses `client.extractions.estimate_cost`, `run`, `retrieve`, and `export_results`.
 
 Reuse the polling, row pagination, and export structure from the follower workflow. Only the tool type, target field, and output filenames change:
 
@@ -396,7 +396,7 @@ def create_tweet_handoff(
     }
 ```
 
-Use `with_raw_response.create` to capture the durable write action. Send a unique `Idempotency-Key`, store `id`, `request.hash`, `billing`, `result`, and `statusUrl`, then poll while `terminal` is false. Retry only when `safeToRetry` is true, using a new key.
+Use `with_raw_response.create` to capture the durable write action. Send a unique `Idempotency-Key`. Store `id`, `request.hash`, `billing`, `result`, and `statusUrl`. Poll while `terminal` is false. Retry only when `safeToRetry` is true, using a new key.
 
 ```python
 response = client.x.tweets.with_raw_response.create(
@@ -470,17 +470,17 @@ dm_handoff = {
 sys.stdout.write(json.dumps(dm_handoff, ensure_ascii=False) + "\n")
 ```
 
-`client.x.tweets.create` returns `tweet.tweet_id` for confirmed posts. Raw create responses can also include the pending write fields above while confirmation runs. `client.x.media.upload` returns `media.media_id` for DM attachments, and `client.x.dm.send` returns `dm.message_id` for support tickets, CRM records, queue jobs, or agent memory.
+`client.x.tweets.create` returns `tweet.tweet_id` for confirmed posts. Raw create responses can also include the pending write fields above while confirmation runs. `client.x.media.upload` returns `media.media_id` for DM attachments. `client.x.dm.send` returns `dm.message_id` for support tickets, CRM records, queue jobs, or agent memory.
 
-Keep DM body text in private systems. Shared logs, public artifacts, queue status, and agent handoffs should store `message_id`, optional `media_id`, `account`, `user_id`, and send status instead of full DM bodies. Leave `reply_to_message_id` unset even if generated SDK types expose it; the REST endpoint rejects DM reply threading.
+Keep DM body text in private systems. Shared logs, public artifacts, queue status, and agent handoffs should store `message_id`, optional `media_id`, `account`, `user_id`, and send status instead of full DM bodies. Leave `reply_to_message_id` unset even if generated SDK types expose it. The REST endpoint rejects DM reply threading.
 
-Text-only tweet and reply writes cost 30 credits. Tweet media adds 2 credits per started MB across attached files. Uploading media costs 10 credits, and sending the DM costs 10 credits. Do not pass uploaded `media.media_id` values to `client.x.tweets.create`. That method uses `media` with public media URLs.
+Text-only tweet and reply writes cost 30 credits. Tweet media adds 2 credits per started MB across attached files. Uploading media costs 10 credits. Sending the DM costs 10 credits. Do not pass uploaded `media.media_id` values to `client.x.tweets.create`. That method uses `media` with public media URLs.
 
 ## Cost, limits & retries
 
-Tweet search costs 1 credit per tweet returned. If remaining credits cannot cover a bounded `limit` request, the API can return fewer tweets. If 0 paid results are affordable, it returns `402 insufficient_credits`. Read calls are rate-limited, and `429` responses include `Retry-After`.
+Tweet search costs 1 credit per tweet returned. If remaining credits cannot cover a bounded `limit` request, the API can return fewer tweets. If 0 paid results are affordable, it returns `402 insufficient_credits`. Xquik rate-limits read calls. `429` responses include `Retry-After`.
 
-The client retries connection errors, 408, 409, 429, and 5xx responses by default. Handle `RateLimitError` with backoff, and fix 400, 401, 403, 404, or 422 responses before retrying.
+The client retries connection errors, 408, 409, 429, and 5xx responses by default. Handle `RateLimitError` with backoff. Fix 400, 401, 403, 404, or 422 responses before retrying.
 
 ## Error handling
 
