@@ -7101,7 +7101,7 @@ const REQUIRED_DOWNLOAD_MEDIA_API_HANDOFF_SNIPPETS = [
   "`cacheHit: true` means the single-tweet request used cached media and is free.",
   '<Card title="Bulk result" icon="list-checks">',
   "Store `requested_tweet_ids`, `successful_tweet_count` from `totalTweets`, and `media_item_count` from `totalMedia`.",
-  "`totalTweets` counts successful tweets with media after invalid or failed IDs are skipped.",
+  "`totalTweets` counts successful tweets with media after the route skips invalid or failed IDs.",
   '<Card title="Input mode" icon="list-filter">',
   "When it contains at least 1 string, bulk mode ignores `tweetInput`, `tweetId`, and `tweetUrl`.",
   '<Card title="Batch limit" icon="list-ordered">',
