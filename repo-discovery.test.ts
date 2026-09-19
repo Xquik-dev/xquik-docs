@@ -3401,7 +3401,7 @@ const REQUIRED_X_ACCOUNTS_CONNECT_TOTP_SNIPPETS = [
 ] as const;
 
 const REQUIRED_X_ACCOUNTS_REAUTH_TOTP_SNIPPETS = [
-  'description: "Restore a connected X account by reusing its saved Authenticator App TOTP secret or sending a replacement for the login challenge. See request fields."',
+  'description: "Restore a connected X account with its current password. Xquik reuses the saved Authenticator App TOTP secret unless you send a replacement. The call is free."',
   "Omit `totp_secret` to reuse the saved key.",
   "Send a replacement only if X",
   "changed or rejected the saved key.",
@@ -3419,11 +3419,11 @@ const REQUIRED_X_ACCOUNTS_REAUTH_TOTP_SNIPPETS = [
   "Treat the old TOTP secret as stale.",
   "Turn Authentication App off, then turn it on again.",
   "choose **Can't scan the QR code?** to reveal the text secret.",
-  "store it safely before leaving the setup screen.",
+  "store it in a password manager before leaving the setup screen.",
   "Add that key to your authenticator app if you are setting it up fresh.",
   "Finish enabling 2FA on X by entering the current 6-digit code",
   "Send the new long key in `totp_secret` when you call Xquik.",
-  "If setup is abandoned before confirmation, re-authentication cannot use that key.",
+  "If you abandon setup before confirmation, re-authentication cannot use that key.",
   "[2FA secret key setup](/api-reference/x-accounts/connect#2fa-secret-key-setup)",
   '"error": "passkey_required"',
   "X asked for passkey verification.",
