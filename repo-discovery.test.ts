@@ -3434,7 +3434,7 @@ const REQUIRED_X_ACCOUNTS_REAUTH_TOTP_SNIPPETS = [
 ] as const;
 
 const REQUIRED_X_ACCOUNTS_SUBMIT_CHALLENGE_SNIPPETS = [
-  'description: "Submit an email verification code for an active X account login challenge. Start a fresh connect or reauthentication when it expires. See request fields."',
+  'description: "Submit an email verification code for an active X account login challenge. Start a fresh connect or reauthentication when the challenge expires. Free to call."',
   "This endpoint cannot reopen an expired, failed, completed, or replaced challenge.",
   "After `409`, `410`, or `422`, start [Connect X Account](/api-reference/x-accounts/connect) again for a new account.",
   "For an existing account, use [Re-authenticate X Account](/api-reference/x-accounts/reauth)",
@@ -3450,7 +3450,7 @@ const REQUIRED_X_ACCOUNTS_SUBMIT_CHALLENGE_SNIPPETS = [
   "If X asks for a new email code, this endpoint returns `202` again.",
   '<Card title="Start over when stale" icon="timer-reset">',
   "`410` means the code expired.",
-  "`409` means the challenge was already completed, failed, expired, or replaced.",
+  "`409` means the challenge already completed, failed, or expired, or a newer challenge replaced it.",
   "Start [Connect X Account](/api-reference/x-accounts/connect) again for a new account",
   "use [Re-authenticate X Account](/api-reference/x-accounts/reauth) for an existing account.",
   "The dashboard follows the same flow",
