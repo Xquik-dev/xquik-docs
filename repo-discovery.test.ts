@@ -3813,7 +3813,7 @@ const REQUIRED_CRM_EXPORT_WORKFLOW_SNIPPETS = [
   "[Go SDK](/sdks/go)",
   "resultsLimit",
   "Call `GET /extractions/{id}/export?format=csv`, `format=json`, or `format=xlsx`",
-  "`md`, `md-document`, `pdf`, and `txt` are also supported",
+  "The endpoint also supports `md`, `md-document`, `pdf`, and `txt`",
   "## End-to-end follower export handoff",
   '"workflow": "follower_export_crm"',
   '"request": {',
