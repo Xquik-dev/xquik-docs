@@ -11682,7 +11682,7 @@ const REQUIRED_OUTSTAND_ALTERNATIVE_SNIPPETS = [
 const REQUIRED_SOCIALCRAWL_ALTERNATIVE_SNIPPETS = [
   "## Source-backed SocialCrawl scope",
   "unified social media data API for developers and AI agents",
-  "the docs introduction says 21 platforms and 108 endpoints, while the pricing page says 27 platforms and 133 APIs",
+  "The docs introduction says 21 platforms and 108 endpoints. The pricing page says 27 platforms and 133 APIs.",
   "`engagement_rate`, `language`, `content_category`, and `estimated_reach`",
   "requests use the `x-api-key` header",
   "`401 MISSING_API_KEY` or `401 INVALID_API_KEY`",
