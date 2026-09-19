@@ -3457,17 +3457,17 @@ const REQUIRED_X_ACCOUNTS_SUBMIT_CHALLENGE_SNIPPETS = [
 ] as const;
 
 const REQUIRED_X_ACCOUNTS_BULK_RETRY_SNIPPETS = [
-  'description: "Clear only temporary login failures; use re-authentication or X-side fixes for credentials, TOTP, passkeys, locked, or suspended accounts. See fields."',
-  "Bulk retry only clears `transient` and `automated` login-failure states.",
+  'description: "Clear temporary login failures for connected X accounts in one call. Credential, TOTP, passkey, locked, or suspended accounts need re-authentication or X fixes."',
+  "Bulk retry clears only `transient` and `automated` login-failure states.",
   "It does not update passwords, TOTP secret keys, passkeys, email challenges, locked accounts, or suspended accounts.",
   "Use re-authentication or reconnect for credential and 2FA fixes",
   "resolve locks or suspensions on X first.",
   "## What gets retried",
   "<CardGroup cols={1}>",
-  '<Card title="Temporary issues are cleared" icon="refresh-cw">',
+  '<Card title="Xquik clears temporary issues" icon="refresh-cw">',
   "stored failure reason is `transient` or `automated`",
   "eligible to reconnect on their next use.",
-  '<Card title="Credential fixes are skipped" icon="key-round">',
+  '<Card title="Xquik skips credential fixes" icon="key-round">',
   "Accounts that need fresh credentials or a security challenge stay unchanged.",
   "[Re-authenticate](/api-reference/x-accounts/reauth)",
   '<Card title="X restrictions stay blocked" icon="shield-alert">',
@@ -3475,7 +3475,7 @@ const REQUIRED_X_ACCOUNTS_BULK_RETRY_SNIPPETS = [
   '<Card title="Response is an aggregate" icon="list-checks">',
   "The API returns only `cleared`",
   "Call [List X Accounts](/api-reference/x-accounts/list) before and after",
-  "The dashboard button follows the same model",
+  "The dashboard button works the same way",
   "It does not reconnect the accounts immediately.",
 ] as const;
 
