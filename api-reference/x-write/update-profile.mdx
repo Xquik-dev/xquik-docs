@@ -1,7 +1,7 @@
 ---
 title: "Twitter profile update API: name, bio, location, URL"
 sidebarTitle: "Update profile"
-description: "Update a Twitter profile bio, display name, location, or website safely through Xquik. Send exact fields, poll write actions, and handle every API response."
+description: "Update a Twitter profile bio, display name, location, or website through Xquik. Send only changed fields, poll the write action, and handle each response."
 api: "PATCH /x/profile"
 keywords:
   [
@@ -190,7 +190,7 @@ import WriteActionLifecycleResponse from "/snippets/write-action-lifecycle-respo
 {/* GENERATED RESPONSE EXAMPLES END */}
 <LlmsDirective />
 
-Use this Twitter profile update API for public profile text. Change a display
+This route updates public profile text. Change a display
 name, bio, location, or website in one request. Send only the fields that need
 new values. Omitted fields remain unchanged. The connected account receives
 every approved change.
@@ -203,7 +203,7 @@ before updating profile text.
 
 ## Update Twitter profile text
 
-Call `PATCH /x/profile` to update Twitter profile fields programmatically.
+Call `PATCH /x/profile` to update Twitter profile fields from code.
 Provide the connected account plus at least one supported field. The `name`
 field changes the display name, not the `@username`. The `description` field
 changes the public bio. The `location` and `url` fields change their matching
@@ -331,7 +331,7 @@ characters. Website values must be valid URLs. Empty `description` or
 | Idempotency key              | Request header             | Changed field values use another key.  |
 | Write action ID              | Response `id`              | Poll the matching lifecycle record.    |
 
-## Automate a safe profile update
+## Automate a profile update
 
 Create one idempotency key for each account and field set. Reuse that key after
 a network interruption. Workers handling the same update must share it. Change
@@ -355,18 +355,17 @@ unrelated profile workflows.
 
 After a terminal write, use
 [Twitter Profile Lookup](/api-reference/x/twitter-profile-lookup). Compare its
-name, description, location, and website with the approved request. This check
-works across user profiles, including user-owned brand accounts. Profile
+name, description, location, and website with the approved request. Profile
 updates never change posts, tweets, followers, replies, likes, or lists. For a
 campaign, save earlier values and restore them with a new key.
 
 Store the earlier and replacement values with the action ID. Apply the
 replacement at launch, then verify the public profile. Restore earlier
-fields with a new idempotency key after the campaign. This history makes each
-temporary Twitter profile update reversible.
+fields with a new idempotency key after the campaign. With that history, you can reverse each
+temporary profile update.
 
-Treat the write action as lifecycle evidence. Treat the later profile lookup
-as public proof. Save both timestamps when profile changes need an audit trail.
+The write action shows the request finished. The later profile lookup
+shows the public result. Save both timestamps when profile changes need an audit trail.
 Never store authentication tokens with those public profile values.
 
 ## Fix Twitter profile update failures
@@ -380,7 +379,7 @@ Delete fake verification marks or unsafe profile links, then retry. X documents
 more causes in its
 [profile save troubleshooting guide](https://help.x.com/en/managing-your-account/cant-save-changes-to-my-account).
 
-Do not create a new action after an uncertain network response. Check the saved
+Do not create a new action after a network error. Check the saved
 `statusUrl` before creating another action. The same request may reuse its
 original idempotency key. Change the key after correcting any field. Retry a
 server error only when `safeToRetry` allows it.
