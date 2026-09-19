@@ -4014,7 +4014,7 @@ const REQUIRED_TWEET_REPLIES_EXPORT_SNIPPETS = [
   "## Related reply APIs",
   "[Fetch live tweet reply pages](/api-reference/x/tweet-replies)",
   "`resultsLimit`",
-  "Estimate is free.",
+  "Estimates are free.",
   "File exports do not charge credits after job creation.",
   "Export `format=csv` to `xquik-replies.csv` or `format=xlsx` to `xquik-replies.xlsx`.",
   "Export `format=json` to `xquik-replies.json`, convert it to `xquik-replies.jsonl`, or paginate `GET /extractions/{id}`.",
