@@ -314,7 +314,7 @@ const REQUIRED_OPERATIONAL_CONTENT = [
     file: "api-reference/extractions/twitter-extraction-results.mdx",
     snippets: [
       "| Extraction result page column | Response source | Export rule |",
-      "| X user ID | `results[].xUserId` | Preserve the stable profile join. |",
+      "| X user ID | `results[].xUserId` | Join profile records on this ID. It does not change. |",
     ],
   },
   {
