@@ -38,7 +38,7 @@ deletes per minute. After `429`, wait for `Retry-After` before retrying.
 | ------------------------------ | ------------------------------------------------------ | ------------------------------------------------------------------------------------ |
 | 300 reads per second           | `GET`, `HEAD`, and `OPTIONS` share one account bucket. | Pace tweet, profile, follower, reply, and event reads below 300 requests per second. |
 | 120 writes per minute          | `POST`, `PUT`, and `PATCH` share one account bucket.   | Queue tweets, monitors, webhooks, and profile changes below 120 requests per minute. |
-| 60 deletes per minute          | Every `DELETE` request uses the delete bucket.         | Serialize cleanup work and preserve each deleted resource ID.                        |
+| 60 deletes per minute          | Every `DELETE` request uses the delete bucket.         | Serialize cleanup work and keep each deleted resource ID.                            |
 | `429 Too Many Requests`        | An Xquik tier or action limit blocked the request.     | Read the error code before choosing a retry delay.                                   |
 | `Retry-After` header           | The response supplies a wait in seconds.               | Pause that bucket for the supplied duration.                                         |
 | `retryAfter` or `retryAfterMs` | The JSON body supplies a retry duration.               | Use the documented unit before resuming work.                                        |
@@ -66,7 +66,7 @@ The listed request count succeeds inside each window. The next request receives
 `429 rate_limit_exceeded`. A read burst does not consume write capacity.
 A write burst does not consume delete capacity.
 
-### Action-Specific Twitter API limits
+### Action-specific Twitter API limits
 
 Some actions add a narrower bucket. That bucket applies beside the method tier.
 
@@ -172,7 +172,7 @@ An idempotency key prevents duplicate submission. It does not make every retry s
 
 ## Xquik limits versus official X API limits
 
-The phrase "Twitter API limits" can describe two separate systems.
+The phrase "Twitter API limits" can describe 2 separate systems.
 Xquik enforces the account buckets documented above. X also enforces upstream
 limits for connected accounts and service access.
 
@@ -193,7 +193,7 @@ Use the Xquik values on this page. Handle upstream codes separately.
 
 ## Recover from API rate limit exceeded
 
-Use bounded retries for idempotent reads. Preserve cursor state before waiting.
+Use bounded retries for idempotent reads. Keep cursor state before waiting.
 Never run an unbounded retry loop.
 
 <Steps>
@@ -210,7 +210,7 @@ Never run an unbounded retry loop.
   </Step>
   <Step title="Keep the same read checkpoint">
 
-    Preserve the query, filters, limit, and cursor.
+    Keep the query, filters, limit, and cursor.
 
   </Step>
   <Step title="Wait with jitter">
@@ -303,7 +303,7 @@ while (true) {
 ```
 
 Keep `q`, `queryType`, filters, and `limit` unchanged while resuming.
-Dedupe stored tweets by `tweets[].id`. A repeated page then remains harmless.
+Deduplicate stored tweets by `tweets[].id`. A repeated page then remains harmless.
 See [Request-Efficient API Usage](/guides/request-efficient-api-usage#store-cursor-checkpoints)
 for more checkpoint patterns.
 
@@ -348,7 +348,7 @@ const response = await readLimiter.schedule(() =>
 One in-memory limiter coordinates only one process.
 Use a shared queue across multiple servers, functions, or containers.
 
-### Rate-Limiting libraries
+### Rate-limiting libraries
 
 <CardGroup cols={3}>
 
@@ -417,7 +417,7 @@ One request per tweet would use 100 read requests.
   <Accordion title="Separate read and write queues">
 
     Use different queues for reads, writes, and deletes.
-    This mirrors the independent server buckets.
+    This matches the independent server buckets.
 
   </Accordion>
 </AccordionGroup>
@@ -502,7 +502,7 @@ Share one limiter across workers. Keep separate queues for each method bucket.
   </Card>
   <Card title="Pagination" icon="list" href="/guides/request-efficient-api-usage#store-cursor-checkpoints">
 
-    Preserve tweet, follower, reply, and extraction cursors safely.
+    Keep tweet, follower, reply, and extraction cursors safely.
 
   </Card>
 </CardGroup>

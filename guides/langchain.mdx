@@ -22,7 +22,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 Build a LangChain Twitter API agent through Xquik's MCP server. Search tweets,
 inspect profiles, export followers, replay monitor events, and review X actions.
 This LangChain Twitter API integration helps when building agents for Twitter.
-It preserves tweet IDs, timestamps, cursors, and route errors as typed values.
+It keeps tweet IDs, timestamps, cursors, and route errors as typed values.
 
 ## Why use LangChain with a Twitter API?
 
@@ -31,7 +31,7 @@ services. LangGraph adds durable state, resumable jobs, and human approval.
 
 Choose a narrow route for each Twitter agent task.
 
-| Agent task            | Xquik route                   | Preserve for the next step                        |
+| Agent task            | Xquik route                   | Keep for the next step                            |
 | --------------------- | ----------------------------- | ------------------------------------------------- |
 | Search tweets         | `GET /api/v1/x/tweets/search` | Query, tweet IDs, authors, `created`, and cursor  |
 | Inspect a profile     | `GET /api/v1/x/users/{id}`    | User ID, username, biography, and follower count  |
@@ -197,10 +197,10 @@ The `execute` tool executes a bounded sandbox function. That function calls
 Use `search` first when the agent does not know a route or parameter.
 Each call uses the documented Xquik route and response fields.
 
-## Preserve the MCP response contract
+## Keep the MCP response contract
 
 MCP returns normalized snake_case fields and Unix-second timestamps. A REST
-`createdAt` field becomes `created`, not `created_at`. Preserve source values
+`createdAt` field becomes `created`, not `created_at`. Keep source values
 before applying an application-specific schema.
 
 Search and list responses use `has_more` and `next_cursor`. Reuse the same
@@ -219,14 +219,14 @@ Stop pagination when one condition becomes true:
 - The agent reaches the configured page cap.
 
 An empty page can still have `has_more: true`. Continue when the cursor
-advances. De-duplicate tweets and users by their stable `id` values.
+advances. Deduplicate tweets and users by their stable `id` values.
 
 MCP tool output has a 24,000-character limit. Project only the required fields.
 Choose extraction exports for complete-row workflows.
 
 ## Keep a resumable Twitter agent handoff
 
-Conversation history is not a reliable job database. Persist the values needed
+Conversation history is not a reliable job database. Store the values needed
 for retries, pagination, exports, and downstream tools.
 
 <CardGroup cols={2}>
@@ -290,19 +290,19 @@ Do not let the model guess whether a failed request should retry.
 Match every HTTP status code before choosing the next action.
 A 400 Bad Request indicates invalid route parameters or unsupported fields.
 
-| Status | Meaning                                           | LangChain agent decision                            |
-| ------ | ------------------------------------------------- | --------------------------------------------------- |
-| `400`  | Invalid route parameters or unsupported fields    | Fix the request before retrying                     |
-| `401`  | Missing or invalid authentication                 | Stop and replace the Xquik credential               |
-| `402`  | Subscription or credit action required            | Report choices and request explicit confirmation    |
-| `424`  | Upstream dependency failure or incomplete replies | Preserve partial rows and inspect `error.retryable` |
-| `429`  | Rate limit reached                                | Respect `error.retry_after`, then back off          |
-| `502`  | Temporary upstream failure                        | Apply bounded backoff to safe read retries          |
+| Status | Meaning                                           | LangChain agent decision                         |
+| ------ | ------------------------------------------------- | ------------------------------------------------ |
+| `400`  | Invalid route parameters or unsupported fields    | Fix the request before retrying                  |
+| `401`  | Missing or invalid authentication                 | Stop and replace the Xquik credential            |
+| `402`  | Subscription or credit action required            | Report choices and request explicit confirmation |
+| `424`  | Upstream dependency failure or incomplete replies | Keep partial rows and inspect `error.retryable`  |
+| `429`  | Rate limit reached                                | Respect `error.retry_after`, then back off       |
+| `502`  | Temporary upstream failure                        | Apply bounded backoff to safe read retries       |
 
 Errors contain `error.type`, `error.code`, and `error.message`. Some errors add
 `error.retryable` or `error.retry_after`. Store these fields with the job.
 
-Preserve exact error messages for operators. Record where the error occurred.
+Keep exact error messages for operators. Record where the error occurred.
 Server errors may permit bounded retries for safe reads. Client errors require
 a corrected request or credential. Test edge cases such as repeated cursors,
 expired keys, empty pages, and partial reply trees.
@@ -315,8 +315,8 @@ for an explicit decision before any supported account checkout action.
 Read-only agents can search tweets and inspect public profiles automatically.
 Write-enabled agents need a review boundary before posting or replying.
 
-Xquik exposes reads and writes through one aggregate `execute` tool. Therefore,
-interrupt every `execute` call in a write-capable agent. Review the proposed call
+Xquik exposes reads and writes through one aggregate `execute` tool.
+Interrupt every `execute` call in a write-capable agent. Review the proposed call
 before approving it.
 
 ```python
@@ -380,7 +380,7 @@ flowchart LR
   G --> E
 ```
 
-Persist the graph after each external call. Store the last completed node,
+Save graph state after each external call. Store the last completed node,
 route, request fingerprint, response IDs, cursor, and retry count. Store write
 idempotency keys before execution.
 
@@ -438,7 +438,7 @@ tweet, profile, follower, monitor, extraction, and X action routes.
 
 ### Can LangChain scrape tweets with Python?
 
-Yes. Call `GET /api/v1/x/tweets/search` through MCP. Preserve each tweet ID,
+Yes. Call `GET /api/v1/x/tweets/search` through MCP. Keep each tweet ID,
 text, author, `created` timestamp, URL, and pagination cursor.
 
 ### What does "Python API Twitter" mean?
@@ -454,7 +454,7 @@ tweet search, profile lookup, follower exports, monitors, and reviewed actions.
 
 ### Can LangChain post tweets through MCP?
 
-Yes. Connect the target X account first. Require human approval, preserve the
+Yes. Connect the target X account first. Require human approval, keep the
 idempotency key, and store the returned tweet or write-action ID.
 
 ### How do I authenticate with the Twitter API using Python?
@@ -489,12 +489,12 @@ safe read requests with bounded backoff. Never recreate a pending write.
 
 ### How should a Python Twitter API agent save results?
 
-Validate a Pydantic schema first. Persist typed tweet IDs, fields, cursors,
+Validate a Pydantic schema first. Store typed tweet IDs, fields, cursors,
 errors, and job status. Never save conversational prose as JSON.
 
 ### Can a LangGraph agent export Twitter followers?
 
-Yes. Create an extraction, persist its ID, and poll its status. Export only
+Yes. Create an extraction, store its ID, and poll its status. Export only
 after completion. Store the source user and requested format together.
 
 ### Can LangChain monitor Twitter keywords continuously?

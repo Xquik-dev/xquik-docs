@@ -1,7 +1,7 @@
 ---
 title: "Platform architecture | X API workflow guide"
 sidebarTitle: "Platform architecture"
-description: "Learn how Xquik searches tweets, exports followers, monitors accounts, signs webhooks, isolates accounts, and enforces API rate limits. Follow exact steps."
+description: "Learn how Xquik searches tweets, exports followers, monitors accounts, signs webhooks, isolates accounts, and enforces API rate limits for each account."
 keywords: ["architecture", "security", "data isolation", "API key", "rate limits", "limitations"]
 ---
 
@@ -46,7 +46,7 @@ You do not deploy Xquik infrastructure or configure X API credentials.
 
   <Card title="REST API" icon="braces">
 
-    130 documented operations at `https://xquik.com/api/v1/*` for apps,
+    131 documented operations at `https://xquik.com/api/v1/*` for apps,
     backends, scripts, and fine-grained pagination.
 
   </Card>
@@ -108,7 +108,7 @@ apps require OAuth and cannot present custom API keys.
   </Card>
   <Card title="One-time display" icon="shield-check">
 
-    Xquik returns the full key only during creation. Store it securely.
+    Xquik returns the full key only during creation. Store it in a secret manager.
 
   </Card>
   <Card title="Revocation" icon="ban">
@@ -136,19 +136,19 @@ apps require OAuth and cannot present custom API keys.
 
 <Warning>
 
-Xquik shows API keys once at creation. Store them securely. You cannot retrieve a key after creation.
+Xquik shows API keys once at creation. Store them in a secret manager. You cannot retrieve a key after creation.
 
 </Warning>
 
 ### Data isolation
 
-Every API key is scoped to a single user account. There is no cross-user access.
+Every API key belongs to a single user account. No key can read another user's data.
 
 <CardGroup cols={2}>
 
   <Card title="Monitors" icon="radio">
 
-    Account and keyword monitors are scoped to the creating user account.
+    Account and keyword monitors belong to the user account that created them.
 
   </Card>
   <Card title="Events" icon="activity">
@@ -183,7 +183,7 @@ Every API key is scoped to a single user account. There is no cross-user access.
   </Card>
 </CardGroup>
 
-Attempting to access another user's resources returns `404 Not Found` (not `403`), preventing enumeration attacks.
+A request for another user's resource returns `404 Not Found`, not `403`. Attackers cannot use the response to enumerate IDs.
 
 ### Authorization
 
@@ -214,12 +214,12 @@ Xquik enforces rate limits per user account with a **fixed-window counter** algo
   </Card>
   <Card title="Delete bucket" icon="circle-x">
 
-    `DELETE` requests are limited to 60 requests per 60 seconds.
+    `DELETE` requests have a limit of 60 requests per 60 seconds.
 
   </Card>
   <Card title="Retry window" icon="timer">
 
-    Throttled reads return `Retry-After: 1`; throttled writes and deletes
+    Throttled reads return `Retry-After: 1`. Throttled writes and deletes
     return `Retry-After: 60`.
 
   </Card>
@@ -247,7 +247,7 @@ See the [Rate Limits](/guides/rate-limits) guide for detailed explanations, back
   </Card>
   <Card title="Credit top-ups" icon="wallet">
 
-    Top up from USD 10. Credits are priced at USD 0.00015 each. See
+    Top up from USD 10. Credits cost USD 0.00015 each. See
     [Billing & Usage](/guides/billing#credit-top-ups).
 
   </Card>
@@ -348,15 +348,15 @@ Signed webhooks ──▶ Customer HTTPS endpoint
   </Card>
   <Card title="Export caps" icon="download">
 
-    Extraction exports are capped at 100,000 rows. PDF exports are capped at
+    Extraction exports stop at 100,000 rows. PDF exports stop at
     10,000 rows. Supported formats: CSV, JSON, MD, MD Document, PDF, TXT, and
     XLSX.
 
   </Card>
   <Card title="Webhook retries" icon="rotate-ccw">
 
-    Webhook deliveries try up to 10 attempts. `410 Gone` exhausts immediately;
-    other failures retry until delivered or exhausted.
+    Webhook deliveries try up to 10 attempts. `410 Gone` exhausts immediately.
+    Other failures retry until delivered or exhausted.
 
   </Card>
   <Card title="Monitor slots" icon="activity">
@@ -373,7 +373,7 @@ Signed webhooks ──▶ Customer HTTPS endpoint
 
   <Card title="Quickstart" icon="rocket" href="/x-api-quickstart">
 
-    Get up and running with your first API call.
+    Make your first API call.
 
   </Card>
   <Card title="Authentication" icon="key" href="/api-reference/authentication">
