@@ -258,7 +258,7 @@ describe("Plugin docs", (): void => {
       "Without `XQUIK_API_KEY`, a non-mutating Hermes probe exposes `tweet_explore` only.",
       "`tweet_action` stays hidden or disabled unless `HERMES_TWEET_ENABLE_ACTIONS=true`.",
       "Hermes one-shot prompts do not dispatch `/xstatus` as an interactive slash command.",
-      "Non-interactive installs cannot prompt for credentials; set `XQUIK_API_KEY` in the process environment or `~/.hermes/.env`.",
+      "Non-interactive installs cannot prompt for credentials. Set `XQUIK_API_KEY` in the process environment or `~/.hermes/.env`.",
       '<Card title="tweet_explore" icon="search">',
       "Search the bundled Xquik endpoint catalog without making an API call.",
       '<Card title="tweet_read" icon="book-open">',
