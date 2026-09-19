@@ -52,7 +52,7 @@ describe("automatic maximum coverage contract", (): void => {
     expect(source).toContain("Repeated busy responses never authorize restarting");
     expect(source).toContain("Repeating a cursorless request starts a separate extraction.");
     expect(source).toContain(
-      "Earlier and terminal responses cannot be replayed after their cursors become unavailable.",
+      "You cannot replay earlier or terminal responses after their cursors become unavailable.",
     );
     expect(replies).toContain("Automatic pages accept `1` through `300`.");
     expect(followers).toContain("Automatic pages accept `20` through `300`.");
