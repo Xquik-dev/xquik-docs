@@ -5599,7 +5599,7 @@ const REQUIRED_USER_MENTIONS_API_HANDOFF_SNIPPETS = [
   '"mentions_job_id": "brand-mentions-q2"',
   '"mentions_route": "GET /api/v1/x/users/{id}/mentions"',
   '"cursor_param": "cursor"',
-  '"saved_export_tool": "mentions"',
+  '"saved_export_tool": "mention_extractor"',
 ] as const;
 
 const FORBIDDEN_USER_MENTIONS_API_RAW_OUTPUT_SNIPPETS = [
