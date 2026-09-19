@@ -10138,8 +10138,8 @@ const REQUIRED_PIPEDREAM_ALTERNATIVE_SNIPPETS = [
   "add app props for managed auth",
   "## Monitor webhook receiver handoff",
   "When a Pipedream HTTP trigger or source receives Xquik monitor events, verify `X-Xquik-Signature` before exporting data to later steps.",
-  "Store `deliveryId` and `streamEventId` as separate workflow keys:",
-  "Return `2xx` after accepting a duplicate `deliveryId` or `streamEventId`;",
+  "Store `deliveryId` and `streamEventId` as separate workflow keys.",
+  "Return `2xx` after accepting a duplicate `deliveryId` or `streamEventId`.",
   "Do not store endpoint signing values, raw request body, raw signature, or full headers in logs, data stores, Slack messages, CRM rows, or retry queues.",
   "/guides/pipedream",
 ] as const;
