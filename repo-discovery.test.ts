@@ -10419,7 +10419,7 @@ const REQUIRED_HAYSTACK_GUIDE_SNIPPETS = [
   "Pipelines and agents can both use these components.",
   "a search tool called `search_current_tweets`",
   'python -m pip install "xquik-haystack==0.1.3" "haystack-ai==3.0.0"',
-  "Release `0.1.3` is published on PyPI.",
+  "PyPI hosts release `0.1.3`.",
   "The `pip install` command pins both packages for repeatable builds.",
   "`XquikTweetSearch` calls the `GET /x/tweets/search` search endpoint.",
   "Save every search query beside its tweet IDs.",
