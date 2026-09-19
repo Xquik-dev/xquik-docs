@@ -8460,7 +8460,7 @@ const FORBIDDEN_WORKFLOW_ENDPOINT_FINDER_TABLE_SNIPPETS = [
 
 const REQUIRED_CAMPAIGN_VERIFICATION_WORKFLOW_SNIPPETS = [
   'title: "Twitter campaign verification API workflow"',
-  "Verify giveaway follows, retweets, replies, quotes, winners, and participant exports through one reviewable Twitter campaign workflow. Includes API examples.",
+  "Verify giveaway follows, retweets, replies, quotes, winners, and participant exports through one reviewable Twitter campaign workflow with audit rows.",
   "Campaign verification separates entry collection, rule checks, winner selection,",
   "Translate every published participation rule into one documented check.",
   "A follow check proves one source-to-target relationship at one checked time.",
@@ -8483,7 +8483,7 @@ const REQUIRED_CAMPAIGN_VERIFICATION_WORKFLOW_SNIPPETS = [
   "[comment and retweet picker guide](/guides/twitter-comment-retweet-picker)",
   "## Follow check",
   "participant_handle",
-  "## Tweet-Level checks",
+  "## Tweet-level checks",
   "Pass `next_cursor` back",
   "as `cursor`",
   "## Giveaway draw",
