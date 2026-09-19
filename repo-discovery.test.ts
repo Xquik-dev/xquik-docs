@@ -11665,7 +11665,7 @@ const REQUIRED_OUTSTAND_ALTERNATIVE_SNIPPETS = [
   "connected accounts without a visible account cap, all 10 platforms, webhooks, MCP, and BYO credentials",
   "social accounts, posts, scheduling, first comment scheduling, and media attachment as core features",
   "`GET /v1/social-accounts` for connected accounts and `POST /v1/posts` with `containers`, `socialAccountIds`, and optional `scheduledAt`",
-  "supports one authentication method, passes a Bearer credential in the `Authorization` header",
+  "It passes a Bearer credential in the `Authorization` header",
   "allows multiple named credentials per organization",
   "25 tools for posting, scheduling, analytics, media management, account management, and social network configuration",
   "`create_post`, `list_posts`, `get_post`, `get_post_analytics`, `delete_post`, `create_reply`, and `get_replies`",
