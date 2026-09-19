@@ -9932,8 +9932,8 @@ const REQUIRED_ZAPIER_ALTERNATIVE_SNIPPETS = [
   "MCP tool calls that use two tasks from the plan quota",
   "## Monitor webhook receiver handoff",
   "When a Zapier REST Hook, Catch Hook, or Catch Raw Hook receives Xquik monitor events, verify `X-Xquik-Signature` before field mapping.",
-  "Store `deliveryId` and `streamEventId` as separate Zap storage keys:",
-  "Return `2xx` after accepting a duplicate `deliveryId` or `streamEventId`;",
+  "Store `deliveryId` and `streamEventId` as separate Zap storage keys.",
+  "Return `2xx` after accepting a duplicate `deliveryId` or `streamEventId`.",
   "Do not store endpoint signing values, raw request body, raw signature, or full headers in Zap history, tables, Slack messages, CRM rows, or retry queues.",
   "/guides/zapier",
 ] as const;
