@@ -11794,7 +11794,7 @@ const REQUIRED_TWEETSTREAM_ALTERNATIVE_SNIPPETS = [
   "track accounts with keyword filters",
   "OCR text, detected crypto assets, live prices, and Polymarket detection",
   "Basic annual plan at USD 139/month billed annually with 3 WebSocket connections and 50 monitored X/Twitter accounts",
-  "Elite annual plan at USD 349/month billed annually with 10 WebSocket connections and 250 monitored accounts",
+  "Elite annual plan costs USD 349/month billed annually with 10 WebSocket connections and 250 monitored accounts",
   "monthly Basic pricing from USD 199/month and Elite pricing at USD 499/month",
   "`wss://ws.tweetstream.io/ws`, protocol `tweetstream.v1`, and an auth subprotocol",
   "the server accepts Bearer auth headers and query parameters",
