@@ -22,14 +22,15 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 Account and keyword monitors check every second. Webhooks deliver matched events
 to your server. Every delivery uses an HMAC-SHA256 signature.
 
-Use webhooks when `tweet.new`, `tweet.reply`, `tweet.quote`, `tweet.retweet`,
-`tweet.media`, `tweet.link`, `tweet.poll`, `tweet.mention`, `tweet.hashtag`,
-`tweet.longform`, `profile.avatar.changed`, `profile.banner.changed`,
-`profile.name.changed`, `profile.username.changed`, `profile.bio.changed`,
-`profile.location.changed`, `profile.url.changed`, `profile.verified.changed`,
-`profile.protected.changed`, `profile.pinned_tweet.changed`, or
-`profile.unavailable.changed` events from tracked accounts must reach your app
-without polling. Keyword monitors support tweet event types only. The setup
+Use webhooks when events from tracked accounts must reach your app without
+polling. The 10 tweet types are `tweet.new`, `tweet.reply`, `tweet.quote`,
+`tweet.retweet`, `tweet.media`, `tweet.link`, `tweet.poll`, `tweet.mention`,
+`tweet.hashtag`, and `tweet.longform`. The 11 profile types are
+`profile.avatar.changed`, `profile.banner.changed`, `profile.name.changed`,
+`profile.username.changed`, `profile.bio.changed`, `profile.location.changed`,
+`profile.url.changed`, `profile.verified.changed`, `profile.protected.changed`,
+`profile.pinned_tweet.changed`, and `profile.unavailable.changed`. Keyword
+monitors support tweet event types only. The setup
 returns a monitor ID, webhook ID, one-time signing secret, and signed JSON
 deliveries. Webhook operations are free. Active monitors cost 21 credits/hour
 and include stored events plus webhook delivery.
@@ -451,7 +452,7 @@ A test payload that the [Test Webhook](/api-reference/webhooks/test) endpoint se
 
 ## Retry policy
 
-Xquik retries failed deliveries with exponential backoff (base 1 second, multiplier 2x, max 60 seconds):
+Xquik retries failed deliveries with exponential backoff. The delay starts at 1 second, doubles each time, and caps at 60 seconds:
 
 <CardGroup cols={2}>
 
@@ -469,7 +470,7 @@ Xquik retries failed deliveries with exponential backoff (base 1 second, multipl
 
   <Card title="Attempts 7-9" icon="hourglass">
 
-    Delay: 60 seconds for each attempt after the cap is reached.
+    Delay: 60 seconds for each attempt after the delay reaches its cap.
 
   </Card>
 
@@ -491,13 +492,13 @@ delivery resumes.
 
 <Note>
 
-Xquik processes retries in batches, so the actual delay may be slightly longer than shown.
+Xquik processes retries in batches. The real delay can exceed the listed delay.
 
 </Note>
 
 <Warning>
 
-**Terminal failures.** Return `410 Gone` only when Xquik should stop retrying that delivery. Other non-`2xx` responses and network failures retry until the delivery is exhausted.
+**Terminal failures.** Return `410 Gone` only when Xquik should stop retrying that delivery. Other non-`2xx` responses and network failures retry until Xquik exhausts the delivery.
 
 </Warning>
 
@@ -617,8 +618,8 @@ Use this handoff when a receiver fails tests, repeats failures, or reaches an
 
 ## Requirements
 
-- Endpoint **must** use HTTPS
-- Endpoint **must not** resolve to a private or internal IP address (localhost, 10.x.x.x, 172.16-31.x.x, 192.168.x.x, 169.254.x.x)
+- The endpoint must use HTTPS
+- The endpoint must not resolve to a private or internal IP address (localhost, 10.x.x.x, 172.16-31.x.x, 192.168.x.x, 169.254.x.x)
 - Endpoints should respond promptly with a `2xx` status code. Non-`2xx` responses count as failures and trigger retries
 
 ## Where to go next
