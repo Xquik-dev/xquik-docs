@@ -219,7 +219,7 @@ Store the creation response as a local handoff before polling:
 }
 ```
 
-Poll by `reply_extraction_id`. Keep `target_tweet_id` and `results_limit` with the audit record. Do not wait for `totalResults` or `createdAt` in the create response; those fields arrive from `GET /extractions/{id}`.
+Poll by `reply_extraction_id`. Keep `target_tweet_id` and `results_limit` with the audit record. Do not wait for `totalResults` or `createdAt` in the create response. Those fields arrive from `GET /extractions/{id}`.
 
 ## Step 3: poll job status
 
@@ -389,7 +389,7 @@ For API exports, follow every cursor and store each confirmed page. Treat a
 Keep reply text, author ID, username, creation time, and engagement counts.
 Route uncertain rows to a human review queue. Add sentiment or spam labels with
 your own classifier. Xquik does not return a sentiment verdict. CSV keeps
-spreadsheet review user friendly. JSON preserves nested media and author fields.
+spreadsheet review user friendly. JSON keeps nested media and author fields.
 
 ### When should I use the live replies API?
 
@@ -401,21 +401,21 @@ Choose `reply_extractor` for stored files and reviewable jobs. Estimate the pare
 
 ### Which file format should I choose?
 
-Choose CSV for CRM imports and spreadsheet filters. Choose XLSX for analyst handoffs that require workbook tools. Choose JSON for applications that preserve nested reply fields. Convert JSON to JSON Lines when queues or warehouses need one reply per record.
+Choose CSV for CRM imports and spreadsheet filters. Choose XLSX for analyst handoffs that require workbook tools. Choose JSON for applications that keep nested reply fields. Convert JSON to JSON Lines when queues or warehouses need one reply per record.
 
 ### How do I resume an interrupted reply export?
 
-Persist the target tweet ID, extraction ID, current cursor, next cursor, and page index. Resume a saved job through `GET /extractions/{id}`. Resume live pagination with the last confirmed `next_cursor`. Never advance the checkpoint before storing its reply rows.
+Store the target tweet ID, extraction ID, current cursor, next cursor, and page index. Resume a saved job through `GET /extractions/{id}`. Resume live pagination with the last confirmed `next_cursor`. Never advance the checkpoint before storing its reply rows.
 
 ### How should I validate exported replies?
 
-Each reply contributes to the conversation under the parent tweet. Check that every row has a reply tweet ID and parent tweet ID. Preserve author IDs separately from usernames because usernames can change. Keep tweet creation times in UTC. Compare the returned rows with the estimate only for planning. The parent `replyCount` can change and does not guarantee the final export size.
+Each reply contributes to the conversation under the parent tweet. Check that every row has a reply tweet ID and parent tweet ID. Keep author IDs separately from usernames because usernames can change. Keep tweet creation times in UTC. Compare the returned rows with the estimate only for planning. The parent `replyCount` can change and does not guarantee the final export size.
 
 ## Cost and failure handling
 
 Estimate is free. A `reply_extractor` job costs 1 credit per result. Direct `GET /x/tweets/{id}/replies` calls cost 1 credit per returned tweet. Available credits can reduce the returned page size. File exports do not charge credits after job creation.
 
-Respect the read rate limit on live Twitter API pages. Use the parent reply count only for estimates. Treat returned reply rows as the source of truth.
+Respect the read rate limit on live Twitter API pages. Use the parent reply count only for estimates. Trust the returned reply rows over the estimate.
 
 Handle common errors before retrying:
 
