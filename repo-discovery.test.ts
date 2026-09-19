@@ -8501,7 +8501,7 @@ const REQUIRED_CAMPAIGN_VERIFICATION_WORKFLOW_SNIPPETS = [
   '"proof_endpoint": "GET /api/v1/x/followers/check"',
   '"verification_state": "matched"',
   "## Handle costs and retries",
-  "Direct X read endpoints are metered. Budget by participants and pages.",
+  "Xquik meters direct X read endpoints. Budget by participants and pages.",
   "Draw execution can meter tweet, reply, retweeter, and follow checks.",
   "`402 insufficient_credits` stops the audit.",
 ] as const;
