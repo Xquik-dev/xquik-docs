@@ -3490,7 +3490,7 @@ const REQUIRED_X_ACCOUNTS_GET_STATE_SNIPPETS = [
   "<CardGroup cols={1}>",
   '<Card title="Ready for actions" icon="circle-check">',
   '`health: "healthy"` means the stored session is usable.',
-  "`cookiesObtainedAt` shows when the session was last obtained",
+  "`cookiesObtainedAt` shows when Xquik last obtained the session",
   '<Card title="Needs credentials" icon="key-round">',
   '`health: "needsReauth"` means credentials, TOTP, email verification, passkey, or another security challenge blocked login.',
   "with current credentials and a valid TOTP secret before retrying writes.",
@@ -3500,7 +3500,7 @@ const REQUIRED_X_ACCOUNTS_GET_STATE_SNIPPETS = [
   "use [Bulk retry](/api-reference/x-accounts/bulk-retry) for temporary failures.",
   '`health: "recovering"` means the account can reconnect on its next use.',
   '<Card title="X restriction" icon="shield-alert">',
-  '`health: "locked"` or `health: "suspended"` means writes stay blocked until the account is fixed on X.',
+  '`health: "locked"` or `health: "suspended"` means writes stay blocked until you fix the account on X.',
 ] as const;
 
 const X_ACCOUNT_PUBLIC_CONTRACT_FILES = [
