@@ -11584,7 +11584,7 @@ const REQUIRED_TWEETDECK_ALTERNATIVE_SNIPPETS = [
   "X's official X Pro help describes X Pro as the global replacement for TweetDeck",
   "multi-column workspace that includes more of X.com",
   "full post composer, scheduled posts, advanced search, top/latest post order, Decks",
-  "column types for home, notifications, search, lists, communities, explore, bookmarks, profiles, messages, and scheduled posts",
+  "Column types include home, notifications, search, lists, communities, explore, bookmarks, profiles, messages, and scheduled posts",
   "X Premium as an optional paid subscription with Basic, Premium, and Premium+ tiers",
   "Premium features can change",
   "delegate account access without sharing sign-in credentials",
