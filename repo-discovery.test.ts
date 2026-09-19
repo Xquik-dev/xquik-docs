@@ -11646,7 +11646,7 @@ const REQUIRED_POST_BRIDGE_ALTERNATIVE_SNIPPETS = [
   "USD 5/month in addition to the plan subscription",
   "dashboard page for API credentials, API documentation, and Discord support through a dedicated API channel",
   "upload video content once, connect each social media account, and Post Bridge distributes the content to connected platforms",
-  "content must be uploaded directly through Post Bridge",
+  "you must upload content directly through Post Bridge",
   "does not support reposting Instagram collaborative reels, already-live social posts, or videos from other platforms or channels",
   "does not currently support Twitter/X threads, Instagram Threads threaded posts, or split tweets",
   "schedule individual posts to X and Instagram Threads",
