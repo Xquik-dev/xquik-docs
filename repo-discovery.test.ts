@@ -3532,7 +3532,7 @@ const REQUIRED_X_ACCOUNTS_DISCONNECT_SNIPPETS = [
   'description: "Delete the stored Xquik connection for one X account. The X account stays unchanged. The old ID then returns 404, and reconnecting creates a new account ID."',
   "It deletes only the stored Xquik connection for that account ID.",
   "It does not change the X account itself.",
-  "After success, the old Xquik account ID returns `404`; reconnect the account to get a new ID.",
+  "After success, the old Xquik account ID returns `404`. Reconnect the account to get a new ID.",
   "## What disconnect does",
   "<CardGroup cols={1}>",
   '<Card title="Removes this connection" icon="trash-2">',
