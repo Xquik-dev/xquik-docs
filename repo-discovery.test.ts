@@ -10855,7 +10855,7 @@ const REQUIRED_CREWAI_GUIDE_SNIPPETS = [
   "Review agent tools before each tool integration.",
   "`import tool` shortcuts and `def run` wrappers duplicate native MCP behavior.",
   "Avoid broad web searches when tweet IDs matter.",
-  "Real world AI applications need safe multi agent systems.",
+  "Multi agent systems in real world AI applications need one key per agent.",
   '<Card title="Tweet search rows" icon="search">',
   "Store `q`, `tweet_id`, `created`, `has_more`, and `next_cursor`.",
   '<Card title="Follower exports" icon="users">',
