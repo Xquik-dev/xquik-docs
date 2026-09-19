@@ -2864,7 +2864,7 @@ const REQUIRED_CREATE_TWEET_API_SNIPPETS = [
   "`reply_to_tweet_id`",
   "`media`",
   "Create a tweet or reply from one connected X account.",
-  "Put public HTTPS images or one MP4 URL in `media`.",
+  "Put public HTTPS images or 1 MP4 URL in `media`.",
   "Never send `mediaId` or `media_ids` to this endpoint.",
   "Send a unique `Idempotency-Key`.",
   "Store the returned write action.",
