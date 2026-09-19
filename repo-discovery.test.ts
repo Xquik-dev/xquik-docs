@@ -7348,7 +7348,7 @@ const REQUIRED_WEBHOOK_TESTING_SNIPPETS = [
 const REQUIRED_WEBHOOK_CREATE_API_SNIPPETS = [
   "## Integration handoff",
   "Use this endpoint after creating an account monitor with [`POST /monitors`](/api-reference/monitors/create) or a keyword monitor with [`POST /monitors/keywords`](/api-reference/monitors/create-keyword).",
-  "Active monitors produce the events. Webhook delivery is included with monitor billing.",
+  "Active monitors produce the events. Monitor billing includes webhook delivery.",
   "Keyword monitors emit only `tweet.*`",
   "Account monitors can emit both `tweet.*` and `profile.*`",
   "const webhookSecret = webhook.secret;",
@@ -7382,7 +7382,7 @@ const REQUIRED_WEBHOOK_CREATE_API_SNIPPETS = [
   "`username` for account monitor",
   "`query` for keyword monitor",
   "Use `deliveryId` as the per-endpoint idempotency key",
-  "and `streamEventId` when you must process one monitor event once across retries",
+  "Use `streamEventId` when you must process one monitor event once across retries",
   "Return a `2xx` response within 10 seconds",
   "[Signature Verification](/webhooks/verification)",
 ] as const;
