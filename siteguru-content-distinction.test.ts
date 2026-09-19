@@ -66,8 +66,8 @@ const CONTENT_REQUIREMENTS: readonly ContentRequirement[] = [
     file: "api-reference/monitors/twitter-account-monitor-status.mdx",
     phrases: [
       "Check one Twitter account activity tracker",
-      "A healthy account alert",
-      "requires four aligned layers.",
+      "A working account alert",
+      "needs 4 checks to pass.",
       "Followers and following are not monitor event types.",
       "How do Twitter analytics tools differ from monitor status?",
       "What should a Twitter account activity audit store?",

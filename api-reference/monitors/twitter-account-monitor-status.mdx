@@ -270,7 +270,7 @@ for your account only, so deleted or cross-account IDs return `404`.
 | X user ID                     | `xUserId`       | Use this stable ID for account verification.        |
 | Event filter                  | `eventTypes`    | Align webhook subscriptions before enabling alerts. |
 | Polling state                 | `isActive`      | Decide whether checks and billing should continue.  |
-| Creation time                 | `createdAt`     | Record when the monitor was created.                |
+| Creation time                 | `createdAt`     | Record when Xquik created the monitor.              |
 | Billing checkpoint            | `nextBillingAt` | Review credits before the next active charge.       |
 
 <CardGroup cols={2}>
@@ -278,12 +278,12 @@ for your account only, so deleted or cross-account IDs return `404`.
   <Card title="Tracked account" icon="user-check">
 
     Treat `username` and `xUserId` as the resolved X account identity. Store
-    both with downstream CRM, warehouse, or queue records.
+    both with your CRM, warehouse, or queue records.
 
   </Card>
   <Card title="Current filter" icon="funnel">
 
-    Treat `eventTypes` as the active matching contract. Mirror those event
+    `eventTypes` decides which changes match. Copy those event
     types into webhook subscriptions before relying on signed alerts.
 
   </Card>
@@ -324,10 +324,9 @@ for your account only, so deleted or cross-account IDs return `404`.
 ## What does Twitter account activity tracker status prove?
 
 The response proves which X profile one monitor targets. Confirm both
-`username` and `xUserId`. Keep the stable X user ID when a username changes.
-A stable X user ID preserves identity after username changes.
+`username` and `xUserId`. Keep the X user ID. It stays the same when a username changes.
 
-Read `eventTypes` as the monitor's current matching contract. Tweet filters
+`eventTypes` lists the changes the monitor matches now. Tweet filters
 include new posts, replies, quotes, reposts, media, links, and polls. Additional
 filters detect mentions, hashtags, and long-form posts. Profile filters cover avatar,
 banner, name, username, biography, location, and URL. They also cover
@@ -347,8 +346,8 @@ prove that an event or webhook delivery succeeded.
 
 ## How do I check whether Twitter account activity alerts are active?
 
-Check the monitor before diagnosing a missing alert. A healthy account alert
-requires four aligned layers.
+Check the monitor before diagnosing a missing alert. A working account alert
+needs 4 checks to pass.
 
 | Alert layer     | Status check                  | Required evidence                                             |
 | --------------- | ----------------------------- | ------------------------------------------------------------- |
@@ -363,10 +362,10 @@ First, confirm the tracked profile. Next, find the expected type in
 the stored event to [webhook deliveries](/api-reference/webhooks/deliveries)
 through `streamEventId`.
 
-Do not treat one active flag as complete health evidence. The monitor may poll
+An active flag alone does not prove the alert works. The monitor may poll
 correctly while a webhook fails. A webhook may also work while the monitor
-omits the expected event type. Keep configuration, event, and delivery checks
-independent during diagnosis.
+omits the expected event type. Check configuration, events, and deliveries
+separately.
 
 ## How do I track mentions and replies for one account?
 
@@ -396,7 +395,7 @@ Monitor event history begins after monitor creation.
 event records. Call [X user tweets](/api-reference/x/user-tweets) when an audit
 requires recent profile posts. Use an extraction job for follower CSV exports.
 
-Keep these outputs distinct. A monitor status snapshot explains configuration.
+Keep these outputs separate. A monitor status snapshot shows configuration.
 An event record proves one matched change. A delivery record proves one
 webhook delivery attempt. A follower export records a dated follower list.
 None of those outputs is an engagement analytics dashboard.
@@ -421,8 +420,8 @@ the change occurred.
 Use [List Events](/api-reference/events/list) to find changes captured by the
 monitor. Open each event before making an activity claim. Use
 [webhook deliveries](/api-reference/webhooks/deliveries) to verify receiver
-attempts. This workflow separates monitor configuration from analytics
-reporting.
+attempts. None of these steps produce an analytics
+report.
 
 Do not compare an empty event list with a complete analytics report. Event
 history begins when the monitor captures a selected change. Paused monitors do
@@ -434,27 +433,27 @@ conclusions.
 
 Start an audit with the monitor response. Store `id`, `username`, and
 `xUserId`. Add `eventTypes`, `isActive`, `createdAt`, and `nextBillingAt`.
-Together, these fields form one reproducible monitor snapshot.
+Together, these fields form one monitor snapshot.
 
 Record the request timestamp beside the response. The endpoint returns monitor
 creation time, not the audit observation time. Keep the HTTP status and monitor
 ID with that entry.
 
 Record the intended event beside the stored filters. For a reply alert, record
-the `tweet.reply` type. For a profile-name change, record `profile.name`. This
+the `tweet.reply` type. For a profile-name change, record `profile.name.changed`. This
 comparison shows whether the required filter existed during the review.
 
 When an event exists, store its event ID and `monitorId`. Open the event and
 confirm its type. Then connect delivery `streamEventId` values to that event
-ID. Store each `deliveryId` and delivery status. This chain distinguishes a
+ID. Store each `deliveryId` and delivery status. With these IDs, you can tell a
 missing event from a failed receiver.
 
 Repeat the status request after each approved update. Compare the account,
-filters, polling status, and next scheduled charge. Preserve both snapshots
-with the approved change ticket. Reject the update when `xUserId` unexpectedly
+filters, polling status, and next scheduled charge. Keep both snapshots
+with the approved change ticket. Reject the update when `xUserId`
 changes.
 
-Treat `404` as an ownership or existence failure. Never infer previous monitor
+A `404` means the monitor does not exist or belongs to another account. Never infer previous monitor
 states from that response. Before continuing, confirm the authenticated account
 and monitor ID. Treat `429` as a temporary request limit. Read the response `Retry-After`
 header and pause for the supplied duration before retrying. Do not change the
@@ -462,9 +461,9 @@ audit conclusion.
 
 ## Approve one account monitor change
 
-Fetch the monitor immediately before an approved update. Store its monitor ID,
+Fetch the monitor just before an approved update. Store its monitor ID,
 username, and stable X user ID. Add event types, active state, and billing
-schedule. This snapshot becomes the change baseline.
+schedule. Compare later snapshots against this one.
 
 Confirm the target profile first. Usernames can change. The stable `xUserId`
 prevents a renamed profile from looking like another account. Stop when the
@@ -475,12 +474,12 @@ removed account event. Check whether existing webhooks accept the proposed
 types. Update webhook subscriptions before relying on new alerts.
 
 Read `isActive` separately from event configuration. A pause keeps the target
-and event types. A resume restores polling under the stored contract. Record
+and event types. A resume restarts polling with the stored event types. Record
 the previous state before toggling it.
 
 After the update, fetch the same monitor ID again. Compare its target, event
 types, active state, and `nextBillingAt`. Keep both snapshots with the approved
-change ticket. This proves the exact account-monitor change.
+change ticket. The 2 snapshots show exactly what changed.
 
 ## Trace one missing profile alert
 
