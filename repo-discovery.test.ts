@@ -3232,7 +3232,7 @@ const REQUIRED_REMOVE_FOLLOWER_API_SNIPPETS = [
   "removal_receipt = response.json()",
   "var removalReceipt map[string]interface{}",
   "## Resolve the follower and connected account",
-  "## Remove followers on Twitter safely",
+  "## Remove followers one request at a time",
   "## Poll and verify the removal",
   "## Choose remove follower, unfollow, or block",
   "## Review bots, private accounts, and bulk queues",
