@@ -95,7 +95,7 @@ and include stored events plus webhook delivery.
 
 ## Quick setup
 
-Get webhooks working in 3 steps:
+Set up webhooks in 3 steps:
 
 <Steps>
 
@@ -127,12 +127,12 @@ Get webhooks working in 3 steps:
 
     </CodeGroup>
 
-    Store the returned monitor `id`; account events include `username`, keyword events include `query`.
+    Store the returned monitor `id`. Account events include `username`. Keyword events include `query`.
 
   </Step>
   <Step title="Register a webhook">
 
-    Provide an HTTPS URL and select which event types to receive. Xquik generates a signing secret. Store it securely. The API returns it only once.
+    Provide an HTTPS URL and select which event types to receive. Xquik generates a signing secret. Store it in a secret manager. The API returns it only once.
 
     ```bash
     curl -X POST https://xquik.com/api/v1/webhooks \
@@ -269,7 +269,7 @@ one batched payload.
   <Card title="streamEventId" icon="link">
 
     Type `string`. Stored monitor event ID. Store it as the event-level
-    de-dupe key when one monitor event should be processed once across webhook
+    deduplication key when you must process one monitor event once across webhook
     retries or endpoint changes.
 
   </Card>
@@ -327,7 +327,7 @@ After signature verification succeeds, store a compact receiver row before handi
 }
 ```
 
-## Tweet, follower & profile event shapes
+## Tweet & profile event shapes
 
 Each event type includes a `data` object. Tweet events contain the raw tweet. The `webhook.test` event contains a test message and timestamp. The examples below show the most common fields.
 
@@ -475,12 +475,12 @@ Xquik retries failed deliveries with exponential backoff (base 1 second, multipl
 
   <Card title="Attempt 10" icon="circle-stop">
 
-    Final attempt. If it fails, the delivery is marked as `exhausted`.
+    Final attempt. If it fails, Xquik marks the delivery `exhausted`.
 
   </Card>
 </CardGroup>
 
-After the 10th failed attempt, the delivery is marked as `exhausted`. A `410 Gone` response exhausts the delivery immediately. Check delivery status with the [deliveries endpoint](/api-reference/webhooks/deliveries).
+After the 10th failed attempt, Xquik marks the delivery `exhausted`. A `410 Gone` response exhausts the delivery immediately. Check delivery status with the [deliveries endpoint](/api-reference/webhooks/deliveries).
 
 Webhook configuration also tracks receiver health. `GET /webhooks` returns
 `deliveryStatus`, `consecutiveFailures`, and `failureHardCap`. When repeated
@@ -537,7 +537,7 @@ work. Do not use `410 Gone` for temporary throttling. It exhausts that delivery.
 Store `nextCursor` after every event page. Reprocess events whose `id` matches
 failed or exhausted delivery `streamEventId` values, then leave delivered rows
 alone. Scope event pages with `monitorId` for account monitors or
-`keywordMonitorId` for keyword monitors when the source is known; omit both
+`keywordMonitorId` for keyword monitors when the source is known. Omit both
 only for all-monitor replay.
 
 ## Troubleshoot a delivery
