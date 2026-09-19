@@ -7069,7 +7069,7 @@ const FORBIDDEN_UPLOAD_MEDIA_API_HANDOFF_SNIPPETS = [
 const REQUIRED_DOWNLOAD_MEDIA_API_HANDOFF_SNIPPETS = [
   'title: "Twitter media downloader API for photos & video"',
   "Download media",
-  "Use this Twitter media downloader API with 1-50 tweet IDs or URLs.",
+  "Send 1-50 tweet IDs or URLs.",
   "download Twitter media",
   "This endpoint creates a saved media gallery from 1-50 tweet URLs or IDs.",
   "The response gives a `galleryUrl` plus cache or bulk",
@@ -7095,7 +7095,7 @@ const REQUIRED_DOWNLOAD_MEDIA_API_HANDOFF_SNIPPETS = [
   "fmt.Println(string(output))",
   "Write one manifest row per request",
   '<Card title="Gallery URL" icon="images">',
-  "Store `gallery_url` from `galleryUrl` as the durable link for downloaded media.",
+  "Store `gallery_url` from `galleryUrl` as the link for downloaded media.",
   '<Card title="Single tweet" icon="message-square">',
   "Store `requested_tweet_id`, `tweet_id`, and `cache_hit`.",
   "`cacheHit: true` means the single-tweet request used cached media and is free.",
@@ -7116,7 +7116,7 @@ const REQUIRED_DOWNLOAD_MEDIA_API_HANDOFF_SNIPPETS = [
   "## Twitter media downloader questions",
   "The gallery can",
   "contain Twitter videos and GIFs plus images.",
-  "This Twitter video downloader route creates a gallery.",
+  "This route creates a gallery.",
   "Send 1-50 tweet IDs through `tweetIds`.",
 ] as const;
 
