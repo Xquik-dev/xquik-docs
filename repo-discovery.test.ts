@@ -10416,7 +10416,7 @@ const REQUIRED_HAYSTACK_GUIDE_SNIPPETS = [
   "Each includes text, authors, metrics, and URLs.",
   "This Haystack AI API integration supports RAG pipelines and agent workflows.",
   "They can retrieve relevant tweets for Haystack AI agents and Haystack AI RAG pipelines.",
-  "These components are building blocks for pipelines and agents.",
+  "Pipelines and agents can both use these components.",
   "a search tool called `search_current_tweets`",
   'python -m pip install "xquik-haystack==0.1.3" "haystack-ai==3.0.0"',
   "Release `0.1.3` is published on PyPI.",
