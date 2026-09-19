@@ -10127,7 +10127,7 @@ const REQUIRED_PIPEDREAM_ALTERNATIVE_SNIPPETS = [
   "Pipedream Workflows",
   "one credit per 30 seconds",
   "does not charge by number of steps",
-  "development and testing in the workflow builder are free",
+  "Development and testing in the workflow builder are free",
   "HTTP trigger",
   "steps.trigger.event",
   "method, payload, headers, path, query, URL",
