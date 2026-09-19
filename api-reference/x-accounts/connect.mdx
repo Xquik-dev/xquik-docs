@@ -1,7 +1,7 @@
 ---
 title: "Connect X account API & profile login workflow"
 sidebarTitle: "Connect X account"
-description: "Connect an X account with username, password, and its saved Authenticator App TOTP secret for durable tweet, reply, DM, and profile actions. See costs."
+description: "Connect an X account with username, email, password, and its saved Authenticator App TOTP secret for tweet, reply, DM, and profile actions. Connecting is free."
 api: "POST /x/accounts"
 keywords: ["x accounts", "connect", "add", "credentials", "2fa", "totp"]
 ---
@@ -132,7 +132,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <Warning>
 
-Xquik encrypts credentials at rest. It only uses them to maintain the
+Xquik encrypts credentials at rest. It uses them only to maintain the
 connection. Xquik never stores plaintext passwords.
 
 </Warning>
@@ -148,7 +148,7 @@ Then send the saved long key as `totp_secret`.
 
 <Info>
 
-Custom, dedicated, and user-supplied proxies are not supported. Xquik does
+Xquik does not support custom, dedicated, or user-supplied proxies. Xquik does
 not guarantee one fixed public IP per connected account.
 
 </Info>
@@ -249,16 +249,16 @@ func main() {
 
 </CodeGroup>
 
-| X account connection result | Response source                     | Next step                                         |
-| --------------------------- | ----------------------------------- | ------------------------------------------------- |
-| Connected account ID        | `id` from `201`                     | Use this ID for write actions and recovery.       |
-| X username                  | `xUsername`                         | Confirm the intended profile connected.           |
-| X user ID                   | `xUserId`                           | Preserve the stable account identity.             |
-| Connection state            | `status`                            | Continue only after the account becomes active.   |
-| Login health                | `health`                            | Require `healthy` before durable actions.         |
-| Pending attempt             | `id` from `202 pending`             | Poll the returned `Location` after `Retry-After`. |
-| Email challenge             | `id` from `202 requires_email_code` | Submit the matching email code before expiry.     |
-| Challenge expiry            | `expiresAt`                         | Stop using an expired challenge.                  |
+| X account connection result | Response source                     | Next step                                              |
+| --------------------------- | ----------------------------------- | ------------------------------------------------------ |
+| Connected account ID        | `id` from `201`                     | Use this ID for write actions and recovery.            |
+| X username                  | `xUsername`                         | Confirm the intended profile connected.                |
+| X user ID                   | `xUserId`                           | Store it. It stays the same when the username changes. |
+| Connection state            | `status`                            | Continue only after the account becomes active.        |
+| Login health                | `health`                            | Require `healthy` before durable actions.              |
+| Pending attempt             | `id` from `202 pending`             | Poll the returned `Location` after `Retry-After`.      |
+| Email challenge             | `id` from `202 requires_email_code` | Submit the matching email code before expiry.          |
+| Challenge expiry            | `expiresAt`                         | Stop using an expired challenge.                       |
 
 ## Headers
 
@@ -290,7 +290,7 @@ Email address associated with the X account.
 
 <ParamField body="password" type="string" required>
 
-Password for the X account. Encrypted at rest immediately upon receipt.
+Password for the X account. Xquik encrypts it at rest on receipt.
 
 </ParamField>
 
@@ -345,7 +345,7 @@ If you already saved the secret key, send it as `totp_secret`. If you did not sa
 3. Turn Authentication App off.
 4. Turn Authentication App on again.
 5. When the QR code appears, choose **Can't scan the QR code?** to reveal the text secret.
-6. Copy the long secret key and store it safely before leaving the setup screen.
+6. Copy the long secret key and store it in a password manager before leaving the setup screen.
 7. Add that key to your authenticator app if you are setting it up fresh.
 8. Finish enabling 2FA on X by entering the current 6-digit code from your authenticator app.
 9. Send the saved long key in `totp_secret` when you call Xquik.

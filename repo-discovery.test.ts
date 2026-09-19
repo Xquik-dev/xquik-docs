@@ -3366,7 +3366,7 @@ const REQUIRED_X_ACCOUNTS_LIST_API_SNIPPETS = [
 ] as const;
 
 const REQUIRED_X_ACCOUNTS_CONNECT_TOTP_SNIPPETS = [
-  'description: "Connect an X account with username, password, and its saved Authenticator App TOTP secret for durable tweet, reply, DM, and profile actions. See costs."',
+  'description: "Connect an X account with username, email, password, and its saved Authenticator App TOTP secret for tweet, reply, DM, and profile actions. Connecting is free."',
   "Authenticator App 2FA and `totp_secret` are required for a durable Xquik",
   "Missing the key? Restart Authentication App 2FA in X to reveal a new secret.",
   "add it to your authenticator app, and finish X's 6-digit confirmation.",
@@ -3387,7 +3387,7 @@ const REQUIRED_X_ACCOUNTS_CONNECT_TOTP_SNIPPETS = [
   "Turn Authentication App off.",
   "Turn Authentication App on again.",
   "choose **Can't scan the QR code?** to reveal the text secret.",
-  "store it safely before leaving the setup screen.",
+  "store it in a password manager before leaving the setup screen.",
   "Add that key to your authenticator app if you are setting it up fresh.",
   "Finish enabling 2FA on X by entering the current 6-digit code",
   "Do not stop after copying the secret key.",
