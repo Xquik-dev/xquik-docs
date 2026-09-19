@@ -2426,7 +2426,7 @@ const REQUIRED_GLOSSARY_CREDIT_CARRYOVER_SNIPPETS = [
   "Subscription grants, top-ups, and automatic top-ups add credits to one shared balance.",
   "Unused credits carry over until you spend them.",
   '<Accordion title="PAYG">',
-  "Top-up credits are added to your balance immediately and do not expire.",
+  "Xquik adds top-up credits to your balance right away. They do not expire.",
 ] as const;
 
 const REQUIRED_GLOSSARY_API_KEY_SNIPPETS = [
