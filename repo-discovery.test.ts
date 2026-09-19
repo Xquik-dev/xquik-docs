@@ -6460,7 +6460,7 @@ const FORBIDDEN_RESPONSE_FORMATS_EXPORTS_SNIPPETS = [
 
 const REQUIRED_TRENDS_REGION_SNIPPETS = [
   "<CardGroup cols={3}>",
-  '<Card title="Global & americas" icon="globe">',
+  '<Card title="Global & Americas" icon="globe">',
   "`1` - Worldwide",
   "`23424977` - United States",
   "`23424775` - Canada",
