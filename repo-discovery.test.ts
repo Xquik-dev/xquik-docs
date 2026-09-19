@@ -8544,7 +8544,7 @@ const REQUIRED_TWITTER_COMMENT_RETWEET_PICKER_SNIPPETS = [
   "[Get Retweeters](/api-reference/x/retweeters)",
   "## How does a Twitter hashtag giveaway picker work?",
   "## Can a comment picker verify likes?",
-  "The current Draws contract does not accept likes as an eligibility rule.",
+  "The Draws contract does not accept likes as an eligibility rule.",
   "## Combine comment and retweet checks",
   "Create one draw with the source Tweet URL and published eligibility filters.",
   "## Store an entry audit row",
