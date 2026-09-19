@@ -56,10 +56,10 @@ const CONTENT_REQUIREMENTS: readonly ContentRequirement[] = [
     file: "api-reference/monitors/list.mdx",
     phrases: [
       "Inventory every Twitter account monitor",
-      "complete account-monitor inventory",
+      "every account monitor in one response",
       "Reconcile an account monitor inventory",
       "Assign account monitor ownership",
-      "Prepare safe bulk account monitor cleanup",
+      "Prepare a bulk account monitor cleanup",
     ],
   },
   {

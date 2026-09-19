@@ -56,8 +56,8 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 ## Inventory every Twitter account monitor
 
-Use `GET /monitors` to monitor multiple Twitter accounts.
-It returns one complete account-monitor inventory.
+Use `GET /monitors` when you monitor multiple Twitter accounts.
+It returns every account monitor in one response.
 The route lists every account monitor that belongs to the signed-in user. Each
 row identifies one tracked X profile. It also shows enabled tweet or profile
 events and the active state. The row includes its creation time. Check
@@ -89,8 +89,7 @@ and profile event types. Then call this route to rebuild the complete list.
 Store each returned `id` as the stable monitor key. Keep `xUserId` beside the
 username because an account can change its username.
 
-This inventory supports Twitter account monitoring across many tracked
-profiles. Use `isActive` to filter rows before estimating costs.
+Use `isActive` to filter rows before estimating costs.
 Group active rows by owner, workflow, or webhook receiver. Keep paused rows in
 the same inventory because their configuration still exists.
 
@@ -103,8 +102,8 @@ This route lists monitor settings, not stored events.
 ## What does the monitor inventory include?
 
 Each row shows the monitor ID, username, and stable X user ID for account joins.
-The `eventTypes` array defines which tweet and profile changes matter.
-The `isActive` field separates running monitors from paused configurations.
+The `eventTypes` array lists the tweet and profile changes the monitor tracks.
+The `isActive` field separates running monitors from paused ones.
 The timestamps show when Xquik created the monitor and its next billing point.
 
 Tweet filters cover new posts, replies, quotes, reposts, media, and links. They
@@ -128,14 +127,13 @@ events. Use [Get Event](/api-reference/events/get) to inspect one stored event.
 
 The route also does not publish or schedule posts. Use the
 [X Write API](/api-reference/x-write/create-tweet) for publishing workflows.
-Keep these responsibilities separate. Otherwise, a monitor inventory can
-become an event feed or publishing queue.
+Do not use the monitor list as an event feed or a publishing queue.
 
 ## How do you set alerts for several X accounts?
 
 First, create one monitor per username. Give each monitor only the event types
 its receiver understands. Then create a webhook for the matching event types.
-Store the monitor ID with every workflow rule. This preserves the source when
+Store the monitor ID with every workflow rule. You can then tell the source when
 several profiles send similar events.
 
 Re-list monitors after every create, update, pause, or delete operation. Check
@@ -160,8 +158,8 @@ assignment to the exact `eventTypes` returned for that monitor.
 
 Agencies should separate client profiles before reporting active-monitor
 costs. Review paused and active rows together, but count their costs
-separately. Record every approved state change. This history prevents one
-client cleanup from changing another client's monitor.
+separately. Record every approved state change. With that history, a cleanup for one
+client cannot change another client's monitor.
 
 ## Is listing Twitter account monitors free?
 
@@ -169,7 +167,7 @@ Yes. This `GET` request consumes no credits. Active monitors cost 21 credits
 per monitor-hour. Paused monitors stay listed and stop active-monitor billing.
 Review `isActive` and `nextBillingAt` before enabling more profiles.
 
-Do not use a quiet event window as a cost signal. A valid monitor may receive
+A quiet event window is no reason to cut cost. A valid monitor may receive
 no matching event during that period. Confirm its owner and selected filters
 before pausing it. Delete a monitor only when its configuration is no longer
 required.
@@ -353,7 +351,7 @@ by creation time and a `total` count for the returned set.
 
   <Card title="Tracked accounts" icon="users">
 
-    Store each monitor's `id`, `username`, and `xUserId` with downstream CRM,
+    Store each monitor's `id`, `username`, and `xUserId` with your CRM,
     warehouse, or queue records.
 
   </Card>
@@ -406,7 +404,7 @@ Store one row per monitor ID. Include its username, X user ID, and event types. 
 
 Join monitors to webhooks by configured ownership. Flag missing webhooks, extra webhooks, and mismatched event types.
 
-Compare completed snapshots to identify new, paused, resumed, or removed monitors. Do not compare partially paginated inventories.
+Compare completed snapshots to identify new, paused, resumed, or removed monitors. Do not compare incomplete snapshots.
 
 Use the single-monitor route for an incident review. Update only the monitors approved for change.
 
@@ -419,23 +417,23 @@ Group rows by the team consuming their events. Support teams may own reply and
 mention events. Research teams may own new posts. Account operations may own
 profile changes. Store ownership outside returned API fields.
 
-Compare `eventTypes` with each receiver contract. A webhook receiving only
+Compare `eventTypes` with the events each receiver handles. A webhook receiving only
 tweet events cannot process a profile biography change. Flag missing
 subscriptions before calling the monitor healthy.
 
 Then inspect active state. Active monitors can produce new account events.
-Paused monitors preserve configuration without polling. Keep both groups in
+Paused monitors keep their configuration and do not poll. Keep both groups in
 the inventory. Never treat a paused row as deleted.
 
 Use `nextBillingAt` for active-budget reviews. Listing remains free. Count
-active account monitors separately from keyword monitors. Their targets and
-event contracts serve different workflows.
+active account monitors separately from keyword monitors. They track different targets and
+event types.
 
 Publish one ownership row per monitor ID. Include username, X user ID, event
 types, active state, and billing checkpoint. Add its owner and review date.
-This record makes later account-monitor changes explicit.
+Later monitor changes then show up as changed rows.
 
-## Prepare safe bulk account monitor cleanup
+## Prepare a bulk account monitor cleanup
 
 Begin from one complete list response. Do not combine partial snapshots. Mark
 rows lacking an owner, current workflow, or required webhook subscription.
@@ -445,8 +443,8 @@ prove the profile is irrelevant. Confirm the account, event types, and review
 window with the owner.
 
 Pause monitors through the update route first. Keep their IDs and previous
-event types in the change record. Observe receiver queues before permanent
-deletion.
+event types in the change record. Watch receiver queues before you
+delete.
 
 Delete only approved rows. Re-list monitors after every batch. Confirm removed
 IDs are absent and paused IDs remain present. Record billing checkpoints for
@@ -484,7 +482,7 @@ Your API key. You can also sign in with a session cookie. Create a key from the 
   Subscribed event types.
 </ResponseField>
 <ResponseField name="monitors[].isActive" type="boolean">
-  Whether the monitor is currently active.
+  Whether the monitor is active.
 </ResponseField>
 <ResponseField name="monitors[].createdAt" type="string">
   ISO 8601 creation timestamp.
@@ -544,7 +542,7 @@ Too many requests. Wait for the `Retry-After` header before retrying.
 
 <Info>
 
-Returns up to 200 monitors. There is no pagination. [Contact support](mailto:support@xquik.com) if you need more.
+Returns up to 200 monitors. The route has no pagination. [Contact support](mailto:support@xquik.com) if you need more.
 
 </Info>
 
