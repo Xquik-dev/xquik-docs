@@ -2274,7 +2274,7 @@ const REQUIRED_BILLING_CARRYOVER_SNIPPETS = [
   "## Monthly credits & carry-over",
   "Every paid subscription invoice adds the monthly credit grant to your account balance.",
   "Subscription credits, top-up credits, and automatic top-up credits stay in that balance until you spend them.",
-  "Unused subscription credits **carry over** to the next billing period",
+  "Unused subscription credits carry over to the next billing period",
   "When the shared balance reaches 0, metered calls return `402 Payment Required`",
   "Yes. Subscription credits and top-up credits stay in the shared balance until you spend them.",
   "## Cancel renewal & request a refund",
@@ -2285,7 +2285,7 @@ const REQUIRED_BILLING_CARRYOVER_SNIPPETS = [
 
 const REQUIRED_BILLING_MPP_SNIPPETS = [
   "## Pay-per-use (MPP)",
-  "Seven fixed-price read operations accept direct [MPP](/mpp/machine-payments-protocol) payments.",
+  "7 fixed-price read operations accept direct [MPP](/mpp/machine-payments-protocol) payments.",
   "Use [MPP overview](/mpp/machine-payments-protocol#eligible-endpoints) for the complete 7-operation list.",
   "Direct MPP uses fixed `charge` pricing:",
   '<Card title="USD 0.00015 units" icon="coins">',
@@ -2298,7 +2298,7 @@ const REQUIRED_BILLING_MPP_SNIPPETS = [
   "Every direct MPP operation advertises one fixed `charge` offer per request.",
   "Guest wallets prepay the 33 eligible GET routes without an account.",
   "`POST /api/v1/guest-wallets` creates a one-use hosted checkout and returns a `paid_reads` key.",
-  "The key stays inactive until payment is verified.",
+  "The key stays inactive until Xquik verifies payment.",
   "A guest `402` offers only `POST /api/v1/guest-wallets/topups`.",
   "Anonymous non-MPP paid reads return `401` with a Bearer challenge and guest wallet action.",
   "The 7 direct MPP reads return `402` with a Payment challenge and the same action.",
