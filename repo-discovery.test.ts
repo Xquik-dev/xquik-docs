@@ -6478,14 +6478,14 @@ const REQUIRED_TRENDS_REGION_SNIPPETS = [
 ] as const;
 
 const REQUIRED_TRENDS_GUIDE_COPY_SNIPPETS = [
-  'description: "Find ranked X trends by WOEID region, preserve each trend query and rank, then search matching tweets with cursor pagination. Includes exact API steps."',
+  'description: "Find ranked X trends by WOEID region, keep each trend query and its rank, then search matching tweets with cursor pagination. Includes exact API steps."',
   "Xquik returns ranked X trends for 12 supported WOEID regions.",
   "Use each trend's",
   "`query` with [Search Tweets](/api-reference/x/search-tweets)",
   "Each trend includes a `name`, optional `description`, optional `rank`, and",
   "optional `query` string",
-  "Defaults to",
-  "`30`; valid values are `1` through `50`.",
+  "The default is",
+  "`30`. Valid values are `1` through `50`.",
   "## Compare Twitter topic trends over time",
   "`captured_at`: your UTC collection timestamp",
   "`current_rank`, `previous_rank`, and `best_rank`",
@@ -14368,7 +14368,7 @@ describe("repository discovery", (): void => {
         REQUIRED_TRENDS_GUIDE_COPY_SNIPPETS,
       ),
     ).toStrictEqual([]);
-    expect(trendPages[0].source).toContain("Results are cached briefly to keep responses fast.");
+    expect(trendPages[0].source).toContain("Xquik caches results briefly.");
     expect(trendPages[1].source).toContain("See supported regions below.");
   });
 
