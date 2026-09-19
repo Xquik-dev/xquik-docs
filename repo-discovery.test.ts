@@ -2590,7 +2590,7 @@ const FORBIDDEN_API_OVERVIEW_SNIPPETS = [
 const FORBIDDEN_SEARCH_TWEETS_QUERY_PARAM_SNIPPETS = ["/x/tweets/search?query="] as const;
 
 const REQUIRED_RATE_LIMIT_TROUBLESHOOTING_SNIPPETS = [
-  "Respect `Retry-After`; otherwise start at 1 second, add jitter, and stop after 3 retries.",
+  "Respect `Retry-After`. Otherwise start at 1 second, add jitter, and stop after 3 retries.",
   "Requests sent before the fixed window resets keep returning `429` until `Retry-After` elapses.",
   "Standard read throttles return `Retry-After: 1`. Standard write and delete",
   "Account connection returns the remaining",
@@ -6063,7 +6063,7 @@ const REQUIRED_TIMELINE_API_HANDOFF_SNIPPETS = [
   '"profilePicture": "https://pbs.twimg.com/profile_images/example.jpg"',
   '<Card title="Home feed rows" icon="house">',
   'timeline_source: "home"',
-  '<Card title="Seen tweet dedupe" icon="list-checks">',
+  '<Card title="Seen tweet deduplication" icon="list-checks">',
   "Add processed tweet IDs to `seenTweetIds`",
   '<Card title="Cursor checkpoint" icon="arrow-right">',
   "Pass `next_cursor` back as `cursor`",
@@ -7348,7 +7348,7 @@ const REQUIRED_WEBHOOK_TESTING_SNIPPETS = [
 const REQUIRED_WEBHOOK_CREATE_API_SNIPPETS = [
   "## Integration handoff",
   "Use this endpoint after creating an account monitor with [`POST /monitors`](/api-reference/monitors/create) or a keyword monitor with [`POST /monitors/keywords`](/api-reference/monitors/create-keyword).",
-  "Active monitors produce the events; webhook delivery is included with monitor billing.",
+  "Active monitors produce the events. Webhook delivery is included with monitor billing.",
   "Keyword monitors emit only `tweet.*`",
   "Account monitors can emit both `tweet.*` and `profile.*`",
   "const webhookSecret = webhook.secret;",
@@ -8089,7 +8089,7 @@ const REQUIRED_WEBHOOK_TYPES_SNIPPETS = [
   "query?: string;",
   "interface WebhookTestPayload",
   'eventType: "webhook.test";',
-  "Account monitor events include `username`; keyword monitor events include `query`.",
+  "Account monitor events include `username`. Keyword monitor events include `query`.",
   "`webhook.test` payloads include `timestamp` and omit monitor-only fields",
 ] as const;
 
@@ -11368,7 +11368,7 @@ const REQUIRED_MAKE_GUIDE_SNIPPETS = [
   "For Make storage rows, map production `deliveryId` to `delivery_id` for receiver retry deduplication and `streamEventId` to `stream_event_id` when one monitor event should process once across endpoint changes.",
   '<Card title="Extraction jobs" icon="database">',
   "Store `id`, `tool_type`, and `status` from `POST /extractions`. Poll `GET /extractions/{id}`, then carry `has_more` and `next_cursor`.",
-  '<Card title="Webhook event dedupe" icon="fingerprint">',
+  '<Card title="Webhook event deduplication" icon="fingerprint">',
   "Store `deliveryId` for endpoint-level retry deduplication and `streamEventId` when one monitor event must process once across receiver changes.",
   '<Card title="Stored event replay" icon="activity">',
   "Call `GET /api/v1/events` with `cursor` when a scenario needs replay.",
@@ -11400,7 +11400,7 @@ const REQUIRED_MAKE_GUIDE_SNIPPETS = [
   "Filter on `eventType`, `username`, and `data.text` before routing alerts.",
   '<Card title="Slack message" icon="message-square">',
   "Create a Slack message from `data.text`, `data.id`, `data.author.userName`, and `occurredAt`.",
-  '<Card title="Dedupe store" icon="database">',
+  '<Card title="Deduplication store" icon="database">',
   "Upsert by `deliveryId` per endpoint. Use `streamEventId` when one monitor event should fan out once across endpoint changes.",
   '<Card title="Schedule trigger" icon="calendar-clock">',
   "Run the scenario on a daily schedule for repeatable topic research.",
@@ -11487,7 +11487,7 @@ const REQUIRED_PHANTOMBUSTER_ALTERNATIVE_SNIPPETS = [
   "Trial, Start, Grow, and Scale plans with automation slots, monthly execution time, email credits, AI credits, URL finder credits, integrations",
   "data extraction across 15+ platforms, 100+ automations and workflows, scheduled auto-refresh, and export limits",
   "CSV combines results from all runs so far, JSON covers the most recent run, Free plan and Free Trial exports stop at 10 rows",
-  "paid plans unlock full CSV files, JSON files, and CSV URLs for Google Sheets or integrations",
+  "paid plans include full CSV files, JSON files, and CSV URLs for Google Sheets or integrations",
   "successful launches return status `200` with a Container ID, and the API cannot launch Workflows",
   "Twitter Follower Collector, Twitter Following Collector, Twitter Hashtag Collector, Twitter Auto Unfollow, and Twitter Search Export",
   "PhantomBuster's official API help describes launching an individual Phantom through `POST /agents/launch` with an Agent ID.",
