@@ -10651,7 +10651,7 @@ const REQUIRED_TWEETCLAW_GUIDE_SNIPPETS = [
   "openclaw plugins install clawhub:@xquik/tweetclaw",
   "openclaw plugins install npm:@xquik/tweetclaw@1.6.41 --pin",
   "`@xquik/tweetclaw` is the official package. The plugin id is `tweetclaw`.",
-  "The published npm and source-truth versions are both `1.6.41`.",
+  "The npm package and the source repository are both at `1.6.41`.",
   "MPP lets TweetClaw call 7 fixed-price, read-only X API endpoints.",
   "Use a guest `paid_reads` key for the broader",
   '<Card title="explore" icon="search">',
