@@ -29,7 +29,7 @@ every durable handoff with a Pydantic model.
 Pydantic AI combines model tool calls with typed Python output. Xquik supplies
 the Twitter API routes through 3 MCP tools: `docs`, `search`, and `execute`.
 
-Use each strength at the correct boundary.
+Each Pydantic AI control covers one boundary.
 
 | Boundary             | Pydantic AI control    | Twitter agent benefit                        |
 | -------------------- | ---------------------- | -------------------------------------------- |
@@ -75,7 +75,7 @@ This Pydantic AI MCP Streamable HTTP setup keeps execution inside Python.
 This Pydantic AI MCP server connection uses the Xquik endpoint.
 Keep the MCP URL HTTPS-only.
 It authenticates with the `x-api-key` header.
-After setup is complete, it can be run inside a local Python process.
+After setup, run it inside a local Python process.
 
 Store secrets outside source control.
 
@@ -171,7 +171,7 @@ Model Context Protocol (MCP) turns Xquik routes into model-callable tools.
 Pydantic builds JSON schemas from `output_type`. Use explicit keyword arguments
 for `headers`, `allowed_tools`, `capabilities`, and `output_type`.
 
-Pydantic AI opens and closes the connection automatically. Enter
+Pydantic AI opens and closes the connection for you. Enter
 `async with agent` when several runs should share one connection.
 
 The agent discovers `docs`, `search`, and `execute`. Discover route requirements before
@@ -207,11 +207,11 @@ exists. Stop after the server repeats a cursor. Return `cursor_stalled` with
 the number of collected rows.
 
 MCP output has a 24,000-character limit. Project only required fields. Use
-extraction exports when the workflow must persist every complete row.
+extraction exports when the workflow must store every complete row.
 
 ## Build a typed Twitter agent handoff
 
-Conversation text cannot safely resume a Python Twitter API job. Persist the
+Conversation text cannot safely resume a Python Twitter API job. Store the
 validated fields required by the next worker.
 
 <CardGroup cols={2}>
@@ -271,7 +271,7 @@ output. Never place private messages in shared traces.
 
 ## Reuse the MCP connection safely
 
-Wrap related calls in `async with agent`. One session fetches two tweet-search
+Wrap related calls in `async with agent`. One session fetches 2 tweet-search
 pages.
 
 ```python
@@ -370,14 +370,14 @@ Store the approval decision and tool call ID with the resulting action receipt.
 
 Treat error messages as typed error handling inputs.
 
-| Status | Meaning                                  | Pydantic AI decision                           |
-| ------ | ---------------------------------------- | ---------------------------------------------- |
-| `400`  | Invalid parameters or unsupported fields | Correct the request before retrying            |
-| `401`  | Invalid Xquik authentication             | Stop and replace the credential                |
-| `402`  | Subscription or credit action required   | Report choices and request confirmation        |
-| `424`  | Dependency failure or incomplete replies | Preserve partial rows and inspect retryability |
-| `429`  | Twitter API rate limit reached           | Respect `error.retry_after` and back off       |
-| `502`  | Temporary upstream failure               | Retry safe reads with a bounded policy         |
+| Status | Meaning                                  | Pydantic AI decision                       |
+| ------ | ---------------------------------------- | ------------------------------------------ |
+| `400`  | Invalid parameters or unsupported fields | Correct the request before retrying        |
+| `401`  | Invalid Xquik authentication             | Stop and replace the credential            |
+| `402`  | Subscription or credit action required   | Report choices and request confirmation    |
+| `424`  | Dependency failure or incomplete replies | Keep partial rows and inspect retryability |
+| `429`  | Twitter API rate limit reached           | Respect `error.retry_after` and back off   |
+| `502`  | Temporary upstream failure               | Retry safe reads with a bounded policy     |
 
 A `402` never authorizes a purchase. Show the available payment choices. Wait
 for explicit confirmation before any supported account checkout action.
@@ -387,7 +387,7 @@ Retry only safe reads when `error.retryable` permits it.
 
 ## Defer and prefix MCP tools
 
-Xquik exposes only two aggregate tools. Deferred loading is optional for one
+Xquik exposes only 3 tools. Deferred loading is optional for one
 Xquik connection. Use it when several servers create a larger tool catalog.
 
 ```python
@@ -416,7 +416,7 @@ agent = Agent(
 )
 ```
 
-The resulting names become `twitter_search` and `twitter_execute`. Update any
+The resulting names become `twitter_docs`, `twitter_search`, and `twitter_execute`. Update any
 approval predicate after adding a prefix.
 
 ## Choose Pydantic AI MCP or the REST API
@@ -476,7 +476,7 @@ extractions, and X actions. Authenticate with an Xquik API key.
 
 ### Can Pydantic AI scrape tweets with Python?
 
-Yes. Call `GET /api/v1/x/tweets/search` through the MCP tools. Preserve tweet
+Yes. Call `GET /api/v1/x/tweets/search` through the MCP tools. Keep tweet
 IDs, authors, `created`, URLs, `has_more`, and `next_cursor`.
 
 ### How do I validate Twitter API JSON with Pydantic?
@@ -493,7 +493,7 @@ Pydantic models. Validate before storage, queues, exports, or handoff.
 
 ### Why avoid a str return?
 
-A structured result preserves tweet IDs, cursors, stop reasons, and errors.
+A structured result keeps tweet IDs, cursors, stop reasons, and errors.
 A plain string cannot prove field completeness or types.
 
 ### How do I import agent from Pydantic AI?
@@ -519,17 +519,17 @@ bounded backoff when retrying safe read requests.
 
 ### How do I paginate tweet search in Pydantic AI?
 
-Persist `has_more` and `next_cursor` in the output model. Reuse unchanged
+Store `has_more` and `next_cursor` in the output model. Reuse unchanged
 filters. Stop on completion, limits, or a stalled cursor.
 
 ### Can a Pydantic AI agent export Twitter followers?
 
-Yes. Create an extraction, persist its ID, and poll its status. Export only
+Yes. Create an extraction, store its ID, and poll its status. Export only
 after completion. Save the source user and format together.
 
 ### Can Pydantic AI monitor Twitter keywords?
 
-Yes. Create a monitor and webhook. Persist both identifiers together. Replay
+Yes. Create a monitor and webhook. Store both identifiers together. Replay
 missed events through `GET /api/v1/events` with `cursor` pagination. Monitor
 delivery is asynchronous and cannot guarantee real-time events.
 
