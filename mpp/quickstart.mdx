@@ -17,13 +17,13 @@ Call 7 fixed-price Xquik operations without an account or subscription. Pay per 
 npm i mppx viem
 ```
 
-The `mppx` package provides both client and server utilities. You only need the client. `viem` is required for wallet account management.
+The `mppx` package provides both client and server utilities. You only need the client. `viem` manages the wallet account.
 
 ## Step 2: set up a Tempo wallet
 
 You need a Tempo wallet funded with USDC, plus its raw hex private key for the `mppx` client.
 
-**Path A. CLI only (recommended for agents)**
+**Path A. CLI only.** Recommended for agents.
 
 ```bash
 mppx account create             # generates a local keychain-backed account
@@ -32,13 +32,13 @@ mppx account export             # prints the hex private key (0x...)
 
 Fund the account's address with USDC on Tempo, then copy the exported key into `TEMPO_PRIVATE_KEY`.
 
-**Path B. Web wallet as a USDC source**
+**Path B. Web wallet as a USDC source.**
 
-Use [wallet.tempo.xyz/welcome](https://wallet.tempo.xyz/welcome) as a hosted UI to buy & send USDC. Run `mppx account create` to mint a local account, copy its address, send USDC from the web wallet to that address, then run `mppx account export` to get the hex key.
+Use [wallet.tempo.xyz/welcome](https://wallet.tempo.xyz/welcome) as a hosted UI to buy & send USDC. Run `mppx account create` to create a local account, copy its address, send USDC from the web wallet to that address, then run `mppx account export` to get the hex key.
 
 You cannot import the web wallet into `mppx`. It is a funding source, not a key source.
 
-> **Warning.** Store your private key securely. Never commit it to version control. Use environment variables.
+> **Warning.** Never commit your private key to version control. Load it from an environment variable.
 
 ## Step 3: make a charge request
 
@@ -68,15 +68,15 @@ console.log(data.tweet.text);
 
 ## Step 4: raw HTTP flow without the SDK
 
-If you are not using the `mppx` SDK, you can implement the protocol manually.
+Without the `mppx` SDK, implement the protocol yourself.
 
-**Step 1: Request the endpoint**
+**Step 1.** Request the endpoint.
 
 ```bash
 curl -i https://xquik.com/api/v1/x/tweets/1893456789012345678
 ```
 
-**Step 2: Receive the 402 challenge**
+**Step 2.** Receive the 402 challenge.
 
 ```text
 HTTP/2 402
@@ -87,7 +87,7 @@ The `request` parameter is a base64url-encoded JSON object containing the amount
 
 The `application/problem+json` body also includes an optional `payment_options.guest_wallet.create_checkout` action. It does not replace the MPP header, and the failed request creates no checkout. Ignore it when completing MPP. Use it only after a user explicitly chooses and confirms a $10-$250 USD guest wallet.
 
-**Step 3: Pay and retry**
+**Step 3.** Pay and retry.
 
 After completing the Tempo payment, retry the request with the payment credential:
 
@@ -98,7 +98,7 @@ curl -i https://xquik.com/api/v1/x/tweets/1893456789012345678 \
 
 The `Authorization: Payment` value is a base64url-encoded JSON object containing the original challenge and your payment proof.
 
-**Step 4: Receive the response + receipt**
+**Step 4.** Receive the response and receipt.
 
 ```text
 HTTP/2 200
