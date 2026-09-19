@@ -413,7 +413,7 @@ const REQUIRED_OPERATIONAL_CONTENT = [
       "Xquik has no restore route. Plan for permanent removal.",
       "An unavailable community confirms removal.",
       "Send its exact `community_name` to confirm the target.",
-      "X says Community posts remain after their Community is deleted.",
+      "X says Community posts remain after you delete their Community.",
       "OAuth bearer authentication is also supported.",
       "## Verify permanent community deletion",
     ],
