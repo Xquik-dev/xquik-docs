@@ -7907,11 +7907,11 @@ const REQUIRED_WEBHOOK_OVERVIEW_SNIPPETS = [
 
 const REQUIRED_WEBHOOK_ARCHITECTURE_SNIPPETS = [
   '<Card title="Event types" icon="radio">',
-  "Account monitors emit `tweet.new`, `tweet.reply`, `tweet.quote`, and",
+  "Account monitors emit 10 tweet and 11 profile event types.",
   '<Card title="Signed delivery" icon="shield-check">',
   "Verify `X-Xquik-Signature`, `X-Xquik-Timestamp`, and",
   '<Card title="Retry schedule" icon="rotate-ccw">',
-  "Failed deliveries retry up to 10 attempts with exponential backoff: base 1",
+  "Failed deliveries retry up to 10 attempts. Backoff starts at 1 second,",
   '<Card title="Receiver timeout" icon="timer">',
   "Webhook receivers should return `2xx` within 10 seconds.",
   '<Card title="Event propagation" icon="activity">',
