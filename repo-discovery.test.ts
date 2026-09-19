@@ -11797,7 +11797,7 @@ const REQUIRED_TWEETSTREAM_ALTERNATIVE_SNIPPETS = [
   "Elite annual plan at USD 349/month billed annually with 10 WebSocket connections and 250 monitored accounts",
   "monthly Basic pricing from USD 199/month and Elite pricing at USD 499/month",
   "`wss://ws.tweetstream.io/ws`, protocol `tweetstream.v1`, and an auth subprotocol",
-  "Bearer auth headers and query parameters are accepted",
+  "the server accepts Bearer auth headers and query parameters",
   "`v`, `t`, `op`, `ts`, and `d`",
   "`tweet`, `account`, or `control`",
   "`content`, `meta`, `update`, `delete`, `profile_update`, `follow`, `auth_ping`, `auth_pong`, and `twitter_handles_result`",
