@@ -12051,7 +12051,7 @@ const REQUIRED_X_API_ALTERNATIVE_SNIPPETS = [
   "Bearer Token authentication tied to the developer App for reading public information",
   "`GET /2/tweets/search/recent`",
   "`GET /2/tweets/search/all`",
-  "Recent search is available to all developers and supports up to 100 posts per request",
+  "All developers can use recent search, which returns up to 100 posts per request",
   "`GET /2/users/:id/followers`",
   "`POST /2/users/:id/following`",
   "read the next-page cursor from `meta`, send it on the following request",
