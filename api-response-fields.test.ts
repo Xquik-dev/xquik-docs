@@ -1145,6 +1145,7 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
     ...propertyNames(accountGetResponse),
     ...propertyNames(accountGetResponse.properties?.["creditInfo"]),
     ...propertyNames(accountGetResponse.properties?.["monitorBilling"]),
+    ...propertyNames(accountGetResponse.properties?.["subscription"]),
   ]);
   const accountUpdate = propertyNames(responseSchema(spec, "/account", "patch"));
   const accountXIdentity = propertyNames(responseSchema(spec, "/account/x-identity", "put"));
