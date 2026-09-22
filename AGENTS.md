@@ -3,25 +3,13 @@
 This repository is the public documentation site. Treat every committed file as
 public-facing unless it is explicitly a standard open-source project file.
 
-No per-commit LOC reduction or coverage gain is required.
-Preserve full TS/JS statement, branch, function & line coverage against the parent.
-Include untested code & compare full suites consistently.
-Preserve assertions, guards, diagnostics, behavior & coverage exclusions.
-Check other languages behaviorally & track measurement gaps separately.
-Coverage below 100% alone never blocks delivery.
-Git LOC statistics remain advisory.
+## Delivery gates
 
-Run all applicable local checks through `bun run check:all` within 30 seconds.
-Include tests, coverage, LOC, types, lint, formatting, security, contracts & docs.
-Report p99 measurement coverage honestly, including gaps.
-Failed, incomplete or unavailable checks block delivery.
-Build timing, p99 coverage, performance, costs & discovery scores remain improvement targets.
-Server deployments must finish within 90 seconds, including setup & verification.
-Overruns block unrelated delivery until corrective work meets the timing gate.
-Corrective commits must still pass every other delivery gate.
-Fix security, correctness, billing, deployment-safety & contract defects before shipping.
-Publish required docs before the affected application deployment.
-Verify production before declaring deployment complete.
+- Preserve the parent commit's TS/JS statement, branch, function & line coverage across the full source, including untested code. No per-commit increase or LOC reduction is required, & coverage below 100% alone never blocks delivery. Weakened tests or new exclusions never count as gains; track other-language gaps separately.
+- Run every applicable local check through `bun run check:all`: tests, coverage, LOC, types, lint, formatting, security, contracts & docs. Report p99 measurement coverage honestly, including gaps. Failed, incomplete or unavailable checks block delivery.
+- `bun run check:all` targets 30 seconds & a deployment 60 seconds including setup & verification. A timing overrun is a performance error to record & fix; it never blocks an otherwise passing change by itself. Build timing, p99 coverage, performance, costs & discovery scores are improvement targets.
+- Fix security, correctness, billing, deployment-safety & contract defects before shipping. Publish required docs before the affected application deployment & verify production before calling a deployment complete.
+- Work autonomously through that outcome: proceed on reversible steps the request implies, stop only for destructive actions or genuine scope changes, & finish the whole request rather than announcing the next step. Keep changes to what the task asks for; report unrelated findings in the PR.
 
 ## Confidentiality
 
