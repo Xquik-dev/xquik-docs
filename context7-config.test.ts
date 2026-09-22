@@ -12,6 +12,7 @@ const REQUIRED_EXCLUDED_FILES = [
   ".gitignore",
   ".mintignore",
   "AGENTS.md",
+  "CLAUDE.md",
   "CODE_OF_CONDUCT.md",
   "CONTRIBUTING.md",
   "DOCS_QUALITY_POLL.md",

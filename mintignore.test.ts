@@ -16,7 +16,7 @@ describe("Mintlify ignore rules", (): void => {
     {
       name: "keeps support and handoff files out of the public docs build",
       path: ".mintignore",
-      files: ["AGENTS.md", "DOCS_QUALITY_POLL.md"],
+      files: ["AGENTS.md", "CLAUDE.md", "DOCS_QUALITY_POLL.md"],
     },
     {
       name: "keeps internal handoff files ignored by Git",
