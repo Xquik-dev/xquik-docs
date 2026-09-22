@@ -114,7 +114,7 @@ describe("analyze tweet writing style documentation", (): void => {
         route === undefined ||
         (route.includes("error: 'no_cached_style'") && route.includes("{ status: 402 }")),
       usernameRemainsLowercase:
-        parser === undefined || parser.includes("body['username'].toLowerCase()"),
+        parser === undefined || parser.includes("normalizeStyleKey(body['username'])"),
       usageMatchesReturnedTweets:
         route === undefined ||
         route.includes("cost: CREDIT_COST_READ * BigInt(result.tweets.length)"),

@@ -51,19 +51,19 @@ describe("save custom tweet style documentation", (): void => {
     expect.assertions(1);
 
     expect({
-      bodyControlsKey: source.includes("The body `label` controls the stored profile key."),
-      mismatchRejected: source.includes(
-        "The PUT route rejects a `{id}` that differs from `label`, ignoring case.",
-      ),
+      pathNamesKey: source.includes("The path `{id}` names the stored profile."),
+      labelOptional: source.includes("The body `label` is optional."),
       replacementIsComplete: source.includes(
         "Sending the same label replaces the entire saved Tweet array.",
       ),
-      renameDenied: source.includes("Changing only the path `{id}` does not rename a profile."),
+      newPathNewKey: source.includes(
+        "A different path `{id}` creates or replaces another normalized key.",
+      ),
     }).toStrictEqual({
-      bodyControlsKey: true,
-      mismatchRejected: true,
+      pathNamesKey: true,
+      labelOptional: true,
       replacementIsComplete: true,
-      renameDenied: true,
+      newPathNewKey: true,
     });
   });
 
@@ -75,7 +75,7 @@ describe("save custom tweet style documentation", (): void => {
       blankTweetRejected: normalizedSource.includes(
         "| Missing, non-string, or blank `text` | Send non-empty text for every object. |",
       ),
-      labelLimit: source.includes("Profile label containing 1-50 characters."),
+      labelLimit: source.includes("It contains 1-50 characters"),
       sampleLimit: source.includes("Complete array of 1-100 approved Tweet examples."),
       underscoreBehavior: source.includes("The validator also accepts underscores."),
     }).toStrictEqual({
@@ -119,9 +119,9 @@ describe("save custom tweet style documentation", (): void => {
       route === undefined ? undefined : route.slice(route.indexOf("export async function PUT"));
 
     expect({
-      bodyLabelRemainsKey:
+      labelDefaultsToPath:
         putRoute === undefined ||
-        putRoute.includes("const label = body.label.trim().toLowerCase()"),
+        putRoute.includes("const labelInput = body.label ?? normalizeXUsername(id)"),
       composeReturnsSavedSamples:
         compose === undefined ||
         compose.includes("return { ...result, styleTweets: [...style.tweets] }"),
@@ -139,7 +139,7 @@ describe("save custom tweet style documentation", (): void => {
       underscoresRemainAccepted:
         validator === undefined || validator.includes("const LABEL_PATTERN = /^\\w"),
     }).toStrictEqual({
-      bodyLabelRemainsKey: true,
+      labelDefaultsToPath: true,
       composeReturnsSavedSamples: true,
       pathMustMatchLabel: true,
       replacementRemainsAccountScoped: true,

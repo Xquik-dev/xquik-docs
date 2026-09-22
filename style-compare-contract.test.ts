@@ -105,7 +105,8 @@ describe("compare tweet writing profiles documentation", (): void => {
         (route.includes("queryStyleDetail(auth.userId, username1)") &&
           route.includes("queryStyleDetail(auth.userId, username2)")),
       queryRemainsLowercase:
-        query === undefined || query.includes("const normalizedUsername = username.toLowerCase()"),
+        query === undefined ||
+        query.includes("const normalizedUsername = normalizeStyleKey(username)"),
       responseOrderRemainsStable:
         route === undefined ||
         (route.includes("style1: formatStyleDetail(row1)") &&
