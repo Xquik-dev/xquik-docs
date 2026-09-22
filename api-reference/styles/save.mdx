@@ -142,11 +142,11 @@ decide whether an example fits your Twitter writing style.
 
 ## Keep the path and label aligned
 
-The body `label` controls the stored profile key. Xquik trims it and converts
-it to lowercase before saving.
+The path `{id}` names the stored profile. Xquik trims it, drops a leading `@`
+and converts it to lowercase before saving.
 
-The PUT route rejects a `{id}` that differs from `label`, ignoring case.
-Send the same value in both places.
+The body `label` is optional. When you send it, it must match `{id}`, ignoring
+case and a leading `@`; the PUT route rejects a mismatch.
 
 ```text
 PUT /api/v1/styles/product-updates
@@ -159,7 +159,7 @@ A simple hyphenated label avoids confusing URLs.
 
 ## Replace an existing tweet style
 
-Profiles belong to the authenticated Xquik account. The normalized body label
+Profiles belong to the authenticated Xquik account. The normalized path `{id}`
 forms the account-scoped storage key.
 
 Sending the same label replaces the entire saved Tweet array. It also resets
@@ -168,8 +168,8 @@ every local sample ID and save timestamp.
 Send the complete approved set during every replacement. Omitting an old
 example removes it from the saved profile.
 
-Changing only the path `{id}` does not rename a profile. Change `label` to
-create or replace another normalized key. Delete the old key separately.
+A different path `{id}` creates or replaces another normalized key. Delete the
+old key separately.
 
 ## Reuse saved tweet examples
 
@@ -353,10 +353,11 @@ Must be `application/json`.
 
 ## Body
 
-<ParamField body="label" type="string" required>
+<ParamField body="label" type="string">
 
-Profile label containing 1-50 characters. It must start with a letter,
-number, or underscore. It accepts letters, numbers, spaces, dots, hyphens,
+Optional profile label. When sent, it must match the path `{id}`, ignoring
+case and a leading `@`. It contains 1-50 characters and must start with a
+letter, number, or underscore. It accepts letters, numbers, spaces, dots, hyphens,
 apostrophes, and underscores. Xquik trims and lowercases this value.
 
 </ParamField>
@@ -534,7 +535,7 @@ Wait for the `Retry-After` header. Then retry the complete replacement body.
 
 - Review every Tweet example before sending it.
 - Remove customer names, private replies, and temporary claims.
-- Keep the path `{id}` aligned with the body `label`.
+- Name the profile in the path `{id}`; `label` is optional.
 - Send 1-100 objects with non-empty `text` strings.
 - Store the returned lowercase `xUsername` key.
 - Confirm `tweetCount` matches the intended sample count.
