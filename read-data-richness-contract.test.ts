@@ -66,6 +66,7 @@ const TWEET_FIELDS = [
   "grokShareAttachment",
   "jetfuelAttachment",
   "article",
+  "authorUnavailable",
   "card",
   "communityNote",
   "edit",
