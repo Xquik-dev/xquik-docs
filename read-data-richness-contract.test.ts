@@ -69,6 +69,7 @@ const TWEET_FIELDS = [
   "card",
   "communityNote",
   "edit",
+  "exclusiveContent",
   "isTranslatable",
   "noteTweet",
   "place",
