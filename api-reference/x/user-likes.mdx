@@ -1,7 +1,7 @@
 ---
 title: "Twitter user likes API & liked tweet export"
 sidebarTitle: "Get user likes"
-description: "Retrieve liked tweets that X makes visible for one user, with authors, text, media, and metrics. X shows likes only to their owner. Others get a 424 error."
+description: "Read your X account's liked tweets with authors, text, media & metrics. Connect an X account first. X shows likes only to their owner. Other profiles get 424."
 api: "GET /x/users/{id}/likes"
 keywords: ["likes", "user likes", "favorites", "x api"]
 ---
@@ -115,7 +115,9 @@ import TweetResultFilterParams from "/snippets/tweet-result-filter-params.mdx";
 
 ## When to read liked tweets
 
-Use this route for liked tweets that X makes visible for one user. X has shown likes only to their owner since 2024. When a profile reports likes and X hides them, the route returns `424 likes_unavailable`. It does not return an empty `200`.
+Use this route for the liked tweets of your connected X account. Pass that account's user ID or username as `id`. Guest keys and callers without a connected X account get `424 account_required`. Use [Connect X account](/api-reference/x-accounts/connect) to add one.
+
+X has shown likes only to their owner since 2024. When another profile reports likes and X hides them, the route returns `424 likes_unavailable`. It does not return an empty `200`. When your connected X accounts are busy, the route returns `503`. Retry after the `Retry-After` delay.
 
 The output is tweet rows with engagement and pagination. Use media or timeline routes when you need posts the user wrote.
 
@@ -513,6 +515,15 @@ You exceeded your tier rate limit. Wait for the `Retry-After` header before retr
 ```
 
 The route returns `424 likes_unavailable` when the profile reports likes and X hides them from other accounts. Retrying does not help. It returns `424 x_api_unavailable` when the read service is unavailable.
+
+Without a connected X account, the route returns `424 account_required`. Connect one, then retry.
+
+```json
+{
+  "error": "account_required",
+  "message": "This read needs your own connected X account. Connect or restore it at dashboard.xquik.com/account, then retry."
+}
+```
 
 <Note>
 

@@ -113,7 +113,10 @@ Requested result counts are upper bounds for paid authenticated calls. When rema
 
 </Callout>
 
-Requires a connected X account. Uses user-authenticated access.
+The route reads the home timeline of your connected X account. Without one, it
+returns `424 account_required`. Use [Connect X account](/api-reference/x-accounts/connect)
+to add one. When your connected X accounts are busy, it returns `503`. Retry
+after the `Retry-After` delay.
 
 <CodeGroup>
 
@@ -303,8 +306,9 @@ Send the last `next_cursor` as `cursor` after storing the full page. Pass
 processed tweet IDs through `seenTweetIds` to reduce repeat rows. Stop when
 `has_next_page` is false or `next_cursor` is empty.
 
-Respect the `Retry-After` header after a 429 response.
-After a 424 or 502 response, retry the stored cursor.
+Respect the `Retry-After` header after a 429 or 503 response.
+After a 424 `account_required` response, connect an X account first.
+After other 424 or 502 responses, retry the stored cursor.
 Never advance a checkpoint after a failed destination write.
 
 ## Route home timeline tweets
@@ -341,7 +345,8 @@ Store tweet IDs for deduplication. Refresh from the last confirmed cursor.
 ### How should timeline API errors be retried?
 
 Fix authentication after a 401 response. Add credits after a 402 response.
-Respect `Retry-After` after 429. Resume from the stored cursor after 424 or 502.
+Connect an X account after `424 account_required`. Respect `Retry-After` after
+429 or 503. Resume from the stored cursor after other 424 or 502 responses.
 
 ## Query parameters
 
@@ -547,6 +552,16 @@ The read service failed. Retry after a short delay.
 
 The opt-in normalized v1 contract returns `424` when the read service fails.
 Send `xquik-api-contract: 2026-04-29` to opt in. Default v1 returns `502`.
+
+Without a connected X account, the route returns `424 account_required`. This
+status needs no contract header.
+
+```json
+{
+  "error": "account_required",
+  "message": "This read needs your own connected X account. Connect or restore it at dashboard.xquik.com/account, then retry."
+}
+```
 
 <Note>
 

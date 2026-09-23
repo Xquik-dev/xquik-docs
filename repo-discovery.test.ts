@@ -5679,7 +5679,7 @@ const FORBIDDEN_VERIFIED_FOLLOWERS_API_RAW_OUTPUT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_FOLLOWERS_YOU_KNOW_API_HANDOFF_SNIPPETS = [
-  'description: "Retrieve mutual X followers between the authenticated context',
+  'description: "Retrieve mutual X followers between your connected X account',
   "mutual followers API",
   "followers you know API",
   "X mutual followers API",
@@ -5702,7 +5702,7 @@ const REQUIRED_FOLLOWERS_YOU_KNOW_API_HANDOFF_SNIPPETS = [
   "`GET /x/users/{id}/followers-you-know`",
   "sales, community, recruiting, support, CRM, or agent workflow",
   "The path `id` is the target numeric X user ID.",
-  "people who follow both the authenticated context and the target user",
+  "people who follow both your connected X account and the target user",
   "<CardGroup cols={2}>",
   '<Card title="Mutual rows"',
   '<Card title="Warm-intro labels"',
