@@ -2544,7 +2544,7 @@ paths:
             example:
               account: '@elonmusk'
               text: 'Just launched our new feature!'
-      responses: &write-target-responses
+      responses: &write-responses
         '200':
           $ref: '#/components/responses/WriteActionCompleted'
         '202':
@@ -2559,6 +2559,8 @@ paths:
           $ref: '#/components/responses/PaymentRequired'
         '403':
           $ref: '#/components/responses/AccountAuthError'
+        '404':
+          $ref: '#/components/responses/XAccountNotFound'
         '422':
           $ref: '#/components/responses/WriteRejected'
         '429':
@@ -3049,7 +3051,7 @@ paths:
               $ref: '#/components/schemas/XAccountBody'
             example:
               account: '@elonmusk'
-      responses: &write-tweet-responses
+      responses: &x-rate-limited-write-responses
         '200': { $ref: '#/components/responses/WriteActionCompleted' }
         '202': { $ref: '#/components/responses/WriteActionAccepted' }
         '409': { $ref: '#/components/responses/WriteIdempotencyConflict' }
@@ -3057,6 +3059,7 @@ paths:
         '401': { $ref: '#/components/responses/Unauthenticated' }
         '402': { $ref: '#/components/responses/PaymentRequired' }
         '403': { $ref: '#/components/responses/AccountAuthError' }
+        '404': { $ref: '#/components/responses/XAccountNotFound' }
         '422': { $ref: '#/components/responses/WriteRejected' }
         '429':
           $ref: '#/components/responses/RateLimitedByX'
@@ -3083,18 +3086,7 @@ paths:
         required: true
         description: Account to perform the like.
         content: *x-account-body-content-with-example
-      responses: &source-rate-limited-write-responses
-        '200': { $ref: '#/components/responses/WriteActionCompleted' }
-        '202': { $ref: '#/components/responses/WriteActionAccepted' }
-        '409': { $ref: '#/components/responses/WriteIdempotencyConflict' }
-        '400': { $ref: '#/components/responses/WriteInvalidInput' }
-        '401': { $ref: '#/components/responses/Unauthenticated' }
-        '402': { $ref: '#/components/responses/PaymentRequired' }
-        '403': { $ref: '#/components/responses/AccountAuthError' }
-        '422': { $ref: '#/components/responses/WriteRejected' }
-        '429': { $ref: '#/components/responses/RateLimitedByX' }
-        '503': { $ref: '#/components/responses/WriteTrackingUnavailable' }
-        '500': { $ref: '#/components/responses/WriteError' }
+      responses: *x-rate-limited-write-responses
     delete:
       operationId: unlikeTweet
       description: Removes a like through a connected X account.
@@ -3117,7 +3109,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/XAccountBody'
-      responses: *write-tweet-responses
+      responses: *x-rate-limited-write-responses
 
   /x/tweets/{id}/retweet:
     post:
@@ -3139,7 +3131,7 @@ paths:
         required: true
         description: Account to perform the retweet.
         content: *x-account-body-content
-      responses: *source-rate-limited-write-responses
+      responses: *x-rate-limited-write-responses
     delete:
       operationId: unretweet
       description: Removes a repost through a connected X account.
@@ -3159,7 +3151,7 @@ paths:
         required: true
         description: Account that retweeted the tweet.
         content: *x-account-body-content
-      responses: *write-tweet-responses
+      responses: *x-rate-limited-write-responses
 
   /x/users/batch:
     get:
@@ -3320,18 +3312,7 @@ paths:
         required: true
         description: Account to perform the follow.
         content: *x-account-body-content
-      responses: &write-action-responses
-        '200': { $ref: '#/components/responses/WriteActionCompleted' }
-        '202': { $ref: '#/components/responses/WriteActionAccepted' }
-        '409': { $ref: '#/components/responses/WriteIdempotencyConflict' }
-        '400': { $ref: '#/components/responses/WriteInvalidInput' }
-        '401': { $ref: '#/components/responses/Unauthenticated' }
-        '402': { $ref: '#/components/responses/PaymentRequired' }
-        '403': { $ref: '#/components/responses/AccountAuthError' }
-        '422': { $ref: '#/components/responses/WriteRejected' }
-        '429': { $ref: '#/components/responses/WriteRateLimited' }
-        '503': { $ref: '#/components/responses/WriteTrackingUnavailable' }
-        '500': { $ref: '#/components/responses/WriteError' }
+      responses: *write-responses
     delete:
       operationId: unfollowUser
       description: Unfollows a user through a connected X account.
@@ -3351,7 +3332,7 @@ paths:
         required: true
         description: Account that follows the target user.
         content: *x-account-body-content
-      responses: *write-target-responses
+      responses: *write-responses
 
   /x/users/{id}/remove-follower:
     post:
@@ -3373,7 +3354,7 @@ paths:
         required: true
         description: Account whose follower list should be updated.
         content: *x-account-body-content
-      responses: *write-action-responses
+      responses: *write-responses
 
   /x/followers/check:
     get:
@@ -3481,7 +3462,7 @@ paths:
               account: '@elonmusk'
               text: 'Example text content'
               media_ids: ['1234567890123456789']
-      responses: *write-action-responses
+      responses: *write-responses
 
   /x/media:
     post:
@@ -3538,20 +3519,7 @@ paths:
             example:
               account: '@elonmusk'
               url: 'https://example.com/image.png'
-      responses: &write-account-responses
-        '200': { $ref: '#/components/responses/WriteActionCompleted' }
-        '202': { $ref: '#/components/responses/WriteActionAccepted' }
-        '409': { $ref: '#/components/responses/WriteIdempotencyConflict' }
-        '400': { $ref: '#/components/responses/WriteInvalidInput' }
-        '401': { $ref: '#/components/responses/Unauthenticated' }
-        '402': { $ref: '#/components/responses/PaymentRequired' }
-        '403': { $ref: '#/components/responses/AccountAuthError' }
-        '404':
-          $ref: '#/components/responses/XAccountNotFound'
-        '422': { $ref: '#/components/responses/WriteRejected' }
-        '429': { $ref: '#/components/responses/WriteRateLimited' }
-        '503': { $ref: '#/components/responses/WriteTrackingUnavailable' }
-        '500': { $ref: '#/components/responses/WriteError' }
+      responses: *write-responses
 
   /x/media/download:
     post:
@@ -3675,7 +3643,7 @@ paths:
               description: 'description_value'
               location: 'location_value'
               url: 'https://xquik.com/example'
-      responses: *write-account-responses
+      responses: *write-responses
 
   /x/profile/avatar:
     patch:
@@ -3725,7 +3693,7 @@ paths:
             example:
               account: '@elonmusk'
               url: 'https://example.com/avatar.png'
-      responses: *write-account-responses
+      responses: *write-responses
 
   /x/profile/banner:
     patch:
@@ -3775,7 +3743,7 @@ paths:
             example:
               account: '@elonmusk'
               url: 'https://example.com/banner.png'
-      responses: *write-account-responses
+      responses: *write-responses
 
   /x/communities:
     post:
@@ -3812,19 +3780,7 @@ paths:
               account: '@elonmusk'
               name: 'Example Name'
               description: 'A community for Tesla enthusiasts'
-      responses: &write-action-responses-with-not-found
-        '200': { $ref: '#/components/responses/WriteActionCompleted' }
-        '202': { $ref: '#/components/responses/WriteActionAccepted' }
-        '409': { $ref: '#/components/responses/WriteIdempotencyConflict' }
-        '400': { $ref: '#/components/responses/WriteInvalidInput' }
-        '401': { $ref: '#/components/responses/Unauthenticated' }
-        '402': { $ref: '#/components/responses/PaymentRequired' }
-        '403': { $ref: '#/components/responses/AccountAuthError' }
-        '404': { $ref: '#/components/responses/XAccountNotFound' }
-        '422': { $ref: '#/components/responses/WriteRejected' }
-        '429': { $ref: '#/components/responses/WriteRateLimited' }
-        '503': { $ref: '#/components/responses/WriteTrackingUnavailable' }
-        '500': { $ref: '#/components/responses/WriteError' }
+      responses: *write-responses
 
   /x/communities/{id}:
     delete:
@@ -3857,7 +3813,7 @@ paths:
             example:
               account: '@elonmusk'
               community_name: 'Tesla Fans'
-      responses: *write-account-responses
+      responses: *write-responses
 
   /x/communities/{id}/join:
     post:
@@ -3874,7 +3830,7 @@ paths:
         required: true
         description: Account to join the community.
         content: *x-account-body-content
-      responses: *write-action-responses-with-not-found
+      responses: *write-responses
     delete:
       operationId: leaveCommunity
       description: Leaves an X Community through a connected account.
@@ -3889,7 +3845,7 @@ paths:
         required: true
         description: Account to leave the community.
         content: *x-account-body-content
-      responses: *write-account-responses
+      responses: *write-responses
 
   # ── X Accounts ───────────────────────────────────────────
   /x/accounts:
@@ -7746,16 +7702,51 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/XWriteActionError'
-          example:
-            error: invalid_input
-            message: Invalid input. Check request fields.
-            charged: false
-            chargedCredits: '0'
-            retryable: false
-            safeToRetry: true
-            success: false
-            nextAction:
-              type: fix_request
+          examples:
+            missingIdempotencyKey:
+              summary: Missing Idempotency-Key header
+              value:
+                error: missing_idempotency_key
+                message: Idempotency-Key is required. Generate one unique key for this write.
+                charged: false
+                chargedCredits: '0'
+                retryable: false
+                safeToRetry: true
+                success: false
+                nextAction:
+                  type: fix_request
+                fieldErrors:
+                  - code: required
+                    message: Idempotency-Key is required. Generate one unique key for this write.
+                    path: headers.Idempotency-Key
+            invalidIdempotencyKey:
+              summary: Invalid Idempotency-Key header
+              value:
+                error: invalid_idempotency_key
+                message: Idempotency-Key must contain 1-255 visible ASCII characters.
+                charged: false
+                chargedCredits: '0'
+                retryable: false
+                safeToRetry: true
+                success: false
+                nextAction:
+                  type: fix_request
+                fieldErrors:
+                  - code: invalid
+                    message: Idempotency-Key must contain 1-255 visible ASCII characters.
+                    path: headers.Idempotency-Key
+            invalidInput:
+              summary: Invalid request fields
+              value:
+                error: invalid_input
+                message: Invalid input. Check request fields.
+                charged: false
+                chargedCredits: '0'
+                retryable: false
+                safeToRetry: true
+                success: false
+                nextAction:
+                  type: fix_request
     WriteTrackingUnavailable:
       description: >
         Durable tracking or the write service is temporarily unavailable.

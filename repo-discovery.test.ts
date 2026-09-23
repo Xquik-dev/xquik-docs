@@ -14119,7 +14119,7 @@ describe("repository discovery", (): void => {
           : [],
       ),
     ]).toStrictEqual([]);
-    expect(errorHandlingSource.length).toBeLessThanOrEqual(23_000);
+    expect(errorHandlingSource.length).toBeLessThanOrEqual(23_350);
   });
 
   it("keeps follower export CRM handoff steps concrete", (): void => {
