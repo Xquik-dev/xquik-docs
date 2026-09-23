@@ -6426,6 +6426,12 @@ paths:
         '502': *x-api-error-response
         '429': *rate-limit-exceeded-response-2
         '424': *x-api-error-response
+        '409':
+          $ref: '#/components/responses/CoverageCursorUnavailable'
+        '410':
+          $ref: '#/components/responses/CursorGone'
+        '503':
+          $ref: '#/components/responses/MaximumCoverageBusy'
 
   /x/tweets/{id}/replies:
     get:
@@ -7109,8 +7115,9 @@ components:
       schema:
         type: string
       description: >
-        Cursor from the previous response. Xquik cursors resume automatic
-        coverage. Existing unprefixed cursors keep legacy standard behavior.
+        Cursor from the previous response. Existing unprefixed cursors keep legacy
+        standard behavior. Pages can be empty before more rows; follow
+        next_cursor.
     AutomaticCoverageMode:
       name: mode
       in: query
@@ -8116,7 +8123,7 @@ components:
             message: 'Cursor finished, expired, or superseded. Restart pagination
               without cursor.'
     MaximumCoverageBusy:
-      description: Coverage unavailable; retry pagination_stalled later.
+      description: Coverage unavailable. Retry x_api_unavailable after Retry-After. Retry pagination_stalled once after 30 seconds.
       headers:
         Retry-After:
           schema: *positive-integer
@@ -9318,7 +9325,9 @@ components:
       properties:
         complete:
           type: boolean
-          description: True after all active strategies exhaust their sources.
+          description: >
+            True after all active strategies exhaust their sources. An empty
+            read of the whole search window also ends its time slices.
         cursorFailureCount: *nonnegative-integer
         deadlineReached:
           type: boolean

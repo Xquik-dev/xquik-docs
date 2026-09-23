@@ -117,7 +117,7 @@ Start with HTTP status. Retry only when stated.
     Retry: yes for `internal_error`, `x_api_rate_limited`,
     `x_api_unavailable` and `x_api_unauthorized`. For writes, retry only when
     `safeToRetry` is `true`, using a new `Idempotency-Key`.
-    For `pagination_stalled`, stop automatic retries & keep returned results.
+    Retry `pagination_stalled` once after 30 seconds. Keep returned results.
 
   </Card>
 </CardGroup>
@@ -593,8 +593,8 @@ responses also include `message`, `reason`, `retryAfter`, or `retryAfterMs`.
       </Card>
       <Card title="pagination_stalled" icon="pause">
 
-        Pagination stopped after repeated empty pages. Keep returned results & stop automatic retries.
-        Retrying the same cursor worked 1 time in 370. Restart without a cursor. Deduplicate by ID.
+        Pagination stopped after repeated empty pages. Retry the same cursor once after 30 seconds.
+        A second stall ends the list. Keep returned rows. Deduplicate by ID.
 
       </Card>
       <Card title="x_api_unauthorized" icon="key-round">
@@ -658,7 +658,7 @@ Writes can return durable actions. Check lifecycle fields before handling succes
 
 ## Retry with exponential backoff
 
-For reads, stop on `pagination_stalled`. Otherwise retry `429` and `5xx`. Use `Retry-After`, then
+For reads, retry `pagination_stalled` once. Otherwise retry `429` and `5xx`. Use `Retry-After`, then
 exponential backoff with jitter. For writes, follow the durable action's
 `safeToRetry` and `nextAction` fields instead.
 
@@ -675,12 +675,12 @@ function retryDelayMs(response: Response, attempt: number): number {
   return 1000 * 2 ** attempt + Math.floor(Math.random() * 1000);
 }
 
-async function shouldRetry(response: Response): Promise<boolean> {
+async function shouldRetry(response: Response, attempt: number): Promise<boolean> {
   const body = await response
     .clone()
     .json()
     .catch(() => null);
-  if (body?.error === "pagination_stalled") return false;
+  if (body?.error === "pagination_stalled") return attempt === 0;
   return response.status === 429 || response.status >= 500;
 }
 ```
