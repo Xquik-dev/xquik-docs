@@ -1,0 +1,52 @@
+---
+title: "Twitter API versioning & deprecation policy"
+sidebarTitle: "Versioning & deprecation"
+description: "How Xquik's v1 Twitter API stays compatible, how much notice breaking removals get, and which Deprecation & Sunset headers mark deprecated fields & parameters."
+keywords:
+  [
+    "API versioning",
+    "API deprecation policy",
+    "Deprecation header",
+    "Sunset header",
+    "breaking changes",
+  ]
+---
+
+The Xquik REST API is v1, and v1 stays compatible. Fields, parameters & endpoints can be added at any time. Your client should ignore fields it does not know.
+
+## Notice for breaking removals
+
+- We announce a breaking removal at least 90 days in advance.
+- The [changelog](/changelog) lists every deprecation & removal.
+- OpenAPI marks a deprecated operation, field or parameter as `deprecated` until it is removed.
+- A security or legal emergency may shorten the notice. We explain every exception.
+
+## Headers on deprecated requests
+
+A response that touches a deprecated part of v1 carries these headers:
+
+| Header        | Example                                                                              | Meaning                                                                                                      |
+| ------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------ |
+| `Deprecation` | `@1783900800`                                                                        | [RFC 9745](https://www.rfc-editor.org/rfc/rfc9745): the Unix time when the item was marked deprecated.       |
+| `Link`        | `<https://xquik.com/deprecation-policy.md>; rel="deprecation"; type="text/markdown"` | Where the policy lives.                                                                                      |
+| `Sunset`      | `Wed, 31 Mar 2027 00:00:00 GMT`                                                      | [RFC 8594](https://www.rfc-editor.org/rfc/rfc8594): the removal date. Sent only once a removal is scheduled. |
+
+Log these headers in your client. A `Deprecation` header means a change is due; a `Sunset` header gives the date.
+
+## Deprecated today
+
+| Request                              | Deprecated item                   | Use instead                          | Since      |
+| ------------------------------------ | --------------------------------- | ------------------------------------ | ---------- |
+| `GET /api/v1/account`                | `monitorsAllowed` in the response | Nothing: monitor slots are unlimited | 2026-07-13 |
+| `GET /api/v1/extractions/{id}`       | `includeRaw` parameter            | `outputMode=raw`                     | 2026-08-09 |
+| `GET /api/v1/x/users/{id}/followers` | `after` parameter                 | `cursor`                             | 2026-04-29 |
+
+No removal is scheduled for these items, so their responses carry no `Sunset` header yet.
+
+## Check your integration
+
+1. Search your code for the items in the table above.
+2. Watch for `Deprecation` & `Sunset` headers in responses.
+3. Read the [changelog](/changelog) before each upgrade.
+
+The same policy is published as Markdown at [xquik.com/deprecation-policy.md](https://xquik.com/deprecation-policy.md).
