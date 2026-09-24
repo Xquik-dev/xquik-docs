@@ -3191,7 +3191,7 @@ paths:
         - $ref: '#/components/parameters/UserFilterVerifiedOnly'
       responses:
         '200':
-          description: Matched users plus reconciliation metadata for unavailable IDs.
+          description: Matched users plus reconciliation metadata.
           content:
             application/json:
               schema:
@@ -3207,6 +3207,7 @@ paths:
                 processed_count: 2
                 returned_count: 1
                 unavailable_ids: ['1234567890']
+                failed_ids: []
                 unprocessed_ids: []
         '400': *invalid-input-response
         '401': *anonymous-guest-authentication-response
@@ -9704,8 +9705,6 @@ components:
     BatchUsers:
       description: >
         Batch lookup preserves first-seen ID order and ignores duplicate IDs.
-        unavailable_ids were processed without profiles. unprocessed_ids were
-        credit-limited.
       type: object
       required:
         [
@@ -9716,6 +9715,7 @@ components:
           processed_count,
           returned_count,
           unavailable_ids,
+          failed_ids,
           unprocessed_ids,
         ]
       properties:
@@ -9754,18 +9754,22 @@ components:
           example: 1
         unavailable_ids:
           type: array
-          description: Processed IDs with no returned profile, in first-seen request order.
-          items:
+          description: Processed IDs with no profile on X, in first-seen request order.
+          items: &batch-user-id
             type: string
             pattern: '^\d+$'
           example: ['1234567890']
+        failed_ids:
+          type: array
+          description: Processed IDs that failed to load, in first-seen request order. They
+            cost nothing. Retry them.
+          items: *batch-user-id
+          example: []
         unprocessed_ids:
           type: array
           description: Requested IDs skipped because available credits limited processing.
             Retry these IDs after adding credits.
-          items:
-            type: string
-            pattern: '^\d+$'
+          items: *batch-user-id
           example: []
     GuestWalletAmount:
       description: Confirmed USD amount for a guest wallet purchase.

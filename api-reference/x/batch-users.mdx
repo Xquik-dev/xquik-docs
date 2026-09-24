@@ -34,6 +34,7 @@ import AudienceCommunityApiLinks from "/snippets/x-audience-community-api-links.
       "unavailable_ids": [
         "1234567890"
       ],
+      "failed_ids": [],
       "unprocessed_ids": []
     }
     ```
@@ -161,7 +162,6 @@ const response = await fetch(`https://xquik.com/api/v1/x/users/batch?ids=${ids.j
   headers: { "x-api-key": "xq_your_api_key_here" },
 });
 const data = await response.json();
-const profilesById = new Map(data.users.map((user) => [user.id, user]));
 const profileRows = data.users.map((user) => ({
   user_id: user.id,
   username: user.username,
@@ -172,7 +172,8 @@ const profileRows = data.users.map((user) => ({
   verified: user.verified ?? false,
   profile_image_url: user.profilePicture ?? null,
 }));
-const missingIds = ids.filter((id) => !profilesById.has(id));
+const retryNow = data.failed_ids;
+const retryAfterCredits = data.unprocessed_ids;
 ```
 
 ```python Python
@@ -185,7 +186,6 @@ response = requests.get(
     headers={"x-api-key": "xq_your_api_key_here"},
 )
 data = response.json()
-profiles_by_id = {user["id"]: user for user in data["users"]}
 profile_rows = [
     {
         "user_id": user["id"],
@@ -199,15 +199,16 @@ profile_rows = [
     }
     for user in data["users"]
 ]
-missing_ids = [user_id for user_id in ids if user_id not in profiles_by_id]
+retry_now = data["failed_ids"]
+retry_after_credits = data["unprocessed_ids"]
 ```
 
 </CodeGroup>
 
 The Node.js and Python snippets build profile rows. They do not print
-full profile objects. Store `profileRows` or `profile_rows` and `missingIds`
-or `missing_ids` with the original ID list. Retries then request only missing
-profiles.
+full profile objects. Store `profileRows` or `profile_rows` with the original
+ID list. Retry `failed_ids` now. Retry `unprocessed_ids` after adding credits.
+Skip `unavailable_ids`, which have no profile on X.
 
 ## Direct batch user handoff
 
@@ -239,8 +240,9 @@ and `next_cursor: ""`. Zero affordable results return
   </Card>
   <Card title="Missing rows" icon="triangle-alert">
 
-    Compare returned `user_id` values with `requested_ids`. Retry only the
-    missing IDs or route username-only inputs to Get User first.
+    Retry `failed_ids` now & `unprocessed_ids` after adding credits. Skip
+    `unavailable_ids`, which have no profile on X. Route username-only inputs
+    to Get User first.
 
   </Card>
   <Card title="No pagination" icon="route">
@@ -446,6 +448,9 @@ Array of user profiles matching the requested IDs.
 </ResponseField>
 <ResponseField name="has_next_page" type="boolean">Always `false` for batch requests.</ResponseField>
 <ResponseField name="next_cursor" type="string">Always empty for batch requests.</ResponseField>
+<ResponseField name="unavailable_ids" type="string[]">IDs with no profile on X. Skip them.</ResponseField>
+<ResponseField name="failed_ids" type="string[]">IDs that failed to load. They cost nothing. Retry them.</ResponseField>
+<ResponseField name="unprocessed_ids" type="string[]">IDs skipped for low credits. Retry them after adding credits.</ResponseField>
 
 ```json
 {
