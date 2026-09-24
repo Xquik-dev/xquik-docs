@@ -356,17 +356,23 @@ detail or list completed jobs before exporting rows.
 
 ## Handle webhook retries and missed events
 
-Webhook deliveries retry with backoff. Attempt 10 is final. `410 Gone` exhausts
-one delivery immediately. Webhook health exposes `deliveryStatus`,
-`consecutiveFailures`, and `failureHardCap`. Fix the receiver before resuming.
+Webhook deliveries retry with backoff until your endpoint returns `2xx`. There
+is no attempt limit. Return `2xx` for events your workflow skips. Webhook
+health exposes `deliveryStatus`, `consecutiveFailures`, and `failureHardCap`.
+`needs_attention` does not stop retries. Only a paused or deleted webhook marks
+deliveries `exhausted`.
 
 Use this repair sequence:
 
 1. Inspect `GET /api/v1/webhooks/{id}/deliveries`.
 2. Find `failed` and `exhausted` rows.
 3. Join each `streamEventId` to the stored event.
-4. Fix the receiver, then call the resume endpoint.
-5. Replay only missing event IDs.
+4. Fix the receiver.
+5. Call the resume endpoint. It starts sending waiting and rejected deliveries
+   at once.
+6. Replay only event IDs your workflow never stored.
+
+A paused webhook keeps waiting deliveries for 30 days after each event.
 
 Use `monitorId` or `keywordMonitorId` during replay. Store each `nextCursor`.
 

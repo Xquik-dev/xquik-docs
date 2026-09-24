@@ -118,11 +118,11 @@ Webhook delivery can fail without a visible error. Check each item:
 
 1. **Webhook is active.** Verify `isActive: true` and `deliveryStatus: "active"` via `GET /api/v1/webhooks`. Paused webhooks do not receive deliveries.
 2. **HTTPS required.** Xquik rejects HTTP endpoints. Your URL must start with `https://`.
-3. **Response time.** Respond with `2xx` within 10 seconds. Xquik may treat slow responses as failures.
+3. **Response time.** Respond with `2xx` within 10 seconds, even for events you skip. Slower responses and rejections count as failures. A failure can delay new deliveries by up to 15 minutes.
 4. **Check deliveries.** Call `GET /api/v1/webhooks/{id}/deliveries` to see delivery status, attempt count, and error messages.
 5. **Correlate source events.** Call `GET /api/v1/events/{id}` with the stored `streamEventId`.
 6. **Local testing.** If using ngrok or a tunnel, verify it's running and the URL is current. Ngrok URLs change on restart (free plan).
-7. **Needs attention.** If `deliveryStatus` is `needs_attention`, fix the receiver and call `POST /api/v1/webhooks/{id}/resume`. The receiver must pass a signed test before delivery resumes.
+7. **Needs attention.** `needs_attention` means 200 failed checks in a row. Xquik keeps retrying. Fix the receiver, then call `POST /api/v1/webhooks/{id}/resume`. It starts sending waiting deliveries at once.
 8. **Event type mismatch.** Your webhook must subscribe to the event types your monitors produce. A webhook listening for `tweet.new` won't receive `tweet.reply` events.
 
 > **Tip.** See the [Webhook Testing](/guides/twitter-webhook-testing) guide for a step-by-step local setup with ngrok.

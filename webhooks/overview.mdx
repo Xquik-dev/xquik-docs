@@ -265,7 +265,7 @@ one batched payload.
 
   <Card title="deliveryId" icon="truck">
 
-    Type `string`. Webhook delivery attempt ID. Store it as the
+    Type `string`. Webhook delivery ID. Every retry reuses it. Store it as the
     delivery-level idempotency key and use it for delivery-log correlation.
 
   </Card>
@@ -479,62 +479,112 @@ A test payload that the [Test Webhook](/api-reference/webhooks/test) endpoint se
 
 ## Retry policy
 
-Xquik retries failed deliveries with exponential backoff. The delay starts at 1 second, doubles each time, and caps at 60 seconds:
+Return `2xx` within 10 seconds for every delivery, even one you skip. Any other
+status, a redirect, a timeout, or a network error is a failure. `410 Gone` is a
+normal failure.
+
+Xquik retries a failed delivery until your endpoint returns `2xx`. There is no
+attempt limit. Xquik never pauses or turns off your webhook.
 
 <CardGroup cols={2}>
 
-  <Card title="Attempts 1-3" icon="timer">
+  <Card title="Failing endpoint" icon="activity">
 
-    Delays: 1 second, 2 seconds, then 4 seconds.
-
-  </Card>
-
-  <Card title="Attempts 4-6" icon="timer-reset">
-
-    Delays: 8 seconds, 16 seconds, then 32 seconds.
+    After a failed delivery, Xquik treats your endpoint as failing. It retries 1
+    waiting delivery at a time to check the endpoint. This is a real delivery,
+    not a `webhook.test`. Checks start 2 seconds apart and slow to 1 every 15
+    minutes. New deliveries wait as `pending` until a check succeeds.
 
   </Card>
 
-  <Card title="Attempts 7-9" icon="hourglass">
+  <Card title="Recovery" icon="rotate-ccw">
 
-    Delay: 60 seconds for each attempt after the delay reaches its cap.
+    When a check succeeds, Xquik starts sending `pending` deliveries at once.
+    A delivery your endpoint rejected can still wait up to 7 days.
+    [Resume Webhook](/api-reference/webhooks/resume) sends it at once.
 
   </Card>
 
-  <Card title="Attempt 10" icon="circle-stop">
+  <Card title="1 rejected delivery" icon="triangle-alert">
 
-    Final attempt. If it fails, Xquik marks the delivery `exhausted`.
+    If no new event arrives within 2 seconds of a failure, Xquik retries the
+    rejected delivery at the next check. New events wait for that check, up to
+    15 minutes. See the table below.
+
+  </Card>
+
+  <Card title="Quiet endpoint" icon="hourglass">
+
+    A rejected delivery keeps failing checks while no new events arrive. After
+    about 2 quiet days, the webhook shows `needs_attention`. Delivery continues.
 
   </Card>
 </CardGroup>
 
-After the 10th failed attempt, Xquik marks the delivery `exhausted`. A `410 Gone` response exhausts the delivery immediately. Check delivery status with the [deliveries endpoint](/api-reference/webhooks/deliveries).
-
-Webhook configuration also tracks receiver health. `GET /webhooks` returns
-`deliveryStatus`, `consecutiveFailures`, and `failureHardCap`. When repeated
-receiver failures reach the hard cap, `deliveryStatus` becomes
-`needs_attention`. Fix the receiver, then call
-[Resume Webhook](/api-reference/webhooks/resume) to require a signed test before
-delivery resumes.
-
-<Note>
-
-Xquik processes retries in batches. The real delay can exceed the listed delay.
-
-</Note>
-
 <Warning>
 
-**Terminal failures.** Return `410 Gone` only when Xquik should stop retrying that delivery. Other non-`2xx` responses and network failures retry until Xquik exhausts the delivery.
+Return `2xx` for every event you skip. Xquik keeps retrying a rejected
+delivery. While it fails, new events can arrive up to 15 minutes late.
 
 </Warning>
 
+If a new event arrives within 2 seconds of each failure, a rejected delivery
+waits longer:
+
+| Failed attempts | Next retry after |
+| --------------- | ---------------- |
+| 1               | 1 second         |
+| 2               | 2 seconds        |
+| 3               | 4 seconds        |
+| 10              | About 9 minutes  |
+| 15              | About 4.5 hours  |
+| 20              | About 6 days     |
+| 21 or more      | 7 days           |
+
+The wait stops growing at 7 days. Retries can arrive a little later than
+listed. When no new event arrives within 2 seconds of a failure, Xquik retries
+the rejected delivery at the next check. Checks run up to 15 minutes apart.
+
+### Pause or delete a webhook
+
+Only you can stop retries. Pause the webhook with
+[Update Webhook](/api-reference/webhooks/update), or delete it. Xquik holds the
+deliveries that were waiting. Within 1 day, they show `exhausted`.
+
+Xquik keeps held deliveries for 30 days after each event. Resume within 30 days
+to receive them. Xquik deletes older ones.
+[Resume Webhook](/api-reference/webhooks/resume) sends a signed test first. Then
+it starts sending held deliveries at once.
+
+A paused webhook gets no new deliveries. Use stored event pages to catch up.
+Deleting a monitor removes its waiting deliveries.
+
+### Check delivery status
+
+[List Deliveries](/api-reference/webhooks/deliveries) shows each delivery's
+`status`: `pending`, `delivered`, `failed`, or `exhausted`. `attempts` counts
+the tries so far. A retry reuses the same `deliveryId`, so store it and skip
+repeats.
+
+[List Webhooks](/api-reference/webhooks/list) shows `deliveryStatus` and
+`consecutiveFailures`. `needs_attention` means 200 failed checks in a row. That
+takes about 2 days. Xquik keeps retrying.
+
+### When deliveries fail
+
+1. Fix your endpoint so it returns `2xx` within 10 seconds.
+2. Call [Resume Webhook](/api-reference/webhooks/resume). It sends a signed test
+   first.
+3. When the test passes, Xquik starts sending waiting and rejected deliveries at
+   once.
+
+Without Resume, a rejected delivery can wait up to 7 days.
+
 ## Backfill after a receiver outage
 
-Use this handoff after your receiver was down, returned repeated non-`2xx`
-responses, or exhausted deliveries. Fix the receiver first, then use delivery
-rows to identify failed attempts and stored event pages to rebuild downstream
-work. Do not use `410 Gone` for temporary throttling. It exhausts that delivery.
+Xquik resends failed deliveries after your receiver recovers. Use this handoff
+when your systems lost work or the webhook was paused. Fix the receiver first.
+Then use delivery rows and stored event pages to rebuild downstream work.
 
 ```json
 {
@@ -558,20 +608,20 @@ work. Do not use `410 Gone` for temporary throttling. It exhausts that delivery.
     "nextCursor"
   ],
   "stop_when": "hasMore is false",
-  "handoff_state": "receiver_fixed_resume_webhook_page_events_join_deliveries"
+  "handoff_state": "receiver_fixed_page_events_join_deliveries"
 }
 ```
 
-Store `nextCursor` after every event page. Reprocess events whose `id` matches
-failed or exhausted delivery `streamEventId` values, then leave delivered rows
-alone. Scope event pages with `monitorId` for account monitors or
-`keywordMonitorId` for keyword monitors when the source is known. Omit both
-only for all-monitor replay.
+Store `nextCursor` after every event page. Reprocess only events your receiver
+never stored. Skip repeats by `streamEventId`, since Xquik also resends failed
+deliveries. Events from a pause may never reach the webhook, so page them here.
+Scope event pages with `monitorId` for account monitors or `keywordMonitorId`
+for keyword monitors when the source is known. Omit both only for all-monitor
+replay.
 
 ## Troubleshoot a delivery
 
-Use this handoff when a receiver fails tests, repeats failures, or reaches an
-`exhausted` delivery state.
+Use this handoff when a receiver fails a signed test or keeps failing deliveries.
 
 ```json
 {
@@ -621,16 +671,16 @@ Use this handoff when a receiver fails tests, repeats failures, or reaches an
 
     Check [List Deliveries](/api-reference/webhooks/deliveries) for `status`,
     `attempts`, `lastStatusCode`, `lastError`, `createdAt`, and
-    `deliveredAt`. Page on `exhausted`, warn on repeated `failed`, and ignore
-    `delivered`.
+    `deliveredAt`. Act on `failed`, wait on `pending`, and ignore
+    `delivered`. `exhausted` means the webhook was paused or deleted.
 
   </Card>
 
-  <Card title="Resume gate" icon="rotate-ccw">
+  <Card title="Needs attention" icon="rotate-ccw">
 
-    If `deliveryStatus` is `needs_attention`, fix the receiver, then call
-    [Resume Webhook](/api-reference/webhooks/resume). Delivery resumes only
-    after the signed test succeeds.
+    `needs_attention` does not stop delivery. Fix the receiver, then call
+    [Resume Webhook](/api-reference/webhooks/resume). It starts sending waiting
+    deliveries at once.
 
   </Card>
 
@@ -647,7 +697,7 @@ Use this handoff when a receiver fails tests, repeats failures, or reaches an
 
 - The endpoint must use HTTPS
 - The endpoint must not resolve to a private or internal IP address (localhost, 10.x.x.x, 172.16-31.x.x, 192.168.x.x, 169.254.x.x)
-- Endpoints should respond promptly with a `2xx` status code. Non-`2xx` responses count as failures and trigger retries
+- Endpoints must return `2xx` within 10 seconds. Other responses, redirects, and timeouts count as failures and trigger retries
 
 ## Where to go next
 
