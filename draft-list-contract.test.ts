@@ -21,7 +21,7 @@ describe("list tweet drafts documentation", (): void => {
     expect({
       apiKeyAuth: listOperation.includes("apiKey: []"),
       oauthAuth: listOperation.includes("oauthBearer: []"),
-      statuses: ["200", "401", "429"].every((status) =>
+      statuses: ["200", "400", "401", "429"].every((status) =>
         listOperation.includes(`        '${status}':`),
       ),
     }).toStrictEqual({ apiKeyAuth: true, oauthAuth: true, statuses: true });
@@ -102,7 +102,8 @@ describe("list tweet drafts documentation", (): void => {
     expect({
       afterCursor: configSource.includes("afterParam: 'afterCursor'"),
       defaultLimit: configSource.includes("defaultLimit: 50"),
-      formatsDrafts: getSource.includes("drafts: items.map((row) => formatDraftRow(row))"),
+      formatsDrafts:
+        getSource.includes("format: formatDraftRow,") && getSource.includes("itemsKey: 'drafts',"),
       maxLimit: configSource.includes("maxLimit: 50"),
       newestFirst: getSource.includes(
         ".orderBy(sql`${tweetDrafts.createdAt} DESC, ${tweetDrafts.id} DESC`)",
