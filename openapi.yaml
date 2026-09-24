@@ -5194,9 +5194,7 @@ paths:
     get:
       operationId: getTweetFavoriters
       summary: List visible users who liked a tweet
-      description: >
-        Returns likers your X account sees, else 424 `account_required`. Hidden
-        likers get 424 `favoriters_unavailable`.
+      description: Likers your X account sees, else 424 `account_required`.
       tags:
         - Tweets
       security: [{ apiKey: [] }, { oauthBearer: [] }]
@@ -5206,12 +5204,8 @@ paths:
           required: true
           schema:
             type: string
-          description: Tweet ID to get favoriters
-        - name: cursor
-          in: query
-          schema:
-            type: string
-          description: Pagination cursor for favoriters
+          description: Tweet ID
+        - $ref: '#/components/parameters/CollectionCursor'
         - $ref: '#/components/parameters/FollowerPageSize'
         - $ref: '#/components/parameters/UserFilterMinFollowers'
         - $ref: '#/components/parameters/UserFilterMaxFollowers'
@@ -5229,11 +5223,13 @@ paths:
         - $ref: '#/components/parameters/UserFilterUsernameContains'
       responses:
         '200':
-          description: Visible users who liked the tweet
+          description: Visible likers
           content: *paginated-users-content
         '400': *invalid-input-response
         '401': *unauthenticated-response
         '402': *payment-required-response
+        '403': &guest-forbidden-response
+          $ref: '#/components/responses/GuestForbidden'
         '502': *x-api-error-response
         '429': *rate-limit-exceeded-response-2
         '424':
@@ -5422,9 +5418,8 @@ paths:
   /x/users/{id}/likes:
     get:
       operationId: getUserLikes
-      description: >
-        Returns your X account's likes, else 424 `account_required`. Others'
-        likes get 424 `likes_unavailable`.
+      description: Your X account's likes, else 424 `account_required`. Others' likes get
+        424 `likes_unavailable`.
       summary: List tweets liked by a user
       tags:
         - Users
@@ -5436,11 +5431,7 @@ paths:
           schema:
             type: string
           description: User ID or username
-        - name: cursor
-          in: query
-          schema:
-            type: string
-          description: Pagination cursor for liked tweets
+        - $ref: '#/components/parameters/CollectionCursor'
         - $ref: '#/components/parameters/ResultPageSize'
         - $ref: '#/components/parameters/TweetFilterFromUser'
         - $ref: '#/components/parameters/TweetFilterToUser'
@@ -5488,11 +5479,12 @@ paths:
         - $ref: '#/components/parameters/TweetFilterRetweetsOfTweetId'
       responses:
         '200':
-          description: List of liked tweets
+          description: Liked tweets
           content: *paginated-tweets-content
         '400': *invalid-input-response
         '401': *unauthenticated-response
         '402': *payment-required-response
+        '403': *guest-forbidden-response
         '404': *user-not-found-response
         '502': *x-api-error-response
         '429': *rate-limit-exceeded-response-2
@@ -5578,7 +5570,7 @@ paths:
   /x/users/{id}/followers-you-know:
     get:
       operationId: getFollowersYouKnow
-      description: Returns mutuals your X account sees, else 424 `account_required`.
+      description: Mutuals your X account sees, else 424 `account_required`.
       summary: List mutual followers between you and a user
       tags:
         - Users
@@ -5589,12 +5581,8 @@ paths:
           required: true
           schema:
             type: string
-          description: User ID for followers-you-know lookup
-        - name: cursor
-          in: query
-          schema:
-            type: string
-          description: Pagination cursor for followers-you-know
+          description: User ID
+        - $ref: '#/components/parameters/CollectionCursor'
         - $ref: '#/components/parameters/FollowerPageSize'
         - $ref: '#/components/parameters/UserFilterMinFollowers'
         - $ref: '#/components/parameters/UserFilterMaxFollowers'
@@ -5612,11 +5600,12 @@ paths:
         - $ref: '#/components/parameters/UserFilterUsernameContains'
       responses:
         '200':
-          description: List of mutual followers
+          description: Mutual followers
           content: *paginated-users-content
         '400': *invalid-input-response
         '401': *unauthenticated-response
         '402': *payment-required-response
+        '403': *guest-forbidden-response
         '502': *x-api-error-response
         '429': *rate-limit-exceeded-response-2
         '424': *x-api-error-response
@@ -7989,6 +7978,14 @@ components:
             type: https://paymentauth.org/problems/payment-required
             next_step: Ask the user to confirm a USD amount before creating checkout.
             payment_options: *guest-checkout-payment-options
+    GuestForbidden:
+      description: Not open to guest keys.
+      content:
+        application/json:
+          schema: *error-schema
+          example:
+            error: forbidden
+            message: This API key can access paid read endpoints only.
     ProtectedTimeline:
       description: >-
         Account is protected. Choose a public account. Applies to initial and
