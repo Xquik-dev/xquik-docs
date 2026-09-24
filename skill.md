@@ -13,7 +13,7 @@ metadata:
 
 ## Product summary
 
-Xquik is an X data platform with 129 documented REST operations, webhooks, Docs MCP, and API MCP. Full account credentials cover account workflows. Accountless guest keys cover 33 prepaid GET reads. Seven fixed-price operations also accept direct MPP. The REST base URL is `https://xquik.com/api/v1`. Primary docs: https://docs.xquik.com
+Xquik is an X data platform with 129 documented REST operations, webhooks, Docs MCP, and API MCP. Full account credentials cover account workflows. Accountless guest keys cover 30 prepaid GET reads. Seven fixed-price operations also accept direct MPP. The REST base URL is `https://xquik.com/api/v1`. Primary docs: https://docs.xquik.com
 
 ## When to use
 
@@ -25,7 +25,7 @@ Reach for Xquik when:
 - **Running giveaway draws.** Run random tweet draws with public result pages.
 - **Composing posts.** Get editorial guidance, Radar research suggestions, and deterministic draft checks.
 - **Connecting AI agents.** Use Docs MCP for no-auth docs search and page retrieval, and API MCP for authenticated account actions.
-- **Running accountless reads.** Use a prepaid guest `paid_reads` key on 33 GET routes or direct MPP on 7 fixed-price operations.
+- **Running accountless reads.** Use a prepaid guest `paid_reads` key on 30 GET routes or direct MPP on 7 fixed-price operations.
 - **Analyzing styles.** Analyze tweet styles, compare accounts, track engagement performance, or save drafts.
 - **Writing to X.** Post tweets, like, retweet, follow, send DMs, upload media, or manage community membership from connected accounts.
 - **Trending data.** Access current X trends across 12 regions plus Radar topics.
@@ -145,7 +145,7 @@ when `safeToRetry` is true.
 
 1. Add Docs MCP at `https://docs.xquik.com/mcp` for read-only docs search and page retrieval.
 2. Configure API MCP at `https://xquik.com/mcp` for live authenticated calls.
-3. Use full credentials for 118 JSON or text routes. Use REST for excluded downloads. Guest keys expose 33 GET routes.
+3. Use full credentials for 118 JSON or text routes. Use REST for excluded downloads. Guest keys expose 30 GET routes.
 4. Use `docs` for guidance, `search` for contracts, and `execute` for allowed requests.
    Inspect `spec.paths`; follow response references into `spec.components.schemas`.
 5. Add `?codemode=false` only when the client needs OpenAPI-native tools.
@@ -188,7 +188,7 @@ Restart Codex and run `codex mcp list`. Do not run `codex mcp login xquik` while
 2. Call `POST /api/v1/guest-wallets` through direct REST with the confirmed amount and a random UUID v4 `Idempotency-Key`.
 3. Store `api_key` and the idempotency key before sharing `checkout_url`.
 4. The user completes the hosted checkout. Poll status every `poll_after_seconds` until `latest_purchase.status` is no longer `pending`.
-5. Use the key only when `usable` is `true`. It can call exactly the 33 eligible paid-read GET routes.
+5. Use the key only when `usable` is `true`. It can call exactly the 30 eligible paid-read GET routes.
 
 The creation request does not charge the user. The key stays inactive until payment is verified. Use `POST /api/v1/guest-wallets/topups` only after another explicit confirmation. Never execute guest credential routes through MCP.
 

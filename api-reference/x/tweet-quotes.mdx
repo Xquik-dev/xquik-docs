@@ -75,6 +75,28 @@ import TweetResultFilterParams from "/snippets/tweet-result-filter-params.mdx";
 
   </Tab>
 
+  <Tab title="409" id="response-x-tweet-quotes-409">
+
+    ```json
+    {
+      "error": "coverage_cursor_unavailable",
+      "message": "Cursor busy. Retry after the indicated delay."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="410" id="response-x-tweet-quotes-410">
+
+    ```json
+    {
+      "error": "coverage_cursor_gone",
+      "message": "Cursor finished, expired, or superseded. Restart pagination without cursor."
+    }
+    ```
+
+  </Tab>
+
   <Tab title="424" id="response-x-tweet-quotes-424">
 
     ```json
@@ -108,6 +130,17 @@ import TweetResultFilterParams from "/snippets/tweet-result-filter-params.mdx";
     ```
 
   </Tab>
+
+  <Tab title="503" id="response-x-tweet-quotes-503">
+
+    ```json
+    {
+      "error": "x_api_unavailable",
+      "message": "Maximum coverage is busy. Retry shortly."
+    }
+    ```
+
+  </Tab>
 </Tabs>
 
 </Panel>
@@ -126,6 +159,13 @@ Requested result counts are upper bounds for paid authenticated calls. When rema
 This route returns quote tweets for one original tweet. Each row
 includes the quoting tweet's commentary, author, engagement counts, and media
 attachments. The route is `GET /api/v1/x/tweets/{id}/quotes`.
+
+Pass `next_cursor` back unchanged as `cursor`. A page can be empty while
+`has_next_page` is `true`, so keep following `next_cursor`. A cursor in use
+returns `409 coverage_cursor_unavailable`. Wait for `Retry-After`, then retry it
+once. A finished or expired cursor returns `410 coverage_cursor_gone`. Restart
+without a cursor and deduplicate by `id`. A busy read returns `503`. Retry after
+`Retry-After`.
 
 <CodeGroup>
 

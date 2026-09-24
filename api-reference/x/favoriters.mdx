@@ -55,7 +55,7 @@ import UserResultFilterParams from "/snippets/user-result-filter-params.mdx";
     ```json
     {
       "error": "unauthenticated",
-      "message": "Authentication required."
+      "message": "Authentication required. Provide a valid API key or bearer token."
     }
     ```
 
@@ -67,6 +67,17 @@ import UserResultFilterParams from "/snippets/user-result-filter-params.mdx";
     {
       "error": "insufficient_credits",
       "message": "Insufficient credits. Top up or subscribe to continue."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="403" id="response-x-favoriters-403">
+
+    ```json
+    {
+      "error": "forbidden",
+      "message": "This API key can access paid read endpoints only."
     }
     ```
 
@@ -115,13 +126,16 @@ Requested result counts are upper bounds for paid authenticated calls. When rema
 
 <Callout icon="coins" color="#5c3327">
 
-**1 credit per result returned** · [All plans](https://xquik.com/#pricing) from $0.00012/credit · Supports [guest paid reads](/guides/guest-wallets)
+**1 credit per result returned** · [All plans](https://xquik.com/#pricing) from $0.00012/credit
 
 </Callout>
 
-This route shows who liked one public tweet. The response returns
-profiles only when X exposes liker identities. The route is
-`GET /api/v1/x/tweets/{id}/favoriters`.
+This route shows who liked one tweet. It returns the likers your connected X
+account can see. X shows likers only to the post author. Use
+[Connect X account](/api-reference/x-accounts/connect) to add the author's
+account. Callers without a connected X account get `424 account_required`.
+Guest keys get `403 forbidden`. When your connected X accounts are busy, the
+route returns `503`. The route is `GET /api/v1/x/tweets/{id}/favoriters`.
 
 <Warning>
 
@@ -279,15 +293,17 @@ can return fewer users than a full page. Zero affordable results return
 
 ### How do I see who liked my tweet?
 
-Pass the tweet's numeric ID. The response lists visible user profiles. Continue
-pagination only when the response confirms another page.
+Connect the X account that posted the tweet. Pass the tweet's numeric ID. The
+response lists visible user profiles. Continue pagination only when the response
+confirms another page.
 [X documents this read intent as Get Liking Users.](https://docs.x.com/x-api/posts/get-liking-users)
 
 ### Why can't I see who liked my tweet?
 
 X does not expose every liker set. A tweet can show a like count while its liker
 profiles remain hidden. `424 favoriters_unavailable` does not mean zero likes.
-Deleted, protected, blocked, or withheld accounts may not appear.
+Deleted, protected, blocked, or withheld accounts may not appear. Without a
+connected X account, the route returns `424 account_required`.
 
 ### Does this show an account's private likes?
 
@@ -383,12 +399,6 @@ These filters apply before billing. Selective filters can return fewer rows.
 <ParamField header="x-api-key" type="string">
 
 Full account key. Sessions and OAuth also work.
-
-</ParamField>
-
-<ParamField header="Authorization" type="string">
-
-`Bearer xq_your_guest_key_here` for `paid_reads`.
 
 </ParamField>
 
@@ -510,12 +520,15 @@ Opaque cursor for the next page. Empty string when no more results.
 
 ### 401 Unauthenticated
 
-Anonymous requests receive `WWW-Authenticate: Bearer`.
-This is not a Payment challenge.
+```json
+{ "error": "unauthenticated" }
+```
+
+Missing or invalid API key.
 
 ### 402 Payment required
 
-Account users can subscribe or add credits. A guest wallet can open checkout.
+Account users can subscribe or add credits.
 Confirm payment before continuing.
 
 <Note>

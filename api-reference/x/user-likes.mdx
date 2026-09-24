@@ -1,7 +1,7 @@
 ---
 title: "Twitter user likes API & liked tweet export"
 sidebarTitle: "Get user likes"
-description: "Retrieve liked tweets that X makes visible for one user, with authors, text, media, and metrics. X shows likes only to their owner. Others get a 424 error."
+description: "Read your X account's liked tweets with authors, text, media & metrics. Connect an X account first. X shows likes only to their owner. Other profiles get 424."
 api: "GET /x/users/{id}/likes"
 keywords: ["likes", "user likes", "favorites", "x api"]
 ---
@@ -46,7 +46,7 @@ import TweetResultFilterParams from "/snippets/tweet-result-filter-params.mdx";
     ```json
     {
       "error": "unauthenticated",
-      "message": "Authentication required."
+      "message": "Authentication required. Provide a valid API key or bearer token."
     }
     ```
 
@@ -58,6 +58,17 @@ import TweetResultFilterParams from "/snippets/tweet-result-filter-params.mdx";
     {
       "error": "insufficient_credits",
       "message": "Insufficient credits. Top up or subscribe to continue."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="403" id="response-x-user-likes-403">
+
+    ```json
+    {
+      "error": "forbidden",
+      "message": "This API key can access paid read endpoints only."
     }
     ```
 
@@ -115,7 +126,9 @@ import TweetResultFilterParams from "/snippets/tweet-result-filter-params.mdx";
 
 ## When to read liked tweets
 
-Use this route for liked tweets that X makes visible for one user. X has shown likes only to their owner since 2024. When a profile reports likes and X hides them, the route returns `424 likes_unavailable`. It does not return an empty `200`.
+Use this route for the liked tweets of your connected X account. Pass that account's user ID or username as `id`. Callers without a connected X account get `424 account_required`. Use [Connect X account](/api-reference/x-accounts/connect) to add one. Guest keys get `403 forbidden`.
+
+X has shown likes only to their owner since 2024. When another profile reports likes and X hides them, the route returns `424 likes_unavailable`. It does not return an empty `200`. When your connected X accounts are busy, the route returns `503`. Retry after the `Retry-After` delay.
 
 The output is tweet rows with engagement and pagination. Use media or timeline routes when you need posts the user wrote.
 
@@ -127,7 +140,7 @@ Requested result counts are upper bounds for paid authenticated calls. When rema
 
 <Callout icon="coins" color="#5c3327">
 
-**1 credit per result returned** · [All plans](https://xquik.com/#pricing) from $0.00012/credit · Supports [guest paid reads](/guides/guest-wallets)
+**1 credit per result returned** · [All plans](https://xquik.com/#pricing) from $0.00012/credit
 
 </Callout>
 
@@ -355,12 +368,6 @@ Full account key. Sessions and OAuth also work.
 
 </ParamField>
 
-<ParamField header="Authorization" type="string">
-
-`Bearer xq_your_guest_key_here` for `paid_reads`.
-
-</ParamField>
-
 ## Response
 
 ### 200 OK
@@ -477,8 +484,6 @@ The user ID is empty or invalid.
 
 ### 401 Unauthenticated
 
-Anonymous requests get `WWW-Authenticate: Bearer` and a guest wallet checkout action. This is not a Payment challenge.
-
 ```json
 { "error": "unauthenticated" }
 ```
@@ -487,7 +492,7 @@ Missing or invalid API key.
 
 ### 402 Payment required
 
-Account keys get account options. Guest keys get guest top-up only.
+Account keys get account options.
 No checkout starts automatically. Confirm any payment action.
 
 ### 502 X API unavailable
@@ -513,6 +518,15 @@ You exceeded your tier rate limit. Wait for the `Retry-After` header before retr
 ```
 
 The route returns `424 likes_unavailable` when the profile reports likes and X hides them from other accounts. Retrying does not help. It returns `424 x_api_unavailable` when the read service is unavailable.
+
+Without a connected X account, the route returns `424 account_required`. Connect one, then retry.
+
+```json
+{
+  "error": "account_required",
+  "message": "This read needs your own connected X account. Connect or restore it at dashboard.xquik.com/account, then retry."
+}
+```
 
 <Note>
 
