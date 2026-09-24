@@ -81,6 +81,17 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
   </Tab>
 
+  <Tab title="409" id="response-draws-create-409">
+
+    ```json
+    {
+      "error": "idempotency_conflict",
+      "message": "Idempotency-Key belongs to another request. Use a new key."
+    }
+    ```
+
+  </Tab>
+
   <Tab title="424" id="response-draws-create-424">
 
     ```json
@@ -139,6 +150,7 @@ Remaining credits cap how many replies and retweeters Xquik can inspect before f
 ```bash cURL
 curl -X POST https://xquik.com/api/v1/draws \
   -H "x-api-key: xq_YOUR_KEY_HERE" \
+  -H "Idempotency-Key: $(uuidgen)" \
   -H "Content-Type: application/json" \
   -d '{
     "tweetUrl": "https://x.com/xquik/status/1893456789012345678",
@@ -155,6 +167,7 @@ const response = await fetch("https://xquik.com/api/v1/draws", {
   method: "POST",
   headers: {
     "x-api-key": "xq_YOUR_KEY_HERE",
+    "Idempotency-Key": crypto.randomUUID(),
     "Content-Type": "application/json",
   },
   body: JSON.stringify({
@@ -172,10 +185,11 @@ console.log(data);
 
 ```python Python
 import requests
+from uuid import uuid4
 
 response = requests.post(
     "https://xquik.com/api/v1/draws",
-    headers={"x-api-key": "xq_YOUR_KEY_HERE"},
+    headers={"x-api-key": "xq_YOUR_KEY_HERE", "Idempotency-Key": str(uuid4())},
     json={
         "tweetUrl": "https://x.com/xquik/status/1893456789012345678",
         "winnerCount": 3,
@@ -194,6 +208,7 @@ package main
 
 import (
 	"bytes"
+	"crypto/rand"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -220,6 +235,7 @@ func main() {
 		log.Fatal(err)
 	}
 	req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
+	req.Header.Set("Idempotency-Key", rand.Text())
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := http.DefaultClient.Do(req)
@@ -260,6 +276,12 @@ Your API key. Session cookie authentication is also supported.
 <ParamField header="Content-Type" type="string" required>
 
 Must be `application/json`.
+
+</ParamField>
+
+<ParamField header="Idempotency-Key" type="string">
+
+Use 1-255 visible ASCII characters. Generate one unique value for each draw. Reuse it only for an exact retry. A retry returns the original draw and charges nothing. A retry while the first request runs returns `409 idempotency_in_progress`. A draw that fails frees its key for a retry. If the first request stops, the key frees after 10 minutes.
 
 </ParamField>
 
@@ -340,6 +362,8 @@ Array of usernames that the reply text must mention. Include the `@` prefix.
 ## Response
 
 ### 201 Created
+
+An exact retry returns the original draw with `Idempotency-Replayed: true`.
 
 <ResponseField name="id" type="string">Draw public ID returned by Xquik.</ResponseField>
 <ResponseField name="tweetId" type="string">X tweet ID extracted from the URL.</ResponseField>
@@ -422,6 +446,17 @@ Missing or malformed request body. Send `tweetUrl` as a string.
 
 Xquik could not parse the `tweetUrl`. Must be a valid `x.com` or `twitter.com` status URL.
 
+### 400 Invalid idempotency key
+
+```json
+{
+  "error": "invalid_idempotency_key",
+  "message": "Idempotency-Key invalid. Use 1-255 visible ASCII characters."
+}
+```
+
+The `Idempotency-Key` header is empty, longer than 255 characters, or not visible ASCII.
+
 ### 401 Unauthenticated
 
 ```json
@@ -439,7 +474,7 @@ Missing or invalid API key / session cookie.
 }
 ```
 
-The available balance cannot cover the minimum draw cost. A later final deduction failure also returns `insufficient_credits`. Xquik stores no draw result after that failure. Check your [credit balance](/api-reference/account/get).
+The available balance cannot cover the minimum draw cost. A later final deduction failure also returns `insufficient_credits`. Xquik stores no draw result and charges nothing after that failure. Check your [credit balance](/api-reference/account/get).
 
 ### 404 Not found
 
@@ -448,6 +483,28 @@ The available balance cannot cover the minimum draw cost. A later final deductio
 ```
 
 The target tweet does not exist, was deleted, or the ID is invalid.
+
+### 409 Idempotency conflict
+
+```json
+{
+  "error": "idempotency_conflict",
+  "message": "Idempotency-Key belongs to another request. Use a new key."
+}
+```
+
+Reuse a key only for the same request. Exact retries return the original draw. Xquik reads nothing and charges nothing for this request.
+
+### 409 Idempotency in progress
+
+```json
+{
+  "error": "idempotency_in_progress",
+  "message": "Idempotency-Key belongs to a running request. Retry later."
+}
+```
+
+The first request with this key is still running. Retry with the same key after it finishes. Xquik charges nothing for this request.
 
 ### 424 X API dependency failed
 

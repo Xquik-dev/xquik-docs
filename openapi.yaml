@@ -1637,7 +1637,7 @@ paths:
       tags: [Extractions]
       security: [{ apiKey: [] }, { oauthBearer: [] }]
       parameters:
-        - $ref: '#/components/parameters/ExtractionIdempotencyKey'
+        - $ref: '#/components/parameters/IdempotencyKey'
         - name: dry_run
           in: query
           description: Estimate cost without creating an extraction.
@@ -1695,14 +1695,7 @@ paths:
         '401': *unauthenticated-response
         '402': *payment-required-response
         '404': *not-found-response
-        '409':
-          description: Idempotency-Key was reused with another request.
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/Error' }
-              example:
-                error: idempotency_conflict
-                message: Idempotency-Key belongs to another request. Use a new key.
+        '409': { $ref: '#/components/responses/IdempotencyConflict' }
         '424': &x-api-error-response
           $ref: '#/components/responses/XApiError'
         '429': *rate-limit-exceeded-response
@@ -1981,6 +1974,8 @@ paths:
         Remaining credits cap inspected candidates.
       tags: [Draws]
       security: [{ apiKey: [] }, { oauthBearer: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
       requestBody:
         required: true
         description: Tweet URL, winner count, and optional eligibility filters (retweet,
@@ -2036,6 +2031,10 @@ paths:
       responses:
         '201':
           description: Draw completed
+          headers:
+            Idempotency-Replayed:
+              description: Present as true when returning the original draw.
+              schema: { type: string, const: 'true' }
           content:
             application/json:
               schema:
@@ -2075,7 +2074,7 @@ paths:
           description: Insufficient usable credits. Draws can fail before execution when
             the available balance cannot cover the minimum draw cost. A draw can
             also fail after execution when its final computed cost cannot be
-            deducted.
+            deducted. Xquik saves nothing and charges nothing for that draw.
           content:
             application/json:
               schema: *error-schema
@@ -2083,6 +2082,23 @@ paths:
                 error: 'insufficient_credits'
                 message: 'Insufficient credits'
         '404': *not-found-response
+        '409':
+          description: Idempotency-Key belongs to another draw request, or its first
+            request is still running. Xquik charges nothing for this request.
+          content:
+            application/json:
+              schema: *error-schema
+              examples:
+                conflict:
+                  summary: Another request body
+                  value:
+                    error: idempotency_conflict
+                    message: Idempotency-Key belongs to another request. Use a new key.
+                inProgress:
+                  summary: First request still running
+                  value:
+                    error: idempotency_in_progress
+                    message: Idempotency-Key belongs to a running request. Retry later.
         '424': *x-api-error-response
         '429': *rate-limit-exceeded-response
         '502': *x-api-error-response
@@ -7013,13 +7029,14 @@ components:
         minLength: 1
         maxLength: 255
         pattern: '^[!-~]{1,255}$'
-    ExtractionIdempotencyKey:
+    IdempotencyKey:
       name: Idempotency-Key
       in: header
       required: false
       description: >
-        Generate one unique value for each intended extraction. Reuse it only
-        when retrying the same request. Exact retries return the original job.
+        Generate one unique value for each intended request. Reuse it only when
+        retrying the same request. Exact retries return the original result
+        and charge nothing.
       schema:
         type: string
         minLength: 1
@@ -7550,6 +7567,14 @@ components:
       description: Raw advanced search query appended as-is.
 
   responses:
+    IdempotencyConflict:
+      description: Idempotency-Key was reused with another request.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example:
+            error: idempotency_conflict
+            message: Idempotency-Key belongs to another request. Use a new key.
     CommunityTweetSearchResults:
       description: Tweet search results from the selected X Community
       content: *paginated-tweets-content
@@ -10405,6 +10430,7 @@ components:
                 - guest_wallets_disabled
                 - guest_wallets_unavailable
                 - idempotency_conflict
+                - idempotency_in_progress
                 - idempotency_key_conflict
                 - invalid_community_id
                 - invalid_complete_replies_request
