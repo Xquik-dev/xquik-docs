@@ -17,7 +17,7 @@ fixes or validating contracts. Generated client APIs live in the SDK repositorie
 
 - [Quickstart](https://docs.xquik.com/x-api-quickstart). Make the first authenticated API call.
 - [API reference](https://docs.xquik.com/api-reference). Browse 129 OpenAPI-backed operations.
-- [Guest wallets](https://docs.xquik.com/guides/guest-wallets). Fund 33 accountless GET routes through a confirmed hosted checkout.
+- [Guest wallets](https://docs.xquik.com/guides/guest-wallets). Fund 30 accountless GET routes through a confirmed hosted checkout.
 - [Direct MPP](https://docs.xquik.com/mpp/machine-payments-protocol). Pay per request on 7 fixed-price GET operations.
 - [SDKs](https://docs.xquik.com/sdks). Use TypeScript, Python, Go, Java, Kotlin, C#, Ruby, PHP, CLI, and Terraform clients.
 - [Tweet search export](https://docs.xquik.com/guides/tweet-scraper-csv-export). Export tweets by keyword to CSV, JSON, or XLSX.
@@ -65,7 +65,7 @@ Search tweets with `from:`, `since:`, `until:`, filters, and cursor pagination.
 
 - **REST API.** 129 operations span account, guest wallets, API keys, monitors, events, webhooks, draws, extractions, X data, trends, radar, styles, drafts, compose, X accounts, writes, support, and integrations.
 - **Webhooks.** HMAC SHA-256 signature verification, retry semantics, and payload schemas.
-- **MCP server.** Use 3 Code Mode tools or `docs` plus 118 OpenAPI-native tools. Guest keys receive 33 read operations. Binary downloads use REST.
+- **MCP server.** Use 3 Code Mode tools or `docs` plus 118 OpenAPI-native tools. Guest keys receive 30 read operations. Binary downloads use REST.
 - **OAuth 2.1.** Automatic discovery, PKCE, client registration, claimed service identities, and token refresh.
 - **Guides.** Workflows, error handling, rate limits, billing, trends, extractions, architecture, troubleshooting, types, webhook testing, and framework integrations.
 - **SDKs.** 10 generated clients support TypeScript, Python, Go, Java, Kotlin, C#, Ruby, PHP, CLI, and Terraform.

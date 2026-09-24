@@ -50,7 +50,7 @@ const REQUIRED_RULE_SNIPPETS = [
   "x-api-quickstart.mdx",
   "api-reference/overview.mdx",
   "129 documented REST operations",
-  "33 prepaid paid-read GET routes",
+  "30 prepaid paid-read GET routes",
   "7 fixed-price direct MPP operations",
   "118, 120, 127, or 128 REST operations",
   "119 or 120 full-scope MCP operations",

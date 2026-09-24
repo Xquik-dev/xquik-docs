@@ -55,7 +55,7 @@ import UserResultFilterParams from "/snippets/user-result-filter-params.mdx";
     ```json
     {
       "error": "unauthenticated",
-      "message": "Authentication required."
+      "message": "Authentication required. Provide a valid API key or bearer token."
     }
     ```
 
@@ -115,16 +115,16 @@ Requested result counts are upper bounds for paid authenticated calls. When rema
 
 <Callout icon="coins" color="#5c3327">
 
-**1 credit per result returned** · [All plans](https://xquik.com/#pricing) from $0.00012/credit · Supports [guest paid reads](/guides/guest-wallets)
+**1 credit per result returned** · [All plans](https://xquik.com/#pricing) from $0.00012/credit
 
 </Callout>
 
 This route shows who liked one tweet. It returns the likers your connected X
 account can see. X shows likers only to the post author. Use
 [Connect X account](/api-reference/x-accounts/connect) to add the author's
-account. Guest keys and callers without a connected X account get
-`424 account_required`. When your connected X accounts are busy, the route
-returns `503`. The route is `GET /api/v1/x/tweets/{id}/favoriters`.
+account. Callers without a connected X account get `424 account_required`.
+Guest keys get `403 forbidden`. When your connected X accounts are busy, the
+route returns `503`. The route is `GET /api/v1/x/tweets/{id}/favoriters`.
 
 <Warning>
 
@@ -391,12 +391,6 @@ Full account key. Sessions and OAuth also work.
 
 </ParamField>
 
-<ParamField header="Authorization" type="string">
-
-`Bearer xq_your_guest_key_here` for `paid_reads`.
-
-</ParamField>
-
 ## Response
 
 ### 200 OK
@@ -515,12 +509,15 @@ Opaque cursor for the next page. Empty string when no more results.
 
 ### 401 Unauthenticated
 
-Anonymous requests receive `WWW-Authenticate: Bearer`.
-This is not a Payment challenge.
+```json
+{ "error": "unauthenticated" }
+```
+
+Missing or invalid API key.
 
 ### 402 Payment required
 
-Account users can subscribe or add credits. A guest wallet can open checkout.
+Account users can subscribe or add credits.
 Confirm payment before continuing.
 
 <Note>
