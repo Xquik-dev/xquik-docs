@@ -181,7 +181,6 @@ const PAGINATED_USER_PAGES = [
   "api-reference/x/retweeters.mdx",
   "api-reference/x/favoriters.mdx",
   "api-reference/x/search-users.mdx",
-  "api-reference/x/batch-users.mdx",
 ] as const;
 
 const NOTIFICATION_PAGE = "api-reference/x/notifications.mdx";
@@ -1233,6 +1232,11 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
 
   return [
     ...paginatedTweetContracts,
+    {
+      allowedFields: uniqueSorted([...schemaPropertyNames(spec, "BatchUsers"), ...userProfile]),
+      page: "api-reference/x/batch-users.mdx",
+      requiredFields: paginatedUserRequired,
+    },
     {
       allowedFields: uniqueSorted([
         ...tweetReplies,
