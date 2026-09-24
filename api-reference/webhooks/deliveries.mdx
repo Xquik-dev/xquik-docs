@@ -95,9 +95,10 @@ curl https://xquik.com/api/v1/webhooks/15/deliveries \
     queued_at: .createdAt,
     delivered_at: (.deliveredAt // null),
     action: (
-      if .status == "exhausted" then "page"
-      elif .status == "failed" and .attempts >= 3 then "warn"
-      else "track"
+      if .status == "failed" then "fix_receiver"
+      elif .status == "exhausted" then "resume_webhook"
+      elif .status == "pending" then "wait"
+      else "done"
       end
     )
   }]'
@@ -108,6 +109,12 @@ const response = await fetch("https://xquik.com/api/v1/webhooks/15/deliveries", 
   headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
 });
 const data = await response.json();
+const deliveryActions = {
+  delivered: "done",
+  exhausted: "resume_webhook",
+  failed: "fix_receiver",
+  pending: "wait",
+};
 const deliveryTriage = data.deliveries.map((delivery) => ({
   delivery_id: delivery.id,
   stream_event_id: delivery.streamEventId,
@@ -117,14 +124,9 @@ const deliveryTriage = data.deliveries.map((delivery) => ({
   last_error: delivery.lastError ?? null,
   queued_at: delivery.createdAt,
   delivered_at: delivery.deliveredAt ?? null,
-  action:
-    delivery.status === "exhausted"
-      ? "page"
-      : delivery.status === "failed" && delivery.attempts >= 3
-        ? "warn"
-        : "track",
+  action: deliveryActions[delivery.status],
 }));
-const retryCandidates = deliveryTriage.filter((row) => row.action !== "track");
+const failedDeliveries = deliveryTriage.filter((row) => row.action === "fix_receiver");
 ```
 
 ```python Python
@@ -135,6 +137,12 @@ response = requests.get(
     headers={"x-api-key": "xq_YOUR_KEY_HERE"},
 )
 data = response.json()
+delivery_actions = {
+    "delivered": "done",
+    "exhausted": "resume_webhook",
+    "failed": "fix_receiver",
+    "pending": "wait",
+}
 delivery_triage = [
     {
         "delivery_id": delivery["id"],
@@ -145,16 +153,12 @@ delivery_triage = [
         "last_error": delivery.get("lastError"),
         "queued_at": delivery["createdAt"],
         "delivered_at": delivery.get("deliveredAt"),
-        "action": "page"
-        if delivery["status"] == "exhausted"
-        else "warn"
-        if delivery["status"] == "failed" and delivery["attempts"] >= 3
-        else "track",
+        "action": delivery_actions[delivery["status"]],
     }
     for delivery in data["deliveries"]
 ]
-retry_candidates = [
-    row for row in delivery_triage if row["action"] != "track"
+failed_deliveries = [
+    row for row in delivery_triage if row["action"] == "fix_receiver"
 ]
 ```
 
@@ -195,13 +199,15 @@ type DeliveryTriage struct {
 }
 
 func actionForDelivery(delivery Delivery) string {
-  if delivery.Status == "exhausted" {
-    return "page"
+  switch delivery.Status {
+  case "failed":
+    return "fix_receiver"
+  case "exhausted":
+    return "resume_webhook"
+  case "pending":
+    return "wait"
   }
-  if delivery.Status == "failed" && delivery.Attempts >= 3 {
-    return "warn"
-  }
-  return "track"
+  return "done"
 }
 
 func main() {
@@ -238,13 +244,13 @@ func main() {
     deliveryTriage = append(deliveryTriage, row)
   }
 
-  retryCandidates := make([]DeliveryTriage, 0)
+  failedDeliveries := make([]DeliveryTriage, 0)
   for _, row := range deliveryTriage {
-    if row.Action != "track" {
-      retryCandidates = append(retryCandidates, row)
+    if row.Action == "fix_receiver" {
+      failedDeliveries = append(failedDeliveries, row)
     }
   }
-  _ = retryCandidates
+  _ = failedDeliveries
 }
 ```
 
@@ -283,7 +289,7 @@ Do not depend on a `nextRetryAt` field. The response has none. Triage incidents 
 | Delivery ID                      | `deliveries[].id`             | Use this ID for idempotency and support lookup.                   |
 | Monitor event ID                 | `deliveries[].streamEventId`  | Join the delivery to `GET /events/{id}`.                          |
 | Delivery state                   | `deliveries[].status`         | Handle pending, failed, exhausted, and delivered rows separately. |
-| Attempt count                    | `deliveries[].attempts`       | Identify early, repeated, or terminal failures.                   |
+| Attempt count                    | `deliveries[].attempts`       | Count tries so far. There is no attempt limit.                    |
 | Receiver status                  | `deliveries[].lastStatusCode` | Separate HTTP failures from unreachable receivers.                |
 | Failure reason                   | `deliveries[].lastError`      | Show the latest receiver error to operators.                      |
 | Delivery timing                  | `createdAt` and `deliveredAt` | Measure queue time and recovery time.                             |
@@ -311,8 +317,8 @@ Store these fields for support and retry triage:
   </Card>
   <Card title="Attempt count" icon="repeat-2">
 
-    Use `attempts` to decide whether a failed delivery is early, repeated, or at
-    the retry cap.
+    Use `attempts` to see how often Xquik tried a delivery. Retries continue
+    until your endpoint returns `2xx`.
 
   </Card>
   <Card title="Receiver result" icon="activity">
@@ -337,8 +343,8 @@ Store these fields for support and retry triage:
 ## Incident response handoff
 
 Use one row per delivery when the receiver owner must act. Ignore
-`delivered` rows, track `pending`, warn on repeated
-`failed`, and page on `exhausted`.
+`delivered` rows, wait on `pending`, and act on `failed`. An `exhausted` row
+means the webhook was paused or deleted.
 
 ```json
 {
@@ -346,14 +352,13 @@ Use one row per delivery when the receiver owner must act. Ignore
   "webhook_id": "15",
   "delivery_id": "503",
   "stream_event_id": "9003",
-  "status": "exhausted",
-  "attempts": 1,
-  "receiver_status": 410,
-  "last_error": "HTTP 410",
-  "terminal_reason": "receiver_returned_410",
+  "status": "failed",
+  "attempts": 4,
+  "receiver_status": 503,
+  "last_error": "HTTP 503",
   "event_join": "GET /api/v1/events/9003",
   "verification_check": "POST /api/v1/webhooks/15/test",
-  "action": "page_receiver_owner",
+  "action": "fix_receiver",
   "handoff_state": "fix_receiver_then_send_signed_test"
 }
 ```
@@ -367,10 +372,10 @@ Use one row per delivery when the receiver owner must act. Ignore
     reachability failures.
 
   </Card>
-  <Card title="Terminal delivery" icon="circle-x">
+  <Card title="No final failure" icon="rotate-ccw">
 
-    Page when `status` is `exhausted`. This means retryable failures reached
-    the 10-attempt cap, or the receiver returned `410 Gone`.
+    Xquik retries every `failed` delivery until your endpoint returns `2xx`.
+    No delivery ends early, even after `410 Gone`.
 
   </Card>
   <Card title="Event join" icon="link">
@@ -387,15 +392,15 @@ Use one row per delivery when the receiver owner must act. Ignore
   </Card>
 </CardGroup>
 
-Failures retry up to 10 attempts with exponential backoff, starting at 1 second and capped at 60 seconds. A `410 Gone` response marks the delivery `exhausted` immediately. Other non-`2xx` responses and network failures stay `failed` until Xquik delivers them or they exhaust all attempts.
+Xquik retries failed deliveries with no attempt limit. While your endpoint fails, Xquik retries 1 waiting delivery at a time. It checks the endpoint at least every 15 minutes. New deliveries wait as `pending`. Return `2xx` for a delivery you will never accept. See the [retry policy](/webhooks/overview#retry-policy).
 
-For incident response, page on `exhausted`, warn on repeated `failed`, and ignore `delivered`. Fix the receiving endpoint, then use [`POST /webhooks/{id}/test`](/api-reference/webhooks/test) to confirm it accepts signed requests before waiting for the next production event.
+Fix the receiving endpoint first. Use [`POST /webhooks/{id}/test`](/api-reference/webhooks/test) to confirm it accepts signed requests. Then call [Resume Webhook](/api-reference/webhooks/resume) to start sending waiting and rejected deliveries at once. Without it, a rejected delivery can wait up to 7 days.
 
 ### Receiver backfill handoff
 
-This endpoint returns the latest 100 delivery rows for one webhook. Use those
-rows to identify receiver failures, then use stored event pages to rebuild your
-own queue after you fix the receiver.
+This endpoint returns the latest 100 delivery rows for 1 webhook. Xquik
+resends failed deliveries on its own. Use stored event pages only to rebuild
+work your receiver lost.
 
 ```json
 {
@@ -406,7 +411,7 @@ own queue after you fix the receiver.
   "join_key": "delivery.streamEventId == event.id",
   "store": ["deliveryId", "streamEventId", "status", "attempts", "eventId", "nextCursor"],
   "stop_when": "hasMore is false",
-  "handoff_state": "receiver_fixed_backfill_events_then_resume_webhooks"
+  "handoff_state": "receiver_fixed_backfill_lost_events"
 }
 ```
 
@@ -442,7 +447,7 @@ List of delivery attempts, most recent first. Returns up to 100 deliveries.
     </ResponseField>
     <ResponseField name="attempts" type="number">
 
-      Total number of delivery attempts made.
+      Total number of delivery attempts made. There is no attempt limit.
 
     </ResponseField>
     <ResponseField name="lastStatusCode" type="number">
@@ -492,10 +497,10 @@ List of delivery attempts, most recent first. Returns up to 100 deliveries.
     {
       "id": "503",
       "streamEventId": "9003",
-      "status": "exhausted",
-      "attempts": 10,
-      "lastStatusCode": 503,
-      "lastError": "HTTP 503",
+      "status": "failed",
+      "attempts": 12,
+      "lastStatusCode": 410,
+      "lastError": "HTTP 410",
       "createdAt": "2026-02-24T14:30:00.000Z"
     },
     {
@@ -551,7 +556,8 @@ Too many requests. Wait for the `Retry-After` header before retrying.
 
   <Card title="pending" icon="clock">
 
-    The delivery waits in the queue for its next attempt.
+    Xquik has not sent this delivery yet. It may wait while your endpoint is
+    failing.
 
   </Card>
   <Card title="delivered" icon="circle-check">
@@ -561,21 +567,20 @@ Too many requests. Wait for the `Retry-After` header before retrying.
   </Card>
   <Card title="failed" icon="triangle-alert">
 
-    The most recent attempt failed because the endpoint returned non-`2xx` or
-    the network request failed. Xquik retries with exponential backoff.
+    The last attempt failed because the endpoint returned non-`2xx` or the
+    network failed. Xquik retries with exponential backoff until your endpoint
+    returns `2xx`.
 
   </Card>
-  <Card title="exhausted" icon="circle-x">
+  <Card title="exhausted" icon="pause">
 
-    Xquik used every retry attempt and will not retry this delivery.
-    Check the receiver endpoint, then use
-    [Resume Webhook](/api-reference/webhooks/resume) if the webhook needs
-    attention before new deliveries continue.
+    You paused or deleted the webhook while this delivery waited. Resume
+    within 30 days of the event to receive it.
 
   </Card>
 </CardGroup>
 
-Xquik retries deliveries with exponential backoff. The wait grows after each failed attempt. After the last retry, the status changes to `exhausted`. Xquik makes no further attempts.
+Xquik retries deliveries until your endpoint returns `2xx`. Retries never stop on their own. Pausing or deleting the webhook stops them. Within 1 day, its waiting deliveries show `exhausted`. Xquik deletes them 30 days after their event.
 
 <Note>
 

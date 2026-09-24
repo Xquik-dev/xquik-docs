@@ -115,6 +115,7 @@ describe("save custom tweet style documentation", (): void => {
     const constants = readProductFile("lib/styles/constants.ts");
     const route = readProductFile("app/api/v1/styles/[id]/route.ts");
     const validator = readProductFile("lib/styles/validate-label.ts");
+    const columns = readProductFile("lib/styles/columns.ts");
     const putRoute =
       route === undefined ? undefined : route.slice(route.indexOf("export async function PUT"));
 
@@ -131,8 +132,11 @@ describe("save custom tweet style documentation", (): void => {
           putRoute.includes("styleIdMatchesLabel(id, label)")),
       replacementRemainsAccountScoped:
         putRoute === undefined ||
-        (putRoute.includes("target: [tweetStyleCache.userId, tweetStyleCache.xUsername]") &&
-          putRoute.includes(".onConflictDoUpdate({")),
+        (putRoute.includes("target: STYLE_CACHE_UPSERT_TARGET") &&
+          putRoute.includes(".onConflictDoUpdate({") &&
+          columns?.includes(
+            "STYLE_CACHE_UPSERT_TARGET = [\n  tweetStyleCache.userId,\n  tweetStyleCache.xUsername,\n];",
+          ) === true),
       sampleIdsRemainLocal: putRoute === undefined || putRoute.includes("id: String(index)"),
       sampleLimitRemains100:
         constants === undefined || constants.includes("MAX_STYLE_TWEETS = 100"),

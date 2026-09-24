@@ -1,7 +1,7 @@
 ---
 title: "Resume Twitter webhook deliveries & retry events"
 sidebarTitle: "Resume webhook"
-description: "Test and resume a paused webhook after delivery failures. Xquik sends a signed test and reactivates the webhook only after a 2xx response. The call is free."
+description: "Resume a webhook and start sending waiting deliveries at once. Xquik sends a signed test first and resumes only after a 2xx response. The call is free."
 api: "POST /webhooks/{id}/resume"
 keywords: ["webhook", "resume", "delivery failure", "needs attention", "test webhook"]
 ---
@@ -240,6 +240,13 @@ Your API key. This endpoint also accepts session cookie authentication.
 Xquik sends a signed `webhook.test` request to the webhook URL. If your receiver
 returns a `2xx` status, Xquik reactivates the webhook. It resets `consecutiveFailures` to `0` and returns the updated webhook object.
 
+Xquik then starts sending waiting deliveries at once. This includes failed
+deliveries and ones that waited when you paused the webhook. A paused webhook
+keeps them for 30 days after each event. Resume within 30 days to receive them.
+
+Events that happen during a pause may never arrive. To catch up, page through
+[List Events](/api-reference/events/list).
+
 If the signed test fails, Xquik returns `400` with `success: false`,
 `statusCode`, and `error`. Xquik does not reactivate the webhook.
 
@@ -308,7 +315,7 @@ Updated webhook configuration.
     </ResponseField>
     <ResponseField name="failureHardCap" type="number">
 
-      Failure count where the webhook needs attention before resuming.
+      Failure count that sets `needs_attention`. Delivery continues past it.
 
     </ResponseField>
     <ResponseField name="createdAt" type="string">
@@ -402,15 +409,17 @@ Too many requests. Wait for the `Retry-After` header before retrying.
 
 ## Recovery handoff
 
-Use this endpoint after fixing a receiver that returned repeated non-`2xx`
-responses, became unreachable, or reached `deliveryStatus: "needs_attention"`.
+Use this endpoint to reactivate a webhook you paused. Also use it after you fix
+a failing receiver. Xquik sends a signed test first, then starts sending
+waiting deliveries at once.
 
 <CardGroup cols={2}>
 
   <Card title="Needs attention" icon="triangle-alert">
 
-    `deliveryStatus: "needs_attention"` means the receiver has reached the
-    failure cap. Fix the receiver before resuming.
+    `deliveryStatus: "needs_attention"` means 200 failed checks in a row. Each
+    check retries 1 real waiting delivery. Delivery continues. After you fix
+    the receiver, call Resume to start sending at once.
 
   </Card>
 

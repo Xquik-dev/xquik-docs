@@ -348,10 +348,10 @@ Only the [Test Webhook](/api-reference/webhooks/test) endpoint generates `webhoo
 
 <ParamField body="isActive" type="boolean">
 
-Set to `false` to pause deliveries. Set to `true` to reactivate a paused
-webhook and reset `consecutiveFailures`. When `deliveryStatus` is
-`needs_attention`, use [Resume Webhook](/api-reference/webhooks/resume) so the
-receiver must pass a signed test first.
+Set to `false` to pause deliveries. Set to `true` to turn it on and start
+sending waiting deliveries at once. Either value resets `consecutiveFailures`
+to `0`. To require a signed test first, use
+[Resume Webhook](/api-reference/webhooks/resume).
 
 </ParamField>
 
@@ -391,7 +391,7 @@ Consecutive delivery failures recorded for this webhook.
 </ResponseField>
 <ResponseField name="failureHardCap" type="number">
 
-Failure count where the webhook needs attention before resuming.
+Failure count that sets `needs_attention`. Delivery continues past it.
 
 </ResponseField>
 <ResponseField name="createdAt" type="string">
@@ -487,14 +487,17 @@ or resumes webhook delivery without creating a new endpoint.
   <Card title="Pause delivery" icon="toggle-left">
 
     `isActive: false` stops future deliveries. Existing stored events and
-    delivery records remain available.
+    delivery records remain available. Xquik keeps waiting deliveries for 30
+    days after each event.
 
   </Card>
 
   <Card title="Resume delivery" icon="toggle-right">
 
-    `isActive: true` resumes delivery for matching future monitor events. Test
-    the receiver after resuming. Use
+    `isActive: true` resumes delivery for matching future monitor events. It
+    also starts sending waiting deliveries at once. Events that happen during
+    a pause may never arrive. To catch up, page through
+    [List Events](/api-reference/events/list). Use
     [Resume Webhook](/api-reference/webhooks/resume) when the receiver must pass a
     signed test first.
 

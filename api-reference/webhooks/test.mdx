@@ -214,9 +214,11 @@ monitor deliveries need the same checks.
 
 You can test active, paused, or needs-attention webhooks. This endpoint reports
 whether the receiver accepted the signed test request. It does not change
-`isActive`, `deliveryStatus`, or `consecutiveFailures`. Use
-[Resume Webhook](/api-reference/webhooks/resume) when a fixed receiver should
-pass a signed test before delivery resumes.
+`isActive`, `deliveryStatus`, or `consecutiveFailures`. Xquik keeps retrying
+an active webhook. After a fix, call
+[Resume Webhook](/api-reference/webhooks/resume). It runs the same test, then
+starts sending waiting and rejected deliveries at once. It also reactivates a
+paused webhook.
 
 The test endpoint does not return or rotate the signing secret. Keep using the
 secret returned by [Create Webhook](/api-reference/webhooks/create) for
@@ -350,7 +352,8 @@ after changing webhook code, secrets, firewall rules, or queue routing.
 
     Xquik still sends tests to paused and needs-attention webhooks. A passing test
     proves reachability only. Use [Resume Webhook](/api-reference/webhooks/resume)
-    when delivery should resume after the test.
+    to reactivate a paused webhook. It also starts sending waiting deliveries at
+    once.
 
   </Card>
 
@@ -380,7 +383,7 @@ after changing webhook code, secrets, firewall rules, or queue routing.
 
   <Card title="Event join" icon="link">
 
-    For failed or exhausted production deliveries, use delivery `streamEventId`
+    For failed production deliveries, use delivery `streamEventId`
     as the `{id}` for [Get Event](/api-reference/events/get). Store the event
     `monitorId`, `monitorType`, `type`, `occurredAt`, and `data` with the
     receiver incident.
