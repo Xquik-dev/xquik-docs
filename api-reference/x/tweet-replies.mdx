@@ -176,9 +176,9 @@ Get replies by tweet ID for analysis, support, moderation, giveaways, and agents
 <Warning>
 
 Reply visibility depends on X. Complete mode returns `424
-  replies_incomplete` below 80% direct-reply coverage. Inspect the returned
-diagnostic before retrying. A `sinceTime` or `untilTime` window read to its end
-returns 200.
+  replies_incomplete` below 80% direct-reply coverage. A `sinceTime` or
+`untilTime` window read to its end returns 200. Retry only while
+`diagnostic.sourcesEnded` is `false`.
 Never treat missing rows as proof that a user did not reply.
 
 </Warning>
@@ -363,7 +363,7 @@ downloads after completion.
 
 Bound moderation, campaign, or giveaway periods with `sinceTime` and `untilTime`, in Unix seconds. Direct replies use the default paid page size. Use `reply_extractor` and `resultsLimit` to cap exports.
 
-Direct replies cost 1 credit per tweet returned. Low balances can reduce standard pages. Zero affordable results return `402 insufficient_credits`. Retry `429` with `Retry-After`. Retry `502` after a short backoff. Retry `503` after its stated delay.
+Direct replies cost 1 credit per tweet returned. Retry `429` with `Retry-After`. Retry `502` after a short backoff. Retry `503` after its stated delay.
 
 ## Build a reply moderation table
 
@@ -621,6 +621,7 @@ Complete-mode coverage evidence. Omitted from standard responses.
 
     </ResponseField>
     <ResponseField name="responseTruncated" type="boolean">Whether the requested limit truncated safe results.</ResponseField>
+    <ResponseField name="sourcesEnded" type="boolean">Every source ended. A retry returns the same rows.</ResponseField>
 
   </Expandable>
 </ResponseField>
@@ -649,7 +650,7 @@ You exceeded your tier rate limit. Wait for the `Retry-After` header before retr
 
 ### 424 Replies incomplete
 
-Collected rows & diagnostics remain available. Check `diagnostic.complete` & `recommendedFallback` before retrying.
+Collected rows & diagnostics remain available. `recommendedFallback` says what to do next.
 
 ### 503 Complete reply extraction busy
 
