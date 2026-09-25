@@ -4212,7 +4212,7 @@ const REQUIRED_GET_TWEET_API_HANDOFF_SNIPPETS = [
   "tweet lookup API",
   "single tweet API",
   "tweet info API",
-  "Pass a 15 to 20 digit numeric tweet ID in the path.",
+  "Pass a numeric tweet ID of 1 to 20 digits in the path.",
   "extract the final status ID first",
   "call [`Search tweets`](/api-reference/x/search-tweets) with the URL in `q`",
   "omit `cursor`, `sinceTime`, and `untilTime`",
