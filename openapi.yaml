@@ -3254,9 +3254,13 @@ paths:
         - $ref: '#/components/parameters/UserFilterBioContains'
         - $ref: '#/components/parameters/UserFilterLocationContains'
         - $ref: '#/components/parameters/UserFilterUsernameContains'
+        - $ref: '#/components/parameters/EnrichProfiles'
       responses:
         '200':
           description: User search results
+          headers: &profile-enrichment-headers
+            X-Xquik-Profile-Enrichment:
+              $ref: '#/components/headers/ProfileEnrichment'
           content: &paginated-users-content
             application/json:
               schema:
@@ -6622,9 +6626,11 @@ paths:
         - $ref: '#/components/parameters/UserFilterBioContains'
         - $ref: '#/components/parameters/UserFilterLocationContains'
         - $ref: '#/components/parameters/UserFilterUsernameContains'
+        - $ref: '#/components/parameters/EnrichProfiles'
       responses:
         '200':
           description: List of retweeters
+          headers: *profile-enrichment-headers
           content: *paginated-users-content
         '400': *invalid-input-response
         '401': *anonymous-guest-authentication-response
@@ -6735,6 +6741,7 @@ paths:
         - $ref: '#/components/parameters/UserFilterBioContains'
         - $ref: '#/components/parameters/UserFilterLocationContains'
         - $ref: '#/components/parameters/UserFilterUsernameContains'
+        - $ref: '#/components/parameters/EnrichProfiles'
         - name: limit
           in: query
           schema: *bounded-result-limit
@@ -6742,6 +6749,7 @@ paths:
       responses:
         '200':
           description: List of user followers
+          headers: *profile-enrichment-headers
           content: *user-list-content
         '400': *invalid-input-response
         '401': *anonymous-guest-authentication-response
@@ -6795,6 +6803,7 @@ paths:
         - $ref: '#/components/parameters/UserFilterBioContains'
         - $ref: '#/components/parameters/UserFilterLocationContains'
         - $ref: '#/components/parameters/UserFilterUsernameContains'
+        - $ref: '#/components/parameters/EnrichProfiles'
         - name: limit
           in: query
           schema: *bounded-result-limit
@@ -6804,6 +6813,7 @@ paths:
       responses:
         '200':
           description: List of following
+          headers: *profile-enrichment-headers
           content: *user-list-content
         '400': *invalid-input-response
         '401': *anonymous-guest-authentication-response
@@ -6936,6 +6946,7 @@ paths:
         - $ref: '#/components/parameters/UserFilterBioContains'
         - $ref: '#/components/parameters/UserFilterLocationContains'
         - $ref: '#/components/parameters/UserFilterUsernameContains'
+        - $ref: '#/components/parameters/EnrichProfiles'
         - name: limit
           in: query
           schema: *bounded-result-limit
@@ -6944,6 +6955,7 @@ paths:
       responses:
         '200':
           description: List of verified followers
+          headers: *profile-enrichment-headers
           content: *user-list-content
         '400': *invalid-input-response
         '401': *anonymous-guest-authentication-response
@@ -7243,6 +7255,13 @@ components:
       in: query
       schema: { type: string }
       description: Match the verification type exactly, ignoring case.
+    EnrichProfiles:
+      name: enrichProfiles
+      in: query
+      schema: { type: boolean, default: false }
+      description: >
+        Add each row's full profile, as GET /x/users/{id} returns it. Pages take
+        several seconds longer.
     UserFilterHasWebsite:
       name: hasWebsite
       in: query
@@ -7574,6 +7593,16 @@ components:
       schema:
         type: string
       description: Raw advanced search query appended as-is.
+
+  headers:
+    ProfileEnrichment:
+      description: >
+        Sent with enrichProfiles=true. How many returned rows carry the full
+        profile. Rows without it keep their list fields.
+      schema:
+        type: string
+        pattern: '^enriched=\d+; requested=\d+$'
+        example: 'enriched=180; requested=200'
 
   responses:
     IdempotencyConflict:
@@ -10732,6 +10761,13 @@ components:
           type: boolean
           default: true
           description: Add source target metadata to each result.
+        enrichProfiles:
+          type: boolean
+          default: false
+          description: >
+            Add each user's full profile to follower_explorer,
+            following_explorer, verified_follower_explorer, people_search &
+            repost_extractor rows. Jobs take longer.
         collectionStrategy:
           type: string
           enum: [auto, complete, direct, search, thread]
