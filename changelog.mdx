@@ -23,12 +23,32 @@ Search tweets, API keys, signed webhooks, user profiles, REST, MCP, authenticati
 - Pass `next_cursor` back unchanged
 - An edited cursor or one from another list returns `400 invalid_cursor`
 
+- Bookmark folder reads on accounts without X Premium return `424 bookmark_folders_unavailable`
+- This covers `GET /x/bookmarks/folders` & `GET /x/bookmarks?folderId=...`
+- They used to return an empty list. The message says to upgrade on X or read all bookmarks
+- These answers cost nothing
+
+- Search Tweets returns `424 search_unavailable` at once for `filter:vine`, `filter:consumer_video`, `filter:pro_video`, `filter:news` & `retweets_of:`
+- X no longer searches these. `news=true` gets the same answer
+- The message says what to change, such as the term to remove
+- A query X refuses as a whole also gets `424 search_unavailable`, such as one over 512 characters
+- These answers cost nothing
+
+- Follower, following, verified follower, retweeter & user search pages take `enrichProfiles=true`
+- Each row then carries the full profile, with fields such as `accountBasedIn`
+- The `x-xquik-profile-enrichment` header counts the rows that carry it
+- Extractions of these rows take `enrichProfiles` & add the profile at `enrichmentData.profile`
+- The price per row stays the same
+
 - Complete-mode replies return 200 after reading a whole `sinceTime` or `untilTime` window
 - Replies outside the window no longer turn that answer into `424 replies_incomplete`
 - Complete-mode replies add `diagnostic.sourcesEnded`
 - `true` means every source ended. X hides the other replies
 - A `424 replies_incomplete` with `sourcesEnded: true` returns the same rows on retry
 - Its message says X hides the other replies instead of asking for a retry
+- Complete-mode replies find replies from new & small accounts more reliably
+- `diagnostic.strategiesAttempted[].stopReason` adds `partial_view` for a view that showed only part of a thread
+- Such a view keeps `sourcesEnded` false until the read holds every reply the post counts
 - `withinTime` now filters user Tweets, replies, media, likes & mentions
 - It also filters Tweet replies & quotes
 - Posts outside the window no longer come back or cost credits
@@ -68,31 +88,21 @@ Search tweets, API keys, signed webhooks, user profiles, REST, MCP, authenticati
 - Guest keys get `403 forbidden` on these 3 routes
 - Guest wallets now prepay 30 GET routes
 
-- Small conversation searches use automatic pagination recovery by default
+- Small conversation searches return more complete results by default
 
-- Reply Scraper 1.2.65 keeps incomplete sources eligible for fallback recovery
-- Reply source exhaustion requires confirmed endings without missing data or errors
+- Reply Scraper 1.2.65 reports completion more accurately
+- Reply reads return more replies within your requested limit
+- Reply Scraper 1.2.64 recovers replies after a stall & keeps collected rows
 
-- Reply recovery follows chained continuations & remaining pages within requested unique-result limits
-
-- Reply recovery pursues requested, filter-matching results beyond the 80% diagnostic threshold
-
-- Reply Scraper 1.2.64 recovers replies after automatic conversation search stalls
-- Reply recovery keeps collected rows & reports incomplete coverage
-
-- Dated author searches support recovery with `include:nativeretweets`
+- Dated author searches with `include:nativeretweets` or `-filter:nativeretweets` return more complete results
 
 - Searches requiring protected authors return an access error before collecting results
 
-- Dated author searches support recovery with `-filter:nativeretweets`
-- Search recovery keeps quote and manual RT distinctions between retweet exclusions
+- Tweet Scraper 1.12.99 returns more Latest search results
 
-- Tweet Scraper 1.12.99 continues Latest searches through empty recovery pages
-- Tweet Scraper recognizes terminal pages after consecutive empty responses
-
-- Multi-author Tweet searches retain recovery while traversing previously returned results
-- Pagination docs now reflect available cursor retries and first-page limitations
-- Tweet search keeps exact ID boundaries during pagination and recovery
+- Multi-author Tweet searches return more complete results
+- Pagination docs now explain cursor retries & first-page limits
+- Tweet search keeps exact ID boundaries across pages
 - `sinceId` excludes its ID. `maxId` includes its ID
 
 - MCP reports missing response-field reads without changing returned values
@@ -141,13 +151,13 @@ Search tweets, API keys, signed webhooks, user profiles, REST, MCP, authenticati
 - Every response after an accepted MPP payment includes `Payment-Receipt`, including non-2xx responses
 - The 26 non-MPP anonymous paid reads return `401` with `WWW-Authenticate: Bearer` and a guest wallet action
 - The 7 direct MPP reads return `402` with `WWW-Authenticate: Payment` and the same guest action
-- Reddit Radar now refreshes rich server-rendered items every 30 minutes and no longer creates reduced RSS fallback items
+- Reddit Radar now lists only items with full details
 - Startup growth Radar items now add founder, company, acquisition, margin, and revenue-efficiency fields when available
 - A successful Compose score now points to `GET /x/accounts` and `POST /x/tweets`, while retaining the one-click `intentUrl`
 
 **Removed**
 
-- Obsolete public `proxy_country` and `loginCountry` account fields. Xquik does not support custom, dedicated, or fixed per-account proxy configuration.
+- Obsolete public `proxy_country` and `loginCountry` account fields
 
 </Update>
 
