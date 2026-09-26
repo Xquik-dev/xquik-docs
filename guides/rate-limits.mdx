@@ -27,7 +27,7 @@ Separate read, write, and delete buckets reset independently.
 
 <Note>
 
-**Standard limits.** 300 reads per second, 120 writes per minute, and 60
+**Standard limits.** 500 reads per second, 120 writes per minute, and 60
 deletes per minute. After `429`, wait for `Retry-After` before retrying.
 
 </Note>
@@ -36,7 +36,7 @@ deletes per minute. After `429`, wait for `Retry-After` before retrying.
 
 | Rate-limit signal              | Meaning                                                | Client action                                                                        |
 | ------------------------------ | ------------------------------------------------------ | ------------------------------------------------------------------------------------ |
-| 300 reads per second           | `GET`, `HEAD`, and `OPTIONS` share one account bucket. | Pace tweet, profile, follower, reply, and event reads below 300 requests per second. |
+| 500 reads per second           | `GET`, `HEAD`, and `OPTIONS` share one account bucket. | Pace tweet, profile, follower, reply, and event reads below 500 requests per second. |
 | 120 writes per minute          | `POST`, `PUT`, and `PATCH` share one account bucket.   | Queue tweets, monitors, webhooks, and profile changes below 120 requests per minute. |
 | 60 deletes per minute          | Every `DELETE` request uses the delete bucket.         | Serialize cleanup work and keep each deleted resource ID.                            |
 | `429 Too Many Requests`        | An Xquik tier or action limit blocked the request.     | Read the error code before choosing a retry delay.                                   |
@@ -47,7 +47,7 @@ deletes per minute. After `429`, wait for `Retry-After` before retrying.
 
   <Card title="Read bucket" icon="database">
 
-    `GET`, `HEAD`, and `OPTIONS` allow 300 requests per 1 second.
+    `GET`, `HEAD`, and `OPTIONS` allow 500 requests per 1 second.
 
   </Card>
   <Card title="Write bucket" icon="pen-line">
@@ -110,11 +110,11 @@ The first counted request starts that bucket's window.
 </Steps>
 
 ```text
-Read bucket: 300 requests per 1 second
+Read bucket: 500 requests per 1 second
 
 0.000s  First GET starts the window
-0.600s  Request 300 succeeds
-0.700s  Request 301 returns 429 with Retry-After: 1
+0.600s  Request 500 succeeds
+0.700s  Request 501 returns 429 with Retry-After: 1
 1.000s  The bucket resets
 1.001s  The next GET succeeds
 ```
@@ -332,8 +332,8 @@ This Bottleneck configuration reserves 10% read headroom.
 import Bottleneck from "bottleneck";
 
 const readLimiter = new Bottleneck({
-  reservoir: 270,
-  reservoirRefreshAmount: 270,
+  reservoir: 450,
+  reservoirRefreshAmount: 450,
   reservoirRefreshInterval: 1_000,
   maxConcurrent: 5,
 });
@@ -454,11 +454,11 @@ Xquik read windows last 1 second. Write and delete windows last 60 seconds.
 Connection safety windows last 15 minutes. Login cooldowns use dynamic waits.
 Official X endpoint windows differ from these Xquik limits.
 
-### Why am I rate limited below 300 reads?
+### Why am I rate limited below 500 reads?
 
 All standard keys for one Xquik account share the read bucket.
 Another worker, function, or server may consume the remaining requests.
-Centralize scheduling and reserve headroom below 300 requests per second.
+Centralize scheduling and reserve headroom below 500 requests per second.
 
 ### Do multiple API keys increase my rate limit?
 

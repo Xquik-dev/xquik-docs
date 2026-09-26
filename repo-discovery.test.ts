@@ -1604,7 +1604,7 @@ const REQUIRED_LLMS_SNIPPETS = [
 
 const REQUIRED_SKILL_RATE_LIMIT_SNIPPETS = [
   "### Rate limits",
-  "- **Read.** `GET`, `HEAD`, and `OPTIONS` share a 300 per 1s user bucket.",
+  "- **Read.** `GET`, `HEAD`, and `OPTIONS` share a 500 per 1s user bucket.",
   "- **Write.** `POST`, `PUT`, and `PATCH` share a 120 per 60s user bucket.",
   "- **Delete.** `DELETE` requests use a 60 per 60s user bucket.",
   "Exceeding limits returns `429 Too Many Requests` with a `Retry-After` header.",
@@ -1621,11 +1621,11 @@ const PUBLIC_READ_RATE_LIMIT_EXPECTATIONS = [
   {
     file: "guides/rate-limits.mdx",
     required: [
-      "**Standard limits.** 300 reads per second, 120 writes per minute, and 60",
-      "`GET`, `HEAD`, and `OPTIONS` allow 300 requests per 1 second.",
-      "Read bucket: 300 requests per 1 second",
-      "reservoir: 270,",
-      "reservoirRefreshAmount: 270,",
+      "**Standard limits.** 500 reads per second, 120 writes per minute, and 60",
+      "`GET`, `HEAD`, and `OPTIONS` allow 500 requests per 1 second.",
+      "Read bucket: 500 requests per 1 second",
+      "reservoir: 450,",
+      "reservoirRefreshAmount: 450,",
       "reservoirRefreshInterval: 1_000,",
       "This Bottleneck configuration reserves 10% read headroom.",
     ],
@@ -1646,25 +1646,25 @@ const PUBLIC_READ_RATE_LIMIT_EXPECTATIONS = [
     file: "api-reference/overview.mdx",
     required: [
       "The read bucket covers `GET`, `HEAD`, and `OPTIONS`.",
-      "It allows 300 calls each second.",
+      "It allows 500 calls each second.",
       "Exceeding a bucket returns `429 rate_limit_exceeded`",
     ],
     forbidden: ["Read calls are 60 per 1s", "share a 60 per 1s user bucket"],
   },
   {
     file: "x-api-quickstart.mdx",
-    required: ["300 reads per 1 second, 120 writes per 60 seconds, and 60 deletes per 60 seconds"],
+    required: ["500 reads per 1 second, 120 writes per 60 seconds, and 60 deletes per 60 seconds"],
     forbidden: ["60 reads/1s, 30 writes/60s, 15 deletes/60s"],
   },
   {
     file: "guides/prefect.mdx",
-    required: ["Read endpoints share a 300 per 1s user bucket."],
+    required: ["Read endpoints share a 500 per 1s user bucket."],
     forbidden: ["Read endpoints share a 60 per 1s user bucket."],
   },
   {
     file: "guides/troubleshooting.mdx",
     required: [
-      "`GET`, `HEAD`, and `OPTIONS` share 300 requests per 1 second.",
+      "`GET`, `HEAD`, and `OPTIONS` share 500 requests per 1 second.",
       "`POST`, `PUT`, and `PATCH` share 120 requests per 60 seconds.",
       "`DELETE` allows 60 requests per 60 seconds.",
     ],
@@ -1677,7 +1677,7 @@ const PUBLIC_READ_RATE_LIMIT_EXPECTATIONS = [
   {
     file: "guides/architecture.mdx",
     required: [
-      "`GET`, `HEAD`, and `OPTIONS` share a standard user limit of 300 requests per",
+      "`GET`, `HEAD`, and `OPTIONS` share a standard user limit of 500 requests per",
       "`POST`, `PUT`, and `PATCH` share a standard user limit of 120 requests per",
       "`DELETE` requests have a limit of 60 requests per 60 seconds.",
     ],
@@ -1689,7 +1689,7 @@ const PUBLIC_READ_RATE_LIMIT_EXPECTATIONS = [
   },
   {
     file: "skill.md",
-    required: ["- **Read.** `GET`, `HEAD`, and `OPTIONS` share a 300 per 1s user bucket."],
+    required: ["- **Read.** `GET`, `HEAD`, and `OPTIONS` share a 500 per 1s user bucket."],
     forbidden: ["- **Read**: `GET`, `HEAD`, and `OPTIONS` share a 60 per 1s user bucket."],
   },
   {
@@ -7952,7 +7952,7 @@ const REQUIRED_ARCHITECTURE_DATA_ISOLATION_SNIPPETS = [
 
 const REQUIRED_ARCHITECTURE_RATE_LIMIT_SNIPPETS = [
   '<Card title="Read bucket" icon="database">',
-  "`GET`, `HEAD`, and `OPTIONS` share a standard user limit of 300 requests per",
+  "`GET`, `HEAD`, and `OPTIONS` share a standard user limit of 500 requests per",
   '<Card title="Write bucket" icon="pen-line">',
   "`POST`, `PUT`, and `PATCH` share a standard user limit of 120 requests per",
   '<Card title="Delete bucket" icon="circle-x">',
@@ -10370,11 +10370,11 @@ const REQUIRED_PREFECT_GUIDE_SNIPPETS = [
   '<Card title="429 Rate limit" icon="timer">',
   '<Card title="502 Retrieval failure" icon="triangle-alert">',
   "## Control concurrency and rate limits",
-  "prefect gcl create xquik-read-rate --limit 300 --slot-decay-per-second 300",
+  "prefect gcl create xquik-read-rate --limit 500 --slot-decay-per-second 500",
   'await rate_limit("xquik-read-rate", occupy=1, strict=True)',
   "Await this helper before `search_tweets`, `get_tweet`, and `search_users`.",
   "Also await it before `get_user`, `get_user_tweets`, and `get_trends`.",
-  "Read endpoints share a 300 per 1s user bucket.",
+  "Read endpoints share a 500 per 1s user bucket.",
   "Concurrency limits only cap active work.",
   "They do not set request frequency.",
   "## Build profile and timeline workflows",
