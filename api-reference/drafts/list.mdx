@@ -1,7 +1,7 @@
 ---
 title: "List Xquik tweet drafts with cursor-based pagination"
 sidebarTitle: "List drafts"
-description: "List Xquik tweet drafts with exact text, optional topic and goal, timestamps, stable cursor pagination, authentication, and clear 401 or 429 recovery."
+description: "List Xquik tweet drafts with exact text, optional topic and goal, timestamps, stable cursor pagination, authentication, and clear 400, 401, or 429 recovery."
 api: "GET /drafts"
 keywords:
   [
@@ -27,6 +27,17 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
     {
       "drafts": [],
       "hasMore": false
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="400" id="response-drafts-list-400">
+
+    ```json
+    {
+      "error": "invalid_input",
+      "message": "Invalid input. Check the request body."
     }
     ```
 
@@ -265,6 +276,7 @@ cursors identify different resources.
 | Status | Error                 | Cause                                | Fix                                       |
 | ------ | --------------------- | ------------------------------------ | ----------------------------------------- |
 | `200`  | Draft page            | The authenticated request succeeded  | Process `drafts`, then inspect `hasMore`. |
+| `400`  | `invalid_input`       | `afterCursor` is edited or unknown   | Resend the last `nextCursor`, or omit it. |
 | `401`  | `unauthenticated`     | The credential is missing or invalid | Replace the API key or bearer token.      |
 | `429`  | `rate_limit_exceeded` | Too many requests reached the route  | Wait for `Retry-After`, then retry once.  |
 
@@ -317,7 +329,7 @@ Results per page. Default `50`, maximum `50`.
 
 <ParamField query="afterCursor" type="string">
 
-Opaque cursor from `nextCursor`. Pass it unchanged to fetch the next page.
+Opaque cursor from `nextCursor`. Pass it unchanged to fetch the next page. An edited or unknown cursor returns `400`.
 
 </ParamField>
 
@@ -390,6 +402,18 @@ An OAuth bearer token formatted as `Bearer YOUR_TOKEN`. Send this header or `x-a
   "nextCursor": "MjAyNi0wMi0yM1QxNjoxNTowMC4wMDBafDM4"
 }
 ```
+
+### 400 Invalid cursor
+
+```json
+{
+  "error": "invalid_input",
+  "message": "Cursor invalid. Use nextCursor from the previous page, or omit it to start over."
+}
+```
+
+The `afterCursor` value is not a `nextCursor` from this route. Send the last
+`nextCursor` you received, or omit `afterCursor` to start from the first page.
 
 ### 401 Unauthenticated
 
