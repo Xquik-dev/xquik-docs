@@ -96,8 +96,8 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
     ```json
     {
-      "error": "x_api_unavailable",
-      "message": "X data source temporarily unavailable. Try again later."
+      "error": "replies_incomplete",
+      "message": "X stopped before every reply loaded. Retry the draw later."
     }
     ```
 
@@ -367,8 +367,8 @@ An exact retry returns the original draw with `Idempotency-Replayed: true`.
 
 <ResponseField name="id" type="string">Draw public ID returned by Xquik.</ResponseField>
 <ResponseField name="tweetId" type="string">X tweet ID extracted from the URL.</ResponseField>
-<ResponseField name="totalEntries" type="number">Candidate entries inspected for this draw after the credit-derived cap. This may be lower than the source tweet's full reply count.</ResponseField>
-<ResponseField name="validEntries" type="number">Entries from the inspected candidate set that passed all filters.</ResponseField>
+<ResponseField name="totalEntries" type="number">Entries inspected after the credit cap, which can be fewer than the post's replies.</ResponseField>
+<ResponseField name="validEntries" type="number">Inspected entries that passed every filter. A credit cap can leave valid replies uninspected.</ResponseField>
 <ResponseField name="winners" type="array">
 
 Selected winners and backup winners.
@@ -505,6 +505,24 @@ Reuse a key only for the same request. Exact retries return the original draw. X
 ```
 
 The first request with this key is still running. Retry with the same key after it finishes. Xquik charges nothing for this request.
+
+### 424 Short read
+
+```json
+{
+  "error": "replies_incomplete",
+  "message": "X stopped before every reply loaded. Retry the draw later."
+}
+```
+
+```json
+{
+  "error": "draw_too_large",
+  "message": "The post has more replies than 1 draw reads. Contact support."
+}
+```
+
+X failed or stopped early. Retry after `replies_incomplete` or `retweeters_incomplete`. `draw_too_large` means the post has more entries than 1 draw reads; contact support. Xquik saves & charges nothing.
 
 ### 424 X API dependency failed
 
