@@ -1973,16 +1973,14 @@ paths:
     post:
       operationId: createDraw
       summary: Run giveaway draw
-      description: Checks credits, then draws winners from inspected replies and reposters.
-        Remaining credits cap inspected candidates.
+      description: Checks credits, then draws winners from inspected replies & reposters. Remaining credits cap the candidates.
       tags: [Draws]
       security: [{ apiKey: [] }, { oauthBearer: [] }]
       parameters:
         - $ref: '#/components/parameters/IdempotencyKey'
       requestBody:
         required: true
-        description: Tweet URL, winner count, and optional eligibility filters (retweet,
-          follow, keywords, hashtags, account age).
+        description: Tweet URL, winner count & optional eligibility filters for retweet, follow, keywords, hashtags & account age.
         content:
           application/json:
             schema:
@@ -2050,15 +2048,11 @@ paths:
                   tweetId: *tweet-id-example-schema
                   totalEntries:
                     type: integer
-                    description: Candidate entries inspected for this draw after the
-                      credit-derived cap. This may be lower than the source
-                      tweet's full reply count.
+                    description: Entries inspected after the credit cap, which can be fewer than the post's replies.
                     example: 250
                   validEntries:
                     type: integer
-                    description: Entries from the inspected candidate set that passed all
-                      filters. This is not necessarily every valid reply on the
-                      source tweet when credits cap inspection.
+                    description: Inspected entries that passed every filter. A credit cap can leave valid replies uninspected.
                     example: 200
                   winners:
                     type: array
@@ -2074,10 +2068,7 @@ paths:
         '400': *invalid-input-response
         '401': *unauthenticated-response
         '402':
-          description: Insufficient usable credits. Draws can fail before execution when
-            the available balance cannot cover the minimum draw cost. A draw can
-            also fail after execution when its final computed cost cannot be
-            deducted. Xquik saves nothing and charges nothing for that draw.
+          description: Insufficient usable credits. A draw fails before it runs when the balance cannot cover the minimum cost, or after it runs when its final cost cannot be deducted. Xquik saves & charges nothing.
           content:
             application/json:
               schema: *error-schema
@@ -2086,8 +2077,7 @@ paths:
                 message: 'Insufficient credits'
         '404': *not-found-response
         '409':
-          description: Idempotency-Key belongs to another draw request, or its first
-            request is still running. Xquik charges nothing for this request.
+          description: Idempotency-Key belongs to another draw request, or its first request still runs. Xquik charges nothing for it.
           content:
             application/json:
               schema: *error-schema
@@ -2102,7 +2092,18 @@ paths:
                   value:
                     error: idempotency_in_progress
                     message: Idempotency-Key belongs to a running request. Retry later.
-        '424': *x-api-error-response
+        '424':
+          description: >-
+            X failed or stopped early. Retry after replies_incomplete or
+            retweeters_incomplete. draw_too_large means the post has more
+            entries than 1 draw reads; contact support. Xquik saves & charges
+            nothing.
+          content:
+            application/json:
+              schema: *error-schema
+              example:
+                error: replies_incomplete
+                message: X stopped before every reply loaded. Retry the draw later.
         '429': *rate-limit-exceeded-response
         '502': *x-api-error-response
 
@@ -2555,10 +2556,7 @@ paths:
                   items:
                     type: string
                   maxItems: 4
-                  description: Array of public media URLs to attach. Supports up to 4
-                    images or exactly 1 MP4 video up to 100 MB. Each URL must be
-                    publicly reachable. Attached media adds 2 credits per
-                    started MB across all files.
+                  description: Public media URLs to attach, up to 4 images or exactly 1 MP4 video up to 100 MB. Each URL must be publicly reachable. Attached media adds 2 credits per started MB across all files.
                   example: ['https://example.com/video.mp4']
             example:
               account: '@elonmusk'
@@ -5916,9 +5914,7 @@ paths:
         '402': *payment-required-response
         '403':
           description: >
-            DM read forbidden. The connected account may not participate in the
-            conversation. It may also be restricted or require reauthentication.
-            Inspect the error code, then fix the account.
+            DM read forbidden. The connected account may not be in the conversation, or it may be restricted or need reauthentication. Check the error code, then fix the account.
           content:
             application/json:
               schema: *error-schema
@@ -7055,9 +7051,7 @@ components:
       in: header
       required: false
       description: >
-        Generate one unique value for each intended request. Reuse it only when
-        retrying the same request. Exact retries return the original result
-        and charge nothing.
+        Generate 1 unique value per intended request. Reuse it only to retry the same request. Exact retries return the original result & charge nothing.
       schema:
         type: string
         minLength: 1
@@ -7116,9 +7110,7 @@ components:
       name: limit
       in: query
       description: >
-        Maximum items per page: 1 to 100, default 50. Credits can reduce paid
-        results. The endpoint returns 402 insufficient_credits when none are
-        affordable.
+        Maximum items per page: 1 to 100, default 50. Credits can reduce paid results. With none affordable, it returns 402 insufficient_credits.
       schema:
         type: integer
         minimum: 1
@@ -8055,9 +8047,7 @@ components:
             message: This API key can access paid read endpoints only.
     ProtectedTimeline:
       description: >-
-        Account is protected. Choose a public account. Applies to initial and
-        continuation requests in every timeline mode. No results are collected
-        or charged. Public profile lookup remains available.
+        Account is protected. Choose a public account. Applies to first & later pages in every timeline mode. Xquik collects & charges nothing. Public profile lookup still works.
       content:
         application/json:
           schema: *error-schema
@@ -8066,9 +8056,7 @@ components:
             message: Account is protected. Choose a public account.
     AccountAuthError:
       description: >
-        The connected X account needs reauthentication or is currently
-        restricted (locked, suspended, or recovering). Returns an error code of
-        `account_needs_reauth` or `account_restricted`.
+        The connected X account needs reauthentication or is restricted (locked, suspended, or recovering). Error code: `account_needs_reauth` or `account_restricted`.
       content:
         application/json:
           schema: *error-schema
@@ -8108,9 +8096,7 @@ components:
             message: 'X rejected this request. Wait a few minutes and try again.'
     RateLimitedByX:
       description: >
-        X throttled the write. Possible codes: `x_rate_limited` (short-term
-        throttle) or `x_daily_limit` (daily cap hit). Back off and retry later.
-        Distinct from Xquik tier-based 429.
+        X throttled the write: `x_rate_limited` (short-term) or `x_daily_limit` (daily cap). Back off & retry later. Distinct from Xquik's tier-based 429.
       content:
         application/json:
           schema: *error-schema
@@ -8250,8 +8236,7 @@ components:
               sourcesEnded: false
     ConnectAlreadyConnected:
       description: >
-        The specified X account is already connected to this Xquik account.
-        Returns error code `account_already_connected`.
+        This X account is already connected to this Xquik account. Error code: `account_already_connected`.
       content:
         application/json:
           schema: *error-schema
@@ -8276,9 +8261,7 @@ components:
             retryAfterMs: 300000
     ConnectLoginCooldown:
       description: >
-        A prior login attempt triggered a cooldown. Response includes `reason`,
-        `retryAfterMs`, and a `Retry-After` header in seconds. Returns error
-        code `login_cooldown`.
+        A prior login attempt triggered a cooldown. The response has `reason`, `retryAfterMs` & a `Retry-After` header in seconds. Error code: `login_cooldown`.
       headers:
         Retry-After:
           description: Cooldown duration in seconds.
@@ -8310,8 +8293,7 @@ components:
             message: 'Too many requests. Retry later.'
     RateLimitExceeded:
       description: >
-        Xquik tier rate limit exceeded. The response includes a `Retry-After`
-        header with the number of seconds to wait before retrying.
+        Xquik tier rate limit exceeded. Wait `Retry-After` seconds before retrying.
       content:
         application/json:
           schema: *retry-after-error-schema
@@ -8334,9 +8316,7 @@ components:
             message: 'Try again later.'
     ConnectUserLookupFailed:
       description: >
-        The X username could not be resolved. Verify the handle is correct and
-        the account exists. Default v1 returns 502. The best-practice response
-        contract returns 424. Error code: `x_user_lookup_failed`.
+        The X username could not be resolved. Check the handle & that the account exists. Default v1 returns 502; the best-practice contract returns 424. Error code: `x_user_lookup_failed`.
       content:
         application/json:
           schema: *error-schema
@@ -8345,8 +8325,7 @@ components:
             message: 'X username lookup failed. Try again later.'
     ConnectServiceUnavailable:
       description: >
-        The X connection service is temporarily unavailable. Retry after a short
-        delay. Returns error code `service_unavailable`.
+        The X connection service is temporarily unavailable. Retry shortly. Error code: `service_unavailable`.
       content:
         application/json:
           schema: *error-schema
@@ -10409,9 +10388,7 @@ components:
           const: https://paymentauth.org/problems/payment-required
     Error:
       description: >
-        Error response. Default v1 returns a legacy string error code. Send
-        `xquik-api-contract: 2026-04-29` to receive the structured best-practice
-        error object.
+        Error response. Default v1 returns a legacy string code. Send `xquik-api-contract: 2026-04-29` for the structured best-practice error object.
       type: object
       required: [error]
       properties:
@@ -10476,6 +10453,7 @@ components:
                 - coverage_cursor_gone
                 - coverage_cursor_unavailable
                 - draft_not_found
+                - draw_too_large
                 - expired
                 - favoriters_unavailable
                 - forbidden
@@ -10507,6 +10485,7 @@ components:
                 - rate_limited
                 - read_request_timeout
                 - replies_incomplete
+                - retweeters_incomplete
                 - search_unavailable
                 - support_media_rate_limit
                 - support_request_rate_limit
