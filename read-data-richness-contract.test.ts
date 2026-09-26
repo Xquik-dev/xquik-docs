@@ -4,9 +4,11 @@ import { describe, expect, it } from "vitest";
 
 interface OpenApiSchema {
   readonly $ref?: string;
+  readonly additionalProperties?: boolean;
   readonly allOf?: readonly OpenApiSchema[];
   readonly maximum?: number;
   readonly properties?: Readonly<Record<string, unknown>>;
+  readonly required?: readonly string[];
 }
 
 interface OpenApiParameter {
@@ -218,6 +220,14 @@ function schemaFieldNames(
   ].toSorted((left, right) => left.localeCompare(right));
 }
 
+function requiredFields(openApi: Readonly<OpenApiDocument>, name: string): readonly string[] {
+  const required = openApi.components?.schemas?.[name]?.required;
+  if (required === undefined) {
+    throw new Error(`OpenAPI schema ${name} lists no required fields.`);
+  }
+  return required;
+}
+
 function sortedFields(fields: readonly string[]): readonly string[] {
   return [...fields].toSorted((left, right) => left.localeCompare(right));
 }
@@ -236,16 +246,33 @@ function parameterName(
 describe("read data richness documentation", (): void => {
   it("documents every normalized field from the OpenAPI contract", (): void => {
     const fields = [...TWEET_FIELDS, ...PROFILE_FIELDS, ...MEDIA_FIELDS];
-    expect.assertions(fields.length + 5);
+    expect.assertions(fields.length + 4);
 
     for (const field of fields) {
       expect(GUIDE, `guide omits ${field}`).toContain(`\`${field}\``);
     }
-    expect(schemaFields(PARSED_OPENAPI, "EmbeddedTweet")).toStrictEqual(sortedFields(TWEET_FIELDS));
     expect(schemaFields(PARSED_OPENAPI, "TweetDetail")).toStrictEqual(sortedFields(TWEET_FIELDS));
     expect(schemaFields(PARSED_OPENAPI, "SearchTweet")).toStrictEqual(sortedFields(TWEET_FIELDS));
     expect(schemaFields(PARSED_OPENAPI, "UserProfile")).toStrictEqual(sortedFields(PROFILE_FIELDS));
     expect(schemaFields(PARSED_OPENAPI, "TweetMedia")).toStrictEqual(sortedFields(MEDIA_FIELDS));
+  });
+
+  // Nested tweets type only the required fields & author, so the product's
+  // vacuum example check fits its limit. The other tweet fields stay allowed.
+  it("types nested tweets with the required tweet fields and author", (): void => {
+    expect.assertions(1);
+    const embeddedTweet = PARSED_OPENAPI.components?.schemas?.["EmbeddedTweet"];
+    const requiredTweetFields = requiredFields(PARSED_OPENAPI, "TweetPublicDataBase");
+
+    expect({
+      additionalProperties: embeddedTweet?.additionalProperties,
+      fields: schemaFields(PARSED_OPENAPI, "EmbeddedTweet"),
+      required: embeddedTweet?.required,
+    }).toStrictEqual({
+      additionalProperties: true,
+      fields: sortedFields([...requiredTweetFields, "author"]),
+      required: requiredTweetFields,
+    });
   });
 
   it("keeps agent guidance and discovery links public", (): void => {

@@ -669,6 +669,7 @@ paths:
               example:
                 drafts: []
                 hasMore: false
+        '400': *invalid-input-response
         '401': *unauthenticated-response
         '429': *rate-limit-exceeded-response
     post:
@@ -1556,6 +1557,7 @@ paths:
               example:
                 events: []
                 hasMore: false
+        '400': *invalid-input-response
         '401': *unauthenticated-response
         '429': *rate-limit-exceeded-response
   /events/{id}:
@@ -1968,6 +1970,7 @@ paths:
               example:
                 draws: []
                 hasMore: false
+        '400': *invalid-input-response
         '401': *unauthenticated-response
         '429': *rate-limit-exceeded-response
     post:
@@ -8174,11 +8177,21 @@ components:
             message: 'Cursor finished, expired, or superseded. Restart pagination
               without cursor.'
     MaximumCoverageBusy:
-      description: Coverage unavailable. Retry x_api_unavailable after Retry-After. Retry pagination_stalled once after 30 seconds.
+      description: Retry x_api_unavailable after Retry-After & pagination_stalled once after 30 s.
       headers:
         Retry-After:
           schema: *positive-integer
-          description: Seconds to wait before retrying.
+          description: Seconds before a retry.
+        X-Xquik-Busy:
+          schema:
+            type: string
+            enum: ['true']
+          description: Nothing is billed. Retry after Retry-After until your deadline.
+        X-Xquik-Busy-Reason:
+          schema:
+            type: string
+            enum: ['admission', 'read_capacity']
+          description: 'admission: slots full. read_capacity: no read account free.'
       content:
         application/json:
           schema: *error-schema
@@ -11879,10 +11892,19 @@ components:
       description: Public tweet fields, excluding nested tweets.
       type: object
       required:
-        [id, text, retweetCount, replyCount, likeCount, quoteCount, viewCount, bookmarkCount]
+        &tweet-required-fields [
+          id,
+          text,
+          retweetCount,
+          replyCount,
+          likeCount,
+          quoteCount,
+          viewCount,
+          bookmarkCount,
+        ]
       properties:
-        id: { type: string, example: '1234567890' }
-        text: { type: string, example: 'Just launched!' }
+        id: &tweet-id-schema { type: string, example: '1234567890' }
+        text: &tweet-text-schema { type: string, example: 'Just launched!' }
         type: { type: string, example: tweet }
         createdAt: { type: string, example: '2025-01-15T12:00:00Z' }
         url:
@@ -12007,12 +12029,12 @@ components:
           items:
             $ref: '#/components/schemas/TweetMedia'
           description: Media, omitted when unavailable.
-        retweetCount: { type: integer, example: 5 }
-        replyCount: { type: integer, example: 3 }
-        likeCount: { type: integer, example: 42 }
-        quoteCount: { type: integer, example: 1 }
-        viewCount: { type: integer, example: 1500 }
-        bookmarkCount: { type: integer, example: 2 }
+        retweetCount: &retweet-count-schema { type: integer, example: 5 }
+        replyCount: &reply-count-schema { type: integer, example: 3 }
+        likeCount: &like-count-schema { type: integer, example: 42 }
+        quoteCount: &quote-count-schema { type: integer, example: 1 }
+        viewCount: &view-count-schema { type: integer, example: 1500 }
+        bookmarkCount: &bookmark-count-schema { type: integer, example: 2 }
 
     TweetPublicData:
       description: Shared public tweet fields.
@@ -12025,50 +12047,26 @@ components:
             retweeted_tweet:
               $ref: '#/components/schemas/EmbeddedTweet'
 
+    # vacuum inlines every $ref to check an example, so each nested tweet repeats
+    # the fields its schema types. Typing all tweet fields here took that check
+    # to 9 s of its 10 s limit in a gate, so only the required fields & author
+    # are typed.
     EmbeddedTweet:
-      description: Quoted or retweeted tweet context.
-      allOf:
-        - $ref: '#/components/schemas/TweetPublicDataBase'
-        - type: object
-          properties:
-            author:
-              $ref: '#/components/schemas/UserProfile'
-            quoted_tweet:
-              $ref: '#/components/schemas/EmbeddedTweetLevel2'
-            retweeted_tweet:
-              $ref: '#/components/schemas/EmbeddedTweetLevel2'
-
-    EmbeddedTweetLevel2:
-      description: Nested tweet context at depth 2.
-      allOf:
-        - $ref: '#/components/schemas/TweetPublicDataBase'
-        - type: object
-          properties:
-            author: { $ref: '#/components/schemas/UserProfile' }
-            quoted_tweet:
-              $ref: '#/components/schemas/EmbeddedTweetLevel3'
-            retweeted_tweet:
-              $ref: '#/components/schemas/EmbeddedTweetLevel3'
-
-    EmbeddedTweetLevel3:
-      description: Nested tweet context at depth 3.
-      allOf:
-        - $ref: '#/components/schemas/TweetPublicDataBase'
-        - type: object
-          properties:
-            author: { $ref: '#/components/schemas/UserProfile' }
-            quoted_tweet:
-              $ref: '#/components/schemas/EmbeddedTweetLevel4'
-            retweeted_tweet:
-              $ref: '#/components/schemas/EmbeddedTweetLevel4'
-
-    EmbeddedTweetLevel4:
-      description: Final nested tweet context at depth 4.
-      allOf:
-        - $ref: '#/components/schemas/TweetPublicDataBase'
-        - type: object
-          properties:
-            author: { $ref: '#/components/schemas/UserProfile' }
+      description: A quoted or retweeted tweet. It has the TweetPublicData fields and an
+        author. Nesting stops after 4 levels.
+      type: object
+      required: *tweet-required-fields
+      properties:
+        id: *tweet-id-schema
+        text: *tweet-text-schema
+        retweetCount: *retweet-count-schema
+        replyCount: *reply-count-schema
+        likeCount: *like-count-schema
+        quoteCount: *quote-count-schema
+        viewCount: *view-count-schema
+        bookmarkCount: *bookmark-count-schema
+        author: { $ref: '#/components/schemas/UserProfile' }
+      additionalProperties: true
 
     ContentDisclosure:
       description: Content disclosure metadata shown by X when a tweet is labeled as paid
