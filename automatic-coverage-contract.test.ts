@@ -67,12 +67,21 @@ describe("automatic maximum coverage contract", (): void => {
     expect.assertions(6);
 
     const openApi = readFileSync("openapi.yaml", "utf8");
+    const { components } = Bun.YAML.parse(openApi) as {
+      readonly components: {
+        readonly parameters: Record<string, { readonly description: string }>;
+      };
+    };
     const mcp = readFileSync("mcp/tools.mdx", "utf8");
 
     expect(openApi).not.toContain("x-guidance");
     expect(openApi).not.toContain("**Find a tweet**");
-    expect(openApi).toContain("Omit mode for resumable maximum coverage.");
-    expect(openApi).toContain("Existing unprefixed cursors keep legacy");
+    expect(components.parameters["AutomaticCoverageMode"]?.description).toContain(
+      "Omit mode for resumable maximum coverage.",
+    );
+    expect(components.parameters["AutomaticCoverageCursor"]?.description).toContain(
+      "Existing unprefixed cursors keep legacy standard behavior.",
+    );
     expect(mcp).toContain("Those operations use automatic maximum coverage.");
     expect(mcp).toContain("Use `mode=standard` only for legacy pagination.");
   });

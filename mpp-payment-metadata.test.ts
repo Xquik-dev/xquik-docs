@@ -30,7 +30,7 @@ interface OpenApiSpec {
 }
 
 interface OperationMetadata {
-  readonly anonymous: boolean;
+  readonly optionalCredential: boolean;
   readonly key: string;
   readonly paymentIntents: readonly string[];
   readonly paymentEnabled: boolean;
@@ -56,8 +56,13 @@ function normalizeOperationKey(method: string, path: string): string {
   return `${method.toUpperCase()} /api/v1${productPath}`;
 }
 
-function hasAnonymousSecurity(operation: OpenApiOperation): boolean {
-  return (operation.security ?? []).some((entry): boolean => Object.keys(entry).length === 0);
+// Paid reads list credentials beside {}. Public operations list no credential.
+function hasOptionalCredential(operation: OpenApiOperation): boolean {
+  const security = operation.security ?? [];
+  return (
+    security.some((entry): boolean => Object.keys(entry).length === 0) &&
+    security.some((entry): boolean => Object.keys(entry).length > 0)
+  );
 }
 
 function collectOperations(spec: OpenApiSpec): readonly OperationMetadata[] {
@@ -68,7 +73,7 @@ function collectOperations(spec: OpenApiSpec): readonly OperationMetadata[] {
         continue;
       }
       operations.push({
-        anonymous: hasAnonymousSecurity(operation),
+        optionalCredential: hasOptionalCredential(operation),
         key: normalizeOperationKey(method, path),
         paymentIntents:
           operation["x-payment-info"]?.offers
@@ -138,7 +143,7 @@ describe("MPP payment metadata", (): void => {
 
     const anonymousOperations = new Set(
       collectOperations(readOpenApi(DOCS_OPENAPI_PATH))
-        .filter((operation): boolean => operation.anonymous)
+        .filter((operation): boolean => operation.optionalCredential)
         .map((operation): string => operation.key),
     );
 
@@ -199,7 +204,7 @@ describe("MPP payment metadata", (): void => {
     expect.assertions(1);
 
     const findings = collectOperations(readOpenApi(DOCS_OPENAPI_PATH))
-      .filter((operation): boolean => operation.anonymous)
+      .filter((operation): boolean => operation.optionalCredential)
       .flatMap((operation): readonly MppFinding[] => {
         const expectedUnauthorizedResponse = operation.paymentEnabled
           ? "#/components/responses/Unauthenticated"
