@@ -102,6 +102,7 @@ const TWEET_FIELDS = [
 
 const PROFILE_FIELDS = [
   "accountBasedIn",
+  "accountBasedInUnavailable",
   "id",
   "username",
   "name",
