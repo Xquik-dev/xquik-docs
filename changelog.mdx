@@ -14,10 +14,53 @@ Search tweets, API keys, signed webhooks, user profiles, REST, MCP, authenticati
 
 <Update label="September 2026" description="v1">
 
+**New**
+
+- Profiles add `accountBasedInUnavailable: true` when X withholds `accountBasedIn` from a read
+- Those profiles omit `accountBasedIn`. Treat the label as unknown & retry later
+- `accountBasedIn: null` still means X shows no label
+
 **Changed**
 
 - Each account now gets 500 reads a second, up from 300
 - Writes still allow 120 a minute & deletes 60 a minute
+
+- `429 x_rate_limited` messages now name the wait from `Retry-After`, such as about 15 minutes
+- Without a known wait, the message says to try again later
+
+- Writes X refuses as possibly automated return `422 x_automation_refused`
+- They used to return `429 x_rate_limited`
+- Waiting does not change X's answer. Send the next request now with a new `Idempotency-Key`
+- If X keeps refusing, check the account on x.com. Vary your text or pace
+- These refusals cost nothing
+- `429 x_rate_limited` now covers only X's rate limits. Wait for `Retry-After` when present
+
+- `GET /x/tweets/{id}/replies` with `sort=latest` or `sort=oldest` sets `orderPartial: true` when some rows come from X views without date order
+- Rows stay sorted by date & keep the same status. Replies may be missing between them
+- Nothing marked such answers before. Retry later for a gap-free order
+- When X's Recent view ends early or comes back signed out, Xquik reads the rest from X search's Latest results
+
+- `GET /x/tweets/{id}/replies` applies `sort` on automatic pages too
+- Those pages used to list the newest replies first, whatever the `sort`
+- Without `sort`, automatic pages still list the newest first. Standard pages ignore `sort`
+
+- `POST /draws` reads every direct reply & retweeter X shows
+- It used to read X's first page of replies & at most 2,000 retweeters
+- Entries are direct replies to the post. Replies to other replies no longer enter
+- A draw on a busy post takes about 1 minute. Keep the request open for 100 seconds
+- `GET /x/tweets/{id}/retweeters` no longer ends the list early when X refuses a page
+- Xquik reads that page again
+
+- `POST /draws` returns `424` when X stops the reply or repost read early
+- It used to draw from the entries read so far
+- Retry after `replies_incomplete` or `retweeters_incomplete`
+- `draw_too_large` means the post has more entries than 1 draw reads. Contact support
+- Xquik saves & charges nothing for these draws
+
+- Bookmark folder reads on accounts without X Premium return `424 bookmark_folders_unavailable`
+- This covers `GET /x/bookmarks/folders` & `GET /x/bookmarks?folderId=...`
+- They used to return an empty list. The message says to upgrade on X or read all bookmarks
+- These answers cost nothing
 
 - Search Tweets returns `424 search_unavailable` at once for `filter:vine`, `filter:consumer_video`, `filter:pro_video`, `filter:news` & `retweets_of:`
 - X no longer searches these. `news=true` gets the same answer

@@ -91,11 +91,12 @@ Start with HTTP status. Retry only when stated.
   </Card>
   <Card title="422 write validation" icon="message-circle-warning">
 
-    Retry: no. Fix the account capability, target, content, DM permissions, or
-    media URL before sending again. Covers `x_account_feature_required`,
-    `x_account_suspended`, `x_account_protected`, `x_duplicate_action`,
+    Retry: no, except `x_automation_refused`. Fix the account capability,
+    target, content, DM permissions, or media URL before sending again.
+    Covers `x_account_feature_required`, `x_account_suspended`,
+    `x_account_protected`, `x_duplicate_action`,
     `x_dm_not_allowed`, `x_reply_not_allowed`, `x_target_not_found`, `x_content_too_long`,
-    `x_rejected`, and `media_download_failed`.
+    `x_rejected`, `x_media_rejected`, and `media_download_failed`.
 
   </Card>
   <Card title="202 active write" icon="clock">
@@ -501,6 +502,20 @@ responses also include `message`, `reason`, `retryAfter`, or `retryAfterMs`.
         Retry only when the durable action marks it safe.
 
       </Card>
+      <Card title="x_automation_refused" icon="bot">
+
+        X said the write might be automated & refused it. Xquik charges
+        nothing. Send the next request now with a new `Idempotency-Key`.
+        Waiting does not help. If X keeps refusing, check the account on x.com.
+        Vary your text or pace.
+
+      </Card>
+      <Card title="x_media_rejected" icon="image">
+
+        X couldn't read the uploaded file. Upload a valid JPG, PNG, GIF, WebP,
+        or MP4. Do not retry the same file.
+
+      </Card>
       <Card title="media_download_failed" icon="image">
 
         Xquik could not download the public media URL. Fix the HTTPS URL or pass the
@@ -514,24 +529,8 @@ responses also include `message`, `reason`, `retryAfter`, or `retryAfterMs`.
   <Accordion title="Active write lifecycle (202)">
 
     The durable write remains active. Its status is `accepted`, `dispatching`,
-    or `pending_confirmation`.
-
-    <CardGroup cols={2}>
-
-      <Card title="Poll" icon="clock">
-
-        Store `id`, `request.hash`, `account`, `target`, and `billing`. Poll
-        `statusUrl` after `Retry-After` or `pollAfterMs`.
-
-      </Card>
-      <Card title="Recovery" icon="circle-check">
-
-        Stop when `terminal` is `true`. Retry only when `safeToRetry` is `true`,
-        using a new key. Verify the result when `nextAction.type` is
-        `verify_result`.
-
-      </Card>
-    </CardGroup>
+    or `pending_confirmation`. Follow
+    [write lifecycle recovery](#write-lifecycle-recovery).
 
   </Accordion>
 
@@ -686,10 +685,6 @@ async function shouldRetry(response: Response, attempt: number): Promise<boolean
 ```
 
 ## Rate limit handling
-
-Rate-limited requests return `429 Too Many Requests` with a
-`Retry-After` header. JSON may include `retryAfter` in seconds or
-`retryAfterMs` in milliseconds for login cooldowns.
 
 <CardGroup cols={2}>
 

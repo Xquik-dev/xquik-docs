@@ -24,7 +24,10 @@ const SKIPPED_PUBLIC_SCAN_DIRS = new Set<string>([".git", "node_modules", ".gith
 const CREDITS_QUICK_TOPUP_PAGE = "api-reference/credits/quick-topup.mdx";
 const API_KEYS_CREATE_PAGE = "api-reference/api-keys/create.mdx";
 const WRITE_ACTION_LIFECYCLE_SNIPPET_PATH = "snippets/write-action-lifecycle-response.mdx";
-const PRODUCT_APP_ICON_FILE = "/Users/burak/Developer/xquik/app/icon.svg";
+const PRODUCT_APP_ICON_FILE = join(
+  process.env["XQUIK_PRODUCT_ROOT"] ?? join(process.cwd(), "..", "xquik"),
+  "app/icon.svg",
+);
 const DOCS_X_ONLY_ICON_SHA256 = "7002c1dd82b5b903d69777fa212f39b0e0410cb156e7bcb1b4426fcec3a7cdc5";
 const CODEX_OAUTH_ISSUER_ERROR =
   "Authorization server response missing required issuer: expected https://xquik.com";
@@ -3707,6 +3710,8 @@ const REQUIRED_WRITE_VALIDATION_ERROR_GUIDE_SNIPPETS = [
   "Content exceeds the character limit.",
   '<Card title="x_rejected" icon="circle-x">',
   "Retry only when the durable action marks it safe.",
+  '<Card title="x_automation_refused" icon="bot">',
+  "Send the next request now with a new `Idempotency-Key`.",
   '<Card title="media_download_failed" icon="image">',
   "Fix the HTTPS URL or pass the",
   "file via multipart/form-data. Do not retry the same URL.",

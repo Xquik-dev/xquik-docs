@@ -231,10 +231,10 @@ views, bookmarks, time filters, page size, and cursors for audits and retries.
 
 ### How can applications control reply API costs?
 
-Each returned reply costs 1 credit. Select a page size that fits your storage
-process. Bound support periods with `sinceTime` and `untilTime`. Save each page
-before requesting another cursor. Use `reply_extractor` for fixed
-`resultsLimit` exports.
+Each returned reply costs 1 credit. Direct replies use the default paid page size
+unless you set `pageSize`. Bound support periods with
+`sinceTime` and `untilTime`, in Unix seconds. Save each page before requesting
+another cursor. Use `reply_extractor` for fixed `resultsLimit` exports.
 
 <CodeGroup>
 
@@ -348,22 +348,12 @@ Use `GET /x/tweets/{id}/replies` for support, community, moderation, giveaway, o
 The examples above write
 JSON Lines rows with `parent_tweet_id`, `reply_id`, `text`, author IDs and
 usernames, thread joins, media URLs, & cursors.
-Each row identifies its source tweet. Save each page before restarting workers.
 The moderation table below adds follower, verification, timing,
 and engagement projections.
-
-A `424 replies_incomplete` response still contains collected direct and nested
-replies, billed like any returned rows.
-A cut at your `limit` returns `200` with `limit_reached: true`. Keep only rows whose
-`inReplyToId` matches the requested tweet for direct-reply workflows.
 
 Use [`reply_extractor`](/guides/tweet-replies-export) instead when a team needs
 an estimate, a reusable extraction ID, stored result pages, or CSV, JSON, and XLSX
 downloads after completion.
-
-Bound moderation, campaign, or giveaway periods with `sinceTime` and `untilTime`, in Unix seconds. Direct replies use the default paid page size. Use `reply_extractor` and `resultsLimit` to cap exports.
-
-Direct replies cost 1 credit per tweet returned. Retry `429` with `Retry-After`. Retry `502` after a short backoff. Retry `503` after its stated delay.
 
 ## Build a reply moderation table
 
@@ -468,7 +458,10 @@ In complete mode, set the maximum reply depth from the source post.
 
 <ParamField query="sort" type="string">
 
-In complete mode, sort by `relevance`, `latest`, `oldest`, or `likes`.
+Sort by `relevance`, `latest`, `oldest`, or `likes`. Complete mode defaults to
+relevance. Automatic pages list the newest first unless you set `sort`.
+`latest` & `oldest` sort every row by date. If some rows come from X views
+without date order, the answer sets `orderPartial: true`.
 
 </ParamField>
 
@@ -580,6 +573,7 @@ Array of reply tweets.
 <ResponseField name="has_next_page" type="boolean">Whether more results are available.</ResponseField>
 <ResponseField name="next_cursor" type="string">Cursor for the next page.</ResponseField>
 <ResponseField name="nested_replies" type="object[]">Nested replies returned by complete mode. Exclude them from direct coverage.</ResponseField>
+<ResponseField name="orderPartial" type="boolean">Present with `latest` or `oldest` sort. Some rows came from X views without date order. Rows stay sorted by date, but replies may be missing between those rows. Retry later for a gap-free order.</ResponseField>
 <ResponseField name="diagnostic" type="object">
 
 Complete-mode coverage evidence. Omitted from standard responses.
@@ -650,7 +644,9 @@ You exceeded your tier rate limit. Wait for the `Retry-After` header before retr
 
 ### 424 Replies incomplete
 
-Collected rows & diagnostics remain available. `recommendedFallback` says what to do next.
+Collected rows & diagnostics stay in the answer. Rows are billed as usual.
+`recommendedFallback` says what to do next. A cut at your `limit` returns `200`
+with `limit_reached: true`.
 
 ### 503 Complete reply extraction busy
 
