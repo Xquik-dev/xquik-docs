@@ -119,10 +119,7 @@ const PRODUCT_TRENDS_API_PATH = join(PRODUCT_ROOT, "lib/api/trends.ts");
 const PRODUCT_ARTICLE_FORMAT_PATH = join(PRODUCT_ROOT, "lib/x-api/article-format.ts");
 const PRODUCT_MEDIA_HANDLER_PATH = join(PRODUCT_ROOT, "lib/media/handler.ts");
 const PRODUCT_X_API_TYPES_PATH = join(PRODUCT_ROOT, "lib/x-api/types.ts");
-const PRODUCT_READ_RICHNESS_CONTRACT_PATH = productXApiFile(
-  /^read-data-richness-fields\.ts$/u,
-  "",
-);
+const PRODUCT_READ_RICHNESS_CONTRACT_PATH = productXApiFile(/^read-data-richness-fields\.ts$/u, "");
 const PRODUCT_READ_TYPES_PATH = productXApiFile(
   /^types\.ts$/u,
   "interface TransformedBookmarkFolder",
@@ -632,10 +629,7 @@ function productBookmarkFolderFields(): readonly string[] {
   }
   return uniqueSorted([
     ...objectLiteralFields(source.slice(start, end + 1)),
-    ...productInterfaceFieldsFromPath(
-      PRODUCT_READ_TYPES_PATH,
-      "TransformedBookmarkFolder",
-    ),
+    ...productInterfaceFieldsFromPath(PRODUCT_READ_TYPES_PATH, "TransformedBookmarkFolder"),
   ]);
 }
 
