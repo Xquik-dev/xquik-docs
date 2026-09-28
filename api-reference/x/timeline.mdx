@@ -135,10 +135,15 @@ Requested result counts are upper bounds for paid authenticated calls. When rema
 
 </Callout>
 
-The route reads the home timeline of your connected X account. Without one, it
-returns `424 account_required`. Use [Connect X account](/api-reference/x-accounts/connect)
+The route reads the home timeline of 1 of your connected X accounts. Without
+one, it returns `424 account_required`. Use [Connect X account](/api-reference/x-accounts/connect)
 to add one. When your connected X accounts are busy, it returns `503`. Retry
 after the `Retry-After` delay.
+
+Each `next_cursor` reads the next page from the same X account. If that account
+can no longer read, the route returns `410 cursor_account_unavailable`. Start
+again without the cursor. An account that follows no one returns no tweets and
+`has_next_page: false`.
 
 Results exclude X ads.
 
@@ -332,6 +337,7 @@ processed tweet IDs through `seenTweetIds` to reduce repeat rows. Stop when
 
 Respect the `Retry-After` header after a 429 or 503 response.
 After a 424 `account_required` response, connect an X account first.
+After a 410 `cursor_account_unavailable` response, start again without the cursor.
 After other 424 or 502 responses, retry the stored cursor.
 Never advance a checkpoint after a failed destination write.
 
@@ -369,14 +375,15 @@ Store tweet IDs for deduplication. Refresh from the last confirmed cursor.
 ### How should timeline API errors be retried?
 
 Fix authentication after a 401 response. Add credits after a 402 response.
-Connect an X account after `424 account_required`. Respect `Retry-After` after
-429 or 503. Resume from the stored cursor after other 424 or 502 responses.
+Connect an X account after `424 account_required`. Start again without the
+cursor after `410 cursor_account_unavailable`. Respect `Retry-After` after 429
+or 503. Resume from the stored cursor after other 424 or 502 responses.
 
 ## Query parameters
 
 <ParamField query="cursor" type="string">
 
-Pagination cursor. Pass the `next_cursor` value from the previous response to fetch the next page.
+Pagination cursor. Pass the `next_cursor` value from the previous response to fetch the next page. The next page comes from the same connected X account.
 
 </ParamField>
 
@@ -547,6 +554,18 @@ Missing or invalid API key.
 ```
 
 Metered access requires enough available credits. Possible error values include `no_subscription`, `subscription_inactive`, `no_credits`, and `insufficient_credits`.
+
+### 410 Cursor account unavailable
+
+```json
+{
+  "error": "cursor_account_unavailable",
+  "message": "The X account for this cursor is unavailable. Start again without the cursor."
+}
+```
+
+The X account that returned the cursor can no longer read. Request the first
+page again without `cursor`.
 
 ### 429 Rate limit exceeded
 
