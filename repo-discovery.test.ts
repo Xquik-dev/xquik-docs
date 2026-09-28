@@ -3710,6 +3710,8 @@ const REQUIRED_WRITE_VALIDATION_ERROR_GUIDE_SNIPPETS = [
   "Content exceeds the character limit.",
   '<Card title="x_rejected" icon="circle-x">',
   "Retry only when the durable action marks it safe.",
+  '<Card title="x_automation_refused" icon="bot">',
+  "Send the next request now with a new `Idempotency-Key`.",
   '<Card title="media_download_failed" icon="image">',
   "Fix the HTTPS URL or pass the",
   "file via multipart/form-data. Do not retry the same URL.",
