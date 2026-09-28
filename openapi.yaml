@@ -95,7 +95,7 @@ paths:
         Search public Xquik docs with NLWeb 0.55. This read-only route accepts
         flat and structured requests. Never send secrets or private data.
       tags: [Agent Discovery]
-      security: []
+      security: [{}]
       requestBody:
         description: Flat or structured NLWeb request.
         required: true
@@ -108,7 +108,6 @@ paths:
           application/x-www-form-urlencoded:
             schema:
               $ref: '#/components/schemas/NlwebAskRequest'
-      # oxfmt-ignore
       responses:
         '200':
           description: Documentation results.
@@ -116,7 +115,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NlwebAnswer'
-              example: { _meta: { response_format: conversational_search, response_type: answer, version: '0.55' }, results: [] }
+              example:
+                _meta:
+                  response_format: conversational_search
+                  response_type: answer
+                  version: '0.55'
+                results: []
             text/event-stream:
               schema:
                 type: string
@@ -126,35 +130,65 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NlwebFailure'
-              example: { _meta: { response_type: failure, version: '0.55' }, error: { code: INVALID_QUERY, message: 'Request is invalid. Send a valid NLWeb query.' } }
+              example:
+                _meta: { response_type: failure, version: '0.55' }
+                error:
+                  code: INVALID_QUERY
+                  message: 'Request is invalid. Send a valid NLWeb query.'
         '413':
           description: Request body exceeds 8 KiB.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/NlwebFailure'
-              example: { _meta: { response_type: failure, version: '0.55' }, error: { code: TOKEN_LIMIT, message: 'Request is too large. Send less context.' } }
+              example:
+                _meta: { response_type: failure, version: '0.55' }
+                error:
+                  code: TOKEN_LIMIT
+                  message: 'Request is too large. Send less context.'
         '502':
           description: Documentation search is unavailable.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/NlwebFailure'
-              example: { _meta: { response_type: failure, version: '0.55' }, error: { code: INTERNAL_ERROR, message: 'Search is unavailable. Retry later.' } }
+              example:
+                _meta: { response_type: failure, version: '0.55' }
+                error:
+                  code: INTERNAL_ERROR
+                  message: 'Search is unavailable. Retry later.'
     get:
       operationId: searchXquikDocumentationWithQuery
       x-mcp-exclusion-reason: Public agent discovery remains direct.
       summary: Search Xquik documentation with query parameters
       description: Send a flat NLWeb 0.55 request through query parameters.
       tags: [Agent Discovery]
-      security: []
-      # oxfmt-ignore
+      security: [{}]
       parameters:
-        - { name: query, in: query, required: true, description: Natural-language docs query., schema: { type: string, minLength: 1, maxLength: 500 } }
-        - { name: site, in: query, description: Optional docs host., schema: { type: string, enum: [docs.xquik.com, xquik.com] } }
-        - { name: mode, in: query, description: List result mode., schema: { type: string, const: list } }
-        - { name: response_format, in: query, description: NLWeb response shape., schema: { type: string, enum: [chatgpt_app, conversational_search], default: conversational_search } }
-        - { name: streaming, in: query, description: Return SSE when true., schema: { type: boolean, default: false } }
+        - name: query
+          in: query
+          required: true
+          description: Natural-language docs query.
+          schema: { type: string, minLength: 1, maxLength: 500 }
+        - name: site
+          in: query
+          description: Optional docs host.
+          schema: { type: string, enum: [docs.xquik.com, xquik.com] }
+        - name: mode
+          in: query
+          description: List result mode.
+          schema: { type: string, const: list }
+        - name: response_format
+          in: query
+          description: NLWeb response shape.
+          schema:
+            type: string
+            enum: [chatgpt_app, conversational_search]
+            default: conversational_search
+        - name: streaming
+          in: query
+          description: Return SSE when true.
+          schema: { type: boolean, default: false }
       responses:
         '200': { $ref: '#/paths/~1ask/post/responses/200' }
         '400': { $ref: '#/paths/~1ask/post/responses/400' }
@@ -207,9 +241,11 @@ paths:
                         example: '2026-10-01T00:00:00.000Z'
                   monitorsUsed:
                     type: integer
+                    minimum: 0
                     example: 3
                   monitorsAllowed:
                     type: integer
+                    minimum: 0
                     deprecated: true
                     x-stainless-deprecation-message: Monitor slots are unlimited. Use
                       monitorBilling.unlimitedSlots instead.
@@ -253,6 +289,7 @@ paths:
                         example: true
                       instantCheckIntervalSeconds:
                         type: integer
+                        minimum: 1
                         description: Active monitors check every 1 second.
                         example: 1
                       unlimitedSlots:
@@ -502,6 +539,7 @@ paths:
                     example: api_key_limit_reached
                   limit:
                     type: integer
+                    minimum: 1
                     example: 100
                   message:
                     type: string
@@ -669,6 +707,7 @@ paths:
               example:
                 drafts: []
                 hasMore: false
+        '400': *invalid-input-response
         '401': *unauthenticated-response
         '429': *rate-limit-exceeded-response
     post:
@@ -911,7 +950,9 @@ paths:
               properties:
                 label:
                   type: string
-                  description: Optional display label. When sent, it must match the path ID, ignoring case and a leading @. The path ID names the style when it is left out.
+                  description: Optional display label. When sent, it must match the path
+                    ID, ignoring case and a leading @. The path ID names the
+                    style when it is left out.
                   example: 'Professional Voice'
                 tweets:
                   type: array
@@ -985,6 +1026,7 @@ paths:
                   xUsername: *handle-example-schema
                   tweetCount:
                     type: integer
+                    minimum: 0
                     example: 5
                   tweets:
                     type: array
@@ -1000,15 +1042,19 @@ paths:
                           example: 'Excited to share our latest research.'
                         likeCount:
                           type: integer
+                          minimum: 0
                           example: 120
                         retweetCount:
                           type: integer
+                          minimum: 0
                           example: 15
                         replyCount:
                           type: integer
+                          minimum: 0
                           example: 8
                         viewCount:
                           type: integer
+                          minimum: 0
                           example: 5000
                         createdAt: &timestamp-text-example-schema
                           type: string
@@ -1158,6 +1204,7 @@ paths:
                     example: []
                   total:
                     type: integer
+                    minimum: 0
                     example: 0
               example:
                 monitors: []
@@ -1190,7 +1237,9 @@ paths:
                   type: string
                   minLength: 1
                   maxLength: 80
-                  description: Your own label for the account monitor. Every event it produces carries it as monitorName. Whitespace is normalized.
+                  description: Your own label for the account monitor. Every event it
+                    produces carries it as monitorName. Whitespace is
+                    normalized.
                   example: Launch watch
                 eventTypes: &event-types
                   type: array
@@ -1269,6 +1318,7 @@ paths:
                     example: []
                   total:
                     type: integer
+                    minimum: 0
                     example: 0
               example:
                 monitors: []
@@ -1303,7 +1353,8 @@ paths:
                   type: string
                   minLength: 1
                   maxLength: 80
-                  description: Your own label for the keyword monitor. Its events carry it as monitorName.
+                  description: Your own label for the keyword monitor. Its events carry it
+                    as monitorName.
                   example: Launch mentions
                 eventTypes: &single-event-type
                   type: array
@@ -1468,7 +1519,8 @@ paths:
                   type: [string, 'null']
                   minLength: 1
                   maxLength: 80
-                  description: New label for the account monitor. Send null to remove the label.
+                  description: New label for the account monitor. Send null to remove the
+                    label.
                   example: Launch watch
             example:
               eventTypes: [tweet.new]
@@ -1556,6 +1608,7 @@ paths:
               example:
                 events: []
                 hasMore: false
+        '400': *invalid-input-response
         '401': *unauthenticated-response
         '429': *rate-limit-exceeded-response
   /events/{id}:
@@ -1855,43 +1908,43 @@ paths:
             enum: [csv, json, md, md-document, pdf, txt, xlsx]
         - name: minFollowers
           in: query
-          schema: { type: integer }
+          schema: { type: integer, minimum: 0 }
           description: Minimum follower count.
         - name: maxFollowers
           in: query
-          schema: { type: integer }
+          schema: { type: integer, minimum: 0 }
           description: Maximum follower count.
         - name: minFollowing
           in: query
-          schema: { type: integer }
+          schema: { type: integer, minimum: 0 }
           description: Minimum following count.
         - name: maxFollowing
           in: query
-          schema: { type: integer }
+          schema: { type: integer, minimum: 0 }
           description: Maximum following count.
         - name: minPosts
           in: query
-          schema: { type: integer }
+          schema: { type: integer, minimum: 0 }
           description: Minimum post count.
         - name: maxPosts
           in: query
-          schema: { type: integer }
+          schema: { type: integer, minimum: 0 }
           description: Maximum post count.
         - name: minLikes
           in: query
-          schema: { type: integer }
+          schema: { type: integer, minimum: 0 }
           description: Minimum like count.
         - name: minReplies
           in: query
-          schema: { type: integer }
+          schema: { type: integer, minimum: 0 }
           description: Minimum reply count.
         - name: minRetweets
           in: query
-          schema: { type: integer }
+          schema: { type: integer, minimum: 0 }
           description: Minimum repost count.
         - name: minViews
           in: query
-          schema: { type: integer }
+          schema: { type: integer, minimum: 0 }
           description: Minimum view count.
         - name: hasDescription
           in: query
@@ -1968,21 +2021,22 @@ paths:
               example:
                 draws: []
                 hasMore: false
+        '400': *invalid-input-response
         '401': *unauthenticated-response
         '429': *rate-limit-exceeded-response
     post:
       operationId: createDraw
       summary: Run giveaway draw
-      description: Checks credits, then draws winners from inspected replies and reposters.
-        Remaining credits cap inspected candidates.
+      description: Checks credits, then draws winners from inspected replies & reposters.
+        Remaining credits cap the candidates.
       tags: [Draws]
       security: [{ apiKey: [] }, { oauthBearer: [] }]
       parameters:
         - $ref: '#/components/parameters/IdempotencyKey'
       requestBody:
         required: true
-        description: Tweet URL, winner count, and optional eligibility filters (retweet,
-          follow, keywords, hashtags, account age).
+        description: Tweet URL, winner count & optional eligibility filters for retweet,
+          follow, keywords, hashtags & account age.
         content:
           application/json:
             schema:
@@ -1995,19 +2049,23 @@ paths:
                   example: 'https://x.com/elonmusk/status/1234567890'
                 winnerCount:
                   type: integer
+                  minimum: 1
                   default: 1
                   example: 3
                 backupCount:
                   type: integer
+                  minimum: 0
                   example: 2
                 uniqueAuthorsOnly: *boolean-example-true
                 mustRetweet: *boolean-example-true
                 mustFollowUsername: *handle-example-schema
                 filterMinFollowers:
                   type: integer
+                  minimum: 0
                   example: 50
                 filterAccountAgeDays:
                   type: integer
+                  minimum: 0
                   example: 30
                 filterLanguage:
                   type: string
@@ -2050,15 +2108,15 @@ paths:
                   tweetId: *tweet-id-example-schema
                   totalEntries:
                     type: integer
-                    description: Candidate entries inspected for this draw after the
-                      credit-derived cap. This may be lower than the source
-                      tweet's full reply count.
+                    minimum: 0
+                    description: Entries inspected after the credit cap, which can be fewer
+                      than the post's replies.
                     example: 250
                   validEntries:
                     type: integer
-                    description: Entries from the inspected candidate set that passed all
-                      filters. This is not necessarily every valid reply on the
-                      source tweet when credits cap inspection.
+                    minimum: 0
+                    description: Inspected entries that passed every filter. A credit cap
+                      can leave valid replies uninspected.
                     example: 200
                   winners:
                     type: array
@@ -2074,10 +2132,9 @@ paths:
         '400': *invalid-input-response
         '401': *unauthenticated-response
         '402':
-          description: Insufficient usable credits. Draws can fail before execution when
-            the available balance cannot cover the minimum draw cost. A draw can
-            also fail after execution when its final computed cost cannot be
-            deducted. Xquik saves nothing and charges nothing for that draw.
+          description: Insufficient usable credits. A draw fails before it runs when the
+            balance cannot cover the minimum cost, or after it runs when its
+            final cost cannot be deducted. Xquik saves & charges nothing.
           content:
             application/json:
               schema: *error-schema
@@ -2087,7 +2144,7 @@ paths:
         '404': *not-found-response
         '409':
           description: Idempotency-Key belongs to another draw request, or its first
-            request is still running. Xquik charges nothing for this request.
+            request still runs. Xquik charges nothing for it.
           content:
             application/json:
               schema: *error-schema
@@ -2102,7 +2159,18 @@ paths:
                   value:
                     error: idempotency_in_progress
                     message: Idempotency-Key belongs to a running request. Retry later.
-        '424': *x-api-error-response
+        '424':
+          description: >-
+            X failed or stopped early. Retry after replies_incomplete or
+            retweeters_incomplete. draw_too_large means the post has more
+            entries than 1 draw reads; contact support. Xquik saves & charges
+            nothing.
+          content:
+            application/json:
+              schema: *error-schema
+              example:
+                error: replies_incomplete
+                message: X stopped before every reply loaded. Retry the draw later.
         '429': *rate-limit-exceeded-response
         '502': *x-api-error-response
 
@@ -2393,6 +2461,8 @@ paths:
                   success: *boolean-example-true
                   statusCode:
                     type: integer
+                    minimum: 0
+                    maximum: 599
                     example: 200
                   error:
                     type: string
@@ -2426,6 +2496,8 @@ paths:
                   success: *boolean-example-true
                   statusCode:
                     type: integer
+                    minimum: 0
+                    maximum: 599
                     example: 200
                   webhook:
                     $ref: '#/components/schemas/Webhook'
@@ -2456,6 +2528,8 @@ paths:
                     example: 'Connection timed out'
                   statusCode:
                     type: integer
+                    minimum: 0
+                    maximum: 599
                     description: Webhook response status, or 0 before a response.
                     example: 0
                   success: &boolean-false
@@ -2517,6 +2591,8 @@ paths:
           $ref: '#/components/responses/AnonymousGuestAuthenticationRequired'
         '402': *payment-required-response
         '502': *x-api-error-response
+        '503':
+          $ref: '#/components/responses/ReadBusy'
         '429': *rate-limit-exceeded-response
         '424': *x-api-error-response
     post:
@@ -2555,10 +2631,10 @@ paths:
                   items:
                     type: string
                   maxItems: 4
-                  description: Array of public media URLs to attach. Supports up to 4
-                    images or exactly 1 MP4 video up to 100 MB. Each URL must be
-                    publicly reachable. Attached media adds 2 credits per
-                    started MB across all files.
+                  description: Public media URLs to attach, up to 4 images or exactly 1 MP4
+                    video up to 100 MB. Each URL must be publicly reachable.
+                    Attached media adds 2 credits per started MB across all
+                    files.
                   example: ['https://example.com/video.mp4']
             example:
               account: '@elonmusk'
@@ -2631,6 +2707,7 @@ paths:
           in: query
           schema:
             type: integer
+            minimum: 1
             default: 1
           description: 'Region WOEID (1=Worldwide, 23424977=US, 23424975=UK,
             23424969=Turkey)'
@@ -2672,9 +2749,11 @@ paths:
                             trends.
                         rank: &integer-example-one
                           type: integer
+                          minimum: 1
                           example: 1
                         tweetVolume:
                           type: [integer, 'null']
+                          minimum: 0
                           description: Approximate public post volume when X supplies it.
                           example: 250000
                         url:
@@ -2691,6 +2770,7 @@ paths:
                         url: 'https://x.com/search?q=%23AI'
                   count:
                     type: integer
+                    minimum: 0
                     example: 30
                   woeid: *integer-example-one
               example:
@@ -2702,6 +2782,8 @@ paths:
         '402':
           $ref: '#/components/responses/PaymentRequired'
         '502': *x-api-error-response
+        '503':
+          $ref: '#/components/responses/ReadBusy'
         '429': *rate-limit-exceeded-response
         '424': *x-api-error-response
 
@@ -2914,9 +2996,11 @@ paths:
                               example: 'https://pbs.twimg.com/media/example.jpg'
                             width:
                               type: integer
+                              minimum: 0
                               example: 1200
                             height:
                               type: integer
+                              minimum: 0
                               example: 675
                             inlineStyleRanges:
                               type: array
@@ -2926,9 +3010,11 @@ paths:
                                 properties:
                                   offset:
                                     type: integer
+                                    minimum: 0
                                     example: 0
                                   length:
                                     type: integer
+                                    minimum: 0
                                     example: 8
                                   style:
                                     type: string
@@ -2936,15 +3022,19 @@ paths:
                       createdAt: *timestamp-text-example-schema
                       likeCount:
                         type: integer
+                        minimum: 0
                         example: 150
                       replyCount:
                         type: integer
+                        minimum: 0
                         example: 23
                       quoteCount:
                         type: integer
+                        minimum: 0
                         example: 8
                       viewCount:
                         type: integer
+                        minimum: 0
                         example: 5000
                   author:
                     $ref: '#/components/schemas/ArticleAuthor'
@@ -2978,6 +3068,8 @@ paths:
                 error: 'article_not_found'
                 message: 'Article not found. Use an X Article tweet ID.'
         '502': *x-api-error-response
+        '503':
+          $ref: '#/components/responses/ReadBusy'
         '429': *rate-limit-exceeded-response-2
         '424': *x-api-error-response
 
@@ -3001,7 +3093,7 @@ paths:
           required: true
           schema:
             type: string
-          description: Numeric tweet ID, 15-20 digits
+          description: Numeric tweet ID, 1-20 digits
       responses:
         '200':
           description: Tweet with author
@@ -3038,6 +3130,8 @@ paths:
         '404': &tweet-not-found-response
           $ref: '#/components/responses/TweetNotFound'
         '502': *x-api-error-response
+        '503':
+          $ref: '#/components/responses/ReadBusy'
         '429': *rate-limit-exceeded-response-2
         '424': *x-api-error-response
     delete:
@@ -3210,6 +3304,8 @@ paths:
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
         '502': *x-api-error-response
+        '503':
+          $ref: '#/components/responses/ReadBusy'
         '429': *rate-limit-exceeded-response-2
         '424': *x-api-error-response
 
@@ -3248,9 +3344,13 @@ paths:
         - $ref: '#/components/parameters/UserFilterBioContains'
         - $ref: '#/components/parameters/UserFilterLocationContains'
         - $ref: '#/components/parameters/UserFilterUsernameContains'
+        - $ref: '#/components/parameters/EnrichProfiles'
       responses:
         '200':
           description: User search results
+          headers: &profile-enrichment-headers
+            X-Xquik-Profile-Enrichment:
+              $ref: '#/components/headers/ProfileEnrichment'
           content: &paginated-users-content
             application/json:
               schema:
@@ -3259,6 +3359,8 @@ paths:
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
         '502': *x-api-error-response
+        '503':
+          $ref: '#/components/responses/ReadBusy'
         '429': *rate-limit-exceeded-response-2
         '424': *x-api-error-response
 
@@ -3303,6 +3405,8 @@ paths:
         '402': *payment-required-response
         '404': *user-not-found-response
         '502': *x-api-error-response
+        '503':
+          $ref: '#/components/responses/ReadBusy'
         '429': *rate-limit-exceeded-response-2
         '424': *x-api-error-response
 
@@ -3429,6 +3533,8 @@ paths:
         '401': *unauthenticated-response
         '402': *payment-required-response
         '502': *x-api-error-response
+        '503':
+          $ref: '#/components/responses/ReadBusy'
         '429': *rate-limit-exceeded-response-2
         '424': *x-api-error-response
 
@@ -3590,9 +3696,11 @@ paths:
                   cacheHit: *boolean-example-false
                   totalTweets:
                     type: integer
+                    minimum: 0
                     example: 2
                   totalMedia:
                     type: integer
+                    minimum: 0
                     example: 5
               example:
                 tweetId: '1234567890'
@@ -4234,6 +4342,7 @@ paths:
                 properties:
                   cleared:
                     type: integer
+                    minimum: 0
                     description: Number of accounts cleared
                     example: 3
               example:
@@ -4261,6 +4370,7 @@ paths:
           in: query
           schema:
             type: integer
+            minimum: 1
             default: 1
           description: 'Region Yahoo WOEID code (1=Worldwide, 23424977=US, 23424975=UK,
             23424969=Turkey)'
@@ -4302,6 +4412,7 @@ paths:
                         rank: *integer-example-one
                         tweetVolume:
                           type: [integer, 'null']
+                          minimum: 0
                           description: Estimated post volume for this trend.
                           example: 250000
                         url:
@@ -4313,6 +4424,7 @@ paths:
                         rank: 1
                   total:
                     type: integer
+                    minimum: 0
                     example: 30
                   woeid: *integer-example-one
               example:
@@ -4674,7 +4786,7 @@ paths:
         The request creates no charge. It returns a paid-read API key without an
         Xquik account. Idempotent replays return the same key.
       tags: [Guest Wallets]
-      security: []
+      security: [{}]
       parameters:
         - $ref: '#/components/parameters/GuestIdempotencyKey'
       requestBody:
@@ -5245,6 +5357,8 @@ paths:
         '403': &guest-forbidden-response
           $ref: '#/components/responses/GuestForbidden'
         '502': *x-api-error-response
+        '503':
+          $ref: '#/components/responses/ReadBusy'
         '429': *rate-limit-exceeded-response-2
         '424':
           $ref: '#/components/responses/FavoritersUnavailable'
@@ -5501,6 +5615,8 @@ paths:
         '403': *guest-forbidden-response
         '404': *user-not-found-response
         '502': *x-api-error-response
+        '503':
+          $ref: '#/components/responses/ReadBusy'
         '429': *rate-limit-exceeded-response-2
         '424': *x-api-error-response
 
@@ -5578,6 +5694,8 @@ paths:
         '402': *payment-required-response
         '404': *user-not-found-response
         '502': *x-api-error-response
+        '503':
+          $ref: '#/components/responses/ReadBusy'
         '429': *rate-limit-exceeded-response-2
         '424': *x-api-error-response
 
@@ -5621,13 +5739,16 @@ paths:
         '402': *payment-required-response
         '403': *guest-forbidden-response
         '502': *x-api-error-response
+        '503':
+          $ref: '#/components/responses/ReadBusy'
         '429': *rate-limit-exceeded-response-2
         '424': *x-api-error-response
 
   /x/bookmarks:
     get:
       operationId: getBookmarks
-      description: Returns your X account's bookmarks, else 424 `account_required`.
+      description: Returns your X account's bookmarks, else 424 `account_required`. A
+        folder needs X Premium, else 424 `bookmark_folders_unavailable`.
       summary: Get bookmarked tweets
       tags:
         - Tweets
@@ -5637,7 +5758,7 @@ paths:
           in: query
           schema:
             type: string
-          description: Optional bookmark folder ID
+          description: Optional bookmark folder ID. Folders need X Premium.
         - name: cursor
           in: query
           schema: &cursor-example-schema
@@ -5652,12 +5773,15 @@ paths:
         '402': *payment-required-response
         '429': *rate-limit-exceeded-response-2
         '502': *x-api-error-response
+        '503':
+          $ref: '#/components/responses/ReadBusy'
         '424': *x-api-error-response
 
   /x/bookmarks/folders:
     get:
       operationId: getBookmarkFolders
       description: Returns your X account's bookmark folders, else 424 `account_required`.
+        Folders need X Premium, else 424 `bookmark_folders_unavailable`.
       summary: Get bookmark folders
       tags:
         - Tweets
@@ -5700,6 +5824,8 @@ paths:
         '402': *payment-required-response
         '429': *rate-limit-exceeded-response-2
         '502': *x-api-error-response
+        '503':
+          $ref: '#/components/responses/ReadBusy'
         '424': *x-api-error-response
 
   /x/notifications:
@@ -5765,12 +5891,16 @@ paths:
         '402': *payment-required-response
         '429': *rate-limit-exceeded-response-2
         '502': *x-api-error-response
+        '503':
+          $ref: '#/components/responses/ReadBusy'
         '424': *x-api-error-response
 
   /x/timeline:
     get:
       operationId: getTimeline
-      description: Returns your X account's home timeline, else 424 `account_required`.
+      description: Returns the home timeline of 1 of your connected X accounts, else 424
+        `account_required`. A cursor reads the next page from the same account.
+        Results exclude X ads.
       summary: Get home timeline
       tags:
         - Tweets
@@ -5793,8 +5923,19 @@ paths:
           content: *paginated-tweets-content
         '401': *unauthenticated-response
         '402': *payment-required-response
+        '410':
+          description: Start again without the cursor.
+          content:
+            application/json:
+              schema: *error-schema
+              example:
+                error: 'cursor_account_unavailable'
+                message: 'The X account for this cursor is unavailable. Start again
+                  without the cursor.'
         '429': *rate-limit-exceeded-response-2
         '502': *x-api-error-response
+        '503':
+          $ref: '#/components/responses/ReadBusy'
         '424': *x-api-error-response
 
   /x/dm/{userId}/history:
@@ -5902,9 +6043,9 @@ paths:
         '402': *payment-required-response
         '403':
           description: >
-            DM read forbidden. The connected account may not participate in the
-            conversation. It may also be restricted or require reauthentication.
-            Inspect the error code, then fix the account.
+            DM read forbidden. The connected account may not be in the
+            conversation, or it may be restricted or need reauthentication.
+            Check the error code, then fix the account.
           content:
             application/json:
               schema: *error-schema
@@ -5938,6 +6079,8 @@ paths:
         '424': *x-api-error-response
         '429': *rate-limit-exceeded-response-2
         '502': *x-api-error-response
+        '503':
+          $ref: '#/components/responses/ReadBusy'
 
   /x/communities/{id}/info:
     get:
@@ -6009,9 +6152,11 @@ paths:
                             type: string
                       member_count:
                         type: integer
+                        minimum: 0
                         description: Total member count
                       moderator_count:
                         type: integer
+                        minimum: 0
                         description: Total moderator count
                       primary_topic:
                         type: object
@@ -6051,6 +6196,8 @@ paths:
         '424': *x-api-error-response
         '429': *rate-limit-exceeded-response-2
         '502': *x-api-error-response
+        '503':
+          $ref: '#/components/responses/ReadBusy'
 
   /x/communities/{id}/members:
     get:
@@ -6089,6 +6236,8 @@ paths:
         '424': *x-api-error-response
         '429': *rate-limit-exceeded-response-2
         '502': *x-api-error-response
+        '503':
+          $ref: '#/components/responses/ReadBusy'
 
   /x/communities/{id}/moderators:
     get:
@@ -6126,6 +6275,8 @@ paths:
         '424': *x-api-error-response
         '429': *rate-limit-exceeded-response-2
         '502': *x-api-error-response
+        '503':
+          $ref: '#/components/responses/ReadBusy'
 
   /x/communities/{id}/tweets:
     get:
@@ -6159,6 +6310,8 @@ paths:
         '424': *x-api-error-response
         '429': *rate-limit-exceeded-response-2
         '502': *x-api-error-response
+        '503':
+          $ref: '#/components/responses/ReadBusy'
 
   /x/communities/search:
     get:
@@ -6198,6 +6351,8 @@ paths:
           $ref: '#/components/responses/RateLimitExceeded'
         '502':
           $ref: '#/components/responses/XApiError'
+        '503':
+          $ref: '#/components/responses/ReadBusy'
 
   /x/communities/tweets:
     get:
@@ -6364,7 +6519,7 @@ paths:
           required: true
           schema:
             type: string
-          description: Numeric tweet ID to get quotes, 15-20 digits
+          description: Numeric tweet ID to get quotes, 1-20 digits
         - $ref: '#/components/parameters/AutomaticCoverageCursor'
         - name: mode
           in: query
@@ -6445,8 +6600,8 @@ paths:
       description: >
         Returns direct replies with automatic maximum coverage and pagination. A
         retweet ID returns replies to the original post. Complete mode adds
-        nested replies, diagnostics, and a 424 below 80% coverage. A fully read time
-        window returns 200.
+        nested replies, diagnostics, and a 424 below 80% coverage. A fully read
+        time window returns 200.
       tags:
         - Tweets
       security: [{ apiKey: [] }, { oauthBearer: [] }, {}]
@@ -6465,8 +6620,8 @@ paths:
             enum: [standard, complete]
           description: >
             Override automatic coverage. Standard uses legacy pagination.
-            Complete adds nested replies, diagnostics, scope, depth, sorting,
-            and original-post controls.
+            Complete adds nested replies, diagnostics, scope, depth, and
+            original-post controls.
         - name: limit
           in: query
           schema: &positive-integer
@@ -6493,8 +6648,12 @@ paths:
           schema:
             type: string
             enum: [relevance, latest, oldest, likes]
-            default: relevance
-          description: Sort the selected replies before applying limit.
+          description: >
+            Sort the selected replies before applying limit. Complete mode
+            defaults to relevance. Automatic pages list the newest first unless
+            you set sort. Standard pages ignore sort. Latest and oldest sort
+            every row by date. An answer with rows from X views without date
+            order sets orderPartial.
         - name: excludeOriginalAuthor
           in: query
           schema: { type: boolean, default: false }
@@ -6617,22 +6776,27 @@ paths:
         - $ref: '#/components/parameters/UserFilterBioContains'
         - $ref: '#/components/parameters/UserFilterLocationContains'
         - $ref: '#/components/parameters/UserFilterUsernameContains'
+        - $ref: '#/components/parameters/EnrichProfiles'
       responses:
         '200':
           description: List of retweeters
+          headers: *profile-enrichment-headers
           content: *paginated-users-content
         '400': *invalid-input-response
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
         '404': *tweet-not-found-response
         '502': *x-api-error-response
+        '503':
+          $ref: '#/components/responses/ReadBusy'
         '429': *rate-limit-exceeded-response-2
         '424': *x-api-error-response
 
   /x/tweets/{id}/thread:
     get:
       operationId: getTweetThread
-      description: Returns visible posts from the selected conversation thread.
+      description: Returns visible posts from the selected conversation thread. Results
+        exclude X ads.
       summary: Get full conversation thread for a tweet
       tags:
         - Tweets
@@ -6691,6 +6855,8 @@ paths:
         '402': *payment-required-response
         '404': *tweet-not-found-response
         '502': *x-api-error-response
+        '503':
+          $ref: '#/components/responses/ReadBusy'
         '429': *rate-limit-exceeded-response-2
         '424': *x-api-error-response
 
@@ -6732,6 +6898,7 @@ paths:
         - $ref: '#/components/parameters/UserFilterBioContains'
         - $ref: '#/components/parameters/UserFilterLocationContains'
         - $ref: '#/components/parameters/UserFilterUsernameContains'
+        - $ref: '#/components/parameters/EnrichProfiles'
         - name: limit
           in: query
           schema: *bounded-result-limit
@@ -6739,10 +6906,13 @@ paths:
       responses:
         '200':
           description: List of user followers
+          headers: *profile-enrichment-headers
           content: *user-list-content
         '400': *invalid-input-response
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403':
+          $ref: '#/components/responses/ProtectedFollowerList'
         '404': *user-not-found-response
         '502': *x-api-error-response
         '429': *rate-limit-exceeded-response-2
@@ -6792,6 +6962,7 @@ paths:
         - $ref: '#/components/parameters/UserFilterBioContains'
         - $ref: '#/components/parameters/UserFilterLocationContains'
         - $ref: '#/components/parameters/UserFilterUsernameContains'
+        - $ref: '#/components/parameters/EnrichProfiles'
         - name: limit
           in: query
           schema: *bounded-result-limit
@@ -6801,10 +6972,13 @@ paths:
       responses:
         '200':
           description: List of following
+          headers: *profile-enrichment-headers
           content: *user-list-content
         '400': *invalid-input-response
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403':
+          $ref: '#/components/responses/ProtectedFollowingList'
         '404': *user-not-found-response
         '502': *x-api-error-response
         '429': *rate-limit-exceeded-response-2
@@ -6892,6 +7066,8 @@ paths:
         '402': *payment-required-response
         '404': *user-not-found-response
         '502': *x-api-error-response
+        '503':
+          $ref: '#/components/responses/ReadBusy'
         '429': *rate-limit-exceeded-response-2
         '424': *x-api-error-response
 
@@ -6933,6 +7109,7 @@ paths:
         - $ref: '#/components/parameters/UserFilterBioContains'
         - $ref: '#/components/parameters/UserFilterLocationContains'
         - $ref: '#/components/parameters/UserFilterUsernameContains'
+        - $ref: '#/components/parameters/EnrichProfiles'
         - name: limit
           in: query
           schema: *bounded-result-limit
@@ -6941,6 +7118,7 @@ paths:
       responses:
         '200':
           description: List of verified followers
+          headers: *profile-enrichment-headers
           content: *user-list-content
         '400': *invalid-input-response
         '401': *anonymous-guest-authentication-response
@@ -7036,9 +7214,8 @@ components:
       in: header
       required: false
       description: >
-        Generate one unique value for each intended request. Reuse it only when
-        retrying the same request. Exact retries return the original result
-        and charge nothing.
+        Generate 1 unique value per intended request. Reuse it only to retry the
+        same request. Exact retries return the original result & charge nothing.
       schema:
         type: string
         minLength: 1
@@ -7098,8 +7275,7 @@ components:
       in: query
       description: >
         Maximum items per page: 1 to 100, default 50. Credits can reduce paid
-        results. The endpoint returns 402 insufficient_credits when none are
-        affordable.
+        results. With none affordable, it returns 402 insufficient_credits.
       schema:
         type: integer
         minimum: 1
@@ -7123,8 +7299,8 @@ components:
       schema:
         type: string
       description: >
-        Cursor from the previous response. Existing unprefixed cursors keep legacy
-        standard behavior. Pages can be empty before more rows; follow
+        Cursor from the previous response. Existing unprefixed cursors keep
+        legacy standard behavior. Pages can be empty before more rows; follow
         next_cursor.
     AutomaticCoverageMode:
       name: mode
@@ -7240,6 +7416,13 @@ components:
       in: query
       schema: { type: string }
       description: Match the verification type exactly, ignoring case.
+    EnrichProfiles:
+      name: enrichProfiles
+      in: query
+      schema: { type: boolean, default: false }
+      description: >
+        Add each row's full profile, as GET /x/users/{id} returns it. Pages take
+        several seconds longer.
     UserFilterHasWebsite:
       name: hasWebsite
       in: query
@@ -7328,8 +7511,7 @@ components:
       name: minLikes
       in: query
       schema: &nonnegative-integer
-        type: integer
-        minimum: 0
+        $ref: '#/components/schemas/NonNegativeInteger'
       description: 'Minimum likes. Aliases: minFaves, min_likes, min_faves.'
     TweetFilterMinRetweets:
       name: minRetweets
@@ -7445,7 +7627,7 @@ components:
       name: news
       in: query
       schema: { type: boolean }
-      description: Only return news results.
+      description: X no longer searches filter:news.
     TweetFilterVerifiedOnly:
       name: verifiedOnly
       in: query
@@ -7571,6 +7753,29 @@ components:
       schema:
         type: string
       description: Raw advanced search query appended as-is.
+
+  headers:
+    BusyRetryAfter:
+      description: Seconds before a retry.
+      schema: *positive-integer
+    XquikBusy:
+      description: Nothing is billed. Retry after Retry-After until your deadline.
+      schema:
+        type: string
+        enum: ['true']
+    XquikBusyReason:
+      description: 'The busy part of Xquik: admission or read_capacity.'
+      schema:
+        type: string
+        enum: ['admission', 'read_capacity']
+    ProfileEnrichment:
+      description: >
+        Sent with enrichProfiles=true. How many returned rows carry the full
+        profile. Rows without it keep their list fields.
+      schema:
+        type: string
+        pattern: '^enriched=\d+; requested=\d+$'
+        example: 'enriched=180; requested=200'
 
   responses:
     IdempotencyConflict:
@@ -7733,7 +7938,8 @@ components:
               summary: Missing Idempotency-Key header
               value:
                 error: missing_idempotency_key
-                message: Idempotency-Key is required. Generate one unique key for this write.
+                message: Idempotency-Key is required. Generate one unique key for this
+                  write.
                 charged: false
                 chargedCredits: '0'
                 retryable: false
@@ -7743,7 +7949,8 @@ components:
                   type: fix_request
                 fieldErrors:
                   - code: required
-                    message: Idempotency-Key is required. Generate one unique key for this write.
+                    message: Idempotency-Key is required. Generate one unique key for
+                      this write.
                     path: headers.Idempotency-Key
             invalidIdempotencyKey:
               summary: Invalid Idempotency-Key header
@@ -7759,7 +7966,8 @@ components:
                   type: fix_request
                 fieldErrors:
                   - code: invalid
-                    message: Idempotency-Key must contain 1-255 visible ASCII characters.
+                    message: Idempotency-Key must contain 1-255 visible ASCII
+                      characters.
                     path: headers.Idempotency-Key
             invalidInput:
               summary: Invalid request fields
@@ -8027,20 +8235,38 @@ components:
             message: This API key can access paid read endpoints only.
     ProtectedTimeline:
       description: >-
-        Account is protected. Choose a public account. Applies to initial and
-        continuation requests in every timeline mode. No results are collected
-        or charged. Public profile lookup remains available.
+        Account is protected. Choose a public account. Applies to first & later
+        pages in every timeline mode. Xquik collects & charges nothing. Public
+        profile lookup still works.
       content:
         application/json:
           schema: *error-schema
           example:
             error: x_account_protected
             message: Account is protected. Choose a public account.
+    ProtectedFollowerList:
+      description: X keeps a protected account's follower list private. Xquik charges
+        nothing.
+      content:
+        application/json:
+          schema: *error-schema
+          example:
+            error: x_account_protected
+            message: This account's follower list is private. Try a public account.
+    ProtectedFollowingList:
+      description: X keeps a protected account's following list private. Xquik charges
+        nothing.
+      content:
+        application/json:
+          schema: *error-schema
+          example:
+            error: x_account_protected
+            message: This account's following list is private. Try a public account.
     AccountAuthError:
       description: >
-        The connected X account needs reauthentication or is currently
-        restricted (locked, suspended, or recovering). Returns an error code of
-        `account_needs_reauth` or `account_restricted`.
+        The connected X account needs reauthentication or is restricted (locked,
+        suspended, or recovering). Error code: `account_needs_reauth` or
+        `account_restricted`.
       content:
         application/json:
           schema: *error-schema
@@ -8070,29 +8296,31 @@ components:
               persists.'
     WriteRejected:
       description: >
-        X rejected the write or download. Read Error.code for the exact reason.
-        Media failures cover URL, size, origin, and timeout.
+        X rejected the write or download. Error.code says why.
+        `x_automation_refused` needs no wait. Media fails on URL, size, origin &
+        timeout.
       content:
         application/json:
           schema: *error-schema
           example:
             error: 'x_rejected'
-            message: 'X rejected this request. Wait a few minutes and try again.'
+            message: 'X rejected this request. Check what you sent & the account on
+              x.com before you try again.'
     RateLimitedByX:
       description: >
-        X throttled the write. Possible codes: `x_rate_limited` (short-term
-        throttle) or `x_daily_limit` (daily cap hit). Back off and retry later.
-        Distinct from Xquik tier-based 429.
+        X throttled the write: `x_rate_limited` (short-term) or `x_daily_limit`
+        (daily cap). Retry later. Distinct from Xquik's tier-based 429.
       content:
         application/json:
           schema: *error-schema
           example:
             error: 'x_rate_limited'
-            message: 'Rate limited by X. Wait before retrying.'
+            message: 'X rate limited this account. Try again in about 15 minutes. Send
+              fewer requests from this account.'
     WriteRateLimited:
       description: >
-        The write hit an Xquik or X limit. Follow `Retry-After` when present.
-        Otherwise back off before retrying.
+        The write hit an Xquik limit or X's `x_rate_limited`. Follow
+        `Retry-After` when present. Otherwise back off before retrying.
       content:
         application/json:
           schema: &retry-after-error-schema
@@ -8102,6 +8330,7 @@ components:
                 properties:
                   retryAfter:
                     type: integer
+                    minimum: 0
                     example: 60
           examples:
             xquikLimit:
@@ -8110,11 +8339,6 @@ components:
                 error: 'rate_limit_exceeded'
                 message: 'Too many requests. Try again later.'
                 retryAfter: 60
-            xLimit:
-              summary: X rate limit
-              value:
-                error: 'x_rate_limited'
-                message: 'Rate limited by X. Wait before retrying.'
     XApiError:
       description: >
         Dependency unavailable, unauthorized, or limited. Default v1 uses 502;
@@ -8160,19 +8384,34 @@ components:
             message: 'Cursor finished, expired, or superseded. Restart pagination
               without cursor.'
     MaximumCoverageBusy:
-      description: Coverage unavailable. Retry x_api_unavailable after Retry-After. Retry pagination_stalled once after 30 seconds.
-      headers:
+      description: Retry x_api_unavailable after Retry-After & pagination_stalled once
+        after 30 s.
+      headers: &busy-headers
         Retry-After:
-          schema: *positive-integer
-          description: Seconds to wait before retrying.
+          $ref: '#/components/headers/BusyRetryAfter'
+        X-Xquik-Busy:
+          $ref: '#/components/headers/XquikBusy'
+        X-Xquik-Busy-Reason:
+          $ref: '#/components/headers/XquikBusyReason'
       content:
         application/json:
           schema: *error-schema
           example:
             error: 'x_api_unavailable'
             message: 'Maximum coverage is busy. Retry shortly.'
+    ReadBusy:
+      description: Retry x_api_unavailable after Retry-After. With X-Xquik-Busy, retry
+        until your deadline.
+      headers: *busy-headers
+      content:
+        application/json:
+          schema: *error-schema
+          example:
+            error: 'x_api_unavailable'
+            message: 'Xquik is busy right now. Retry shortly.'
     RepliesIncomplete:
-      description: X did not expose every reply. Returned rows are billed as usual. An answer cut by your own limit returns 200 with limit_reached.
+      description: X did not expose every reply. Returned rows are billed as usual. An
+        answer cut by your own limit returns 200 with limit_reached.
       content:
         application/json:
           schema:
@@ -8222,8 +8461,8 @@ components:
               sourcesEnded: false
     ConnectAlreadyConnected:
       description: >
-        The specified X account is already connected to this Xquik account.
-        Returns error code `account_already_connected`.
+        This X account is already connected to this Xquik account. Error code:
+        `account_already_connected`.
       content:
         application/json:
           schema: *error-schema
@@ -8234,7 +8473,8 @@ components:
       description: >
         Login requires new credentials or account verification. Cooldowns
         include `retryAfterMs` and `Retry-After`. Codes are `login_failed` or
-        `passkey_required`.
+        `passkey_required`. `reason` is `account_not_found` (unknown username)
+        or `repeated_login_error`.
       headers:
         Retry-After:
           description: Cooldown duration in seconds, when retrying must wait.
@@ -8248,9 +8488,9 @@ components:
             retryAfterMs: 300000
     ConnectLoginCooldown:
       description: >
-        A prior login attempt triggered a cooldown. Response includes `reason`,
-        `retryAfterMs`, and a `Retry-After` header in seconds. Returns error
-        code `login_cooldown`.
+        A prior login attempt triggered a cooldown. The response has `reason`,
+        `retryAfterMs` & a `Retry-After` header in seconds. Error code:
+        `login_cooldown`.
       headers:
         Retry-After:
           description: Cooldown duration in seconds.
@@ -8282,8 +8522,9 @@ components:
             message: 'Too many requests. Retry later.'
     RateLimitExceeded:
       description: >
-        Xquik tier rate limit exceeded. The response includes a `Retry-After`
-        header with the number of seconds to wait before retrying.
+        Xquik tier rate limit exceeded. Each user gets 500 reads a second, 120
+        writes a minute & 60 deletes a minute. Wait `Retry-After` seconds before
+        retrying.
       content:
         application/json:
           schema: *retry-after-error-schema
@@ -8306,9 +8547,9 @@ components:
             message: 'Try again later.'
     ConnectUserLookupFailed:
       description: >
-        The X username could not be resolved. Verify the handle is correct and
-        the account exists. Default v1 returns 502. The best-practice response
-        contract returns 424. Error code: `x_user_lookup_failed`.
+        The X username could not be resolved. Check the handle & that the
+        account exists. Default v1 returns 502; the best-practice contract
+        returns 424. Error code: `x_user_lookup_failed`.
       content:
         application/json:
           schema: *error-schema
@@ -8317,8 +8558,8 @@ components:
             message: 'X username lookup failed. Try again later.'
     ConnectServiceUnavailable:
       description: >
-        The X connection service is temporarily unavailable. Retry after a short
-        delay. Returns error code `service_unavailable`.
+        The X connection service is temporarily unavailable. Retry shortly.
+        Error code: `service_unavailable`.
       content:
         application/json:
           schema: *error-schema
@@ -8337,6 +8578,10 @@ components:
             message: 'X account not found.'
 
   schemas:
+    NonNegativeInteger:
+      description: Whole number from 0.
+      type: integer
+      minimum: 0
     SupportReceipt:
       description: Support submission receipt.
       type: object
@@ -8361,7 +8606,6 @@ components:
           properties:
             create_checkout:
               $ref: '#/components/schemas/GuestWalletCreateCheckoutAction'
-    # oxfmt-ignore
     NlwebAskRequest:
       description: Public NLWeb documentation search request.
       type: object
@@ -8402,8 +8646,7 @@ components:
           description: Optional NLWeb conversational context.
         prefer:
           type: object
-          example:
-            { mode: list, response_format: chatgpt_app, streaming: false }
+          example: { mode: list, response_format: chatgpt_app, streaming: false }
           additionalProperties: true
           properties:
             streaming:
@@ -8459,14 +8702,16 @@ components:
         name:
           type: string
         url: *uri-string
-    # oxfmt-ignore
     NlwebAnswer:
       description: NLWeb documentation answer in a supported response format.
       type: object
       required: [_meta]
       properties:
         _meta:
-          example: { response_format: conversational_search, response_type: answer, version: '0.55' }
+          example:
+            response_format: conversational_search
+            response_type: answer
+            version: '0.55'
           allOf:
             - $ref: '#/components/schemas/NlwebMeta'
             - type: object
@@ -8496,8 +8741,10 @@ components:
             $ref: '#/components/schemas/NlwebDocumentationResult'
       oneOf:
         - { required: [results], properties: { results: { type: array } } }
-        - { required: [content, structuredData], properties: { content: { type: array }, structuredData: { type: array } } }
-    # oxfmt-ignore
+        - required: [content, structuredData]
+          properties:
+            content: { type: array }
+            structuredData: { type: array }
     NlwebFailure:
       description: Typed NLWeb request or search failure.
       type: object
@@ -9006,7 +9253,7 @@ components:
         safeToRetry:
           type: boolean
           description: >
-            True only when no write was dispatched and a new idempotency key may
+            True only when X did not get the write and a new idempotency key may
             be used.
           example: false
         statusUrl:
@@ -9252,6 +9499,7 @@ components:
           example: image
         sizeBytes:
           type: integer
+          minimum: 0
           format: int64
           example: 204800
         status:
@@ -9300,6 +9548,11 @@ components:
               bookmarkCount: 2
         has_next_page: *boolean-example-true
         next_cursor: *cursor-example-schema
+        windowComplete:
+          type: boolean
+          const: true
+          description: Present on a last page whose sources all read past its start time.
+          example: true
     CoverageStopReason:
       description: Reason a coverage strategy stopped.
       type: string
@@ -9431,12 +9684,22 @@ components:
             limit_reached:
               type: boolean
               const: true
-              description: Present when your limit cut a complete-mode answer. The post has more replies; raise limit to get them all.
+              description: Present when your limit cut a complete-mode answer. The post has
+                more replies; raise limit to get them all.
+              example: true
+            orderPartial:
+              type: boolean
+              const: true
+              description: Present with latest or oldest sort. Some rows came from X views
+                without date order. Rows stay sorted by date, but replies may be
+                missing between those rows. Retry later for a gap-free order.
+                Complete mode and automatic pages set it alike.
               example: true
             message:
               type: string
               description: Explains an answer cut by your limit.
-              example: The post has more matching replies than limit. Raise limit to get them all.
+              example: The post has more matching replies than limit. Raise limit to
+                get them all.
     IncompleteTweetReplies:
       description: Partial reply results with a safe diagnostic.
       allOf:
@@ -9477,6 +9740,7 @@ components:
             - missing_cursor
             - no_next_page
             - page_cap
+            - partial_view
             - repeated_cursor
     ReplyCoverageRichness:
       description: Field counts across collected direct replies.
@@ -10380,9 +10644,9 @@ components:
           const: https://paymentauth.org/problems/payment-required
     Error:
       description: >
-        Error response. Default v1 returns a legacy string error code. Send
-        `xquik-api-contract: 2026-04-29` to receive the structured best-practice
-        error object.
+        Error response. Default v1 returns a legacy string code. Send
+        `xquik-api-contract: 2026-04-29` for the structured best-practice error
+        object.
       type: object
       required: [error]
       properties:
@@ -10440,12 +10704,15 @@ components:
                 - unsupported_field
                 - user_not_found
                 - body_too_large
+                - bookmark_folders_unavailable
                 - checkout_unavailable
                 - connection_challenge_expired
                 - connection_challenge_inactive
                 - coverage_cursor_gone
                 - coverage_cursor_unavailable
+                - cursor_account_unavailable
                 - draft_not_found
+                - draw_too_large
                 - expired
                 - favoriters_unavailable
                 - forbidden
@@ -10477,6 +10744,7 @@ components:
                 - rate_limited
                 - read_request_timeout
                 - replies_incomplete
+                - retweeters_incomplete
                 - search_unavailable
                 - support_media_rate_limit
                 - support_request_rate_limit
@@ -10494,9 +10762,11 @@ components:
                 - x_api_unavailable
                 - x_api_unauthorized
                 - x_auth_failure
+                - x_automation_refused
                 - x_content_too_long
                 - x_daily_limit
                 - x_dm_not_allowed
+                - x_dm_not_sent
                 - x_duplicate_action
                 - x_login_auth_failed
                 - x_login_challenge
@@ -10506,6 +10776,7 @@ components:
                 - x_login_rate_limited
                 - x_login_service_unavailable
                 - x_login_suspended
+                - x_media_rejected
                 - x_rate_limited
                 - x_rejected
                 - x_reply_not_allowed
@@ -10544,7 +10815,7 @@ components:
           example: 'Invalid input. Check the request body.'
         reason:
           type: string
-          description: Machine-readable reason for a login cooldown.
+          description: Machine-readable login failure reason.
           example: temporary_issue
         retryAfter:
           type: integer
@@ -10589,6 +10860,7 @@ components:
       items:
         $ref: '#/components/schemas/EventType'
       minItems: 1
+      maxItems: 21
       example: ['tweet.new', 'tweet.reply']
 
     ExtractionToolType:
@@ -10736,6 +11008,13 @@ components:
           type: boolean
           default: true
           description: Add source target metadata to each result.
+        enrichProfiles:
+          type: boolean
+          default: false
+          description: >
+            Add each user's full profile to follower_explorer,
+            following_explorer, verified_follower_explorer, people_search &
+            repost_extractor rows. Jobs take longer.
         collectionStrategy:
           type: string
           enum: [auto, complete, direct, search, thread]
@@ -10772,12 +11051,14 @@ components:
             - type: string
               format: date-time
             - type: integer
+              minimum: 0
           description: Reply start time as ISO 8601 or Unix seconds.
         untilTime:
           oneOf:
             - type: string
               format: date-time
             - type: integer
+              minimum: 0
           description: Reply end time as ISO 8601 or Unix seconds.
         minViews:
           type: integer
@@ -10845,7 +11126,7 @@ components:
         news:
           type: boolean
           default: false
-          description: Require news-classified Tweet results.
+          description: X dropped filter:news. Leave it false.
         minFollowers:
           type: integer
           minimum: 0
@@ -11028,6 +11309,7 @@ components:
           example: '500'
         estimatedResults:
           type: integer
+          minimum: 0
           description: Credit calculation row count, not source availability.
           example: 500
         resolvedXUserId:
@@ -11268,6 +11550,7 @@ components:
           enum: [pending, running, canceled, completed, failed]
         totalResults:
           type: integer
+          minimum: 0
         resultsLimit:
           type: integer
           minimum: 1
@@ -11306,7 +11589,7 @@ components:
         xUserId: { type: string }
         xUsername: { type: string }
         xDisplayName: { type: string }
-        xFollowersCount: { type: integer }
+        xFollowersCount: { type: integer, minimum: 0 }
         xVerified: { type: boolean }
         xProfileImageUrl: { type: string, format: uri }
         tweetId: { type: string }
@@ -11320,12 +11603,12 @@ components:
             Attached media with outputPreset=flat. Default nested output uses
             enrichmentData.tweet.media.
           items: { $ref: '#/components/schemas/TweetMedia' }
-        bookmarkCount: { type: integer }
-        likeCount: { type: integer }
-        quoteCount: { type: integer }
-        replyCount: { type: integer }
-        retweetCount: { type: integer }
-        viewCount: { type: integer }
+        bookmarkCount: { type: integer, minimum: 0 }
+        likeCount: { type: integer, minimum: 0 }
+        quoteCount: { type: integer, minimum: 0 }
+        replyCount: { type: integer, minimum: 0 }
+        retweetCount: { type: integer, minimum: 0 }
+        viewCount: { type: integer, minimum: 0 }
         enrichmentData: { $ref: '#/components/schemas/PublicMetadata' }
 
     DrawListItem:
@@ -11342,8 +11625,10 @@ components:
           type: string
         totalEntries:
           type: integer
+          minimum: 0
         validEntries:
           type: integer
+          minimum: 0
         createdAt: *date-time-string
         drawnAt: *date-time-string
 
@@ -11370,12 +11655,16 @@ components:
               type: string
             tweetLikeCount:
               type: integer
+              minimum: 0
             tweetRetweetCount:
               type: integer
+              minimum: 0
             tweetReplyCount:
               type: integer
+              minimum: 0
             tweetQuoteCount:
               type: integer
+              minimum: 0
 
     Winner:
       description: Giveaway draw winner with position and backup flag.
@@ -11388,6 +11677,7 @@ components:
           type: string
         position:
           type: integer
+          minimum: 1
         isBackup:
           type: boolean
 
@@ -11413,6 +11703,7 @@ components:
         isActive: *boolean-example-true
         consecutiveFailures:
           type: integer
+          minimum: 0
           description: Consecutive failed delivery attempts since the last success.
           example: 0
         deliveryStatus:
@@ -11423,6 +11714,7 @@ components:
           example: active
         failureHardCap:
           type: integer
+          minimum: 1
           description: Maximum reported failures before needs_attention. It does not pause
             delivery.
           example: 200
@@ -11441,10 +11733,13 @@ components:
           type: string
         attempts:
           type: integer
+          minimum: 0
         createdAt: *date-time-string
         deliveredAt: *date-time-string
         lastStatusCode:
           type: integer
+          minimum: 0
+          maximum: 599
         lastError:
           type: string
 
@@ -11468,14 +11763,19 @@ components:
           type: string
         followersCount:
           type: integer
+          minimum: 0
         followingCount:
           type: integer
+          minimum: 0
         statusesCount:
           type: integer
+          minimum: 0
         mediaCount:
           type: integer
+          minimum: 0
         favouritesCount:
           type: integer
+          minimum: 0
         profilePicture:
           type: string
         profileBannerUrl:
@@ -11503,12 +11803,15 @@ components:
         aspectRatio:
           type: array
           description: Video width and height ratio.
-          items: { type: integer }
+          items: { type: integer, minimum: 0 }
         availabilityReason: { type: string, description: Availability reason. }
         availabilityStatus: { type: string, description: Availability state. }
         description: { type: string, description: Media description. }
         displayUrl: { type: string, description: Display URL. }
-        durationMillis: { type: integer, description: Video duration in milliseconds. }
+        durationMillis:
+          type: integer
+          minimum: 0
+          description: Video duration in milliseconds.
         expandedUrl: { type: string, description: Expanded media URL. }
         embeddable: { type: boolean, description: Embeddable status. }
         faceRects:
@@ -11520,22 +11823,22 @@ components:
               type: object
               required: [x, y, w, h]
               properties:
-                x: { type: integer }
-                y: { type: integer }
-                w: { type: integer }
-                h: { type: integer }
+                x: { type: integer, minimum: 0 }
+                y: { type: integer, minimum: 0 }
+                w: { type: integer, minimum: 0 }
+                h: { type: integer, minimum: 0 }
         focusRects:
           type: array
           description: Suggested image crops.
           items: *image-crop-schema
         grokPostId: { type: string, description: Grok post ID associated with the media. }
         graphicViolence: { type: boolean, description: Graphic-violence warning. }
-        height: { type: integer, description: Original height. }
+        height: { type: integer, minimum: 0, description: Original height. }
         id: { type: string, description: Media entity ID. }
         indices:
           type: array
           description: Tweet text offsets.
-          items: { type: integer }
+          items: { type: integer, minimum: 0 }
         mediaKey: { type: string, description: Stable X media key. }
         monetizable: { type: boolean, description: Monetization status. }
         otherSensitiveContent: { type: boolean }
@@ -11546,8 +11849,8 @@ components:
             type: object
             required: [w, h, resize]
             properties:
-              w: { type: integer }
-              h: { type: integer }
+              w: { type: integer, minimum: 0 }
+              h: { type: integer, minimum: 0 }
               resize: { type: string }
         sourceStatusId: { type: string, description: Source tweet ID for copied media. }
         sourceUserId: { type: string, description: Source profile ID for copied media. }
@@ -11569,12 +11872,12 @@ components:
             type: object
             required: [contentType, url]
             properties:
-              bitrate: { type: integer }
+              bitrate: { type: integer, minimum: 0 }
               contentType: { type: string }
               url: { type: string }
         watchNowUrl: { type: string, description: Public media action URL. }
         visitSiteUrl: { type: string, description: Public destination URL. }
-        width: { type: integer, description: Original width. }
+        width: { type: integer, minimum: 0, description: Original width. }
 
     BookmarkFolder:
       description: Bookmark folder and its optional public cover image.
@@ -11590,9 +11893,12 @@ components:
             id: { type: string, description: Media object ID. }
             mediaId: { type: string, description: Media ID. }
             mediaKey: { type: string, description: Stable media key. }
-            originalImageHeight: { type: integer, description: Original image height. }
+            originalImageHeight:
+              type: integer
+              minimum: 0
+              description: Original image height.
             originalImageUrl: { type: string, description: Original image URL. }
-            originalImageWidth: { type: integer, description: Original image width. }
+            originalImageWidth: { type: integer, minimum: 0, description: Original image width. }
             palette:
               type: array
               description: Dominant image colors and their proportions.
@@ -11665,75 +11971,6 @@ components:
         visualStyle: { type: string }
         metadata: { $ref: '#/components/schemas/PublicMetadata' }
 
-    TweetEdit:
-      description: Lists edit-chain identifiers and the remaining edit window.
-      type: object
-      properties:
-        editTweetIds: { type: array, items: { type: string } }
-        editableUntilMsecs: { type: string }
-        initialTweetId: { type: string }
-
-    TweetEntities:
-      description: Lists hashtags, symbols, links, and mentions from tweet text.
-      type: object
-      properties:
-        hashtags: { type: array, items: { $ref: '#/components/schemas/TweetHashtag' } }
-        smarttags: { type: array, items: { $ref: '#/components/schemas/TweetSymbol' } }
-        symbols: { type: array, items: { $ref: '#/components/schemas/TweetSymbol' } }
-        timestamps: { type: array, items: { $ref: '#/components/schemas/TweetSymbol' } }
-        urls: { type: array, items: { $ref: '#/components/schemas/TweetUrlEntity' } }
-        user_mentions: { type: array, items: { $ref: '#/components/schemas/TweetUserMention' } }
-
-    TweetHashtag:
-      description: Provides hashtag text and source offsets within a tweet.
-      type: object
-      required: [text]
-      properties:
-        indices: { type: array, items: { type: integer } }
-        text: { type: string }
-
-    TweetSymbol:
-      description: Indexed smart-tag, cashtag, or video timestamp metadata.
-      type: object
-      properties:
-        indices: { type: array, items: { type: integer } }
-        seconds: { type: number }
-        text: { type: string }
-        tag:
-          type: object
-          properties:
-            info:
-              type: object
-              properties:
-                info:
-                  type: object
-                  properties:
-                    name: { type: string }
-                    ticker: { type: string }
-
-    TweetUrlEntity:
-      description: Provides shortened, display, and expanded URLs from tweet text.
-      type: object
-      properties:
-        display_url: { type: string }
-        expanded_url: { type: string }
-        indices:
-          type: array
-          items: { type: integer }
-        url: { type: string }
-
-    TweetUserMention:
-      description: Provides profile identity and source offsets for a mention.
-      type: object
-      required: [screen_name]
-      properties:
-        id_str: { type: string }
-        indices:
-          type: array
-          items: { type: integer }
-        name: { type: string }
-        screen_name: { type: string }
-
     TweetAuthorUnavailable:
       description: Why the tweet has no author. X serves a suspended or deleted account as
         an unavailable user with a reason such as Suspended or NotFound. Omitted
@@ -11762,6 +11999,75 @@ components:
               full post.,
           }
 
+    TweetEdit:
+      description: Lists edit-chain identifiers and the remaining edit window.
+      type: object
+      properties:
+        editTweetIds: { type: array, items: { type: string } }
+        editableUntilMsecs: { type: string }
+        initialTweetId: { type: string }
+
+    TweetEntities:
+      description: Lists hashtags, symbols, links, and mentions from tweet text.
+      type: object
+      properties:
+        hashtags: { type: array, items: { $ref: '#/components/schemas/TweetHashtag' } }
+        smarttags: { type: array, items: { $ref: '#/components/schemas/TweetSymbol' } }
+        symbols: { type: array, items: { $ref: '#/components/schemas/TweetSymbol' } }
+        timestamps: { type: array, items: { $ref: '#/components/schemas/TweetSymbol' } }
+        urls: { type: array, items: { $ref: '#/components/schemas/TweetUrlEntity' } }
+        user_mentions: { type: array, items: { $ref: '#/components/schemas/TweetUserMention' } }
+
+    TweetHashtag:
+      description: Provides hashtag text and source offsets within a tweet.
+      type: object
+      required: [text]
+      properties:
+        indices: { type: array, items: { type: integer, minimum: 0 } }
+        text: { type: string }
+
+    TweetSymbol:
+      description: Indexed smart-tag, cashtag, or video timestamp metadata.
+      type: object
+      properties:
+        indices: { type: array, items: { type: integer, minimum: 0 } }
+        seconds: { type: number }
+        text: { type: string }
+        tag:
+          type: object
+          properties:
+            info:
+              type: object
+              properties:
+                info:
+                  type: object
+                  properties:
+                    name: { type: string }
+                    ticker: { type: string }
+
+    TweetUrlEntity:
+      description: Provides shortened, display, and expanded URLs from tweet text.
+      type: object
+      properties:
+        display_url: { type: string }
+        expanded_url: { type: string }
+        indices:
+          type: array
+          items: { type: integer, minimum: 0 }
+        url: { type: string }
+
+    TweetUserMention:
+      description: Provides profile identity and source offsets for a mention.
+      type: object
+      required: [screen_name]
+      properties:
+        id_str: { type: string }
+        indices:
+          type: array
+          items: { type: integer, minimum: 0 }
+        name: { type: string }
+        screen_name: { type: string }
+
     TweetNote:
       description: Complete Note Tweet content and rich-text metadata.
       type: object
@@ -11782,7 +12088,7 @@ components:
             type: object
             required: [index, mediaId]
             properties:
-              index: { type: integer }
+              index: { type: integer, minimum: 0 }
               mediaId: { type: string }
         richtextTags:
           type: array
@@ -11792,8 +12098,10 @@ components:
             properties:
               fromIndex:
                 type: integer
+                minimum: 0
               toIndex:
                 type: integer
+                minimum: 0
               types:
                 type: array
                 items:
@@ -11805,14 +12113,19 @@ components:
       properties:
         bookmarkCount:
           type: integer
+          minimum: 0
         likeCount:
           type: integer
+          minimum: 0
         quoteCount:
           type: integer
+          minimum: 0
         replyCount:
           type: integer
+          minimum: 0
         retweetCount:
           type: integer
+          minimum: 0
 
     TweetPlace:
       description: Describes public place metadata on a geotagged tweet.
@@ -11850,8 +12163,8 @@ components:
               items:
                 type: object
                 properties:
-                  fromIndex: { type: integer }
-                  toIndex: { type: integer }
+                  fromIndex: { type: integer, minimum: 0 }
+                  toIndex: { type: integer, minimum: 0 }
                   ref:
                     type: object
                     properties:
@@ -11863,10 +12176,19 @@ components:
       description: Public tweet fields, excluding nested tweets.
       type: object
       required:
-        [id, text, retweetCount, replyCount, likeCount, quoteCount, viewCount, bookmarkCount]
+        &tweet-required-fields [
+          id,
+          text,
+          retweetCount,
+          replyCount,
+          likeCount,
+          quoteCount,
+          viewCount,
+          bookmarkCount,
+        ]
       properties:
-        id: { type: string, example: '1234567890' }
-        text: { type: string, example: 'Just launched!' }
+        id: &tweet-id-schema { type: string, example: '1234567890' }
+        text: &tweet-text-schema { type: string, example: 'Just launched!' }
         type: { type: string, example: tweet }
         createdAt: { type: string, example: '2025-01-15T12:00:00Z' }
         url:
@@ -11913,7 +12235,7 @@ components:
         source: { type: string, example: 'Twitter Web App' }
         displayTextRange:
           type: array
-          items: { type: integer }
+          items: { type: integer, minimum: 0 }
           example: [0, 31]
         contentDisclosure:
           $ref: '#/components/schemas/ContentDisclosure'
@@ -11991,12 +12313,30 @@ components:
           items:
             $ref: '#/components/schemas/TweetMedia'
           description: Media, omitted when unavailable.
-        retweetCount: { type: integer, example: 5 }
-        replyCount: { type: integer, example: 3 }
-        likeCount: { type: integer, example: 42 }
-        quoteCount: { type: integer, example: 1 }
-        viewCount: { type: integer, example: 1500 }
-        bookmarkCount: { type: integer, example: 2 }
+        retweetCount: &retweet-count-schema
+          type: integer
+          minimum: 0
+          example: 5
+        replyCount: &reply-count-schema
+          type: integer
+          minimum: 0
+          example: 3
+        likeCount: &like-count-schema
+          type: integer
+          minimum: 0
+          example: 42
+        quoteCount: &quote-count-schema
+          type: integer
+          minimum: 0
+          example: 1
+        viewCount: &view-count-schema
+          type: integer
+          minimum: 0
+          example: 1500
+        bookmarkCount: &bookmark-count-schema
+          type: integer
+          minimum: 0
+          example: 2
 
     TweetPublicData:
       description: Shared public tweet fields.
@@ -12009,50 +12349,26 @@ components:
             retweeted_tweet:
               $ref: '#/components/schemas/EmbeddedTweet'
 
+    # vacuum inlines every $ref to check an example, so each nested tweet repeats
+    # the fields its schema types. Typing all tweet fields here took that check
+    # to 9 s of its 10 s limit in a gate, so only the required fields & author
+    # are typed.
     EmbeddedTweet:
-      description: Quoted or retweeted tweet context.
-      allOf:
-        - $ref: '#/components/schemas/TweetPublicDataBase'
-        - type: object
-          properties:
-            author:
-              $ref: '#/components/schemas/UserProfile'
-            quoted_tweet:
-              $ref: '#/components/schemas/EmbeddedTweetLevel2'
-            retweeted_tweet:
-              $ref: '#/components/schemas/EmbeddedTweetLevel2'
-
-    EmbeddedTweetLevel2:
-      description: Nested tweet context at depth 2.
-      allOf:
-        - $ref: '#/components/schemas/TweetPublicDataBase'
-        - type: object
-          properties:
-            author: { $ref: '#/components/schemas/UserProfile' }
-            quoted_tweet:
-              $ref: '#/components/schemas/EmbeddedTweetLevel3'
-            retweeted_tweet:
-              $ref: '#/components/schemas/EmbeddedTweetLevel3'
-
-    EmbeddedTweetLevel3:
-      description: Nested tweet context at depth 3.
-      allOf:
-        - $ref: '#/components/schemas/TweetPublicDataBase'
-        - type: object
-          properties:
-            author: { $ref: '#/components/schemas/UserProfile' }
-            quoted_tweet:
-              $ref: '#/components/schemas/EmbeddedTweetLevel4'
-            retweeted_tweet:
-              $ref: '#/components/schemas/EmbeddedTweetLevel4'
-
-    EmbeddedTweetLevel4:
-      description: Final nested tweet context at depth 4.
-      allOf:
-        - $ref: '#/components/schemas/TweetPublicDataBase'
-        - type: object
-          properties:
-            author: { $ref: '#/components/schemas/UserProfile' }
+      description: A quoted or retweeted tweet. It has the TweetPublicData fields and an
+        author. Nesting stops after 4 levels.
+      type: object
+      required: *tweet-required-fields
+      properties:
+        id: *tweet-id-schema
+        text: *tweet-text-schema
+        retweetCount: *retweet-count-schema
+        replyCount: *reply-count-schema
+        likeCount: *like-count-schema
+        quoteCount: *quote-count-schema
+        viewCount: *view-count-schema
+        bookmarkCount: *bookmark-count-schema
+        author: { $ref: '#/components/schemas/UserProfile' }
+      additionalProperties: true
 
     ContentDisclosure:
       description: Content disclosure metadata shown by X when a tweet is labeled as paid
@@ -12211,9 +12527,11 @@ components:
           example: 'CEO of Tesla, SpaceX, and X'
         followers:
           type: integer
+          minimum: 0
           example: 150000000
         following:
           type: integer
+          minimum: 0
           example: 500
         verified: *boolean-example-true
         isBlueVerified:
@@ -12239,9 +12557,13 @@ components:
           description: Account owner's public profile location text
           example: 'Austin, TX'
         accountBasedIn:
+          description: Null when X shows no label.
           anyOf:
             - $ref: '#/components/schemas/AccountBasedIn'
             - type: 'null'
+        accountBasedInUnavailable:
+          type: boolean
+          description: True when X withheld accountBasedIn from this read. Retry later.
         retweetedAt:
           type: [string, 'null']
           format: date-time
@@ -12254,9 +12576,11 @@ components:
           description: Account creation time.
         statusesCount:
           type: integer
+          minimum: 0
           example: 35000
         mediaCount:
           type: integer
+          minimum: 0
           example: 1200
         protected:
           type: boolean
@@ -12267,6 +12591,7 @@ components:
           example: 'https://xquik.com'
         favouritesCount:
           type: integer
+          minimum: 0
           example: 18000
         hasCustomTimelines: *boolean-example-true
         isTranslator: *boolean-example-false
@@ -12308,8 +12633,10 @@ components:
           $ref: '#/components/schemas/UserAffiliateLabel'
         businessAccountAffiliatesCount:
           type: integer
+          minimum: 0
         creatorSubscriptionsCount:
           type: integer
+          minimum: 0
         hasGraduatedAccess:
           type: boolean
         hasHiddenSubscriptionsOnProfile:
@@ -12387,6 +12714,7 @@ components:
         xUsername: *username-example-schema
         tweetCount:
           type: integer
+          minimum: 0
           example: 50
         isOwnAccount: *boolean-example-true
         fetchedAt: *creation-time-example-schema
@@ -12496,6 +12824,7 @@ components:
             numberComments: *nonnegative-integer
             score:
               type: integer
+              minimum: -9007199254740991
             selftext:
               type: string
             sourceFormat:

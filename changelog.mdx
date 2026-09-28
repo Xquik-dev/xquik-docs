@@ -14,6 +14,12 @@ Search tweets, API keys, signed webhooks, user profiles, REST, MCP, authenticati
 
 <Update label="September 2026" description="v1">
 
+**New**
+
+- Profiles add `accountBasedInUnavailable: true` when X withholds `accountBasedIn` from a read
+- Those profiles omit `accountBasedIn`. Treat the label as unknown & retry later
+- `accountBasedIn: null` still means X shows no label
+
 **Changed**
 
 - Replies, quotes, retweeters & thread of a post X does not have return `404 tweet_not_found`
@@ -21,12 +27,67 @@ Search tweets, API keys, signed webhooks, user profiles, REST, MCP, authenticati
 - Only an empty first page checks the post. A post without engagement still returns 200
 - A 404 costs no credits
 
+- Each account now gets 500 reads a second, up from 300
+- Writes still allow 120 a minute & deletes 60 a minute
+
+- `429 x_rate_limited` messages now name the wait from `Retry-After`, such as about 15 minutes
+- Without a known wait, the message says to try again later
+
+- Writes X refuses as possibly automated return `422 x_automation_refused`
+- They used to return `429 x_rate_limited`
+- Waiting does not change X's answer. Send the next request now with a new `Idempotency-Key`
+- If X keeps refusing, check the account on x.com. Vary your text or pace
+- These refusals cost nothing
+- `429 x_rate_limited` now covers only X's rate limits. Wait for `Retry-After` when present
+
+- `GET /x/tweets/{id}/replies` with `sort=latest` or `sort=oldest` sets `orderPartial: true` when some rows come from X views without date order
+- Rows stay sorted by date & keep the same status. Replies may be missing between them
+- Nothing marked such answers before. Retry later for a gap-free order
+- When X's Recent view ends early or comes back signed out, Xquik reads the rest from X search's Latest results
+
+- `GET /x/tweets/{id}/replies` applies `sort` on automatic pages too
+- Those pages used to list the newest replies first, whatever the `sort`
+- Without `sort`, automatic pages still list the newest first. Standard pages ignore `sort`
+
+- `POST /draws` reads every direct reply & retweeter X shows
+- It used to read X's first page of replies & at most 2,000 retweeters
+- Entries are direct replies to the post. Replies to other replies no longer enter
+- A draw on a busy post takes about 1 minute. Keep the request open for 100 seconds
+- `GET /x/tweets/{id}/retweeters` no longer ends the list early when X refuses a page
+- Xquik reads that page again
+
+- `POST /draws` returns `424` when X stops the reply or repost read early
+- It used to draw from the entries read so far
+- Retry after `replies_incomplete` or `retweeters_incomplete`
+- `draw_too_large` means the post has more entries than 1 draw reads. Contact support
+- Xquik saves & charges nothing for these draws
+
+- Bookmark folder reads on accounts without X Premium return `424 bookmark_folders_unavailable`
+- This covers `GET /x/bookmarks/folders` & `GET /x/bookmarks?folderId=...`
+- They used to return an empty list. The message says to upgrade on X or read all bookmarks
+- These answers cost nothing
+
+- Search Tweets returns `424 search_unavailable` at once for `filter:vine`, `filter:consumer_video`, `filter:pro_video`, `filter:news` & `retweets_of:`
+- X no longer searches these. `news=true` gets the same answer
+- The message says what to change, such as the term to remove
+- A query X refuses as a whole also gets `424 search_unavailable`, such as one over 512 characters
+- These answers cost nothing
+
+- Follower, following, verified follower, retweeter & user search pages take `enrichProfiles=true`
+- Each row then carries the full profile, with fields such as `accountBasedIn`
+- The `x-xquik-profile-enrichment` header counts the rows that carry it
+- Extractions of these rows take `enrichProfiles` & add the profile at `enrichmentData.profile`
+- The price per row stays the same
+
 - Complete-mode replies return 200 after reading a whole `sinceTime` or `untilTime` window
 - Replies outside the window no longer turn that answer into `424 replies_incomplete`
 - Complete-mode replies add `diagnostic.sourcesEnded`
 - `true` means every source ended. X hides the other replies
 - A `424 replies_incomplete` with `sourcesEnded: true` returns the same rows on retry
 - Its message says X hides the other replies instead of asking for a retry
+- Complete-mode replies find replies from new & small accounts more reliably
+- `diagnostic.strategiesAttempted[].stopReason` adds `partial_view` for a view that showed only part of a thread
+- Such a view keeps `sourcesEnded` false until the read holds every reply the post counts
 - `withinTime` now filters user Tweets, replies, media, likes & mentions
 - It also filters Tweet replies & quotes
 - Posts outside the window no longer come back or cost credits
@@ -66,31 +127,21 @@ Search tweets, API keys, signed webhooks, user profiles, REST, MCP, authenticati
 - Guest keys get `403 forbidden` on these 3 routes
 - Guest wallets now prepay 30 GET routes
 
-- Small conversation searches use automatic pagination recovery by default
+- Small conversation searches return more complete results by default
 
-- Reply Scraper 1.2.65 keeps incomplete sources eligible for fallback recovery
-- Reply source exhaustion requires confirmed endings without missing data or errors
+- Reply Scraper 1.2.65 reports completion more accurately
+- Reply reads return more replies within your requested limit
+- Reply Scraper 1.2.64 recovers replies after a stall & keeps collected rows
 
-- Reply recovery follows chained continuations & remaining pages within requested unique-result limits
-
-- Reply recovery pursues requested, filter-matching results beyond the 80% diagnostic threshold
-
-- Reply Scraper 1.2.64 recovers replies after automatic conversation search stalls
-- Reply recovery keeps collected rows & reports incomplete coverage
-
-- Dated author searches support recovery with `include:nativeretweets`
+- Dated author searches with `include:nativeretweets` or `-filter:nativeretweets` return more complete results
 
 - Searches requiring protected authors return an access error before collecting results
 
-- Dated author searches support recovery with `-filter:nativeretweets`
-- Search recovery keeps quote and manual RT distinctions between retweet exclusions
+- Tweet Scraper 1.12.99 returns more Latest search results
 
-- Tweet Scraper 1.12.99 continues Latest searches through empty recovery pages
-- Tweet Scraper recognizes terminal pages after consecutive empty responses
-
-- Multi-author Tweet searches retain recovery while traversing previously returned results
-- Pagination docs now reflect available cursor retries and first-page limitations
-- Tweet search keeps exact ID boundaries during pagination and recovery
+- Multi-author Tweet searches return more complete results
+- Pagination docs now explain cursor retries & first-page limits
+- Tweet search keeps exact ID boundaries across pages
 - `sinceId` excludes its ID. `maxId` includes its ID
 
 - MCP reports missing response-field reads without changing returned values
@@ -139,13 +190,13 @@ Search tweets, API keys, signed webhooks, user profiles, REST, MCP, authenticati
 - Every response after an accepted MPP payment includes `Payment-Receipt`, including non-2xx responses
 - The 26 non-MPP anonymous paid reads return `401` with `WWW-Authenticate: Bearer` and a guest wallet action
 - The 7 direct MPP reads return `402` with `WWW-Authenticate: Payment` and the same guest action
-- Reddit Radar now refreshes rich server-rendered items every 30 minutes and no longer creates reduced RSS fallback items
+- Reddit Radar now lists only items with full details
 - Startup growth Radar items now add founder, company, acquisition, margin, and revenue-efficiency fields when available
 - A successful Compose score now points to `GET /x/accounts` and `POST /x/tweets`, while retaining the one-click `intentUrl`
 
 **Removed**
 
-- Obsolete public `proxy_country` and `loginCountry` account fields. Xquik does not support custom, dedicated, or fixed per-account proxy configuration.
+- Obsolete public `proxy_country` and `loginCountry` account fields
 
 </Update>
 

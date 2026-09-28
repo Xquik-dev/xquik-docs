@@ -116,6 +116,17 @@ import UserResultFilterParams from "/snippets/user-result-filter-params.mdx";
     ```
 
   </Tab>
+
+  <Tab title="503" id="response-x-retweeters-503">
+
+    ```json
+    {
+      "error": "x_api_unavailable",
+      "message": "Xquik is busy right now. Retry shortly."
+    }
+    ```
+
+  </Tab>
 </Tabs>
 
 </Panel>
@@ -371,6 +382,13 @@ Profiles per page. Range: `20-200`. Defaults to `200`.
   rows.
 </ParamField>
 
+<ParamField query="enrichProfiles" type="boolean" default="false">
+
+Set `true` to add each row's full profile, as `GET /x/users/{id}` returns it.
+Pages take several seconds longer. The price per row stays the same.
+
+</ParamField>
+
 ## Which tweet engagement endpoint?
 
 <CardGroup cols={2}>
@@ -438,6 +456,10 @@ Full account key. Sessions and OAuth also work.
 
 ### 200 OK
 
+With `enrichProfiles=true`, each row carries the full profile. The
+`x-xquik-profile-enrichment` header then counts the rows that have it, as in
+`enriched=180; requested=200`. A row without it keeps its list fields.
+
 <ResponseField name="users" type="object[]">
 
 Array of users who retweeted.
@@ -469,6 +491,14 @@ Array of users who retweeted.
 </ResponseField>
 <ResponseField name="location" type="string">
   Profile location.
+</ResponseField>
+<ResponseField name="accountBasedIn" type="object | null">
+  Country or region X shows for the account, with `value`, `level` & `observedAt`. X infers it from
+  account access. It states no nationality or exact location. `null` when X shows none. Present with
+  `enrichProfiles=true`, unless X withholds it.
+</ResponseField>
+<ResponseField name="accountBasedInUnavailable" type="boolean">
+  `true` when X withheld `accountBasedIn` from this row. Retry later to get it. Omitted otherwise.
 </ResponseField>
 <ResponseField name="createdAt" type="string">
   Account creation date (ISO 8601).
