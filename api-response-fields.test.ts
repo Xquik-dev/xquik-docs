@@ -1,9 +1,23 @@
-import { existsSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { basename, join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const PROJECT_ROOT = process.cwd();
 const PRODUCT_ROOT = process.env["XQUIK_PRODUCT_ROOT"] ?? join(PROJECT_ROOT, "..", "xquik");
+const PRODUCT_X_API_DIR = join(PRODUCT_ROOT, "lib/x-api");
+
+function productXApiFile(name: RegExp, marker: string): string {
+  const files = existsSync(PRODUCT_X_API_DIR)
+    ? readdirSync(PRODUCT_X_API_DIR, { encoding: "utf8", recursive: true })
+    : [];
+  const file = files.find(
+    (candidate) =>
+      name.test(basename(candidate)) &&
+      readFileSync(join(PRODUCT_X_API_DIR, candidate), "utf8").includes(marker),
+  );
+  return join(PRODUCT_X_API_DIR, file ?? "missing.ts");
+}
+
 const DOCS_OPENAPI_PATH = join(PROJECT_ROOT, "openapi.yaml");
 const PRODUCT_ROUTE_HELPERS_PATH = join(PRODUCT_ROOT, "app/api/v1/x/route-helpers.ts");
 const PRODUCT_ACCOUNT_ROUTE_PATH = join(PRODUCT_ROOT, "app/api/v1/account/route.ts");
@@ -105,15 +119,22 @@ const PRODUCT_TRENDS_API_PATH = join(PRODUCT_ROOT, "lib/api/trends.ts");
 const PRODUCT_ARTICLE_FORMAT_PATH = join(PRODUCT_ROOT, "lib/x-api/article-format.ts");
 const PRODUCT_MEDIA_HANDLER_PATH = join(PRODUCT_ROOT, "lib/media/handler.ts");
 const PRODUCT_X_API_TYPES_PATH = join(PRODUCT_ROOT, "lib/x-api/types.ts");
-const PRODUCT_READ_RICHNESS_CONTRACT_PATH = join(
-  PRODUCT_ROOT,
-  "lib/x-api/twikit/__tests__/read-data-richness-fields.ts",
+const PRODUCT_READ_RICHNESS_CONTRACT_PATH = productXApiFile(
+  /^read-data-richness-fields\.ts$/u,
+  "",
+);
+const PRODUCT_READ_TYPES_PATH = productXApiFile(
+  /^types\.ts$/u,
+  "interface TransformedBookmarkFolder",
 );
 const PRODUCT_PUBLIC_READ_SANITIZER_PATH = join(
   PRODUCT_ROOT,
   "actors/apify/shared/src/public-read-sanitizer.ts",
 );
-const PRODUCT_X_WRITE_TWIKIT_PATH = join(PRODUCT_ROOT, "lib/x-api/write-client-twikit.ts");
+const PRODUCT_X_WRITE_CLIENT_PATH = productXApiFile(
+  /^write-client-[a-z]+\.ts$/u,
+  "buildUploadMediaOperation]",
+);
 
 interface OpenApiSpec {
   readonly components?: {
@@ -612,7 +633,7 @@ function productBookmarkFolderFields(): readonly string[] {
   return uniqueSorted([
     ...objectLiteralFields(source.slice(start, end + 1)),
     ...productInterfaceFieldsFromPath(
-      join(PRODUCT_ROOT, "lib/x-api/twikit/types.ts"),
+      PRODUCT_READ_TYPES_PATH,
       "TransformedBookmarkFolder",
     ),
   ]);
@@ -841,7 +862,7 @@ function productSendDmFields(): readonly string[] {
   ) {
     throw new Error("Could not verify send DM route write-action wiring.");
   }
-  const writeSource = readFileSync(PRODUCT_X_WRITE_TWIKIT_PATH, "utf8");
+  const writeSource = readFileSync(PRODUCT_X_WRITE_CLIENT_PATH, "utf8");
   if (
     !writeSource.includes("path: '/twitter/send_dm_to_user'") &&
     !writeSource.includes("['/twitter/send_dm_to_user', buildSendDmOperation]")
@@ -874,7 +895,7 @@ function productUploadMediaFields(): readonly string[] {
   ) {
     throw new Error("Could not verify upload media public URL response field.");
   }
-  const writeSource = readFileSync(PRODUCT_X_WRITE_TWIKIT_PATH, "utf8");
+  const writeSource = readFileSync(PRODUCT_X_WRITE_CLIENT_PATH, "utf8");
   if (
     !writeSource.includes("['/twitter/upload_media_v2', buildUploadMediaOperation]") ||
     !writeSource.includes("return { attempts: 0, status: 'success', mediaId: result.mediaId };")
@@ -894,7 +915,7 @@ function productUpdateProfileFields(): readonly string[] {
   ) {
     throw new Error("Could not verify update profile route wiring.");
   }
-  const writeSource = readFileSync(PRODUCT_X_WRITE_TWIKIT_PATH, "utf8");
+  const writeSource = readFileSync(PRODUCT_X_WRITE_CLIENT_PATH, "utf8");
   if (
     !writeSource.includes("['/twitter/update_profile_v2', buildUpdateProfileOperation]") ||
     !writeSource.includes("return { attempts: 0, status: 'success', message: result.userId };")
@@ -930,7 +951,7 @@ function productProfileImageFields(
   ) {
     throw new Error(`Could not verify ${actionType} upload helper wiring.`);
   }
-  const writeSource = readFileSync(PRODUCT_X_WRITE_TWIKIT_PATH, "utf8");
+  const writeSource = readFileSync(PRODUCT_X_WRITE_CLIENT_PATH, "utf8");
   if (
     !writeSource.includes(`['${apiPath}', ${operationBuilder}]`) ||
     !writeSource.includes(operationReturn)
@@ -972,7 +993,7 @@ function productCreateCommunityFields(): readonly string[] {
   ) {
     throw new Error("Could not verify create community route wiring.");
   }
-  const writeSource = readFileSync(PRODUCT_X_WRITE_TWIKIT_PATH, "utf8");
+  const writeSource = readFileSync(PRODUCT_X_WRITE_CLIENT_PATH, "utf8");
   if (
     !writeSource.includes("['/twitter/create_community_v2', buildCreateCommunityOperation]") ||
     !writeSource.includes(
@@ -995,7 +1016,7 @@ function productDeleteCommunityFields(): readonly string[] {
   ) {
     throw new Error("Could not verify delete community route wiring.");
   }
-  const writeSource = readFileSync(PRODUCT_X_WRITE_TWIKIT_PATH, "utf8");
+  const writeSource = readFileSync(PRODUCT_X_WRITE_CLIENT_PATH, "utf8");
   if (
     !writeSource.includes("['/twitter/delete_community_v2', buildDeleteCommunityOperation]") ||
     !writeSource.includes("return { attempts: 0, status: 'success' };")
@@ -1037,7 +1058,7 @@ function productSimpleWriteFields(
   ) {
     throw new Error(`Could not verify ${actionType} route wiring.`);
   }
-  const writeSource = readFileSync(PRODUCT_X_WRITE_TWIKIT_PATH, "utf8");
+  const writeSource = readFileSync(PRODUCT_X_WRITE_CLIENT_PATH, "utf8");
   if (
     !writeSource.includes(`'${apiPath}'`) ||
     !writeSource.includes(`simpleIdBuilder(${operationName}, '${bodyKey}')`) ||
@@ -1502,7 +1523,7 @@ describe("API response field docs", (): void => {
       existsSync(PRODUCT_X_API_TYPES_PATH) &&
       existsSync(PRODUCT_READ_RICHNESS_CONTRACT_PATH) &&
       existsSync(PRODUCT_PUBLIC_READ_SANITIZER_PATH) &&
-      existsSync(PRODUCT_X_WRITE_TWIKIT_PATH);
+      existsSync(PRODUCT_X_WRITE_CLIENT_PATH);
     if (!productSourceExists) {
       expect(productSourceExists).toBe(false);
       return;
