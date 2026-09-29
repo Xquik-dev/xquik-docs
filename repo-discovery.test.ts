@@ -12254,13 +12254,13 @@ const REQUIRED_AGENT_DOCS_PAGE_SIZE_CHECKS = [
   "  - page-size-html",
   "  - page-size-markdown",
   "content-start-position stays disabled until the bounded afdocs sample starts",
-  "Keep the live CI crawl deterministic and bounded",
+  "Keep the live crawl deterministic and bounded",
   "  maxConcurrency: 32",
   "  maxLinksToTest: 30",
   "  requestDelay: 0",
   "  requestTimeout: 10000",
-  "llms-txt-directive-html stays enabled even when it warns on buried positions",
-  "Treat that warning as generated HTML",
+  "llms-txt-directive-html stays on when it warns on buried positions",
+  "Mintlify navigation can push API page bodies past 50%",
 ] as const;
 
 const VAGUE_PUBLIC_POSITIONING = [
