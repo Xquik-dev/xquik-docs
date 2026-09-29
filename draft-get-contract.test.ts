@@ -3,6 +3,8 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
+import { docsSecurity } from "./product-contract.test.helpers.ts";
+
 const PROJECT_ROOT = dirname(fileURLToPath(import.meta.url));
 const PRODUCT_ROOT = process.env["XQUIK_PRODUCT_ROOT"] ?? join(PROJECT_ROOT, "..", "xquik");
 const page = readFileSync(join(PROJECT_ROOT, "api-reference/drafts/get.mdx"), "utf8");
@@ -19,12 +21,11 @@ describe("get tweet draft documentation", (): void => {
     expect.assertions(1);
 
     expect({
-      apiKeyAuth: getOperation.includes("apiKey: []"),
-      oauthAuth: getOperation.includes("oauthBearer: []"),
+      security: docsSecurity("getDraft"),
       statuses: ["200", "400", "401", "404", "429"].every((status) =>
         getOperation.includes(`        '${status}':`),
       ),
-    }).toStrictEqual({ apiKeyAuth: true, oauthAuth: true, statuses: true });
+    }).toStrictEqual({ security: [{ apiKey: [] }, { oauthBearer: [] }], statuses: true });
   });
 
   it("documents only the canonical draft response fields", (): void => {
