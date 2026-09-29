@@ -3,7 +3,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
-import { PRODUCT_ROOT, productCheck } from "./product-contract.test.helpers.ts";
+import { docsSecurity, PRODUCT_ROOT, productCheck } from "./product-contract.test.helpers.ts";
 
 const PROJECT_ROOT = dirname(fileURLToPath(import.meta.url));
 const page = readFileSync(join(PROJECT_ROOT, "api-reference/support/list.mdx"), "utf8");
@@ -48,23 +48,21 @@ describe("support ticket list documentation", (): void => {
     expect.assertions(1);
 
     expect({
-      apiKeyAuth: listOperation.includes("apiKey: []"),
       documentedApiKey: normalizedPage.includes("Your Xquik API key. Generate one from the"),
       documentedBearer: normalizedPage.includes(
         "An OAuth bearer token formatted as `Bearer YOUR_TOKEN`.",
       ),
       noSessionCookieClaim: !normalizedPage.includes("Session cookie authentication"),
-      oauthAuth: listOperation.includes("oauthBearer: []"),
+      security: docsSecurity("listTickets"),
       statuses: ["200", "401", "429"].every((status) =>
         listOperation.includes(`        '${status}':`),
       ),
       ticketStates: openapi.includes("enum: [open, in_progress, resolved, closed]"),
     }).toStrictEqual({
-      apiKeyAuth: true,
       documentedApiKey: true,
       documentedBearer: true,
       noSessionCookieClaim: true,
-      oauthAuth: true,
+      security: [{ apiKey: [] }, { oauthBearer: [] }],
       statuses: true,
       ticketStates: true,
     });

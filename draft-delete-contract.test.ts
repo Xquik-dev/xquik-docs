@@ -3,6 +3,8 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
+import { docsSecurity } from "./product-contract.test.helpers.ts";
+
 const PROJECT_ROOT = dirname(fileURLToPath(import.meta.url));
 const PRODUCT_ROOT = process.env["XQUIK_PRODUCT_ROOT"] ?? join(PROJECT_ROOT, "..", "xquik");
 const page = readFileSync(join(PROJECT_ROOT, "api-reference/drafts/delete.mdx"), "utf8");
@@ -19,12 +21,11 @@ describe("delete tweet draft documentation", (): void => {
     expect.assertions(1);
 
     expect({
-      apiKeyAuth: deleteOperation.includes("apiKey: []"),
-      oauthAuth: deleteOperation.includes("oauthBearer: []"),
+      security: docsSecurity("deleteDraft"),
       statuses: ["204", "400", "401", "404", "429"].every((status) =>
         deleteOperation.includes(`        '${status}':`),
       ),
-    }).toStrictEqual({ apiKeyAuth: true, oauthAuth: true, statuses: true });
+    }).toStrictEqual({ security: [{ apiKey: [] }, { oauthBearer: [] }], statuses: true });
   });
 
   it("handles the empty success response in every client example", (): void => {

@@ -3,6 +3,8 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
+import { docsSecurity } from "./product-contract.test.helpers.ts";
+
 const PROJECT_ROOT = dirname(fileURLToPath(import.meta.url));
 const PRODUCT_ROOT = process.env["XQUIK_PRODUCT_ROOT"] ?? join(PROJECT_ROOT, "..", "xquik");
 const page = readFileSync(join(PROJECT_ROOT, "api-reference/account/x-identity.mdx"), "utf8");
@@ -20,12 +22,11 @@ describe("set X identity documentation", (): void => {
     expect.assertions(1);
 
     expect({
-      apiKeyAuth: operation.includes("apiKey: []"),
-      oauthAuth: operation.includes("oauthBearer: []"),
+      security: docsSecurity("setXIdentity"),
       statuses: ["200", "400", "401", "429"].every((status) =>
         operation.includes(`        '${status}':`),
       ),
-    }).toStrictEqual({ apiKeyAuth: true, oauthAuth: true, statuses: true });
+    }).toStrictEqual({ security: [{ apiKey: [] }, { oauthBearer: [] }], statuses: true });
   });
 
   it("documents the canonical request and response fields", (): void => {

@@ -72,12 +72,23 @@ interface ProductOperation {
   readonly itemFields: (property: string) => readonly string[];
 }
 
-/** An operation of the product spec by `operationId`, or undefined. */
-function productOperation(spec: Spec, operationId: string): ProductOperation | undefined {
-  const operation = Object.values(asRecord(spec["paths"]) ?? {})
+/** An operation of `spec` by `operationId`, or undefined. */
+function findOperation(spec: Spec, operationId: string): Spec | undefined {
+  return Object.values(asRecord(spec["paths"]) ?? {})
     .flatMap((path) => Object.values(asRecord(path) ?? {}))
     .map((candidate) => asRecord(candidate))
     .find((candidate) => candidate?.["operationId"] === operationId);
+}
+
+/** The `security` of an operation of this repository's spec, aliases resolved. */
+function docsSecurity(operationId: string): unknown {
+  const source = readFileSync(join(import.meta.dirname, "openapi.yaml"), "utf8");
+  return findOperation(asRecord(Bun.YAML.parse(source)) ?? {}, operationId)?.["security"];
+}
+
+/** An operation of the product spec by `operationId`, or undefined. */
+function productOperation(spec: Spec, operationId: string): ProductOperation | undefined {
+  const operation = findOperation(spec, operationId);
   if (operation === undefined) return undefined;
   const responses = asRecord(operation["responses"]) ?? {};
   const success = resolve(spec, responses["200"]);
@@ -137,4 +148,4 @@ function productCheck(name: string, run: (spec: Spec) => void): void {
   );
 }
 
-export { docsContract, PRODUCT_ROOT, productCheck, productOperation };
+export { docsContract, docsSecurity, PRODUCT_ROOT, productCheck, productOperation };
