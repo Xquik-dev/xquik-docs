@@ -2,13 +2,9 @@ import { readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
 
-const productRoot = process.env["XQUIK_PRODUCT_ROOT"] ?? process.env["XQUIK_ROOT"];
-const source = readFileSync(new URL("api-reference/styles/get.mdx", import.meta.url), "utf8");
+import { docsContract, productCheck, productOperation } from "./product-contract.test.helpers.ts";
 
-function readProductFile(path: string): string | undefined {
-  if (productRoot === undefined) return undefined;
-  return readFileSync(`${productRoot}/${path}`, "utf8");
-}
+const source = readFileSync(new URL("api-reference/styles/get.mdx", import.meta.url), "utf8");
 
 describe("get tweet style documentation", (): void => {
   it("matches every canonical status and authentication method", (): void => {
@@ -85,26 +81,21 @@ describe("get tweet style documentation", (): void => {
     });
   });
 
-  it("remains synchronized with the optional product implementation", (): void => {
+  productCheck("matches the product OpenAPI operation", (spec): void => {
     expect.assertions(1);
 
-    const route = readProductFile("app/api/v1/styles/[id]/route.ts");
-    const query = readProductFile("lib/api/style-cache-query.ts");
+    const docs = docsContract(source);
+    const product = productOperation(spec, "getStyle");
+    const fields = [...(product?.successFields ?? []), ...(product?.itemFields("tweets") ?? [])];
 
     expect({
-      queryIsAccountScoped:
-        query === undefined ||
-        (query.includes("eq(tweetStyleCache.userId, userId)") &&
-          query.includes("eq(tweetStyleCache.xUsername, normalizedUsername)")),
-      routeFormatsRow: route === undefined || route.includes("formatStyleDetail(row)"),
-      routeReturnsNotFound: route === undefined || route.includes("error: 'style_not_found'"),
-      routeUsesProfileKey:
-        route === undefined || route.includes("queryStyleDetail(auth.userId, username)"),
+      parameters: product?.parameters.toSorted(),
+      statuses: product?.statuses,
+      undocumentedFields: fields.filter((field) => !docs.fields.includes(field)),
     }).toStrictEqual({
-      queryIsAccountScoped: true,
-      routeFormatsRow: true,
-      routeReturnsNotFound: true,
-      routeUsesProfileKey: true,
+      parameters: docs.parameters,
+      statuses: docs.statuses,
+      undocumentedFields: [],
     });
   });
 });

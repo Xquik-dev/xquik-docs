@@ -2,13 +2,9 @@ import { readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
 
-const productRoot = process.env["XQUIK_PRODUCT_ROOT"] ?? process.env["XQUIK_ROOT"];
-const source = readFileSync(new URL("api-reference/x-accounts/list.mdx", import.meta.url), "utf8");
+import { docsContract, productCheck, productOperation } from "./product-contract.test.helpers.ts";
 
-function readProductFile(path: string): string | undefined {
-  if (productRoot === undefined) return undefined;
-  return readFileSync(`${productRoot}/${path}`, "utf8");
-}
+const source = readFileSync(new URL("api-reference/x-accounts/list.mdx", import.meta.url), "utf8");
 
 describe("connected X accounts list documentation", (): void => {
   it("documents every status and supported authentication method", (): void => {
@@ -104,38 +100,22 @@ describe("connected X accounts list documentation", (): void => {
     });
   });
 
-  it("remains synchronized with the optional product implementation", (): void => {
+  productCheck("matches the product OpenAPI operation", (spec): void => {
     expect.assertions(1);
 
-    const handler = readProductFile("lib/x-accounts/accounts-route.ts");
-    const route = readProductFile("app/api/v1/x/accounts/route.ts");
+    const docs = docsContract(source);
+    const product = productOperation(spec, "listXAccounts");
 
     expect({
-      accountScopedQuery:
-        route === undefined ||
-        (route.includes("eq(connectedXAccounts.userId, userId)") &&
-          route.includes(".where(and(...conditions))")),
-      createdAscending:
-        route === undefined ||
-        (route.includes("connectedXAccounts.createdAt} ASC") &&
-          route.includes("connectedXAccounts.id} ASC")),
-      cursorBounded:
-        route === undefined ||
-        (route.includes("'asc'") && route.includes("rows.limit(query.fetchCount)")),
-      listUsesV1Auth:
-        route === undefined || route.includes("withV1Auth(request, 'Failed to list X accounts'"),
-      optionalCookieTimestamp:
-        handler === undefined || handler.includes("row.cookiesObtainedAt?.toISOString()"),
-      resultMapsPage:
-        handler === undefined ||
-        handler.includes("accounts: page.items.map((row) => formatAccount(row))"),
+      parameters: product?.parameters.toSorted(),
+      statuses: product?.statuses,
+      undocumentedFields: (product?.successFields ?? []).filter(
+        (field) => !docs.fields.includes(field),
+      ),
     }).toStrictEqual({
-      accountScopedQuery: true,
-      createdAscending: true,
-      cursorBounded: true,
-      listUsesV1Auth: true,
-      optionalCookieTimestamp: true,
-      resultMapsPage: true,
+      parameters: docs.parameters,
+      statuses: docs.statuses,
+      undocumentedFields: [],
     });
   });
 });

@@ -554,62 +554,29 @@ should always know why each tweet appeared. Render concrete tweet fields:
 - Attached photo, video, or animated GIF URLs.
 - A source URL for opening the original tweet.
 
-Keep `next_cursor` outside the visible tweet list. Bind it to the community,
-query, sort mode, and page size. Disable the next-page action during requests.
-Disable it permanently when `has_next_page` becomes false.
-
-An empty page is a valid search result. It does not mean the community
-is missing. Display empty matches separately from authentication, credit, and
-request errors.
+Bind `next_cursor` to the community, query, sort mode, and page size. Stop
+paging when `has_next_page` is false. An empty page is a valid result, not a
+missing community.
 
 ## Keep decisions across a live moderation queue
 
-Create one queue identity from the community ID, query, and sort mode. Keep it
-unchanged while reviewers page through matching tweets.
+Key the queue on the community ID, query, and sort mode. Store each decision
+against `tweet.id`, never a row position. When a page fails, keep its rows and
+cursor. Retry with the same parameters.
 
-Store each decision against `tweet.id`. Never attach labels to visible row
-numbers. New tweets can change result order between `Latest` requests.
-
-Separate 4 queue states:
-
-- Unreviewed tweets from the current cursor page.
-- Selected tweets awaiting an explicit action.
-- Reviewed tweets with a stored decision and review time.
-- Failed page requests that retain their previous cursor.
-
-When a page fails, keep the current rows and cursor. Retry with identical
-query parameters. Do not advance the cursor until you have saved every row.
-
-`Latest` results change as new tweets arrive. Deduplicate incoming rows by Tweet ID. Keep
-earlier decisions when the same tweet appears again.
-
-`Top` results rank by relevance. Record each collection time because ranking
-can change. Do not compare row positions across separate requests.
-
-Pass approved Tweet IDs into reply, thread, profile, or media workflows. Keep
-each follow-up response separate from the search result. Your queue owns the
-reviewer, decision, and review time fields.
+`Latest` rows change as new tweets arrive, so deduplicate them by Tweet ID.
+`Top` ranking changes too, so record each collection time.
 
 ## Build a query-specific community review batch
 
-Save the exact query before requesting tweets. Keep every operator, quoted
-phrase, exclusion, language choice, and engagement filter. Reviewers must see
-the expression that produced the queue.
+Save the exact query before requesting tweets. Give each batch 1 purpose.
 
 Store Tweet ID, author ID, text, creation time, engagement, and media for every
-match. Add the request time and returned cursor. Keep reviewer fields in a
-separate table keyed by Tweet ID.
+match. Add the request time and cursor. Keep reviewer fields in a separate
+table keyed by Tweet ID.
 
-Assign one purpose to each batch. Examples include campaign replies, support
-complaints, product feedback, rule violations, or event coverage. Never mix
-unrelated queries inside one review queue.
-
-Store each cursor page before requesting another. Deduplicate repeated Tweet
-IDs after retries. Never discard a prior decision when engagement counts
-change.
-
-Record one terminal state: completed, capped, credit-bounded, or interrupted.
-A live search page never proves a complete historical community archive.
+Record 1 terminal state: completed, capped, credit-bounded, or interrupted. A
+live search page never proves a complete community archive.
 
 ## Separate search matches from community feed coverage
 
@@ -619,14 +586,6 @@ every recent post. Use the community feed route for an unfiltered timeline.
 Keep match counts separate from total community activity. A narrow query can
 return zero tweets while the community remains active. A broad query can
 create more review work without improving relevance.
-
-Test the expression before opening a long queue. Inspect several Tweet IDs,
-authors, timestamps, replies, reposts, likes, and media URLs. Narrow recurring
-false matches with supported operators.
-
-Compare 2 queries with the same time window and result cap. Count unique
-Tweet IDs for each expression. Report overlapping matches separately. Never
-combine both result sets under one unrecorded query label.
 
 ## Headers
 

@@ -507,22 +507,22 @@ paths:
                     example: '42'
                   fullKey:
                     type: string
-                    example: xq_live_abc123def456
+                    example: xq_live_example_key
                   name:
                     type: string
                     example: My API Key
                   prefix:
                     type: string
-                    example: xq_live_abc1
+                    example: xq_live_exam
                   createdAt: &created-at-schema
                     type: string
                     format: date-time
                     example: '2025-01-15T12:00:00Z'
               example:
                 id: '42'
-                fullKey: xq_live_abc123def456
+                fullKey: xq_live_example_key
                 name: My API Key
-                prefix: xq_live_abc1
+                prefix: xq_live_exam
                 createdAt: '2025-01-15T12:00:00Z'
         '401': *unauthenticated-response
         '403':
@@ -2336,13 +2336,13 @@ paths:
                   secret:
                     type: string
                     description: Plaintext HMAC signing secret returned only at creation.
-                    example: 'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2'
+                    example: 'abababababababababababababababababababababababababababababababab'
                   eventTypes: *event-types
                   createdAt: *created-at-schema
               example:
                 id: '42'
                 url: 'https://example.com/webhook'
-                secret: 'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2'
+                secret: 'abababababababababababababababababababababababababababababababab'
                 eventTypes: [tweet.new, tweet.reply]
                 createdAt: '2025-01-15T12:00:00Z'
         '400': *invalid-input-response
@@ -5235,7 +5235,7 @@ paths:
                       clientSecret:
                         type: string
                         description: Payment client secret for completing authentication.
-                        example: pi_3abc_secret_xyz
+                        example: pi_example_secret_example
                   - type: object
                     required: [outcome]
                     properties:
@@ -5259,7 +5259,7 @@ paths:
                   summary: Additional authentication required
                   value:
                     outcome: requires_action
-                    clientSecret: pi_3abc_secret_xyz
+                    clientSecret: pi_example_secret_example
                 noPaymentMethod:
                   summary: No saved payment method
                   value:
@@ -6627,8 +6627,9 @@ paths:
             Sort the selected replies before applying limit. Complete mode
             defaults to relevance. Automatic pages list the newest first unless
             you set sort. Standard pages ignore sort. Latest and oldest sort
-            every row by date. An answer with rows from X views without date
-            order sets orderPartial.
+            every row by date. They read the whole thread before applying limit,
+            so big threads take longer. An answer that stopped before every
+            reply X shows sets orderPartial.
         - name: excludeOriginalAuthor
           in: query
           schema: { type: boolean, default: false }
@@ -8297,7 +8298,12 @@ components:
     WriteRateLimited:
       description: >
         The write hit an Xquik limit or X's `x_rate_limited`. Follow
-        `Retry-After` when present. Otherwise back off before retrying.
+        `Retry-After` when present. Otherwise back off before retrying. The
+        follow limit's `Retry-After` is the wait until it frees, up to 24 hours.
+      headers:
+        Retry-After:
+          description: Seconds to wait before retrying, when known.
+          schema: *positive-integer
       content:
         application/json:
           schema: &retry-after-error-schema
@@ -8311,11 +8317,17 @@ components:
                     example: 60
           examples:
             xquikLimit:
-              summary: Xquik tier or action limit
+              summary: Xquik tier limit
               value:
                 error: 'rate_limit_exceeded'
                 message: 'Too many requests. Try again later.'
                 retryAfter: 60
+            followLimit:
+              summary: Follow limit
+              value:
+                error: 'rate_limit_exceeded'
+                message: 'Too many follow actions. Try again in 23 hours.'
+                retryAfter: 82800
     XApiError:
       description: >
         Dependency unavailable, unauthorized, or limited. Default v1 uses 502;
@@ -8499,9 +8511,8 @@ components:
             message: 'Too many requests. Retry later.'
     RateLimitExceeded:
       description: >
-        Xquik tier rate limit exceeded. Each user gets 500 reads a second, 120
-        writes a minute & 60 deletes a minute. Wait `Retry-After` seconds before
-        retrying.
+        Each user gets 500 reads/s, 120 writes/min & 60 deletes/min. Wait
+        `Retry-After` seconds.
       content:
         application/json:
           schema: *retry-after-error-schema
@@ -9667,9 +9678,9 @@ components:
             orderPartial:
               type: boolean
               const: true
-              description: Present with latest or oldest sort. Some rows came from X views
-                without date order. Rows stay sorted by date, but replies may be
-                missing between those rows. Retry later for a gap-free order.
+              description: Present with latest or oldest sort. The read stopped before it
+                held every reply X shows. Rows stay sorted by date, but replies
+                may be missing between them. Retry later for a gap-free order.
                 Complete mode and automatic pages set it alike.
               example: true
             message:

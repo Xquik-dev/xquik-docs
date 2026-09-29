@@ -2,13 +2,9 @@ import { readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
 
-const productRoot = process.env["XQUIK_PRODUCT_ROOT"] ?? process.env["XQUIK_ROOT"];
-const source = readFileSync(new URL("api-reference/styles/compare.mdx", import.meta.url), "utf8");
+import { docsContract, productCheck, productOperation } from "./product-contract.test.helpers.ts";
 
-function readProductFile(path: string): string | undefined {
-  if (productRoot === undefined) return undefined;
-  return readFileSync(`${productRoot}/${path}`, "utf8");
-}
+const source = readFileSync(new URL("api-reference/styles/compare.mdx", import.meta.url), "utf8");
 
 describe("compare tweet writing profiles documentation", (): void => {
   it("matches every canonical response status and authentication method", (): void => {
@@ -90,36 +86,23 @@ describe("compare tweet writing profiles documentation", (): void => {
     });
   });
 
-  it("remains synchronized with the optional product implementation", (): void => {
+  productCheck("matches the product OpenAPI operation", (spec): void => {
     expect.assertions(1);
 
-    const route = readProductFile("app/api/v1/styles/compare/route.ts");
-    const query = readProductFile("lib/api/style-cache-query.ts");
+    const docs = docsContract(source);
+    const product = productOperation(spec, "compareStyles");
+    const fields = [...(product?.successFields ?? []), ...(product?.itemFields("style1") ?? [])];
 
     expect({
-      missingParamsRemain400:
-        route === undefined ||
-        (route.includes("error: 'missing_params'") && route.includes("{ status: 400 }")),
-      parallelLookupsRemainAccountScoped:
-        route === undefined ||
-        (route.includes("queryStyleDetail(auth.userId, username1)") &&
-          route.includes("queryStyleDetail(auth.userId, username2)")),
-      queryRemainsLowercase:
-        query === undefined ||
-        query.includes("const normalizedUsername = normalizeStyleKey(username)"),
-      responseOrderRemainsStable:
-        route === undefined ||
-        (route.includes("style1: formatStyleDetail(row1)") &&
-          route.includes("style2: formatStyleDetail(row2)")),
-      styleNotFoundRemains404:
-        route === undefined ||
-        (route.includes("error: 'style_not_found'") && route.includes("{ status: 404 }")),
+      parameters: product?.parameters.toSorted(),
+      statuses: product?.statuses,
+      undocumentedFields: fields.filter(
+        (field) => !docs.fields.includes(field) && !["style1", "style2"].includes(field),
+      ),
     }).toStrictEqual({
-      missingParamsRemain400: true,
-      parallelLookupsRemainAccountScoped: true,
-      queryRemainsLowercase: true,
-      responseOrderRemainsStable: true,
-      styleNotFoundRemains404: true,
+      parameters: docs.parameters,
+      statuses: docs.statuses,
+      undocumentedFields: [],
     });
   });
 });
