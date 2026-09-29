@@ -105,9 +105,61 @@ function isExpectedSectionHeaderSkip(result: CheckResult): boolean {
   );
 }
 
-function acceptsResult(checkId: string, result: CheckResult): boolean {
+/**
+ * The served markdown keeps Mintlify components such as `<Card title="...">`
+ * as MDX. afdocs reads their titles & inner markdown links as raw HTML, so
+ * text the markdown holds can count as missing. The markdown text of a page:
+ * its component titles, and its prose with links reduced to their text & tags,
+ * code marks & bold marks removed.
+ */
+function markdownText(markdown: string): string {
+  const titles = [...markdown.matchAll(/\btitle="([^"]*)"/gu)].map((match) => match[1]);
+  const prose = markdown
+    .replaceAll(/!?\[([^\]]*)\]\([^)]*\)/gu, "$1")
+    .replaceAll(/<\/?[A-Za-z][^>]*>/gu, " ")
+    .replaceAll(/`|\*\*|__/gu, "");
+  return [...titles, prose].join(" ").replaceAll(/\s+/gu, " ");
+}
+
+/**
+ * Whether every text a parity warning names as missing is in that page's
+ * served markdown, so the warning comes from MDX components alone.
+ */
+async function parityWarningIsMdxOnly(result: CheckResult): Promise<boolean> {
+  const pages = asRecordArray(asRecord(result.details)?.pageResults).filter(
+    (page) => page.status === "warn",
+  );
+  const checks = await Promise.all(
+    pages.map(async (page): Promise<boolean> => {
+      const url = asString(page.url);
+      const samples = Array.isArray(page.sampleDiffs) ? page.sampleDiffs : [];
+      if (url === undefined || samples.length === 0) return false;
+      const mdUrl = new URL(url);
+      mdUrl.pathname =
+        mdUrl.pathname === "/" ? "/index.md" : `${mdUrl.pathname.replace(/\/$/u, "")}.md`;
+      const response = await fetch(mdUrl).catch((): undefined => undefined);
+      if (!response?.ok) return false;
+      const text = markdownText(await response.text());
+      return samples.every(
+        (sample) =>
+          typeof sample === "string" &&
+          text.includes(sample.replace(/^- /u, "").replaceAll(/\s+/gu, " ").trim()),
+      );
+    }),
+  );
+  return pages.length > 0 && checks.every(Boolean);
+}
+
+function acceptsResult(
+  checkId: string,
+  result: CheckResult,
+  mdxOnlyParityWarning: boolean,
+): boolean {
   if (result.status === "pass") {
     return true;
+  }
+  if (checkId === "markdown-content-parity") {
+    return result.status === "warn" && mdxOnlyParityWarning;
   }
   if (checkId === "auth-alternative-access") {
     return result.status === "skip";
@@ -121,6 +173,7 @@ function acceptsResult(checkId: string, result: CheckResult): boolean {
 describe("Agent-Friendly Documentation", (): void => {
   let configuredCheckIds = new Set<string>();
   let resultsByCheck: Map<string, CheckResult> | undefined;
+  let mdxOnlyParityWarning = false;
 
   beforeAll(async (): Promise<void> => {
     const config = await loadConfig();
@@ -129,6 +182,8 @@ describe("Agent-Friendly Documentation", (): void => {
     resultsByCheck = new Map(
       report.results.map((result): [string, CheckResult] => [result.id, result]),
     );
+    const parity = resultsByCheck.get("markdown-content-parity");
+    mdxOnlyParityWarning = parity?.status === "warn" ? await parityWarningIsMdxOnly(parity) : false;
   }, LIVE_AGENT_DOCS_TIMEOUT_MS);
 
   for (const check of getChecksSorted()) {
@@ -143,7 +198,7 @@ describe("Agent-Friendly Documentation", (): void => {
 
       const message = formatResult(result);
       process.stdout.write(`${message}\n`);
-      expect(acceptsResult(check.id, result), message).toBe(true);
+      expect(acceptsResult(check.id, result, mdxOnlyParityWarning), message).toBe(true);
     });
   }
 });
