@@ -1067,17 +1067,6 @@ paths:
                         replyCount: 8
                         viewCount: 5000
                         createdAt: '2025-01-15T12:00:00Z'
-              example:
-                xUsername: elonmusk
-                tweetCount: 5
-                tweets:
-                  - id: '1234567890'
-                    text: 'Excited to share our latest research.'
-                    likeCount: 120
-                    retweetCount: 15
-                    replyCount: 8
-                    viewCount: 5000
-                    createdAt: '2025-01-15T12:00:00Z'
         '401': *unauthenticated-response
         '402': *payment-required-response
         '404': *not-found-response
@@ -1214,10 +1203,10 @@ paths:
     post:
       operationId: createMonitor
       summary: Create monitor
-      description: Creates an account monitor. Monitors are unlimited. Active monitors
-        check every 1 second and cost 21 credits per hour. Events and webhook
-        deliveries are included. Creation requires available credits for the
-        first hourly charge and username lookup.
+      description: Creates an account monitor, with no count limit. Active monitors check
+        every second for 21 credits per hour, including events & webhook
+        deliveries. Creation needs credits for the first hour & the username
+        lookup.
       tags: [Monitors]
       security: [{ apiKey: [] }, { oauthBearer: [] }]
       requestBody:
@@ -1328,10 +1317,9 @@ paths:
     post:
       operationId: createKeywordMonitor
       summary: Create keyword monitor
-      description: Creates a keyword monitor. Keyword monitors are unlimited. Active
-        monitors check every 1 second and cost 21 credits per hour. Events and
-        webhook deliveries are included. Creation requires available credits for
-        the first hourly charge.
+      description: Creates a keyword monitor, with no count limit. Active monitors check
+        every second for 21 credits per hour, including events & webhook
+        deliveries. Creation needs credits for the first hour.
       tags: [Monitors]
       security: [{ apiKey: [] }, { oauthBearer: [] }]
       requestBody:
@@ -2214,22 +2202,6 @@ paths:
                     items:
                       $ref: '#/components/schemas/Winner'
                     example: []
-              example:
-                draw:
-                  id: 'f4bd00a2-7b4e-4e59-8e1b-72e2c9f12345'
-                  tweetUrl: 'https://x.com/elonmusk/status/1234567890'
-                  tweetId: '1234567890'
-                  tweetText: 'Giving away 3 Tesla Model 3s!'
-                  tweetAuthorUsername: 'elonmusk'
-                  status: 'completed'
-                  totalEntries: 250
-                  validEntries: 200
-                  tweetLikeCount: 50000
-                  tweetRetweetCount: 25000
-                  tweetReplyCount: 10000
-                  tweetQuoteCount: 5000
-                  createdAt: '2025-01-15T12:00:00Z'
-                winners: []
         '401': *unauthenticated-response
         '404': *not-found-response
         '429': *rate-limit-exceeded-response
@@ -2631,15 +2603,14 @@ paths:
                   items:
                     type: string
                   maxItems: 4
-                  description: Public media URLs to attach, up to 4 images or exactly 1 MP4
-                    video up to 100 MB. Each URL must be publicly reachable.
-                    Attached media adds 2 credits per started MB across all
-                    files.
+                  description: Publicly reachable URLs of up to 4 images or exactly 1 MP4
+                    video up to 100 MB. Media adds 2 credits per started MB
+                    across all files.
                   example: ['https://example.com/video.mp4']
             example:
               account: '@elonmusk'
               text: 'Just launched our new feature!'
-      responses: &write-responses
+      responses: &media-write-responses
         '200':
           $ref: '#/components/responses/WriteActionCompleted'
         '202':
@@ -2664,6 +2635,10 @@ paths:
           $ref: '#/components/responses/WriteTrackingUnavailable'
         '500':
           $ref: '#/components/responses/WriteError'
+        '413':
+          $ref: '#/components/responses/MediaTooLarge'
+        '415':
+          $ref: '#/components/responses/UnsupportedMedia'
 
   /x/write-actions/{id}:
     get:
@@ -2773,10 +2748,6 @@ paths:
                     minimum: 0
                     example: 30
                   woeid: *integer-example-one
-              example:
-                trends: *trends-example
-                count: 30
-                woeid: 1
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '402':
@@ -2826,11 +2797,11 @@ paths:
             minimum: 1
             maximum: 10000
           description: >
-            Unique matching result upper bound after filtering. Default 20.
-            Explicit coverage defaults to 2000. It returns retained rows and
-            deadline diagnostics when time expires. Only returned rows are
-            billed. Credits may reduce results; zero affordable rows returns
-            402. Aliases: pageSize, count, max_results.
+            Most unique matches to return after filtering. Default 20; explicit
+            coverage defaults to 2000. At the deadline it returns kept rows &
+            diagnostics. Only returned rows are billed; credits can cut results,
+            & 0 affordable rows returns 402. Aliases: pageSize, count,
+            max_results.
         - $ref: '#/components/parameters/TweetFilterFromUser'
         - $ref: '#/components/parameters/TweetFilterToUser'
         - $ref: '#/components/parameters/TweetFilterMentioning'
@@ -3400,7 +3371,31 @@ paths:
         required: true
         description: Account to perform the follow.
         content: *x-account-body-content
-      responses: *write-responses
+      responses: &write-responses
+        '200':
+          $ref: '#/components/responses/WriteActionCompleted'
+        '202':
+          $ref: '#/components/responses/WriteActionAccepted'
+        '409':
+          $ref: '#/components/responses/WriteIdempotencyConflict'
+        '400':
+          $ref: '#/components/responses/WriteInvalidInput'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
+        '403':
+          $ref: '#/components/responses/AccountAuthError'
+        '404':
+          $ref: '#/components/responses/XAccountNotFound'
+        '422':
+          $ref: '#/components/responses/WriteRejected'
+        '429':
+          $ref: '#/components/responses/WriteRateLimited'
+        '503':
+          $ref: '#/components/responses/WriteTrackingUnavailable'
+        '500':
+          $ref: '#/components/responses/WriteError'
     delete:
       operationId: unfollowUser
       description: Unfollows a user through a connected X account.
@@ -3616,7 +3611,7 @@ paths:
             example:
               account: '@elonmusk'
               url: 'https://example.com/image.png'
-      responses: *write-responses
+      responses: *media-write-responses
 
   /x/media/download:
     post:
@@ -3792,7 +3787,7 @@ paths:
             example:
               account: '@elonmusk'
               url: 'https://example.com/avatar.png'
-      responses: *write-responses
+      responses: *media-write-responses
 
   /x/profile/banner:
     patch:
@@ -3842,7 +3837,7 @@ paths:
             example:
               account: '@elonmusk'
               url: 'https://example.com/banner.png'
-      responses: *write-responses
+      responses: *media-write-responses
 
   /x/communities:
     post:
@@ -4634,17 +4629,6 @@ paths:
                         sender: 'user'
                         createdAt: '2025-01-15T12:00:00Z'
                         attachments: []
-              example:
-                publicId: 'tkt_a1b2c3d4e5f6a1b2c3d4e5f6'
-                subject: 'Cannot connect X account'
-                status: 'open'
-                createdAt: '2025-01-15T12:00:00Z'
-                updatedAt: '2025-01-16T09:30:00Z'
-                messages:
-                  - body: 'I am unable to connect my X account.'
-                    sender: 'user'
-                    createdAt: '2025-01-15T12:00:00Z'
-                    attachments: []
         '401': *unauthenticated-response
         '404': *not-found-response
         '429': *rate-limit-exceeded-response-2
@@ -5340,9 +5324,9 @@ paths:
       operationId: getUserTweets
       summary: List recent tweets posted by one user
       description: >
-        For multiple users, use createExtraction with tweet_search_extractor and
+        For 2 or more users, use createExtraction with tweet_search_extractor &
         targetUsernames. Omit mode for automatic maximum coverage. Pass
-        next_cursor unchanged. Unprefixed cursors use legacy pagination.
+        next_cursor unchanged; unprefixed cursors are legacy.
       tags:
         - Users
       security: [{ apiKey: [] }, { oauthBearer: [] }, {}]
@@ -5430,9 +5414,9 @@ paths:
       operationId: getUserReplies
       summary: List a user's With Replies timeline
       description: >-
-        Returns target-authored posts and replies. Omit mode for automatic
-        maximum coverage. Pass next_cursor unchanged. Unprefixed cursors stay
-        legacy. Excludes other-author context.
+        Returns target-authored posts & replies, without other authors' context.
+        Omit mode for automatic maximum coverage. Pass next_cursor unchanged;
+        unprefixed cursors are legacy.
       tags:
         - Users
       security: [{ apiKey: [] }, { oauthBearer: [] }, {}]
@@ -6625,9 +6609,9 @@ paths:
             type: integer
             minimum: 1
           description: >
-            Complete mode defaults to 25,000 combined direct and nested replies.
-            Set a smaller or larger total with limit. Automatic pages accept
-            1-300. Standard pages accept 1-100.
+            Complete mode defaults to 25,000 combined direct & nested replies;
+            set another total with limit. Automatic pages accept 1-300, standard
+            pages 1-100.
         - $ref: '#/components/parameters/AutomaticTweetPageSize'
         - name: scope
           in: query
@@ -6646,12 +6630,11 @@ paths:
             type: string
             enum: [relevance, latest, oldest, likes]
           description: >
-            Sort the selected replies before applying limit. Complete mode
+            Sorts the selected replies before limit applies. Complete mode
             defaults to relevance. Automatic pages list the newest first unless
-            you set sort. Standard pages ignore sort. Latest and oldest sort
-            every row by date. They read the whole thread before applying limit,
-            for up to 20 s. An answer that stopped before every reply X shows
-            sets orderPartial.
+            you set sort; standard pages ignore it. Latest & oldest sort every
+            row by date. They read the whole thread first, for up to 20 s. An
+            answer that stopped before every reply X shows sets orderPartial.
         - name: excludeOriginalAuthor
           in: query
           schema: { type: boolean, default: false }
@@ -7269,9 +7252,9 @@ components:
       name: pageSize
       in: query
       description: >
-        Maximum page items (1-100, default 20). Source, filters, or credits can
-        reduce results. Follow next_cursor while the response reports more
-        pages. Deprecated limit and count aliases remain accepted.
+        Items per page (1-100, default 20). Source, filters or credits can
+        return fewer. Follow next_cursor while the response reports more pages.
+        Deprecated limit & count aliases still work.
       schema:
         type: integer
         minimum: 1
@@ -7299,9 +7282,9 @@ components:
       name: pageSize
       in: query
       description: >
-        Automatic pages accept 1-300 Tweets. Standard pages keep 1-100. Default
-        20. Follow next_cursor while the response reports more pages. Deprecated
-        aliases remain accepted.
+        Automatic pages accept 1-300 Tweets, standard pages 1-100. Default 20.
+        Follow next_cursor while the response reports more pages. Deprecated
+        aliases still work.
       schema:
         type: integer
         minimum: 1
@@ -7345,10 +7328,9 @@ components:
       name: pageSize
       in: query
       description: >
-        Maximum user profiles requested from this page (1-200, default 200).
-        Source, filters, or credits can return fewer profiles. Follow
-        next_cursor while the response reports more pages. Deprecated aliases
-        remain accepted.
+        Profiles to request from this page (1-200, default 200). Source, filters
+        or credits can return fewer. Follow next_cursor while the response
+        reports more pages. Deprecated aliases still work.
       schema:
         type: integer
         minimum: 1
@@ -7367,9 +7349,9 @@ components:
       name: pageSize
       in: query
       description: >
-        Maximum user profiles: automatic 300; standard 200. Sources return fewer
-        profiles. Follow next_cursor while the response reports more pages.
-        Deprecated limit and count aliases remain accepted.
+        Up to 300 user profiles in automatic mode, 200 in standard. Sources can
+        return fewer. Follow next_cursor while the response reports more pages.
+        Deprecated limit & count aliases still work.
       schema:
         type: integer
         minimum: 1
@@ -8241,9 +8223,9 @@ components:
             message: This API key can access paid read endpoints only.
     ProtectedTimeline:
       description: >-
-        Account is protected. Choose a public account. Applies to first & later
-        pages in every timeline mode. Xquik collects & charges nothing. Public
-        profile lookup still works.
+        The account is protected; choose a public one. Applies to every page in
+        every timeline mode. Xquik collects & charges nothing. Public profile
+        lookup still works.
       content:
         application/json:
           schema: *error-schema
@@ -8279,6 +8261,23 @@ components:
           example:
             error: 'account_needs_reauth'
             message: 'X account needs re-authentication. Re-add the account.'
+    MediaTooLarge:
+      description: Media stays over Xquik's or X's size limit.
+      content:
+        application/json:
+          schema: *error-schema
+          example:
+            error: 'media_too_large'
+            message: "This image stays over X's size limit after shrinking. Send a
+              smaller one."
+    UnsupportedMedia:
+      description: The file isn't a supported, readable image or video.
+      content:
+        application/json:
+          schema: *error-schema
+          example:
+            error: 'unsupported_media_type'
+            message: "Xquik couldn't read this image. Send a valid image file."
     XAccountNotFound:
       description: Connected X account not found
       content:
@@ -8563,9 +8562,9 @@ components:
             message: 'Try again later.'
     ConnectUserLookupFailed:
       description: >
-        The X username could not be resolved. Check the handle & that the
-        account exists. Default v1 returns 502; the best-practice contract
-        returns 424. Error code: `x_user_lookup_failed`.
+        X couldn't resolve this username. Check the handle & that the account
+        exists. Default v1 returns 502; the best-practice contract returns 424.
+        Code `x_user_lookup_failed`.
       content:
         application/json:
           schema: *error-schema
@@ -9541,10 +9540,10 @@ components:
           example: pending
     PaginatedTweets:
       description: >
-        Automatic search, user Tweet, and reply coverage preserves shape,
-        filters, aliases, and billing. Follow next_cursor while the response
-        reports more pages. An empty filtered page can still require
-        continuation. Unprefixed cursors are legacy.
+        Follow next_cursor while the response reports more pages. An empty
+        filtered page can still require continuation. Automatic search, user
+        Tweet & reply coverage keeps shape, filters, aliases & billing.
+        Unprefixed cursors are legacy.
       type: object
       example: { tweets: [], has_next_page: false, next_cursor: '' }
       required: [tweets, has_next_page, next_cursor]
@@ -10691,6 +10690,7 @@ components:
                 - invalid_format
                 - invalid_id
                 - invalid_input
+                - invalid_media_url
                 - invalid_message_id
                 - invalid_params
                 - invalid_tool_type
@@ -10704,6 +10704,7 @@ components:
                 - login_cooldown
                 - login_failed
                 - media_download_failed
+                - media_too_large
                 - missing_params
                 - missing_query
                 - monitor_already_exists
@@ -10769,6 +10770,7 @@ components:
                 - too_many_ids
                 - too_many_tweets
                 - unknown_field
+                - unsupported_media_combination
                 - unsupported_media_type
                 - webhook_inactive
                 - write_tracking_unavailable
