@@ -2846,6 +2846,7 @@ paths:
         - $ref: '#/components/parameters/TweetFilterInReplyToTweetId'
         - $ref: '#/components/parameters/TweetFilterQuotesOfTweetId'
         - $ref: '#/components/parameters/TweetFilterRetweetsOfTweetId'
+        - $ref: '#/components/parameters/TweetSearchKeywords'
         - $ref: '#/components/parameters/TweetSearchListId'
         - $ref: '#/components/parameters/TweetSearchPlace'
         - $ref: '#/components/parameters/TweetSearchPlaceCountry'
@@ -3275,11 +3276,7 @@ paths:
           schema:
             type: string
           description: User search query
-        - name: cursor
-          in: query
-          schema:
-            type: string
-          description: Pagination cursor for user search
+        - $ref: '#/components/parameters/CollectionCursor'
         - $ref: '#/components/parameters/ResultPageSize'
         - $ref: '#/components/parameters/UserFilterMinFollowers'
         - $ref: '#/components/parameters/UserFilterMaxFollowers'
@@ -5278,6 +5275,8 @@ paths:
         '401': *unauthenticated-response
         '429': *rate-limit-exceeded-response-2
   /x/tweets/{id}/favoriters:
+    parameters:
+      - $ref: '#/components/parameters/TweetPathId'
     get:
       operationId: getTweetFavoriters
       summary: List visible users who liked a tweet
@@ -5285,8 +5284,7 @@ paths:
       tags:
         - Tweets
       security: [{ apiKey: [] }, { oauthBearer: [] }]
-      parameters:
-        - $ref: '#/components/parameters/TweetPathId'
+      parameters: &profile-page-parameters
         - $ref: '#/components/parameters/CollectionCursor'
         - $ref: '#/components/parameters/FollowerPageSize'
         - $ref: '#/components/parameters/UserFilterMinFollowers'
@@ -5338,10 +5336,7 @@ paths:
         - $ref: '#/components/parameters/TweetSinceTime'
         - $ref: '#/components/parameters/TweetUntilTime'
         - $ref: '#/components/parameters/TweetIncludeReplies'
-        - name: includeParentTweet
-          in: query
-          schema: *boolean-default-false
-          description: Include parent tweet for replies
+        - $ref: '#/components/parameters/TweetIncludeParentTweet'
         - $ref: '#/components/parameters/TweetFilterFromUser'
         - $ref: '#/components/parameters/TweetFilterToUser'
         - $ref: '#/components/parameters/TweetFilterMentioning'
@@ -5372,6 +5367,13 @@ paths:
         - $ref: '#/components/parameters/TweetFilterNativeRetweets'
         - $ref: '#/components/parameters/TweetFilterSafe'
         - $ref: '#/components/parameters/TweetFilterNews'
+        - $ref: '#/components/parameters/TweetSearchKeywords'
+        - $ref: '#/components/parameters/TweetSearchListId'
+        - $ref: '#/components/parameters/TweetSearchPlace'
+        - $ref: '#/components/parameters/TweetSearchPlaceCountry'
+        - $ref: '#/components/parameters/TweetSearchPointRadius'
+        - $ref: '#/components/parameters/TweetSearchBoundingBox'
+        - $ref: '#/components/parameters/TweetSearchAdvancedQuery'
         - $ref: '#/components/parameters/TweetFilterVerifiedOnly'
         - $ref: '#/components/parameters/TweetFilterReplies'
         - $ref: '#/components/parameters/TweetFilterRetweets'
@@ -5427,10 +5429,7 @@ paths:
         - $ref: '#/components/parameters/AutomaticTweetPageSize'
         - $ref: '#/components/parameters/TweetSinceTime'
         - $ref: '#/components/parameters/TweetUntilTime'
-        - name: includeParentTweet
-          in: query
-          schema: *boolean-default-false
-          description: Include each reply's parent tweet.
+        - $ref: '#/components/parameters/TweetIncludeParentTweet'
         - $ref: '#/components/parameters/TweetFilterFromUser'
         - $ref: '#/components/parameters/TweetFilterToUser'
         - $ref: '#/components/parameters/TweetFilterMentioning'
@@ -5461,6 +5460,13 @@ paths:
         - $ref: '#/components/parameters/TweetFilterNativeRetweets'
         - $ref: '#/components/parameters/TweetFilterSafe'
         - $ref: '#/components/parameters/TweetFilterNews'
+        - $ref: '#/components/parameters/TweetSearchKeywords'
+        - $ref: '#/components/parameters/TweetSearchListId'
+        - $ref: '#/components/parameters/TweetSearchPlace'
+        - $ref: '#/components/parameters/TweetSearchPlaceCountry'
+        - $ref: '#/components/parameters/TweetSearchPointRadius'
+        - $ref: '#/components/parameters/TweetSearchBoundingBox'
+        - $ref: '#/components/parameters/TweetSearchAdvancedQuery'
         - $ref: '#/components/parameters/TweetFilterVerifiedOnly'
         - $ref: '#/components/parameters/TweetFilterReplies'
         - $ref: '#/components/parameters/TweetFilterRetweets'
@@ -5496,6 +5502,8 @@ paths:
           $ref: '#/components/responses/MaximumCoverageBusy'
 
   /x/users/{id}/likes:
+    parameters:
+      - $ref: '#/components/parameters/UserPathId'
     get:
       operationId: getUserLikes
       description: Your X account's likes, else 424 `account_required`. Others' likes get
@@ -5504,8 +5512,7 @@ paths:
       tags:
         - Users
       security: [{ apiKey: [] }, { oauthBearer: [] }]
-      parameters:
-        - $ref: '#/components/parameters/UserPathId'
+      parameters: &tweet-row-page-parameters
         - $ref: '#/components/parameters/CollectionCursor'
         - $ref: '#/components/parameters/ResultPageSize'
         - $ref: '#/components/parameters/TweetFilterFromUser'
@@ -5560,6 +5567,8 @@ paths:
         '424': *x-api-error-response
 
   /x/users/{id}/media:
+    parameters:
+      - $ref: '#/components/parameters/UserPathId'
     get:
       operationId: getUserMedia
       description: Returns public media posts from the selected user.
@@ -5567,50 +5576,7 @@ paths:
       tags:
         - Users
       security: [{ apiKey: [] }, { oauthBearer: [] }, {}]
-      parameters:
-        - $ref: '#/components/parameters/UserPathId'
-        - name: cursor
-          in: query
-          schema:
-            type: string
-          description: Pagination cursor for media tweets
-        - $ref: '#/components/parameters/ResultPageSize'
-        - $ref: '#/components/parameters/TweetFilterFromUser'
-        - $ref: '#/components/parameters/TweetFilterToUser'
-        - $ref: '#/components/parameters/TweetFilterMentioning'
-        - $ref: '#/components/parameters/TweetFilterLanguage'
-        - $ref: '#/components/parameters/TweetFilterSinceDate'
-        - $ref: '#/components/parameters/TweetFilterUntilDate'
-        - $ref: '#/components/parameters/TweetFilterMediaType'
-        - $ref: '#/components/parameters/TweetFilterMinLikes'
-        - $ref: '#/components/parameters/TweetFilterMinRetweets'
-        - $ref: '#/components/parameters/TweetFilterMinReplies'
-        - $ref: '#/components/parameters/TweetFilterMinQuotes'
-        - $ref: '#/components/parameters/TweetFilterMinViews'
-        - $ref: '#/components/parameters/TweetFilterMinBookmarks'
-        - $ref: '#/components/parameters/TweetFilterMaxFaves'
-        - $ref: '#/components/parameters/TweetFilterMaxRetweets'
-        - $ref: '#/components/parameters/TweetFilterMaxReplies'
-        - $ref: '#/components/parameters/TweetFilterMaxQuotes'
-        - $ref: '#/components/parameters/TweetFilterBlueVerifiedOnly'
-        - $ref: '#/components/parameters/TweetFilterSinceId'
-        - $ref: '#/components/parameters/TweetFilterMaxId'
-        - $ref: '#/components/parameters/TweetFilterWithinTime'
-        - $ref: '#/components/parameters/TweetFilterNativeRetweets'
-        - $ref: '#/components/parameters/TweetFilterVerifiedOnly'
-        - $ref: '#/components/parameters/TweetFilterReplies'
-        - $ref: '#/components/parameters/TweetFilterRetweets'
-        - $ref: '#/components/parameters/TweetFilterQuotes'
-        - $ref: '#/components/parameters/TweetFilterExactPhrase'
-        - $ref: '#/components/parameters/TweetFilterExcludeWords'
-        - $ref: '#/components/parameters/TweetFilterAnyWords'
-        - $ref: '#/components/parameters/TweetFilterHashtags'
-        - $ref: '#/components/parameters/TweetFilterCashtags'
-        - $ref: '#/components/parameters/TweetFilterUrl'
-        - $ref: '#/components/parameters/TweetFilterConversationId'
-        - $ref: '#/components/parameters/TweetFilterInReplyToTweetId'
-        - $ref: '#/components/parameters/TweetFilterQuotesOfTweetId'
-        - $ref: '#/components/parameters/TweetFilterRetweetsOfTweetId'
+      parameters: *tweet-row-page-parameters
       responses:
         '200':
           description: List of media tweets
@@ -5626,6 +5592,8 @@ paths:
         '424': *x-api-error-response
 
   /x/users/{id}/followers-you-know:
+    parameters:
+      - $ref: '#/components/parameters/UserPathId'
     get:
       operationId: getFollowersYouKnow
       description: Mutuals your X account sees, else 424 `account_required`.
@@ -5633,24 +5601,7 @@ paths:
       tags:
         - Users
       security: [{ apiKey: [] }, { oauthBearer: [] }]
-      parameters:
-        - $ref: '#/components/parameters/UserPathId'
-        - $ref: '#/components/parameters/CollectionCursor'
-        - $ref: '#/components/parameters/FollowerPageSize'
-        - $ref: '#/components/parameters/UserFilterMinFollowers'
-        - $ref: '#/components/parameters/UserFilterMaxFollowers'
-        - $ref: '#/components/parameters/UserFilterMinFollowing'
-        - $ref: '#/components/parameters/UserFilterMaxFollowing'
-        - $ref: '#/components/parameters/UserFilterMinStatuses'
-        - $ref: '#/components/parameters/UserFilterMaxStatuses'
-        - $ref: '#/components/parameters/UserFilterMinAccountAgeDays'
-        - $ref: '#/components/parameters/UserFilterVerifiedOnly'
-        - $ref: '#/components/parameters/UserFilterVerifiedType'
-        - $ref: '#/components/parameters/UserFilterHasWebsite'
-        - $ref: '#/components/parameters/UserFilterHasLocation'
-        - $ref: '#/components/parameters/UserFilterBioContains'
-        - $ref: '#/components/parameters/UserFilterLocationContains'
-        - $ref: '#/components/parameters/UserFilterUsernameContains'
+      parameters: *profile-page-parameters
       responses:
         '200':
           description: Mutual followers
@@ -5767,11 +5718,7 @@ paths:
             enum: [All, Verified, Mentions]
             default: All
           description: Notification type filter. Unrecognized values fall back to All.
-        - name: cursor
-          in: query
-          schema:
-            type: string
-          description: Pagination cursor for notifications
+        - $ref: '#/components/parameters/CollectionCursor'
       responses:
         '200':
           description: List of notifications
@@ -5835,11 +5782,7 @@ paths:
             type: string
           description: Comma-separated tweet IDs to exclude from results. Empty entries are
             ignored.
-        - name: cursor
-          in: query
-          schema:
-            type: string
-          description: Pagination cursor for timeline
+        - $ref: '#/components/parameters/CollectionCursor'
       responses:
         '200':
           description: List of timeline tweets
@@ -5880,11 +5823,7 @@ paths:
             X handle (without the `@` prefix) of the connected X account used to
             read the conversation. The account must be a participant in the
             conversation.
-        - name: cursor
-          in: query
-          schema:
-            type: string
-          description: Pagination cursor for DM history
+        - $ref: '#/components/parameters/CollectionCursor'
         - name: maxId
           in: query
           schema:
@@ -6197,6 +6136,8 @@ paths:
           $ref: '#/components/responses/ReadBusy'
 
   /x/communities/{id}/tweets:
+    parameters:
+      - $ref: '#/components/parameters/CommunityPathId'
     get:
       operationId: getCommunityTweets
       description: Returns public tweets posted within one community.
@@ -6204,46 +6145,7 @@ paths:
       tags:
         - Communities
       security: [{ apiKey: [] }, { oauthBearer: [] }, {}]
-      parameters:
-        - $ref: '#/components/parameters/CommunityPathId'
-        - $ref: '#/components/parameters/CollectionCursor'
-        - $ref: '#/components/parameters/ResultPageSize'
-        - $ref: '#/components/parameters/TweetFilterLanguage'
-        - $ref: '#/components/parameters/TweetFilterFromUser'
-        - $ref: '#/components/parameters/TweetFilterToUser'
-        - $ref: '#/components/parameters/TweetFilterMentioning'
-        - $ref: '#/components/parameters/TweetFilterSinceDate'
-        - $ref: '#/components/parameters/TweetFilterUntilDate'
-        - $ref: '#/components/parameters/TweetFilterMediaType'
-        - $ref: '#/components/parameters/TweetFilterMinLikes'
-        - $ref: '#/components/parameters/TweetFilterMinRetweets'
-        - $ref: '#/components/parameters/TweetFilterMinReplies'
-        - $ref: '#/components/parameters/TweetFilterMinViews'
-        - $ref: '#/components/parameters/TweetFilterMinQuotes'
-        - $ref: '#/components/parameters/TweetFilterMinBookmarks'
-        - $ref: '#/components/parameters/TweetFilterMaxFaves'
-        - $ref: '#/components/parameters/TweetFilterMaxRetweets'
-        - $ref: '#/components/parameters/TweetFilterMaxReplies'
-        - $ref: '#/components/parameters/TweetFilterMaxQuotes'
-        - $ref: '#/components/parameters/TweetFilterBlueVerifiedOnly'
-        - $ref: '#/components/parameters/TweetFilterSinceId'
-        - $ref: '#/components/parameters/TweetFilterMaxId'
-        - $ref: '#/components/parameters/TweetFilterWithinTime'
-        - $ref: '#/components/parameters/TweetFilterNativeRetweets'
-        - $ref: '#/components/parameters/TweetFilterVerifiedOnly'
-        - $ref: '#/components/parameters/TweetFilterReplies'
-        - $ref: '#/components/parameters/TweetFilterRetweets'
-        - $ref: '#/components/parameters/TweetFilterQuotes'
-        - $ref: '#/components/parameters/TweetFilterExactPhrase'
-        - $ref: '#/components/parameters/TweetFilterExcludeWords'
-        - $ref: '#/components/parameters/TweetFilterAnyWords'
-        - $ref: '#/components/parameters/TweetFilterHashtags'
-        - $ref: '#/components/parameters/TweetFilterCashtags'
-        - $ref: '#/components/parameters/TweetFilterUrl'
-        - $ref: '#/components/parameters/TweetFilterConversationId'
-        - $ref: '#/components/parameters/TweetFilterInReplyToTweetId'
-        - $ref: '#/components/parameters/TweetFilterQuotesOfTweetId'
-        - $ref: '#/components/parameters/TweetFilterRetweetsOfTweetId'
+      parameters: *tweet-row-page-parameters
       responses:
         '200':
           description: List of community tweets
@@ -6461,6 +6363,12 @@ paths:
         - $ref: '#/components/parameters/TweetFilterNativeRetweets'
         - $ref: '#/components/parameters/TweetFilterSafe'
         - $ref: '#/components/parameters/TweetFilterNews'
+        - $ref: '#/components/parameters/TweetSearchKeywords'
+        - $ref: '#/components/parameters/TweetSearchPlace'
+        - $ref: '#/components/parameters/TweetSearchPlaceCountry'
+        - $ref: '#/components/parameters/TweetSearchPointRadius'
+        - $ref: '#/components/parameters/TweetSearchBoundingBox'
+        - $ref: '#/components/parameters/TweetSearchAdvancedQuery'
         - $ref: '#/components/parameters/TweetFilterVerifiedOnly'
         - $ref: '#/components/parameters/TweetFilterReplies'
         - $ref: '#/components/parameters/TweetFilterRetweets'
@@ -6547,6 +6455,13 @@ paths:
         - $ref: '#/components/parameters/TweetFilterNativeRetweets'
         - $ref: '#/components/parameters/TweetFilterSafe'
         - $ref: '#/components/parameters/TweetFilterNews'
+        - $ref: '#/components/parameters/TweetSearchKeywords'
+        - $ref: '#/components/parameters/TweetSearchListId'
+        - $ref: '#/components/parameters/TweetSearchPlace'
+        - $ref: '#/components/parameters/TweetSearchPlaceCountry'
+        - $ref: '#/components/parameters/TweetSearchPointRadius'
+        - $ref: '#/components/parameters/TweetSearchBoundingBox'
+        - $ref: '#/components/parameters/TweetSearchAdvancedQuery'
         - $ref: '#/components/parameters/TweetFilterVerifiedOnly'
         - $ref: '#/components/parameters/TweetFilterReplies'
         - $ref: '#/components/parameters/TweetFilterRetweets'
@@ -6722,11 +6637,7 @@ paths:
       security: [{ apiKey: [] }, { oauthBearer: [] }, {}]
       parameters:
         - $ref: '#/components/parameters/TweetPathId'
-        - name: cursor
-          in: query
-          schema:
-            type: string
-          description: Pagination cursor for retweeters
+        - $ref: '#/components/parameters/CollectionCursor'
         - name: includeRetweetTimestamp
           in: query
           description: Look up repost event times.
@@ -6763,6 +6674,8 @@ paths:
         '424': *x-api-error-response
 
   /x/tweets/{id}/thread:
+    parameters:
+      - $ref: '#/components/parameters/TweetPathId'
     get:
       operationId: getTweetThread
       description: Returns visible posts from the selected conversation thread. Results
@@ -6771,50 +6684,7 @@ paths:
       tags:
         - Tweets
       security: [{ apiKey: [] }, { oauthBearer: [] }, {}]
-      parameters:
-        - $ref: '#/components/parameters/TweetPathId'
-        - name: cursor
-          in: query
-          schema:
-            type: string
-          description: Pagination cursor for thread tweets
-        - $ref: '#/components/parameters/ResultPageSize'
-        - $ref: '#/components/parameters/TweetFilterFromUser'
-        - $ref: '#/components/parameters/TweetFilterToUser'
-        - $ref: '#/components/parameters/TweetFilterMentioning'
-        - $ref: '#/components/parameters/TweetFilterLanguage'
-        - $ref: '#/components/parameters/TweetFilterSinceDate'
-        - $ref: '#/components/parameters/TweetFilterUntilDate'
-        - $ref: '#/components/parameters/TweetFilterMediaType'
-        - $ref: '#/components/parameters/TweetFilterMinLikes'
-        - $ref: '#/components/parameters/TweetFilterMinRetweets'
-        - $ref: '#/components/parameters/TweetFilterMinReplies'
-        - $ref: '#/components/parameters/TweetFilterMinQuotes'
-        - $ref: '#/components/parameters/TweetFilterMinViews'
-        - $ref: '#/components/parameters/TweetFilterMinBookmarks'
-        - $ref: '#/components/parameters/TweetFilterMaxFaves'
-        - $ref: '#/components/parameters/TweetFilterMaxRetweets'
-        - $ref: '#/components/parameters/TweetFilterMaxReplies'
-        - $ref: '#/components/parameters/TweetFilterMaxQuotes'
-        - $ref: '#/components/parameters/TweetFilterBlueVerifiedOnly'
-        - $ref: '#/components/parameters/TweetFilterSinceId'
-        - $ref: '#/components/parameters/TweetFilterMaxId'
-        - $ref: '#/components/parameters/TweetFilterWithinTime'
-        - $ref: '#/components/parameters/TweetFilterNativeRetweets'
-        - $ref: '#/components/parameters/TweetFilterVerifiedOnly'
-        - $ref: '#/components/parameters/TweetFilterReplies'
-        - $ref: '#/components/parameters/TweetFilterRetweets'
-        - $ref: '#/components/parameters/TweetFilterQuotes'
-        - $ref: '#/components/parameters/TweetFilterExactPhrase'
-        - $ref: '#/components/parameters/TweetFilterExcludeWords'
-        - $ref: '#/components/parameters/TweetFilterAnyWords'
-        - $ref: '#/components/parameters/TweetFilterHashtags'
-        - $ref: '#/components/parameters/TweetFilterCashtags'
-        - $ref: '#/components/parameters/TweetFilterUrl'
-        - $ref: '#/components/parameters/TweetFilterConversationId'
-        - $ref: '#/components/parameters/TweetFilterInReplyToTweetId'
-        - $ref: '#/components/parameters/TweetFilterQuotesOfTweetId'
-        - $ref: '#/components/parameters/TweetFilterRetweetsOfTweetId'
+      parameters: *tweet-row-page-parameters
       responses:
         '200':
           description: Thread tweets
@@ -6837,7 +6707,7 @@ paths:
       tags:
         - Users
       security: [{ apiKey: [] }, { oauthBearer: [] }, {}]
-      parameters:
+      parameters: &user-profile-coverage-parameters
         - $ref: '#/components/parameters/UserPathId'
         - $ref: '#/components/parameters/AutomaticCoverageCursor'
         - $ref: '#/components/parameters/AutomaticCoverageMode'
@@ -6858,10 +6728,7 @@ paths:
         - $ref: '#/components/parameters/UserFilterLocationContains'
         - $ref: '#/components/parameters/UserFilterUsernameContains'
         - $ref: '#/components/parameters/EnrichProfiles'
-        - name: limit
-          in: query
-          schema: *bounded-result-limit
-          description: Legacy follower limit. Coverage accepts 1-10000. Prefer pageSize.
+        - $ref: '#/components/parameters/LegacyFollowerLimit'
       responses:
         '200':
           description: List of user followers
@@ -6891,33 +6758,7 @@ paths:
       tags:
         - Users
       security: [{ apiKey: [] }, { oauthBearer: [] }, {}]
-      parameters:
-        - $ref: '#/components/parameters/UserPathId'
-        - $ref: '#/components/parameters/AutomaticCoverageCursor'
-        - $ref: '#/components/parameters/AutomaticCoverageMode'
-        - $ref: '#/components/parameters/LegacyCursorAlias'
-        - $ref: '#/components/parameters/AutomaticFollowerPageSize'
-        - $ref: '#/components/parameters/UserFilterMinFollowers'
-        - $ref: '#/components/parameters/UserFilterMaxFollowers'
-        - $ref: '#/components/parameters/UserFilterMinFollowing'
-        - $ref: '#/components/parameters/UserFilterMaxFollowing'
-        - $ref: '#/components/parameters/UserFilterMinStatuses'
-        - $ref: '#/components/parameters/UserFilterMaxStatuses'
-        - $ref: '#/components/parameters/UserFilterMinAccountAgeDays'
-        - $ref: '#/components/parameters/UserFilterVerifiedOnly'
-        - $ref: '#/components/parameters/UserFilterVerifiedType'
-        - $ref: '#/components/parameters/UserFilterHasWebsite'
-        - $ref: '#/components/parameters/UserFilterHasLocation'
-        - $ref: '#/components/parameters/UserFilterBioContains'
-        - $ref: '#/components/parameters/UserFilterLocationContains'
-        - $ref: '#/components/parameters/UserFilterUsernameContains'
-        - $ref: '#/components/parameters/EnrichProfiles'
-        - name: limit
-          in: query
-          schema: *bounded-result-limit
-          description: >
-            Legacy page-size alias outside explicit coverage mode. Coverage
-            accepts 1-10000. Prefer pageSize.
+      parameters: *user-profile-coverage-parameters
       responses:
         '200':
           description: List of following
@@ -6949,11 +6790,7 @@ paths:
       security: [{ apiKey: [] }, { oauthBearer: [] }, {}]
       parameters:
         - $ref: '#/components/parameters/UserPathId'
-        - name: cursor
-          in: query
-          schema:
-            type: string
-          description: Pagination cursor for mentions
+        - $ref: '#/components/parameters/CollectionCursor'
         - $ref: '#/components/parameters/ResultPageSize'
         - $ref: '#/components/parameters/TweetSinceTime'
         - $ref: '#/components/parameters/TweetUntilTime'
@@ -7015,32 +6852,7 @@ paths:
       tags:
         - Users
       security: [{ apiKey: [] }, { oauthBearer: [] }, {}]
-      parameters:
-        - $ref: '#/components/parameters/UserPathId'
-        - $ref: '#/components/parameters/AutomaticCoverageCursor'
-        - $ref: '#/components/parameters/AutomaticCoverageMode'
-        - $ref: '#/components/parameters/LegacyCursorAlias'
-        - $ref: '#/components/parameters/AutomaticFollowerPageSize'
-        - $ref: '#/components/parameters/UserFilterMinFollowers'
-        - $ref: '#/components/parameters/UserFilterMaxFollowers'
-        - $ref: '#/components/parameters/UserFilterMinFollowing'
-        - $ref: '#/components/parameters/UserFilterMaxFollowing'
-        - $ref: '#/components/parameters/UserFilterMinStatuses'
-        - $ref: '#/components/parameters/UserFilterMaxStatuses'
-        - $ref: '#/components/parameters/UserFilterMinAccountAgeDays'
-        - $ref: '#/components/parameters/UserFilterVerifiedOnly'
-        - $ref: '#/components/parameters/UserFilterVerifiedType'
-        - $ref: '#/components/parameters/UserFilterHasWebsite'
-        - $ref: '#/components/parameters/UserFilterHasLocation'
-        - $ref: '#/components/parameters/UserFilterBioContains'
-        - $ref: '#/components/parameters/UserFilterLocationContains'
-        - $ref: '#/components/parameters/UserFilterUsernameContains'
-        - $ref: '#/components/parameters/EnrichProfiles'
-        - name: limit
-          in: query
-          schema: *bounded-result-limit
-          description: Legacy verified-follower page-size alias. Coverage accepts 1-10000.
-            Prefer pageSize.
+      parameters: *user-profile-coverage-parameters
       responses:
         '200':
           description: List of verified followers
@@ -7248,7 +7060,7 @@ components:
       description: >
         Items per page (1-100, default 20). Source, filters or credits can
         return fewer. Follow next_cursor while the response reports more pages.
-        Deprecated limit & count aliases still work.
+        Deprecated limit, count & max_results aliases still work.
       schema:
         type: integer
         minimum: 1
@@ -7278,7 +7090,7 @@ components:
       description: >
         Automatic pages accept 1-300 Tweets, standard pages 1-100. Default 20.
         Follow next_cursor while the response reports more pages. Deprecated
-        limit & count aliases still work.
+        limit, count & max_results aliases still work.
       schema:
         type: integer
         minimum: 1
@@ -7312,7 +7124,16 @@ components:
       schema:
         type: string
         enum: [standard]
-      description: Optional legacy pagination override.
+      description: >
+        Optional legacy pagination override. Search-only filters such as
+        keywords apply only without it.
+    TweetIncludeParentTweet:
+      name: includeParentTweet
+      in: query
+      schema: { type: boolean, default: false }
+      description: >
+        Include each reply's parent tweet. Search-only filters such as keywords
+        do not apply with it.
     TweetIncludeReplies:
       name: includeReplies
       in: query
@@ -7324,7 +7145,8 @@ components:
       description: >
         Profiles to request from this page (1-200, default 200). Source, filters
         or credits can return fewer. Follow next_cursor while the response
-        reports more pages. Deprecated limit & count aliases still work.
+        reports more pages. Deprecated limit, count & max_results aliases still
+        work.
       schema:
         type: integer
         minimum: 1
@@ -7339,13 +7161,20 @@ components:
         minimum: 1
         maximum: 200
         default: 20
+    LegacyFollowerLimit:
+      name: limit
+      in: query
+      schema: *bounded-result-limit
+      description: >
+        Legacy page-size alias outside coverage mode. Coverage accepts 1-10000.
+        Prefer pageSize.
     AutomaticFollowerPageSize:
       name: pageSize
       in: query
       description: >
         Up to 300 user profiles in automatic mode, 200 in standard. Sources can
         return fewer. Follow next_cursor while the response reports more pages.
-        Deprecated limit & count aliases still work.
+        Deprecated limit, count & max_results aliases still work.
       schema:
         type: integer
         minimum: 1
@@ -7699,6 +7528,12 @@ components:
       schema:
         type: string
       description: Only retweets of this tweet ID.
+    TweetSearchKeywords:
+      name: keywords
+      in: query
+      schema:
+        type: string
+      description: Words the Tweets must match, in X search syntax.
     TweetSearchListId:
       name: listId
       in: query

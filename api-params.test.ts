@@ -214,12 +214,18 @@ function requestBodyFields(spec: OpenApiSpec, operation: OpenApiOperation): Sche
   };
 }
 
+/** The operation's parameters after the ones its path lists for every operation. */
 function openApiParameters(
   spec: OpenApiSpec,
+  path: string,
   operation: OpenApiOperation,
   kind: "path" | "query",
 ): readonly OpenApiParameter[] {
-  return (operation.parameters ?? [])
+  const shared: unknown = spec.paths?.[path]?.["parameters"];
+  return [
+    ...(Array.isArray(shared) ? (shared as OpenApiParameter[]) : []),
+    ...(operation.parameters ?? []),
+  ]
     .map((parameter): OpenApiParameter => resolveReference(spec, parameter))
     .filter((parameter): boolean => parameter.in === kind && parameter.name !== undefined)
     .sort((left, right): number => (left.name ?? "").localeCompare(right.name ?? ""));
@@ -249,10 +255,12 @@ function collectFieldFindings(spec: OpenApiSpec): readonly FieldFinding[] {
               name,
               required: bodyFields.required.includes(name),
             }))
-          : openApiParameters(spec, operation, kind).map((parameter): DocumentedField => ({
-              name: parameter.name ?? "",
-              required: parameter.required === true,
-            }));
+          : openApiParameters(spec, apiDoc.path, operation, kind).map(
+              (parameter): DocumentedField => ({
+                name: parameter.name ?? "",
+                required: parameter.required === true,
+              }),
+            );
       const noun = kind === "body" ? "body field" : "parameter";
       for (const field of fields) {
         const documented = docs.find((entry): boolean => entry.name === field.name);
