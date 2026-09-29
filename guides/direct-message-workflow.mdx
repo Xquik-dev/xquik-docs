@@ -26,6 +26,7 @@ Read DM history and send direct messages from a connected X account.
 Xquik reads participant-scoped conversations through `GET /x/dm/{userId}/history`.
 It sends text DMs through `POST /x/dm/{userId}`.
 It can attach one uploaded media item through `media_ids`.
+It deletes a DM through `DELETE /x/dm/{userId}/messages/{messageId}`.
 
 ## Choose the DM path
 
@@ -437,6 +438,21 @@ audits can then join the upload, recipient, sender account, and outbound message
 }
 ```
 
+## Step 5: delete a direct message
+
+Delete a DM from the sender account's side with its `message_id`.
+The other person keeps their copy.
+
+```bash
+curl -X DELETE "https://xquik.com/api/v1/x/dm/987654321/messages/1893726451029384193?account=myxhandle" \
+  -H "x-api-key: xq_YOUR_KEY_HERE" \
+  -H "Idempotency-Key: dm-delete-1893726451029384193" | jq
+```
+
+A `200` means the conversation no longer shows the DM. It costs 10 credits.
+`422 x_dm_not_deleted` means X still shows it. You pay nothing.
+After the `200`, mark the stored `message_id` row as deleted.
+
 ## Twitter DM API questions
 
 ### How does the X direct message API work?
@@ -530,6 +546,12 @@ Give recipients a clear way to stop automated messages.
     `POST /x/dm/{userId}` costs 10 credits per call and returns `messageId`.
 
   </Card>
+
+  <Card title="DM delete" icon="trash-2">
+
+    `DELETE /x/dm/{userId}/messages/{messageId}` costs 10 credits, only when X deletes the DM.
+
+  </Card>
 </CardGroup>
 
 ## Error handling
@@ -569,6 +591,12 @@ Give recipients a clear way to stop automated messages.
   <Card title="422 x_dm_not_allowed" icon="message-circle">
 
     X rejected the send with `422 x_dm_not_allowed`. The recipient may not accept DMs from this connected account. Do not retry unchanged. Use another permitted account or ask the recipient to allow messages.
+
+  </Card>
+
+  <Card title="422 x_dm_not_deleted" icon="trash-2">
+
+    X still shows the DM after a delete. You pay nothing. Retry with a new `Idempotency-Key`.
 
   </Card>
 
@@ -637,7 +665,7 @@ Give recipients a clear way to stop automated messages.
 
 <Note>
 
-**Related.** [Send Direct Message](/api-reference/x-write/send-dm) &middot; [Get DM History](/api-reference/x/dm-history) &middot; [Get User](/api-reference/x/twitter-profile-lookup) &middot; [Media Upload Workflow](/guides/media-upload-workflow)
+**Related.** [Send Direct Message](/api-reference/x-write/send-dm) &middot; [Delete Direct Message](/api-reference/x-write/delete-dm) &middot; [Get DM History](/api-reference/x/dm-history) &middot; [Get User](/api-reference/x/twitter-profile-lookup) &middot; [Media Upload Workflow](/guides/media-upload-workflow)
 
 </Note>
 

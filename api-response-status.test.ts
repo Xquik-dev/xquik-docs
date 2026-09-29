@@ -279,7 +279,7 @@ describe("API success response status documentation", (): void => {
       }),
     );
 
-    expect(writeDocs).toHaveLength(18);
+    expect(writeDocs).toHaveLength(19);
     expect(findings).toStrictEqual([]);
   });
 
@@ -308,7 +308,7 @@ describe("API success response status documentation", (): void => {
         .map(([, snippet]): string => `${file}: incorrect retry guidance ${snippet}`);
     });
 
-    expect(pages).toHaveLength(18);
+    expect(pages).toHaveLength(19);
     expect(findings).toStrictEqual([]);
   });
 });

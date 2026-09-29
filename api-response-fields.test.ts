@@ -7,7 +7,6 @@ import { PRODUCT_ROOT as FOUND_PRODUCT_ROOT } from "./product-contract.test.help
 const PROJECT_ROOT = process.cwd();
 const PRODUCT_ROOT = FOUND_PRODUCT_ROOT ?? join(PROJECT_ROOT, "..", "xquik");
 const DOCS_OPENAPI_PATH = join(PROJECT_ROOT, "openapi.yaml");
-const PRODUCT_DRAFT_FORMAT_PATH = join(PRODUCT_ROOT, "lib/api/draft-format.ts");
 const PRODUCT_STYLE_COLUMNS_PATH = join(PRODUCT_ROOT, "lib/styles/columns.ts");
 const PRODUCT_STYLE_PERFORMANCE_ROUTE_PATH = join(
   PRODUCT_ROOT,
@@ -365,24 +364,6 @@ function productReturnFieldsFromPath(path: string, functionName: string): readon
   ]);
 }
 
-function productInterfaceFieldsFromPath(path: string, interfaceName: string): readonly string[] {
-  const source = readFileSync(path, "utf8");
-  const start = source.search(new RegExp(`interface ${interfaceName}(?: extends [^{]+)? \\{`, "u"));
-  if (start < 0) {
-    throw new Error(`Missing product interface: ${interfaceName}`);
-  }
-  const end = source.indexOf("\n}\n", start);
-  if (end < 0) {
-    throw new Error(`Could not locate product interface end: ${interfaceName}`);
-  }
-  const body = source.slice(start, end);
-  return uniqueSorted(
-    [...body.matchAll(/^\s{2}readonly (?<field>[A-Za-z_]\w*)\??:/gmu)].map(
-      (match): string => match.groups?.["field"] ?? "",
-    ),
-  );
-}
-
 function objectLiteralFields(source: string): readonly string[] {
   const start = source.indexOf("{");
   const end = source.lastIndexOf("}");
@@ -709,15 +690,10 @@ describe("API response field docs", (): void => {
     expect(findings).toStrictEqual([]);
   });
 
-  it("keeps draft response fields aligned with product draft formatting", (): void => {
+  it("keeps draft response fields aligned with the draft schema", (): void => {
     expect.assertions(1);
 
-    if (!existsSync(PRODUCT_DRAFT_FORMAT_PATH)) {
-      expect(existsSync(PRODUCT_DRAFT_FORMAT_PATH)).toBe(false);
-      return;
-    }
-
-    const draftFields = productInterfaceFieldsFromPath(PRODUCT_DRAFT_FORMAT_PATH, "FormattedDraft");
+    const draftFields = schemaPropertyNames(readOpenApi(), "DraftDetail");
     const listFields = responseFields(DRAFTS_LIST_PAGE);
     const createFields = responseFields(DRAFTS_CREATE_PAGE);
     const getFields = responseFields(DRAFTS_GET_PAGE);
