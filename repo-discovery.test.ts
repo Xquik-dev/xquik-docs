@@ -86,8 +86,8 @@ const REQUIRED_README_SNIPPETS = [
   "X automation",
   "[Quickstart](https://docs.xquik.com/x-api-quickstart)",
   "[API reference](https://docs.xquik.com/api-reference)",
-  "Browse 129 OpenAPI-backed operations",
-  "**REST API.** 129 operations",
+  "Browse 130 OpenAPI-backed operations",
+  "**REST API.** 130 operations",
   "[SDKs](https://docs.xquik.com/sdks)",
   "[Tweet search export](https://docs.xquik.com/guides/tweet-scraper-csv-export)",
   "Export tweets by keyword to CSV, JSON, or XLSX",
@@ -1728,7 +1728,7 @@ const REQUIRED_SKILL_MCP_HANDOFF_SNIPPETS = [
   "### Connect an AI agent through MCP",
   "1. Add Docs MCP at `https://docs.xquik.com/mcp` for read-only docs search and page retrieval.",
   "2. Configure API MCP at `https://xquik.com/mcp` for live authenticated calls.",
-  "3. Use full credentials for 118 JSON or text routes. Use REST for excluded downloads. Guest keys expose 30 GET routes.",
+  "3. Use full credentials for 119 JSON or text routes. Use REST for excluded downloads. Guest keys expose 30 GET routes.",
   "4. Use `docs` for guidance, `search` for contracts, and `execute` for allowed requests.",
   "- Full account REST and API MCP share account state. Guest keys remain limited to wallet-backed paid reads.",
   "Refunds and disputes reconcile affected-purchase credits only. Unrelated credits remain usable.",
@@ -1790,7 +1790,7 @@ const REQUIRED_MCP_CONTRACT_SNIPPETS = [
   '`{ "error": "Authentication required" }`',
   "API-key clients should send",
   "`x-api-key` on the first request.",
-  "Full credentials see 118 JSON or text routes. Private support media downloads use REST.",
+  "Full credentials see 119 JSON or text routes. Private support media downloads use REST.",
   "CamelCase reads work, including `favoriteCount` for `like_count`.",
   "Write and media results follow the same contract. Read `tweet_id`, `write_action_id`, `charged_credits`, `media_id`, `media_url`, and `message_id` from `response.result`.",
   "Search the X/Twitter API catalog. No network calls or credits.",
@@ -1917,13 +1917,13 @@ const REQUIRED_MCP_CONTRACT_SNIPPETS = [
   "Full account sessions may create account checkout after confirmation.",
   "Guest wallet creation and top-up remain direct REST after confirmation.",
   "The MCP server never starts subscriptions, checkout, top-up, or other billing mutations in response to an API error.",
-  "The REST API documents 129 operations. The full MCP catalog exposes 118 across 10 categories:",
+  "The REST API documents 130 operations. The full MCP catalog exposes 119 across 10 categories:",
   "5 operations in `support`: create, list, read, reply, and close tickets.",
-  "27 operations across `x-accounts` and `x-write`:",
+  "28 operations across `x-accounts` and `x-write`:",
   '<Card title="Tweets, profiles & followers" icon="search">',
   "38 operations in `twitter`: batch and single tweet lookup, tweet search, article lookup, user lookup, follow checks, trends, bookmarks, notifications, timeline, DM history, likes, media, followers, replies, communities, and lists.",
   '<Card title="X accounts and writes" icon="send">',
-  "27 operations across `x-accounts` and `x-write`: connect accounts, resolve challenges, post tweets, like, retweet, follow, remove followers, send DMs, upload media, update profiles, and manage communities.",
+  "28 operations across `x-accounts` and `x-write`: connect accounts, resolve challenges, post tweets, like, retweet, follow, remove followers, send and delete DMs, upload media, update profiles, and manage communities.",
   '<Card title="Monitor billing" icon="radio">',
   "Active monitors cost 21 credits per monitor-hour. Creating one requires enough available credits.",
 ] as const;
@@ -2106,7 +2106,7 @@ const REQUIRED_DOCS_MCP_SERVER_SNIPPETS = [
   "A question about how draw filters work goes to the docs server.",
   "A request to run a draw goes to the API server.",
   "## What gets searched",
-  "API reference (129 documented operations)",
+  "API reference (130 documented operations)",
   "Webhook documentation (overview, signature verification)",
   "MCP server setup and tools reference",
   "OAuth 2.1 documentation",
@@ -2149,7 +2149,7 @@ const REQUIRED_TROUBLESHOOTING_MCP_HANDOFF_SNIPPETS = [
   '<Card title="Search docs" icon="book-open">',
   "Connect `https://docs.xquik.com/mcp`. It is read-only and requires no auth.",
   '<Card title="Run API actions" icon="terminal">',
-  "Connect `https://xquik.com/mcp`. Full credentials expose 118 JSON or text routes. Guest `paid_reads` keys expose 30 GET routes.",
+  "Connect `https://xquik.com/mcp`. Full credentials expose 119 JSON or text routes. Guest `paid_reads` keys expose 30 GET routes.",
   "For docs search, add `https://docs.xquik.com/mcp`.",
   "For account actions, use a full API key or OAuth login.",
   "For guest reads, activate a guest key through direct REST, then authenticate MCP with that key.",
@@ -7905,7 +7905,7 @@ const REQUIRED_WEBHOOK_ARCHITECTURE_SNIPPETS = [
 
 const REQUIRED_ARCHITECTURE_COMPONENT_SNIPPETS = [
   '<Card title="REST API" icon="braces">',
-  "129 documented operations at `https://xquik.com/api/v1/*`",
+  "130 documented operations at `https://xquik.com/api/v1/*`",
   '<Card title="MCP server" icon="bot">',
   "3 tools, `docs`, `search`, and `execute`, at `https://xquik.com/mcp`",
   '<Card title="Dashboard" icon="layout-dashboard">',
@@ -12194,7 +12194,7 @@ const FORBIDDEN_PUBLIC_CONFIDENTIALITY_WORDING = [
   ["whose", "session", "reads"].join(" "),
 ] as const;
 
-const EXPECTED_OPENAPI_OPERATION_COUNT = 130;
+const EXPECTED_OPENAPI_OPERATION_COUNT = 131;
 const NON_REST_OPERATION_IDS = new Set(["searchXquikDocumentation"]);
 
 const FORBIDDEN_STALE_OPERATION_COUNT_SNIPPETS = [

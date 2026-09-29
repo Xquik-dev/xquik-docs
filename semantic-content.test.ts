@@ -491,7 +491,7 @@ const REQUIRED_OPERATIONAL_CONTENT = [
     file: "api-reference/x-write/update-avatar.mdx",
     snippets: [
       "| Profile avatar update column | Request or response source | Review rule |",
-      "| Uploaded file | Request `file` | Accept JPEG or PNG up to 700 KB. |",
+      "| Uploaded file | Request `file` | Accept JPEG or PNG up to 15 MiB. |",
       "Twitter profile picture API: update avatar images",
       "This route updates one connected account's avatar.",
       "A request accepts a JPEG or PNG file.",
@@ -504,7 +504,7 @@ const REQUIRED_OPERATIONAL_CONTENT = [
     file: "api-reference/x-write/update-banner.mdx",
     snippets: [
       "| Profile banner update column | Request or response source | Review rule |",
-      "| Uploaded file | Request `file` | Accept JPEG or PNG up to 2 MB. |",
+      "| Uploaded file | Request `file` | Accept JPEG or PNG up to 15 MiB. |",
       "Twitter profile banner API: update header images",
       "## Prepare Twitter profile banner dimensions",
       "1500 × 500 pixels",

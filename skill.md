@@ -13,7 +13,7 @@ metadata:
 
 ## Product summary
 
-Xquik is an X data platform with 129 documented REST operations, webhooks, Docs MCP, and API MCP. Full account credentials cover account workflows. Accountless guest keys cover 30 prepaid GET reads. Seven fixed-price operations also accept direct MPP. The REST base URL is `https://xquik.com/api/v1`. Primary docs: https://docs.xquik.com
+Xquik is an X data platform with 130 documented REST operations, webhooks, Docs MCP, and API MCP. Full account credentials cover account workflows. Accountless guest keys cover 30 prepaid GET reads. Seven fixed-price operations also accept direct MPP. The REST base URL is `https://xquik.com/api/v1`. Primary docs: https://docs.xquik.com
 
 ## When to use
 
@@ -53,7 +53,7 @@ Retry safe reads only on `429` and temporary `5xx` responses. For writes, poll
 the returned action. Never resubmit an ambiguous write. Start a new attempt only
 when `safeToRetry` is true.
 
-### API endpoints (129 documented operations)
+### API endpoints (130 documented operations)
 
 - **Monitors and Events.** Create account and keyword monitors, retrieve events, and manage webhooks.
 - **Extractions.** 23 tools for bulk data extraction.
@@ -145,7 +145,7 @@ when `safeToRetry` is true.
 
 1. Add Docs MCP at `https://docs.xquik.com/mcp` for read-only docs search and page retrieval.
 2. Configure API MCP at `https://xquik.com/mcp` for live authenticated calls.
-3. Use full credentials for 118 JSON or text routes. Use REST for excluded downloads. Guest keys expose 30 GET routes.
+3. Use full credentials for 119 JSON or text routes. Use REST for excluded downloads. Guest keys expose 30 GET routes.
 4. Use `docs` for guidance, `search` for contracts, and `execute` for allowed requests.
    Inspect `spec.paths`; follow response references into `spec.components.schemas`.
 5. Add `?codemode=false` only when the client needs OpenAPI-native tools.
