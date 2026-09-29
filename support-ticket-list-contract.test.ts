@@ -3,12 +3,12 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
+import { PRODUCT_ROOT, productCheck } from "./product-contract.test.helpers.ts";
+
 const PROJECT_ROOT = dirname(fileURLToPath(import.meta.url));
-const PRODUCT_ROOT = process.env["XQUIK_PRODUCT_ROOT"] ?? join(PROJECT_ROOT, "..", "xquik");
 const page = readFileSync(join(PROJECT_ROOT, "api-reference/support/list.mdx"), "utf8");
 const normalizedPage = page.replaceAll(/\s+/gu, " ");
 const openapi = readFileSync(join(PROJECT_ROOT, "openapi.yaml"), "utf8");
-const TICKET_SOURCE_PATH = join(PRODUCT_ROOT, "lib/support/tickets.ts");
 const listOperation = openapi.slice(
   openapi.indexOf("      operationId: listTickets"),
   openapi.indexOf("  /support/tickets/{id}:"),
@@ -79,12 +79,13 @@ describe("support ticket list documentation", (): void => {
     }).toStrictEqual({ documentedLimit: true, documentedOrder: true });
   });
 
-  it("matches product ordering", (): void => {
+  // The spec does not state the order, so this reads the product's ticket list.
+  productCheck("matches product ordering", (): void => {
     expect.assertions(1);
 
-    const ticketSource = readFileSync(TICKET_SOURCE_PATH, "utf8");
+    const ticketSource = readFileSync(join(PRODUCT_ROOT ?? "", "lib/support/tickets.ts"), "utf8");
     const listStart = ticketSource.indexOf("async function listTickets(");
-    const listEnd = ticketSource.indexOf("\nasync function getTicketWithMessages(", listStart);
+    const listEnd = ticketSource.indexOf("\nasync function ", listStart + 1);
     const listTicketsSource = ticketSource.slice(listStart, listEnd);
 
     expect({
