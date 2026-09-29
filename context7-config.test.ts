@@ -6,45 +6,31 @@ const CONTEXT7_LIBRARY_URL = "https://context7.com/xquik-dev/xquik-docs";
 const CONTEXT7_WEBSITE_URL = "https://context7.com/websites/xquik";
 const PUBLIC_KEY_PREFIX = "pk_";
 const CONTEXT7_PUBLIC_KEY = "pk_oCPeRRqZFJsY4cCUSotDD";
+// Context7 parses only these folders & the root Markdown files, so the
+// OpenAPI copy, tests & package files stay out of the index.
+const DOC_FOLDERS = [
+  "api-reference",
+  "guides",
+  "mcp",
+  "mpp",
+  "oauth",
+  "sdks",
+  "snippets",
+  "webhooks",
+] as const;
+// Root files that are not docs, pages that repeat others & retired pages.
 const REQUIRED_EXCLUDED_FILES = [
-  ".env.local",
-  ".gitignore",
-  ".mintignore",
-  "AGENTS.md",
-  "CLAUDE.md",
   "CODE_OF_CONDUCT.md",
   "CONTRIBUTING.md",
-  "DOCS_QUALITY_POLL.md",
-  "LICENSE",
   "SECURITY.md",
-  "agent-docs.config.yml",
-  "agent-docs.test.ts",
-  "api-content-quality.test.ts",
-  "api-params.test.ts",
-  "api-response-fields.test.ts",
-  "api-response-status.test.ts",
-  "twitter-api-alternatives.mdx",
-  "context7-config.test.ts",
-  "custom.css",
-  "docs.json",
-  "endpoint-strings.test.ts",
-  "event-types.test.ts",
-  "favicon.svg",
-  "guides/hermes-tweet.mdx",
-  "llms-coverage.test.ts",
-  "mintignore.test.ts",
-  "mpp-payment-metadata.test.ts",
-  "navigation-state.test.ts",
-  "openapi-parity.test.ts",
-  "package-lock.json",
-  "package.json",
-  "plugin-docs.test.ts",
-  "repo-discovery.test.ts",
+  "changelog.mdx",
+  "hermes-tweet.mdx",
+  "llms.txt",
   "robots.txt",
-  "seo-metadata.test.ts",
+  "security.txt",
+  "twitter-api-alternatives.mdx",
 ] as const;
-
-const REQUIRED_EXCLUDED_FOLDERS = [".github", "alternatives", "node_modules"] as const;
+const PAGE_PATH = /^[a-z\d-]+\/[a-z\d/-]+$/u;
 const REQUIRED_RULE_SNIPPETS = [
   "x-api-quickstart.mdx",
   "api-reference/overview.mdx",
@@ -83,7 +69,7 @@ interface Context7Config {
   readonly $schema?: string;
   readonly branch?: string;
   readonly excludeFiles?: readonly string[];
-  readonly excludeFolders?: readonly string[];
+  readonly folders?: readonly string[];
   readonly public_key?: string;
   readonly rules?: readonly string[];
   readonly url?: string;
@@ -114,13 +100,32 @@ describe("Context7 configuration", (): void => {
     expect(config.public_key?.startsWith(PUBLIC_KEY_PREFIX)).toBe(true);
   });
 
-  it("keeps non-doc repository files out of Context7 parsing", (): void => {
+  it("indexes the doc folders the navigation shows, apart from alternatives", (): void => {
+    expect.assertions(2);
+
+    const config = readContext7Config("context7.json");
+    const indexed = new Set<string>(DOC_FOLDERS);
+    const shown = new Set(
+      readFileSync("docs.json", "utf8")
+        .split('"')
+        .filter((value): boolean => PAGE_PATH.test(value))
+        .map((page): string => page.split("/")[0] ?? ""),
+    );
+    shown.delete("alternatives");
+
+    expect(config.folders).toStrictEqual(DOC_FOLDERS);
+    expect([...shown].filter((folder): boolean => !indexed.has(folder))).toStrictEqual([]);
+  });
+
+  it("keeps non-doc root files out by file name, the only form Context7 reads", (): void => {
     expect.assertions(2);
 
     const config = readContext7Config("context7.json");
 
     expect(missingEntries(config.excludeFiles, REQUIRED_EXCLUDED_FILES)).toStrictEqual([]);
-    expect(missingEntries(config.excludeFolders, REQUIRED_EXCLUDED_FOLDERS)).toStrictEqual([]);
+    expect((config.excludeFiles ?? []).filter((file): boolean => file.includes("/"))).toStrictEqual(
+      [],
+    );
   });
 
   it("keeps Context7 rules pointed at the pages agents should read first", (): void => {
