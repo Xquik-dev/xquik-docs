@@ -117,7 +117,7 @@ Run `bun run --bun --no-install mint dev` when visual previewing is necessary.
 `main` auto-deploys to [docs.xquik.com](https://docs.xquik.com).
 Deployment status appears in commit check runs.
 
-GitHub Actions is unavailable. Run every required check locally before pushing.
+This repository runs no GitHub Actions. Run every required check locally before pushing.
 Verify the published pages after deployment.
 
 ## Contributing

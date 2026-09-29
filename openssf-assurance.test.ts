@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
 
@@ -23,7 +23,7 @@ describe("OpenSSF shared-site assurance", (): void => {
       "bun run install:frozen",
       "bun run install:licenses",
       "bun run check:all",
-      "GitHub Actions is unavailable.",
+      "This repository runs no GitHub Actions.",
       "`check:licenses` verifies SPDX coverage",
       "The MIT License lets you use",
       "### Is the Xquik API open source?",
@@ -58,24 +58,12 @@ describe("OpenSSF shared-site assurance", (): void => {
     expect(security).toContain("https://github.com/Xquik-dev/xquik-docs/security/advisories/new");
     expect(security).toContain("at least every 14 days");
     expect(security).toContain("## Threat model");
-    expect(securityPage).toContain("Pinned workflows and lockfile integrity");
+    expect(securityPage).toContain("Exact dependency pins and lockfile integrity");
   });
 
-  it("pins CI actions and limits workflow authority", (): void => {
-    expect.assertions(7);
+  it("backs the no GitHub Actions claim with no workflow files", (): void => {
+    expect.assertions(1);
 
-    const docsWorkflow = readFileSync(".github/workflows/agent-docs.yml", "utf8");
-    const refreshWorkflow = readFileSync(".github/workflows/context7-refresh.yml", "utf8");
-    const actionUses = [...docsWorkflow.matchAll(/^\s*uses:\s*(.+)$/gmu)].map(
-      (match): string => match[1] ?? "",
-    );
-
-    expect(actionUses).not.toHaveLength(0);
-    expect(actionUses.every((use): boolean => /@[0-9a-f]{40}\b/u.test(use))).toBe(true);
-    expect(`${docsWorkflow}\n${refreshWorkflow}`).not.toContain("runs-on: ubuntu-latest");
-    expect(docsWorkflow).toContain("permissions:\n  contents: read");
-    expect(docsWorkflow).toContain("persist-credentials: false");
-    expect(docsWorkflow).toContain("npm ci --ignore-scripts");
-    expect(refreshWorkflow).toContain("--proto '=https'");
+    expect(existsSync(".github/workflows")).toBe(false);
   });
 });

@@ -47,7 +47,7 @@ Repository changes, build inputs, external links, and deployment cross trust bou
 
 Pull requests must not expose credentials or private implementation details.
 
-Pinned workflows and lockfile integrity protect documentation builds.
+Exact dependency pins and lockfile integrity protect documentation builds.
 
 Contract tests detect drift from the public OpenAPI specification.
 
