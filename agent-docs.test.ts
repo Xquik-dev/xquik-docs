@@ -3,7 +3,7 @@ import { loadConfig } from "afdocs/helpers";
 import type { AgentDocsConfig, CheckResult, RunnerOptions } from "afdocs";
 import { beforeAll, describe, expect, it } from "vitest";
 
-const LIVE_AGENT_DOCS_TIMEOUT_MS = 28_000;
+const LIVE_CRAWL_HANG_GUARD_MS = 300_000;
 
 function runnerOptions(config: AgentDocsConfig): Partial<RunnerOptions> {
   const inferredStrategy =
@@ -178,13 +178,15 @@ describe("Agent-Friendly Documentation", (): void => {
   beforeAll(async (): Promise<void> => {
     const config = await loadConfig();
     configuredCheckIds = new Set(config.checks);
+    const started = performance.now();
     const report = await runChecks(config.url, runnerOptions(config));
+    process.stdout.write(`Crawl took ${Math.round(performance.now() - started)} ms\n`);
     resultsByCheck = new Map(
       report.results.map((result): [string, CheckResult] => [result.id, result]),
     );
     const parity = resultsByCheck.get("markdown-content-parity");
     mdxOnlyParityWarning = parity?.status === "warn" ? await parityWarningIsMdxOnly(parity) : false;
-  }, LIVE_AGENT_DOCS_TIMEOUT_MS);
+  }, LIVE_CRAWL_HANG_GUARD_MS);
 
   for (const check of getChecksSorted()) {
     it(check.id, (): void => {
