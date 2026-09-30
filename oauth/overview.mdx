@@ -40,11 +40,11 @@ Codex CLI 0.147.0 fixes `Authorization server response missing required issuer: 
 </Warning>
 
 - **Client ID Metadata Documents (CIMD).** Recommended for modern clients. The client's HTTPS metadata URL becomes its `client_id`. It needs no registration request or client secret.
-- **Dynamic Client Registration (DCR).** Compatibility fallback for clients that do not publish CIMD. The client registers itself once at `/api/oauth/register`.
+- **Dynamic Client Registration (DCR).** Fallback for clients without CIMD. The client registers once at `/api/oauth/register`.
 
 ## Discovery
 
-Xquik publishes standard OAuth discovery documents. MCP clients use them to configure endpoints.
+MCP clients configure endpoints from these standard discovery documents.
 
 ### Authorization server metadata
 
@@ -126,10 +126,8 @@ The MCP endpoint also returns this metadata URL in its unauthenticated
 Bearer realm="OAuth", resource_metadata="https://xquik.com/.well-known/oauth-protected-resource/mcp", scope="mcp:tools"
 ```
 
-The ChatGPT app's URL, `https://xquik.com/mcp?app=chatgpt`, asks for
-`mcp:read` instead. Its challenge points to
-`/.well-known/oauth-protected-resource/mcp?app=chatgpt`, which lists only
-`mcp:read`.
+The ChatGPT app's `https://xquik.com/mcp?app=chatgpt` asks for `mcp:read`,
+and its `resource_metadata` URL, ending in `?app=chatgpt`, lists only that.
 
 ## Client registration choices
 
@@ -449,7 +447,7 @@ issues anonymous agent credentials.
 
 ## Refresh tokens
 
-Interactive access tokens expire after 1 hour. Use their refresh token without another login.
+Interactive access tokens last 1 hour. Refresh them without another login.
 
 ```bash
 curl -X POST https://xquik.com/api/oauth/token \
@@ -478,7 +476,7 @@ Refresh tokens are single-use. Always store the latest returned token.
 
 ## Token revocation
 
-Revoke an access or refresh token when a user disconnects or your application no longer needs access.
+Revoke a token when a user disconnects or your app no longer needs it.
 
 ```bash
 curl -X POST https://xquik.com/api/oauth/revoke \
@@ -494,10 +492,10 @@ curl -X POST https://xquik.com/api/oauth/revoke \
 | `client_id`       | Yes      | The client ID that owns the token                                           |
 | `token_type_hint` | No       | `access_token` or `refresh_token`. Helps the server locate the token faster |
 
-The endpoint returns `200` with an empty body on success. If the token is already revoked or invalid, the server still returns `200`, as RFC 7009 requires.
+It returns `200` with an empty body, even for a revoked or invalid token (RFC 7009).
 
 Revoke a claimed agent with its `identity_assertion`, `client_id=urn:xquik:agent-auth`, and `token_type_hint=urn:ietf:params:oauth:token-type:id-jag`.
-This revokes the registration and every access token. Revoking one access token leaves the registration active.
+This revokes the registration & every access token. Revoking 1 access token keeps the registration.
 
 **Revocation errors.**
 
@@ -514,10 +512,9 @@ This revokes the registration and every access token. Revoking one access token 
 | `mcp:tools` | Full access to all MCP tools, such as tweet search, monitors, extractions, and draws |
 | `mcp:read`  | Only the ChatGPT app's 8 reads of public posts, profiles & trends, paid with credits |
 
-The consent screen lists only what the requested scopes allow. The token gets
-exactly the scopes the user approved. A refresh keeps them, and a refresh that
-asks for other scopes gets `invalid_scope`. A token without `mcp:tools` sees
-only the ChatGPT app's 8 read tools over MCP.
+Consent lists only what the requested scopes allow, and the token gets exactly
+those. A refresh keeps them; asking for others gets `invalid_scope`. Without
+`mcp:tools`, MCP shows only the ChatGPT app's 8 read tools.
 
 ## Client registration
 
@@ -573,7 +570,7 @@ optional `state`, and `iss=https://xquik.com` query parameters.
 | --------------------------- | --------------------------------------------------------- |
 | `unsupported_response_type` | `response_type` is not `code`                             |
 | `invalid_request`           | Missing or repeated parameters, or missing S256 PKCE data |
-| `invalid_scope`             | Scope names something other than `mcp:tools` or `mcp:read` |
+| `invalid_scope`             | Scope is neither `mcp:tools` nor `mcp:read`               |
 | `invalid_target`            | Resource is not a published protected resource            |
 | `access_denied`             | User denied the authorization request                     |
 
