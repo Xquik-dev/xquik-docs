@@ -58,7 +58,7 @@ curl https://xquik.com/.well-known/oauth-authorization-server
   "authorization_endpoint": "https://xquik.com/api/oauth/authorize",
   "token_endpoint": "https://xquik.com/api/oauth/token",
   "registration_endpoint": "https://xquik.com/api/oauth/register",
-  "scopes_supported": ["mcp:tools"],
+  "scopes_supported": ["mcp:read", "mcp:tools"],
   "response_types_supported": ["code"],
   "grant_types_supported": [
     "authorization_code",
@@ -111,7 +111,7 @@ curl https://xquik.com/.well-known/oauth-protected-resource/mcp
   "authorization_servers": ["https://xquik.com"],
   "bearer_methods_supported": ["header"],
   "resource_documentation": "https://docs.xquik.com/mcp/overview",
-  "scopes_supported": ["mcp:tools"]
+  "scopes_supported": ["mcp:read", "mcp:tools"]
 }
 ```
 
@@ -125,6 +125,11 @@ The MCP endpoint also returns this metadata URL in its unauthenticated
 ```text
 Bearer realm="OAuth", resource_metadata="https://xquik.com/.well-known/oauth-protected-resource/mcp", scope="mcp:tools"
 ```
+
+The ChatGPT app's URL, `https://xquik.com/mcp?app=chatgpt`, asks for
+`mcp:read` instead. Its challenge points to
+`/.well-known/oauth-protected-resource/mcp?app=chatgpt`, which lists only
+`mcp:read`.
 
 ## Client registration choices
 
@@ -294,7 +299,7 @@ can show a concrete `client_id`.
 
     | Parameter | Default | Description |
     |-----------|---------|-------------|
-    | `scope` | `mcp:tools` | Xquik supports only `mcp:tools` |
+    | `scope` | `mcp:tools` | `mcp:tools`, `mcp:read`, or both, separated by a space |
     | `state` | | Opaque value for CSRF protection |
 
     These examples use `/mcp`. Direct REST clients use `https://xquik.com`.
@@ -507,8 +512,12 @@ This revokes the registration and every access token. Revoking one access token 
 | Scope       | Description                                                                          |
 | ----------- | ------------------------------------------------------------------------------------ |
 | `mcp:tools` | Full access to all MCP tools, such as tweet search, monitors, extractions, and draws |
+| `mcp:read`  | Only the ChatGPT app's 8 reads of public posts, profiles & trends, paid with credits |
 
-Xquik supports only `mcp:tools`. It offers no partial scopes or scope combinations.
+The consent screen lists only what the requested scopes allow. The token gets
+exactly the scopes the user approved. A refresh keeps them, and a refresh that
+asks for other scopes gets `invalid_scope`. A token without `mcp:tools` sees
+only the ChatGPT app's 8 read tools over MCP.
 
 ## Client registration
 
@@ -564,7 +573,7 @@ optional `state`, and `iss=https://xquik.com` query parameters.
 | --------------------------- | --------------------------------------------------------- |
 | `unsupported_response_type` | `response_type` is not `code`                             |
 | `invalid_request`           | Missing or repeated parameters, or missing S256 PKCE data |
-| `invalid_scope`             | Scope is not `mcp:tools`                                  |
+| `invalid_scope`             | Scope names something other than `mcp:tools` or `mcp:read` |
 | `invalid_target`            | Resource is not a published protected resource            |
 | `access_denied`             | User denied the authorization request                     |
 
