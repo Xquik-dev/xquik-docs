@@ -10,7 +10,7 @@ import McpSearchSpec from "/snippets/mcp-search-spec.mdx";
 
 <LlmsDirective />
 
-Xquik API MCP supports 2 explicit tool modes. Code Mode uses `docs`, `search`, and `execute`. Native mode exposes `docs` plus one tool for each eligible OpenAPI operation. Active guest `paid_reads` keys see exactly 30 GET routes in either mode.
+Xquik API MCP supports 2 explicit tool modes. Code Mode uses `docs`, `search`, and `execute`. Native mode exposes `docs`, `readSavedResult`, and one tool for each eligible OpenAPI operation. Active guest `paid_reads` keys see exactly 30 GET routes in either mode.
 
 Modern clients negotiate MCP `2026-07-28` through `server/discover`. Current SDKs add required request metadata and headers.
 See [MCP 2026-07-28](/mcp/overview#mcp-2026-07-28).
@@ -18,7 +18,7 @@ See [MCP 2026-07-28](/mcp/overview#mcp-2026-07-28).
 ## Native OpenAPI tools
 
 Connect to `https://xquik.com/mcp?codemode=false` for ordinary MCP tools. Full
-credentials get 120 tools. Guest keys get 31 tools.
+credentials get 121 tools. Guest keys get 32 tools.
 
 Native names, schemas, and contracts come from OpenAPI. `compose` and
 `estimateExtraction` are read-only. Clients read each JSON Schema from
@@ -31,6 +31,16 @@ Use `https://xquik.com/mcp` for Code Mode. Choose native mode for one tool per o
 Search canonical public documentation. `docs` is read-only and uses no credits.
 
 **Input.** Pass a non-empty `query` string of up to 500 characters.
+
+## readSavedResult
+
+Native mode reads a saved oversized answer in pages. Pages make no API requests and use no credits.
+
+**Input.** Pass `result_id` from the oversized answer and optional `offset`, which starts at 0.
+
+**Output.** Each page returns `characters`, `next_offset`, and `text` within 24,000 characters.
+Pass `next_offset` as `offset` until it is `null`, then join each `text` in order.
+A page never splits a character.
 
 ## search
 
@@ -174,9 +184,10 @@ The separate 24,000-character tool output limit still applies.
 ### Recover oversized results
 
 When saving succeeds, oversized API results include `result_id` and a resource link.
-Use either retrieval method:
+Their `retry` names only tools your catalog lists. Use a retrieval method:
 
-- Pass `result_id` to `execute`, then project or page `xquik.result`.
+- In Code Mode, pass `result_id` to `execute`, then project or page `xquik.result`.
+- In native mode, pass `result_id` to [`readSavedResult`](#readsavedresult) for every page.
 - Read `xquik://results/{result_id}` through MCP `resources/read`.
 
 Resources return complete `{ result, warnings? }` JSON.
@@ -195,7 +206,7 @@ Missing or unavailable results return an error.
 ```
 
 Recovery applies only when the response supplies `result_id`.
-Very large results or storage failures may prevent saving.
+Every API answer MCP accepts fits in storage. A storage failure may still prevent saving.
 Search catalog errors still require a smaller selection.
 Without a saved result, contact support before repeating paid requests.
 Verify completed writes before retrying them.

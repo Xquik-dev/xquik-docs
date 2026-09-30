@@ -28,7 +28,7 @@ function docsConfig(): DocsConfig {
 
 describe("public security guidance", (): void => {
   it("keeps owner verification and security contacts discoverable", (): void => {
-    expect.assertions(10);
+    expect.assertions(11);
 
     const config = docsConfig();
     const trustLinks = config.footer?.links?.find(
@@ -55,9 +55,12 @@ describe("public security guidance", (): void => {
       { label: "Privacy", href: "https://xquik.com/en/privacy" },
       { label: "Terms", href: "https://xquik.com/en/terms" },
     ]);
-    expect(securityText).toContain("Contact: mailto:security@xquik.com\n");
+    expect(securityText).toContain("Contact: mailto:support@xquik.com\n");
+    expect(securityText).not.toContain("security@xquik.com");
     expect(securityText).toContain("Policy: https://docs.xquik.com/security\n");
-    expect(securityPage).toContain("[security@xquik.com](mailto:security@xquik.com)");
+    expect(securityPage).toContain(
+      "[support@xquik.com](mailto:support@xquik.com) with the subject `Security report`",
+    );
     expect(securityPage).toContain(
       "https://github.com/Xquik-dev/xquik-docs/security/advisories/new",
     );
