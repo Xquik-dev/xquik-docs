@@ -126,7 +126,7 @@ Be civil. Personal attacks, harassment, and discriminatory language are not tole
 ## Questions
 
 - General product questions: [support@xquik.com](mailto:support@xquik.com).
-- Security findings: [security@xquik.com](mailto:security@xquik.com) (see [SECURITY.md](SECURITY.md)).
+- Security findings: [support@xquik.com](mailto:support@xquik.com) with the subject `Security report` (see [SECURITY.md](SECURITY.md)).
 - Anything else about this repository: open an issue.
 
 [dco]: https://developercertificate.org/
