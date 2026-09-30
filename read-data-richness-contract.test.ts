@@ -49,6 +49,7 @@ const TWEET_FIELDS = [
   "createdAt",
   "retweetedAt",
   "isNoteTweet",
+  "isPinned",
   "isReply",
   "isRetweet",
   "isLimitedReply",
