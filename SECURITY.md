@@ -6,7 +6,7 @@ Thank you for taking the time to report a vulnerability responsibly.
 
 Use [GitHub private vulnerability reporting][private-report].
 
-Email [security@xquik.com](mailto:security@xquik.com) if GitHub is unavailable.
+Email [support@xquik.com](mailto:support@xquik.com) with the subject `Security report` if GitHub is unavailable.
 
 Do **not** open a public GitHub issue, discussion, or pull request for security findings. Public disclosure before a fix is in place puts every Xquik user at risk.
 
@@ -35,7 +35,7 @@ In scope:
 
 Out of scope (handle through the main repo or normal channels):
 
-- Bugs in the Xquik product itself - report via [security@xquik.com](mailto:security@xquik.com); the team routes them to the right repository internally.
+- Bugs in the Xquik product itself - email [support@xquik.com](mailto:support@xquik.com) with the subject `Security report`; the team routes them to the right repository internally.
 - Typos, broken links, or content suggestions - open a normal GitHub issue or PR on this repository.
 - Findings that affect only the documentation hosting platform.
 
