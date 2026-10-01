@@ -45,6 +45,7 @@ const MCP_GUIDANCE_FILES = [
   "skill.md",
   "README.md",
   "context7.json",
+  "llms.txt",
 ] as const;
 const RETIRED_OAUTH_WORKAROUND_SNIPPETS = [
   "Authorization server response missing required issuer: expected https://xquik.com",
