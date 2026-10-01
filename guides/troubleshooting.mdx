@@ -213,10 +213,9 @@ Guest wallet creation, status, and top-up are never executable through MCP.
 
 Current client paths are:
 
-- **OAuth 2.1.** Claude.ai, Claude Desktop, Claude Code, ChatGPT, Cursor, VS Code, Windsurf, OpenCode, Gemini CLI, GitHub Copilot CLI, Cline, Qwen Code, and Codex CLI 0.147.0 or newer
-- **API key fallback.** Codex CLI older than 0.147.0 and affected Goose releases
+- **OAuth 2.1.** Claude.ai, Claude Desktop, Claude Code, ChatGPT, Cursor, VS Code, Windsurf, OpenCode, Gemini CLI, GitHub Copilot CLI, Cline, Qwen Code, Pi, Goose, and Codex CLI
 - **API-key only.** Roo Code's archived final release has no MCP OAuth provider
-- **No native MCP.** Pi requires a separately installed and tested adapter
+- **Older Pi.** Builds without `pi mcp` require an upgrade or a tested adapter
 
 See [Docs MCP server](/mcp/docs-mcp) for docs search, [MCP Server overview](/mcp/overview) for account actions, and the [MCP Tools](/mcp/tools) reference for tool details.
 
@@ -244,65 +243,6 @@ its public HTTPS metadata URL must include an explicit path. A trailing `/` is
 sufficient. It must return JSON
 without a redirect. Repeat the exact URL in `client_id`. List the callback in
 `redirect_uris`.
-
-### Codex OAuth issuer validation error
-
-This recovery applies to Codex CLI older than 0.147.0 and affected Goose releases. They can stop
-after browser approval and report:
-
-```text
-Authorization server response missing required issuer: expected https://xquik.com
-```
-
-Codex CLI 0.147.0 and newer keep the RFC 9207 `iss` authorization response value. Older Codex and affected Goose releases may discard it before token exchange. Xquik returns `iss=https://xquik.com` and advertises `authorization_response_iss_parameter_supported: true`. Xquik keeps issuer validation enabled. [Issue #31573](https://github.com/openai/codex/issues/31573) records the Codex defect and fix.
-
-Retrying OAuth does not restore the discarded value. Export an API key before configuring either fallback:
-
-```bash
-export XQUIK_API_KEY="xq_your_api_key_here"
-```
-
-Add the API MCP server to `~/.codex/config.toml` or a trusted project's `.codex/config.toml`:
-
-```toml
-[mcp_servers.xquik]
-url = "https://xquik.com/mcp"
-bearer_token_env_var = "XQUIK_API_KEY"
-```
-
-Restart Codex, then run `codex mcp list`. Do not run `codex mcp login xquik` while the bearer-token fallback is active. Never commit the key or place its value directly in `config.toml`.
-
-For Goose, add this extension to `~/.config/goose/config.yaml`:
-
-```yaml
-extensions:
-  xquik:
-    type: streamable_http
-    name: xquik
-    enabled: true
-    uri: "https://xquik.com/mcp"
-    headers:
-      Authorization: "Bearer ${XQUIK_API_KEY}"
-    env_keys:
-      - XQUIK_API_KEY
-    envs: {}
-```
-
-Goose substitutes `XQUIK_API_KEY` before sending the header. Remove the custom header configuration only after your Goose release keeps the authorization response issuer.
-
-The Docs MCP server needs no authentication. Older Codex and affected Goose releases can retrieve these instructions while API MCP OAuth is blocked:
-
-```bash
-codex mcp add xquik-docs --url https://docs.xquik.com/mcp
-```
-
-Goose can connect to the same documentation server without OAuth:
-
-```bash
-goose session --with-streamable-http-extension https://docs.xquik.com/mcp
-```
-
-After upgrading to Codex CLI 0.147.0 or newer, remove `bearer_token_env_var` and run `codex mcp login xquik` again. See [issue #31573](https://github.com/openai/codex/issues/31573) for the fix record.
 
 ### How do I export extraction results?
 

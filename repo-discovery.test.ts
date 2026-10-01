@@ -2045,7 +2045,7 @@ const REQUIRED_CURRENT_MCP_CLIENT_SETUP_SNIPPETS = [
   "pi mcp add xquik --url https://xquik.com/mcp",
   "pi mcp login xquik",
   "`agent mcp login xquik`",
-  "API-key fallback is client-specific.",
+  "API-key authentication is client-specific.",
 ] as const;
 
 const FORBIDDEN_CURRENT_MCP_CLIENT_SETUP_SNIPPETS = [

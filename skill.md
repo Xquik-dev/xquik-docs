@@ -162,25 +162,18 @@ advances. Stop and report partial progress when a cursor is missing or repeats.
 
 API-key lifecycle, saved-payment quick top-up, the account top-up redirect, and all 3 guest wallet credential routes are unavailable through MCP. Private support downloads are discoverable, but their binary responses require REST. Never start checkout or top-up after `401` or `402`. Ask the user to choose an amount. Wait for confirmation.
 
-### Recover from the Codex OAuth issuer error
+### Connect Codex with OAuth
 
-Codex CLI 0.147.0 and newer preserve the RFC 9207 `iss` value. Upgrade first. Older releases may report `Authorization server response missing required issuer: expected https://xquik.com`. Xquik already returns the value. Issue https://github.com/openai/codex/issues/31573 records the defect and fix.
-
-Set the API key in the environment:
+Add Xquik & complete browser authorization:
 
 ```bash
-export XQUIK_API_KEY="xq_your_api_key_here"
+codex mcp add xquik --url https://xquik.com/mcp
+codex mcp login xquik
+codex mcp list
 ```
 
-Configure Codex without placing the key value in `config.toml`:
-
-```toml
-[mcp_servers.xquik]
-url = "https://xquik.com/mcp"
-bearer_token_env_var = "XQUIK_API_KEY"
-```
-
-Restart Codex and run `codex mcp list`. Do not run `codex mcp login xquik` while the fallback is active. Docs MCP at `https://docs.xquik.com/mcp` needs no authentication, so it can retrieve the full troubleshooting guide at https://docs.xquik.com/guides/troubleshooting#codex-oauth-issuer-validation-error while API MCP OAuth is blocked.
+Codex also supports [environment-backed API-key authentication](https://docs.xquik.com/mcp/overview#codex-api-key-authentication).
+Docs MCP at `https://docs.xquik.com/mcp` needs no authentication.
 
 ### Create an accountless guest wallet
 
@@ -225,7 +218,7 @@ Refunds and disputes reconcile affected-purchase credits only. Unrelated credits
 - Agent Skills index: https://xquik.com/.well-known/agent-skills/index.json
 - Agent catalog: https://xquik.com/.well-known/agents.json
 - OAuth instructions: https://xquik.com/auth.md
-- Codex OAuth troubleshooting: https://docs.xquik.com/guides/troubleshooting#codex-oauth-issuer-validation-error
+- Coding-agent setup: https://docs.xquik.com/mcp/coding-agents
 - Guest wallets: https://docs.xquik.com/guides/guest-wallets
 - Direct MPP: https://docs.xquik.com/mpp/machine-payments-protocol
 - Error handling: https://docs.xquik.com/guides/error-handling
