@@ -70,6 +70,13 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 </Callout>
 
+Account events include the current `username` and permanent `xUserId`.
+Use `xUserId` to match an account after its username changes.
+`monitorName` keeps your label when Xquik created the event.
+Older events capture your label when their next delivery starts.
+Renaming or clearing a monitor leaves captured event labels unchanged.
+MCP returns `x_user_id`, `monitor_name`, and prefixed `monitor_id` values.
+
 <Note>
 
 Active monitor billing includes event and webhook deliveries.
@@ -89,6 +96,8 @@ curl "https://xquik.com/api/v1/events?limit=10&monitorId=7" \
     event_type: .type,
     monitor_type: .monitorType,
     monitor_id: .monitorId,
+    monitor_name: (.monitorName // null),
+    x_user_id: (.xUserId // null),
     keyword_monitor_id: (.keywordMonitorId // null),
     username: (.username // null),
     query: (.query // null),
@@ -113,6 +122,8 @@ const eventRows = data.events.map((event) => ({
   event_type: event.type,
   monitor_type: event.monitorType,
   monitor_id: event.monitorId,
+  monitor_name: event.monitorName ?? null,
+  x_user_id: event.xUserId ?? null,
   keyword_monitor_id: event.keywordMonitorId ?? null,
   username: event.username ?? null,
   query: event.query ?? null,
@@ -151,6 +162,8 @@ for event in data["events"]:
             "event_type": event["type"],
             "monitor_type": event["monitorType"],
             "monitor_id": event["monitorId"],
+    "monitor_name": event.get("monitorName"),
+    "x_user_id": event.get("xUserId"),
             "keyword_monitor_id": event.get("keywordMonitorId"),
             "username": event.get("username"),
             "query": event.get("query"),
@@ -193,6 +206,8 @@ type Event struct {
   Type             string       `json:"type"`
   MonitorType      string       `json:"monitorType"`
   MonitorID        string       `json:"monitorId"`
+  MonitorName      *string      `json:"monitorName"`
+  XUserID          *string      `json:"xUserId"`
   KeywordMonitorID *string      `json:"keywordMonitorId"`
   Username         *string      `json:"username"`
   Query            *string      `json:"query"`
@@ -213,6 +228,8 @@ type EventRow struct {
   EventType            string  `json:"event_type"`
   MonitorType          string  `json:"monitor_type"`
   MonitorID            string  `json:"monitor_id"`
+  MonitorName          *string `json:"monitor_name"`
+  XUserID              *string `json:"x_user_id"`
   KeywordMonitorID     *string `json:"keyword_monitor_id"`
   Username             *string `json:"username"`
   Query                *string `json:"query"`
@@ -256,6 +273,8 @@ func main() {
       EventType:           event.Type,
       MonitorType:         event.MonitorType,
       MonitorID:           event.MonitorID,
+    MonitorName:         event.MonitorName,
+    XUserID:             event.XUserID,
       KeywordMonitorID:    event.KeywordMonitorID,
       Username:            event.Username,
       Query:               event.Query,
