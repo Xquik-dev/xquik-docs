@@ -46,7 +46,7 @@ const REQUIRED_RULE_SNIPPETS = [
   "guides/troubleshooting.mdx",
   "Current Codex CLI supports Xquik OAuth",
   "Roo Code is archived and API-key only",
-  "Pi 0.99.2 has native MCP",
+  "Pi 1.0.0 has native MCP",
   "Goose supports native OAuth",
   "mcp/coding-agents.mdx",
   "guides/guest-wallets.mdx",
