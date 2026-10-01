@@ -66,6 +66,8 @@ const TWEET_FIELDS = [
   "contentDisclosure",
   "communityId",
   "conversationControl",
+  "coordinates",
+  "geo",
   "grokShareAttachment",
   "jetfuelAttachment",
   "article",

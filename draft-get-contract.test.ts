@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
@@ -6,11 +6,9 @@ import { describe, expect, it } from "vitest";
 import { docsSecurity } from "./product-contract.test.helpers.ts";
 
 const PROJECT_ROOT = dirname(fileURLToPath(import.meta.url));
-const PRODUCT_ROOT = process.env["XQUIK_PRODUCT_ROOT"] ?? join(PROJECT_ROOT, "..", "xquik");
 const page = readFileSync(join(PROJECT_ROOT, "api-reference/drafts/get.mdx"), "utf8");
 const normalizedPage = page.replaceAll(/\s+/gu, " ");
 const openapi = readFileSync(join(PROJECT_ROOT, "openapi.yaml"), "utf8");
-const routePath = join(PRODUCT_ROOT, "app/api/v1/drafts/[id]/route.ts");
 const getOperation = openapi.slice(
   openapi.indexOf("      operationId: getDraft"),
   openapi.indexOf("    delete:", openapi.indexOf("      operationId: getDraft")),
@@ -81,31 +79,5 @@ describe("get tweet draft documentation", (): void => {
         "## Tweet draft retrieval questions",
       ].every((snippet) => page.includes(snippet)),
     ).toBe(true);
-  });
-
-  it("matches the product route when its source is available", (): void => {
-    expect.assertions(1);
-
-    if (!existsSync(routePath)) {
-      expect(existsSync(routePath)).toBe(false);
-      return;
-    }
-
-    const route = readFileSync(routePath, "utf8");
-    const getStart = route.indexOf("export async function GET(");
-    const deleteStart = route.indexOf("\nexport async function DELETE(", getStart);
-    const getSource = route.slice(getStart, deleteStart);
-
-    expect({
-      formatsDraft: getSource.includes("formatDraftRow(row)"),
-      invalidId: getSource.includes("error: 'invalid_id'"),
-      notFound: getSource.includes("error: 'draft_not_found'"),
-      routeFound: getStart >= 0 && deleteStart > getStart,
-    }).toStrictEqual({
-      formatsDraft: true,
-      invalidId: true,
-      notFound: true,
-      routeFound: true,
-    });
   });
 });

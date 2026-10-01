@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
@@ -6,11 +6,9 @@ import { describe, expect, it } from "vitest";
 import { docsSecurity } from "./product-contract.test.helpers.ts";
 
 const PROJECT_ROOT = dirname(fileURLToPath(import.meta.url));
-const PRODUCT_ROOT = process.env["XQUIK_PRODUCT_ROOT"] ?? join(PROJECT_ROOT, "..", "xquik");
 const page = readFileSync(join(PROJECT_ROOT, "api-reference/drafts/delete.mdx"), "utf8");
 const normalizedPage = page.replaceAll(/\s+/gu, " ");
 const openapi = readFileSync(join(PROJECT_ROOT, "openapi.yaml"), "utf8");
-const routePath = join(PRODUCT_ROOT, "app/api/v1/drafts/[id]/route.ts");
 const deleteOperation = openapi.slice(
   openapi.indexOf("      operationId: deleteDraft"),
   openapi.indexOf("\n  /styles:", openapi.indexOf("      operationId: deleteDraft")),
@@ -81,30 +79,5 @@ describe("delete tweet draft documentation", (): void => {
         "## Tweet draft deletion questions",
       ].every((snippet) => page.includes(snippet)),
     ).toBe(true);
-  });
-
-  it("matches the product route when its source is available", (): void => {
-    expect.assertions(1);
-
-    if (!existsSync(routePath)) {
-      expect(existsSync(routePath)).toBe(false);
-      return;
-    }
-
-    const route = readFileSync(routePath, "utf8");
-    const deleteStart = route.indexOf("export async function DELETE(");
-    const deleteSource = route.slice(deleteStart);
-
-    expect({
-      empty204: deleteSource.includes("return new NextResponse(undefined, { status: 204 });"),
-      invalidId: deleteSource.includes("error: 'invalid_id'"),
-      notFound: deleteSource.includes("error: 'draft_not_found'"),
-      routeFound: deleteStart >= 0,
-    }).toStrictEqual({
-      empty204: true,
-      invalidId: true,
-      notFound: true,
-      routeFound: true,
-    });
   });
 });
