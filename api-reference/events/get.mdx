@@ -105,7 +105,7 @@ curl https://xquik.com/api/v1/events/9001 \
     x_event_id: (.xEventId // null),
     tweet_id: (.xEventId // .data.id // null),
     tweet_text: (.data.text // null),
-    author_username: (.data.author.userName // null),
+    author_username: (.data.author.username // .data.author.userName // null),
     event_detail_endpoint: ("/api/v1/events/" + .id),
     delivery_join_key: .id
   }'
@@ -128,7 +128,7 @@ const eventRow = {
   x_event_id: event.xEventId ?? null,
   tweet_id: event.xEventId ?? event.data?.id ?? null,
   tweet_text: event.data?.text ?? null,
-  author_username: event.data?.author?.userName ?? null,
+  author_username: event.data?.author?.username ?? event.data?.author?.userName ?? null,
   event_detail_endpoint: `/api/v1/events/${event.id}`,
   delivery_join_key: event.id,
 };
@@ -159,7 +159,7 @@ event_row = {
     "x_event_id": event.get("xEventId"),
     "tweet_id": event.get("xEventId") or tweet.get("id"),
     "tweet_text": tweet.get("text"),
-    "author_username": author.get("userName"),
+    "author_username": author.get("username") or author.get("userName"),
     "event_detail_endpoint": f"/api/v1/events/{event['id']}",
     "delivery_join_key": event["id"],
 }
@@ -177,7 +177,7 @@ import (
 )
 
 type EventAuthor struct {
-  UserName *string `json:"userName"`
+  Username *string `json:"username"`
 }
 
 type EventPayload struct {
@@ -241,7 +241,7 @@ func main() {
 
   var authorUsername *string
   if event.Data.Author != nil {
-    authorUsername = event.Data.Author.UserName
+    authorUsername = event.Data.Author.Username
   }
 
   row := EventRow{
@@ -391,7 +391,7 @@ ISO 8601 timestamp of when the event occurred on X.
 </ResponseField>
 <ResponseField name="data" type="object">
 
-Tweet object stored with the monitor event. Fields vary by event type. See [Webhooks Overview](/webhooks/overview).
+Post or profile-change data. Post fields match REST responses. See [Webhooks Overview](/webhooks/overview).
 
 </ResponseField>
 <ResponseField name="xEventId" type="string">
@@ -413,7 +413,7 @@ X platform tweet ID associated with this event. Present only for tweet events.
     "text": "The future is now.",
     "author": {
       "id": "44196397",
-      "userName": "elonmusk",
+      "username": "elonmusk",
       "name": "Elon Musk"
     },
     "isRetweet": false,

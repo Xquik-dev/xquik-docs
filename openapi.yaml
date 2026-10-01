@@ -11354,8 +11354,7 @@ components:
           description: Keyword monitor ID, present for keyword monitor events.
         occurredAt: *date-time-string
         data:
-          type: object
-          additionalProperties: true
+          $ref: '#/components/schemas/MonitorEventData'
 
     EventDetail:
       description: Full monitor event including payload data and optional X event ID.
@@ -11397,12 +11396,130 @@ components:
           format: date-time
           example: '2025-01-15T12:00:00Z'
         data:
-          type: object
-          $ref: '#/components/schemas/PublicMetadata'
-          description: Event payload - shape varies by event type (JSON)
+          $ref: '#/components/schemas/MonitorEventData'
+          description: Post or profile-change payload for the event type.
           example:
-            tweetId: '1234567890'
+            field: name
+            previous: Previous name
+            current: Current name
+            userId: '1234567890'
+            username: example
         xEventId: *tweet-id-example-schema
+
+    MonitorEventData:
+      description: Post fields match REST. Legacy fields remain available.
+      anyOf:
+        - $ref: '#/components/schemas/MonitorPost'
+        - $ref: '#/components/schemas/MonitorProfileChange'
+        - $ref: '#/components/schemas/MonitorLegacyPost'
+
+    MonitorLegacyPost:
+      description: Older stored posts remain readable. Fields can be missing or null.
+      type: [object, 'null']
+      properties:
+        id:
+          type: string
+        text:
+          type: string
+        author:
+          type: [object, 'null']
+          additionalProperties: true
+        quoted_tweet:
+          type: [object, 'null']
+          additionalProperties: true
+        retweeted_tweet:
+          type: [object, 'null']
+          additionalProperties: true
+      additionalProperties: true
+
+    MonitorPost:
+      description: Monitored post with public fields and retained legacy fields.
+      allOf:
+        - $ref: '#/components/schemas/TweetPublicData'
+        - type: object
+          properties:
+            author:
+              type: object
+              $ref: '#/components/schemas/MonitorProfile'
+            card:
+              type: object
+              allOf:
+                - $ref: '#/components/schemas/TweetCard'
+                - type: object
+                  properties:
+                    userReferences:
+                      type: array
+                      items:
+                        type: object
+                        $ref: '#/components/schemas/MonitorProfile'
+            reactionContext:
+              type: object
+              properties:
+                reactedToPostId:
+                  type: string
+                reactedToUser:
+                  type: object
+                  $ref: '#/components/schemas/MonitorProfile'
+            quoted_tweet:
+              type: object
+              $ref: '#/components/schemas/MonitorEmbeddedPost'
+            retweeted_tweet:
+              type: object
+              $ref: '#/components/schemas/MonitorEmbeddedPost'
+          additionalProperties: true
+
+    MonitorEmbeddedPost:
+      description: Embedded post with public fields and legacy profile aliases.
+      allOf:
+        - $ref: '#/components/schemas/EmbeddedTweet'
+        - type: object
+          properties:
+            author:
+              type: object
+              $ref: '#/components/schemas/MonitorProfile'
+
+    MonitorProfile:
+      description: Public profile with retained legacy monitor fields.
+      allOf:
+        - $ref: '#/components/schemas/UserProfile'
+        - type: object
+          properties:
+            userName:
+              type: string
+              deprecated: true
+              description: Legacy username alias. Read username instead.
+            rawVerified:
+              type: boolean
+              deprecated: true
+              description: Original X flag. Read verified for the displayed badge.
+          additionalProperties: true
+
+    MonitorProfileChange:
+      description: Changed profile field with its previous and current values.
+      type: object
+      required: [field, userId, username]
+      properties:
+        field:
+          type: string
+        userId:
+          type: string
+          description: Permanent X user ID.
+        username:
+          type: string
+          description: Username observed for this change.
+        previous:
+          $ref: '#/components/schemas/MonitorProfileValue'
+        current:
+          $ref: '#/components/schemas/MonitorProfileValue'
+
+    MonitorProfileValue:
+      description: Profile text, flag, or pinned post IDs. Missing values are omitted.
+      anyOf:
+        - type: string
+        - type: boolean
+        - type: array
+          items:
+            type: string
 
     ExtractionJob:
       description: Extraction job tracking status, tool type, and result count.

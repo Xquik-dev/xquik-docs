@@ -95,7 +95,7 @@ curl "https://xquik.com/api/v1/events?limit=10&monitorId=7" \
     occurred_at: .occurredAt,
     tweet_id: (.data.id // null),
     tweet_text: (.data.text // null),
-    author_username: (.data.author.userName // null),
+    author_username: (.data.author.username // .data.author.userName // null),
     event_detail_endpoint: ("/api/v1/events/" + .id),
     delivery_join_key: .id,
     has_more: $page.hasMore,
@@ -119,7 +119,7 @@ const eventRows = data.events.map((event) => ({
   occurred_at: event.occurredAt,
   tweet_id: event.data?.id ?? null,
   tweet_text: event.data?.text ?? null,
-  author_username: event.data?.author?.userName ?? null,
+  author_username: event.data?.author?.username ?? event.data?.author?.userName ?? null,
   event_detail_endpoint: `/api/v1/events/${event.id}`,
   delivery_join_key: event.id,
   has_more: data.hasMore,
@@ -157,7 +157,7 @@ for event in data["events"]:
             "occurred_at": event["occurredAt"],
             "tweet_id": tweet.get("id"),
             "tweet_text": tweet.get("text"),
-            "author_username": author.get("userName"),
+            "author_username": author.get("username") or author.get("userName"),
             "event_detail_endpoint": f"/api/v1/events/{event['id']}",
             "delivery_join_key": event["id"],
             "has_more": data["hasMore"],
@@ -179,7 +179,7 @@ import (
 )
 
 type EventAuthor struct {
-  UserName *string `json:"userName"`
+  Username *string `json:"username"`
 }
 
 type EventPayload struct {
@@ -246,7 +246,7 @@ func main() {
   for _, event := range data.Events {
     var authorUsername *string
     if event.Data.Author != nil {
-      authorUsername = event.Data.Author.UserName
+      authorUsername = event.Data.Author.Username
     }
 
     row := EventRow{
@@ -404,11 +404,11 @@ List of event objects matching the query.
     </ResponseField>
     <ResponseField name="data" type="object">
 
-      Tweet object stored with the monitor event. Fields vary by event type.
+      Post or profile-change data. Post fields match REST responses.
 
       <Info>
 
-        The `data` field contains the raw tweet object. See [Webhooks Overview](/webhooks/overview) for the full data schema of each event type.
+        Post profiles use `username` and `verified`. Legacy fields remain available. See [Webhooks Overview](/webhooks/overview) for each event type.
 
       </Info>
     </ResponseField>
@@ -440,7 +440,7 @@ Pagination cursor. Pass it as `cursor` for the next page.
         "text": "The future is now.",
         "author": {
           "id": "44196397",
-          "userName": "elonmusk",
+          "username": "elonmusk",
           "name": "Elon Musk"
         },
         "isRetweet": false,
@@ -461,7 +461,7 @@ Pagination cursor. Pass it as `cursor` for the next page.
         "text": "Absolutely. Shipping next week.",
         "author": {
           "id": "44196397",
-          "userName": "elonmusk",
+          "username": "elonmusk",
           "name": "Elon Musk"
         },
         "isRetweet": false,
