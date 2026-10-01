@@ -1,0 +1,269 @@
+---
+title: "Coding-agent MCP setup for X API & OAuth clients"
+sidebarTitle: "Coding agents"
+description: "Connect Claude Code, Cursor, OpenCode, Pi & Codex to Xquik MCP. Compare current releases, OAuth setup & API-key formats. Use public Docs MCP without login."
+---
+
+Use `https://xquik.com/mcp` for authenticated X/Twitter actions.
+Use `https://docs.xquik.com/mcp` for public documentation, without authentication.
+See [MCP setup](/mcp/overview#setup) for the full client examples.
+
+## Current client releases
+
+We checked these official releases on October 1, 2026.
+Versions below record that review. Install your client's latest stable release before setup.
+
+| Client                   | Reviewed release                                                                                                                               | API MCP path                                 |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------- |
+| Claude Code              | [2.1.286](https://github.com/anthropics/claude-code/releases/tag/v2.1.286)                                                                     | Native HTTP & OAuth                          |
+| Cursor                   | [Desktop 3.22](https://cursor.com/download), [CLI 2026.09.28-64d2043](https://cursor.com/docs/cli/changelog)                                   | Native HTTP & OAuth                          |
+| OpenCode                 | [1.18.34](https://github.com/anomalyco/opencode/releases/tag/v1.18.34)                                                                         | Native remote MCP & OAuth                    |
+| Codex                    | [0.159.3](https://github.com/openai/codex/releases/tag/rust-v0.159.3)                                                                          | Native HTTP & OAuth                          |
+| Pi                       | [0.99.2](https://github.com/earendil-works/pi/releases/tag/v0.99.2)                                                                            | Native HTTP & OAuth                          |
+| GitHub Copilot CLI       | [1.0.90](https://github.com/github/copilot-cli/releases/tag/v1.0.90)                                                                           | Native HTTP & OAuth                          |
+| Gemini CLI               | [0.61.0](https://geminicli.com/docs/changelogs/latest/)                                                                                        | Native HTTP & OAuth                          |
+| Cline                    | [CLI 3.0.67](https://github.com/cline/cline/releases/tag/cli-v3.0.67), [extension 4.1.22](https://github.com/cline/cline/releases/tag/v4.1.22) | Native HTTP & OAuth                          |
+| Qwen Code                | [CLI 0.24.7](https://github.com/QwenLM/qwen-code/releases/tag/v0.24.7)                                                                         | Native HTTP & OAuth                          |
+| Goose                    | [1.52.0](https://github.com/aaif-goose/goose/releases/tag/v1.52.0)                                                                             | Native HTTP & OAuth                          |
+| VS Code                  | [1.140.0](https://code.visualstudio.com/updates)                                                                                               | Native HTTP & OAuth                          |
+| Windsurf / Devin Desktop | [3.10.48](https://docs.devin.ai/desktop/releases)                                                                                              | Separate Cascade & Devin Local configuration |
+| Roo Code                 | [3.54.0, archived](https://github.com/RooCodeInc/Roo-Code/releases/tag/v3.54.0)                                                                | API-key headers; no native MCP OAuth         |
+
+These paths describe vendor support. Complete Xquik authorization before calling paid tools.
+For Codex & ChatGPT, follow the [OpenAI setup guides](/mcp/overview#openai).
+
+## Codex
+
+Current Codex supports Xquik OAuth with the shared local MCP configuration:
+
+```bash
+codex mcp add xquik --url https://xquik.com/mcp
+codex mcp login xquik
+codex mcp list
+```
+
+Complete sign-in & authorization in your browser.
+The CLI, app & IDE extension share the host's MCP configuration.
+See [OpenAI setup](/mcp/overview#openai) & [Codex MCP](https://learn.chatgpt.com/docs/extend/mcp).
+For API keys, use [environment-backed authentication](/mcp/overview#codex-api-key-authentication).
+
+## Claude Code
+
+Add Xquik to your user configuration:
+
+```bash
+claude mcp add --scope user --transport http xquik https://xquik.com/mcp
+claude mcp login xquik
+claude mcp list
+```
+
+Use `--scope project` to share the URL through `.mcp.json`.
+Claude Code asks you to approve project servers before connecting.
+Use `/mcp` inside a session to authenticate or reconnect.
+
+Version 2.1.286 fixes stale MCP discovery & repeated authentication reminders.
+It also fixes credential redaction in MCP errors.
+Upgrade before diagnosing those symptoms.
+
+Xquik supports automatic registration. Leave client ID & client secret unset.
+For API-key headers, `.mcp.json` expands `${XQUIK_API_KEY}` from your environment.
+See [Claude Code MCP](https://code.claude.com/docs/en/mcp).
+
+## Cursor
+
+Keep the existing URL entry in `~/.cursor/mcp.json` or `.cursor/mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "xquik": {
+      "url": "https://xquik.com/mcp"
+    }
+  }
+}
+```
+
+Current [Cursor CLI docs](https://cursor.com/docs/cli/mcp) use the `agent` command:
+
+```bash
+agent mcp login xquik
+agent mcp list
+```
+
+Approve the server when prompted. Team distribution does not automatically enable it.
+Enterprise policy may restrict servers.
+Xquik needs no static OAuth `auth` object.
+API-key headers use `${env:XQUIK_API_KEY}`.
+Remote entries cannot load `envFile`.
+See [Cursor MCP configuration](https://cursor.com/docs/mcp).
+
+## OpenCode
+
+Add this entry to `opencode.json`:
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "xquik": {
+      "type": "remote",
+      "url": "https://xquik.com/mcp"
+    }
+  }
+}
+```
+
+Then authenticate & check discovery:
+
+```bash
+opencode mcp auth xquik
+opencode mcp list
+```
+
+OpenCode automatically registers the client & refreshes OAuth tokens.
+For connection failures, run `opencode mcp debug xquik`.
+An API-key entry needs `"oauth": false` & `Bearer {env:XQUIK_API_KEY}`.
+See [OpenCode MCP servers](https://opencode.ai/docs/mcp-servers/).
+
+## Pi
+
+Pi 0.99.2 has native MCP. No community adapter is required.
+Older builds without `pi mcp` need an upgrade or a tested adapter.
+
+```bash
+pi mcp add xquik --url https://xquik.com/mcp
+pi mcp login xquik
+pi mcp list
+```
+
+Pi stores global servers in `~/.pi/agent/mcp.json`.
+Use `--local` for `.pi/mcp.json`; project trust is required.
+Pi supports Streamable HTTP, not legacy SSE.
+Use `/mcp` to inspect connections & `/reload` after changing external configuration.
+
+Pi's default `codemode` exposure makes tools available through tool search & scripts.
+Use `--exposure direct` when adding Xquik to expose its 3 tools directly.
+Pi's exposure setting is separate from Xquik's [tool mode](/mcp/overview#choose-a-tool-mode).
+
+For an environment-backed API key:
+
+```bash
+pi mcp add xquik --url https://xquik.com/mcp --bearer-token-env-var XQUIK_API_KEY
+```
+
+Set `XQUIK_API_KEY` before starting Pi. This replaces OAuth for that entry.
+See [Pi's MCP guide](https://github.com/earendil-works/pi/blob/v0.99.2/packages/coding-agent/docs/mcp.md).
+
+## Copilot CLI, Gemini CLI, Cline & Qwen Code
+
+Current Copilot CLI uses this command:
+
+```bash
+copilot mcp add --transport http xquik https://xquik.com/mcp
+```
+
+The URL is positional. Use `/mcp` to inspect the server & complete authentication.
+Version 1.0.90 improves discovery recovery & cached OAuth token reuse.
+See [Copilot CLI MCP setup](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-mcp-servers).
+
+Gemini CLI & Qwen Code retain `httpUrl` for manual Streamable HTTP entries:
+
+```json
+{
+  "mcpServers": {
+    "xquik": {
+      "httpUrl": "https://xquik.com/mcp"
+    }
+  }
+}
+```
+
+Gemini uses `~/.gemini/settings.json`; Qwen uses `~/.qwen/settings.json`.
+Use their `/mcp` authentication flow after adding the server.
+See [Gemini MCP](https://geminicli.com/docs/tools/mcp-server/)
+& [Qwen MCP](https://qwenlm.github.io/qwen-code-docs/en/users/features/mcp/).
+
+Cline CLI uses `cline mcp` to manage servers & OAuth.
+Its extension uses the MCP Servers panel.
+Choose Streamable HTTP & enter `https://xquik.com/mcp`.
+The CLI, extension & Desktop app have separate release versions.
+See [Cline MCP](https://docs.cline.bot/mcp/mcp-overview).
+
+## VS Code
+
+Current VS Code recommends portable `.mcp.json` for new project servers:
+
+```json
+{
+  "mcpServers": {
+    "xquik": {
+      "type": "http",
+      "url": "https://xquik.com/mcp"
+    }
+  }
+}
+```
+
+Existing `.vscode/mcp.json` entries still use the top-level `servers` object.
+Run **MCP: Add Server** for guided setup, then approve server trust & OAuth.
+Managed MCP policies may restrict access.
+See [VS Code MCP setup](https://code.visualstudio.com/docs/agent-customization/mcp-servers).
+
+## Windsurf / Devin Desktop
+
+Current Windsurf documentation calls the editor Devin Desktop.
+Choose the guide for your active agent.
+
+For Devin Local, run:
+
+```bash
+devin mcp add xquik https://xquik.com/mcp
+devin mcp login xquik
+devin mcp list
+```
+
+Current Devin CLI stores servers in dedicated `mcp_config.json` files.
+The default local file is `.devin/mcp_config.local.json`.
+Use `--scope user` for your global configuration.
+See [Devin MCP configuration](https://docs.devin.ai/cli/extensibility/mcp/configuration).
+
+Legacy Cascade uses `mcp_config.json` with `mcpServers` & `serverUrl`.
+Open that file through Cascade's MCP menu to find your installed version's location.
+Current macOS & Linux releases use `~/.config/devin/mcp_config.json`.
+Older Windsurf releases used `~/.codeium/windsurf/mcp_config.json`.
+Cascade allows 100 enabled tools total, so prefer Xquik's default Code Mode.
+See [Cascade MCP configuration](https://docs.devin.ai/desktop/cascade/mcp).
+
+## Goose & Roo Code
+
+Goose 1.46.0 fixed the OAuth issuer callback defect.
+Current 1.52.0 retains that fix.
+Add a Streamable HTTP extension & complete the browser authorization flow:
+
+```bash
+goose session --with-streamable-http-extension https://xquik.com/mcp
+```
+
+See [Goose extensions](https://goose-docs.ai/docs/getting-started/using-extensions/)
+& the [issuer fix](https://github.com/aaif-goose/goose/releases/tag/v1.46.0).
+Goose also supports [environment-backed API-key headers](/mcp/overview#remaining-api-key-and-adapter-paths).
+
+Roo Code is archived. Its final release supports HTTP headers without MCP OAuth.
+Use its [environment-backed API-key configuration](/mcp/overview#remaining-api-key-and-adapter-paths).
+
+## Check the connection
+
+Confirm the server connects & lists `docs`, `search` & `execute`.
+Those are Xquik's default Code Mode tools.
+Native mode at `?codemode=false` exposes individual operations instead.
+
+Use `xquik-docs` as a separate entry for `https://docs.xquik.com/mcp`.
+That server needs no OAuth & searches public documentation.
+A successful Docs MCP connection does not authorize API MCP.
+See [Docs MCP setup](/mcp/docs-mcp).
+
+OAuth connections need browser login & consent in each client.
+Do not copy another client's token store.
+For a `401`, use the client's authentication flow.
+For issuer errors, upgrade the affected client before retrying.
+Include the UTC time & `X-Request-Id` when [reporting a connection failure](/guides/troubleshooting).
