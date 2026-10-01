@@ -2022,7 +2022,7 @@ const REQUIRED_CURRENT_MCP_CLIENT_SETUP_SNIPPETS = [
   "[Roo Code](https://github.com/RooCodeInc/Roo-Code)",
   "[Pi](https://github.com/earendil-works/pi/tree/main/packages/coding-agent)",
   "Roo Code's archived final release has Streamable HTTP but no MCP OAuth provider",
-  "Pi 0.99.2 has native Streamable HTTP & OAuth",
+  "Pi 1.0.0 has native Streamable HTTP & OAuth",
   "Goose 1.46.0 and newer preserve the RFC 9207 `iss` callback value",
   "**Settings > Security and login**",
   "https://chatgpt.com/plugins",
