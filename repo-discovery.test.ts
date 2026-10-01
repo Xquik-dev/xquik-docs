@@ -35,13 +35,8 @@ const PRODUCT_APP_ICON_FILE = join(
   "app/icon.svg",
 );
 const DOCS_X_ONLY_ICON_SHA256 = "7002c1dd82b5b903d69777fa212f39b0e0410cb156e7bcb1b4426fcec3a7cdc5";
-const CODEX_OAUTH_ISSUER_ERROR =
-  "Authorization server response missing required issuer: expected https://xquik.com";
-const CODEX_OAUTH_UPSTREAM_ISSUE = "https://github.com/openai/codex/issues/31573";
-const CODEX_OAUTH_FIXED_VERSION = "Codex CLI 0.147.0";
-const CODEX_OAUTH_TROUBLESHOOTING_ANCHOR =
-  "guides/troubleshooting#codex-oauth-issuer-validation-error";
-const CODEX_OAUTH_GUIDANCE_FILES = [
+const MCP_GUIDANCE_FILES = [
+  "mcp/coding-agents.mdx",
   "mcp/overview.mdx",
   "guides/troubleshooting.mdx",
   "oauth/overview.mdx",
@@ -51,11 +46,12 @@ const CODEX_OAUTH_GUIDANCE_FILES = [
   "README.md",
   "context7.json",
 ] as const;
-const GOOSE_OAUTH_GUIDANCE_FILES = [
-  "mcp/overview.mdx",
-  "guides/troubleshooting.mdx",
-  "mcp/docs-mcp.mdx",
-  "context7.json",
+const RETIRED_OAUTH_WORKAROUND_SNIPPETS = [
+  "Authorization server response missing required issuer: expected https://xquik.com",
+  "https://github.com/openai/codex/issues/31573",
+  "codex-oauth-issuer-validation-error",
+  "Codex API key fallback",
+  "Older Codex and affected Goose releases",
 ] as const;
 
 const REQUIRED_CUSTOM_CSS_MOBILE_VIEWPORT_SNIPPETS = [
@@ -2013,10 +2009,10 @@ const REQUIRED_MCP_SETUP_TAB_SNIPPETS = [
 
 const REQUIRED_CURRENT_MCP_CLIENT_SETUP_SNIPPETS = [
   "## Client compatibility",
-  "[Claude Code](https://docs.anthropic.com/en/docs/claude-code/mcp)",
+  "[Claude Code](https://code.claude.com/docs/en/mcp)",
   "[OpenCode](https://opencode.ai/docs/mcp-servers/)",
   "[Gemini CLI](https://geminicli.com/docs/tools/mcp-server/)",
-  "[Cursor](https://docs.cursor.com/context/model-context-protocol)",
+  "[Cursor](https://cursor.com/docs/mcp)",
   "[GitHub Copilot CLI](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-mcp-servers)",
   "[Cline](https://docs.cline.bot/cli/cli-reference)",
   "[Qwen Code](https://github.com/QwenLM/qwen-code)",
@@ -2025,7 +2021,8 @@ const REQUIRED_CURRENT_MCP_CLIENT_SETUP_SNIPPETS = [
   "[Roo Code](https://github.com/RooCodeInc/Roo-Code)",
   "[Pi](https://github.com/earendil-works/pi/tree/main/packages/coding-agent)",
   "Roo Code's archived final release has Streamable HTTP but no MCP OAuth provider",
-  "Pi requires a separately installed and tested MCP adapter",
+  "Pi 0.99.2 has native Streamable HTTP & OAuth",
+  "Goose 1.46.0 and newer preserve the RFC 9207 `iss` callback value",
   "**Settings > Security and login**",
   "https://chatgpt.com/plugins",
   "https://xquik.com/mcp?app=chatgpt",
@@ -2034,7 +2031,7 @@ const REQUIRED_CURRENT_MCP_CLIENT_SETUP_SNIPPETS = [
   "Custom remote",
   "connectors require Pro, Max, Team, or Enterprise.",
   "an Owner or Primary Owner must add the connector first.",
-  "copilot mcp add xquik --type http --url https://xquik.com/mcp",
+  "copilot mcp add --transport http xquik https://xquik.com/mcp",
   "run `/mcp add`",
   "gemini mcp add --transport http xquik https://xquik.com/mcp",
   '"httpUrl": "https://xquik.com/mcp"',
@@ -2045,7 +2042,9 @@ const REQUIRED_CURRENT_MCP_CLIENT_SETUP_SNIPPETS = [
   "`~/.config/goose/config.yaml`",
   'Authorization: "Bearer ${XQUIK_API_KEY}"',
   '"Authorization": "Bearer ${env:XQUIK_API_KEY}"',
-  "Pi's coding agent has no native MCP client.",
+  "pi mcp add xquik --url https://xquik.com/mcp",
+  "pi mcp login xquik",
+  "`agent mcp login xquik`",
   "API-key fallback is client-specific.",
 ] as const;
 
@@ -2057,7 +2056,10 @@ const FORBIDDEN_CURRENT_MCP_CLIENT_SETUP_SNIPPETS = [
   '"Authorization": "Bearer ${XQUIK_API_KEY}"',
   "Claude's CIMD client",
   "Free accounts can add 1 custom connector.",
-  "copilot mcp add --transport http xquik https://xquik.com/mcp",
+  "copilot mcp add xquik --type http --url https://xquik.com/mcp",
+  "`cursor-agent mcp login xquik`",
+  "Pi's coding agent has no native MCP client.",
+  "Pi requires a separately installed and tested MCP adapter",
   "Older Gemini CLI builds also accept the legacy `httpUrl` field.",
 ] as const;
 
@@ -2104,7 +2106,7 @@ const REQUIRED_DOCS_MCP_SERVER_SNIPPETS = [
   "qwen mcp add --transport http xquik-docs https://docs.xquik.com/mcp",
   "goose session --with-streamable-http-extension https://docs.xquik.com/mcp",
   "Roo Code is archived.",
-  "Pi has no native MCP client.",
+  "pi mcp add xquik-docs --url https://docs.xquik.com/mcp",
   "## Using both MCP servers",
   "**Docs MCP** (`docs.xquik.com/mcp`)",
   "**API MCP** (`xquik.com/mcp`)",
@@ -13632,34 +13634,13 @@ describe("repository discovery", (): void => {
     expect(findings).toStrictEqual([]);
   });
 
-  it("keeps the Codex fix and Goose workaround discoverable before API MCP authentication", (): void => {
+  it("keeps current OAuth setup free of retired issuer workarounds", (): void => {
     expect.assertions(1);
 
-    const findings = CODEX_OAUTH_GUIDANCE_FILES.flatMap((file): readonly DiscoveryFinding[] => {
+    const findings = MCP_GUIDANCE_FILES.flatMap((file): readonly DiscoveryFinding[] => {
       const source = readFileSync(file, "utf8");
-      const required: string[] = [
-        CODEX_OAUTH_FIXED_VERSION,
-        CODEX_OAUTH_ISSUER_ERROR,
-        CODEX_OAUTH_UPSTREAM_ISSUE,
-      ];
-
-      if (file !== "guides/troubleshooting.mdx") {
-        required.push(CODEX_OAUTH_TROUBLESHOOTING_ANCHOR);
-      }
-
-      return collectSnippetFindings(source, file, required);
+      return collectSnippetFindings(source, file, [], RETIRED_OAUTH_WORKAROUND_SNIPPETS);
     });
-
-    for (const file of GOOSE_OAUTH_GUIDANCE_FILES) {
-      const source = readFileSync(file, "utf8");
-      const required = ["Goose", CODEX_OAUTH_ISSUER_ERROR];
-
-      if (file !== "guides/troubleshooting.mdx") {
-        required.push(CODEX_OAUTH_TROUBLESHOOTING_ANCHOR);
-      }
-
-      findings.push(...collectSnippetFindings(source, file, required));
-    }
 
     expect(findings).toStrictEqual([]);
   });
