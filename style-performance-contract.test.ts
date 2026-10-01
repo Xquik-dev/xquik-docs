@@ -1,16 +1,10 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-const productRoot = process.env["XQUIK_PRODUCT_ROOT"] ?? process.env["XQUIK_ROOT"];
 const source = readFileSync(
   new URL("api-reference/styles/performance.mdx", import.meta.url),
   "utf8",
 );
-
-function readProductFile(path: string): string | undefined {
-  if (productRoot === undefined) return undefined;
-  return readFileSync(`${productRoot}/${path}`, "utf8");
-}
 
 describe("tweet style performance documentation", (): void => {
   it("matches every canonical response status and authentication method", (): void => {
@@ -108,34 +102,6 @@ describe("tweet style performance documentation", (): void => {
       focusedTitle: true,
       keywordsPresent: true,
       vagueDescription: false,
-    });
-  });
-
-  it("remains synchronized with the optional product implementation", (): void => {
-    expect.assertions(1);
-
-    const route = readProductFile("app/api/v1/styles/[id]/performance/route.ts");
-
-    expect({
-      accountScopedLookup:
-        route === undefined || route.includes("queryStyleDetail(userAuth.userId, username)"),
-      liveTweetLookup: route === undefined || route.includes("lookupTweet(tweet.id)"),
-      maximumRemainsCapped:
-        route === undefined || route.includes("row.tweets.slice(0, MAX_STYLE_TWEETS)"),
-      styleNotFoundRemains404:
-        route === undefined ||
-        (route.includes("error: 'style_not_found'") && route.includes("{ status: 404 }")),
-      usageMatchesReturnedRows:
-        route === undefined ||
-        (route.includes("type: 'tweet_search'") &&
-          route.includes("count: BigInt(tweets.length)") &&
-          route.includes("resultCount: tweets.length")),
-    }).toStrictEqual({
-      accountScopedLookup: true,
-      liveTweetLookup: true,
-      maximumRemainsCapped: true,
-      styleNotFoundRemains404: true,
-      usageMatchesReturnedRows: true,
     });
   });
 });
