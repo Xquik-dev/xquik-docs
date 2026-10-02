@@ -89,7 +89,7 @@ paths:
       - url: https://xquik.com
     post:
       operationId: searchXquikDocumentation
-      x-mcp-exclusion-reason: Public agent discovery remains direct.
+      x-mcp-exclusion-reason: &agent-discovery Public agent discovery remains direct.
       summary: Search Xquik documentation with NLWeb
       description: >-
         Search public Xquik docs with NLWeb 0.55. This read-only route accepts
@@ -159,7 +159,7 @@ paths:
                   message: 'Search is unavailable. Retry later.'
     get:
       operationId: searchXquikDocumentationWithQuery
-      x-mcp-exclusion-reason: Public agent discovery remains direct.
+      x-mcp-exclusion-reason: *agent-discovery
       summary: Search Xquik documentation with query parameters
       description: Send a flat NLWeb 0.55 request through query parameters.
       tags: [Agent Discovery]
@@ -267,19 +267,31 @@ paths:
                     properties:
                       activeDailyEstimate:
                         type: string
+                        minLength: 1
+                        maxLength: 13
+                        pattern: &nonnegative-credit-string '^(0|[1-9][0-9]*)$'
+                        not: &credit-whitespace
+                          type: string
+                          pattern: '\s'
                         description: Estimated daily credits for currently active monitors.
                         example: '1500'
                       activeHourlyBurn:
                         type: string
+                        minLength: 1
+                        maxLength: 11
+                        pattern: *nonnegative-credit-string
+                        not: *credit-whitespace
                         description: Credits charged each hour for currently active
                           monitors.
                         example: '63'
                       creditsPerActiveMonitorDay:
                         type: string
+                        enum: ['500']
                         description: Rounded daily estimate for 1 active monitor.
                         example: '500'
                       creditsPerActiveMonitorHour:
                         type: string
+                        enum: ['21']
                         description: Hourly credits charged for 1 active monitor.
                         example: '21'
                       eventsIncluded:
@@ -310,15 +322,27 @@ paths:
                     properties:
                       balance:
                         type: string
+                        minLength: 1
+                        maxLength: 19
+                        pattern: *nonnegative-credit-string
+                        not: *credit-whitespace
                         description: Bigint string to preserve precision above
                           Number.MAX_SAFE_INTEGER.
                         example: '50000'
                       lifetimePurchased:
                         type: string
+                        minLength: 1
+                        maxLength: 20
+                        pattern: &signed-credit-string '^(0|-?[1-9][0-9]*)$'
+                        not: *credit-whitespace
                         description: Total purchased credits as a bigint string.
                         example: '140000'
                       lifetimeUsed:
                         type: string
+                        minLength: 1
+                        maxLength: 20
+                        pattern: *signed-credit-string
+                        not: *credit-whitespace
                         description: Total consumed credits as a bigint string.
                         example: '90000'
                       autoTopupEnabled: &boolean-example-false
@@ -330,6 +354,7 @@ paths:
                         example: 10
                       autoTopupThreshold:
                         type: string
+                        enum: ['10000', '50000', '100000', '250000']
                         description: Bigint string threshold that triggers automatic top-up
                           when enabled.
                         example: '50000'
@@ -443,7 +468,7 @@ paths:
   /api-keys:
     get:
       operationId: listApiKeys
-      x-mcp-exclusion-reason: Credential management requires browser auth.
+      x-mcp-exclusion-reason: &browser-auth Credential management requires browser auth.
       description: Returns API key metadata without exposing secret key values.
       summary: List API keys
       tags: [API Keys]
@@ -468,7 +493,7 @@ paths:
         '429': *rate-limit-exceeded-response
     post:
       operationId: createApiKey
-      x-mcp-exclusion-reason: Credential management requires browser auth.
+      x-mcp-exclusion-reason: *browser-auth
       description: Creates a revocable API key and returns its secret once.
       summary: Create API key
       tags: [API Keys]
@@ -545,12 +570,12 @@ paths:
   /api-keys/{id}:
     delete:
       operationId: revokeApiKey
-      x-mcp-exclusion-reason: Credential management requires browser auth.
+      x-mcp-exclusion-reason: *browser-auth
       description: Permanently revokes the selected API key.
       summary: Revoke API key
       tags: [API Keys]
       security: [{ cookieSession: [] }]
-      parameters:
+      parameters: &resource-id-parameters
         - $ref: '#/components/parameters/ResourceId'
       responses:
         '200':
@@ -757,8 +782,7 @@ paths:
       summary: Get draft by ID
       tags: [Composition]
       security: *api-auth
-      parameters:
-        - $ref: '#/components/parameters/ResourceId'
+      parameters: *resource-id-parameters
       responses:
         '200':
           description: Draft details
@@ -773,8 +797,7 @@ paths:
       summary: Delete a draft
       tags: [Composition]
       security: *api-auth
-      parameters:
-        - $ref: '#/components/parameters/ResourceId'
+      parameters: *resource-id-parameters
       responses:
         '204':
           $ref: '#/components/responses/NoContent'
@@ -886,7 +909,7 @@ paths:
                   fetchedAt: '2025-01-15T12:00:00Z'
                   tweets:
                     - id: '1234567890'
-                      text: 'Just launched our new feature!'
+                      text: &launch-text 'Just launched our new feature!'
                 style2:
                   xUsername: 'BillGates'
                   tweetCount: 40
@@ -907,7 +930,7 @@ paths:
       summary: Get cached style profile
       tags: [Composition]
       security: *api-auth
-      parameters:
+      parameters: &style-id-parameters
         - $ref: '#/components/parameters/StyleId'
       responses:
         '200':
@@ -922,8 +945,7 @@ paths:
       summary: Save style profile with custom tweets
       tags: [Composition]
       security: *api-auth
-      parameters:
-        - $ref: '#/components/parameters/StyleId'
+      parameters: *style-id-parameters
       requestBody:
         required: true
         description: Sample tweets that define the style profile.
@@ -950,11 +972,11 @@ paths:
                         example: 'Excited to share our latest research.'
                   description: Array of tweet objects
                   example:
-                    - text: 'Excited to share our latest research.'
+                    - text: &research-text 'Excited to share our latest research.'
             example:
               label: 'Professional Voice'
               tweets:
-                - text: 'Excited to share our latest research.'
+                - text: *research-text
       responses:
         '200':
           description: Style profile saved
@@ -969,7 +991,7 @@ paths:
                 fetchedAt: '2026-08-02T18:30:00.000Z'
                 tweets:
                   - id: '0'
-                    text: 'Excited to share our latest research.'
+                    text: *research-text
                     authorUsername: 'professional voice'
                     createdAt: '2026-08-02T18:30:00.000Z'
         '400': *invalid-input-response
@@ -981,8 +1003,7 @@ paths:
       summary: Delete a style profile
       tags: [Composition]
       security: *api-auth
-      parameters:
-        - $ref: '#/components/parameters/StyleId'
+      parameters: *style-id-parameters
       responses:
         '204':
           $ref: '#/components/responses/NoContent'
@@ -997,8 +1018,7 @@ paths:
       summary: Get engagement metrics for style tweets
       tags: [Composition]
       security: *api-auth
-      parameters:
-        - $ref: '#/components/parameters/StyleId'
+      parameters: *style-id-parameters
       responses:
         '200':
           description: Performance metrics
@@ -1046,7 +1066,7 @@ paths:
                           example: '2025-01-15T12:00:00Z'
                     example:
                       - id: '1234567890'
-                        text: 'Excited to share our latest research.'
+                        text: *research-text
                         likeCount: 120
                         retweetCount: 15
                         replyCount: 8
@@ -1368,8 +1388,7 @@ paths:
       summary: Get keyword monitor
       tags: [Monitors]
       security: *api-auth
-      parameters:
-        - $ref: '#/components/parameters/ResourceId'
+      parameters: *resource-id-parameters
       responses:
         '200':
           description: Keyword monitor details
@@ -1394,8 +1413,7 @@ paths:
       summary: Update keyword monitor
       tags: [Monitors]
       security: *api-auth
-      parameters:
-        - $ref: '#/components/parameters/ResourceId'
+      parameters: *resource-id-parameters
       requestBody:
         required: true
         description: Updated event types or active status.
@@ -1430,8 +1448,7 @@ paths:
       summary: Delete keyword monitor
       tags: [Monitors]
       security: *api-auth
-      parameters:
-        - $ref: '#/components/parameters/ResourceId'
+      parameters: *resource-id-parameters
       responses: &monitor-deletion-responses
         '202':
           $ref: '#/components/responses/MonitorDeletionAccepted'
@@ -1447,8 +1464,7 @@ paths:
       summary: Get monitor
       tags: [Monitors]
       security: *api-auth
-      parameters:
-        - $ref: '#/components/parameters/ResourceId'
+      parameters: *resource-id-parameters
       responses:
         '200':
           description: Monitor details
@@ -1474,8 +1490,7 @@ paths:
       summary: Update monitor
       tags: [Monitors]
       security: *api-auth
-      parameters:
-        - $ref: '#/components/parameters/ResourceId'
+      parameters: *resource-id-parameters
       requestBody:
         required: true
         description: Event type list or active state for the account monitor.
@@ -1530,8 +1545,7 @@ paths:
       summary: Delete monitor
       tags: [Monitors]
       security: *api-auth
-      parameters:
-        - $ref: '#/components/parameters/ResourceId'
+      parameters: *resource-id-parameters
       responses: *monitor-deletion-responses
 
   # ── Events ───────────────────────────────────────────────
@@ -1589,8 +1603,7 @@ paths:
       summary: Get event
       tags: [Events]
       security: *api-auth
-      parameters:
-        - $ref: '#/components/parameters/ResourceId'
+      parameters: *resource-id-parameters
       responses:
         '200':
           description: Event details
@@ -1695,7 +1708,8 @@ paths:
               schema: { type: string }
             Retry-After:
               description: Seconds before polling statusUrl.
-              schema: { $ref: '#/components/schemas/WholeNumber' }
+              schema: &whole-number
+                $ref: '#/components/schemas/WholeNumber'
             Idempotency-Replayed:
               description: Present as true when returning the original job.
               schema: { type: string, const: 'true' }
@@ -1768,8 +1782,7 @@ paths:
       summary: Cancel extraction
       tags: [Extractions]
       security: *api-auth
-      parameters:
-        - $ref: '#/components/parameters/ResourceId'
+      parameters: *resource-id-parameters
       responses:
         '200':
           description: Extraction canceled
@@ -1862,7 +1875,7 @@ paths:
   /extractions/{id}/export:
     get:
       operationId: exportExtraction
-      x-mcp-exclusion-reason: Binary downloads remain direct REST.
+      x-mcp-exclusion-reason: &binary-rest Binary downloads remain direct REST.
       description: Downloads completed extraction results in the requested format.
       summary: Export extraction results
       tags: [Extractions]
@@ -1883,43 +1896,43 @@ paths:
             enum: [csv, json, md, md-document, pdf, txt, xlsx]
         - name: minFollowers
           in: query
-          schema: { $ref: '#/components/schemas/WholeNumber' }
+          schema: *whole-number
           description: Minimum follower count.
         - name: maxFollowers
           in: query
-          schema: { $ref: '#/components/schemas/WholeNumber' }
+          schema: *whole-number
           description: Maximum follower count.
         - name: minFollowing
           in: query
-          schema: { $ref: '#/components/schemas/WholeNumber' }
+          schema: *whole-number
           description: Minimum following count.
         - name: maxFollowing
           in: query
-          schema: { $ref: '#/components/schemas/WholeNumber' }
+          schema: *whole-number
           description: Maximum following count.
         - name: minPosts
           in: query
-          schema: { $ref: '#/components/schemas/WholeNumber' }
+          schema: *whole-number
           description: Minimum post count.
         - name: maxPosts
           in: query
-          schema: { $ref: '#/components/schemas/WholeNumber' }
+          schema: *whole-number
           description: Maximum post count.
         - name: minLikes
           in: query
-          schema: { $ref: '#/components/schemas/WholeNumber' }
+          schema: *whole-number
           description: Minimum like count.
         - name: minReplies
           in: query
-          schema: { $ref: '#/components/schemas/WholeNumber' }
+          schema: *whole-number
           description: Minimum reply count.
         - name: minRetweets
           in: query
-          schema: { $ref: '#/components/schemas/WholeNumber' }
+          schema: *whole-number
           description: Minimum repost count.
         - name: minViews
           in: query
-          schema: { $ref: '#/components/schemas/WholeNumber' }
+          schema: *whole-number
           description: Minimum view count.
         - name: hasDescription
           in: query
@@ -1974,7 +1987,7 @@ paths:
       summary: List draws
       tags: [Draws]
       security: *api-auth
-      parameters:
+      parameters: &limit-after-parameters
         - $ref: '#/components/parameters/Limit'
         - $ref: '#/components/parameters/After'
       responses:
@@ -2196,7 +2209,7 @@ paths:
   /draws/{id}/export:
     get:
       operationId: exportDraw
-      x-mcp-exclusion-reason: Binary downloads remain direct REST.
+      x-mcp-exclusion-reason: *binary-rest
       description: Downloads draw evidence in the requested format.
       summary: Export draw data
       tags: [Draws]
@@ -2314,8 +2327,7 @@ paths:
       summary: Update webhook
       tags: [Webhooks]
       security: *api-auth
-      parameters:
-        - $ref: '#/components/parameters/ResourceId'
+      parameters: *resource-id-parameters
       requestBody:
         required: true
         description: Updated URL, event types, or active status.
@@ -2359,8 +2371,7 @@ paths:
       summary: Deactivate webhook
       tags: [Webhooks]
       security: *api-auth
-      parameters:
-        - $ref: '#/components/parameters/ResourceId'
+      parameters: *resource-id-parameters
       responses:
         '200':
           $ref: '#/components/responses/Success'
@@ -2376,8 +2387,7 @@ paths:
       summary: List webhook deliveries
       tags: [Webhooks]
       security: *api-auth
-      parameters:
-        - $ref: '#/components/parameters/ResourceId'
+      parameters: *resource-id-parameters
       responses:
         '200':
           description: Delivery list
@@ -2406,8 +2416,7 @@ paths:
       summary: Test webhook endpoint
       tags: [Webhooks]
       security: *api-auth
-      parameters:
-        - $ref: '#/components/parameters/ResourceId'
+      parameters: *resource-id-parameters
       responses:
         '200':
           description: Test result
@@ -2441,8 +2450,7 @@ paths:
       summary: Test and resume webhook endpoint
       tags: [Webhooks]
       security: *api-auth
-      parameters:
-        - $ref: '#/components/parameters/ResourceId'
+      parameters: *resource-id-parameters
       responses:
         '200':
           description: Webhook resumed after a successful test delivery
@@ -2530,7 +2538,7 @@ paths:
               example:
                 tweets: &example-launch-tweets
                   - id: '1234567890'
-                    text: 'Just launched our new feature!'
+                    text: *launch-text
                     createdAt: '2025-01-15T12:00:00Z'
                     likeCount: 42
                     retweetCount: 5
@@ -2561,7 +2569,7 @@ paths:
       summary: Create tweet
       tags: [X Write]
       security: *api-auth
-      parameters:
+      parameters: &write-idempotency-parameters
         - $ref: '#/components/parameters/WriteIdempotencyKey'
       requestBody:
         required: true
@@ -2596,7 +2604,7 @@ paths:
                   example: ['https://example.com/video.mp4']
             example:
               account: '@elonmusk'
-              text: 'Just launched our new feature!'
+              text: *launch-text
       responses: &media-write-responses
         '200':
           $ref: '#/components/responses/WriteActionCompleted'
@@ -2646,8 +2654,7 @@ paths:
           $ref: '#/components/responses/WriteActionCompleted'
         '202':
           $ref: '#/components/responses/WriteActionAccepted'
-        '400':
-          $ref: '#/components/responses/InvalidInput'
+        '400': *invalid-input-response
         '401': *unauthenticated-response
         '404': *not-found-response
         '429': *rate-limit-exceeded-response
@@ -2663,7 +2670,7 @@ paths:
       x-payment-info:
         offers:
           - amount: '450'
-            currency: '0x20c000000000000000000000b9537d11c60e8b50'
+            currency: &tempo-usd '0x20c000000000000000000000b9537d11c60e8b50'
             intent: charge
             method: tempo
       parameters:
@@ -2896,7 +2903,7 @@ paths:
       x-payment-info:
         offers:
           - amount: '750'
-            currency: '0x20c000000000000000000000b9537d11c60e8b50'
+            currency: *tempo-usd
             intent: charge
             method: tempo
       parameters:
@@ -3046,7 +3053,7 @@ paths:
       x-payment-info:
         offers:
           - amount: '150'
-            currency: '0x20c000000000000000000000b9537d11c60e8b50'
+            currency: *tempo-usd
             intent: charge
             method: tempo
       parameters:
@@ -3098,7 +3105,7 @@ paths:
       summary: Delete tweet
       tags: [X Write]
       security: *api-auth
-      parameters:
+      parameters: &tweet-write-parameters
         - $ref: '#/components/parameters/WriteIdempotencyKey'
         - $ref: '#/components/parameters/TweetPathId'
       requestBody:
@@ -3133,9 +3140,7 @@ paths:
       summary: Like tweet
       tags: [X Write]
       security: *api-auth
-      parameters:
-        - $ref: '#/components/parameters/WriteIdempotencyKey'
-        - $ref: '#/components/parameters/TweetPathId'
+      parameters: *tweet-write-parameters
       requestBody:
         required: true
         description: Account to perform the like.
@@ -3148,9 +3153,7 @@ paths:
       summary: Unlike tweet
       tags: [X Write]
       security: *api-auth
-      parameters:
-        - $ref: '#/components/parameters/WriteIdempotencyKey'
-        - $ref: '#/components/parameters/TweetPathId'
+      parameters: *tweet-write-parameters
       requestBody:
         required: true
         description: Account that liked the tweet.
@@ -3168,9 +3171,7 @@ paths:
       summary: Retweet
       tags: [X Write]
       security: *api-auth
-      parameters:
-        - $ref: '#/components/parameters/WriteIdempotencyKey'
-        - $ref: '#/components/parameters/TweetPathId'
+      parameters: *tweet-write-parameters
       requestBody:
         required: true
         description: Account to perform the retweet.
@@ -3183,9 +3184,7 @@ paths:
       summary: Unretweet
       tags: [X Write]
       security: *api-auth
-      parameters:
-        - $ref: '#/components/parameters/WriteIdempotencyKey'
-        - $ref: '#/components/parameters/TweetPathId'
+      parameters: *tweet-write-parameters
       requestBody:
         required: true
         description: Account that retweeted the tweet.
@@ -3313,7 +3312,7 @@ paths:
       x-payment-info:
         offers:
           - amount: '150'
-            currency: '0x20c000000000000000000000b9537d11c60e8b50'
+            currency: *tempo-usd
             intent: charge
             method: tempo
       parameters:
@@ -3351,7 +3350,7 @@ paths:
       summary: Follow user
       tags: [X Write]
       security: *api-auth
-      parameters:
+      parameters: &user-write-parameters
         - $ref: '#/components/parameters/WriteIdempotencyKey'
         - $ref: '#/components/parameters/UserPathId'
       requestBody:
@@ -3390,9 +3389,7 @@ paths:
       summary: Unfollow user
       tags: [X Write]
       security: *api-auth
-      parameters:
-        - $ref: '#/components/parameters/WriteIdempotencyKey'
-        - $ref: '#/components/parameters/UserPathId'
+      parameters: *user-write-parameters
       requestBody:
         required: true
         description: Account that follows the target user.
@@ -3407,9 +3404,7 @@ paths:
       summary: Remove follower
       tags: [X Write]
       security: *api-auth
-      parameters:
-        - $ref: '#/components/parameters/WriteIdempotencyKey'
-        - $ref: '#/components/parameters/UserPathId'
+      parameters: *user-write-parameters
       requestBody:
         required: true
         description: Account whose follower list should be updated.
@@ -3427,7 +3422,7 @@ paths:
       x-payment-info:
         offers:
           - amount: '750'
-            currency: '0x20c000000000000000000000b9537d11c60e8b50'
+            currency: *tempo-usd
             intent: charge
             method: tempo
       parameters:
@@ -3551,8 +3546,7 @@ paths:
       summary: Upload media
       tags: [X Write]
       security: *api-auth
-      parameters:
-        - $ref: '#/components/parameters/WriteIdempotencyKey'
+      parameters: *write-idempotency-parameters
       requestBody:
         required: true
         description: Upload media with multipart form data, or provide a JSON URL for
@@ -3688,8 +3682,7 @@ paths:
       summary: Update X profile
       tags: [X Write]
       security: *api-auth
-      parameters:
-        - $ref: '#/components/parameters/WriteIdempotencyKey'
+      parameters: *write-idempotency-parameters
       requestBody:
         required: true
         description: Account and profile fields to update (name, bio, location, website).
@@ -3734,8 +3727,7 @@ paths:
       summary: Update profile avatar
       tags: [X Write]
       security: *api-auth
-      parameters:
-        - $ref: '#/components/parameters/WriteIdempotencyKey'
+      parameters: *write-idempotency-parameters
       requestBody:
         required: true
         description: Account and avatar image file or HTTPS image URL (max 15 MiB).
@@ -3784,8 +3776,7 @@ paths:
       summary: Update profile banner
       tags: [X Write]
       security: *api-auth
-      parameters:
-        - $ref: '#/components/parameters/WriteIdempotencyKey'
+      parameters: *write-idempotency-parameters
       requestBody:
         required: true
         description: Account and banner image file or HTTPS image URL (max 15 MiB).
@@ -3834,8 +3825,7 @@ paths:
       summary: Create community
       tags: [X Write]
       security: *api-auth
-      parameters:
-        - $ref: '#/components/parameters/WriteIdempotencyKey'
+      parameters: *write-idempotency-parameters
       requestBody:
         required: true
         description: Account, community name, and optional description.
@@ -3871,7 +3861,7 @@ paths:
       summary: Delete community
       tags: [X Write]
       security: *api-auth
-      parameters:
+      parameters: &resource-write-parameters
         - $ref: '#/components/parameters/WriteIdempotencyKey'
         - $ref: '#/components/parameters/ResourceId'
       requestBody:
@@ -3904,9 +3894,7 @@ paths:
       summary: Join community
       tags: [X Write]
       security: *api-auth
-      parameters:
-        - $ref: '#/components/parameters/WriteIdempotencyKey'
-        - $ref: '#/components/parameters/ResourceId'
+      parameters: *resource-write-parameters
       requestBody:
         required: true
         description: Account to join the community.
@@ -3919,9 +3907,7 @@ paths:
       summary: Leave community
       tags: [X Write]
       security: *api-auth
-      parameters:
-        - $ref: '#/components/parameters/WriteIdempotencyKey'
-        - $ref: '#/components/parameters/ResourceId'
+      parameters: *resource-write-parameters
       requestBody:
         required: true
         description: Account to leave the community.
@@ -3938,9 +3924,7 @@ paths:
       summary: List connected X accounts
       tags: [X Accounts]
       security: *api-auth
-      parameters:
-        - $ref: '#/components/parameters/Limit'
-        - $ref: '#/components/parameters/After'
+      parameters: *limit-after-parameters
       responses:
         '200':
           description: X account list
@@ -4136,8 +4120,7 @@ paths:
       summary: Submit X account email verification code
       tags: [X Accounts]
       security: *api-auth
-      parameters:
-        - $ref: '#/components/parameters/ResourceId'
+      parameters: *resource-id-parameters
       requestBody:
         required: true
         description: Email verification code requested during account connect.
@@ -4198,8 +4181,7 @@ paths:
       summary: Get X account details
       tags: [X Accounts]
       security: *api-auth
-      parameters:
-        - $ref: '#/components/parameters/ResourceId'
+      parameters: *resource-id-parameters
       responses:
         '200':
           description: X account details
@@ -4217,8 +4199,7 @@ paths:
       summary: Disconnect X account
       tags: [X Accounts]
       security: *api-auth
-      parameters:
-        - $ref: '#/components/parameters/ResourceId'
+      parameters: *resource-id-parameters
       responses:
         '200':
           $ref: '#/components/responses/Success'
@@ -4234,8 +4215,7 @@ paths:
       summary: Re-authenticate X account
       tags: [X Accounts]
       security: *api-auth
-      parameters:
-        - $ref: '#/components/parameters/ResourceId'
+      parameters: *resource-id-parameters
       requestBody:
         required: true
         description: Updated password and optional fields for re-authentication.
@@ -4321,7 +4301,7 @@ paths:
       x-payment-info:
         offers:
           - amount: '450'
-            currency: '0x20c000000000000000000000b9537d11c60e8b50'
+            currency: *tempo-usd
             intent: charge
             method: tempo
       parameters:
@@ -4401,7 +4381,7 @@ paths:
   /support/attachments/{id}:
     get:
       operationId: downloadSupportAttachment
-      x-mcp-exclusion-reason: Binary downloads remain direct REST.
+      x-mcp-exclusion-reason: *binary-rest
       summary: Download support ticket media
       description: >
         Streams an authenticated user's support image or video. Video requests
@@ -4727,7 +4707,7 @@ paths:
   /guest-wallets:
     post:
       operationId: createGuestWallet
-      x-mcp-exclusion-reason: Guest wallet billing remains direct REST.
+      x-mcp-exclusion-reason: &guest-wallet-rest Guest wallet billing remains direct REST.
       summary: Create an accountless prepaid wallet checkout
       description: >
         Create a one-use hosted checkout after the user confirms $10-$250 USD.
@@ -4735,7 +4715,7 @@ paths:
         Xquik account. Idempotent replays return the same key.
       tags: [Guest Wallets]
       security: [{}]
-      parameters:
+      parameters: &guest-idempotency-parameters
         - $ref: '#/components/parameters/GuestIdempotencyKey'
       requestBody:
         required: true
@@ -4838,7 +4818,7 @@ paths:
   /guest-wallets/topups:
     post:
       operationId: topUpGuestWallet
-      x-mcp-exclusion-reason: Guest wallet billing remains direct REST.
+      x-mcp-exclusion-reason: *guest-wallet-rest
       summary: Create another guest wallet checkout
       description: >
         Create a one-use hosted checkout after the user confirms a $10-$250 USD
@@ -4846,8 +4826,7 @@ paths:
         This request creates no charge and never redirects through Xquik.
       tags: [Guest Wallets]
       security: [{ apiKey: [] }]
-      parameters:
-        - $ref: '#/components/parameters/GuestIdempotencyKey'
+      parameters: *guest-idempotency-parameters
       requestBody:
         required: true
         description: Confirmed top-up amount in USD cents.
@@ -4909,7 +4888,7 @@ paths:
   /guest-wallets/status:
     get:
       operationId: getGuestWalletStatus
-      x-mcp-exclusion-reason: Guest wallet billing remains direct REST.
+      x-mcp-exclusion-reason: *guest-wallet-rest
       summary: Get guest wallet and payment status
       description: >
         Poll after payment. Use usable to decide whether paid reads can run. An
@@ -5069,7 +5048,7 @@ paths:
   /credits/topup/redirect:
     get:
       operationId: redirectCreditTopupCheckout
-      x-mcp-exclusion-reason: Browser checkout requires user interaction.
+      x-mcp-exclusion-reason: &browser-checkout Browser checkout requires user interaction.
       description: Redirects to the active hosted top-up checkout.
       summary: Redirect to an active top-up payment page
       tags:
@@ -5175,7 +5154,7 @@ paths:
   /credits/quick-topup:
     post:
       operationId: quickTopUpCredits
-      x-mcp-exclusion-reason: Browser checkout requires user interaction.
+      x-mcp-exclusion-reason: *browser-checkout
       description: Charges a saved payment method only after explicit confirmation.
       summary: Charge saved card for credits
       tags:
@@ -5946,7 +5925,7 @@ paths:
       x-payment-info:
         offers:
           - amount: '150'
-            currency: '0x20c000000000000000000000b9537d11c60e8b50'
+            currency: *tempo-usd
             intent: charge
             method: tempo
       parameters:
@@ -7181,37 +7160,37 @@ components:
     UserMinFollowers:
       name: minFollowers
       in: query
-      schema: { $ref: '#/components/schemas/WholeNumber' }
+      schema: *whole-number
       description: Minimum follower count. Filtering happens before billing.
     UserMaxFollowers:
       name: maxFollowers
       in: query
-      schema: { $ref: '#/components/schemas/WholeNumber' }
+      schema: *whole-number
       description: Maximum follower count. Missing counts pass this maximum.
     UserMinFollowing:
       name: minFollowing
       in: query
-      schema: { $ref: '#/components/schemas/WholeNumber' }
+      schema: *whole-number
       description: Profiles must follow at least this many accounts.
     UserMaxFollowing:
       name: maxFollowing
       in: query
-      schema: { $ref: '#/components/schemas/WholeNumber' }
+      schema: *whole-number
       description: Profiles may follow at most this many accounts.
     UserMinStatuses:
       name: minStatuses
       in: query
-      schema: { $ref: '#/components/schemas/WholeNumber' }
+      schema: *whole-number
       description: Minimum post count. minPosts is also accepted.
     UserMaxStatuses:
       name: maxStatuses
       in: query
-      schema: { $ref: '#/components/schemas/WholeNumber' }
+      schema: *whole-number
       description: Maximum post count. maxPosts is also accepted.
     UserMinAccountAgeDays:
       name: minAccountAgeDays
       in: query
-      schema: { $ref: '#/components/schemas/WholeNumber' }
+      schema: *whole-number
       description: Minimum account age in whole days.
     UserVerifiedOnly:
       name: verifiedOnly
@@ -8051,8 +8030,8 @@ components:
             message: This API key can access paid read endpoints only.
     ProtectedTimeline:
       description: >-
-        The account is protected; choose a public one. Applies to every
-        timeline page & mode. Xquik charges nothing. Profile lookup still works.
+        The account is protected; choose a public one. Applies to every timeline
+        page & mode. Xquik charges nothing. Profile lookup still works.
       content:
         application/json:
           schema: *error-schema
@@ -8060,8 +8039,8 @@ components:
             error: x_account_protected
             message: Account is protected. Choose a public account.
     ProtectedTarget:
-      description: The target account is protected; choose a public one. Xquik creates
-        no job & charges nothing. Follower tools name the private list.
+      description: The target account is protected; choose a public one. Xquik creates no
+        job & charges nothing. Follower tools name the private list.
       content:
         application/json:
           schema: *error-schema
@@ -9400,7 +9379,7 @@ components:
             $ref: '#/components/schemas/SearchTweet'
           example:
             - id: '1234567890'
-              text: 'Just launched our new feature!'
+              text: *launch-text
               retweetCount: 5
               replyCount: 3
               likeCount: 42
@@ -10926,13 +10905,13 @@ components:
           oneOf:
             - type: string
               format: date-time
-            - { $ref: '#/components/schemas/WholeNumber' }
+            - $ref: '#/components/schemas/WholeNumber'
           description: Reply start time as ISO 8601 or Unix seconds.
         untilTime:
           oneOf:
             - type: string
               format: date-time
-            - { $ref: '#/components/schemas/WholeNumber' }
+            - $ref: '#/components/schemas/WholeNumber'
           description: Reply end time as ISO 8601 or Unix seconds.
         minViews:
           type: integer
@@ -11546,7 +11525,8 @@ components:
         status:
           type: string
           enum: [pending, running, canceled, completed, failed]
-        totalResults: { $ref: '#/components/schemas/WholeNumber' }
+        totalResults:
+          $ref: '#/components/schemas/WholeNumber'
         resultsLimit:
           type: integer
           minimum: 1
@@ -11585,7 +11565,7 @@ components:
         xUserId: { type: string }
         xUsername: { type: string }
         xDisplayName: { type: string }
-        xFollowersCount: { $ref: '#/components/schemas/WholeNumber' }
+        xFollowersCount: *whole-number
         xVerified: { type: boolean }
         xProfileImageUrl: { type: string, format: uri }
         tweetId: { type: string }
@@ -11599,12 +11579,12 @@ components:
             Attached media with outputPreset=flat. Default nested output uses
             enrichmentData.tweet.media.
           items: { $ref: '#/components/schemas/TweetMedia' }
-        bookmarkCount: { $ref: '#/components/schemas/WholeNumber' }
-        likeCount: { $ref: '#/components/schemas/WholeNumber' }
-        quoteCount: { $ref: '#/components/schemas/WholeNumber' }
-        replyCount: { $ref: '#/components/schemas/WholeNumber' }
-        retweetCount: { $ref: '#/components/schemas/WholeNumber' }
-        viewCount: { $ref: '#/components/schemas/WholeNumber' }
+        bookmarkCount: *whole-number
+        likeCount: *whole-number
+        quoteCount: *whole-number
+        replyCount: *whole-number
+        retweetCount: *whole-number
+        viewCount: *whole-number
         enrichmentData: { $ref: '#/components/schemas/PublicMetadata' }
 
     DrawListItem:
@@ -11619,8 +11599,10 @@ components:
         tweetUrl: *uri-string
         status:
           type: string
-        totalEntries: { $ref: '#/components/schemas/WholeNumber' }
-        validEntries: { $ref: '#/components/schemas/WholeNumber' }
+        totalEntries:
+          $ref: '#/components/schemas/WholeNumber'
+        validEntries:
+          $ref: '#/components/schemas/WholeNumber'
         createdAt: *date-time-string
         drawnAt: *date-time-string
 
@@ -11645,10 +11627,14 @@ components:
               type: string
             tweetAuthorUsername:
               type: string
-            tweetLikeCount: { $ref: '#/components/schemas/WholeNumber' }
-            tweetRetweetCount: { $ref: '#/components/schemas/WholeNumber' }
-            tweetReplyCount: { $ref: '#/components/schemas/WholeNumber' }
-            tweetQuoteCount: { $ref: '#/components/schemas/WholeNumber' }
+            tweetLikeCount:
+              $ref: '#/components/schemas/WholeNumber'
+            tweetRetweetCount:
+              $ref: '#/components/schemas/WholeNumber'
+            tweetReplyCount:
+              $ref: '#/components/schemas/WholeNumber'
+            tweetQuoteCount:
+              $ref: '#/components/schemas/WholeNumber'
 
     Winner:
       description: Giveaway draw winner with position and backup flag.
@@ -11715,7 +11701,8 @@ components:
           type: string
         status:
           type: string
-        attempts: { $ref: '#/components/schemas/WholeNumber' }
+        attempts:
+          $ref: '#/components/schemas/WholeNumber'
         createdAt: *date-time-string
         deliveredAt: *date-time-string
         lastStatusCode:
@@ -11743,11 +11730,16 @@ components:
           type: string
         createdAt:
           type: string
-        followersCount: { $ref: '#/components/schemas/WholeNumber' }
-        followingCount: { $ref: '#/components/schemas/WholeNumber' }
-        statusesCount: { $ref: '#/components/schemas/WholeNumber' }
-        mediaCount: { $ref: '#/components/schemas/WholeNumber' }
-        favouritesCount: { $ref: '#/components/schemas/WholeNumber' }
+        followersCount:
+          $ref: '#/components/schemas/WholeNumber'
+        followingCount:
+          $ref: '#/components/schemas/WholeNumber'
+        statusesCount:
+          $ref: '#/components/schemas/WholeNumber'
+        mediaCount:
+          $ref: '#/components/schemas/WholeNumber'
+        favouritesCount:
+          $ref: '#/components/schemas/WholeNumber'
         profilePicture:
           type: string
         profileBannerUrl:
@@ -11775,7 +11767,7 @@ components:
         aspectRatio:
           type: array
           description: Video width and height ratio.
-          items: { $ref: '#/components/schemas/WholeNumber' }
+          items: *whole-number
         availabilityReason: { type: string, description: Availability reason. }
         availabilityStatus: { type: string, description: Availability state. }
         description: { type: string, description: Media description. }
@@ -11795,10 +11787,10 @@ components:
               type: object
               required: [x, y, w, h]
               properties:
-                x: { $ref: '#/components/schemas/WholeNumber' }
-                y: { $ref: '#/components/schemas/WholeNumber' }
-                w: { $ref: '#/components/schemas/WholeNumber' }
-                h: { $ref: '#/components/schemas/WholeNumber' }
+                x: *whole-number
+                y: *whole-number
+                w: *whole-number
+                h: *whole-number
         focusRects:
           type: array
           description: Suggested image crops.
@@ -11810,7 +11802,7 @@ components:
         indices:
           type: array
           description: Tweet text offsets.
-          items: { $ref: '#/components/schemas/WholeNumber' }
+          items: *whole-number
         mediaKey: { type: string, description: Stable X media key. }
         monetizable: { type: boolean, description: Monetization status. }
         otherSensitiveContent: { type: boolean }
@@ -11821,8 +11813,8 @@ components:
             type: object
             required: [w, h, resize]
             properties:
-              w: { $ref: '#/components/schemas/WholeNumber' }
-              h: { $ref: '#/components/schemas/WholeNumber' }
+              w: *whole-number
+              h: *whole-number
               resize: { type: string }
         sourceStatusId: { type: string, description: Source tweet ID for copied media. }
         sourceUserId: { type: string, description: Source profile ID for copied media. }
@@ -11844,7 +11836,7 @@ components:
             type: object
             required: [contentType, url]
             properties:
-              bitrate: { $ref: '#/components/schemas/WholeNumber' }
+              bitrate: *whole-number
               contentType: { type: string }
               url: { type: string }
         watchNowUrl: { type: string, description: Public media action URL. }
@@ -11995,14 +11987,14 @@ components:
       type: object
       required: [text]
       properties:
-        indices: { type: array, items: { $ref: '#/components/schemas/WholeNumber' } }
+        indices: { type: array, items: *whole-number }
         text: { type: string }
 
     TweetSymbol:
       description: Indexed smart-tag, cashtag, or video timestamp metadata.
       type: object
       properties:
-        indices: { type: array, items: { $ref: '#/components/schemas/WholeNumber' } }
+        indices: { type: array, items: *whole-number }
         seconds: { type: number }
         text: { type: string }
         tag:
@@ -12025,7 +12017,7 @@ components:
         expanded_url: { type: string }
         indices:
           type: array
-          items: { $ref: '#/components/schemas/WholeNumber' }
+          items: *whole-number
         url: { type: string }
 
     TweetUserMention:
@@ -12036,7 +12028,7 @@ components:
         id_str: { type: string }
         indices:
           type: array
-          items: { $ref: '#/components/schemas/WholeNumber' }
+          items: *whole-number
         name: { type: string }
         screen_name: { type: string }
 
@@ -12060,7 +12052,7 @@ components:
             type: object
             required: [index, mediaId]
             properties:
-              index: { $ref: '#/components/schemas/WholeNumber' }
+              index: *whole-number
               mediaId: { type: string }
         richtextTags:
           type: array
@@ -12068,8 +12060,10 @@ components:
             type: object
             required: [fromIndex, toIndex, types]
             properties:
-              fromIndex: { $ref: '#/components/schemas/WholeNumber' }
-              toIndex: { $ref: '#/components/schemas/WholeNumber' }
+              fromIndex:
+                $ref: '#/components/schemas/WholeNumber'
+              toIndex:
+                $ref: '#/components/schemas/WholeNumber'
               types:
                 type: array
                 items:
@@ -12079,11 +12073,16 @@ components:
       description: Engagement counts retained from a prior tweet edit.
       type: object
       properties:
-        bookmarkCount: { $ref: '#/components/schemas/WholeNumber' }
-        likeCount: { $ref: '#/components/schemas/WholeNumber' }
-        quoteCount: { $ref: '#/components/schemas/WholeNumber' }
-        replyCount: { $ref: '#/components/schemas/WholeNumber' }
-        retweetCount: { $ref: '#/components/schemas/WholeNumber' }
+        bookmarkCount:
+          $ref: '#/components/schemas/WholeNumber'
+        likeCount:
+          $ref: '#/components/schemas/WholeNumber'
+        quoteCount:
+          $ref: '#/components/schemas/WholeNumber'
+        replyCount:
+          $ref: '#/components/schemas/WholeNumber'
+        retweetCount:
+          $ref: '#/components/schemas/WholeNumber'
 
     TweetPoint:
       description: Author-published geographic point with 2 numeric coordinates.
@@ -12135,8 +12134,8 @@ components:
               items:
                 type: object
                 properties:
-                  fromIndex: { $ref: '#/components/schemas/WholeNumber' }
-                  toIndex: { $ref: '#/components/schemas/WholeNumber' }
+                  fromIndex: *whole-number
+                  toIndex: *whole-number
                   ref:
                     type: object
                     properties:
@@ -12146,7 +12145,9 @@ components:
 
     TweetPublicDataBase:
       description: >-
-        Public tweet fields, excluding nested tweets. `text` reads as x.com shows it, with `&`, `<` & `>` decoded. `displayTextRange` & entity `indices` count that text.
+        Public tweet fields, excluding nested tweets. `text` reads as x.com
+        shows it, with `&`, `<` & `>` decoded. `displayTextRange` & entity
+        `indices` count that text.
       type: object
       required:
         &tweet-required-fields [
@@ -12209,7 +12210,7 @@ components:
         source: { type: string, example: 'Twitter Web App' }
         displayTextRange:
           type: array
-          items: { $ref: '#/components/schemas/WholeNumber' }
+          items: *whole-number
           example: [0, 31]
         contentDisclosure:
           $ref: '#/components/schemas/ContentDisclosure'
@@ -12613,8 +12614,10 @@ components:
           example: 'Business'
         affiliatesHighlightedLabel:
           $ref: '#/components/schemas/UserAffiliateLabel'
-        businessAccountAffiliatesCount: { $ref: '#/components/schemas/WholeNumber' }
-        creatorSubscriptionsCount: { $ref: '#/components/schemas/WholeNumber' }
+        businessAccountAffiliatesCount:
+          $ref: '#/components/schemas/WholeNumber'
+        creatorSubscriptionsCount:
+          $ref: '#/components/schemas/WholeNumber'
         hasGraduatedAccess:
           type: boolean
         hasHiddenSubscriptionsOnProfile:
@@ -12719,7 +12722,7 @@ components:
                   authorUsername: *username-example-schema
               example:
                 - id: '1234567890'
-                  text: 'Just launched our new feature!'
+                  text: *launch-text
 
     RadarItem:
       description: Trending topic with score, category, source, region, language, and
