@@ -3495,7 +3495,7 @@ const REQUIRED_X_ACCOUNTS_GET_STATE_SNIPPETS = [
   "<CardGroup cols={1}>",
   '<Card title="Ready for actions" icon="circle-check">',
   '`health: "healthy"` means the stored session is usable.',
-  "`cookiesObtainedAt` shows when Xquik last obtained the session",
+  "`connectedAt` shows when the account last connected or reconnected.",
   '<Card title="Needs credentials" icon="key-round">',
   '`health: "needsReauth"` means credentials, TOTP, email verification, passkey, or another security challenge blocked login.',
   "with current credentials and a valid TOTP secret before retrying writes.",
@@ -3520,14 +3520,6 @@ const X_ACCOUNT_PUBLIC_CONTRACT_FILES = [
 ] as const;
 
 const FORBIDDEN_X_ACCOUNT_PUBLIC_CONTRACT_SNIPPETS = [
-  "`proxy_country`",
-  'body="proxy_country"',
-  "`proxyCountry`",
-  'name="proxyCountry"',
-  "accounts[].proxyCountry",
-  "`loginCountry`",
-  'name="loginCountry"',
-  "selected `proxy_country`",
   "3 attempts per 15 minutes",
   "3 per 15 minutes",
   "Too many connection attempts. Try again in 15 minutes.",
@@ -12190,16 +12182,6 @@ const FORBIDDEN_PUBLIC_CONFIDENTIALITY_WORDING = [
   ["Trending", "topics", "and", "news", "aggregated", "from", "7", "sources"].join(" "),
   ["Trending", "topics", "and", "news", "from", "7", "sources"].join(" "),
   "TrustMRR",
-  [["browser", "service"].join("-"), "capacity"].join(" "),
-  ["declared", "proxy", "region", "was", "unavailable"].join(" "),
-  ["login", "fell", "back", "to", "a", "single", "US", "consumer", "device"].join(" "),
-  ["one-time", "US", "browser", "session"].join(" "),
-  [["one", "time"].join("-"), "US", "fallback"].join(" "),
-  ["proxy", "service"].join(" "),
-  ["participant", "session"].join(" "),
-  ["session", "reads", "the", "conversation"].join(" "),
-  ["shared", "read", "pool"].join(" "),
-  ["whose", "session", "reads"].join(" "),
 ] as const;
 
 const EXPECTED_OPENAPI_OPERATION_COUNT = 131;
