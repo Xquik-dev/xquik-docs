@@ -24,7 +24,19 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
     ```json
     {
-      "styles": []
+      "styles": [],
+      "hasMore": false
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="400" id="response-styles-list-400">
+
+    ```json
+    {
+      "error": "invalid_input",
+      "message": "Invalid input. Check the request body."
     }
     ```
 
@@ -167,8 +179,8 @@ Use the summary fields to choose the next endpoint:
 | Refresh likes, replies, reposts, and views | [Analyze Performance](/api-reference/styles/performance) | Pass `xUsername` in `{id}`.     |
 | Remove a cached profile                    | [Delete Style](/api-reference/styles/delete)             | Pass `xUsername` in `{id}`.     |
 
-The response contains no pagination cursor. Do not invent `nextCursor`, `page`,
-or `total` fields. Process only the summaries returned in `styles`.
+The response pages by cursor. When `hasMore` is `true`, pass `nextCursor` as
+`cursor` for the next page. Do not invent `page` or `total` fields.
 
 ## Handle list style errors
 
@@ -196,6 +208,16 @@ Your API key. Session cookie authentication is also supported. Generate a key fr
 
 </ParamField>
 
+## Query parameters
+
+<ParamField query="limit" type="integer">
+  Maximum items per page: 1 to 200, default 200.
+</ParamField>
+<ParamField query="cursor" type="string">
+  `nextCursor` from the previous page. The `after` alias also works. Offset pagination is not
+  supported.
+</ParamField>
+
 ## Response
 
 ### 200 OK
@@ -220,6 +242,13 @@ Array of cached style summaries.
 
 </ResponseField>
 
+<ResponseField name="hasMore" type="boolean">
+  Whether more rows follow this page.
+</ResponseField>
+<ResponseField name="nextCursor" type="string">
+  Pass it as `cursor` for the next page. Present when `hasMore` is `true`.
+</ResponseField>
+
 ```json
 {
   "styles": [
@@ -235,9 +264,21 @@ Array of cached style summaries.
       "fetchedAt": "2026-02-25T14:00:00.000Z",
       "isOwnAccount": false
     }
-  ]
+  ],
+  "hasMore": false
 }
 ```
+
+### 400 Invalid cursor
+
+```json
+{
+  "error": "invalid_input",
+  "message": "Cursor invalid. Use nextCursor from the previous page, or omit it to start over."
+}
+```
+
+The `cursor` is not one this list returned. Send the `nextCursor` of the previous page, or omit it.
 
 ### 401 Unauthenticated
 

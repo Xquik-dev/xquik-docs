@@ -34,7 +34,19 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
           "messageCount": 2,
           "createdAt": "2025-01-15T12:00:00Z"
         }
-      ]
+      ],
+      "hasMore": false
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="400" id="response-support-list-400">
+
+    ```json
+    {
+      "error": "invalid_input",
+      "message": "Invalid input. Check the request body."
     }
     ```
 
@@ -169,8 +181,8 @@ requesting any detailed history.
 | Latest activity      | `updatedAt`    | Process recently changed tickets first.                          |
 
 The endpoint returns up to 200 tickets. It sorts the newest `updatedAt` value
-first. The request has no pagination, search, or status query parameter. Ask
-[support](mailto:support@xquik.com) when you need an older ticket.
+first. Pass `nextCursor` as `cursor` to read older tickets. The request has no
+search or status query parameter.
 
 Filter the returned array locally. Match `publicId`, `subject`, or `status`
 without sending another list request.
@@ -271,6 +283,16 @@ An OAuth bearer token formatted as `Bearer YOUR_TOKEN`. Send this header or `x-a
 
 </ParamField>
 
+## Query parameters
+
+<ParamField query="limit" type="integer">
+  Maximum items per page: 1 to 200, default 200.
+</ParamField>
+<ParamField query="cursor" type="string">
+  `nextCursor` from the previous page. The `after` alias also works. Offset pagination is not
+  supported.
+</ParamField>
+
 ## Response
 
 ### 200 OK
@@ -297,6 +319,13 @@ An OAuth bearer token formatted as `Bearer YOUR_TOKEN`. Send this header or `x-a
   ISO 8601 last update timestamp.
 </ResponseField>
 
+<ResponseField name="hasMore" type="boolean">
+  Whether more rows follow this page.
+</ResponseField>
+<ResponseField name="nextCursor" type="string">
+  Pass it as `cursor` for the next page. Present when `hasMore` is `true`.
+</ResponseField>
+
 ```json
 {
   "tickets": [
@@ -308,9 +337,21 @@ An OAuth bearer token formatted as `Bearer YOUR_TOKEN`. Send this header or `x-a
       "createdAt": "2026-03-18T10:00:00Z",
       "updatedAt": "2026-03-18T12:30:00Z"
     }
-  ]
+  ],
+  "hasMore": false
 }
 ```
+
+### 400 Invalid cursor
+
+```json
+{
+  "error": "invalid_input",
+  "message": "Cursor invalid. Use nextCursor from the previous page, or omit it to start over."
+}
+```
+
+The `cursor` is not one this list returned. Send the `nextCursor` of the previous page, or omit it.
 
 ### 401 Unauthenticated
 

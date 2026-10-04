@@ -18,7 +18,8 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
     ```json
     {
-      "deliveries": []
+      "deliveries": [],
+      "hasMore": false
     }
     ```
 
@@ -274,7 +275,7 @@ Your API key.
 
 ## Operational handoff
 
-Use this endpoint when your queue, CRM, warehouse, or alerting system needs to check webhook delivery status. It returns the 100 most recent delivery records for one webhook, newest first.
+Use this endpoint when your queue, CRM, warehouse, or alerting system needs to check webhook delivery status. It returns the 100 most recent delivery records for one webhook, newest first. Follow `nextCursor` for older ones.
 
 Map each delivery to a small incident row before you pass it on. Keep `id`, `streamEventId`, `status`, `attempts`, receiver status, timestamps, and the chosen action. Do not write the full response to logs.
 
@@ -398,7 +399,7 @@ Fix the receiving endpoint first. Use [`POST /webhooks/{id}/test`](/api-referenc
 
 ### Receiver backfill handoff
 
-This endpoint returns the latest 100 delivery rows for 1 webhook. Xquik
+This endpoint returns 100 delivery rows per page for 1 webhook, newest first. Xquik
 resends failed deliveries on its own. Use stored event pages only to rebuild
 work your receiver lost.
 
@@ -421,13 +422,23 @@ Then compare each event `id` with delivery `streamEventId` values before
 replaying your own work. Add `monitorId` when replaying one account
 monitor, or `keywordMonitorId` when replaying one keyword monitor.
 
+## Query parameters
+
+<ParamField query="limit" type="integer">
+  Maximum deliveries per page: 1 to 100, default 100.
+</ParamField>
+<ParamField query="cursor" type="string">
+  `nextCursor` from the previous page. The `after` alias also works. Offset pagination is not
+  supported.
+</ParamField>
+
 ## Response
 
 ### 200 OK
 
 <ResponseField name="deliveries" type="array">
 
-List of delivery attempts, most recent first. Returns up to 100 deliveries.
+List of delivery attempts, most recent first. Returns up to 100 deliveries per page.
 **Delivery object fields.**
 
 <ResponseField name="id" type="string">
@@ -473,6 +484,13 @@ List of delivery attempts, most recent first. Returns up to 100 deliveries.
 
 </ResponseField>
 
+<ResponseField name="hasMore" type="boolean">
+  Whether more rows follow this page.
+</ResponseField>
+<ResponseField name="nextCursor" type="string">
+  Pass it as `cursor` for the next page. Present when `hasMore` is `true`.
+</ResponseField>
+
 ```json
 {
   "deliveries": [
@@ -510,9 +528,21 @@ List of delivery attempts, most recent first. Returns up to 100 deliveries.
       "attempts": 0,
       "createdAt": "2026-02-24T14:35:00.000Z"
     }
-  ]
+  ],
+  "hasMore": false
 }
 ```
+
+### 400 Invalid cursor
+
+```json
+{
+  "error": "invalid_input",
+  "message": "Cursor invalid. Use nextCursor from the previous page, or omit it to start over."
+}
+```
+
+The `cursor` is not one this list returned. Send the `nextCursor` of the previous page, or omit it.
 
 ### 401 Unauthenticated
 

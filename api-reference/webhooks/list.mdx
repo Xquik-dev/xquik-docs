@@ -18,7 +18,19 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
     ```json
     {
-      "webhooks": []
+      "webhooks": [],
+      "hasMore": false
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="400" id="response-webhooks-list-400">
+
+    ```json
+    {
+      "error": "invalid_input",
+      "message": "Invalid input. Check the request body."
     }
     ```
 
@@ -241,13 +253,23 @@ Your API key. Session cookie authentication is also supported.
 
 </ParamField>
 
+## Query parameters
+
+<ParamField query="limit" type="integer">
+  Maximum items per page: 1 to 200, default 200.
+</ParamField>
+<ParamField query="cursor" type="string">
+  `nextCursor` from the previous page. The `after` alias also works. Offset pagination is not
+  supported.
+</ParamField>
+
 ## Response
 
 ### 200 OK
 
 <ResponseField name="webhooks" type="array">
 
-List of webhook objects for your account. Returns up to 200 webhooks.
+List of webhook objects for your account. Returns up to 200 webhooks per page.
 **Webhook object fields.**
 
 <ResponseField name="id" type="string">
@@ -293,6 +315,13 @@ List of webhook objects for your account. Returns up to 200 webhooks.
 
 </ResponseField>
 
+<ResponseField name="hasMore" type="boolean">
+  Whether more rows follow this page.
+</ResponseField>
+<ResponseField name="nextCursor" type="string">
+  Pass it as `cursor` for the next page. Present when `hasMore` is `true`.
+</ResponseField>
+
 ```json
 {
   "webhooks": [
@@ -316,11 +345,23 @@ List of webhook objects for your account. Returns up to 200 webhooks.
       "failureHardCap": 200,
       "createdAt": "2026-02-20T08:15:00.000Z"
     }
-  ]
+  ],
+  "hasMore": false
 }
 ```
 
 List responses never include the `secret`. The API returns it once at creation time.
+
+### 400 Invalid cursor
+
+```json
+{
+  "error": "invalid_input",
+  "message": "Cursor invalid. Use nextCursor from the previous page, or omit it to start over."
+}
+```
+
+The `cursor` is not one this list returned. Send the `nextCursor` of the previous page, or omit it.
 
 ### 401 Unauthenticated
 
