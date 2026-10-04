@@ -2329,7 +2329,7 @@ const REQUIRED_GUEST_WALLET_GUIDE_SNIPPETS = [
   "Create a hosted checkout only after the user explicitly confirms.",
   "The `paid_reads` scope permits exactly the GET routes",
   "## Eligible paid-read routes",
-  "Of these routes, 7 also accept [direct MPP payment](/mpp/machine-payments-protocol#eligible-endpoints).",
+  "Some of these routes also accept [direct MPP payment](/mpp/machine-payments-protocol#eligible-endpoints).",
   "The others require a guest or full account credential.",
   "Available account credits. Plans add monthly credits.",
   "The 3 guest credential routes remain direct REST only:",
