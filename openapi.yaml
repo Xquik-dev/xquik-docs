@@ -7721,6 +7721,101 @@ paths:
         '503':
           $ref: '#/components/responses/ReadBusy'
 
+  /x/spaces/{id}/replay:
+    get:
+      operationId: getSpaceReplay
+      summary: Get an ended X Space's replay as an HLS playback URL
+      description:
+        Returns the recording X plays back once a Space is over, in state Ended
+        or TimedOut. Accepts the Space ID or the URL-encoded Space URL. Check
+        state and isAvailableForReplay with the Space lookup first. A live or
+        scheduled Space answers 409, and a cancelled one 404.
+      tags:
+        - Spaces
+      security: *read-auth
+      x-payment-info:
+        offers:
+          - amount: '150'
+            currency: *tempo-usd
+            intent: charge
+            method: tempo
+      parameters:
+        - $ref: '#/components/parameters/SpacePathId'
+      responses:
+        '200':
+          description: Space replay
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [replay]
+                properties:
+                  replay:
+                    type: object
+                    description: Recording of an ended Space
+                    required: [url]
+                    properties:
+                      url:
+                        type: string
+                        format: uri
+                        description: HLS playlist of the recording
+                        example: 'https://prod-fastly-us-east-1.video.pscp.tv/Transcoding/v1/hls/example/audio-space/playlist.m3u8?type=replay'
+                      streamType:
+                        type: string
+                        description: Stream format, as X names it
+                        example: 'HLS'
+                      status:
+                        type: string
+                        description: Stream status, as X names it
+                        example: 'LIVE_PUBLIC'
+              example:
+                replay:
+                  url: 'https://prod-fastly-us-east-1.video.pscp.tv/Transcoding/v1/hls/example/audio-space/playlist.m3u8?type=replay'
+                  streamType: 'HLS'
+                  status: 'LIVE_PUBLIC'
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
+        '404':
+          description: Unknown Space, or a Space without a recording
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                unknownSpace:
+                  summary: X does not know the Space
+                  value:
+                    error: 'not_found'
+                    message: 'Resource not found.'
+                noReplay:
+                  summary: The host kept no recording, or cancelled the Space
+                  value:
+                    error: 'replay_unavailable'
+                    message:
+                      'This Space has no replay. Its host kept no recording.'
+        '409':
+          description: The Space has not ended
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: 'space_not_ended'
+                message:
+                  'This Space has not ended. Its replay is ready after it ends.'
+        '424':
+          $ref: '#/components/responses/XApiError'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+        '502':
+          $ref: '#/components/responses/XApiError'
+        '503':
+          $ref: '#/components/responses/ReadBusy'
+
   /x/tweets/{id}/quotes:
     get:
       operationId: getTweetQuotes
@@ -13161,9 +13256,11 @@ components:
                 - passkey_required
                 - rate_limited
                 - read_request_timeout
+                - replay_unavailable
                 - replies_incomplete
                 - retweeters_incomplete
                 - search_unavailable
+                - space_not_ended
                 - support_media_rate_limit
                 - support_request_rate_limit
                 - too_many_ids
