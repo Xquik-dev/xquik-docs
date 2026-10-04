@@ -59,6 +59,8 @@ tags:
     description: AI analysis of posts, at 2 credits per analyzed post
   - name: Articles
     description: Long-form X Article extraction
+  - name: Broadcasts
+    description: X live video details, watch counts, and broadcaster
   - name: Communities
     description: X Community info, members, and tweets
   - name: Composition
@@ -7725,6 +7727,86 @@ paths:
         '503':
           $ref: '#/components/responses/MaximumCoverageBusy'
 
+  /x/broadcasts/{id}:
+    get:
+      operationId: getBroadcast
+      summary: Get an X broadcast's title, state, times, watch counts and host
+      description:
+        Returns one X broadcast, the live video X hosts at x.com/i/broadcasts,
+        live or ended. Accepts the broadcast ID or the URL-encoded broadcast
+        URL. Reading a broadcast adds no view to it.
+      tags:
+        - Broadcasts
+      security: *read-auth
+      x-payment-info:
+        offers:
+          - amount: '150'
+            currency: *tempo-usd
+            intent: charge
+            method: tempo
+      parameters:
+        - $ref: '#/components/parameters/BroadcastPathId'
+      responses:
+        '200':
+          description: Broadcast details
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [broadcast]
+                properties:
+                  broadcast:
+                    $ref: '#/components/schemas/Broadcast'
+              example:
+                broadcast:
+                  id: '1nGeLMWbkpaKX'
+                  title: 'USSF-259 Mission'
+                  state: 'Ended'
+                  startedAt: '2026-09-17T00:54:56.506Z'
+                  endedAt: '2026-09-17T01:17:35.036Z'
+                  totalWatched: 161758
+                  totalWatching: 21639
+                  width: 3840
+                  height: 2160
+                  creator:
+                    id: '34743251'
+                    username: 'SpaceX'
+                    name: 'SpaceX'
+        '400':
+          description: The path names no broadcast
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: 'invalid_broadcast_id'
+                message:
+                  'Send a broadcast ID or URL, such as
+                  x.com/i/broadcasts/1nGeLMWbkpaKX.'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
+        '404':
+          description: X knows no such broadcast
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: 'broadcast_not_found'
+                message:
+                  'Broadcast not found. Check the broadcast ID or
+                  x.com/i/broadcasts URL.'
+        '424':
+          $ref: '#/components/responses/XApiError'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+        '502':
+          $ref: '#/components/responses/XApiError'
+        '503':
+          $ref: '#/components/responses/ReadBusy'
+
   /x/spaces/search:
     get:
       operationId: searchSpaces
@@ -9105,6 +9187,14 @@ components:
       required: true
       schema: { type: string }
       description: X List ID.
+    BroadcastPathId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string }
+      description:
+        X broadcast ID, or the URL-encoded broadcast URL, such as
+        x.com/i/broadcasts/1nGeLMWbkpaKX.
     SpacePathId:
       name: id
       in: path
@@ -13389,6 +13479,7 @@ components:
                 - user_not_found
                 - body_too_large
                 - bookmark_folders_unavailable
+                - broadcast_not_found
                 - checkout_unavailable
                 - connection_challenge_expired
                 - connection_challenge_inactive
@@ -13406,6 +13497,7 @@ components:
                 - idempotency_conflict
                 - idempotency_in_progress
                 - idempotency_key_conflict
+                - invalid_broadcast_id
                 - invalid_community_id
                 - invalid_complete_replies_request
                 - invalid_coverage_cursor
@@ -16095,6 +16187,127 @@ components:
           $ref: '#/components/schemas/UserProfile'
         tweet:
           $ref: '#/components/schemas/SearchTweet'
+
+    Broadcast:
+      type: object
+      description: X broadcast, a live video
+      required: [id]
+      properties:
+        id:
+          type: string
+          description: Broadcast ID
+          example: '1nGeLMWbkpaKX'
+        title:
+          type: string
+          description: Broadcast title
+          example: 'USSF-259 Mission'
+        isTitleEdited:
+          type: boolean
+          description: Whether the broadcaster edited the title of the replay
+        state:
+          type: string
+          description: Such as NotStarted, Running or Ended, as X names it
+          example: 'Ended'
+        scheduledStart:
+          type: string
+          format: date-time
+          description: When the broadcast was set to start
+          example: '2026-09-17T00:55:00.000Z'
+        startedAt:
+          type: string
+          format: date-time
+          description: When the broadcast went live
+          example: '2026-09-17T00:54:56.506Z'
+        endedAt:
+          type: string
+          format: date-time
+          description: When the broadcast ended
+          example: '2026-09-17T01:17:35.036Z'
+        lastPingAt:
+          type: string
+          format: date-time
+          description: When the video stream last reached X
+          example: '2026-09-17T01:17:32.232Z'
+        totalWatched:
+          type: integer
+          minimum: 0
+          description: Accounts that watched, live or after
+          example: 161758
+        totalWatching:
+          type: integer
+          minimum: 0
+          description: Accounts watching, as X counts them
+          example: 21639
+        isAvailableForReplay:
+          type: boolean
+          description: Whether X offers a recording of the broadcast
+        width:
+          type: integer
+          minimum: 0
+          description: Video width in pixels
+          example: 3840
+        height:
+          type: integer
+          minimum: 0
+          description: Video height in pixels
+          example: 2160
+        cameraRotation:
+          type: integer
+          minimum: 0
+          maximum: 359
+          description: Camera rotation in degrees
+          example: 0
+        isHighLatency:
+          type: boolean
+          description: Whether the video stream runs in high-latency mode
+        chatOption:
+          type: integer
+          minimum: 0
+          description: X's code for who may chat
+          example: 1
+        isPrivateChat:
+          type: boolean
+          description: Whether X marks the chat private
+        source:
+          type: string
+          description: What produced the video stream, as X names it
+          example: 'LiveCms'
+        mediaKey:
+          type: string
+          description: X's media key for the video
+          example: '28_2097700444252635136'
+        preLiveSlateUrl:
+          type: string
+          format: uri
+          description: Image X shows before the broadcast starts
+          example: 'https://pbs.twimg.com/media/HRyHXi3WoAAYJ6F.jpg'
+        version:
+          type: integer
+          minimum: 0
+          description: X's revision number of the broadcast
+          example: 151
+        periscopeUser:
+          type: object
+          description: Broadcaster, as X's live video service names the account
+          properties:
+            id:
+              type: string
+              description: Live video account ID
+              example: '1raQZonlMGYKz'
+            username:
+              type: string
+              description: Live video username
+              example: 'SpaceX'
+            displayName:
+              type: string
+              description: Live video display name
+              example: 'SpaceX'
+            profilePicture:
+              type: string
+              format: uri
+              description: Live video avatar URL
+        creator:
+          $ref: '#/components/schemas/UserProfile'
 
     SpaceParticipant:
       description:

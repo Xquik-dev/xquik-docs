@@ -1,0 +1,446 @@
+---
+title: "Twitter broadcast API: get an X live video's details"
+sidebarTitle: "Get broadcast"
+description: "Get one Twitter or X broadcast, a live video, by ID or URL: title, state, start and end times, watch counts, video size, and broadcaster. 1 credit per call."
+api: "GET /x/broadcasts/{id}"
+keywords:
+  [
+    "Twitter broadcast API",
+    "X live video API",
+    "get Twitter broadcast",
+    "X broadcast viewers",
+    "Twitter live stream details",
+    "Periscope broadcast lookup",
+    "MPP",
+  ]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+import TweetReadApiLinks from "/snippets/x-tweet-read-api-links.mdx";
+
+{/* GENERATED RESPONSE EXAMPLES START */}
+
+<Panel>
+
+<Tabs defaultTabIndex={0} sync={false}>
+
+  <Tab title="200" id="response-x-get-broadcast-200">
+
+    ```json
+    {
+      "broadcast": {
+        "id": "1nGeLMWbkpaKX",
+        "title": "USSF-259 Mission",
+        "state": "Ended",
+        "startedAt": "2026-09-17T00:54:56.506Z",
+        "endedAt": "2026-09-17T01:17:35.036Z"
+      }
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="400" id="response-x-get-broadcast-400">
+
+    ```json
+    {
+      "error": "invalid_broadcast_id",
+      "message": "Send a broadcast ID or URL, such as x.com/i/broadcasts/1nGeLMWbkpaKX."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="401" id="response-x-get-broadcast-401">
+
+    ```json
+    {
+      "error": "unauthenticated",
+      "message": "Authentication required. Provide a valid API key or bearer token."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="402" id="response-x-get-broadcast-402">
+
+    ```json
+    {
+      "error": "insufficient_credits",
+      "message": "Insufficient credits. Top up or subscribe to continue."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="404" id="response-x-get-broadcast-404">
+
+    ```json
+    {
+      "error": "broadcast_not_found",
+      "message": "Broadcast not found. Check the broadcast ID or x.com/i/broadcasts URL."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="424" id="response-x-get-broadcast-424">
+
+    ```json
+    {
+      "error": "x_api_unavailable",
+      "message": "X data source temporarily unavailable. Try again later."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="429" id="response-x-get-broadcast-429">
+
+    ```json
+    {
+      "error": "rate_limit_exceeded",
+      "message": "Too many requests. Try again later.",
+      "retryAfter": 60
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="502" id="response-x-get-broadcast-502">
+
+    ```json
+    {
+      "error": "x_api_unavailable",
+      "message": "X data source temporarily unavailable. Try again later."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="503" id="response-x-get-broadcast-503">
+
+    ```json
+    {
+      "error": "x_api_unavailable",
+      "message": "Xquik is busy right now. Retry shortly."
+    }
+    ```
+
+  </Tab>
+</Tabs>
+
+</Panel>
+{/* GENERATED RESPONSE EXAMPLES END */}
+<LlmsDirective />
+
+<Callout icon="coins" color="#5c3327">
+
+**1 credit per call** · [All plans](https://xquik.com/#pricing) from $0.00012/credit · Direct [MPP](/mpp/machine-payments-protocol): USD 0.00015 per call
+
+</Callout>
+
+Get broadcast returns one X broadcast, the live video X hosts at `x.com/i/broadcasts`, live or ended.
+The endpoint is `GET /api/v1/x/broadcasts/{id}`.
+
+<CodeGroup>
+
+```bash cURL
+curl https://xquik.com/api/v1/x/broadcasts/1nGeLMWbkpaKX \
+  -H "x-api-key: xq_your_api_key_here" | jq
+```
+
+```javascript Node.js
+const broadcastId = "1nGeLMWbkpaKX";
+const response = await fetch(`https://xquik.com/api/v1/x/broadcasts/${broadcastId}`, {
+  headers: { "x-api-key": "xq_your_api_key_here" },
+});
+const data = await response.json();
+if (!response.ok) throw new Error(JSON.stringify(data));
+const { broadcast } = data;
+const broadcastRow = {
+  broadcast_id: broadcast.id,
+  broadcast_title: broadcast.title ?? null,
+  broadcast_state: broadcast.state ?? null,
+  started_at: broadcast.startedAt ?? null,
+  ended_at: broadcast.endedAt ?? null,
+  total_watched: broadcast.totalWatched ?? null,
+  broadcaster_username: broadcast.creator?.username ?? null,
+};
+process.stdout.write(`${JSON.stringify(broadcastRow)}\n`);
+```
+
+```python Python
+import json
+import requests
+
+broadcast_id = "1nGeLMWbkpaKX"
+response = requests.get(
+    f"https://xquik.com/api/v1/x/broadcasts/{broadcast_id}",
+    headers={"x-api-key": "xq_your_api_key_here"},
+)
+data = response.json()
+if not response.ok:
+    raise RuntimeError(data)
+broadcast = data["broadcast"]
+broadcast_row = {
+    "broadcast_id": broadcast["id"],
+    "broadcast_title": broadcast.get("title"),
+    "broadcast_state": broadcast.get("state"),
+    "started_at": broadcast.get("startedAt"),
+    "ended_at": broadcast.get("endedAt"),
+    "total_watched": broadcast.get("totalWatched"),
+    "broadcaster_username": (broadcast.get("creator") or {}).get("username"),
+}
+print(json.dumps(broadcast_row))
+```
+
+</CodeGroup>
+
+The Node.js and Python snippets build 1 row per broadcast. Each call costs 1 credit.
+A refused request costs nothing.
+
+## Read a broadcast's state, times, and audience
+
+Use `GET /x/broadcasts/{id}` when you hold a broadcast ID or a broadcast URL.
+A broadcast is an X live video. For an audio Space, use
+[Get Space](/api-reference/x/get-space).
+
+- `state` tells a broadcast that has not started from a running or ended one.
+- `scheduledStart`, `startedAt`, and `endedAt` give its times.
+- `totalWatched` counts the accounts that watched, live or after.
+  `totalWatching` is the audience X counts now.
+- `isAvailableForReplay` says whether X offers a recording.
+- `width` and `height` give the video size in pixels.
+- `creator` is the broadcaster's full profile. `periscopeUser` names the same
+  account as X's live video service does.
+
+Reading a broadcast adds no view to it. A field X leaves empty is left out.
+
+## Path parameters
+
+<ParamField path="id" type="string" required>
+
+X broadcast ID, or the URL-encoded broadcast URL, such as `x.com/i/broadcasts/1nGeLMWbkpaKX`.
+
+</ParamField>
+
+## Headers
+
+<ParamField header="x-api-key" type="string">
+
+Full account key. Sessions and OAuth also work.
+
+</ParamField>
+
+<ParamField header="Authorization" type="string">
+
+`Bearer xq_your_guest_key_here` authenticates `paid_reads` guest keys. Direct MPP uses the `Payment ...` credential. Get it from the `WWW-Authenticate: Payment` challenge.
+
+</ParamField>
+
+## Response
+
+### 200 OK
+
+<ResponseField name="broadcast" type="object">
+
+The broadcast.
+**Broadcast object fields.**
+
+<ResponseField name="id" type="string">
+  Broadcast ID.
+</ResponseField>
+<ResponseField name="title" type="string">
+  Broadcast title.
+</ResponseField>
+<ResponseField name="isTitleEdited" type="boolean">
+  Whether the broadcaster edited the title of the replay.
+</ResponseField>
+<ResponseField name="state" type="string">
+  State as X names it, such as `NotStarted`, `Running`, or `Ended`.
+</ResponseField>
+<ResponseField name="scheduledStart" type="string">
+  When the broadcast was set to start, in UTC.
+</ResponseField>
+<ResponseField name="startedAt" type="string">
+  When the broadcast went live, in UTC.
+</ResponseField>
+<ResponseField name="endedAt" type="string">
+  When the broadcast ended, in UTC.
+</ResponseField>
+<ResponseField name="lastPingAt" type="string">
+  When the video stream last reached X, in UTC.
+</ResponseField>
+<ResponseField name="totalWatched" type="number">
+  Accounts that watched, live or after.
+</ResponseField>
+<ResponseField name="totalWatching" type="number">
+  Accounts watching, as X counts them.
+</ResponseField>
+<ResponseField name="isAvailableForReplay" type="boolean">
+  Whether X offers a recording of the broadcast.
+</ResponseField>
+<ResponseField name="width" type="number">
+  Video width in pixels.
+</ResponseField>
+<ResponseField name="height" type="number">
+  Video height in pixels.
+</ResponseField>
+<ResponseField name="cameraRotation" type="number">
+  Camera rotation in degrees, 0 to 359.
+</ResponseField>
+<ResponseField name="isHighLatency" type="boolean">
+  Whether the video stream runs in high-latency mode.
+</ResponseField>
+<ResponseField name="chatOption" type="number">
+  X's code for who may chat.
+</ResponseField>
+<ResponseField name="isPrivateChat" type="boolean">
+  Whether X marks the chat private.
+</ResponseField>
+<ResponseField name="source" type="string">
+  What produced the video stream, as X names it, such as `LiveCms`.
+</ResponseField>
+<ResponseField name="mediaKey" type="string">
+  X's media key for the video.
+</ResponseField>
+<ResponseField name="preLiveSlateUrl" type="string">
+  Image X shows before the broadcast starts.
+</ResponseField>
+<ResponseField name="version" type="number">
+  X's revision number of the broadcast.
+</ResponseField>
+<ResponseField name="periscopeUser" type="object">
+  The broadcaster as X's live video service names the account: `id`, `username`, `displayName`, and
+  `profilePicture`.
+</ResponseField>
+<ResponseField name="creator" type="object">
+  Profile of the broadcaster. It uses the fields of [Get
+  User](/api-reference/x/twitter-profile-lookup).
+</ResponseField>
+
+</ResponseField>
+
+```json
+{
+  "broadcast": {
+    "id": "1nGeLMWbkpaKX",
+    "title": "USSF-259 Mission",
+    "state": "Ended",
+    "startedAt": "2026-09-17T00:54:56.506Z",
+    "endedAt": "2026-09-17T01:17:35.036Z",
+    "totalWatched": 161758,
+    "totalWatching": 21639,
+    "width": 3840,
+    "height": 2160,
+    "creator": {
+      "id": "34743251",
+      "username": "SpaceX",
+      "name": "SpaceX"
+    }
+  }
+}
+```
+
+### 400 Invalid broadcast ID
+
+```json
+{
+  "error": "invalid_broadcast_id",
+  "message": "Send a broadcast ID or URL, such as x.com/i/broadcasts/1nGeLMWbkpaKX."
+}
+```
+
+The path is not a broadcast ID or a broadcast URL. The request costs nothing.
+
+### 401 Unauthenticated
+
+```json
+{ "error": "unauthenticated" }
+```
+
+Missing or invalid API key. Check the `x-api-key` header value.
+
+### 402 Payment required
+
+Account keys get account options. Guest keys get guest top-up only.
+Anonymous calls receive a direct MPP `WWW-Authenticate: Payment` challenge plus a guest wallet creation action.
+No checkout starts automatically. Confirm any payment action.
+
+### 404 Broadcast not found
+
+```json
+{
+  "error": "broadcast_not_found",
+  "message": "Broadcast not found. Check the broadcast ID or x.com/i/broadcasts URL."
+}
+```
+
+X knows no such broadcast. The request costs nothing.
+
+### 502 X API unavailable
+
+```json
+{ "error": "x_api_unavailable" }
+```
+
+The read service returned an error. Retry after a short delay.
+
+### 503 Service busy
+
+```json
+{ "error": "x_api_unavailable" }
+```
+
+Xquik is busy. Wait for `Retry-After`, then retry. The request costs nothing.
+
+### 429 Rate limit exceeded
+
+```json
+{ "error": "rate_limit_exceeded", "retryAfter": 60 }
+```
+
+You exceeded your tier rate limit. Wait for the `Retry-After` header before retrying.
+
+### 424 Dependency failed
+
+```json
+{ "error": "x_api_unavailable" }
+```
+
+The normalized v1 response contract can return 424 when the read service is unavailable.
+
+## Twitter broadcast API questions
+
+### How do I get a Twitter broadcast by its link?
+
+URL-encode the broadcast link and pass it as `id`, or pass the ID from the
+link. `x.com/i/broadcasts/1nGeLMWbkpaKX` holds the ID `1nGeLMWbkpaKX`.
+
+### How many people watched a broadcast?
+
+Read `totalWatched` for everyone who watched, live or after. `totalWatching` is
+the audience X counts now.
+
+### Does reading a broadcast count as a view?
+
+No. Reading a broadcast adds no view to it, so its counts stay as X shows them.
+
+### What is the difference between a broadcast and a Space?
+
+A broadcast is a live video. A Space is a live audio room. Read a Space with
+[Get Space](/api-reference/x/get-space).
+
+### Does this replace X's official API?
+
+No. This page documents Xquik, an independent third-party service.
+It does not document X's official API.
+
+<Note>
+
+**Next steps.** [Get User](/api-reference/x/twitter-profile-lookup) for the broadcaster's latest profile, or [Get Space](/api-reference/x/get-space) for an audio Space.
+
+</Note>
+
+<TweetReadApiLinks />
