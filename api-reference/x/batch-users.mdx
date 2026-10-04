@@ -1,9 +1,9 @@
 ---
 title: "Twitter batch user lookup API & profile details"
 sidebarTitle: "Get users (batch)"
-description: "Retrieve up to 100 X user profiles by ID in one request, including usernames, bios, verification state, follower counts, and profile media. 1 credit per user."
+description: "Retrieve up to 100 X user profiles by ID or username in one request, with bios, verification state, follower counts, and profile media. 1 credit per user."
 api: "GET /x/users/batch"
-keywords: ["batch", "users", "bulk", "multiple", "x api"]
+keywords: ["batch", "users", "bulk", "multiple", "usernames", "x api"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -203,8 +203,8 @@ Skip `unavailable_ids`, which have no profile on X.
 ## Direct batch user handoff
 
 Use `GET /x/users/batch` when a CRM, warehouse, enrichment, lead scoring, or
-agent workflow already has numeric X user IDs. One JSON response returns the
-profile details. Use [Get User](/api-reference/x/twitter-profile-lookup) when you have one ID
+agent workflow already has X user IDs or usernames. One JSON response returns
+the profile details. Use [Get User](/api-reference/x/twitter-profile-lookup) when you have one ID
 or username to resolve.
 
 Store `requested_ids`, `user_id`, `username`, `display_name`, profile metrics,
@@ -218,8 +218,8 @@ and `next_cursor: ""`. Zero affordable results return
 
   <Card title="Known IDs" icon="key-round">
 
-    Send comma-separated X user IDs in `ids`. Keep the original list as
-    `requested_ids` for retry and audit rows.
+    Send comma-separated X user IDs in `ids`, or usernames in `usernames`.
+    Keep the original list as `requested_ids` for retry and audit rows.
 
   </Card>
   <Card title="Profile rows" icon="user-round">
@@ -231,8 +231,7 @@ and `next_cursor: ""`. Zero affordable results return
   <Card title="Missing rows" icon="triangle-alert">
 
     Retry `failed_ids` now & `unprocessed_ids` after adding credits. Skip
-    `unavailable_ids`, which have no profile on X. Route username-only inputs
-    to Get User first.
+    `unavailable_ids`, which have no profile on X.
 
   </Card>
   <Card title="No pagination" icon="route">
@@ -311,9 +310,17 @@ before starting the next. A failed enrichment job can then resume from the last 
 
 ## Query parameters
 
-<ParamField query="ids" type="string" required>
+<ParamField query="ids" type="string">
 
 Comma-separated user IDs. Maximum 100 per request.
+
+</ParamField>
+
+<ParamField query="usernames" type="string">
+
+Comma-separated usernames, with or without `@`, in place of `ids`. Maximum 100
+per request. `NASA` & `nasa` are the same account. Send `ids` or `usernames`,
+not both.
 
 </ParamField>
 
@@ -446,9 +453,9 @@ Array of user profiles matching the requested IDs.
 </ResponseField>
 <ResponseField name="has_next_page" type="boolean">Always `false` for batch requests.</ResponseField>
 <ResponseField name="next_cursor" type="string">Always empty for batch requests.</ResponseField>
-<ResponseField name="unavailable_ids" type="string[]">IDs with no profile on X. Skip them.</ResponseField>
-<ResponseField name="failed_ids" type="string[]">IDs that failed to load. They cost nothing. Retry them.</ResponseField>
-<ResponseField name="unprocessed_ids" type="string[]">IDs skipped for low credits. Retry them after adding credits.</ResponseField>
+<ResponseField name="unavailable_ids" type="string[]">IDs or usernames with no profile on X. Skip them.</ResponseField>
+<ResponseField name="failed_ids" type="string[]">IDs or usernames that failed to load. They cost nothing. Retry them.</ResponseField>
+<ResponseField name="unprocessed_ids" type="string[]">IDs or usernames skipped for low credits. Retry them after adding credits.</ResponseField>
 
 ```json
 {
@@ -477,6 +484,18 @@ Array of user profiles matching the requested IDs.
 ```json
 { "error": "too_many_ids", "message": "Max 100 IDs per request" }
 ```
+
+### 400 Invalid usernames
+
+```json
+{
+  "error": "invalid_user_ids",
+  "message": "usernames must contain 1-100 X usernames."
+}
+```
+
+A username has 1-15 letters, digits or `_`. Sending `ids` & `usernames`
+together returns the same error with `Send ids or usernames, not both.`
 
 ### 401 Unauthenticated
 
