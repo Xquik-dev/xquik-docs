@@ -79,6 +79,8 @@ tags:
     description: Media upload and download
   - name: Monitors
     description: X account monitoring with 1-second checks
+  - name: Spaces
+    description: X Space details, host, and speakers
   - name: Subscribe
     description: Subscription, billing, and credits
   - name: Support
@@ -3603,20 +3605,29 @@ paths:
   /x/users/batch:
     get:
       operationId: getBatchUsers
-      description: Returns public profiles for the requested user IDs.
-      summary: Look up multiple users by IDs in one call
+      description:
+        Returns public profiles for up to 100 user IDs or usernames. Send ids or
+        usernames, not both. Each returned profile costs 1 credit.
+      summary: Look up multiple users by IDs or usernames in one call
       tags:
         - Users
       security: *read-auth
       parameters:
         - name: ids
           in: query
-          required: true
           schema:
             type: string
           description:
             Comma-separated numeric user IDs (1-100 values). Duplicate IDs are
             ignored while preserving first-seen order.
+        - name: usernames
+          in: query
+          schema:
+            type: string
+          example: 'nasa,@OpenAI'
+          description:
+            Comma-separated X usernames, with or without @ (1-100 values), in
+            place of ids. A name in another case is the same account.
         - $ref: '#/components/parameters/UserMinFollowers'
         - $ref: '#/components/parameters/UserMaxFollowers'
         - $ref: '#/components/parameters/UserMinFollowing'
@@ -7456,6 +7467,185 @@ paths:
         '503':
           $ref: '#/components/responses/MaximumCoverageBusy'
 
+  /x/spaces/{id}:
+    get:
+      operationId: getSpace
+      summary: Get an X Space's title, state, times, audience, host and speakers
+      description:
+        Returns one X Space as X shows it, live, scheduled or ended. Accepts the
+        Space ID or the URL-encoded Space URL. A Space X limits to subscribers
+        or a community answers 404.
+      tags:
+        - Spaces
+      security: *read-auth
+      x-payment-info:
+        offers:
+          - amount: '150'
+            currency: *tempo-usd
+            intent: charge
+            method: tempo
+      parameters:
+        - $ref: '#/components/parameters/SpacePathId'
+      responses:
+        '200':
+          description: Space details
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [space]
+                properties:
+                  space:
+                    type: object
+                    description: X Space
+                    required: [id, admins, speakers, listeners]
+                    properties:
+                      id:
+                        type: string
+                        description: Space ID
+                        example: '1OGwblLjnQMKB'
+                      title:
+                        type: string
+                        description: Space title
+                        example: 'Extending the Network to the Edge'
+                      state:
+                        type: string
+                        description: Such as NotStarted, Running or Ended
+                        example: 'Ended'
+                      createdAt:
+                        type: string
+                        format: date-time
+                        description: When the Space was made
+                        example: '2026-03-10T21:49:59.425Z'
+                      scheduledStart:
+                        type: string
+                        format: date-time
+                        description: When the Space was set to start
+                        example: '2026-03-11T17:00:00.000Z'
+                      startedAt:
+                        type: string
+                        format: date-time
+                        description: When the Space went live
+                        example: '2026-03-11T17:00:26.227Z'
+                      endedAt:
+                        type: string
+                        format: date-time
+                        description: When the Space ended
+                        example: '2026-03-11T17:49:29.190Z'
+                      updatedAt:
+                        type: string
+                        format: date-time
+                        description: When X last changed the Space
+                        example: '2026-03-11T17:49:30.879Z'
+                      totalLiveListeners:
+                        type: integer
+                        minimum: 0
+                        description: Accounts that listened live
+                        example: 841
+                      totalReplayWatched:
+                        type: integer
+                        minimum: 0
+                        description: Accounts that played the recording
+                        example: 609
+                      participantCount:
+                        type: integer
+                        minimum: 0
+                        description: Accounts in the Space now, while it is live
+                        example: 67
+                      isAvailableForReplay:
+                        type: boolean
+                        description: Whether X offers a recording
+                      isAvailableForClipping:
+                        type: boolean
+                        description: Whether listeners may clip the Space
+                      isLocked:
+                        type: boolean
+                        description: Whether the host locked the Space
+                      isEmployeeOnly:
+                        type: boolean
+                        description: Whether only X employees may join
+                      disallowJoin:
+                        type: boolean
+                        description: Whether X lets no more accounts join
+                      noIncognito:
+                        type: boolean
+                        description: Whether anonymous listening is off
+                      contentType:
+                        type: string
+                        description: Audio or video kind, as X names it
+                        example: 'visual_audio'
+                      conversationControls:
+                        type: integer
+                        minimum: 0
+                        description: X's code for who may speak
+                        example: 0
+                      maxAdminCapacity:
+                        type: integer
+                        minimum: 0
+                        description: Most hosts and co-hosts the Space allows
+                        example: 3
+                      mediaKey:
+                        type: string
+                        description: X's media key for the Space's audio
+                        example: '28_2031487758255214592'
+                      mentionedUserIds:
+                        type: array
+                        description: IDs of the accounts the host tagged
+                        items:
+                          type: string
+                        example: ['379392334']
+                      tweetId:
+                        type: string
+                        description: ID of the post that announces the Space
+                        example: '2031777281509564419'
+                      creator:
+                        $ref: '#/components/schemas/UserProfile'
+                      admins:
+                        type: array
+                        description: Hosts and co-hosts
+                        items:
+                          $ref: '#/components/schemas/SpaceParticipant'
+                      speakers:
+                        type: array
+                        description: Accounts X lists as speakers
+                        items:
+                          $ref: '#/components/schemas/SpaceParticipant'
+                      listeners:
+                        type: array
+                        description: Accounts X lists as listeners
+                        items:
+                          $ref: '#/components/schemas/SpaceParticipant'
+              example:
+                space:
+                  id: '1OGwblLjnQMKB'
+                  title: 'Extending the Network to the Edge'
+                  state: 'Ended'
+                  startedAt: '2026-03-11T17:00:26.227Z'
+                  endedAt: '2026-03-11T17:49:29.190Z'
+                  totalLiveListeners: 841
+                  totalReplayWatched: 609
+                  creator:
+                    id: '951329744804392960'
+                    username: 'solana'
+                    name: 'Solana'
+                  admins:
+                    - id: '951329744804392960'
+                      username: 'solana'
+                      name: 'Solana'
+                  speakers: []
+                  listeners: []
+        '400': *invalid-input-response
+        '401': *unauthenticated-response
+        '402': *payment-required-response
+        '404': *not-found-response
+        '424':
+          $ref: '#/components/responses/XApiError'
+        '429': *rate-limit-exceeded-response-2
+        '502':
+          $ref: '#/components/responses/XApiError'
+        '503':
+          $ref: '#/components/responses/ReadBusy'
+
   /x/tweets/{id}/quotes:
     get:
       operationId: getTweetQuotes
@@ -8476,6 +8666,14 @@ components:
       required: true
       schema: { type: string }
       description: X List ID.
+    SpacePathId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string }
+      description:
+        X Space ID, or the URL-encoded Space URL, such as
+        x.com/i/spaces/1OGwblLjnQMKB.
     CommunityId:
       name: communityId
       in: query
@@ -11161,6 +11359,13 @@ components:
               bookmarkCount: 2
         has_next_page: *boolean-example-true
         next_cursor: *cursor-example-schema
+        readBackTo:
+          type: string
+          format: date-time
+          description: >
+            How far back a filtered Latest search has read, in UTC. Every newer
+            post was checked, so an empty page still moves this time back.
+          example: '2026-10-04T10:07:00.000Z'
         windowComplete:
           type: boolean
           const: true
@@ -12012,7 +12217,8 @@ components:
         - $ref: '#/components/schemas/UserListCoverageResponse'
     BatchUsers:
       description: >
-        Batch lookup preserves first-seen ID order and ignores duplicate IDs.
+        Batch lookup preserves first-seen order and ignores duplicates. The ID
+        lists name the requested IDs or usernames as sent.
       type: object
       required:
         [
@@ -12066,7 +12272,7 @@ components:
             Processed IDs with no profile on X, in first-seen request order.
           items: &batch-user-id
             type: string
-            pattern: '^\d+$'
+            pattern: '^(?:\d+|[A-Za-z0-9_]{1,15})$'
           example: ['1234567890']
         failed_ids:
           type: array
@@ -12771,6 +12977,7 @@ components:
                 - invalid_payment_amount
                 - invalid_range
                 - invalid_reply_options
+                - invalid_space_id
                 - likes_unavailable
                 - list_not_found
                 - login_rate_limited
@@ -15000,6 +15207,49 @@ components:
             author:
               $ref: '#/components/schemas/UserProfile'
 
+    SpaceParticipant:
+      description:
+        An account on a Space's stage or in its audience, as X lists it there.
+      type: object
+      required: [id, username, name]
+      properties:
+        id: *user-id-example-schema
+        username: *username-example-schema
+        name:
+          type: string
+          description: Name the account shows in the Space
+          example: 'Solana'
+        profilePicture:
+          type: string
+          description: Profile picture URL
+          example: 'https://pbs.twimg.com/profile_images/example_normal.jpg'
+        isVerified:
+          type: boolean
+          description: Whether X shows a verified badge in the Space
+        isBlueVerified:
+          type: boolean
+          description: Whether the account has X Premium verification
+        verifiedType:
+          type: string
+          description: Business or Government badge type
+          example: 'Business'
+        affiliatesHighlightedLabel:
+          $ref: '#/components/schemas/UserAffiliateLabel'
+        joinedAt:
+          type: string
+          format: date-time
+          description: When the account joined the Space
+          example: '2026-03-11T17:00:52.759Z'
+        isMutedByAdmin:
+          type: boolean
+          description: Whether a host muted the account
+        isMutedByGuest:
+          type: boolean
+          description: Whether the account muted itself
+        periscopeUserId:
+          type: string
+          description: The account's ID in X's broadcast service
+          example: '645158'
     UserAffiliateLabel:
       description: Organization affiliation label shown on an X profile.
       type: object
