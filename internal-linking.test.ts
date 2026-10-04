@@ -18,6 +18,7 @@ const LINK_CLUSTERS: readonly LinkCluster[] = [
     snippet: "x-audience-community-api-links.mdx",
     routes: [
       "/api-reference/x/search-users",
+      "/api-reference/x/search-autocomplete",
       "/api-reference/x/twitter-profile-lookup",
       "/api-reference/x/batch-users",
       "/api-reference/x/followers",

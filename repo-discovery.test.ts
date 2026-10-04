@@ -2367,6 +2367,7 @@ const PAID_READ_REFERENCE_PAGES = [
   "api-reference/x/list-members.mdx",
   "api-reference/x/list-tweets.mdx",
   "api-reference/x/retweeters.mdx",
+  "api-reference/x/search-autocomplete.mdx",
   "api-reference/x/search-tweets.mdx",
   "api-reference/x/search-users.mdx",
   "api-reference/x/trend-locations.mdx",

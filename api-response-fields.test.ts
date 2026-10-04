@@ -82,6 +82,7 @@ const MEDIA_DOWNLOAD_PAGE = "api-reference/x/download-media.mdx";
 const BOOKMARK_FOLDERS_PAGE = "api-reference/x/bookmark-folders.mdx";
 const X_TRENDS_PAGE = "api-reference/x/trends.mdx";
 const FOLLOW_CHECK_PAGE = "api-reference/x/check-follower.mdx";
+const SEARCH_AUTOCOMPLETE_PAGE = "api-reference/x/search-autocomplete.mdx";
 const ACCOUNT_GET_PAGE = "api-reference/account/get.mdx";
 const ACCOUNT_UPDATE_PAGE = "api-reference/account/update.mdx";
 const ACCOUNT_X_IDENTITY_PAGE = "api-reference/account/x-identity.mdx";
@@ -338,6 +339,18 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
   const xTrends = propertyNames(xTrendsResponse);
   const xTrend = itemPropertyNamesFromProperty(spec, xTrendsResponse, "trends");
   const followCheck = propertyNames(responseSchema(spec, "/x/followers/check", "get"));
+  const searchSuggestions = resolveSchema(
+    spec,
+    responseSchema(spec, "/x/search/autocomplete", "get"),
+  );
+  const suggestedUser = resolveSchema(spec, searchSuggestions.properties?.["users"]?.items ?? {});
+  const searchAutocomplete = uniqueSorted([
+    ...propertyNames(searchSuggestions),
+    ...["users", "topics", "hashtags", "cashtags"].flatMap((list): readonly string[] =>
+      itemPropertyNamesFromProperty(spec, searchSuggestions, list),
+    ),
+    ...propertyNames(suggestedUser.properties?.["badges"]?.items),
+  ]);
   const accountGetResponse = responseSchema(spec, "/account", "get");
   const accountGet = uniqueSorted([
     ...propertyNames(accountGetResponse),
@@ -478,6 +491,7 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
         [BOOKMARK_FOLDERS_PAGE, uniqueSorted([...bookmarkFolders, ...bookmarkFolder])],
         [X_TRENDS_PAGE, uniqueSorted([...xTrends, ...xTrend])],
         [FOLLOW_CHECK_PAGE, followCheck],
+        [SEARCH_AUTOCOMPLETE_PAGE, searchAutocomplete],
         [ACCOUNT_GET_PAGE, accountGet],
         [ACCOUNT_UPDATE_PAGE, accountUpdate],
         [ACCOUNT_X_IDENTITY_PAGE, accountXIdentity],
