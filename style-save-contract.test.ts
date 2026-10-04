@@ -116,8 +116,9 @@ describe("save custom tweet style documentation", (): void => {
     const route = readProductFile("app/api/v1/styles/[id]/route.ts");
     const validator = readProductFile("lib/styles/validate-label.ts");
     const columns = readProductFile("lib/styles/columns.ts");
+    const cacheQuery = readProductFile("lib/api/style-cache-query.ts");
     const putRoute =
-      route === undefined ? undefined : route.slice(route.indexOf("export async function PUT"));
+      route === undefined ? undefined : route.slice(route.indexOf("export const PUT"));
 
     expect({
       labelDefaultsToPath:
@@ -127,13 +128,12 @@ describe("save custom tweet style documentation", (): void => {
         compose === undefined ||
         compose.includes("return { ...result, styleTweets: [...style.tweets] }"),
       pathMustMatchLabel:
-        putRoute === undefined ||
-        (putRoute.includes("const { id } = await params;") &&
-          putRoute.includes("styleIdMatchesLabel(id, label)")),
+        putRoute === undefined || putRoute.includes("styleIdMatchesLabel(id, label)"),
       replacementRemainsAccountScoped:
         putRoute === undefined ||
-        (putRoute.includes("target: STYLE_CACHE_UPSERT_TARGET") &&
-          putRoute.includes(".onConflictDoUpdate({") &&
+        (putRoute.includes("upsertStyleDetail(auth.userId, label, {") &&
+          cacheQuery?.includes(".onConflictDoUpdate({ target: STYLE_CACHE_UPSERT_TARGET") ===
+            true &&
           columns?.includes(
             "STYLE_CACHE_UPSERT_TARGET = [\n  tweetStyleCache.userId,\n  tweetStyleCache.xUsername,\n];",
           ) === true),

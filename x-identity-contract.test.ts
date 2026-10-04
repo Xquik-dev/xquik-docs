@@ -95,7 +95,7 @@ describe("set X identity documentation", (): void => {
 
     expect({
       invalidInput: route.includes("return invalidInputResponse()"),
-      invalidUsername: route.includes("error: 'invalid_username'"),
+      invalidUsername: route.includes("errorResponse('invalid_username', { status: 400 })"),
       lowercase: route.includes("body['username'].toLowerCase()"),
       storesUsername: route.includes(".set({ xUsername })"),
       styleMatch: styleRoute.includes("user?.xUsername?.toLowerCase() === username"),
