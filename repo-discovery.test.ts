@@ -6838,9 +6838,9 @@ const FORBIDDEN_DRAW_EXPORT_RESPONSE_SNIPPETS = [
 ] as const;
 
 const REQUIRED_EXTRACTION_EXPORT_COLUMNS_SNIPPETS = [
-  "The file format changes only the encoding. The extraction tool type decides",
-  "the columns. Default exports include 29 columns. `article_extractor`",
-  "exports 10 article columns.",
+  "The extraction tool type decides the columns. Default exports include 29",
+  "columns. `article_extractor` exports 10 article columns. JSON rows also keep",
+  "each result's nested `enrichmentData`, as",
   "All extraction tools except `article_extractor` use the default result column set.",
   "Some enrichment columns may be empty when the result does not include that data.",
   '<Card title="User identity" icon="user">',
