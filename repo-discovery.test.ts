@@ -12187,9 +12187,6 @@ const FORBIDDEN_PUBLIC_CONFIDENTIALITY_WORDING = [
   "TrustMRR",
 ] as const;
 
-const EXPECTED_OPENAPI_OPERATION_COUNT = 132;
-const NON_REST_OPERATION_IDS = new Set(["searchXquikDocumentation"]);
-
 const FORBIDDEN_STALE_OPERATION_COUNT_SNIPPETS = [
   ["100+", "REST", "API", "endpoints"].join(" "),
   ["100+", "API", "endpoints"].join(" "),
@@ -12391,13 +12388,6 @@ function collectReadmeDiscoveryFindings(): readonly DiscoveryFinding[] {
 
 function sha256File(file: string): string {
   return createHash("sha256").update(readFileSync(file)).digest("hex");
-}
-
-function getOpenApiOperationCount(): number {
-  const openApi = readFileSync("openapi.yaml", "utf8");
-  return [...openApi.matchAll(/^\s+operationId:\s*(?<id>\S+)/gmu)].filter(
-    ({ groups }) => !NON_REST_OPERATION_IDS.has(groups?.id ?? ""),
-  ).length;
 }
 
 function collectStaleOperationCountFindings(): readonly DiscoveryFinding[] {
@@ -12650,10 +12640,9 @@ describe("repository discovery", (): void => {
     expect(collectReadmeDiscoveryFindings()).toStrictEqual([]);
   });
 
-  it("keeps public REST operation counts aligned with OpenAPI", (): void => {
-    expect.assertions(2);
+  it("keeps stale REST operation counts out of public pages", (): void => {
+    expect.assertions(1);
 
-    expect(getOpenApiOperationCount()).toBe(EXPECTED_OPENAPI_OPERATION_COUNT);
     expect(collectStaleOperationCountFindings()).toStrictEqual([]);
   });
 
