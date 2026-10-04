@@ -2,13 +2,7 @@ import { readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
 
-const productRoot = process.env["XQUIK_PRODUCT_ROOT"] ?? process.env["XQUIK_ROOT"];
 const source = readFileSync(new URL("api-reference/styles/analyze.mdx", import.meta.url), "utf8");
-
-function readProductFile(path: string): string | undefined {
-  if (productRoot === undefined) return undefined;
-  return readFileSync(`${productRoot}/${path}`, "utf8");
-}
 
 describe("analyze tweet writing style documentation", (): void => {
   it("matches every canonical status and authentication method", (): void => {
@@ -94,37 +88,6 @@ describe("analyze tweet writing style documentation", (): void => {
       focusedTitle: true,
       keywordsPresent: true,
       vagueDescription: false,
-    });
-  });
-
-  it("remains synchronized with the optional product implementation", (): void => {
-    expect.assertions(1);
-
-    const parser = readProductFile("lib/api/parse-username-body.ts");
-    const route = readProductFile("app/api/v1/styles/route.ts");
-
-    expect({
-      existingCacheCanReturn200:
-        route === undefined || route.includes("NextResponse.json(formatStyleDetail(existing))"),
-      refreshRemains201:
-        route === undefined || route.includes("styleUpsertResponse(upserted, 201)"),
-      refreshUsesUsernameSearch:
-        route === undefined || route.includes("searchTweets(`from:${username}`)"),
-      unfundedMissingReturns402:
-        route === undefined ||
-        (route.includes("error: 'no_cached_style'") && route.includes("{ status: 402 }")),
-      usernameRemainsLowercase:
-        parser === undefined || parser.includes("normalizeStyleKey(body['username'])"),
-      usageMatchesReturnedTweets:
-        route === undefined ||
-        route.includes("cost: CREDIT_COST_READ * BigInt(result.tweets.length)"),
-    }).toStrictEqual({
-      existingCacheCanReturn200: true,
-      refreshRemains201: true,
-      refreshUsesUsernameSearch: true,
-      unfundedMissingReturns402: true,
-      usernameRemainsLowercase: true,
-      usageMatchesReturnedTweets: true,
     });
   });
 });

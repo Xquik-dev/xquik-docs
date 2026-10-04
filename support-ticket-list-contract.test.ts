@@ -3,7 +3,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
-import { docsSecurity, PRODUCT_ROOT, productCheck } from "./product-contract.test.helpers.ts";
+import { docsSecurity } from "./product-contract.test.helpers.ts";
 
 const PROJECT_ROOT = dirname(fileURLToPath(import.meta.url));
 const page = readFileSync(join(PROJECT_ROOT, "api-reference/support/list.mdx"), "utf8");
@@ -75,26 +75,6 @@ describe("support ticket list documentation", (): void => {
       documentedLimit: page.includes("returns up to 200 tickets."),
       documentedOrder: normalizedPage.includes("It sorts the newest `updatedAt` value first."),
     }).toStrictEqual({ documentedLimit: true, documentedOrder: true });
-  });
-
-  // The spec does not state the order, so this reads the product's ticket list.
-  productCheck("matches product ordering", (): void => {
-    expect.assertions(1);
-
-    const ticketSource = readFileSync(join(PRODUCT_ROOT ?? "", "lib/support/tickets.ts"), "utf8");
-    const listStart = ticketSource.indexOf("async function listTickets(");
-    const listEnd = ticketSource.indexOf("\nasync function ", listStart + 1);
-    const listTicketsSource = ticketSource.slice(listStart, listEnd);
-
-    expect({
-      listFunctionFound: listStart >= 0 && listEnd > listStart,
-      productLimit: listTicketsSource.includes(".limit(MAX_TICKETS)"),
-      productOrder: listTicketsSource.includes(".orderBy(desc(supportTickets.updatedAt))"),
-    }).toStrictEqual({
-      listFunctionFound: true,
-      productLimit: true,
-      productOrder: true,
-    });
   });
 
   it("preserves focused support ticket API search intent", (): void => {

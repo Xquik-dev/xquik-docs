@@ -2,7 +2,7 @@
 set -euo pipefail
 cd -- "$(dirname -- "$0")/.."
 
-configuration=$(bun -e 'const config = require("./package.json").config; const c = config.comply; process.stdout.write(`${c.version} ${c.sha256} ${c.sourceDateEpoch} ${config.cargoAudit} ${config.rustVersion}\n`);')
+configuration=$(bun -e 'const config = require("./package.json").config; const c = config.comply; console.log([c.version, c.sha256, c.sourceDateEpoch, config.cargoAudit, config.rustVersion].join(" "));')
 read -r version archive_sha source_epoch audit_version rust_version <<<"$configuration"
 patch="$PWD/patches/comply-licensing.patch"
 patch_sha=$(shasum -a 256 "$patch" | cut -d ' ' -f 1)

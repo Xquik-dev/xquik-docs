@@ -1,17 +1,9 @@
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { PRODUCT_ROOT as FOUND_PRODUCT_ROOT } from "./product-contract.test.helpers.ts";
-
 const PROJECT_ROOT = process.cwd();
-const PRODUCT_ROOT = FOUND_PRODUCT_ROOT ?? join(PROJECT_ROOT, "..", "xquik");
 const DOCS_OPENAPI_PATH = join(PROJECT_ROOT, "openapi.yaml");
-const PRODUCT_STYLE_COLUMNS_PATH = join(PRODUCT_ROOT, "lib/styles/columns.ts");
-const PRODUCT_STYLE_PERFORMANCE_ROUTE_PATH = join(
-  PRODUCT_ROOT,
-  "app/api/v1/styles/[id]/performance/route.ts",
-);
 interface OpenApiSpec {
   readonly components?: {
     readonly responses?: Record<string, OpenApiResponse>;
@@ -301,106 +293,6 @@ function fieldDifferences(
 function setDifference(actual: readonly string[], expected: readonly string[]): readonly string[] {
   const expectedSet = new Set(expected);
   return actual.filter((field): boolean => !expectedSet.has(field));
-}
-
-function mapFunctionBody(source: string, functionName: string): string {
-  const start = source.indexOf(`function ${functionName}`);
-  if (start < 0) {
-    throw new Error(`Missing product mapper: ${functionName}`);
-  }
-  const end = source.indexOf("\n}\n\n", start);
-  if (end < 0) {
-    throw new Error(`Could not locate product mapper end: ${functionName}`);
-  }
-  return source.slice(start, end);
-}
-
-function objectLiteralPropertyFields(source: string): readonly string[] {
-  return uniqueSorted(
-    [...source.matchAll(/[{,]\s*(?<field>[A-Za-z_]\w*)\s*:/gu)]
-      .map((match): string => match.groups?.["field"] ?? "")
-      .filter((field): boolean => field.length > 0),
-  );
-}
-
-function assignDefinedPropertyFields(source: string): readonly string[] {
-  return uniqueSorted(
-    [...source.matchAll(/assignDefined\(\s*response\s*,\s*'(?<field>[^']+)'\s*,/gu)]
-      .map((match): string => match.groups?.["field"] ?? "")
-      .filter((field): boolean => field.length > 0),
-  );
-}
-
-function returnedResponseFields(body: string): readonly string[] {
-  const literalStart = body.indexOf("const response:");
-  if (literalStart < 0 || !body.includes("return response;")) return [];
-  const objectStart = body.indexOf("{", literalStart);
-  const objectEnd = body.indexOf("};", objectStart);
-  if (objectStart < 0 || objectEnd < 0) return [];
-  const literalFields = objectLiteralPropertyFields(body.slice(objectStart, objectEnd + 1));
-  if (literalFields.length > 0) {
-    return uniqueSorted([...literalFields, ...assignDefinedPropertyFields(body)]);
-  }
-  return assignDefinedPropertyFields(body);
-}
-
-function productReturnFieldsFromPath(path: string, functionName: string): readonly string[] {
-  const source = readFileSync(path, "utf8");
-  const body = mapFunctionBody(source, functionName);
-  const responseFields = returnedResponseFields(body);
-  if (responseFields.length > 0) return responseFields;
-  const definedFields = [...body.matchAll(/\[\s*'(?<field>[^']+)'\s*,/gu)]
-    .map((match): string => match.groups?.["field"] ?? "")
-    .filter((field): boolean => field.length > 0);
-  const start = body.indexOf("return {");
-  const end = body.indexOf("};", start);
-  if (start < 0 || end < 0) {
-    if (definedFields.length > 0) return uniqueSorted(definedFields);
-    throw new Error(`Could not locate return fields: ${functionName}`);
-  }
-  return uniqueSorted([
-    ...definedFields,
-    ...objectLiteralPropertyFields(body.slice(start, end + 1)),
-  ]);
-}
-
-function objectLiteralFields(source: string): readonly string[] {
-  const start = source.indexOf("{");
-  const end = source.lastIndexOf("}");
-  if (start < 0) {
-    return [];
-  }
-  const bodyEnd = end < 0 ? source.length : end;
-  return uniqueSorted(
-    [
-      ...source
-        .slice(start + 1, bodyEnd)
-        .matchAll(/(?:^|,)\s*(?<field>[A-Za-z_]\w*)\s*(?=[:},]|$)/gu),
-    ]
-      .map((match): string => match.groups?.["field"] ?? "")
-      .filter((field): boolean => field.length > 0),
-  );
-}
-
-function productStylePerformanceFields(): readonly string[] {
-  const source = readFileSync(PRODUCT_STYLE_PERFORMANCE_ROUTE_PATH, "utf8");
-  const responseStart = source.indexOf("return NextResponse.json({\n        tweets,");
-  if (responseStart < 0) {
-    throw new Error("Could not locate style performance success response.");
-  }
-  const responseEnd = source.indexOf("});", responseStart);
-  const resultsStart = source.indexOf("const results =");
-  const tweetStart = source.indexOf("return {", resultsStart);
-  const tweetEnd = source.indexOf("};", tweetStart);
-  if (resultsStart < 0 || tweetStart < 0 || tweetEnd < 0) {
-    throw new Error("Could not locate style performance tweet fields.");
-  }
-  const tweetFields = objectLiteralPropertyFields(source.slice(tweetStart, tweetEnd + 1));
-
-  return uniqueSorted([
-    ...objectLiteralFields(source.slice(responseStart, responseEnd + 1)),
-    ...tweetFields,
-  ]);
 }
 
 function prefixedFields(prefix: string, fields: readonly string[]): readonly string[] {
@@ -712,22 +604,17 @@ describe("API response field docs", (): void => {
     ]).toStrictEqual([]);
   });
 
-  it("keeps style response fields aligned with product style formatting", (): void => {
+  it("keeps style response fields aligned with the style schemas", (): void => {
     expect.assertions(1);
 
-    const productSourceExists =
-      existsSync(PRODUCT_STYLE_COLUMNS_PATH) && existsSync(PRODUCT_STYLE_PERFORMANCE_ROUTE_PATH);
-    if (!productSourceExists) {
-      expect(productSourceExists).toBe(false);
-      return;
-    }
-
-    const detailFields = productReturnFieldsFromPath(
-      PRODUCT_STYLE_COLUMNS_PATH,
-      "formatStyleCacheRow",
-    );
-    const summaryFields = detailFields.filter((field): boolean => field !== "tweets");
-    const performanceFields = productStylePerformanceFields();
+    const spec = readOpenApi();
+    const detailFields = schemaPropertyNames(spec, "StyleProfile");
+    const summaryFields = schemaPropertyNames(spec, "StyleProfileSummary");
+    const performance = responseSchema(spec, "/styles/{id}/performance", "get");
+    const performanceFields = uniqueSorted([
+      ...propertyNames(performance),
+      ...itemPropertyNamesFromProperty(spec, performance, "tweets"),
+    ]);
 
     expect([
       ...setDifference(detailFields, responseFields(STYLES_ANALYZE_PAGE)).map(
@@ -746,8 +633,10 @@ describe("API response field docs", (): void => {
         ["style1", "style2", ...detailFields],
         responseFields(STYLES_COMPARE_PAGE),
       ).map((field): string => `${STYLES_COMPARE_PAGE} is missing ${field}.`),
-      ...setDifference(performanceFields, responseFields(STYLES_PERFORMANCE_PAGE)).map(
-        (field): string => `${STYLES_PERFORMANCE_PAGE} is missing ${field}.`,
+      ...fieldDifferences(
+        STYLES_PERFORMANCE_PAGE,
+        responseFields(STYLES_PERFORMANCE_PAGE),
+        performanceFields,
       ),
     ]).toStrictEqual([]);
   });

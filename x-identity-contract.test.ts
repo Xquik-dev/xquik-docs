@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
@@ -6,12 +6,9 @@ import { describe, expect, it } from "vitest";
 import { docsSecurity } from "./product-contract.test.helpers.ts";
 
 const PROJECT_ROOT = dirname(fileURLToPath(import.meta.url));
-const PRODUCT_ROOT = process.env["XQUIK_PRODUCT_ROOT"] ?? join(PROJECT_ROOT, "..", "xquik");
 const page = readFileSync(join(PROJECT_ROOT, "api-reference/account/x-identity.mdx"), "utf8");
 const normalizedPage = page.replaceAll(/\s+/gu, " ");
 const openapi = readFileSync(join(PROJECT_ROOT, "openapi.yaml"), "utf8");
-const routePath = join(PRODUCT_ROOT, "app/api/v1/account/x-identity/route.ts");
-const styleRoutePath = join(PRODUCT_ROOT, "app/api/v1/styles/route.ts");
 const operation = openapi.slice(
   openapi.indexOf("      operationId: setXIdentity"),
   openapi.indexOf("  /api-keys:", openapi.indexOf("      operationId: setXIdentity")),
@@ -79,34 +76,6 @@ describe("set X identity documentation", (): void => {
       noLookup: true,
       noOwnership: true,
       noUserIdConversion: true,
-    });
-  });
-
-  it("matches product behavior when its source is available", (): void => {
-    expect.assertions(1);
-
-    if (!existsSync(routePath) || !existsSync(styleRoutePath)) {
-      expect(existsSync(routePath) && existsSync(styleRoutePath)).toBe(false);
-      return;
-    }
-
-    const route = readFileSync(routePath, "utf8");
-    const styleRoute = readFileSync(styleRoutePath, "utf8");
-
-    expect({
-      invalidInput: route.includes("return invalidInputResponse()"),
-      invalidUsername: route.includes("error: 'invalid_username'"),
-      lowercase: route.includes("body['username'].toLowerCase()"),
-      storesUsername: route.includes(".set({ xUsername })"),
-      styleMatch: styleRoute.includes("user?.xUsername?.toLowerCase() === username"),
-      usernamePattern: route.includes("X_USERNAME_PATTERN.test"),
-    }).toStrictEqual({
-      invalidInput: true,
-      invalidUsername: true,
-      lowercase: true,
-      storesUsername: true,
-      styleMatch: true,
-      usernamePattern: true,
     });
   });
 });

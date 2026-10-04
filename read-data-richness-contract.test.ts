@@ -101,6 +101,10 @@ const TWEET_FIELDS = [
   "quoteCount",
   "viewCount",
   "bookmarkCount",
+  "grokTranslatedPost",
+  "hasCommunityNotes",
+  "quotedTweetPermalink",
+  "unavailableAuthorId",
 ] as const;
 
 const PROFILE_FIELDS = [
@@ -158,6 +162,24 @@ const PROFILE_FIELDS = [
   "tipJar",
   "communityRole",
   "profile_bio",
+  "accountBasedInAccurate",
+  "connectedVia",
+  "connectedViaAccurate",
+  "usernameChanges",
+  "birthdate",
+  "listedCount",
+  "fastFollowersCount",
+  "normalFollowersCount",
+  "defaultProfile",
+  "defaultProfileImage",
+  "hasExtendedProfile",
+  "isTranslationEnabled",
+  "geoEnabled",
+  "advertiserAccountType",
+  "advertiserAccountServiceLevels",
+  "businessProfileState",
+  "subscribersCount",
+  "verificationReason",
 ] as const;
 
 const MEDIA_FIELDS = [
@@ -194,6 +216,7 @@ const MEDIA_FIELDS = [
   "visitSiteUrl",
   "watchNowUrl",
   "width",
+  "sourceUser",
 ] as const;
 
 const PARSED_OPENAPI = Bun.YAML.parse(OPENAPI) as OpenApiDocument;

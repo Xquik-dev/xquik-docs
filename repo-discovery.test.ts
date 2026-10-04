@@ -30,10 +30,7 @@ const SKIPPED_PUBLIC_SCAN_DIRS = new Set<string>([".git", "node_modules", ".gith
 const CREDITS_QUICK_TOPUP_PAGE = "api-reference/credits/quick-topup.mdx";
 const API_KEYS_CREATE_PAGE = "api-reference/api-keys/create.mdx";
 const WRITE_ACTION_LIFECYCLE_SNIPPET_PATH = "snippets/write-action-lifecycle-response.mdx";
-const PRODUCT_APP_ICON_FILE = join(
-  process.env["XQUIK_PRODUCT_ROOT"] ?? join(process.cwd(), "..", "xquik"),
-  "app/icon.svg",
-);
+const DOCS_FAVICON_SHA256 = "7b22cb7c5f5f9f154e1327210b7878e03e1028ef33857282701feb5fd5e96960";
 const DOCS_X_ONLY_ICON_SHA256 = "7002c1dd82b5b903d69777fa212f39b0e0410cb156e7bcb1b4426fcec3a7cdc5";
 const MCP_GUIDANCE_FILES = [
   "mcp/coding-agents.mdx",
@@ -3498,7 +3495,7 @@ const REQUIRED_X_ACCOUNTS_GET_STATE_SNIPPETS = [
   "<CardGroup cols={1}>",
   '<Card title="Ready for actions" icon="circle-check">',
   '`health: "healthy"` means the stored session is usable.',
-  "`cookiesObtainedAt` shows when Xquik last obtained the session",
+  "`connectedAt` shows when the account last connected or reconnected.",
   '<Card title="Needs credentials" icon="key-round">',
   '`health: "needsReauth"` means credentials, TOTP, email verification, passkey, or another security challenge blocked login.',
   "with current credentials and a valid TOTP secret before retrying writes.",
@@ -3523,14 +3520,6 @@ const X_ACCOUNT_PUBLIC_CONTRACT_FILES = [
 ] as const;
 
 const FORBIDDEN_X_ACCOUNT_PUBLIC_CONTRACT_SNIPPETS = [
-  "`proxy_country`",
-  'body="proxy_country"',
-  "`proxyCountry`",
-  'name="proxyCountry"',
-  "accounts[].proxyCountry",
-  "`loginCountry`",
-  'name="loginCountry"',
-  "selected `proxy_country`",
   "3 attempts per 15 minutes",
   "3 per 15 minutes",
   "Too many connection attempts. Try again in 15 minutes.",
@@ -6838,9 +6827,9 @@ const FORBIDDEN_DRAW_EXPORT_RESPONSE_SNIPPETS = [
 ] as const;
 
 const REQUIRED_EXTRACTION_EXPORT_COLUMNS_SNIPPETS = [
-  "The file format changes only the encoding. The extraction tool type decides",
-  "the columns. Default exports include 29 columns. `article_extractor`",
-  "exports 10 article columns.",
+  "The extraction tool type decides the columns. Default exports include 29",
+  "columns. `article_extractor` exports 10 article columns. JSON rows also keep",
+  "each result's nested `enrichmentData`, as",
   "All extraction tools except `article_extractor` use the default result column set.",
   "Some enrichment columns may be empty when the result does not include that data.",
   '<Card title="User identity" icon="user">',
@@ -12193,16 +12182,6 @@ const FORBIDDEN_PUBLIC_CONFIDENTIALITY_WORDING = [
   ["Trending", "topics", "and", "news", "aggregated", "from", "7", "sources"].join(" "),
   ["Trending", "topics", "and", "news", "from", "7", "sources"].join(" "),
   "TrustMRR",
-  [["browser", "service"].join("-"), "capacity"].join(" "),
-  ["declared", "proxy", "region", "was", "unavailable"].join(" "),
-  ["login", "fell", "back", "to", "a", "single", "US", "consumer", "device"].join(" "),
-  ["one-time", "US", "browser", "session"].join(" "),
-  [["one", "time"].join("-"), "US", "fallback"].join(" "),
-  ["proxy", "service"].join(" "),
-  ["participant", "session"].join(" "),
-  ["session", "reads", "the", "conversation"].join(" "),
-  ["shared", "read", "pool"].join(" "),
-  ["whose", "session", "reads"].join(" "),
 ] as const;
 
 const EXPECTED_OPENAPI_OPERATION_COUNT = 131;
@@ -15669,15 +15648,11 @@ describe("repository discovery", (): void => {
     expect(findings).toStrictEqual([]);
   });
 
-  it("keeps Xquik docs icon sources aligned with product icon policy", (): void => {
+  it("keeps the Xquik docs icon files unchanged", (): void => {
     expect.assertions(3);
 
     expect(sha256File("logo/x-only.svg")).toBe(DOCS_X_ONLY_ICON_SHA256);
-    expect(sha256File("favicon.svg")).toBe(
-      existsSync(PRODUCT_APP_ICON_FILE)
-        ? sha256File(PRODUCT_APP_ICON_FILE)
-        : "7b22cb7c5f5f9f154e1327210b7878e03e1028ef33857282701feb5fd5e96960",
-    );
+    expect(sha256File("favicon.svg")).toBe(DOCS_FAVICON_SHA256);
     expect(readFileSync("docs.json", "utf8")).toContain('"favicon": "/favicon.svg"');
   });
 

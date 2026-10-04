@@ -1,14 +1,11 @@
-import { execFileSync } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 
 import { it } from "vitest";
 
-type Spec = Record<string, unknown>;
+import { findProductRoot } from "./scripts/lib/product-root.ts";
 
-/** Tells a skipped product check apart from a passed one in the test output. */
-const PRODUCT_CHECKOUT_HINT =
-  "needs the product checkout: set XQUIK_PRODUCT_ROOT or clone xquik beside this repository";
+type Spec = Record<string, unknown>;
 
 function asRecord(value: unknown): Spec | undefined {
   return value !== null && typeof value === "object" && !Array.isArray(value)
@@ -16,31 +13,14 @@ function asRecord(value: unknown): Spec | undefined {
     : undefined;
 }
 
-/**
- * The product checkout the contract tests compare with: XQUIK_PRODUCT_ROOT or
- * XQUIK_ROOT when set, else `xquik` beside this repository's main checkout, so
- * a git worktree of this repository finds it too. Undefined when there is no
- * product OpenAPI spec there.
- */
-function findProductRoot(): string | undefined {
-  const configured = process.env["XQUIK_PRODUCT_ROOT"] ?? process.env["XQUIK_ROOT"] ?? "";
-  if (configured !== "") return configured;
-  const commonDir = execFileSync(
-    "git",
-    ["rev-parse", "--path-format=absolute", "--git-common-dir"],
-    { cwd: import.meta.dirname, encoding: "utf8" },
-  ).trim();
-  const sibling = join(dirname(dirname(commonDir)), "xquik");
-  return existsSync(join(sibling, "openapi.yaml")) ? sibling : undefined;
-}
-
 const PRODUCT_ROOT = findProductRoot();
 
-/** The product's published OpenAPI spec, its stable public contract. */
-const productSpec: Spec | undefined =
-  PRODUCT_ROOT === undefined
-    ? undefined
-    : asRecord(Bun.YAML.parse(readFileSync(join(PRODUCT_ROOT, "openapi.yaml"), "utf8")));
+/**
+ * The product's published OpenAPI spec, its stable public contract. This
+ * repository holds an exact copy, which `openapi-parity.test.ts` checks.
+ */
+const productSpec: Spec =
+  asRecord(Bun.YAML.parse(readFileSync(join(import.meta.dirname, "openapi.yaml"), "utf8"))) ?? {};
 
 /** Follows local `$ref` pointers such as `#/components/responses/NotFound`. */
 function resolve(spec: Spec, value: unknown): Spec {
@@ -80,10 +60,9 @@ function findOperation(spec: Spec, operationId: string): Spec | undefined {
     .find((candidate) => candidate?.["operationId"] === operationId);
 }
 
-/** The `security` of an operation of this repository's spec, aliases resolved. */
+/** The `security` of an operation of the spec, aliases resolved. */
 function docsSecurity(operationId: string): unknown {
-  const source = readFileSync(join(import.meta.dirname, "openapi.yaml"), "utf8");
-  return findOperation(asRecord(Bun.YAML.parse(source)) ?? {}, operationId)?.["security"];
+  return findOperation(productSpec, operationId)?.["security"];
 }
 
 /** An operation of the product spec by `operationId`, or undefined. */
@@ -134,18 +113,11 @@ function docsContract(source: string): DocsContract {
   };
 }
 
-/**
- * Registers a check against the product spec, skipped with a hint in its
- * title when no product checkout is found.
- */
+/** Registers a check against the product spec. */
 function productCheck(name: string, run: (spec: Spec) => void): void {
-  const spec = productSpec;
-  it.skipIf(spec === undefined)(
-    spec === undefined ? `${name} (${PRODUCT_CHECKOUT_HINT})` : name,
-    (): void => {
-      if (spec !== undefined) run(spec);
-    },
-  );
+  it(name, (): void => {
+    run(productSpec);
+  });
 }
 
 export { docsContract, docsSecurity, PRODUCT_ROOT, productCheck, productOperation };

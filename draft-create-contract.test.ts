@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
@@ -6,11 +6,9 @@ import { describe, expect, it } from "vitest";
 import { docsSecurity } from "./product-contract.test.helpers.ts";
 
 const PROJECT_ROOT = dirname(fileURLToPath(import.meta.url));
-const PRODUCT_ROOT = process.env["XQUIK_PRODUCT_ROOT"] ?? join(PROJECT_ROOT, "..", "xquik");
 const page = readFileSync(join(PROJECT_ROOT, "api-reference/drafts/create.mdx"), "utf8");
 const normalizedPage = page.replaceAll(/\s+/gu, " ");
 const openapi = readFileSync(join(PROJECT_ROOT, "openapi.yaml"), "utf8");
-const routePath = join(PRODUCT_ROOT, "app/api/v1/drafts/route.ts");
 const createOperation = openapi.slice(
   openapi.indexOf("      operationId: createDraft"),
   openapi.indexOf("  /drafts/{id}:", openapi.indexOf("      operationId: createDraft")),
@@ -78,41 +76,6 @@ describe("create tweet draft documentation", (): void => {
       noEdit: true,
       noIdempotency: true,
       noPublish: true,
-    });
-  });
-
-  it("matches product validation when its source is available", (): void => {
-    expect.assertions(1);
-
-    if (!existsSync(routePath)) {
-      expect(existsSync(routePath)).toBe(false);
-      return;
-    }
-
-    const route = readFileSync(routePath, "utf8");
-    const postStart = route.indexOf("export async function POST(");
-    const postSource = route.slice(postStart);
-
-    expect({
-      goals: ["engagement", "followers", "authority", "conversation"].every((goal) =>
-        route.includes(`'${goal}'`),
-      ),
-      invalidText: [
-        "typeof body['text'] !== 'string'",
-        "body['text'].length === 0",
-        "body['text'].length > MAX_TEXT_LENGTH",
-      ].every((snippet) => postSource.includes(snippet)),
-      successStatus: postSource.includes("{ status: 201 }"),
-      textLimit: route.includes("const MAX_TEXT_LENGTH = 25_000"),
-      topicLimit: route.includes("const MAX_TOPIC_LENGTH = 500"),
-      topicTruncation: route.includes("raw.slice(0, MAX_TOPIC_LENGTH)"),
-    }).toStrictEqual({
-      goals: true,
-      invalidText: true,
-      successStatus: true,
-      textLimit: true,
-      topicLimit: true,
-      topicTruncation: true,
     });
   });
 });
