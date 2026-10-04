@@ -1,0 +1,282 @@
+---
+title: "X job locations API: find places & location IDs"
+sidebarTitle: "Job locations"
+description: "Find the places X job search knows by name, such as New York, US. Each place returns the location ID that job search takes. 1 credit per place returned."
+api: "GET /x/jobs/locations"
+keywords:
+  [
+    "X job locations",
+    "Twitter jobs location search",
+    "X jobs API",
+    "job search location ID",
+    "location typeahead API",
+    "remote jobs by city",
+  ]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+{/* GENERATED RESPONSE EXAMPLES START */}
+
+<Panel>
+
+<Tabs defaultTabIndex={0} sync={false}>
+
+  <Tab title="200" id="response-x-job-locations-200">
+
+    ```json
+    {
+      "locations": [
+        {
+          "id": "1720462281849397612",
+          "name": "New York, US"
+        }
+      ],
+      "count": 2
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="400" id="response-x-job-locations-400">
+
+    ```json
+    {
+      "error": "missing_query",
+      "message": "Search query required. Use q."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="401" id="response-x-job-locations-401">
+
+    ```json
+    {
+      "error": "unauthenticated",
+      "message": "Authentication required."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="402" id="response-x-job-locations-402">
+
+    ```json
+    {
+      "error": "insufficient_credits",
+      "message": "Insufficient credits. Top up or subscribe to continue."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="424" id="response-x-job-locations-424">
+
+    ```json
+    {
+      "error": "x_api_unavailable",
+      "message": "X data source temporarily unavailable. Try again later."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="429" id="response-x-job-locations-429">
+
+    ```json
+    {
+      "error": "rate_limit_exceeded",
+      "message": "Too many requests. Try again later.",
+      "retryAfter": 60
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="502" id="response-x-job-locations-502">
+
+    ```json
+    {
+      "error": "x_api_unavailable",
+      "message": "X data source temporarily unavailable. Try again later."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="503" id="response-x-job-locations-503">
+
+    ```json
+    {
+      "error": "x_api_unavailable",
+      "message": "Xquik is busy right now. Retry shortly."
+    }
+    ```
+
+  </Tab>
+</Tabs>
+
+</Panel>
+{/* GENERATED RESPONSE EXAMPLES END */}
+<LlmsDirective />
+
+Find the places X job search knows by name. Pass a place name or its start, such as `new york`. Each match returns its name and the location ID that [job search](/api-reference/x/search-jobs) takes.
+
+<Callout icon="coins" color="#5c3327">
+
+**1 credit per place returned** · [All plans](https://xquik.com/#pricing) from $0.00012/credit
+
+</Callout>
+
+<CodeGroup>
+
+```bash cURL
+curl "https://xquik.com/api/v1/x/jobs/locations?q=new%20york&limit=5" \
+  -H "x-api-key: xq_your_api_key_here" | jq
+```
+
+```javascript Node.js
+const params = new URLSearchParams({ q: "new york", limit: "5" });
+const response = await fetch(`https://xquik.com/api/v1/x/jobs/locations?${params}`, {
+  headers: { "x-api-key": "xq_your_api_key_here" },
+});
+const { locations } = await response.json();
+const firstLocationId = locations[0]?.id ?? null;
+```
+
+```python Python
+import requests
+
+response = requests.get(
+    "https://xquik.com/api/v1/x/jobs/locations",
+    params={"q": "new york", "limit": 5},
+    headers={"x-api-key": "xq_your_api_key_here"},
+)
+locations = response.json()["locations"]
+first_location_id = locations[0]["id"] if locations else None
+```
+
+</CodeGroup>
+
+## Search jobs in an exact place
+
+A free-text `location` works for most searches. A location ID pins 1 exact place instead. `New York City, NY` and `West New York, NJ` then stay apart.
+
+1. Look up the place name here.
+2. Pick the matching place from `locations`.
+3. Send its `id` to [job search](/api-reference/x/search-jobs) as `locationId`.
+
+Store the ID with the place name. The same ID works in later searches.
+
+## Control the cost
+
+Each returned place costs 1 credit. A broad name such as `york` can match many places. Send `limit` to keep only the best matches. No match returns an empty list and costs nothing.
+
+## Query parameters
+
+<ParamField query="q" type="string" required>
+
+Place name or its start, such as `new york`. Alias: `query`.
+
+</ParamField>
+
+<ParamField query="limit" type="integer">
+
+Most places to return. Without it, every match returns. Aliases: `pageSize`, `count`, `max_results`, `maxItems`, `max_items` & `per_page`.
+
+</ParamField>
+
+## Headers
+
+<ParamField header="x-api-key" type="string">
+
+Full account key. Sessions and OAuth also work.
+
+</ParamField>
+
+<ParamField header="Authorization" type="string">
+
+`Bearer xq_your_guest_key_here` for `paid_reads`.
+
+</ParamField>
+
+## Response
+
+### 200 OK
+
+<ResponseField name="locations" type="object[]">
+
+Matching places, best match first.
+**Location object fields.**
+
+<ResponseField name="id" type="string">
+  Location ID, which the job search `locationId` takes.
+</ResponseField>
+<ResponseField name="name" type="string">
+  Place name with its region or country code.
+</ResponseField>
+
+</ResponseField>
+<ResponseField name="count" type="number">Places returned, each charged 1 credit.</ResponseField>
+
+```json
+{
+  "locations": [
+    { "id": "1720462281849397612", "name": "New York, US" },
+    { "id": "1720462281920696805", "name": "New York City, NY" }
+  ],
+  "count": 2
+}
+```
+
+### 400 Missing query
+
+```json
+{ "error": "missing_query" }
+```
+
+Send a place name in `q`.
+
+### 401 Unauthenticated
+
+Anonymous requests get `WWW-Authenticate: Bearer` and a guest wallet checkout action. This is not a Payment challenge.
+
+```json
+{ "error": "unauthenticated" }
+```
+
+### 402 Payment required
+
+Account keys get account options. Guest keys get guest top-up only.
+No checkout starts automatically. Confirm any payment action.
+
+### 502 X API unavailable
+
+```json
+{ "error": "x_api_unavailable" }
+```
+
+The read service returned an error. Retry after a short delay.
+
+### 429 Rate limit exceeded
+
+```json
+{ "error": "rate_limit_exceeded", "retryAfter": 60 }
+```
+
+You exceeded your tier rate limit. Wait for the `Retry-After` header before retrying.
+
+### 424 Dependency failed
+
+```json
+{ "error": "x_api_unavailable" }
+```
+
+The normalized v1 response contract can return 424 when the read service is unavailable.
+
+<Note>
+
+**Next steps.** [Search job listings](/api-reference/x/search-jobs) with the location ID, or [get 1 job listing](/api-reference/x/get-job) for its full description.
+
+</Note>

@@ -65,6 +65,7 @@ const LINK_CLUSTERS: readonly LinkCluster[] = [
       "/api-reference/x/trends",
       "/api-reference/x/trend-locations",
       "/api-reference/x/search-spaces",
+      "/api-reference/x/get-space",
       "/api-reference/x/download-media",
     ],
   },
