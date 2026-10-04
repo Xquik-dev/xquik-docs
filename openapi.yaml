@@ -2839,7 +2839,9 @@ paths:
   /x/trends:
     get:
       operationId: getXTrends
-      description: Returns current X trends for the requested region.
+      description:
+        Returns X's current trends for a place you choose. Pick it by woeid,
+        country or location name. Without one, trends are worldwide.
       summary: Get trending hashtags and topics from X by region
       tags:
         - Trends
@@ -2859,7 +2861,22 @@ paths:
             default: 1
           description:
             'Region WOEID (1=Worldwide, 23424977=US, 23424975=UK,
-            23424969=Turkey)'
+            23424969=Turkey). Wins over country & location.'
+        - name: country
+          in: query
+          schema:
+            type: string
+          description:
+            Country to read trends for, by name or 2-letter code, such as Turkey
+            or TR. Case insensitive.
+        - name: location
+          in: query
+          schema:
+            type: string
+          description:
+            Town or country to read trends for, by name, such as Istanbul. Case
+            insensitive. Add country when 2 towns share a name.
+            /x/trends/locations lists every name.
         - name: count
           in: query
           description: Number of trending topics to return (1-50, default 30)
@@ -2924,6 +2941,31 @@ paths:
                     minimum: 0
                     example: 30
                   woeid: *integer-example-one
+                  location:
+                    type: object
+                    $ref: '#/components/schemas/TrendLocation'
+                    description:
+                      The place country or location named. Absent when woeid
+                      picked the place or the request named none.
+                    example:
+                      woeid: 2344116
+                      name: 'Istanbul'
+                      country: 'Turkey'
+                      countryCode: 'TR'
+                      placeType: 'Town'
+                      placeTypeCode: 7
+                      parentWoeid: 23424969
+                      url: 'http://where.yahooapis.com/v1/place/2344116'
+        '400':
+          description: Unknown country or location
+          content:
+            application/json:
+              schema: *error-schema
+              example:
+                error: 'invalid_input'
+                message:
+                  'X lists no trends for that place. List places with GET
+                  /x/trends/locations.'
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '402':
@@ -2987,59 +3029,7 @@ paths:
                   locations:
                     type: array
                     items:
-                      type: object
-                      required:
-                        - woeid
-                        - name
-                        - country
-                        - countryCode
-                        - placeType
-                        - placeTypeCode
-                        - parentWoeid
-                        - url
-                      properties:
-                        woeid:
-                          type: integer
-                          minimum: 1
-                          description:
-                            Location ID. Pass it as woeid to /x/trends.
-                          example: 2344116
-                        name:
-                          type: string
-                          example: 'Istanbul'
-                        country:
-                          type: [string, 'null']
-                          description: Country name. Null for Worldwide.
-                          example: 'Turkey'
-                        countryCode:
-                          type: [string, 'null']
-                          description:
-                            2-letter country code. Null for Worldwide.
-                          example: 'TR'
-                        placeType:
-                          type: [string, 'null']
-                          description:
-                            X's kind of place. Town, Country, Supername for
-                            Worldwide, or Unknown.
-                          example: 'Town'
-                        placeTypeCode:
-                          type: [integer, 'null']
-                          minimum: 0
-                          description: X's numeric code for the kind of place.
-                          example: 7
-                        parentWoeid:
-                          type: [integer, 'null']
-                          minimum: 1
-                          description:
-                            WOEID of the country or region above it. Null for
-                            Worldwide.
-                          example: 23424969
-                        url:
-                          type: [string, 'null']
-                          description:
-                            X's legacy Yahoo GeoPlanet reference. It may not
-                            resolve.
-                          example: 'http://where.yahooapis.com/v1/place/2344116'
+                      $ref: '#/components/schemas/TrendLocation'
                     example:
                       - woeid: 2344116
                         name: 'Istanbul'
@@ -3074,6 +3064,180 @@ paths:
           $ref: '#/components/responses/ReadBusy'
         '429': *rate-limit-exceeded-response
         '424': *x-api-error-response
+
+  /x/hashflags:
+    get:
+      operationId: getXHashflags
+      description:
+        Returns X's hashflags, the custom emoji X shows after some hashtags.
+        Lists the ones running now unless activeOnly is false. Each returned
+        hashflag costs 1 credit.
+      summary: List the hashflags X shows after hashtags
+      tags:
+        - Trends
+      security: *read-auth
+      parameters:
+        - name: q
+          in: query
+          schema:
+            type: string
+          description:
+            Text the hashtag contains, such as football. Case insensitive. A
+            leading hash sign is ignored. Alias query.
+        - name: activeOnly
+          in: query
+          schema:
+            type: boolean
+            default: true
+          description:
+            Keeps hashflags that run now. Send false to add ended & upcoming
+            ones.
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+          description:
+            Maximum hashflags to return. Omit it for every match. Credits can
+            return fewer. Aliases pageSize, count, max_results, maxItems,
+            max_items & per_page.
+      responses:
+        '200':
+          description: Hashflags X shows after hashtags
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [hashflags, count, total]
+                properties:
+                  hashflags:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Hashflag'
+                    example:
+                      - hashtag: 'AION2'
+                        assetUrl: 'https://abs.twimg.com/hashflags/BF-16692_AIon2_jp_Hashmoji_v3/BF-16692_AIon2_jp_Hashmoji_v3.png'
+                        startsAt: '2026-10-02T10:00:00.000Z'
+                        endsAt: '2027-01-03T14:59:00.000Z'
+                        isHashfettiEnabled: false
+                        animations: []
+                  count:
+                    type: integer
+                    minimum: 0
+                    description: Hashflags returned & charged.
+                    example: 1
+                  total:
+                    type: integer
+                    minimum: 0
+                    description: Hashflags that match the filters, before limit.
+                    example: 1
+                  message:
+                    type: string
+                    description:
+                      What to send instead. Present only when no hashflag
+                      matches.
+                    example:
+                      No hashflag runs now. Send activeOnly=false to list the
+                      rest.
+        '401': *anonymous-guest-authentication-response
+        '402': *payment-required-response
+        '502': { $ref: '#/components/responses/XApiError' }
+        '503':
+          $ref: '#/components/responses/ReadBusy'
+        '429': *rate-limit-exceeded-response
+        '424': { $ref: '#/components/responses/XApiError' }
+
+  /x/places/search:
+    get:
+      operationId: searchXPlaces
+      description:
+        Finds places on X by name. Pass a place's id as place to
+        /x/tweets/search to read posts tagged there. X ranks the places, so
+        their order can differ between requests. Each returned place costs 1
+        credit.
+      summary: Search X places by name
+      tags:
+        - Tweets
+      security: *read-auth
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Place name to search for, such as istanbul. Alias query.
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+          description:
+            Maximum places to return. Omit it for every place X finds. Credits
+            can return fewer. Aliases pageSize, count, max_results, maxItems,
+            max_items & per_page.
+      responses:
+        '200':
+          description: Places X found for the name
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [places, count, total]
+                properties:
+                  places:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PlaceSearchResult'
+                    example:
+                      - id: '5e02a0f0d91c76d2'
+                        name: 'İstanbul'
+                        fullName: 'İstanbul, Türkiye'
+                        country: 'Turkey'
+                        countryCode: 'TR'
+                        placeType: 'city'
+                        url: 'https://api.twitter.com/1.1/geo/id/5e02a0f0d91c76d2.json'
+                        centroid: [28.84318392941324, 41.054196399999995]
+                        boundingBox:
+                          type: 'Polygon'
+                          coordinates:
+                            - - [28.6321043, 40.8027337]
+                              - [28.6321043, 41.2399073]
+                              - [29.3783413, 41.2399073]
+                              - [29.3783413, 40.8027337]
+                        attributes: {}
+                        containedWithin: []
+                  count:
+                    type: integer
+                    minimum: 0
+                    description: Places returned & charged.
+                    example: 1
+                  total:
+                    type: integer
+                    minimum: 0
+                    description: Places X found, before limit.
+                    example: 1
+                  message:
+                    type: string
+                    description:
+                      What to send instead. Present only when X finds no place.
+                    example:
+                      X found no place for that text. Try a city or country
+                      name.
+        '400':
+          description: Missing place search text
+          content:
+            application/json:
+              schema: *error-schema
+              example:
+                error: 'missing_query'
+                message: 'Search query required. Use q.'
+        '401': *anonymous-guest-authentication-response
+        '402': *payment-required-response
+        '502': { $ref: '#/components/responses/XApiError' }
+        '503':
+          $ref: '#/components/responses/ReadBusy'
+        '429': *rate-limit-exceeded-response
+        '424': { $ref: '#/components/responses/XApiError' }
 
   /x/tweets/search:
     get:
@@ -3613,8 +3777,9 @@ paths:
     get:
       operationId: getBatchUsers
       description:
-        Returns public profiles for up to 100 user IDs or usernames. Send ids or
-        usernames, not both. Each returned profile costs 1 credit.
+        Returns public profiles for up to 100 user IDs, usernames or profile
+        links. Send ids or usernames, not both. Each returned profile costs 1
+        credit.
       summary: Look up multiple users by IDs or usernames in one call
       tags:
         - Users
@@ -3631,10 +3796,11 @@ paths:
           in: query
           schema:
             type: string
-          example: 'nasa,@OpenAI'
+          example: 'nasa,@OpenAI,x.com/verge'
           description:
-            Comma-separated X usernames, with or without @ (1-100 values), in
-            place of ids. A name in another case is the same account.
+            Comma-separated X usernames, with or without @, or profile links
+            such as x.com/nasa (1-100 values), in place of ids. A name in
+            another case is the same account.
         - $ref: '#/components/parameters/UserMinFollowers'
         - $ref: '#/components/parameters/UserMaxFollowers'
         - $ref: '#/components/parameters/UserMinFollowing'
@@ -12484,7 +12650,8 @@ components:
     BatchUsers:
       description: >
         Batch lookup preserves first-seen order and ignores duplicates. The ID
-        lists name the requested IDs or usernames as sent.
+        lists name the requested IDs or usernames. A profile link is named by
+        its username.
       type: object
       required:
         [
@@ -15143,6 +15310,272 @@ components:
           type: string
         url:
           type: string
+
+    TrendLocation:
+      description: A place X offers trends for.
+      type: object
+      required:
+        - woeid
+        - name
+        - country
+        - countryCode
+        - placeType
+        - placeTypeCode
+        - parentWoeid
+        - url
+      properties:
+        woeid:
+          type: integer
+          minimum: 1
+          description: Location ID. Pass it as woeid to /x/trends.
+          example: 2344116
+        name:
+          type: string
+          example: 'Istanbul'
+        country:
+          type: [string, 'null']
+          description: Country name. Null for Worldwide.
+          example: 'Turkey'
+        countryCode:
+          type: [string, 'null']
+          description: 2-letter country code. Null for Worldwide.
+          example: 'TR'
+        placeType:
+          type: [string, 'null']
+          description:
+            X's kind of place. Town, Country, Supername for Worldwide, or
+            Unknown.
+          example: 'Town'
+        placeTypeCode:
+          type: [integer, 'null']
+          minimum: 0
+          description: X's numeric code for the kind of place.
+          example: 7
+        parentWoeid:
+          type: [integer, 'null']
+          minimum: 1
+          description:
+            WOEID of the country or region above it. Null for Worldwide.
+          example: 23424969
+        url:
+          type: [string, 'null']
+          description: X's legacy Yahoo GeoPlanet reference. It may not resolve.
+          example: 'http://where.yahooapis.com/v1/place/2344116'
+      example:
+        woeid: 2344116
+        name: 'Istanbul'
+        country: 'Turkey'
+        countryCode: 'TR'
+        placeType: 'Town'
+        placeTypeCode: 7
+        parentWoeid: 23424969
+        url: 'http://where.yahooapis.com/v1/place/2344116'
+
+    Place:
+      description: A place on X, such as a city or a neighborhood.
+      type: object
+      required:
+        - id
+        - name
+        - fullName
+        - country
+        - countryCode
+        - placeType
+        - url
+        - centroid
+        - boundingBox
+        - attributes
+      properties:
+        id:
+          type: string
+          description: Place ID. Pass it as place to /x/tweets/search.
+          example: '5e02a0f0d91c76d2'
+        name:
+          type: string
+          description: Short name of the place.
+          example: 'İstanbul'
+        fullName:
+          type: [string, 'null']
+          description: Name with the region or country around the place.
+          example: 'İstanbul, Türkiye'
+        country:
+          type: [string, 'null']
+          description: Country the place lies in.
+          example: 'Turkey'
+        countryCode:
+          type: [string, 'null']
+          description: 2-letter code of the country the place lies in.
+          example: 'TR'
+        placeType:
+          type: [string, 'null']
+          description:
+            X's kind of place, such as city, admin, neighborhood, poi or
+            country.
+          example: 'city'
+        url:
+          type: [string, 'null']
+          description: X's own reference URL for the place.
+          example: 'https://api.twitter.com/1.1/geo/id/5e02a0f0d91c76d2.json'
+        centroid:
+          type: [array, 'null']
+          description: Center of the place. Longitude, then latitude.
+          items: { type: number, example: 28.84318392941324 }
+          example: [28.84318392941324, 41.054196399999995]
+        boundingBox:
+          type: [object, 'null']
+          description:
+            Outline of the place as GeoJSON. Each point holds longitude, then
+            latitude.
+          required: [type, coordinates]
+          properties:
+            type:
+              type: string
+              description: GeoJSON shape of the outline.
+              example: 'Polygon'
+            coordinates:
+              type: array
+              description: Rings of points that draw the outline.
+              items:
+                type: array
+                items:
+                  type: array
+                  items: { type: number, example: 28.6321043 }
+                  example: [28.6321043, 40.8027337]
+                example: [[28.6321043, 40.8027337], [29.3783413, 41.2399073]]
+              example:
+                - - [28.6321043, 40.8027337]
+                  - [28.6321043, 41.2399073]
+                  - [29.3783413, 41.2399073]
+                  - [29.3783413, 40.8027337]
+          example:
+            type: 'Polygon'
+            coordinates:
+              - - [28.6321043, 40.8027337]
+                - [28.6321043, 41.2399073]
+                - [29.3783413, 41.2399073]
+                - [29.3783413, 40.8027337]
+        attributes:
+          type: object
+          $ref: '#/components/schemas/PublicMetadata'
+          description: Extra details X attaches to some places. Often empty.
+      example:
+        id: '5e02a0f0d91c76d2'
+        name: 'İstanbul'
+        fullName: 'İstanbul, Türkiye'
+        country: 'Turkey'
+        countryCode: 'TR'
+        placeType: 'city'
+        url: 'https://api.twitter.com/1.1/geo/id/5e02a0f0d91c76d2.json'
+        centroid: [28.84318392941324, 41.054196399999995]
+        boundingBox:
+          type: 'Polygon'
+          coordinates:
+            - - [28.6321043, 40.8027337]
+              - [28.6321043, 41.2399073]
+              - [29.3783413, 41.2399073]
+              - [29.3783413, 40.8027337]
+        attributes: {}
+
+    PlaceSearchResult:
+      description: A place X found, with the larger places it lies in.
+      allOf:
+        - $ref: '#/components/schemas/Place'
+        - type: object
+          required: [containedWithin]
+          properties:
+            containedWithin:
+              type: array
+              description: Larger places this place lies in. Often 1.
+              items:
+                $ref: '#/components/schemas/Place'
+              example: []
+      example:
+        id: '5e02a0f0d91c76d2'
+        name: 'İstanbul'
+        fullName: 'İstanbul, Türkiye'
+        country: 'Turkey'
+        countryCode: 'TR'
+        placeType: 'city'
+        url: 'https://api.twitter.com/1.1/geo/id/5e02a0f0d91c76d2.json'
+        centroid: [28.84318392941324, 41.054196399999995]
+        boundingBox:
+          type: 'Polygon'
+          coordinates:
+            - - [28.6321043, 40.8027337]
+              - [28.6321043, 41.2399073]
+              - [29.3783413, 41.2399073]
+              - [29.3783413, 40.8027337]
+        attributes: {}
+        containedWithin: []
+
+    Hashflag:
+      description: A custom emoji X shows after a hashtag for a set time.
+      type: object
+      required:
+        - hashtag
+        - assetUrl
+        - startsAt
+        - endsAt
+        - isHashfettiEnabled
+        - animations
+      properties:
+        hashtag:
+          type: string
+          description:
+            Hashtag text without the hash sign. X also lists some plain phrases.
+          example: 'AION2'
+        assetUrl:
+          type: string
+          format: uri
+          description: Image of the emoji.
+          example: 'https://abs.twimg.com/hashflags/BF-16692_AIon2_jp_Hashmoji_v3/BF-16692_AIon2_jp_Hashmoji_v3.png'
+        startsAt:
+          type: string
+          format: date-time
+          description: When X starts showing the emoji, in UTC.
+          example: '2026-10-02T10:00:00.000Z'
+        endsAt:
+          type: string
+          format: date-time
+          description: When X stops showing the emoji, in UTC.
+          example: '2027-01-03T14:59:00.000Z'
+        isHashfettiEnabled:
+          type: boolean
+          description: Whether X marks the hashflag for its hashfetti effect.
+          example: false
+        animations:
+          type: array
+          description:
+            Animations X plays for the hashtag, such as on a like. Often empty.
+          items:
+            type: object
+            required: [context, assetUrl, priority]
+            properties:
+              context:
+                type: [string, 'null']
+                description: What plays the animation, such as Like.
+                example: 'Like'
+              assetUrl:
+                type: string
+                format: uri
+                description: Animation file.
+                example: 'https://abs.twimg.com/hashflags/2026FootballCustomLikeEvergreenv3/2026FootballCustomLikeEvergreenv3_sakura_0.json'
+              priority:
+                type: [number, 'null']
+                description: X's order among the animations of a hashtag.
+                example: 1
+            example:
+              context: 'Like'
+              assetUrl: 'https://abs.twimg.com/hashflags/2026FootballCustomLikeEvergreenv3/2026FootballCustomLikeEvergreenv3_sakura_0.json'
+              priority: 1
+          example: []
+      example:
+        hashtag: 'AION2'
+        assetUrl: 'https://abs.twimg.com/hashflags/BF-16692_AIon2_jp_Hashmoji_v3/BF-16692_AIon2_jp_Hashmoji_v3.png'
+        startsAt: '2026-10-02T10:00:00.000Z'
+        endsAt: '2027-01-03T14:59:00.000Z'
+        isHashfettiEnabled: false
+        animations: []
 
     TweetTombstone:
       description: Public visibility notice attached to an available tweet.

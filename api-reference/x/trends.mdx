@@ -1,7 +1,7 @@
 ---
 title: "Twitter trends API by region, WOEID & search"
 sidebarTitle: "Get X trends"
-description: "Get Twitter and X trends by WOEID region. Return ranked topics, hashtags, search queries, descriptions, tweet volume, and result counts. 3 credits per call."
+description: "Get Twitter and X trends for a country, town, or WOEID. Return ranked topics, hashtags, search queries, descriptions, and tweet volume. 3 credits per call."
 api: "GET /x/trends"
 keywords:
   [
@@ -41,6 +41,17 @@ import TweetReadApiLinks from "/snippets/x-tweet-read-api-links.mdx";
       ],
       "count": 30,
       "woeid": 1
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="400" id="response-x-trends-400">
+
+    ```json
+    {
+      "error": "invalid_input",
+      "message": "X lists no trends for that place. List places with GET /x/trends/locations."
     }
     ```
 
@@ -185,7 +196,8 @@ for row in trend_rows:
 
 </CodeGroup>
 
-Use `GET /x/trends` to retrieve ranked regional topics.
+Use `GET /x/trends` to retrieve X's ranked trends for a place you choose.
+Pick the place by `country`, `location`, or `woeid`. Without one, trends are worldwide.
 Use trends for planning, monitor setup, search jobs, and alerts.
 Each example emits one JSON record for every returned trend.
 Store `trend_name` for every result.
@@ -215,7 +227,19 @@ that field for some trends.
 
 <ParamField query="woeid" type="integer">
 
-Positive Where On Earth ID for the region. Invalid or nonpositive values fall back to `1` (worldwide). See [Trends guide](/guides/trends) for common regions, or [List trend locations](/api-reference/x/trend-locations) for every place.
+Positive Where On Earth ID for the region. It wins over `country` and `location`. Invalid or nonpositive values fall back to those names, then to `1` (worldwide). See [Trends guide](/guides/trends) for common regions, or [List trend locations](/api-reference/x/trend-locations) for every place.
+
+</ParamField>
+
+<ParamField query="country" type="string">
+
+Country to read trends for, by name or 2-letter code, such as `Turkey` or `TR`. Case insensitive.
+
+</ParamField>
+
+<ParamField query="location" type="string">
+
+Town or country to read trends for, by name, such as `Istanbul`. Case insensitive. Add `country` when 2 towns share a name. [List trend locations](/api-reference/x/trend-locations) returns every name.
 
 </ParamField>
 
@@ -273,6 +297,9 @@ Array of trending topics.
 </ResponseField>
 <ResponseField name="count" type="number">Number of trends returned.</ResponseField>
 <ResponseField name="woeid" type="number">WOEID used for the request.</ResponseField>
+<ResponseField name="location" type="object">
+  The place `country` or `location` named, with the fields of a [trend location](/api-reference/x/trend-locations). Absent when `woeid` picked the place or the request named none.
+</ResponseField>
 
 ```json
 {
@@ -291,6 +318,37 @@ Array of trending topics.
   "woeid": 23424977
 }
 ```
+
+A request with `location=Istanbul` also names the place it read:
+
+```json
+{
+  "trends": [],
+  "count": 0,
+  "woeid": 2344116,
+  "location": {
+    "woeid": 2344116,
+    "name": "Istanbul",
+    "country": "Turkey",
+    "countryCode": "TR",
+    "placeType": "Town",
+    "placeTypeCode": 7,
+    "parentWoeid": 23424969,
+    "url": "http://where.yahooapis.com/v1/place/2344116"
+  }
+}
+```
+
+### 400 Unknown place
+
+```json
+{
+  "error": "invalid_input",
+  "message": "X lists no trends for that place. List places with GET /x/trends/locations."
+}
+```
+
+X lists no trends for that `country` or `location`. The request costs nothing.
 
 ### 401 Unauthenticated
 
@@ -337,8 +395,13 @@ Send `xquik-api-contract: 2026-04-29` to opt in. Default v1 returns 502.
 
 ### How do I get Twitter trends programmatically?
 
-Call `GET /x/trends` with a regional `woeid` and a result `count`.
+Call `GET /x/trends` with a `country`, a `location`, or a `woeid`, and a result `count`.
 Read each trend's name, rank, query, description, and available tweet volume.
+
+### Can I get Twitter trends by country or city name?
+
+Yes. Send `country=TR` or `location=Istanbul`. Names ignore case.
+The response returns the place it read as `location`.
 
 ### Can I track trending hashtags by region?
 
