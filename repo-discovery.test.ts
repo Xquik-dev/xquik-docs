@@ -2297,7 +2297,7 @@ const REQUIRED_BILLING_MPP_SNIPPETS = [
   "Use [MPP overview](/mpp/machine-payments-protocol#eligible-endpoints) for the complete list.",
   "Direct MPP uses fixed `charge` pricing:",
   '<Card title="USD 0.00015 units" icon="coins">',
-  "`GET /x/tweets/{id}`, `GET /x/users/{id}`, and `GET /x/communities/{id}/info` cost USD 0.00015 per call.",
+  "`GET /x/tweets/{id}`, `GET /x/tweets/{id}/translation`, `GET /x/users/{id}`, and `GET /x/communities/{id}/info` cost USD 0.00015 per call.",
   '<Card title="USD 0.00075 calls" icon="badge-dollar-sign">',
   "`GET /x/followers/check` and `GET /x/articles/{tweetId}` cost USD 0.00075 per call.",
   '<Card title="USD 0.00045 trends" icon="trending-up">',
