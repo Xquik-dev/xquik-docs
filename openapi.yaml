@@ -7173,6 +7173,72 @@ paths:
         '429': *rate-limit-exceeded-response-2
         '424': *x-api-error-response
 
+  /x/users/{id}/follower-ids:
+    parameters:
+      - $ref: '#/components/parameters/UserPathId'
+    get:
+      operationId: getUserFollowerIds
+      description:
+        Returns the user IDs of the selected user's followers, newest first, up
+        to 5,000 a page. Use it when you need IDs only. Each ID costs 1 credit.
+      summary: List the user IDs of a user's followers
+      tags:
+        - Users
+      security: *read-auth
+      parameters:
+        - $ref: '#/components/parameters/CollectionCursor'
+        - $ref: '#/components/parameters/UserIdPageSize'
+      responses:
+        '200':
+          description: A page of follower IDs
+          content: &user-id-page-content
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedUserIds'
+        '400': *invalid-input-response
+        '401': *anonymous-guest-authentication-response
+        '402': *payment-required-response
+        '403':
+          $ref: '#/components/responses/ProtectedFollowerList'
+        '404': *user-not-found-response
+        '502': *x-api-error-response
+        '503':
+          $ref: '#/components/responses/ReadBusy'
+        '429': *rate-limit-exceeded-response-2
+        '424': *x-api-error-response
+
+  /x/users/{id}/following-ids:
+    parameters:
+      - $ref: '#/components/parameters/UserPathId'
+    get:
+      operationId: getUserFollowingIds
+      description:
+        Returns the user IDs of the accounts the selected user follows, newest
+        first, up to 5,000 a page. Use it when you need IDs only. Each ID costs
+        1 credit.
+      summary: List the user IDs of the accounts a user follows
+      tags:
+        - Users
+      security: *read-auth
+      parameters:
+        - $ref: '#/components/parameters/CollectionCursor'
+        - $ref: '#/components/parameters/UserIdPageSize'
+      responses:
+        '200':
+          description: A page of following IDs
+          content: *user-id-page-content
+        '400': *invalid-input-response
+        '401': *anonymous-guest-authentication-response
+        '402': *payment-required-response
+        '403':
+          $ref: '#/components/responses/ProtectedFollowingList'
+        '404': *user-not-found-response
+        '502': *x-api-error-response
+        '503':
+          $ref: '#/components/responses/ReadBusy'
+        '429': *rate-limit-exceeded-response-2
+        '424': *x-api-error-response
+
   /x/users/{id}/followers:
     get:
       operationId: getUserFollowers
@@ -7628,6 +7694,18 @@ components:
         minimum: 1
         maximum: 200
         default: 200
+    UserIdPageSize:
+      name: pageSize
+      in: query
+      description: >
+        User IDs to request from this page (1-5000, default 5000). Credits can
+        return fewer. Follow next_cursor for more pages. Aliases: limit, count &
+        max_results.
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 5000
+        default: 5000
     LegacyUserPageSize:
       name: pageSize
       in: query
@@ -10331,6 +10409,25 @@ components:
         sourcesEnded:
           type: boolean
           description: Every source ended. A retry returns the same rows.
+    PaginatedUserIds:
+      description: >
+        A page of user IDs without profiles. Follow next_cursor while the
+        response reports more pages.
+      type: object
+      example:
+        ids: ['9876543210', '44196397']
+        has_next_page: true
+        next_cursor: '1878079982871151535'
+      required: [ids, has_next_page, next_cursor]
+      properties:
+        ids:
+          type: array
+          description: X user IDs, newest relationship first.
+          items:
+            type: string
+          example: ['9876543210', '44196397']
+        has_next_page: *boolean-example-true
+        next_cursor: *cursor-example-schema
     PaginatedUsers:
       description: >
         Profile coverage preserves shape, billing, aliases, and filters. Follow
