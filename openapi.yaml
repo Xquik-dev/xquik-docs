@@ -7848,6 +7848,101 @@ paths:
         '503':
           $ref: '#/components/responses/MaximumCoverageBusy'
 
+  /x/tweets/{id}/retweeters/check:
+    parameters:
+      - $ref: '#/components/parameters/TweetPathId'
+    get:
+      operationId: getTweetRepostCheck
+      description:
+        Returns whether 1 account reposted the post, read from its newest posts.
+        A repost older than the posts read returns false with complete false.
+        Each check costs 1 credit.
+      summary: Check whether a user retweeted a tweet
+      tags:
+        - Tweets
+      security: *read-auth
+      parameters:
+        - name: user
+          in: query
+          required: true
+          schema:
+            type: string
+          example: 'nasa'
+          description: User ID, username with or without @, or profile URL.
+      responses:
+        '200':
+          description: Repost check result
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  [
+                    isRetweeted,
+                    retweetedAt,
+                    retweetId,
+                    tweetId,
+                    userId,
+                    checkedPosts,
+                    complete,
+                  ]
+                properties:
+                  isRetweeted:
+                    type: boolean
+                    description: Whether the account reposted the post.
+                    example: true
+                  retweetedAt:
+                    type: [string, 'null']
+                    description: When the account reposted it, else null.
+                    example: '2026-09-11T16:59:50.000Z'
+                  retweetId:
+                    type: [string, 'null']
+                    description: The ID of the account's repost, else null.
+                    example: '2098456494362460375'
+                  tweetId:
+                    type: string
+                    example: '2098439298617856319'
+                  userId:
+                    type: string
+                    example: '3065618342'
+                  checkedPosts:
+                    type: integer
+                    minimum: 0
+                    description:
+                      How many of the account's newest posts the check read.
+                    example: 20
+                  complete:
+                    type: boolean
+                    description:
+                      Whether the check read the account's whole timeline.
+                    example: false
+              example:
+                isRetweeted: true
+                retweetedAt: '2026-09-11T16:59:50.000Z'
+                retweetId: '2098456494362460375'
+                tweetId: '2098439298617856319'
+                userId: '3065618342'
+                checkedPosts: 20
+                complete: false
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '401':
+          $ref: '#/components/responses/AnonymousGuestAuthenticationRequired'
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
+        '403':
+          $ref: '#/components/responses/ProtectedTimeline'
+        '404':
+          $ref: '#/components/responses/UserNotFound'
+        '502':
+          $ref: '#/components/responses/XApiError'
+        '503':
+          $ref: '#/components/responses/ReadBusy'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+        '424':
+          $ref: '#/components/responses/XApiError'
+
   /x/tweets/{id}/retweeters:
     get:
       operationId: getTweetRetweeters
