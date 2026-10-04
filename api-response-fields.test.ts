@@ -98,6 +98,7 @@ const STYLES_SAVE_PAGE = "api-reference/styles/save.mdx";
 const STYLES_GET_PAGE = "api-reference/styles/get.mdx";
 const STYLES_LIST_PAGE = "api-reference/styles/list.mdx";
 const STYLES_COMPARE_PAGE = "api-reference/styles/compare.mdx";
+const STYLES_PERFORMANCE_PAGE = "api-reference/styles/performance.mdx";
 const ARTICLE_PAGE = "api-reference/x/get-article.mdx";
 const DM_HISTORY_PAGE = "api-reference/x/dm-history.mdx";
 const SEND_DM_PAGE = "api-reference/x-write/send-dm.mdx";
@@ -609,6 +610,11 @@ describe("API response field docs", (): void => {
     const spec = readOpenApi();
     const detailFields = schemaPropertyNames(spec, "StyleProfile");
     const summaryFields = schemaPropertyNames(spec, "StyleProfileSummary");
+    const performance = responseSchema(spec, "/styles/{id}/performance", "get");
+    const performanceFields = uniqueSorted([
+      ...propertyNames(performance),
+      ...itemPropertyNamesFromProperty(spec, performance, "tweets"),
+    ]);
 
     expect([
       ...setDifference(detailFields, responseFields(STYLES_ANALYZE_PAGE)).map(
@@ -627,6 +633,11 @@ describe("API response field docs", (): void => {
         ["style1", "style2", ...detailFields],
         responseFields(STYLES_COMPARE_PAGE),
       ).map((field): string => `${STYLES_COMPARE_PAGE} is missing ${field}.`),
+      ...fieldDifferences(
+        STYLES_PERFORMANCE_PAGE,
+        responseFields(STYLES_PERFORMANCE_PAGE),
+        performanceFields,
+      ),
     ]).toStrictEqual([]);
   });
 });
