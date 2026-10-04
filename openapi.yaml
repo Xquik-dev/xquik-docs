@@ -7946,7 +7946,8 @@ paths:
         '402':
           $ref: '#/components/responses/PaymentRequired'
         '404':
-          description: Unknown Space, or a Space without a recording
+          description:
+            Unknown Space, a Space without a recording, or a cancelled Space
           content:
             application/json:
               schema:
@@ -7958,11 +7959,18 @@ paths:
                     error: 'not_found'
                     message: 'Resource not found.'
                 noReplay:
-                  summary: The host kept no recording, or cancelled the Space
+                  summary: The host kept no recording
                   value:
                     error: 'replay_unavailable'
                     message:
                       'This Space has no replay. Its host kept no recording.'
+                canceled:
+                  summary: The Space was cancelled before it started
+                  value:
+                    error: 'space_canceled'
+                    message:
+                      'This Space was canceled before it started. It has no
+                      replay.'
         '409':
           description: The Space has not ended
           content:
@@ -13427,6 +13435,7 @@ components:
                 - replies_incomplete
                 - retweeters_incomplete
                 - search_unavailable
+                - space_canceled
                 - space_not_ended
                 - support_media_rate_limit
                 - support_request_rate_limit
@@ -16039,6 +16048,53 @@ components:
           description: Accounts X lists as listeners
           items:
             $ref: '#/components/schemas/SpaceParticipant'
+        sharings:
+          type: array
+          description:
+            Posts the hosts and speakers shared in the Space, in X's order. Only
+            when X lists them.
+          items:
+            $ref: '#/components/schemas/SpaceSharing'
+          example:
+            - id: '2106511178339881415'
+              sharedAt: '2026-10-03T22:26:16.658Z'
+              updatedAt: '2026-10-03T22:26:16.658Z'
+              sharedBy:
+                id: '3259467336'
+                username: 'JoeCarlasare'
+                name: 'Joe Carlasare'
+              tweet:
+                id: '2105620368836706789'
+                text: 'Yields are rising in Europe as well.'
+                retweetCount: 35
+                replyCount: 32
+                likeCount: 275
+                quoteCount: 8
+                viewCount: 98007
+                bookmarkCount: 20
+
+    SpaceSharing:
+      description: A post shared in a Space, & the account that shared it.
+      type: object
+      properties:
+        id:
+          type: string
+          description: X's ID of the sharing, not of the post
+          example: '2106511178339881415'
+        sharedAt:
+          type: string
+          format: date-time
+          description: When the post was shared
+          example: '2026-10-03T22:26:16.658Z'
+        updatedAt:
+          type: string
+          format: date-time
+          description: When X last changed the sharing
+          example: '2026-10-03T22:26:16.658Z'
+        sharedBy:
+          $ref: '#/components/schemas/UserProfile'
+        tweet:
+          $ref: '#/components/schemas/SearchTweet'
 
     SpaceParticipant:
       description:
