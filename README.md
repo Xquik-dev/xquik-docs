@@ -103,13 +103,6 @@ bun run check:all
 Clone the application beside this repository, or set `XQUIK_PRODUCT_ROOT` to it.
 `bun run sync` then copies the spec & rewrites each page's response examples.
 The parity test needs that checkout too. Without it, the test skips & says so.
-Reuse verified static checks through the application's existing validation cache.
-Changes to docs, dependencies, or commands invalidate those results.
-Full tests, coverage, LOC checks, and measurement reports always run.
-
-Coverage compares the full suite against the parent commit.
-Retain its verified reports under Git's `coverage-baselines/<parent SHA>/` directory.
-Missing parent evidence fails validation.
 
 Run `bunx --bun mint@4.2.949 dev` when visual previewing is necessary.
 
