@@ -206,8 +206,10 @@ Use `GET /x/spaces/search` when you know a topic or a host but not a Space ID.
 It returns the public Spaces that posts matching your query share. A Space can
 be live, scheduled, or ended.
 
-Each page reads up to 20 posts and returns each Space once, in the order the
-posts share them. A page can hold fewer than 20 Spaces. Follow `next_cursor`
+Each page reads up to `pageSize` posts, 20 by default, and returns each Space
+once, in the order the posts share them. Posts often share the same Space, so a
+page returns fewer Spaces. Send `pageSize=100` to read a search fastest. Follow
+`next_cursor`
 while `has_next_page` is `true`.
 
 Each Space carries the `id` that [Get Space](/api-reference/x/get-space) takes. Store the `id`,
@@ -241,6 +243,14 @@ Pagination cursor from a previous response. Omit for the first page.
 
 </ParamField>
 
+<ParamField query="pageSize" type="integer" default="20">
+
+Posts a page reads, 20 at a time. Range: `1-100`. Posts often share the same
+Space, so a page returns fewer Spaces. Send `100` to read a search fastest.
+Aliases: `limit`, `count`, `max_results`, `maxItems`, `max_items` & `per_page`.
+
+</ParamField>
+
 ## Headers
 
 <ParamField header="x-api-key" type="string">
@@ -271,7 +281,8 @@ Public Spaces, in the order the posts share them.
   Space title.
 </ResponseField>
 <ResponseField name="state" type="string">
-  Such as `NotStarted`, `Running` or `Ended`.
+  `NotStarted` (scheduled), `Running` (live), `Ended`, `Canceled` (scheduled, never started) or
+  `TimedOut` (closed by X, not by its host).
 </ResponseField>
 <ResponseField name="createdAt" type="string">
   When the Space was made.
@@ -454,9 +465,9 @@ Each returned Space costs 1 credit. An empty page costs nothing.
 No. It returns live, scheduled, and ended Spaces. Read `state` to tell them
 apart.
 
-### Why does a page hold fewer than 20 Spaces?
+### Why does a page hold fewer Spaces than `pageSize`?
 
-A page reads up to 20 posts and returns each Space once. Several posts can
+A page reads up to `pageSize` posts and returns each Space once. Several posts can
 share 1 Space, and limited Spaces stay out.
 
 ### Does this replace X's official API?
