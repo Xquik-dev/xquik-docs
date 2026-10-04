@@ -135,6 +135,18 @@ function markdownText(markdown: string): string {
   return plainText([...titles, prose].join(" "));
 }
 
+/** Attempts per markdown fetch, so 1 dropped request cannot fail the crawl. */
+const FETCH_ATTEMPTS = 2;
+
+/** The body of `url`, or undefined when no attempt answers 200. */
+async function fetchText(url: URL): Promise<string | undefined> {
+  for (let attempt = 1; attempt <= FETCH_ATTEMPTS; attempt += 1) {
+    const response = await fetch(url).catch((): undefined => undefined);
+    if (response?.ok) return response.text();
+  }
+  return undefined;
+}
+
 /**
  * Whether every text a parity warning names as missing is in that page's
  * served markdown, so the warning comes from MDX components alone.
@@ -151,9 +163,9 @@ async function parityWarningIsMdxOnly(result: CheckResult): Promise<boolean> {
       const mdUrl = new URL(url);
       mdUrl.pathname =
         mdUrl.pathname === "/" ? "/index.md" : `${mdUrl.pathname.replace(/\/$/u, "")}.md`;
-      const response = await fetch(mdUrl).catch((): undefined => undefined);
-      if (!response?.ok) return false;
-      const text = markdownText(await response.text());
+      const markdown = await fetchText(mdUrl);
+      if (markdown === undefined) return false;
+      const text = markdownText(markdown);
       return samples.every(
         (sample) =>
           typeof sample === "string" && text.includes(plainText(sample.replace(/^- /u, ""))),
