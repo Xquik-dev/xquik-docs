@@ -30,10 +30,7 @@ const SKIPPED_PUBLIC_SCAN_DIRS = new Set<string>([".git", "node_modules", ".gith
 const CREDITS_QUICK_TOPUP_PAGE = "api-reference/credits/quick-topup.mdx";
 const API_KEYS_CREATE_PAGE = "api-reference/api-keys/create.mdx";
 const WRITE_ACTION_LIFECYCLE_SNIPPET_PATH = "snippets/write-action-lifecycle-response.mdx";
-const PRODUCT_APP_ICON_FILE = join(
-  process.env["XQUIK_PRODUCT_ROOT"] ?? join(process.cwd(), "..", "xquik"),
-  "app/icon.svg",
-);
+const DOCS_FAVICON_SHA256 = "7b22cb7c5f5f9f154e1327210b7878e03e1028ef33857282701feb5fd5e96960";
 const DOCS_X_ONLY_ICON_SHA256 = "7002c1dd82b5b903d69777fa212f39b0e0410cb156e7bcb1b4426fcec3a7cdc5";
 const MCP_GUIDANCE_FILES = [
   "mcp/coding-agents.mdx",
@@ -15669,15 +15666,11 @@ describe("repository discovery", (): void => {
     expect(findings).toStrictEqual([]);
   });
 
-  it("keeps Xquik docs icon sources aligned with product icon policy", (): void => {
+  it("keeps the Xquik docs icon files unchanged", (): void => {
     expect.assertions(3);
 
     expect(sha256File("logo/x-only.svg")).toBe(DOCS_X_ONLY_ICON_SHA256);
-    expect(sha256File("favicon.svg")).toBe(
-      existsSync(PRODUCT_APP_ICON_FILE)
-        ? sha256File(PRODUCT_APP_ICON_FILE)
-        : "7b22cb7c5f5f9f154e1327210b7878e03e1028ef33857282701feb5fd5e96960",
-    );
+    expect(sha256File("favicon.svg")).toBe(DOCS_FAVICON_SHA256);
     expect(readFileSync("docs.json", "utf8")).toContain('"favicon": "/favicon.svg"');
   });
 

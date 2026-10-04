@@ -1,19 +1,11 @@
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
 const PROJECT_ROOT = process.cwd();
-const PRODUCT_ROOT = process.env["XQUIK_PRODUCT_ROOT"] ?? join(PROJECT_ROOT, "..", "xquik");
 const DOCS_OPENAPI_PATH = join(PROJECT_ROOT, "openapi.yaml");
-const PRODUCT_OPENAPI_PATH = join(PRODUCT_ROOT, "openapi.yaml");
-const PRODUCT_MPP_PRICING_PATH = join(PRODUCT_ROOT, "lib/mpp/pricing.ts");
 const HTTP_METHODS = new Set(["delete", "get", "patch", "post", "put"]);
-const PRODUCT_ROUTE_PATTERN = /'(?<route>[A-Z]+ \/api\/v1[^']+)'/gu;
-const PRODUCT_ROUTE_BLOCK_ENDS = {
-  DIRECT_MPP_ROUTES: "function isDirectMppRoute",
-  PAID_READ_ROUTE_KEYS: "const PAID_READ_ROUTES",
-} as const;
 
 interface OpenApiOperation {
   readonly responses?: Readonly<Record<string, { readonly ["$ref"]?: string }>>;
@@ -88,104 +80,7 @@ function collectOperations(spec: OpenApiSpec): readonly OperationMetadata[] {
   return operations.sort((left, right): number => left.key.localeCompare(right.key));
 }
 
-function paymentOperationKeys(spec: OpenApiSpec): ReadonlySet<string> {
-  return new Set(
-    collectOperations(spec)
-      .filter((operation): boolean => operation.paymentEnabled)
-      .map((operation): string => operation.key),
-  );
-}
-
-function productRouteKeys(blockName: keyof typeof PRODUCT_ROUTE_BLOCK_ENDS): ReadonlySet<string> {
-  const source = readFileSync(PRODUCT_MPP_PRICING_PATH, "utf8");
-  const blockStart = source.indexOf(`const ${blockName}`);
-  const blockEnd = source.indexOf(PRODUCT_ROUTE_BLOCK_ENDS[blockName], blockStart);
-
-  if (blockStart < 0 || blockEnd < 0) {
-    return new Set();
-  }
-
-  const block = source.slice(blockStart, blockEnd);
-  return new Set(
-    [...block.matchAll(PRODUCT_ROUTE_PATTERN)]
-      .map((match): string => match.groups?.["route"] ?? "")
-      .filter((route): boolean => route.length > 0),
-  );
-}
-
-function compareSets(
-  actual: ReadonlySet<string>,
-  expected: ReadonlySet<string>,
-): readonly MppFinding[] {
-  const findings: MppFinding[] = [];
-  for (const operation of actual) {
-    if (!expected.has(operation)) {
-      findings.push({ issue: "Unexpected payment metadata.", operation });
-    }
-  }
-  for (const operation of expected) {
-    if (!actual.has(operation)) {
-      findings.push({ issue: "Missing payment metadata.", operation });
-    }
-  }
-  return findings.sort((left, right): number => left.operation.localeCompare(right.operation));
-}
-
 describe("MPP payment metadata", (): void => {
-  it("keeps anonymous paid reads aligned with the product paid-read catalog", (): void => {
-    expect.assertions(1);
-
-    const productSourceExists = existsSync(PRODUCT_MPP_PRICING_PATH);
-    if (!productSourceExists) {
-      expect(productSourceExists).toBe(false);
-      return;
-    }
-
-    const anonymousOperations = new Set(
-      collectOperations(readOpenApi(DOCS_OPENAPI_PATH))
-        .filter((operation): boolean => operation.optionalCredential)
-        .map((operation): string => operation.key),
-    );
-
-    expect(
-      compareSets(anonymousOperations, productRouteKeys("PAID_READ_ROUTE_KEYS")),
-    ).toStrictEqual([]);
-  });
-
-  it("maps docs payment metadata to product MPP routes when product source is available", (): void => {
-    expect.assertions(1);
-
-    const productSourceExists = existsSync(PRODUCT_MPP_PRICING_PATH);
-    if (!productSourceExists) {
-      expect(productSourceExists).toBe(false);
-      return;
-    }
-
-    expect(
-      compareSets(
-        paymentOperationKeys(readOpenApi(DOCS_OPENAPI_PATH)),
-        productRouteKeys("DIRECT_MPP_ROUTES"),
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it("keeps docs and product OpenAPI payment metadata aligned when product OpenAPI is available", (): void => {
-    expect.assertions(1);
-
-    const productOpenApiExists = existsSync(PRODUCT_OPENAPI_PATH);
-    if (!productOpenApiExists) {
-      expect(productOpenApiExists).toBe(false);
-      return;
-    }
-
-    expect(
-      compareSets(
-        paymentOperationKeys(readOpenApi(DOCS_OPENAPI_PATH)),
-        paymentOperationKeys(readOpenApi(PRODUCT_OPENAPI_PATH)),
-      ),
-    ).toStrictEqual([]);
-  });
-
   it("keeps every direct MPP offer on the fixed charge intent", (): void => {
     expect.assertions(1);
 

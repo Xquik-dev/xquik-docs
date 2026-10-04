@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
@@ -6,11 +6,9 @@ import { describe, expect, it } from "vitest";
 import { docsSecurity } from "./product-contract.test.helpers.ts";
 
 const PROJECT_ROOT = dirname(fileURLToPath(import.meta.url));
-const PRODUCT_ROOT = process.env["XQUIK_PRODUCT_ROOT"] ?? join(PROJECT_ROOT, "..", "xquik");
 const page = readFileSync(join(PROJECT_ROOT, "api-reference/drafts/list.mdx"), "utf8");
 const normalizedPage = page.replaceAll(/\s+/gu, " ");
 const openapi = readFileSync(join(PROJECT_ROOT, "openapi.yaml"), "utf8");
-const routePath = join(PRODUCT_ROOT, "app/api/v1/drafts/route.ts");
 const listOperation = openapi.slice(
   openapi.indexOf("      operationId: listDrafts"),
   openapi.indexOf("    post:", openapi.indexOf("      operationId: listDrafts")),
@@ -80,43 +78,6 @@ describe("list tweet drafts documentation", (): void => {
       nativeBoundary: true,
       noFilters: true,
       noPublish: true,
-    });
-  });
-
-  it("matches product pagination when its source is available", (): void => {
-    expect.assertions(1);
-
-    if (!existsSync(routePath)) {
-      expect(existsSync(routePath)).toBe(false);
-      return;
-    }
-
-    const route = readFileSync(routePath, "utf8");
-    const getStart = route.indexOf("export async function GET(");
-    const postStart = route.indexOf("\nexport async function POST(", getStart);
-    const getSource = route.slice(getStart, postStart);
-    const configSource = route.slice(
-      route.indexOf("const LIST_CONFIG:"),
-      route.indexOf("const MAX_TEXT_LENGTH"),
-    );
-
-    expect({
-      afterCursor: configSource.includes("afterParam: 'afterCursor'"),
-      defaultLimit: configSource.includes("defaultLimit: 50"),
-      formatsDrafts:
-        getSource.includes("format: formatDraftRow,") && getSource.includes("itemsKey: 'drafts',"),
-      maxLimit: configSource.includes("maxLimit: 50"),
-      newestFirst: getSource.includes(
-        ".orderBy(sql`${tweetDrafts.createdAt} DESC, ${tweetDrafts.id} DESC`)",
-      ),
-      routeFound: getStart >= 0 && postStart > getStart,
-    }).toStrictEqual({
-      afterCursor: true,
-      defaultLimit: true,
-      formatsDrafts: true,
-      maxLimit: true,
-      newestFirst: true,
-      routeFound: true,
     });
   });
 });

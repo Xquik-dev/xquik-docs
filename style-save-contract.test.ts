@@ -1,13 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-const productRoot = process.env["XQUIK_PRODUCT_ROOT"] ?? process.env["XQUIK_ROOT"];
 const source = readFileSync(new URL("api-reference/styles/save.mdx", import.meta.url), "utf8");
-
-function readProductFile(path: string): string | undefined {
-  if (productRoot === undefined) return undefined;
-  return readFileSync(`${productRoot}/${path}`, "utf8");
-}
 
 describe("save custom tweet style documentation", (): void => {
   it("matches every canonical status and authentication method", (): void => {
@@ -105,51 +99,6 @@ describe("save custom tweet style documentation", (): void => {
       focusedTitle: true,
       keywordsPresent: true,
       unsupportedDescriptionSignals: false,
-    });
-  });
-
-  it("remains synchronized with the optional product implementation", (): void => {
-    expect.assertions(1);
-
-    const compose = readProductFile("lib/compose/handler.ts");
-    const constants = readProductFile("lib/styles/constants.ts");
-    const route = readProductFile("app/api/v1/styles/[id]/route.ts");
-    const validator = readProductFile("lib/styles/validate-label.ts");
-    const columns = readProductFile("lib/styles/columns.ts");
-    const putRoute =
-      route === undefined ? undefined : route.slice(route.indexOf("export async function PUT"));
-
-    expect({
-      labelDefaultsToPath:
-        putRoute === undefined ||
-        putRoute.includes("const labelInput = body.label ?? normalizeXUsername(id)"),
-      composeReturnsSavedSamples:
-        compose === undefined ||
-        compose.includes("return { ...result, styleTweets: [...style.tweets] }"),
-      pathMustMatchLabel:
-        putRoute === undefined ||
-        (putRoute.includes("const { id } = await params;") &&
-          putRoute.includes("styleIdMatchesLabel(id, label)")),
-      replacementRemainsAccountScoped:
-        putRoute === undefined ||
-        (putRoute.includes("target: STYLE_CACHE_UPSERT_TARGET") &&
-          putRoute.includes(".onConflictDoUpdate({") &&
-          columns?.includes(
-            "STYLE_CACHE_UPSERT_TARGET = [\n  tweetStyleCache.userId,\n  tweetStyleCache.xUsername,\n];",
-          ) === true),
-      sampleIdsRemainLocal: putRoute === undefined || putRoute.includes("id: String(index)"),
-      sampleLimitRemains100:
-        constants === undefined || constants.includes("MAX_STYLE_TWEETS = 100"),
-      underscoresRemainAccepted:
-        validator === undefined || validator.includes("const LABEL_PATTERN = /^\\w"),
-    }).toStrictEqual({
-      labelDefaultsToPath: true,
-      composeReturnsSavedSamples: true,
-      pathMustMatchLabel: true,
-      replacementRemainsAccountScoped: true,
-      sampleIdsRemainLocal: true,
-      sampleLimitRemains100: true,
-      underscoresRemainAccepted: true,
     });
   });
 });

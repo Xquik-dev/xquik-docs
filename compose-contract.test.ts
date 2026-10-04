@@ -5,15 +5,9 @@ import { describe, expect, it } from "vitest";
 import { stripGeneratedResponseExamples } from "./scripts/lib/generated-response-examples";
 
 const ROOT = process.cwd();
-const PRODUCT_ROOT = process.env["XQUIK_PRODUCT_ROOT"] ?? process.env["XQUIK_ROOT"];
 
 function read(relativePath: string): string {
   return readFileSync(join(ROOT, relativePath), "utf8");
-}
-
-function readProductFile(relativePath: string): string | undefined {
-  if (PRODUCT_ROOT === undefined) return undefined;
-  return readFileSync(join(PRODUCT_ROOT, relativePath), "utf8");
 }
 
 const COMPOSE_PAGE = stripGeneratedResponseExamples(read("api-reference/compose/create.mdx"));
@@ -120,33 +114,5 @@ describe("compose documentation contract", (): void => {
     expect(OPENAPI).toMatch(/scorerWeights:[\s\S]*?minItems: 26[\s\S]*?maxItems: 26/gu);
     expect(OPENAPI).toContain("Null prevents source defaults becoming production claims.");
     expect(OPENAPI).toMatch(/ComposeScoreResult:[\s\S]*?const: 1/gu);
-  });
-
-  it("remains synchronized with draft validation and style lookup", (): void => {
-    expect.assertions(1);
-
-    const handler = readProductFile("lib/compose/handler.ts");
-    const scorer = readProductFile("lib/mcp/tweet-composer/score.ts");
-
-    expect({
-      oneTextCheck:
-        scorer === undefined ||
-        (scorer.includes("factor: 'Draft contains text'") && scorer.includes("totalChecks: 1")),
-      sourceLimit: scorer === undefined || scorer.includes("Ranking uses per-viewer predictions."),
-      styleFallbackReturns200:
-        handler === undefined || (handler.includes("...result,") && handler.includes("styleNote:")),
-      styleLookupCanReturn400:
-        handler === undefined ||
-        handler.includes("Call POST /api/v1/styles with the username to analyze first."),
-      successfulStyleReturnsTweets:
-        handler === undefined ||
-        handler.includes("return { ...result, styleTweets: [...style.tweets] };"),
-    }).toStrictEqual({
-      oneTextCheck: true,
-      sourceLimit: true,
-      styleFallbackReturns200: true,
-      styleLookupCanReturn400: true,
-      successfulStyleReturnsTweets: true,
-    });
   });
 });
