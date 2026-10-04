@@ -1,0 +1,388 @@
+---
+title: "Twitter following IDs API & fast friend list export"
+sidebarTitle: "Get following IDs"
+description: "Get the user IDs of accounts a Twitter or X user follows, newest first, up to 5,000 a page. Use them for fast graph syncs and set comparisons. 1 credit per ID."
+api: "GET /x/users/{id}/following-ids"
+keywords:
+  [
+    "Twitter following IDs API",
+    "X following IDs",
+    "friends ids",
+    "following ID export",
+    "graph sync",
+    "following list IDs",
+  ]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+import AudienceCommunityApiLinks from "/snippets/x-audience-community-api-links.mdx";
+
+{/* GENERATED RESPONSE EXAMPLES START */}
+
+<Panel>
+
+<Tabs defaultTabIndex={0} sync={false}>
+
+  <Tab title="200" id="response-x-following-ids-200">
+
+    ```json
+    {
+      "ids": [
+        "9876543210"
+      ],
+      "has_next_page": true,
+      "next_cursor": "1878079982871151535"
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="400" id="response-x-following-ids-400">
+
+    ```json
+    {
+      "error": "invalid_input",
+      "message": "Invalid input. Check the request body."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="401" id="response-x-following-ids-401">
+
+    ```json
+    {
+      "error": "unauthenticated",
+      "message": "Authentication required."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="402" id="response-x-following-ids-402">
+
+    ```json
+    {
+      "error": "insufficient_credits",
+      "message": "Insufficient credits. Top up or subscribe to continue."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="403" id="response-x-following-ids-403">
+
+    ```json
+    {
+      "error": "x_account_protected",
+      "message": "This account's following list is private. Try a public account."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="404" id="response-x-following-ids-404">
+
+    ```json
+    {
+      "error": "user_not_found",
+      "message": "X user not found. Check the username."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="424" id="response-x-following-ids-424">
+
+    ```json
+    {
+      "error": "x_api_unavailable",
+      "message": "X data source temporarily unavailable. Try again later."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="429" id="response-x-following-ids-429">
+
+    ```json
+    {
+      "error": "rate_limit_exceeded",
+      "message": "Too many requests. Try again later.",
+      "retryAfter": 60
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="502" id="response-x-following-ids-502">
+
+    ```json
+    {
+      "error": "x_api_unavailable",
+      "message": "X data source temporarily unavailable. Try again later."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="503" id="response-x-following-ids-503">
+
+    ```json
+    {
+      "error": "x_api_unavailable",
+      "message": "Xquik is busy right now. Retry shortly."
+    }
+    ```
+
+  </Tab>
+</Tabs>
+
+</Panel>
+{/* GENERATED RESPONSE EXAMPLES END */}
+<LlmsDirective />
+
+<Note>
+
+Requested result counts are upper bounds for paid authenticated calls. When remaining credits cannot cover the full page or ID list, Xquik returns fewer results. If zero paid results are affordable, it returns `402 insufficient_credits`.
+
+</Note>
+
+<Callout icon="coins" color="#5c3327">
+
+**1 credit per result returned** · [All plans](https://xquik.com/#pricing) from $0.00012/credit · Supports [guest paid reads](/guides/guest-wallets)
+
+</Callout>
+
+<CodeGroup>
+
+```bash cURL
+curl https://xquik.com/api/v1/x/users/nasa/following-ids \
+  -H "x-api-key: xq_your_api_key_here" | jq
+
+# Page 2
+curl -G https://xquik.com/api/v1/x/users/nasa/following-ids \
+  --data-urlencode "cursor=abc123" \
+  -H "x-api-key: xq_your_api_key_here" | jq
+```
+
+```javascript Node.js
+const user = "nasa";
+let pageCursor = "";
+let position = 0;
+
+for (let pageIndex = 0; pageIndex < 3; pageIndex += 1) {
+  const params = pageCursor === "" ? "" : `?${new URLSearchParams({ cursor: pageCursor })}`;
+  const response = await fetch(`https://xquik.com/api/v1/x/users/${user}/following-ids${params}`, {
+    headers: { "x-api-key": "xq_your_api_key_here" },
+  });
+  const page = await response.json();
+  if (!response.ok) throw new Error(JSON.stringify(page));
+
+  for (const userId of page.ids) {
+    position += 1;
+    const idRow = { source_user: user, position, user_id: userId, page_cursor: pageCursor };
+    process.stdout.write(`${JSON.stringify(idRow)}\n`);
+  }
+
+  if (!page.has_next_page || page.next_cursor === "") break;
+  pageCursor = page.next_cursor;
+}
+```
+
+```python Python
+import json
+import requests
+
+user = "nasa"
+page_cursor = ""
+position = 0
+
+for page_index in range(3):
+    params = {"cursor": page_cursor} if page_cursor else {}
+    response = requests.get(
+        f"https://xquik.com/api/v1/x/users/{user}/following-ids",
+        params=params,
+        headers={"x-api-key": "xq_your_api_key_here"},
+    )
+    page = response.json()
+    if not response.ok:
+        raise RuntimeError(page)
+
+    for user_id in page["ids"]:
+        position += 1
+        id_row = {
+            "source_user": user,
+            "position": position,
+            "user_id": user_id,
+            "page_cursor": page_cursor,
+        }
+        print(json.dumps(id_row, separators=(",", ":")))
+
+    if not page["has_next_page"] or not page["next_cursor"]:
+        break
+    page_cursor = page["next_cursor"]
+```
+
+</CodeGroup>
+
+## IDs only, 5,000 a page
+
+Use `GET /x/users/{id}/following-ids` for the user IDs of the accounts a user follows.
+IDs arrive newest first. The response holds no profiles, so a page holds up to
+5,000 IDs.
+
+Use it for fast audience syncs and set comparisons. Pass up to 100 IDs to
+[`GET /x/users/batch`](/api-reference/x/batch-users) when you need profiles.
+
+Stop paging when `has_next_page` is `false`.
+
+A protected account returns 403 `x_account_protected`. Xquik charges nothing.
+
+## IDs or profiles?
+
+- Use `GET /api/v1/x/users/{id}/following-ids` when IDs are enough.
+- Use `GET /api/v1/x/users/{id}/following` when each row needs a profile.
+
+| Need          | Route                         | Rows returned                |
+| ------------- | ----------------------------- | ---------------------------- |
+| IDs only      | `/x/users/{id}/following-ids` | Up to 5,000 user IDs a page. |
+| Full profiles | `/x/users/{id}/following`     | Profiles with filters.       |
+
+## Path parameters
+
+<ParamField path="id" type="string" required>
+
+User ID, username with or without `@`, or URL-encoded profile URL, such as
+`x.com/nasa`. See [path IDs](/api-reference/overview#path-ids).
+
+</ParamField>
+
+## Query parameters
+
+<ParamField query="cursor" type="string">
+
+Pagination cursor. Pass the `next_cursor` value from the previous response to fetch the next page.
+
+</ParamField>
+
+<ParamField query="pageSize" type="integer">
+
+User IDs per page. Range: `1-5000`. Defaults to `5000`.
+
+</ParamField>
+
+## Headers
+
+<ParamField header="x-api-key" type="string">
+
+Full account key. Sessions and OAuth also work.
+
+</ParamField>
+
+<ParamField header="Authorization" type="string">
+
+`Bearer xq_your_guest_key_here` for `paid_reads`.
+
+</ParamField>
+
+## Response
+
+### 200 OK
+
+<ResponseField name="ids" type="string[]">
+
+User IDs, newest first.
+
+</ResponseField>
+<ResponseField name="has_next_page" type="boolean">
+
+Whether more results are available.
+
+</ResponseField>
+<ResponseField name="next_cursor" type="string">
+
+Opaque cursor for the next page. Empty string when no more results.
+
+</ResponseField>
+
+```json
+{
+  "ids": ["9876543210", "44196397"],
+  "has_next_page": true,
+  "next_cursor": "1878079982871151535"
+}
+```
+
+### 400 Invalid user ID
+
+```json
+{
+  "error": "invalid_user_id",
+  "message": "Send a user ID, @username or profile URL, such as x.com/nasa."
+}
+```
+
+The user ID is empty or invalid.
+
+### 403 Protected account
+
+```json
+{
+  "error": "x_account_protected",
+  "message": "This account's following list is private. Try a public account."
+}
+```
+
+### 404 User not found
+
+```json
+{ "error": "user_not_found", "message": "X user not found. Check the username." }
+```
+
+### 401 Unauthenticated
+
+Anonymous requests get `WWW-Authenticate: Bearer` and a guest wallet checkout action. This is not a Payment challenge.
+
+```json
+{ "error": "unauthenticated" }
+```
+
+Missing or invalid API key.
+
+### 402 Payment required
+
+Account keys get account options. Guest keys get guest top-up only.
+No checkout starts automatically. Confirm any payment action.
+
+### 502 X API unavailable
+
+```json
+{ "error": "x_api_unavailable" }
+```
+
+The read service returned an error. Retry after a short delay.
+
+### 429 Rate limit exceeded
+
+```json
+{ "error": "rate_limit_exceeded", "retryAfter": 60 }
+```
+
+You exceeded your tier rate limit. Wait for the `Retry-After` header before retrying.
+
+### 424 Dependency failed
+
+```json
+{ "error": "x_api_unavailable" }
+```
+
+The normalized v1 response contract can return 424 when the read service is unavailable.
+
+<Note>
+
+**Related.** [Profiles on this list](/api-reference/x/following) · [Batch users](/api-reference/x/batch-users) · [Check follower](/api-reference/x/check-follower)
+
+</Note>
+
+<AudienceCommunityApiLinks />
