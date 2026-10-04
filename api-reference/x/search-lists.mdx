@@ -1,0 +1,416 @@
+---
+title: "Twitter List search API: find X Lists by keyword"
+sidebarTitle: "Search lists"
+description: "Find public Twitter or X Lists by keyword. Get each List's name, description, member and follower counts, banner, and owner profile. 1 credit per List."
+api: "GET /x/lists/search"
+keywords:
+  [
+    "Twitter list search",
+    "search Twitter lists",
+    "find Twitter lists",
+    "X Lists search API",
+    "Twitter list finder",
+    "public Twitter lists",
+    "Twitter list directory",
+  ]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+import AudienceCommunityApiLinks from "/snippets/x-audience-community-api-links.mdx";
+
+{/* GENERATED RESPONSE EXAMPLES START */}
+
+<Panel>
+
+<Tabs defaultTabIndex={0} sync={false}>
+
+  <Tab title="200" id="response-x-search-lists-200">
+
+    ```json
+    {
+      "lists": [],
+      "has_next_page": false,
+      "next_cursor": ""
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="400" id="response-x-search-lists-400">
+
+    ```json
+    {
+      "error": "missing_query",
+      "message": "Search query required. Use q."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="401" id="response-x-search-lists-401">
+
+    ```json
+    {
+      "error": "unauthenticated",
+      "message": "Authentication required."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="402" id="response-x-search-lists-402">
+
+    ```json
+    {
+      "error": "insufficient_credits",
+      "message": "Insufficient credits. Top up or subscribe to continue."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="424" id="response-x-search-lists-424">
+
+    ```json
+    {
+      "error": "x_api_unavailable",
+      "message": "X data source temporarily unavailable. Try again later."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="429" id="response-x-search-lists-429">
+
+    ```json
+    {
+      "error": "rate_limit_exceeded",
+      "message": "Too many requests. Try again later.",
+      "retryAfter": 60
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="502" id="response-x-search-lists-502">
+
+    ```json
+    {
+      "error": "x_api_unavailable",
+      "message": "X data source temporarily unavailable. Try again later."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="503" id="response-x-search-lists-503">
+
+    ```json
+    {
+      "error": "x_api_unavailable",
+      "message": "Xquik is busy right now. Retry shortly."
+    }
+    ```
+
+  </Tab>
+</Tabs>
+
+</Panel>
+{/* GENERATED RESPONSE EXAMPLES END */}
+<LlmsDirective />
+
+<Note>
+
+Requested result counts are upper bounds for paid authenticated calls. When remaining credits cannot cover the full page, Xquik returns fewer results. If zero paid results are affordable, it returns `402 insufficient_credits`.
+
+</Note>
+
+<Callout icon="coins" color="#5c3327">
+
+**1 credit per List returned** · [All plans](https://xquik.com/#pricing) from $0.00012/credit
+
+</Callout>
+
+<CodeGroup>
+
+```bash cURL
+curl -G https://xquik.com/api/v1/x/lists/search \
+  --data-urlencode "q=space news" \
+  -H "x-api-key: xq_your_api_key_here" | jq
+```
+
+```javascript Node.js
+const query = "space news";
+const params = new URLSearchParams({ q: query });
+const response = await fetch(`https://xquik.com/api/v1/x/lists/search?${params}`, {
+  headers: { "x-api-key": "xq_your_api_key_here" },
+});
+const data = await response.json();
+const nextCursor = data.has_next_page ? data.next_cursor : null;
+const listRows = data.lists.map((list, index) => ({
+  search_query: query,
+  result_rank: index + 1,
+  list_id: list.id,
+  list_name: list.name,
+  member_count: list.memberCount ?? null,
+  follower_count: list.subscriberCount ?? null,
+  owner_username: list.owner?.username ?? null,
+  list_url: list.url ?? null,
+  next_cursor: nextCursor,
+}));
+```
+
+```python Python
+import requests
+
+query = "space news"
+response = requests.get(
+    "https://xquik.com/api/v1/x/lists/search",
+    params={"q": query},
+    headers={"x-api-key": "xq_your_api_key_here"},
+)
+data = response.json()
+next_cursor = data["next_cursor"] if data["has_next_page"] else None
+list_rows = [
+    {
+        "search_query": query,
+        "result_rank": index + 1,
+        "list_id": item["id"],
+        "list_name": item["name"],
+        "member_count": item.get("memberCount"),
+        "follower_count": item.get("subscriberCount"),
+        "owner_username": (item.get("owner") or {}).get("username"),
+        "list_url": item.get("url"),
+        "next_cursor": next_cursor,
+    }
+    for index, item in enumerate(data["lists"])
+]
+```
+
+</CodeGroup>
+
+The Node.js and Python snippets build 1 row per List. Store `listRows` or
+`list_rows` with `nextCursor` or `next_cursor` before requesting the next page.
+
+## Find Lists before you read them
+
+Use `GET /x/lists/search` when you know a topic but not a List ID. It returns
+the public Lists X finds for your keywords, in X's order. X may rank the Lists
+differently per request. Each List carries the
+`id` that [List members](/api-reference/x/list-members),
+[List followers](/api-reference/x/list-followers) and
+[List tweets](/api-reference/x/list-tweets) take.
+
+Compare `memberCount`, `subscriberCount` and the owner profile to pick a List.
+A List with many followers is often a well-kept source. Store the List `id`,
+since a List name can change.
+
+An empty `lists` array with `has_next_page: false` means X has no more Lists
+for your keywords. It costs nothing.
+
+## Query parameters
+
+<ParamField query="q" type="string" required>
+
+Keywords to find Lists by, such as a topic or a List name. Alias: `query`.
+
+</ParamField>
+
+<ParamField query="cursor" type="string">
+
+Pagination cursor from a previous response. Omit for the first page.
+
+</ParamField>
+
+<ParamField query="pageSize" type="integer">
+
+Lists per page. Range: `1-100`. Defaults to `20`. Aliases: `limit`, `count`, and `max_results`.
+
+</ParamField>
+
+## Headers
+
+<ParamField header="x-api-key" type="string">
+
+Full account key. Sessions and OAuth also work.
+
+</ParamField>
+
+<ParamField header="Authorization" type="string">
+
+`Bearer xq_your_guest_key_here` for `paid_reads`.
+
+</ParamField>
+
+## Response
+
+### 200 OK
+
+<ResponseField name="lists" type="object[]">
+
+Public Lists that match your keywords.
+**List object fields.**
+
+<ResponseField name="id" type="string">
+  Numeric List ID.
+</ResponseField>
+<ResponseField name="name" type="string">
+  List name.
+</ResponseField>
+<ResponseField name="description" type="string">
+  List description. Empty when the owner wrote none.
+</ResponseField>
+<ResponseField name="memberCount" type="number">
+  Accounts on the List.
+</ResponseField>
+<ResponseField name="subscriberCount" type="number">
+  Accounts that follow the List.
+</ResponseField>
+<ResponseField name="owner" type="object">
+  Public profile of the account that owns the List, with the fields of [Get
+  User](/api-reference/x/twitter-profile-lookup).
+</ResponseField>
+<ResponseField name="url" type="string">
+  List page on x.com.
+</ResponseField>
+<ResponseField name="createdAt" type="string">
+  When the owner made the List (ISO 8601).
+</ResponseField>
+<ResponseField name="bannerUrl" type="string">
+  The uploaded banner's URL, else X's default banner's.
+</ResponseField>
+<ResponseField name="customBanner" type="object">
+  Banner the owner uploaded: `url`, `width`, `height`, `salientRect`, `mediaId`, `mediaKey` &
+  dominant colors in `palette`. Omitted when there is none.
+</ResponseField>
+<ResponseField name="defaultBanner" type="object">
+  Banner X shows when the owner uploaded none: `url`, `width`, `height` & `salientRect`.
+</ResponseField>
+<ResponseField name="facepileUrls" type="string[]">
+  Avatar URLs of a few List members, which X may pick per request.
+</ResponseField>
+<ResponseField name="membersContext" type="string">
+  Member count as X words it, such as `35 members`.
+</ResponseField>
+
+</ResponseField>
+<ResponseField name="has_next_page" type="boolean">Whether more results are available.</ResponseField>
+<ResponseField name="next_cursor" type="string">Cursor for the next page.</ResponseField>
+
+```json
+{
+  "lists": [
+    {
+      "id": "1284239399492833280",
+      "name": "#Mars2020 Science & Tech",
+      "description": "Official accounts on the Perseverance Mars rover mission.",
+      "memberCount": 35,
+      "subscriberCount": 76,
+      "owner": {
+        "id": "1232783237623119872",
+        "username": "NASAPersevere",
+        "name": "NASA's Perseverance Mars Rover",
+        "followers": 2887286,
+        "verified": true
+      },
+      "url": "https://x.com/i/lists/1284239399492833280",
+      "createdAt": "2020-07-17T21:31:47.000Z",
+      "membersContext": "35 members"
+    }
+  ],
+  "has_next_page": true,
+  "next_cursor": "DAAHCgABHTwHK3H..."
+}
+```
+
+### 400 Missing query
+
+```json
+{ "error": "missing_query", "message": "Search query required. Use q." }
+```
+
+### 401 Unauthenticated
+
+Anonymous requests get `WWW-Authenticate: Bearer` and a guest wallet checkout action. This is not a Payment challenge.
+
+```json
+{ "error": "unauthenticated" }
+```
+
+### 402 Payment required
+
+Account keys get account options. Guest keys get guest top-up only.
+No checkout starts automatically. Confirm any payment action.
+
+### 502 X API unavailable
+
+```json
+{ "error": "x_api_unavailable" }
+```
+
+The read service returned an error. Retry after a short delay.
+
+### 503 Service busy
+
+```json
+{ "error": "x_api_unavailable" }
+```
+
+Xquik is busy. Wait for `Retry-After`, then retry.
+
+### 429 Rate limit exceeded
+
+```json
+{ "error": "rate_limit_exceeded", "retryAfter": 60 }
+```
+
+The Xquik tier limit blocked the request.
+Use `Retry-After` when present. Otherwise, use the JSON `retryAfter` field.
+
+### 424 Dependency failed
+
+```json
+{ "error": "x_api_unavailable" }
+```
+
+The opt-in normalized contract returns 424 when the read service fails.
+Send `xquik-api-contract: 2026-04-29` to opt in. Default v1 returns 502.
+
+## Twitter List search questions
+
+### How do I search Twitter Lists by keyword?
+
+Call `GET /x/lists/search` with your keywords in `q`. Each result is a public
+List with its ID, counts and owner.
+
+### How much does a List search cost?
+
+Each returned List costs 1 credit. An empty page costs nothing. Lower
+`pageSize` to return fewer Lists.
+
+### Does List search return private Lists?
+
+No. It returns only public Lists. Private Lists stay out of every answer.
+
+### Why do 2 searches return Lists in another order?
+
+X may rank the Lists differently per request. Store each List `id` and dedupe
+by it when you merge pages or runs.
+
+### How do I get the members of a List I found?
+
+Pass the List `id` to [List members](/api-reference/x/list-members). Use
+[List tweets](/api-reference/x/list-tweets) for its timeline.
+
+### Does this replace X's official API?
+
+No. This page documents Xquik, an independent third-party service.
+It does not document X's official API.
+
+<Note>
+
+**Next steps.** [List members](/api-reference/x/list-members) reads who is on a List, and [List tweets](/api-reference/x/list-tweets) reads its timeline.
+
+</Note>
+
+<AudienceCommunityApiLinks />
