@@ -1,0 +1,473 @@
+---
+title: "Twitter Spaces search API: find X Spaces by keyword"
+sidebarTitle: "Search Spaces"
+description: "Find public Twitter or X Spaces by keyword, host, or topic. Get each Space's title, state, times, listener counts, hosts, and speakers. 1 credit per Space."
+api: "GET /x/spaces/search"
+keywords:
+  [
+    "Twitter Spaces search",
+    "search Twitter Spaces",
+    "find X Spaces",
+    "X Spaces search API",
+    "Twitter Spaces API",
+    "Spaces by host",
+    "live Twitter Spaces",
+  ]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+import TweetReadApiLinks from "/snippets/x-tweet-read-api-links.mdx";
+
+{/* GENERATED RESPONSE EXAMPLES START */}
+
+<Panel>
+
+<Tabs defaultTabIndex={0} sync={false}>
+
+  <Tab title="200" id="response-x-search-spaces-200">
+
+    ```json
+    {
+      "spaces": [
+        {
+          "id": "1OGwblLjnQMKB",
+          "title": "Extending the Network to the Edge",
+          "state": "Ended",
+          "startedAt": "2026-03-11T17:00:26.227Z",
+          "endedAt": "2026-03-11T17:49:29.190Z"
+        }
+      ],
+      "has_next_page": true,
+      "next_cursor": "DAACCgACGRElMJcAAA"
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="400" id="response-x-search-spaces-400">
+
+    ```json
+    {
+      "error": "invalid_input",
+      "message": "Invalid input. Check the request body."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="401" id="response-x-search-spaces-401">
+
+    ```json
+    {
+      "error": "unauthenticated",
+      "message": "Authentication required."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="402" id="response-x-search-spaces-402">
+
+    ```json
+    {
+      "error": "insufficient_credits",
+      "message": "Insufficient credits. Top up or subscribe to continue."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="424" id="response-x-search-spaces-424">
+
+    ```json
+    {
+      "error": "x_api_unavailable",
+      "message": "X data source temporarily unavailable. Try again later."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="429" id="response-x-search-spaces-429">
+
+    ```json
+    {
+      "error": "rate_limit_exceeded",
+      "message": "Too many requests. Try again later.",
+      "retryAfter": 60
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="502" id="response-x-search-spaces-502">
+
+    ```json
+    {
+      "error": "x_api_unavailable",
+      "message": "X data source temporarily unavailable. Try again later."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="503" id="response-x-search-spaces-503">
+
+    ```json
+    {
+      "error": "x_api_unavailable",
+      "message": "Xquik is busy right now. Retry shortly."
+    }
+    ```
+
+  </Tab>
+</Tabs>
+
+</Panel>
+{/* GENERATED RESPONSE EXAMPLES END */}
+<LlmsDirective />
+
+<Note>
+
+Requested result counts are upper bounds for paid authenticated calls. When remaining credits cannot cover the full page, Xquik returns fewer results. If zero paid results are affordable, it returns `402 insufficient_credits`.
+
+</Note>
+
+<Callout icon="coins" color="#5c3327">
+
+**1 credit per Space returned** · [All plans](https://xquik.com/#pricing) from $0.00012/credit
+
+</Callout>
+
+<CodeGroup>
+
+```bash cURL
+curl -G https://xquik.com/api/v1/x/spaces/search \
+  --data-urlencode "q=from:solana" \
+  -H "x-api-key: xq_your_api_key_here" | jq
+```
+
+```javascript Node.js
+const query = "from:solana";
+const params = new URLSearchParams({ q: query });
+const response = await fetch(`https://xquik.com/api/v1/x/spaces/search?${params}`, {
+  headers: { "x-api-key": "xq_your_api_key_here" },
+});
+const data = await response.json();
+const nextCursor = data.has_next_page ? data.next_cursor : null;
+const spaceRows = data.spaces.map((space, index) => ({
+  search_query: query,
+  result_rank: index + 1,
+  space_id: space.id,
+  space_title: space.title ?? null,
+  space_state: space.state ?? null,
+  started_at: space.startedAt ?? null,
+  live_listeners: space.totalLiveListeners ?? null,
+  host_usernames: space.admins.map((host) => host.username),
+  next_cursor: nextCursor,
+}));
+```
+
+```python Python
+import requests
+
+query = "from:solana"
+response = requests.get(
+    "https://xquik.com/api/v1/x/spaces/search",
+    params={"q": query},
+    headers={"x-api-key": "xq_your_api_key_here"},
+)
+data = response.json()
+next_cursor = data["next_cursor"] if data["has_next_page"] else None
+space_rows = [
+    {
+        "search_query": query,
+        "result_rank": index + 1,
+        "space_id": item["id"],
+        "space_title": item.get("title"),
+        "space_state": item.get("state"),
+        "started_at": item.get("startedAt"),
+        "live_listeners": item.get("totalLiveListeners"),
+        "host_usernames": [host["username"] for host in item["admins"]],
+        "next_cursor": next_cursor,
+    }
+    for index, item in enumerate(data["spaces"])
+]
+```
+
+</CodeGroup>
+
+The Node.js and Python snippets build 1 row per Space. Store `spaceRows` or
+`space_rows` with `nextCursor` or `next_cursor` before requesting the next page.
+
+## Find Spaces by keyword, host, or topic
+
+Use `GET /x/spaces/search` when you know a topic or a host but not a Space ID.
+It returns the public Spaces that posts matching your query share. A Space can
+be live, scheduled, or ended.
+
+Each page reads up to 20 posts and returns each Space once, in the order the
+posts share them. A page can hold fewer than 20 Spaces. Follow `next_cursor`
+while `has_next_page` is `true`.
+
+Each Space carries the `id` that `GET /x/spaces/{id}` takes. Store the `id`,
+since a title can change. Use `state` to tell a live Space from a scheduled or
+ended one.
+
+A Space X limits to subscribers or a community stays out of the results. An
+empty `spaces` array with `has_next_page: false` means X has no more Spaces for
+your query. It costs nothing.
+
+## Query parameters
+
+<ParamField query="q" type="string" required>
+
+Words, hashtags, or X search operators, such as `from:solana`. The search adds
+`filter:spaces`. Alias: `query`.
+
+</ParamField>
+
+<ParamField query="queryType" type="string" default="Latest">
+
+`Latest` sorts by post time. `Top` ranks by engagement. Any case works.
+Aliases: `result_type`, `sort_order`, `type`, `search_type`, `product`,
+`category` & `section`.
+
+</ParamField>
+
+<ParamField query="cursor" type="string">
+
+Pagination cursor from a previous response. Omit for the first page.
+
+</ParamField>
+
+## Headers
+
+<ParamField header="x-api-key" type="string">
+
+Full account key. Sessions and OAuth also work.
+
+</ParamField>
+
+<ParamField header="Authorization" type="string">
+
+`Bearer xq_your_guest_key_here` for `paid_reads`.
+
+</ParamField>
+
+## Response
+
+### 200 OK
+
+<ResponseField name="spaces" type="object[]">
+
+Public Spaces, in the order the posts share them.
+**Space object fields.**
+
+<ResponseField name="id" type="string">
+  Space ID.
+</ResponseField>
+<ResponseField name="title" type="string">
+  Space title.
+</ResponseField>
+<ResponseField name="state" type="string">
+  Such as `NotStarted`, `Running` or `Ended`.
+</ResponseField>
+<ResponseField name="createdAt" type="string">
+  When the Space was made.
+</ResponseField>
+<ResponseField name="scheduledStart" type="string">
+  When the Space was set to start.
+</ResponseField>
+<ResponseField name="startedAt" type="string">
+  When the Space went live.
+</ResponseField>
+<ResponseField name="endedAt" type="string">
+  When the Space ended.
+</ResponseField>
+<ResponseField name="updatedAt" type="string">
+  When X last changed the Space.
+</ResponseField>
+<ResponseField name="totalLiveListeners" type="number">
+  Accounts that listened live.
+</ResponseField>
+<ResponseField name="totalReplayWatched" type="number">
+  Accounts that played the recording.
+</ResponseField>
+<ResponseField name="participantCount" type="number">
+  Accounts in the Space now, while it is live.
+</ResponseField>
+<ResponseField name="isAvailableForReplay" type="boolean">
+  Whether X offers a recording.
+</ResponseField>
+<ResponseField name="isAvailableForClipping" type="boolean">
+  Whether listeners may clip the Space.
+</ResponseField>
+<ResponseField name="isLocked" type="boolean">
+  Whether the host locked the Space.
+</ResponseField>
+<ResponseField name="isEmployeeOnly" type="boolean">
+  Whether only X employees may join.
+</ResponseField>
+<ResponseField name="disallowJoin" type="boolean">
+  Whether X lets no more accounts join.
+</ResponseField>
+<ResponseField name="noIncognito" type="boolean">
+  Whether anonymous listening is off.
+</ResponseField>
+<ResponseField name="contentType" type="string">
+  Audio or video kind, as X names it.
+</ResponseField>
+<ResponseField name="conversationControls" type="number">
+  X's code for who may speak.
+</ResponseField>
+<ResponseField name="maxAdminCapacity" type="number">
+  Most hosts and co-hosts the Space allows.
+</ResponseField>
+<ResponseField name="mediaKey" type="string">
+  X's media key for the Space's audio.
+</ResponseField>
+<ResponseField name="mentionedUserIds" type="string[]">
+  IDs of the accounts the host tagged.
+</ResponseField>
+<ResponseField name="tweetId" type="string">
+  ID of the post that announces the Space.
+</ResponseField>
+<ResponseField name="creator" type="object">
+  Profile of the account that made the Space. It uses the fields of [Get
+  User](/api-reference/x/twitter-profile-lookup).
+</ResponseField>
+<ResponseField name="admins" type="object[]">
+  Hosts and co-hosts. Each has `id`, `username` and `name`, plus `profilePicture`, badge fields and
+  `joinedAt` when X sends them.
+</ResponseField>
+<ResponseField name="speakers" type="object[]">
+  Accounts X lists as speakers, with the same fields as `admins`.
+</ResponseField>
+<ResponseField name="listeners" type="object[]">
+  Accounts X lists as listeners, with the same fields as `admins`.
+</ResponseField>
+
+</ResponseField>
+<ResponseField name="has_next_page" type="boolean">Whether more results are available.</ResponseField>
+<ResponseField name="next_cursor" type="string">Cursor for the next page.</ResponseField>
+
+```json
+{
+  "spaces": [
+    {
+      "id": "1OGwblLjnQMKB",
+      "title": "Extending the Network to the Edge",
+      "state": "Ended",
+      "startedAt": "2026-03-11T17:00:26.227Z",
+      "endedAt": "2026-03-11T17:49:29.190Z",
+      "totalLiveListeners": 841,
+      "totalReplayWatched": 609,
+      "admins": [
+        {
+          "id": "951329744804392960",
+          "username": "solana",
+          "name": "Solana"
+        }
+      ],
+      "speakers": [],
+      "listeners": []
+    }
+  ],
+  "has_next_page": true,
+  "next_cursor": "DAACCgACGRElMJcAAA"
+}
+```
+
+### 400 Missing query
+
+```json
+{ "error": "missing_query", "message": "Search query required. Use q." }
+```
+
+### 401 Unauthenticated
+
+Anonymous requests get `WWW-Authenticate: Bearer` and a guest wallet checkout action. This is not a Payment challenge.
+
+```json
+{ "error": "unauthenticated" }
+```
+
+### 402 Payment required
+
+Account keys get account options. Guest keys get guest top-up only.
+No checkout starts automatically. Confirm any payment action.
+
+### 502 X API unavailable
+
+```json
+{ "error": "x_api_unavailable" }
+```
+
+The read service returned an error. Retry after a short delay.
+
+### 503 Service busy
+
+```json
+{ "error": "x_api_unavailable" }
+```
+
+Xquik is busy, or X failed to return 1 of the page's Spaces. The call costs
+nothing. Wait for `Retry-After`, then retry.
+
+### 429 Rate limit exceeded
+
+```json
+{ "error": "rate_limit_exceeded", "retryAfter": 60 }
+```
+
+The Xquik tier limit blocked the request.
+Use `Retry-After` when present. Otherwise, use the JSON `retryAfter` field.
+
+### 424 Dependency failed
+
+```json
+{ "error": "x_api_unavailable" }
+```
+
+The opt-in normalized contract returns 424 when the read service fails.
+Send `xquik-api-contract: 2026-04-29` to opt in. Default v1 returns 502.
+
+## Twitter Spaces search questions
+
+### How do I search Twitter Spaces by keyword?
+
+Call `GET /x/spaces/search` with your words in `q`. Each result is a public
+Space with its ID, title, state, times, and hosts.
+
+### How do I find the Spaces 1 account hosted or shared?
+
+Send `q=from:username`. The search returns the Spaces that account's posts
+share.
+
+### How much does a Space search cost?
+
+Each returned Space costs 1 credit. An empty page costs nothing.
+
+### Does Space search return live Spaces only?
+
+No. It returns live, scheduled, and ended Spaces. Read `state` to tell them
+apart.
+
+### Why does a page hold fewer than 20 Spaces?
+
+A page reads up to 20 posts and returns each Space once. Several posts can
+share 1 Space, and limited Spaces stay out.
+
+### Does this replace X's official API?
+
+No. This page documents Xquik, an independent third-party service.
+It does not document X's official API.
+
+<Note>
+
+**Next steps.** Pass a Space `id` to `GET /x/spaces/{id}` to read that Space again, such as when it goes live or ends.
+
+</Note>
+
+<TweetReadApiLinks />
