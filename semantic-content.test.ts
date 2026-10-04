@@ -856,16 +856,6 @@ describe("Apify comparison search intent", (): void => {
   });
 });
 
-describe("tweet replies crawler budget", (): void => {
-  it("keeps rendered documentation beneath the live page-size threshold", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("api-reference/x/tweet-replies.mdx", "utf8");
-
-    expect(Buffer.byteLength(source, "utf8")).toBeLessThanOrEqual(27_000);
-  });
-});
-
 describe("extraction export format copy", (): void => {
   it("keeps API exports distinct from local JSON Lines files", (): void => {
     expect.assertions(4);

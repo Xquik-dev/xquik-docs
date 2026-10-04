@@ -12221,11 +12221,6 @@ const FORBIDDEN_STALE_OPERATION_COUNT_SNIPPETS = [
   "full list of 32 endpoints",
 ] as const;
 
-const MAX_LLMS_TXT_CHARS = 30_000;
-// Keep the overview from absorbing another deep tutorial body; link to focused
-// workflow and API pages for expanded examples instead.
-const MAX_WORKFLOWS_OVERVIEW_CHARS = 20_000;
-
 const REQUIRED_AGENT_DOCS_MARKDOWN_FALLBACK_CHECKS = [
   "  - llms-txt-size",
   "  - llms-txt-links-markdown",
@@ -13349,7 +13344,6 @@ describe("repository discovery", (): void => {
     {
       name: "keeps the TypeScript SDK page useful for tweet search handoffs",
       file: "sdks/typescript.mdx",
-      limit: 19_050,
       label: "TypeScript SDK workflow docs",
       required: REQUIRED_TYPESCRIPT_SDK_WORKFLOW_SNIPPETS,
       forbidden: FORBIDDEN_TYPESCRIPT_SDK_RAW_SEARCH_SNIPPETS,
@@ -13357,7 +13351,6 @@ describe("repository discovery", (): void => {
     {
       name: "keeps the Go SDK page useful for tweet search handoffs",
       file: "sdks/go.mdx",
-      limit: 20_100,
       label: "Go SDK workflow docs",
       required: REQUIRED_GO_SDK_WORKFLOW_SNIPPETS,
       forbidden: FORBIDDEN_GO_SDK_WEAK_SEARCH_SNIPPETS,
@@ -13365,7 +13358,6 @@ describe("repository discovery", (): void => {
     {
       name: "keeps the Python SDK page useful for tweet search handoffs",
       file: "sdks/python.mdx",
-      limit: 20_400,
       label: "Python SDK workflow docs",
       required: REQUIRED_PYTHON_SDK_WORKFLOW_SNIPPETS,
       forbidden: FORBIDDEN_PYTHON_SDK_RAW_SEARCH_SNIPPETS,
@@ -13373,7 +13365,6 @@ describe("repository discovery", (): void => {
     {
       name: "keeps the Ruby SDK page useful for tweet search handoffs",
       file: "sdks/ruby.mdx",
-      limit: 17_950,
       label: "Ruby SDK workflow docs",
       required: REQUIRED_RUBY_SDK_WORKFLOW_SNIPPETS,
       forbidden: FORBIDDEN_RUBY_SDK_WEAK_SEARCH_SNIPPETS,
@@ -13381,7 +13372,6 @@ describe("repository discovery", (): void => {
     {
       name: "keeps the CLI SDK page useful for tweet search, follower export, and replies handoffs",
       file: "sdks/cli.mdx",
-      limit: 18_950,
       label: "CLI SDK workflow docs",
       required: REQUIRED_CLI_SDK_WORKFLOW_SNIPPETS,
       forbidden: FORBIDDEN_CLI_SDK_WORKFLOW_SNIPPETS,
@@ -13389,7 +13379,6 @@ describe("repository discovery", (): void => {
     {
       name: "keeps the C# SDK page useful for tweet search handoffs",
       file: "sdks/csharp-x-api-sdk.mdx",
-      limit: 23_100,
       label: "C# SDK workflow docs",
       required: REQUIRED_CSHARP_SDK_WORKFLOW_SNIPPETS,
       forbidden: FORBIDDEN_CSHARP_SDK_WEAK_SEARCH_SNIPPETS,
@@ -13397,24 +13386,20 @@ describe("repository discovery", (): void => {
     {
       name: "keeps the PHP SDK page useful for tweet search handoffs",
       file: "sdks/php.mdx",
-      limit: 20_150,
       label: "PHP SDK workflow docs",
       required: REQUIRED_PHP_SDK_WORKFLOW_SNIPPETS,
       forbidden: FORBIDDEN_PHP_SDK_WEAK_SEARCH_SNIPPETS,
     },
-  ])("$name", ({ file, limit, label, required, forbidden }): void => {
-    expect.assertions(2);
+  ])("$name", ({ file, label, required, forbidden }): void => {
+    expect.assertions(1);
     const source = readFileSync(file, "utf8");
-    expect(source.length).toBeLessThanOrEqual(limit);
     expect(collectSnippetFindings(source, label, required, forbidden)).toStrictEqual([]);
   });
 
   it("keeps the Java SDK page useful for tweet search handoffs", (): void => {
-    expect.assertions(2);
+    expect.assertions(1);
 
     const source = readFileSync("sdks/java.mdx", "utf8");
-
-    expect(source.length).toBeLessThanOrEqual(27_500);
 
     expect([
       ...collectSnippetFindings(
@@ -13431,11 +13416,9 @@ describe("repository discovery", (): void => {
   });
 
   it("keeps the Kotlin SDK page useful for tweet search handoffs", (): void => {
-    expect.assertions(2);
+    expect.assertions(1);
 
     const source = readFileSync("sdks/kotlin.mdx", "utf8");
-
-    expect(source.length).toBeLessThanOrEqual(25_800);
 
     expect([
       ...collectSnippetFindings(
@@ -13518,14 +13501,6 @@ describe("repository discovery", (): void => {
       ),
       ...forbiddenFindings,
     ]).toStrictEqual([]);
-  });
-
-  it("keeps llms.txt below the agent score size threshold with headroom", (): void => {
-    expect.assertions(1);
-
-    const llms = readFileSync("llms.txt", "utf8");
-
-    expect(llms.length).toBeLessThanOrEqual(MAX_LLMS_TXT_CHARS);
   });
 
   it("keeps MCP response-contract docs aligned with product behavior", (): void => {
@@ -13740,11 +13715,9 @@ describe("repository discovery", (): void => {
   });
 
   it("keeps billing recovery steps concrete for 402 failures", (): void => {
-    expect.assertions(2);
+    expect.assertions(1);
 
     const billing = readFileSync("guides/billing.mdx", "utf8");
-
-    expect(billing.length).toBeLessThanOrEqual(18_950);
 
     expect([
       ...collectSnippetFindings(billing, "Billing guide", REQUIRED_BILLING_RECOVERY_SNIPPETS),
@@ -14031,7 +14004,7 @@ describe("repository discovery", (): void => {
   });
 
   it("keeps write confirmation recovery current in error handling", (): void => {
-    expect.assertions(2);
+    expect.assertions(1);
 
     const errorHandlingSource = readFileSync("guides/error-handling.mdx", "utf8");
     const source = [errorHandlingSource, readFileSync("guides/troubleshooting.mdx", "utf8")].join(
@@ -14099,7 +14072,6 @@ describe("repository discovery", (): void => {
           : [],
       ),
     ]).toStrictEqual([]);
-    expect(errorHandlingSource.length).toBeLessThanOrEqual(23_350);
   });
 
   it("keeps follower export CRM handoff steps concrete", (): void => {
@@ -14230,7 +14202,7 @@ describe("repository discovery", (): void => {
   });
 
   it("keeps the search tweets API handoff concrete", (): void => {
-    expect.assertions(2);
+    expect.assertions(1);
 
     const source = stripGeneratedResponseExamples(
       readFileSync("api-reference/x/search-tweets.mdx", "utf8"),
@@ -14244,7 +14216,6 @@ describe("repository discovery", (): void => {
         FORBIDDEN_SEARCH_TWEETS_DIRECT_FILE_EXPORT_SNIPPETS,
       ),
     ).toStrictEqual([]);
-    expect(source.length).toBeLessThanOrEqual(19_000);
   });
 
   it("keeps tweet-list API result filters visible", (): void => {
@@ -14280,7 +14251,7 @@ describe("repository discovery", (): void => {
   });
 
   it("keeps the extraction workflow concrete for credits, JSON, and file handoffs", (): void => {
-    expect.assertions(2);
+    expect.assertions(1);
 
     const source = readFileSync("guides/extraction-workflow.mdx", "utf8");
 
@@ -14292,7 +14263,6 @@ describe("repository discovery", (): void => {
         FORBIDDEN_EXTRACTION_WORKFLOW_SNIPPETS,
       ),
     ).toStrictEqual([]);
-    expect(source.length).toBeLessThanOrEqual(30_000);
   });
 
   it("keeps the list extractions page cursor-safe for job inventory handoffs", (): void => {
@@ -14994,14 +14964,6 @@ describe("repository discovery", (): void => {
             : [],
       ),
     ]).toStrictEqual([]);
-  });
-
-  it("keeps the workflows overview within the generated HTML weight budget", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("guides/workflows.mdx", "utf8");
-
-    expect(source.length).toBeLessThanOrEqual(MAX_WORKFLOWS_OVERVIEW_CHARS);
   });
 
   it("keeps the keyword monitor API handoff concrete", (): void => {

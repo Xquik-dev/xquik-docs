@@ -25,6 +25,10 @@ const spec = Bun.YAML.parse(
 const WRITE_OPERATION_COUNT = Object.values(spec.paths ?? {})
   .flatMap((methods) => Object.values(methods))
   .filter((operation) => operation["x-write-action"] !== undefined).length;
+// Every operation that answers 204 has 1 page.
+const NO_CONTENT_OPERATION_COUNT = Object.values(spec.paths ?? {})
+  .flatMap((methods) => Object.values(methods))
+  .filter((operation) => operation.responses?.["204"] !== undefined).length;
 const WRITE_ACTION_LIFECYCLE_SNIPPET_PATH = join(
   PROJECT_ROOT,
   "snippets/write-action-lifecycle-response.mdx",
@@ -261,7 +265,7 @@ describe("API success response status documentation", (): void => {
         : [`${apiDoc.file}: 204 tab implies a response body.`],
     );
 
-    expect(noContentPages).toHaveLength(2);
+    expect(noContentPages).toHaveLength(NO_CONTENT_OPERATION_COUNT);
     expect(findings).toStrictEqual([]);
   });
 
