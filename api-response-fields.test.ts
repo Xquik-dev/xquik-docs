@@ -49,6 +49,7 @@ const PAGINATED_TWEET_PAGES = [
   "api-reference/x/user-likes.mdx",
   "api-reference/x/user-media.mdx",
   "api-reference/x/user-highlights.mdx",
+  "api-reference/x/user-articles.mdx",
   "api-reference/x/bookmarks.mdx",
   "api-reference/x/timeline.mdx",
   "api-reference/x/tweet-quotes.mdx",
