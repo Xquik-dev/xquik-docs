@@ -76,6 +76,13 @@ const REQUIRED_OPERATIONAL_CONTENT = [
     ],
   },
   {
+    file: "api-reference/x/user-highlights.mdx",
+    snippets: [
+      "| Profile feed | Route | Rows returned |",
+      "| Highlights tab | `/x/users/{id}/highlights` | Highlighted posts, in X's order. |",
+    ],
+  },
+  {
     file: "api-reference/x/twitter-profile-lookup.mdx",
     snippets: [
       "| Profile column | Response field | CRM or warehouse rule |",
