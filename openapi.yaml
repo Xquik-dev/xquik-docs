@@ -55,6 +55,8 @@ tags:
     description: Account info and settings
   - name: Agent Discovery
     description: Public agent discovery and documentation search
+  - name: Analysis
+    description: AI analysis of posts, at 2 credits per analyzed post
   - name: Articles
     description: Long-form X Article extraction
   - name: Communities
@@ -7439,6 +7441,67 @@ paths:
         '429': *rate-limit-exceeded-response-2
         '424': *x-api-error-response
 
+  /x/tweets/{id}/translation:
+    get:
+      operationId: translateTweet
+      description:
+        Returns X's own translation of one public tweet into the language you
+        pick, with the links, mentions, and tags X places in the translated
+        text.
+      summary: Translate a tweet into a chosen language
+      tags:
+        - Tweets
+      security: *read-auth
+      x-payment-info:
+        offers:
+          - amount: '150'
+            currency: *tempo-usd
+            intent: charge
+            method: tempo
+      parameters:
+        - $ref: '#/components/parameters/TweetPathId'
+        - name: language
+          in: query
+          required: true
+          description:
+            Language code to translate into, such as `en`, `tr`, `pt-br`, or
+            `zh-tw`. Upper and lower case both work.
+          schema:
+            type: string
+            example: tr
+      responses:
+        '200':
+          description: Translated tweet text
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [translation]
+                properties:
+                  translation:
+                    $ref: '#/components/schemas/TweetTranslation'
+              example:
+                translation:
+                  tweetId: '2102882545427714266'
+                  language: tr
+                  sourceLanguage: en
+                  text: 'Artemis Anlaşmaları’na Hoş Geldiniz, Hırvatistan'
+                  entities:
+                    urls:
+                      - url: 'https://t.co/Xe1nm2pkSX'
+                        expanded_url: 'https://go.nasa.gov/3VcvAQn'
+                        display_url: go.nasa.gov/3VcvAQn
+                        indices: [154, 177]
+        '400': *invalid-input-response
+        '401': *unauthenticated-response
+        '402': *payment-required-response
+        '404': *tweet-not-found-response
+        '502': *x-api-error-response
+        '503':
+          $ref: '#/components/responses/ReadBusy'
+        '429': *rate-limit-exceeded-response-2
+        '424': *x-api-error-response
+
   /x/users/{id}/follower-ids:
     parameters:
       - $ref: '#/components/parameters/UserPathId'
@@ -7681,6 +7744,248 @@ paths:
           $ref: '#/components/responses/CursorGone'
         '503':
           $ref: '#/components/responses/MaximumCoverageBusy'
+
+  /x/analysis/sentiment:
+    post:
+      operationId: analyzeTweetSentiment
+      x-mcp-annotations: { readOnlyHint: true }
+      summary: Analyze the sentiment of posts with AI
+      description:
+        Answers each post's attitude, its intensity & its sarcasm probability.
+        Send post IDs, an X search or your own texts. Each analyzed post costs 2
+        credits. A post without an analysis costs nothing.
+      tags: [Analysis]
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
+      requestBody:
+        required: true
+        description:
+          Posts whose sentiment to analyze, as tweetIds, query or texts, with
+          optional analysis settings.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TweetAnalysisRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/TweetAnalysisPage'
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '401':
+          $ref: '#/components/responses/AnonymousGuestAuthenticationRequired'
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
+        '403':
+          $ref: '#/components/responses/ProtectedTimeline'
+        '424':
+          $ref: '#/components/responses/XApiError'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+        '502':
+          $ref: '#/components/responses/XApiError'
+        '503':
+          $ref: '#/components/responses/ReadBusy'
+
+  /x/analysis/brand:
+    post:
+      operationId: analyzeBrandMentions
+      x-mcp-annotations: { readOnlyHint: true }
+      summary: Analyze brand mentions in posts with AI
+      description:
+        Answers whether each post is about your brand, the author's attitude
+        toward it & the author's relationship with it. Name the brand in
+        analysis.targets. Each analyzed post costs 2 credits.
+      tags: [Analysis]
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
+      requestBody:
+        required: true
+        description:
+          Posts to check for brand mentions, as tweetIds, query or texts, with
+          the brand in analysis.targets.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TweetAnalysisRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/TweetAnalysisPage'
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '401':
+          $ref: '#/components/responses/AnonymousGuestAuthenticationRequired'
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
+        '403':
+          $ref: '#/components/responses/ProtectedTimeline'
+        '424':
+          $ref: '#/components/responses/XApiError'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+        '502':
+          $ref: '#/components/responses/XApiError'
+        '503':
+          $ref: '#/components/responses/ReadBusy'
+
+  /x/analysis/news:
+    post:
+      operationId: analyzeNewsPosts
+      x-mcp-annotations: { readOnlyHint: true }
+      summary: Classify news posts with AI
+      description:
+        Answers each post's format, such as reporting, commentary or
+        speculation, its source attribution & its relevance to your topic. Name
+        the topic in analysis.targets. Each analyzed post costs 2 credits.
+      tags: [Analysis]
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
+      requestBody:
+        required: true
+        description:
+          Posts to classify as news, as tweetIds, query or texts, with the topic
+          in analysis.targets.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TweetAnalysisRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/TweetAnalysisPage'
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '401':
+          $ref: '#/components/responses/AnonymousGuestAuthenticationRequired'
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
+        '403':
+          $ref: '#/components/responses/ProtectedTimeline'
+        '424':
+          $ref: '#/components/responses/XApiError'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+        '502':
+          $ref: '#/components/responses/XApiError'
+        '503':
+          $ref: '#/components/responses/ReadBusy'
+
+  /x/analysis/market-signals:
+    post:
+      operationId: analyzeMarketSignals
+      x-mcp-annotations: { readOnlyHint: true }
+      summary: Read stock & crypto signals from posts with AI
+      description:
+        Answers each post's stance on an asset, its content type, its conviction
+        & its relevance. The summary counts bullish & bearish posts per cashtag.
+        Name the asset in analysis.targets. Each analyzed post costs 2 credits.
+      tags: [Analysis]
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
+      requestBody:
+        required: true
+        description:
+          Posts to read market signals from, as tweetIds, query or texts, with
+          the asset in analysis.targets.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TweetAnalysisRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/TweetAnalysisPage'
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '401':
+          $ref: '#/components/responses/AnonymousGuestAuthenticationRequired'
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
+        '403':
+          $ref: '#/components/responses/ProtectedTimeline'
+        '424':
+          $ref: '#/components/responses/XApiError'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+        '502':
+          $ref: '#/components/responses/XApiError'
+        '503':
+          $ref: '#/components/responses/ReadBusy'
+
+  /x/analysis/viral-score:
+    post:
+      operationId: analyzeTweetViralScore
+      x-mcp-annotations: { readOnlyHint: true }
+      summary: Score how viral posts or drafts read with AI
+      description:
+        Answers each post's hook, clarity, payoff, humor, spam risk & likely
+        reaction, & adds a Viral Score from 0 to 100 with a verdict. The score
+        rates the wording. It does not predict likes or views. Send drafts in
+        texts to score them before posting. Each analyzed post costs 2 credits.
+      tags: [Analysis]
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
+      requestBody:
+        required: true
+        description:
+          Posts or drafts to score, as tweetIds, query or texts, with optional
+          analysis settings.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TweetAnalysisRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/TweetAnalysisPage'
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '401':
+          $ref: '#/components/responses/AnonymousGuestAuthenticationRequired'
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
+        '403':
+          $ref: '#/components/responses/ProtectedTimeline'
+        '424':
+          $ref: '#/components/responses/XApiError'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+        '502':
+          $ref: '#/components/responses/XApiError'
+        '503':
+          $ref: '#/components/responses/ReadBusy'
+
+  /x/analysis/classify:
+    post:
+      operationId: classifyTweets
+      x-mcp-annotations: { readOnlyHint: true }
+      summary: Classify posts with your own AI questions
+      description:
+        Answers 1 to 8 questions you write in analysis.questions. A choice picks
+        a category, such as a topic. A score picks a level. A probability
+        answers yes or no. Without questions it answers the sentiment questions.
+        Each analyzed post costs 2 credits.
+      tags: [Analysis]
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
+      requestBody:
+        required: true
+        description:
+          Posts to classify, as tweetIds, query or texts, with your questions in
+          analysis.questions.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TweetAnalysisRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/TweetAnalysisPage'
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '401':
+          $ref: '#/components/responses/AnonymousGuestAuthenticationRequired'
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
+        '403':
+          $ref: '#/components/responses/ProtectedTimeline'
+        '424':
+          $ref: '#/components/responses/XApiError'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+        '502':
+          $ref: '#/components/responses/XApiError'
+        '503':
+          $ref: '#/components/responses/ReadBusy'
 
 components:
   securitySchemes:
@@ -9159,6 +9464,100 @@ components:
           example:
             error: 'x_api_unavailable'
             message: 'Xquik is busy right now. Retry shortly.'
+    TweetAnalysisPage:
+      description: Analyzed posts, posts without an analysis & their totals
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/TweetAnalysisPage'
+          example:
+            results:
+              - tweet:
+                  id: '1893456789012345678'
+                  text:
+                    'The new headphones sound great. The app keeps crashing.'
+                  retweetCount: 4
+                  replyCount: 2
+                  likeCount: 31
+                  quoteCount: 0
+                  viewCount: 2140
+                  bookmarkCount: 1
+                analysis:
+                  status: 'succeeded'
+                  answers:
+                    - questionId: 'sentiment'
+                      questionVersion: 'sentiment:2'
+                      type: 'choice'
+                      value: 'mixed'
+                      confidence: 0.88
+                      probabilities:
+                        positive: 0.06
+                        negative: 0.04
+                        mixed: 0.88
+                        neutral: 0.01
+                        unclear: 0.01
+                    - questionId: 'intensity'
+                      questionVersion: 'sentiment:2'
+                      type: 'score'
+                      value: 1
+                      confidence: 0.81
+                      probabilities: { '0': 0.05, '1': 0.81, '2': 0.14 }
+                      levels:
+                        - 'No attitude or a passing mention.'
+                        - 'A clear but measured attitude.'
+                        - 'An emphatic or emotional attitude with strong
+                          wording.'
+                    - questionId: 'sarcasm'
+                      questionVersion: 'sentiment:2'
+                      type: 'probability'
+                      probability: 0.03
+                  questions:
+                    - { id: 'sentiment', version: 'sentiment:2' }
+                    - { id: 'intensity', version: 'sentiment:2' }
+                    - { id: 'sarcasm', version: 'sentiment:2' }
+                  contextBytes: 612
+                  contextAvailability:
+                    quote: 'not_applicable'
+                    reply: 'not_applicable'
+                    author: 'available'
+                    media: 'not_supplied'
+                    article: 'not_supplied'
+                    postText: 'full'
+                answers: { sentiment: 'mixed', intensity: 1, sarcasm: 0.03 }
+                sourceDomains: []
+                cashtags: []
+            unanalyzed:
+              - id: '1893456789012345679'
+                status: 'skipped'
+                reason: 'post_unavailable'
+            analysisSummary:
+              schemaVersion: 1
+              rows: { analyzed: 1, failed: 0, skipped: 0 }
+              engagement: 37
+              questions:
+                sentiment:
+                  type: 'choice'
+                  counts:
+                    {
+                      positive: 0,
+                      negative: 0,
+                      mixed: 1,
+                      neutral: 0,
+                      unclear: 0,
+                    }
+                  shares:
+                    {
+                      positive: 0,
+                      negative: 0,
+                      mixed: 1,
+                      neutral: 0,
+                      unclear: 0,
+                    }
+              targets: []
+              cashtags: []
+              sourceDomains: []
+            has_next_page: false
+            next_cursor: ''
     RepliesIncomplete:
       description:
         X did not expose every reply. Returned rows are billed as usual. An
@@ -13430,6 +13829,44 @@ components:
                     name: { type: string }
                     ticker: { type: string }
 
+    TweetTranslation:
+      description:
+        Holds X's translation of one tweet into the requested language.
+        `entities` holds the links, mentions, and tags with their offsets in the
+        translated text, and is empty when the text has none.
+      type: object
+      required: [tweetId, language, text, entities]
+      properties:
+        tweetId:
+          type: string
+          description: ID of the translated tweet.
+          example: '2102882545427714266'
+        language:
+          type: string
+          description: Language code of the translated text, in lower case.
+          example: tr
+        sourceLanguage:
+          type: string
+          description: Language code X detects in the tweet, when it names one.
+          example: en
+        text:
+          type: string
+          description: Translated tweet text.
+          example: 'Artemis Anlaşmaları’na Hoş Geldiniz, Hırvatistan'
+        entities:
+          $ref: '#/components/schemas/TweetEntities'
+      example:
+        tweetId: '2102882545427714266'
+        language: tr
+        sourceLanguage: en
+        text: 'Artemis Anlaşmaları’na Hoş Geldiniz, Hırvatistan'
+        entities:
+          urls:
+            - url: 'https://t.co/Xe1nm2pkSX'
+              expanded_url: 'https://go.nasa.gov/3VcvAQn'
+              display_url: go.nasa.gov/3VcvAQn
+              indices: [154, 177]
+
     TweetUrlEntity:
       description:
         Provides shortened, display, and expanded URLs from tweet text.
@@ -14572,3 +15009,620 @@ components:
           type: string
           description: X account identifier (@username or account ID)
           example: '@elonmusk'
+
+    TweetAnalysisRequest:
+      description:
+        Posts to analyze & optional analysis settings. Send exactly 1 of
+        tweetIds, query & texts.
+      type: object
+      additionalProperties: false
+      example:
+        query: 'Sony WH-1000XM6 lang:en'
+        limit: 20
+        analysis:
+          targets: [{ name: 'Sony', aliases: ['WH-1000XM6'] }]
+      properties:
+        tweetIds:
+          type: array
+          minItems: 1
+          maxItems: 100
+          description: Post IDs or post URLs to analyze, up to 100.
+          example: ['1893456789012345678']
+          items:
+            type: string
+            example: '1893456789012345678'
+        query:
+          type: string
+          minLength: 1
+          description:
+            X search to analyze, with the operators of /x/tweets/search, such as
+            from:nasa or lang:en.
+          example: 'Sony WH-1000XM6 lang:en'
+        queryType:
+          type: string
+          enum: [Latest, Top]
+          description: Search order for query. Default Latest.
+          example: 'Latest'
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+          description:
+            Maximum posts to analyze from query. Credits can return fewer.
+          example: 20
+        cursor:
+          type: string
+          minLength: 1
+          description: The next_cursor of the page before, for query.
+          example: 'DAACCgACGRElMJcAAA'
+        texts:
+          type: array
+          minItems: 1
+          maxItems: 100
+          description:
+            Your own texts to analyze, such as drafts. Reads nothing from X.
+            Each text costs the same as 1 analyzed post.
+          example: ['We shipped dark mode today. Tell us what breaks.']
+          items:
+            type: string
+            minLength: 1
+            example: 'We shipped dark mode today. Tell us what breaks.'
+        analysis:
+          $ref: '#/components/schemas/TweetAnalysisSettings'
+
+    TweetAnalysisSettings:
+      description:
+        Analysis settings, the same as the analysis input of Xquik's AI Actors.
+        Leave it out for the route's own questions.
+      type: object
+      additionalProperties: false
+      example:
+        targets: [{ name: 'Sony', aliases: ['WH-1000XM6'] }]
+        context: 'Consumer headphones & customer service.'
+      properties:
+        questions:
+          type: array
+          minItems: 1
+          maxItems: 8
+          description:
+            Your own questions, which replace the route's questions. Write
+            question IDs & category names in lower case without hyphens.
+          example:
+            - id: 'request'
+              type: 'choice'
+              version: '1'
+              instructions: 'What does the author ask for?'
+              categories:
+                support: 'Help with a problem.'
+                recommendation: 'Advice on choosing a product.'
+                other: 'Neither request.'
+          items:
+            $ref: '#/components/schemas/TweetAnalysisQuestion'
+        preset:
+          type: string
+          enum:
+            - brand
+            - complaints
+            - competitors
+            - purchase_intent
+            - product_feedback
+            - news
+            - sentiment
+            - market
+          description:
+            A ready set of questions, used when questions is left out.
+            complaints, competitors, purchase_intent & product_feedback need
+            targets.
+          example: 'complaints'
+        targets:
+          type: array
+          maxItems: 100
+          description:
+            Brands, people, assets or topics the questions are about, each with
+            its aliases.
+          example: [{ name: 'Sony', aliases: ['WH-1000XM6'] }]
+          items:
+            type: object
+            additionalProperties: false
+            required: [name]
+            example: { name: 'Sony', aliases: ['WH-1000XM6'] }
+            properties:
+              name:
+                type: string
+                minLength: 1
+                example: 'Sony'
+              aliases:
+                type: array
+                maxItems: 100
+                example: ['WH-1000XM6']
+                items:
+                  type: string
+                  minLength: 1
+                  example: 'WH-1000XM6'
+        context:
+          type: string
+          description: Background the AI reads with every post.
+          example: 'Consumer headphones & customer service.'
+        maxContextBytes:
+          type: integer
+          minimum: 1
+          maximum: 64000
+          default: 64000
+          description:
+            Bytes of post, quote & settings the AI reads. Longer posts are cut
+            to fit.
+          example: 64000
+        concurrency:
+          type: integer
+          minimum: 1
+          maximum: 16
+          default: 16
+          description: Posts analyzed at the same time.
+          example: 16
+
+    TweetAnalysisQuestion:
+      description:
+        A question the AI answers for each post. A choice picks 1 of 2 to 255
+        categories, a score picks 1 of 2 or more ordered levels & a probability
+        answers yes or no.
+      type: object
+      additionalProperties: false
+      required: [id, type, version, instructions]
+      example:
+        id: 'request'
+        type: 'choice'
+        version: '1'
+        instructions: 'What does the author ask for?'
+        categories:
+          support: 'Help with a problem.'
+          recommendation: 'Advice on choosing a product.'
+          other: 'Neither request.'
+      properties:
+        id:
+          type: string
+          pattern: '^[a-z][a-z0-9_]*$'
+          description: Name of the answer, such as request.
+          example: 'request'
+        type:
+          type: string
+          enum: [choice, score, probability]
+          example: 'choice'
+        version:
+          type: string
+          minLength: 1
+          description: Your version of the question, such as 1.
+          example: '1'
+        instructions:
+          type: string
+          minLength: 1
+          description: The question, as the AI reads it.
+          example: 'What does the author ask for?'
+        categories:
+          type: object
+          description:
+            For a choice. Each category name with its description, or null.
+          additionalProperties:
+            type: [string, 'null']
+            example: 'Help with a problem.'
+          example:
+            support: 'Help with a problem.'
+            other: 'Neither request.'
+        levels:
+          type: array
+          minItems: 2
+          maxItems: 100
+          description: For a score. Each level's description, lowest first.
+          example: ['No urgency.', 'Some urgency.', 'Urgent.']
+          items:
+            type: string
+            minLength: 1
+            example: 'No urgency.'
+        criteria:
+          type: object
+          additionalProperties: false
+          required: ['yes', 'no']
+          description: For a probability. What counts as yes & as no.
+          example: { 'yes': 'Asks for a refund.', 'no': 'Asks for no refund.' }
+          properties:
+            'yes':
+              type: string
+              minLength: 1
+              example: 'Asks for a refund.'
+            'no':
+              type: string
+              minLength: 1
+              example: 'Asks for no refund.'
+
+    TweetAnalysisPage:
+      description:
+        Analyzed posts, the posts without an analysis & the totals of the
+        answers. Each row in results costs 2 credits.
+      type: object
+      required:
+        [results, unanalyzed, analysisSummary, has_next_page, next_cursor]
+      properties:
+        results:
+          type: array
+          description: Each analyzed post with its answers.
+          example: []
+          items:
+            $ref: '#/components/schemas/TweetAnalysisResult'
+        unanalyzed:
+          type: array
+          description:
+            Each post without an analysis, by ID & reason. These cost nothing.
+          example:
+            - id: '1893456789012345679'
+              status: 'skipped'
+              reason: 'post_unavailable'
+          items:
+            $ref: '#/components/schemas/UnanalyzedTweet'
+        analysisSummary:
+          $ref: '#/components/schemas/TweetAnalysisSummary'
+        has_next_page:
+          type: boolean
+          description: Whether query has more posts. Send next_cursor as cursor.
+          example: false
+        next_cursor:
+          type: string
+          description: Cursor of the next page of query, else empty.
+          example: ''
+
+    TweetAnalysisResult:
+      description: 1 analyzed post with its answers.
+      type: object
+      required: [tweet, analysis, answers, sourceDomains, cashtags]
+      properties:
+        tweet:
+          type: object
+          description:
+            The post, as /x/tweets/search returns it. Your own texts have the
+            IDs text:1, text:2 & so on.
+          $ref: '#/components/schemas/SearchTweet'
+        analysis:
+          type: object
+          description: The answers in full, with their probabilities.
+          required:
+            - status
+            - answers
+            - questions
+            - contextBytes
+            - contextAvailability
+          properties:
+            status:
+              type: string
+              const: succeeded
+              example: 'succeeded'
+            answers:
+              type: array
+              description: 1 answer per question, in question order.
+              items:
+                $ref: '#/components/schemas/TweetAnalysisAnswer'
+            questions:
+              type: array
+              description: The ID & version of each question asked.
+              items:
+                type: object
+                required: [id, version]
+                properties:
+                  id: { type: string, example: 'sentiment' }
+                  version: { type: string, example: 'sentiment:2' }
+            contextBytes:
+              type: integer
+              minimum: 0
+              description: Bytes of post & settings the AI read.
+              example: 612
+            contextAvailability:
+              type: object
+              description: What the AI read beside the post's text.
+              required: [quote, reply, author, media, article, postText]
+              properties:
+                quote:
+                  type: string
+                  enum: [available, missing, not_applicable]
+                  example: 'not_applicable'
+                reply:
+                  type: string
+                  enum: [available, missing, not_applicable]
+                  example: 'not_applicable'
+                author:
+                  type: string
+                  enum: [available, missing]
+                  example: 'available'
+                media:
+                  type: string
+                  enum: [text_descriptions_only, not_supplied]
+                  example: 'not_supplied'
+                article:
+                  type: string
+                  enum: [text_blocks, summary, not_supplied]
+                  example: 'not_supplied'
+                postText:
+                  type: string
+                  enum: [full, truncated]
+                  description: truncated when the post was cut to fit.
+                  example: 'full'
+        answers:
+          type: object
+          description:
+            Each question's decision by question ID. A choice gives its
+            category, a score its level & a probability its value from 0 to 1.
+          additionalProperties:
+            type: [string, number]
+            example: 'negative'
+          example: { sentiment: 'negative', intensity: 2, sarcasm: 0.08 }
+        sourceDomains:
+          type: array
+          description: Hostnames the post links to, without t.co.
+          example: ['youtube.com']
+          items: { type: string, example: 'youtube.com' }
+        cashtags:
+          type: array
+          description: Cashtags in the post's text, in upper case.
+          example: ['$NVDA']
+          items: { type: string, example: '$NVDA' }
+        viralScore:
+          type: [integer, 'null']
+          minimum: 0
+          maximum: 100
+          description:
+            Only from /x/analysis/viral-score. How viral the wording reads, or
+            null when a trait has no answer.
+          example: 72
+        viralVerdict:
+          type: [string, 'null']
+          enum: [send_it, edit_first, sleep_on_it, null]
+          description:
+            Only from /x/analysis/viral-score. send_it from 70, edit_first from
+            40, else sleep_on_it.
+          example: 'send_it'
+        viralAlgorithmScore:
+          type: [number, 'null']
+          minimum: 0
+          description:
+            Only from /x/analysis/viral-score. The post's public counts under
+            X's published ranking weights, per 1,000 views or followers.
+          example: 18.4
+        viralActualEngagementRate:
+          type: [number, 'null']
+          minimum: 0
+          description:
+            Only from /x/analysis/viral-score. log10 of 1 plus the weighted
+            engagement per 1,000 followers. Null without a follower count.
+          example: 1.2874
+        viral:
+          type: object
+          description:
+            Only from /x/analysis/viral-score. The score with its weights
+            version, the caps that applied & the engagement comparison.
+          additionalProperties: true
+          example:
+            score: 72
+            verdict: 'send_it'
+            weights: 'viral_lite:1'
+            stops: []
+            algorithmScore: 18.4
+            algorithmBasis: 'views'
+            algorithmWeightedSum: 412
+            actualEngagementRate: 1.2874
+            weightsVersion: 'x_algorithm_params:2026-09-18'
+
+    TweetAnalysisAnswer:
+      description:
+        1 question's answer. A probability has probability. A choice or score
+        has value, confidence & the probability of each category or level.
+      type: object
+      required: [questionId, questionVersion, type]
+      example:
+        questionId: 'sentiment'
+        questionVersion: 'sentiment:2'
+        type: 'choice'
+        value: 'negative'
+        confidence: 0.93
+        probabilities:
+          {
+            positive: 0.01,
+            negative: 0.93,
+            mixed: 0.04,
+            neutral: 0.01,
+            unclear: 0.01,
+          }
+      properties:
+        questionId: { type: string, example: 'sentiment' }
+        questionVersion: { type: string, example: 'sentiment:2' }
+        type:
+          type: string
+          enum: [choice, score, probability]
+          example: 'choice'
+        value:
+          type: [string, number]
+          description: The chosen category, or the level from 0.
+          example: 'negative'
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+          example: 0.93
+        probabilities:
+          type: object
+          description: Probability of each category, or of each level by index.
+          additionalProperties:
+            type: number
+            minimum: 0
+            maximum: 1
+            example: 0.93
+          example:
+            {
+              positive: 0.01,
+              negative: 0.93,
+              mixed: 0.04,
+              neutral: 0.01,
+              unclear: 0.01,
+            }
+        levels:
+          type: array
+          description: For a score. The levels the question named, from 0.
+          example:
+            ['No attitude.', 'A measured attitude.', 'An emphatic attitude.']
+          items: { type: string, example: 'No attitude.' }
+        probability:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: For a probability. The chance the answer is yes.
+          example: 0.08
+
+    UnanalyzedTweet:
+      description: A post without an analysis. It costs nothing.
+      type: object
+      required: [id, status, reason]
+      properties:
+        id:
+          type: string
+          description:
+            Post ID. Your own texts have the IDs text:1, text:2 & so on.
+          example: '1893456789012345678'
+        status:
+          type: string
+          enum: [failed, skipped]
+          example: 'skipped'
+        reason:
+          type: string
+          description:
+            post_unavailable when X returns no such post. missing_text for a
+            post without text. insufficient_credits when credits ran out.
+            context_limit when the settings leave the post no room. The other
+            reasons mean the analysis failed. Send the post again.
+          example: 'post_unavailable'
+
+    TweetAnalysisSummary:
+      description: Totals of the answers across the analyzed posts.
+      type: object
+      required:
+        - schemaVersion
+        - rows
+        - engagement
+        - questions
+        - targets
+        - cashtags
+        - sourceDomains
+      properties:
+        schemaVersion:
+          type: integer
+          minimum: 1
+          example: 1
+        rows:
+          type: object
+          description: Posts by analysis outcome.
+          required: [analyzed, failed, skipped]
+          properties:
+            analyzed: { type: integer, minimum: 0, example: 20 }
+            failed: { type: integer, minimum: 0, example: 0 }
+            skipped: { type: integer, minimum: 0, example: 0 }
+        engagement:
+          type: integer
+          minimum: 0
+          description: Likes, reposts, replies & quotes of the analyzed posts.
+          example: 1840
+        questions:
+          type: object
+          description:
+            Totals by question ID. A choice has counts, shares, engagementShares
+            & top posts per category. A score has mean, engagementWeightedMean &
+            levels. A probability has mean, yes & no.
+          additionalProperties:
+            type: object
+            additionalProperties: true
+            example:
+              type: 'choice'
+              counts:
+                { positive: 12, negative: 5, mixed: 1, neutral: 2, unclear: 0 }
+          example:
+            sentiment:
+              type: 'choice'
+              counts:
+                { positive: 12, negative: 5, mixed: 1, neutral: 2, unclear: 0 }
+              shares:
+                {
+                  positive: 0.6,
+                  negative: 0.25,
+                  mixed: 0.05,
+                  neutral: 0.1,
+                  unclear: 0,
+                }
+        targets:
+          type: array
+          description: Mentions & answers per target in analysis.targets.
+          items:
+            type: object
+            required: [name, mentions, share, engagement, choices, top]
+            properties:
+              name: { type: string, example: 'Sony' }
+              mentions: { type: integer, minimum: 0, example: 14 }
+              share: { type: number, minimum: 0, maximum: 1, example: 0.7 }
+              engagement: { type: integer, minimum: 0, example: 1200 }
+              choices:
+                type: object
+                description: Category counts by question ID.
+                additionalProperties: true
+                example: { sentiment: { positive: 9, negative: 5 } }
+              top:
+                type: object
+                description: The most engaged posts per question ID & category.
+                additionalProperties: true
+                example:
+                  sentiment:
+                    negative:
+                      [{ tweetId: '1893456789012345678', engagement: 412 }]
+        cashtags:
+          type: array
+          description:
+            Posts & answers per cashtag, most posts first, up to 20. signal is
+            present for the market questions.
+          items:
+            type: object
+            required: [cashtag, rows, choices]
+            properties:
+              cashtag: { type: string, example: '$NVDA' }
+              rows: { type: integer, minimum: 0, example: 3 }
+              choices:
+                type: object
+                description:
+                  Category counts of the cashtag's posts by question ID.
+                additionalProperties: true
+                example: { stance: { bullish: 2, bearish: 1 } }
+              signal:
+                type: object
+                required: [bullish, bearish, score]
+                properties:
+                  bullish: { type: integer, minimum: 0, example: 2 }
+                  bearish: { type: integer, minimum: 0, example: 1 }
+                  score:
+                    type: number
+                    minimum: -1
+                    maximum: 1
+                    description: Bullish minus bearish posts, over all posts.
+                    example: 0.3333
+        sourceDomains:
+          type: array
+          description: Posts per linked hostname, most posts first, up to 20.
+          items:
+            type: object
+            required: [domain, posts]
+            properties:
+              domain: { type: string, example: 'youtube.com' }
+              posts: { type: integer, minimum: 0, example: 4 }
+        viral:
+          type: object
+          description:
+            Only from /x/analysis/viral-score. Scored posts, the average score,
+            verdict counts, the scores against actual engagement, a report per
+            author & the leaderboards.
+          additionalProperties: true
+          example:
+            weights: 'viral_lite:1'
+            scored: 20
+            unscored: 0
+            averageScore: 58
+            verdicts: { send_it: 6, edit_first: 9, sleep_on_it: 5 }
