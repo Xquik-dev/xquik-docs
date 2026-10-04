@@ -106,19 +106,33 @@ function isExpectedSectionHeaderSkip(result: CheckResult): boolean {
 }
 
 /**
+ * Text as both the rendered page & its markdown source write it: straight
+ * quotes for curly ones, single spaces & no space before punctuation.
+ */
+function plainText(text: string): string {
+  return text
+    .replaceAll(/[\u2018\u2019]/gu, "'")
+    .replaceAll(/[\u201C\u201D]/gu, '"')
+    .replaceAll(/\s+/gu, " ")
+    .replaceAll(/ (?=[.,;:!?)])/gu, "")
+    .trim();
+}
+
+/**
  * The served markdown keeps Mintlify components such as `<Card title="...">`
  * as MDX. afdocs reads their titles & inner markdown links as raw HTML, so
  * text the markdown holds can count as missing. The markdown text of a page:
  * its component titles, and its prose with links reduced to their text & tags,
- * code marks & bold marks removed.
+ * escapes, code marks & bold marks removed.
  */
 function markdownText(markdown: string): string {
   const titles = [...markdown.matchAll(/\btitle="([^"]*)"/gu)].map((match) => match[1]);
   const prose = markdown
     .replaceAll(/!?\[([^\]]*)\]\([^)]*\)/gu, "$1")
     .replaceAll(/<\/?[A-Za-z][^>]*>/gu, " ")
+    .replaceAll(/\\([!-/:-@[-`{-~])/gu, "$1")
     .replaceAll(/`|\*\*|__/gu, "");
-  return [...titles, prose].join(" ").replaceAll(/\s+/gu, " ");
+  return plainText([...titles, prose].join(" "));
 }
 
 /**
@@ -142,24 +156,54 @@ async function parityWarningIsMdxOnly(result: CheckResult): Promise<boolean> {
       const text = markdownText(await response.text());
       return samples.every(
         (sample) =>
-          typeof sample === "string" &&
-          text.includes(sample.replace(/^- /u, "").replaceAll(/\s+/gu, " ").trim()),
+          typeof sample === "string" && text.includes(plainText(sample.replace(/^- /u, ""))),
       );
     }),
   );
   return pages.length > 0 && checks.every(Boolean);
 }
 
-function acceptsResult(
-  checkId: string,
-  result: CheckResult,
-  mdxOnlyParityWarning: boolean,
+/**
+ * Whether every page an HTML size warning names has served markdown under the
+ * size limit in the same crawl. afdocs converts the whole HTML, which holds
+ * about 13,000 characters of sidebar on every page, so the limit applies to
+ * the page's own content: its markdown. A page over the fail limit fails.
+ */
+function htmlSizeWarningIsChromeOnly(
+  html: CheckResult,
+  markdown: CheckResult | undefined,
 ): boolean {
+  const small = new Set(
+    asRecordArray(asRecord(markdown?.details)?.pageResults)
+      .filter((page) => page.status === "pass")
+      .map((page) => asString(page.url)),
+  );
+  const large = asRecordArray(asRecord(html.details)?.pageResults).filter(
+    (page) => page.status !== "pass",
+  );
+  return (
+    html.status === "warn" &&
+    large.length > 0 &&
+    large.every((page) => page.status === "warn" && small.has(asString(page.url)))
+  );
+}
+
+interface Accepted {
+  /** Whether an HTML size warning names only pages with small markdown. */
+  readonly chromeOnlySizeWarning: boolean;
+  /** Whether a parity warning comes from MDX components alone. */
+  readonly mdxOnlyParityWarning: boolean;
+}
+
+function acceptsResult(checkId: string, result: CheckResult, accepted: Accepted): boolean {
   if (result.status === "pass") {
     return true;
   }
   if (checkId === "markdown-content-parity") {
-    return result.status === "warn" && mdxOnlyParityWarning;
+    return result.status === "warn" && accepted.mdxOnlyParityWarning;
+  }
+  if (checkId === "page-size-html") {
+    return accepted.chromeOnlySizeWarning;
   }
   if (checkId === "auth-alternative-access") {
     return result.status === "skip";
@@ -173,7 +217,7 @@ function acceptsResult(
 describe("Agent-Friendly Documentation", (): void => {
   let configuredCheckIds = new Set<string>();
   let resultsByCheck: Map<string, CheckResult> | undefined;
-  let mdxOnlyParityWarning = false;
+  let accepted: Accepted = { chromeOnlySizeWarning: false, mdxOnlyParityWarning: false };
 
   beforeAll(async (): Promise<void> => {
     const config = await loadConfig();
@@ -185,7 +229,14 @@ describe("Agent-Friendly Documentation", (): void => {
       report.results.map((result): [string, CheckResult] => [result.id, result]),
     );
     const parity = resultsByCheck.get("markdown-content-parity");
-    mdxOnlyParityWarning = parity?.status === "warn" ? await parityWarningIsMdxOnly(parity) : false;
+    const htmlSize = resultsByCheck.get("page-size-html");
+    accepted = {
+      chromeOnlySizeWarning:
+        htmlSize !== undefined &&
+        htmlSizeWarningIsChromeOnly(htmlSize, resultsByCheck.get("page-size-markdown")),
+      mdxOnlyParityWarning:
+        parity?.status === "warn" ? await parityWarningIsMdxOnly(parity) : false,
+    };
   }, LIVE_CRAWL_HANG_GUARD_MS);
 
   for (const check of getChecksSorted()) {
@@ -200,7 +251,7 @@ describe("Agent-Friendly Documentation", (): void => {
 
       const message = formatResult(result);
       process.stdout.write(`${message}\n`);
-      expect(acceptsResult(check.id, result, mdxOnlyParityWarning), message).toBe(true);
+      expect(acceptsResult(check.id, result, accepted), message).toBe(true);
     });
   }
 });

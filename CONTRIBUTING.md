@@ -25,6 +25,10 @@ Installation also installs pinned cargo-audit. Each license check audits the Rus
 `package.json` pins Rust and the license tools.
 Install OSV-Scanner, Gitleaks, and ShellCheck for dependency, secret, and shell checks.
 
+`bun run check:live` crawls the published site at docs.xquik.com, so it cannot
+test a pull request's own content. Maintainers run it on `main` right after each
+merge is published. A failure there blocks the next merge until it is fixed.
+
 Use `mint dev` only when visual previewing is necessary.
 
 ## First contributions
