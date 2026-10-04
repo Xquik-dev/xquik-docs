@@ -1602,7 +1602,7 @@ const REQUIRED_LLMS_SNIPPETS = [
   "Search docs through `https://docs.xquik.com/mcp`.",
   "https://xquik.com/mcp",
   "npx skills add Xquik-dev/x-twitter-scraper",
-  "[OpenAPI schema](https://docs.xquik.com/openapi.yaml)",
+  "[OpenAPI schema](https://xquik.com/openapi.yaml)",
 ] as const;
 
 const REQUIRED_SKILL_RATE_LIMIT_SNIPPETS = [
