@@ -7844,6 +7844,76 @@ paths:
         '429': *rate-limit-exceeded-response-2
         '424': *x-api-error-response
 
+  /x/tweets/{id}/embed:
+    get:
+      operationId: getTweetEmbed
+      description:
+        Returns the HTML that X gives websites to embed one public tweet, with
+        the tweet's link and author.
+      summary: Get embed HTML for a tweet
+      tags:
+        - Tweets
+      security: *read-auth
+      x-payment-info:
+        offers:
+          - amount: '150'
+            currency: *tempo-usd
+            intent: charge
+            method: tempo
+      parameters:
+        - $ref: '#/components/parameters/TweetPathId'
+        - name: theme
+          in: query
+          description: Color theme of the embed. X uses light when left out.
+          schema:
+            type: string
+            enum: [light, dark]
+        - name: hideMedia
+          in: query
+          description: Set `true` to leave photos, videos, and link cards out.
+          schema:
+            type: boolean
+        - name: hideThread
+          in: query
+          description: Set `true` to leave the tweet this one replies to out.
+          schema:
+            type: boolean
+        - name: omitScript
+          in: query
+          description:
+            Set `true` to leave the widget script tag out, for pages that load
+            it once themselves.
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Embed HTML
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [embed]
+                properties:
+                  embed:
+                    $ref: '#/components/schemas/TweetEmbed'
+              example:
+                embed:
+                  tweetId: '2102882545427714266'
+                  url: 'https://x.com/NASA/status/2102882545427714266'
+                  authorName: NASA
+                  authorUrl: 'https://x.com/NASA'
+                  html: '<blockquote class="twitter-tweet">...</blockquote>'
+                  width: 550
+        '400': *invalid-input-response
+        '401': *unauthenticated-response
+        '402': *payment-required-response
+        '404': *tweet-not-found-response
+        '502': *x-api-error-response
+        '503':
+          $ref: '#/components/responses/ReadBusy'
+        '429': *rate-limit-exceeded-response-2
+        '424': *x-api-error-response
+
   /x/users/{id}/follower-ids:
     parameters:
       - $ref: '#/components/parameters/UserPathId'
@@ -14350,6 +14420,46 @@ components:
         editTweetIds: { type: array, items: { type: string } }
         editableUntilMsecs: { type: string }
         initialTweetId: { type: string }
+
+    TweetEmbed:
+      description: Holds the HTML that embeds one tweet on a website.
+      type: object
+      required: [tweetId, url, authorName, authorUrl, html]
+      properties:
+        tweetId:
+          type: string
+          description: ID of the embedded tweet.
+        url:
+          type: string
+          description: Link to the tweet with its author's username.
+        authorName:
+          type: string
+          description: Display name of the tweet's author.
+        authorUrl:
+          type: string
+          description: Link to the author's profile.
+        html:
+          type: string
+          description:
+            Markup to place on a page. It loads X's widget script unless
+            `omitScript` is `true`.
+        width:
+          type: integer
+          minimum: 1
+          maximum: 10000
+          description: Width of the embed in pixels.
+        height:
+          type: integer
+          minimum: 1
+          maximum: 10000
+          description: Height in pixels, when X fixes it.
+      example:
+        tweetId: '2102882545427714266'
+        url: 'https://x.com/NASA/status/2102882545427714266'
+        authorName: NASA
+        authorUrl: 'https://x.com/NASA'
+        html: '<blockquote class="twitter-tweet">...</blockquote>'
+        width: 550
 
     TweetEntities:
       description: Lists hashtags, symbols, links, and mentions from tweet text.
