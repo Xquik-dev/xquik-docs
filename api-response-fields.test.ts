@@ -54,6 +54,7 @@ const PAGINATED_TWEET_PAGES = [
   "api-reference/x/timeline.mdx",
   "api-reference/x/tweet-quotes.mdx",
   "api-reference/x/tweet-thread.mdx",
+  "api-reference/x/tweet-hidden-replies.mdx",
   "api-reference/x/list-tweets.mdx",
   "api-reference/x/community-tweets.mdx",
   "api-reference/x/community-search.mdx",
