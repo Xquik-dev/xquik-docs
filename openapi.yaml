@@ -7475,6 +7475,95 @@ paths:
         '503':
           $ref: '#/components/responses/MaximumCoverageBusy'
 
+  /x/spaces/search:
+    get:
+      operationId: searchSpaces
+      summary: Search X Spaces by keyword, host or topic
+      description:
+        Returns the public Spaces that posts matching the query share, live,
+        scheduled or ended. Each page reads up to 20 posts and returns each
+        Space once. Costs 1 credit per Space.
+      tags:
+        - Spaces
+      security: *read-auth
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            example: 'from:solana'
+          description: >
+            Words, hashtags or X search operators, such as from:solana. The
+            search adds filter:spaces. Alias query.
+        - name: queryType
+          in: query
+          schema:
+            type: string
+            enum: [Latest, Top]
+            default: Latest
+          description:
+            Latest sorts by post time. Top ranks by engagement. Any case works.
+            Aliases result_type, sort_order, type, search_type, product,
+            category & section.
+        - $ref: '#/components/parameters/CollectionCursor'
+      responses:
+        '200':
+          description: Spaces found
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [spaces, has_next_page, next_cursor]
+                properties:
+                  spaces:
+                    type: array
+                    description:
+                      Public Spaces, in the order the posts share them
+                    items:
+                      $ref: '#/components/schemas/Space'
+                    example:
+                      - id: '1OGwblLjnQMKB'
+                        title: 'Extending the Network to the Edge'
+                        state: 'Ended'
+                        admins: []
+                        speakers: []
+                        listeners: []
+                  has_next_page: *boolean-example-true
+                  next_cursor: *cursor-example-schema
+              example:
+                spaces:
+                  - id: '1OGwblLjnQMKB'
+                    title: 'Extending the Network to the Edge'
+                    state: 'Ended'
+                    startedAt: '2026-03-11T17:00:26.227Z'
+                    endedAt: '2026-03-11T17:49:29.190Z'
+                    totalLiveListeners: 841
+                    totalReplayWatched: 609
+                    admins:
+                      - id: '951329744804392960'
+                        username: 'solana'
+                        name: 'Solana'
+                    speakers: []
+                    listeners: []
+                has_next_page: true
+                next_cursor: 'DAACCgACGRElMJcAAA'
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '401':
+          $ref: '#/components/responses/AnonymousGuestAuthenticationRequired'
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
+        '424':
+          $ref: '#/components/responses/XApiError'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+        '502':
+          $ref: '#/components/responses/XApiError'
+        '503':
+          $ref: '#/components/responses/ReadBusy'
+
   /x/spaces/{id}:
     get:
       operationId: getSpace
@@ -7504,125 +7593,7 @@ paths:
                 required: [space]
                 properties:
                   space:
-                    type: object
-                    description: X Space
-                    required: [id, admins, speakers, listeners]
-                    properties:
-                      id:
-                        type: string
-                        description: Space ID
-                        example: '1OGwblLjnQMKB'
-                      title:
-                        type: string
-                        description: Space title
-                        example: 'Extending the Network to the Edge'
-                      state:
-                        type: string
-                        description: Such as NotStarted, Running or Ended
-                        example: 'Ended'
-                      createdAt:
-                        type: string
-                        format: date-time
-                        description: When the Space was made
-                        example: '2026-03-10T21:49:59.425Z'
-                      scheduledStart:
-                        type: string
-                        format: date-time
-                        description: When the Space was set to start
-                        example: '2026-03-11T17:00:00.000Z'
-                      startedAt:
-                        type: string
-                        format: date-time
-                        description: When the Space went live
-                        example: '2026-03-11T17:00:26.227Z'
-                      endedAt:
-                        type: string
-                        format: date-time
-                        description: When the Space ended
-                        example: '2026-03-11T17:49:29.190Z'
-                      updatedAt:
-                        type: string
-                        format: date-time
-                        description: When X last changed the Space
-                        example: '2026-03-11T17:49:30.879Z'
-                      totalLiveListeners:
-                        type: integer
-                        minimum: 0
-                        description: Accounts that listened live
-                        example: 841
-                      totalReplayWatched:
-                        type: integer
-                        minimum: 0
-                        description: Accounts that played the recording
-                        example: 609
-                      participantCount:
-                        type: integer
-                        minimum: 0
-                        description: Accounts in the Space now, while it is live
-                        example: 67
-                      isAvailableForReplay:
-                        type: boolean
-                        description: Whether X offers a recording
-                      isAvailableForClipping:
-                        type: boolean
-                        description: Whether listeners may clip the Space
-                      isLocked:
-                        type: boolean
-                        description: Whether the host locked the Space
-                      isEmployeeOnly:
-                        type: boolean
-                        description: Whether only X employees may join
-                      disallowJoin:
-                        type: boolean
-                        description: Whether X lets no more accounts join
-                      noIncognito:
-                        type: boolean
-                        description: Whether anonymous listening is off
-                      contentType:
-                        type: string
-                        description: Audio or video kind, as X names it
-                        example: 'visual_audio'
-                      conversationControls:
-                        type: integer
-                        minimum: 0
-                        description: X's code for who may speak
-                        example: 0
-                      maxAdminCapacity:
-                        type: integer
-                        minimum: 0
-                        description: Most hosts and co-hosts the Space allows
-                        example: 3
-                      mediaKey:
-                        type: string
-                        description: X's media key for the Space's audio
-                        example: '28_2031487758255214592'
-                      mentionedUserIds:
-                        type: array
-                        description: IDs of the accounts the host tagged
-                        items:
-                          type: string
-                        example: ['379392334']
-                      tweetId:
-                        type: string
-                        description: ID of the post that announces the Space
-                        example: '2031777281509564419'
-                      creator:
-                        $ref: '#/components/schemas/UserProfile'
-                      admins:
-                        type: array
-                        description: Hosts and co-hosts
-                        items:
-                          $ref: '#/components/schemas/SpaceParticipant'
-                      speakers:
-                        type: array
-                        description: Accounts X lists as speakers
-                        items:
-                          $ref: '#/components/schemas/SpaceParticipant'
-                      listeners:
-                        type: array
-                        description: Accounts X lists as listeners
-                        items:
-                          $ref: '#/components/schemas/SpaceParticipant'
+                    $ref: '#/components/schemas/Space'
               example:
                 space:
                   id: '1OGwblLjnQMKB'
@@ -15224,6 +15195,127 @@ components:
           properties:
             author:
               $ref: '#/components/schemas/UserProfile'
+
+    Space:
+      type: object
+      description: X Space
+      required: [id, admins, speakers, listeners]
+      properties:
+        id:
+          type: string
+          description: Space ID
+          example: '1OGwblLjnQMKB'
+        title:
+          type: string
+          description: Space title
+          example: 'Extending the Network to the Edge'
+        state:
+          type: string
+          description: Such as NotStarted, Running or Ended
+          example: 'Ended'
+        createdAt:
+          type: string
+          format: date-time
+          description: When the Space was made
+          example: '2026-03-10T21:49:59.425Z'
+        scheduledStart:
+          type: string
+          format: date-time
+          description: When the Space was set to start
+          example: '2026-03-11T17:00:00.000Z'
+        startedAt:
+          type: string
+          format: date-time
+          description: When the Space went live
+          example: '2026-03-11T17:00:26.227Z'
+        endedAt:
+          type: string
+          format: date-time
+          description: When the Space ended
+          example: '2026-03-11T17:49:29.190Z'
+        updatedAt:
+          type: string
+          format: date-time
+          description: When X last changed the Space
+          example: '2026-03-11T17:49:30.879Z'
+        totalLiveListeners:
+          type: integer
+          minimum: 0
+          description: Accounts that listened live
+          example: 841
+        totalReplayWatched:
+          type: integer
+          minimum: 0
+          description: Accounts that played the recording
+          example: 609
+        participantCount:
+          type: integer
+          minimum: 0
+          description: Accounts in the Space now, while it is live
+          example: 67
+        isAvailableForReplay:
+          type: boolean
+          description: Whether X offers a recording
+        isAvailableForClipping:
+          type: boolean
+          description: Whether listeners may clip the Space
+        isLocked:
+          type: boolean
+          description: Whether the host locked the Space
+        isEmployeeOnly:
+          type: boolean
+          description: Whether only X employees may join
+        disallowJoin:
+          type: boolean
+          description: Whether X lets no more accounts join
+        noIncognito:
+          type: boolean
+          description: Whether anonymous listening is off
+        contentType:
+          type: string
+          description: Audio or video kind, as X names it
+          example: 'visual_audio'
+        conversationControls:
+          type: integer
+          minimum: 0
+          description: X's code for who may speak
+          example: 0
+        maxAdminCapacity:
+          type: integer
+          minimum: 0
+          description: Most hosts and co-hosts the Space allows
+          example: 3
+        mediaKey:
+          type: string
+          description: X's media key for the Space's audio
+          example: '28_2031487758255214592'
+        mentionedUserIds:
+          type: array
+          description: IDs of the accounts the host tagged
+          items:
+            type: string
+          example: ['379392334']
+        tweetId:
+          type: string
+          description: ID of the post that announces the Space
+          example: '2031777281509564419'
+        creator:
+          $ref: '#/components/schemas/UserProfile'
+        admins:
+          type: array
+          description: Hosts and co-hosts
+          items:
+            $ref: '#/components/schemas/SpaceParticipant'
+        speakers:
+          type: array
+          description: Accounts X lists as speakers
+          items:
+            $ref: '#/components/schemas/SpaceParticipant'
+        listeners:
+          type: array
+          description: Accounts X lists as listeners
+          items:
+            $ref: '#/components/schemas/SpaceParticipant'
 
     SpaceParticipant:
       description:
