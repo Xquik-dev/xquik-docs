@@ -16,9 +16,9 @@ fixes or validating contracts. Generated client APIs live in the SDK repositorie
 ## Start here
 
 - [Quickstart](https://docs.xquik.com/x-api-quickstart). Make the first authenticated API call.
-- [API reference](https://docs.xquik.com/api-reference). Browse 130 OpenAPI-backed operations.
-- [Guest wallets](https://docs.xquik.com/guides/guest-wallets). Fund 30 accountless GET routes through a confirmed hosted checkout.
-- [Direct MPP](https://docs.xquik.com/mpp/machine-payments-protocol). Pay per request on 7 fixed-price GET operations.
+- [API reference](https://docs.xquik.com/api-reference). Browse every OpenAPI-backed operation.
+- [Guest wallets](https://docs.xquik.com/guides/guest-wallets). Fund accountless GET routes through a confirmed hosted checkout.
+- [Direct MPP](https://docs.xquik.com/mpp/machine-payments-protocol). Pay per request on fixed-price GET operations.
 - [SDKs](https://docs.xquik.com/sdks). Use TypeScript, Python, Go, Java, Kotlin, C#, Ruby, PHP, CLI, and Terraform clients.
 - [Tweet search export](https://docs.xquik.com/guides/tweet-scraper-csv-export). Export tweets by keyword to CSV, JSON, or XLSX.
 - [Tweet replies export](https://docs.xquik.com/guides/tweet-replies-export). Export replies to CSV, JSON, or XLSX.
@@ -63,9 +63,9 @@ Search tweets with `from:`, `since:`, `until:`, filters, and cursor pagination.
 
 ## What's covered
 
-- **REST API.** 130 operations span account, guest wallets, API keys, monitors, events, webhooks, draws, extractions, X data, trends, radar, styles, drafts, compose, X accounts, writes, support, and integrations.
+- **REST API.** Operations span account, guest wallets, API keys, monitors, events, webhooks, draws, extractions, X data, trends, radar, styles, drafts, compose, X accounts, writes, support, and integrations.
 - **Webhooks.** HMAC SHA-256 signature verification, retry semantics, and payload schemas.
-- **MCP server.** Use 3 Code Mode tools or `docs` plus 119 OpenAPI-native tools. Guest keys receive 30 read operations. Binary downloads use REST.
+- **MCP server.** Use 3 Code Mode tools or `docs` plus OpenAPI-native tools, 1 for each eligible operation. Guest keys receive the eligible read operations. Binary downloads use REST.
 - **OAuth 2.1.** Automatic discovery, PKCE, client registration, claimed service identities, and token refresh.
 - **Guides.** Workflows, error handling, rate limits, billing, trends, extractions, architecture, troubleshooting, types, webhook testing, and framework integrations.
 - **SDKs.** 10 generated clients support TypeScript, Python, Go, Java, Kotlin, C#, Ruby, PHP, CLI, and Terraform.
@@ -76,7 +76,7 @@ Search tweets with `from:`, `since:`, `until:`, filters, and cursor pagination.
 ## Repository layout
 
 ```
-api-reference/      130 OpenAPI operations, grouped by resource
+api-reference/      OpenAPI operations, grouped by resource
 guides/             Workflow, operations, and framework guides
 webhooks/           Overview + signature verification
 mcp/                MCP server overview + tool reference

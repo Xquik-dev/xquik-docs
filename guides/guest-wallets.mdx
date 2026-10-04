@@ -20,7 +20,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Guest wallets provide prepaid access to 30 eligible X read routes without an account. Here, account means an Xquik account. You need no connected X account. Use one funded guest key to search tweets. Read profiles, followers, replies, timelines, communities, or lists. You need no email address or dashboard.
+Guest wallets provide prepaid access to the eligible X read routes without an account. Here, account means an Xquik account. You need no connected X account. Use one funded guest key to search tweets. Read profiles, followers, replies, timelines, communities, or lists. You need no email address or dashboard.
 
 This is accountless access, not anonymous access. Every guest-wallet paid read requires the active guest key returned during wallet creation. Direct MPP reads use a per-request payment credential.
 
@@ -34,7 +34,7 @@ A `401` or `402` response never creates a checkout. Show the payment choices and
 
 ### What Twitter APIs work without connecting an X account?
 
-Xquik guest wallets cover 30 documented GET routes. They read tweets, replies,
+Xquik guest wallets cover the documented GET routes below. They read tweets, replies,
 threads, profiles, followers, following, and timelines. Other routes cover
 communities, lists, trends, relationships, and articles. They do not require a
 connected X account.
@@ -48,7 +48,7 @@ They also cover followers, following, timelines, communities, lists, and
 trends. Relationship and article routes are also eligible. Guest access
 excludes posts, likes, reposts, follows, and messages. It also excludes
 monitors, webhooks, extractions, draws, and account management. Check the
-30-route list below before building the request.
+route list below before building the request.
 
 ### Can I scrape Twitter without an API account?
 
@@ -119,8 +119,8 @@ approved top-up. Do not create a new wallet when one paid read returns
 | --------------- | ------------ | ------------------------------ | ------------------------------------------ | ----------------------------------------------------- |
 | Account API key | Required     | Full-scope API key             | Full authenticated API                     | Available account credits. Plans add monthly credits. |
 | OAuth 2.1       | Required     | OAuth Bearer token             | Same account capabilities granted by OAuth | Available account credits. Plans add monthly credits. |
-| Guest wallet    | Not required | `paid_reads` API key           | Exactly 30 prepaid GET routes              | USD 10 to 250 hosted checkout                         |
-| MPP             | Not required | Per-request payment credential | 7 fixed-price GET operations               | Per-request payment                                   |
+| Guest wallet    | Not required | `paid_reads` API key           | Only the prepaid GET routes                | USD 10 to 250 hosted checkout                         |
+| MPP             | Not required | Per-request payment credential | Fixed-price GET operations                 | Per-request payment                                   |
 
 Guest wallets do not grant write actions, connected-account reads, monitors, webhooks, extractions, draws, account management, billing management, API-key management, or OAuth access. Full account keys and OAuth behavior remain unchanged.
 
@@ -184,11 +184,11 @@ curl "https://xquik.com/api/v1/x/tweets?ids=1893456789012345678,1893456789012345
   -H "Authorization: Bearer xq_your_guest_key_here" | jq
 ```
 
-The `paid_reads` scope permits exactly the 30 GET routes listed below. It includes batch `GET /api/v1/x/tweets`, which accepts up to 100 tweet IDs. Every other route is unavailable.
+The `paid_reads` scope permits exactly the GET routes listed below. It includes batch `GET /api/v1/x/tweets`, which accepts up to 100 tweet IDs. Every other route is unavailable.
 
 ## Eligible paid-read routes
 
-Guest wallets cover these 30 prepaid GET routes:
+Guest wallets cover these prepaid GET routes:
 
 - **Tweets.** `/api/v1/x/tweets`, `/api/v1/x/tweets/{id}`, `/api/v1/x/tweets/search`, `/api/v1/x/tweets/{id}/quotes`, `/api/v1/x/tweets/{id}/replies`, `/api/v1/x/tweets/{id}/retweeters`, `/api/v1/x/tweets/{id}/thread`
 - **Users.** `/api/v1/x/users/batch`, `/api/v1/x/users/search`, `/api/v1/x/users/{id}`, `/api/v1/x/users/{id}/followers`, `/api/v1/x/users/{id}/following`, `/api/v1/x/users/{id}/media`, `/api/v1/x/users/{id}/mentions`, `/api/v1/x/users/{id}/replies`, `/api/v1/x/users/{id}/tweets`, `/api/v1/x/users/{id}/verified-followers`
@@ -198,7 +198,7 @@ Guest wallets cover these 30 prepaid GET routes:
 - **Relationships.** `/api/v1/x/followers/check`
 - **Articles.** `/api/v1/x/articles/{tweetId}`
 
-Of these routes, 7 also accept [direct MPP payment](/mpp/machine-payments-protocol#eligible-endpoints). The other 23 routes require a guest or full account credential.
+Some of these routes also accept [direct MPP payment](/mpp/machine-payments-protocol#eligible-endpoints). The others require a guest or full account credential.
 
 `/favoriters`, `/likes` & `/followers-you-know` read through your own connected X account. They are not guest routes. Guest keys get `403 forbidden` on them.
 
@@ -212,7 +212,7 @@ See [Top up guest wallet](/api-reference/guest-wallets/topup) for the request an
 
 ## Handle anonymous 401 and 402 responses
 
-The 23 non-MPP paid reads return `401` with a Bearer authentication challenge and a guest wallet creation action:
+The non-MPP paid reads return `401` with a Bearer authentication challenge and a guest wallet creation action:
 
 ```text
 HTTP/2 401
@@ -222,13 +222,13 @@ Content-Type: application/json
 
 The JSON body includes `payment_options.guest_wallet.create_checkout`. That action describes the guest wallet route, amount bounds, required UUID v4 header, and returned fields. The Bearer header requests authentication. It is not a Payment challenge.
 
-The 7 [direct MPP operations](/mpp/machine-payments-protocol#eligible-endpoints) return `402 application/problem+json` with `WWW-Authenticate: Payment` and the same guest wallet action. Complete the MPP challenge or ask the user to confirm a guest wallet amount.
+The [direct MPP operations](/mpp/machine-payments-protocol#eligible-endpoints) return `402 application/problem+json` with `WWW-Authenticate: Payment` and the same guest wallet action. Complete the MPP challenge or ask the user to confirm a guest wallet amount.
 
 Do not create a guest wallet because a request returned `401` or `402`. The guest wallet action is an offer, not authorization.
 
 ## Use guest keys with MCP
 
-An active guest key can authenticate the API MCP server. Its `search` and `execute` tools expose only the 30 eligible GET read routes. The `docs` tool remains available. Writes and all other routes are unavailable.
+An active guest key can authenticate the API MCP server. Its `search` and `execute` tools expose only the eligible GET read routes. The `docs` tool remains available. Writes and all other routes are unavailable.
 
 The 3 guest credential routes remain direct REST only:
 
