@@ -1,18 +1,16 @@
 ---
-title: "Twitter media scraper & profile export API guide"
-sidebarTitle: "Get user media"
-description: "Scrape tweets with photos, videos, and GIFs from a Twitter or X profile. Export media posts with authors, metrics, cursors, and timestamps. 1 credit per tweet."
-api: "GET /x/users/{id}/media"
+title: "Twitter highlights API & highlighted tweet export"
+sidebarTitle: "Get user highlights"
+description: "Get the posts on a Twitter or X profile's Highlights tab, in X's order. Export highlighted tweets with authors, metrics, media, and cursors. 1 credit per post."
+api: "GET /x/users/{id}/highlights"
 keywords:
   [
-    "Twitter media scraper",
-    "Twitter media API",
-    "X media API",
-    "user media",
-    "tweet photos",
-    "tweet videos",
-    "GIFs",
-    "media export",
+    "Twitter highlights API",
+    "X highlights API",
+    "user highlights",
+    "Highlights tab",
+    "highlighted tweets",
+    "profile highlights export",
   ]
 ---
 
@@ -29,7 +27,7 @@ import TweetWithinTimeParam from "/snippets/tweet-within-time-param.mdx";
 
 <Tabs defaultTabIndex={0} sync={false}>
 
-  <Tab title="200" id="response-x-user-media-200">
+  <Tab title="200" id="response-x-user-highlights-200">
 
     ```json
     {
@@ -41,7 +39,7 @@ import TweetWithinTimeParam from "/snippets/tweet-within-time-param.mdx";
 
   </Tab>
 
-  <Tab title="400" id="response-x-user-media-400">
+  <Tab title="400" id="response-x-user-highlights-400">
 
     ```json
     {
@@ -52,7 +50,7 @@ import TweetWithinTimeParam from "/snippets/tweet-within-time-param.mdx";
 
   </Tab>
 
-  <Tab title="401" id="response-x-user-media-401">
+  <Tab title="401" id="response-x-user-highlights-401">
 
     ```json
     {
@@ -63,7 +61,7 @@ import TweetWithinTimeParam from "/snippets/tweet-within-time-param.mdx";
 
   </Tab>
 
-  <Tab title="402" id="response-x-user-media-402">
+  <Tab title="402" id="response-x-user-highlights-402">
 
     ```json
     {
@@ -74,7 +72,7 @@ import TweetWithinTimeParam from "/snippets/tweet-within-time-param.mdx";
 
   </Tab>
 
-  <Tab title="403" id="response-x-user-media-403">
+  <Tab title="403" id="response-x-user-highlights-403">
 
     ```json
     {
@@ -85,7 +83,7 @@ import TweetWithinTimeParam from "/snippets/tweet-within-time-param.mdx";
 
   </Tab>
 
-  <Tab title="404" id="response-x-user-media-404">
+  <Tab title="404" id="response-x-user-highlights-404">
 
     ```json
     {
@@ -96,7 +94,7 @@ import TweetWithinTimeParam from "/snippets/tweet-within-time-param.mdx";
 
   </Tab>
 
-  <Tab title="424" id="response-x-user-media-424">
+  <Tab title="424" id="response-x-user-highlights-424">
 
     ```json
     {
@@ -107,7 +105,7 @@ import TweetWithinTimeParam from "/snippets/tweet-within-time-param.mdx";
 
   </Tab>
 
-  <Tab title="429" id="response-x-user-media-429">
+  <Tab title="429" id="response-x-user-highlights-429">
 
     ```json
     {
@@ -119,7 +117,7 @@ import TweetWithinTimeParam from "/snippets/tweet-within-time-param.mdx";
 
   </Tab>
 
-  <Tab title="502" id="response-x-user-media-502">
+  <Tab title="502" id="response-x-user-highlights-502">
 
     ```json
     {
@@ -130,7 +128,7 @@ import TweetWithinTimeParam from "/snippets/tweet-within-time-param.mdx";
 
   </Tab>
 
-  <Tab title="503" id="response-x-user-media-503">
+  <Tab title="503" id="response-x-user-highlights-503">
 
     ```json
     {
@@ -161,52 +159,43 @@ Requested result counts are upper bounds for paid authenticated calls. When rema
 <CodeGroup>
 
 ```bash cURL
-curl https://xquik.com/api/v1/x/users/44196397/media \
+curl https://xquik.com/api/v1/x/users/nasa/highlights \
   -H "x-api-key: xq_your_api_key_here" | jq
 
 # Page 2
-curl -G https://xquik.com/api/v1/x/users/44196397/media \
+curl -G https://xquik.com/api/v1/x/users/nasa/highlights \
   --data-urlencode "cursor=abc123" \
   -H "x-api-key: xq_your_api_key_here" | jq
 ```
 
 ```javascript Node.js
-const userId = "44196397";
+const user = "nasa";
 let pageCursor = "";
+let position = 0;
 
 for (let pageIndex = 0; pageIndex < 3; pageIndex += 1) {
   const params = pageCursor === "" ? "" : `?${new URLSearchParams({ cursor: pageCursor })}`;
-  const response = await fetch(`https://xquik.com/api/v1/x/users/${userId}/media${params}`, {
+  const response = await fetch(`https://xquik.com/api/v1/x/users/${user}/highlights${params}`, {
     headers: { "x-api-key": "xq_your_api_key_here" },
   });
   const page = await response.json();
   if (!response.ok) throw new Error(JSON.stringify(page));
 
-  const mediaRows = page.tweets.map((tweet) => ({
-    source_user_id: userId,
-    media_tweet_id: tweet.id,
-    text: tweet.text,
-    tweet_url: tweet.url ?? null,
-    created_at: tweet.createdAt ?? null,
-    author_id: tweet.author?.id ?? null,
-    author_username: tweet.author?.username ?? null,
-    author_name: tweet.author?.name ?? null,
-    author_followers: tweet.author?.followers ?? null,
-    author_verified: tweet.author?.verified ?? null,
-    author_profile_picture: tweet.author?.profilePicture ?? null,
-    like_count: tweet.likeCount ?? null,
-    reply_count: tweet.replyCount ?? null,
-    retweet_count: tweet.retweetCount ?? null,
-    quote_count: tweet.quoteCount ?? null,
-    view_count: tweet.viewCount ?? null,
-    media_urls: (tweet.media ?? []).map((item) => item.mediaUrl).filter(Boolean),
-    media_types: (tweet.media ?? []).map((item) => item.type).filter(Boolean),
-    page_index: pageIndex,
-    page_cursor: pageCursor,
-    next_cursor: page.next_cursor,
-    has_next_page: page.has_next_page,
-  }));
-  for (const row of mediaRows) process.stdout.write(`${JSON.stringify(row)}\n`);
+  for (const tweet of page.tweets) {
+    position += 1;
+    const highlightRow = {
+      source_user: user,
+      highlight_position: position,
+      tweet_id: tweet.id,
+      text: tweet.text,
+      tweet_url: tweet.url ?? null,
+      created_at: tweet.createdAt ?? null,
+      like_count: tweet.likeCount ?? null,
+      view_count: tweet.viewCount ?? null,
+      page_cursor: pageCursor,
+    };
+    process.stdout.write(`${JSON.stringify(highlightRow)}\n`);
+  }
 
   if (!page.has_next_page || page.next_cursor === "") break;
   pageCursor = page.next_cursor;
@@ -217,13 +206,14 @@ for (let pageIndex = 0; pageIndex < 3; pageIndex += 1) {
 import json
 import requests
 
-user_id = "44196397"
+user = "nasa"
 page_cursor = ""
+position = 0
 
 for page_index in range(3):
     params = {"cursor": page_cursor} if page_cursor else {}
     response = requests.get(
-        f"https://xquik.com/api/v1/x/users/{user_id}/media",
+        f"https://xquik.com/api/v1/x/users/{user}/highlights",
         params=params,
         headers={"x-api-key": "xq_your_api_key_here"},
     )
@@ -232,34 +222,19 @@ for page_index in range(3):
         raise RuntimeError(page)
 
     for tweet in page["tweets"]:
-        media_items = tweet.get("media", [])
-        media_row = {
-            "source_user_id": user_id,
-            "media_tweet_id": tweet["id"],
+        position += 1
+        highlight_row = {
+            "source_user": user,
+            "highlight_position": position,
+            "tweet_id": tweet["id"],
             "text": tweet["text"],
             "tweet_url": tweet.get("url"),
             "created_at": tweet.get("createdAt"),
-            "author_id": (tweet.get("author") or {}).get("id"),
-            "author_username": (tweet.get("author") or {}).get("username"),
-            "author_name": (tweet.get("author") or {}).get("name"),
-            "author_followers": (tweet.get("author") or {}).get("followers"),
-            "author_verified": (tweet.get("author") or {}).get("verified"),
-            "author_profile_picture": (tweet.get("author") or {}).get("profilePicture"),
             "like_count": tweet.get("likeCount"),
-            "reply_count": tweet.get("replyCount"),
-            "retweet_count": tweet.get("retweetCount"),
-            "quote_count": tweet.get("quoteCount"),
             "view_count": tweet.get("viewCount"),
-            "media_urls": [
-                item["mediaUrl"] for item in media_items if item.get("mediaUrl")
-            ],
-            "media_types": [item["type"] for item in media_items if item.get("type")],
-            "page_index": page_index,
             "page_cursor": page_cursor,
-            "next_cursor": page["next_cursor"],
-            "has_next_page": page["has_next_page"],
         }
-        print(json.dumps(media_row, separators=(",", ":")))
+        print(json.dumps(highlight_row, separators=(",", ":")))
 
     if not page["has_next_page"] or not page["next_cursor"]:
         break
@@ -268,77 +243,33 @@ for page_index in range(3):
 
 </CodeGroup>
 
-## User media handoff
+## Order and empty results
 
-Use `GET /x/users/{id}/media` when a gallery, moderation queue, warehouse, or
-agent needs recent media tweets from one account. The examples above write JSON
-Lines rows with the source user, media tweet ID, text, tweet URL, author ID,
-username, display name, follower count, verified state, profile image URL,
-engagement counts, `media_urls`, `media_types`, and cursor fields. A worker
-can then resume from the last saved `next_cursor`.
+Use `GET /x/users/{id}/highlights` for the posts on a profile's Highlights tab.
+Rows arrive in X's order. The examples above save that order as
+`highlight_position`.
+
+A user without highlights returns an empty list, not an error:
+
+```json
+{ "tweets": [], "has_next_page": false, "next_cursor": "" }
+```
+
+The last page looks the same. Stop paging when `has_next_page` is `false`.
 
 A protected account returns 403 `x_account_protected`. Xquik charges nothing.
 
-## Which media endpoint?
+## Which profile endpoint?
 
-- Use `GET /api/v1/x/users/{id}/media` when every row must be a media tweet
-  from one profile. Store `media_urls`, `media_types`, `media_tweet_id`,
-  `page_cursor`, `next_cursor`, and `has_next_page`.
-- Use `GET /api/v1/x/users/{id}/tweets` when the sync also needs non-media
-  posts or replies.
-- Use `GET /api/v1/x/tweets/{id}` when you already know one tweet ID and need
-  its media plus full tweet detail.
-- Use `POST /api/v1/x/media` only to host or validate a local file or HTTPS
-  media URL before a write. Pass `mediaUrl` to `POST /api/v1/x/tweets`, or pass
-  `mediaId` as the only `media_ids` item for `POST /api/v1/x/dm/{userId}`.
+- Use `GET /api/v1/x/users/{id}/highlights` for the Highlights tab only.
+- Use `GET /api/v1/x/users/{id}/tweets` for the whole profile timeline.
+- Use `GET /api/v1/x/users/{id}/media` when every row must be a media tweet.
 
-## Build a profile media inventory
-
-Use this route for tweets containing photos, videos, or animated GIFs from one
-profile. Keep the source profile ID with every media item.
-
-Use the inventory for asset review, campaign research, or approved archiving.
-Respect the original publisher and applicable usage rights.
-
-## Hand media into an asset workflow
-
-Create one child row per media item. Include the parent tweet ID, media type,
-source URL, author ID, and collection time.
-
-Choose the best available video variant only after inspecting its metadata.
-Keep the original variant list when later processing may need another format.
-
-Do not download every asset during discovery. First filter and approve the
-relevant tweets. Then call the download route with the selected tweet IDs.
-
-Keep attribution and source links in any archive. The media URL alone does
-not explain who published the asset or where it appeared.
-
-Record download status separately from discovery status. A listed media URL
-does not mean you downloaded the asset.
-
-| Media inventory column | Response source                  | Asset rule                                                       |
-| ---------------------- | -------------------------------- | ---------------------------------------------------------------- |
-| `source_x_user_id`     | Resolved profile ID              | Keep every media tweet tied to the intended profile.             |
-| `tweet_id`             | `tweets[].id`                    | Use as the parent key for one or more media items.               |
-| `tweet_url`            | `tweets[].url`                   | Keep the original X post for attribution and review.             |
-| `tweet_text`           | `tweets[].text`                  | Keep the caption or post context beside each asset.              |
-| `author_id`            | `tweets[].author.id`             | Keep the original publisher as a stable identity.                |
-| `created_at`           | `tweets[].createdAt`             | Store the tweet publication time.                                |
-| `media_index`          | Position inside `tweets[].media` | Keep the order of several assets on one tweet.                   |
-| `media_type`           | `tweets[].media[].type`          | Separate photo, video, and animated GIF processing.              |
-| `media_url`            | `tweets[].media[].mediaUrl`      | Deduplicate an asset only within its parent tweet.               |
-| `video_variants`       | `tweets[].media[].videoVariants` | Keep every returned rendition until someone approves a download. |
-| `page_cursor`          | Request `cursor`                 | Resume the profile media inventory after stored pages.           |
-| `collected_at`         | Integration timestamp            | Audit when you observed the media URL and engagement counts.     |
-
-| Asset decision           | Required evidence                      | Next action                                                      |
-| ------------------------ | -------------------------------------- | ---------------------------------------------------------------- |
-| Review only              | Tweet URL, media URL, author, and text | Keep the remote asset linked to its source tweet.                |
-| Approved image download  | Image media type and approved usage    | Call the download route with the parent tweet ID.                |
-| Approved video download  | Video variants and selected format     | Choose a variant after inspecting bitrate and content type.      |
-| Rejected asset           | Reviewer decision and reason           | Keep the source record without downloading the file.             |
-| Failed selected download | Tweet ID, media URL, and failure state | Retry only the selected asset, not the entire profile inventory. |
+| Profile feed     | Route                      | Rows returned                      |
+| ---------------- | -------------------------- | ---------------------------------- |
+| Highlights tab   | `/x/users/{id}/highlights` | Highlighted posts, in X's order.   |
+| Profile timeline | `/x/users/{id}/tweets`     | Original profile posts by default. |
+| Media-only posts | `/x/users/{id}/media`      | Profile tweets that contain media. |
 
 ## Path parameters
 
@@ -366,7 +297,7 @@ Tweets per page. Range: `1-100`. Defaults to `20`.
 ### Tweet result filters
 
 These optional filters apply to `tweets[]` returned by this route. They keep the
-same media-tweets target. Xquik filters rows after it fetches each page. Selective
+same highlights target. Xquik filters rows after it fetches each page. Selective
 filters can return fewer rows than an unfiltered page.
 
 <TweetResultFilterParams />
@@ -393,7 +324,7 @@ Full account key. Sessions and OAuth also work.
 
 <ResponseField name="tweets" type="object[]">
 
-Array of tweets containing media.
+Array of highlighted tweets, in X's order.
 **Tweet object fields.**
 
 <ResponseField name="id" type="string">Tweet ID.</ResponseField>
@@ -464,7 +395,7 @@ Opaque cursor for the next page. Empty string when no more results.
   "tweets": [
     {
       "id": "1893456789012345678",
-      "text": "Check out this photo",
+      "text": "Launch day recap",
       "createdAt": "2026-02-24T10:00:00.000Z",
       "likeCount": 200,
       "viewCount": 15000,
@@ -476,8 +407,7 @@ Opaque cursor for the next page. Empty string when no more results.
         "followers": 1200,
         "verified": true,
         "profilePicture": "https://pbs.twimg.com/profile_images/example.jpg"
-      },
-      "media": [{ "type": "photo", "mediaUrl": "https://pbs.twimg.com/media/example.jpg" }]
+      }
     }
   ],
   "has_next_page": true,
@@ -495,6 +425,15 @@ Opaque cursor for the next page. Empty string when no more results.
 ```
 
 The user ID is empty or invalid.
+
+### 403 Protected account
+
+```json
+{
+  "error": "x_account_protected",
+  "message": "Account is protected. Choose a public account."
+}
+```
 
 ### 404 User not found
 
@@ -543,7 +482,7 @@ The normalized v1 response contract can return 424 when the read service is unav
 
 <Note>
 
-**Related.** [Get user timeline](/api-reference/x/user-tweets) · [User highlights](/api-reference/x/user-highlights) · [User likes](/api-reference/x/user-likes) · [User mentions timeline](/api-reference/x/user-mentions)
+**Related.** [Get user timeline](/api-reference/x/user-tweets) · [User media](/api-reference/x/user-media) · [User likes](/api-reference/x/user-likes)
 
 </Note>
 

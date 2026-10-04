@@ -1921,7 +1921,7 @@ const REQUIRED_MCP_CONTRACT_SNIPPETS = [
   "Operations in `support`: create, list, read, reply, and close tickets.",
   "Operations across `x-accounts` and `x-write`:",
   '<Card title="Tweets, profiles & followers" icon="search">',
-  "Operations in `twitter`: batch and single tweet lookup, tweet search, article lookup, user lookup, follow checks, trends, bookmarks, notifications, timeline, DM history, likes, media, followers, replies, communities, and lists.",
+  "Operations in `twitter`: batch and single tweet lookup, tweet search, article lookup, user lookup, follow checks, trends, bookmarks, notifications, timeline, DM history, likes, media, highlights, followers, replies, communities, and lists.",
   '<Card title="X accounts and writes" icon="send">',
   "Operations across `x-accounts` and `x-write`: connect accounts, resolve challenges, post tweets, like, retweet, follow, remove followers, send and delete DMs, upload media, update profiles, and manage communities.",
   '<Card title="Monitor billing" icon="radio">',
@@ -2373,6 +2373,7 @@ const PAID_READ_REFERENCE_PAGES = [
   "api-reference/x/tweet-quotes.mdx",
   "api-reference/x/tweet-replies.mdx",
   "api-reference/x/tweet-thread.mdx",
+  "api-reference/x/user-highlights.mdx",
   "api-reference/x/user-media.mdx",
   "api-reference/x/user-mentions.mdx",
   "api-reference/x/user-replies.mdx",
@@ -5891,6 +5892,7 @@ const TWEET_LIST_FILTER_API_PAGES = [
   "api-reference/x/user-tweets.mdx",
   "api-reference/x/user-likes.mdx",
   "api-reference/x/user-media.mdx",
+  "api-reference/x/user-highlights.mdx",
   "api-reference/x/user-mentions.mdx",
   "api-reference/x/tweet-quotes.mdx",
 ] as const;
@@ -5914,6 +5916,7 @@ const HIGH_VALUE_ROW_HANDOFF_API_PAGES = [
   },
   { file: "api-reference/x/user-likes.mdx", label: "User likes endpoint page" },
   { file: "api-reference/x/user-media.mdx", label: "User media endpoint page" },
+  { file: "api-reference/x/user-highlights.mdx", label: "User highlights endpoint page" },
   {
     file: "api-reference/x/user-mentions.mdx",
     label: "User mentions endpoint page",
@@ -12184,7 +12187,7 @@ const FORBIDDEN_PUBLIC_CONFIDENTIALITY_WORDING = [
   "TrustMRR",
 ] as const;
 
-const EXPECTED_OPENAPI_OPERATION_COUNT = 131;
+const EXPECTED_OPENAPI_OPERATION_COUNT = 132;
 const NON_REST_OPERATION_IDS = new Set(["searchXquikDocumentation"]);
 
 const FORBIDDEN_STALE_OPERATION_COUNT_SNIPPETS = [
