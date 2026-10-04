@@ -33,6 +33,8 @@ const LINK_CLUSTERS: readonly LinkCluster[] = [
       "/api-reference/x/search-lists",
       "/api-reference/x/list-members",
       "/api-reference/x/list-followers",
+      "/api-reference/x/user-list-memberships",
+      "/api-reference/x/user-lists",
       "/api-reference/x/community-info",
       "/api-reference/x/community-members",
       "/api-reference/x/community-moderators",
