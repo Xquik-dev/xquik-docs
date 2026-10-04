@@ -7565,8 +7565,8 @@ paths:
       summary: Search X Spaces by keyword, host or topic
       description:
         Returns the public Spaces that posts matching the query share, live,
-        scheduled or ended. Each page reads up to 20 posts and returns each
-        Space once. Costs 1 credit per Space.
+        scheduled or ended. Each page reads up to pageSize posts, 20 by default,
+        and returns each Space once. Costs 1 credit per Space.
       tags:
         - Spaces
       security: *read-auth
@@ -7592,6 +7592,18 @@ paths:
             Aliases result_type, sort_order, type, search_type, product,
             category & section.
         - $ref: '#/components/parameters/CollectionCursor'
+        - name: pageSize
+          in: query
+          description: >
+            Posts a page reads, 20 at a time (1-100, default 20). Posts often
+            share the same Space, so a page returns fewer Spaces. Send 100 to
+            read a search fastest. Aliases: limit, count, max_results, maxItems,
+            max_items & per_page.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
       responses:
         '200':
           description: Spaces found
@@ -15390,7 +15402,9 @@ components:
           example: 'Extending the Network to the Edge'
         state:
           type: string
-          description: Such as NotStarted, Running or Ended
+          description:
+            NotStarted (scheduled), Running (live), Ended, Canceled (scheduled,
+            never started) or TimedOut (closed by X, not by its host)
           example: 'Ended'
         createdAt:
           type: string
