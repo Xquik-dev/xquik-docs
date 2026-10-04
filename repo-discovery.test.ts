@@ -1921,7 +1921,7 @@ const REQUIRED_MCP_CONTRACT_SNIPPETS = [
   "Operations in `support`: create, list, read, reply, and close tickets.",
   "Operations across `x-accounts` and `x-write`:",
   '<Card title="Tweets, profiles & followers" icon="search">',
-  "Operations in `twitter`: batch and single tweet lookup, tweet search, article lookup, user Article lists, user lookup, follow checks, trends, bookmarks, notifications, timeline, DM history, likes, media, highlights, followers, replies, communities, and lists.",
+  "Operations in `twitter`: batch and single tweet lookup, tweet search, article lookup, user Article lists, user lookup, follow checks, trends, bookmarks, notifications, timeline, DM history, likes, media, highlights, followers, replies, communities, lists, and job listings.",
   '<Card title="X accounts and writes" icon="send">',
   "Operations across `x-accounts` and `x-write`: connect accounts, resolve challenges, post tweets, like, retweet, follow, remove followers, send and delete DMs, upload media, update profiles, and manage communities.",
   '<Card title="Monitor billing" icon="radio">',

@@ -48,6 +48,7 @@ const X_API_GROUPS = [
   "Timeline & DMs",
   "Communities",
   "Lists",
+  "Jobs",
 ] as const;
 
 const PRIORITY_API_ROUTES = [
