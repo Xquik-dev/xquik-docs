@@ -519,6 +519,9 @@ paths:
       summary: List API keys
       tags: [API Keys]
       security: [{ cookieSession: [] }]
+      parameters: &list-limit-after-parameters
+        - $ref: '#/components/parameters/ListLimit'
+        - $ref: '#/components/parameters/After'
       responses:
         '200':
           description: API key list
@@ -526,15 +529,21 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [keys]
+                required: [keys, hasMore]
                 properties:
                   keys:
                     type: array
                     items:
                       $ref: '#/components/schemas/ApiKey'
                     example: []
+                  hasMore: *boolean-example-false
+                  nextCursor: &short-id-example-schema
+                    type: string
+                    example: 'abc123'
               example:
                 keys: []
+                hasMore: false
+        '400': *invalid-input-response
         '401': *unauthenticated-response
         '429': *rate-limit-exceeded-response
     post:
@@ -767,9 +776,7 @@ paths:
                       $ref: '#/components/schemas/Draft'
                     example: []
                   hasMore: *boolean-example-false
-                  nextCursor: &short-id-example-schema
-                    type: string
-                    example: 'abc123'
+                  nextCursor: *short-id-example-schema
               example:
                 drafts: []
                 hasMore: false
@@ -864,6 +871,7 @@ paths:
       summary: List cached style profiles
       tags: [Composition]
       security: *api-auth
+      parameters: *list-limit-after-parameters
       responses:
         '200':
           description: Style profile list
@@ -871,15 +879,19 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [styles]
+                required: [styles, hasMore]
                 properties:
                   styles:
                     type: array
                     items:
                       $ref: '#/components/schemas/StyleProfileSummary'
                     example: []
+                  hasMore: *boolean-example-false
+                  nextCursor: *short-id-example-schema
               example:
                 styles: []
+                hasMore: false
+        '400': *invalid-input-response
         '401': *unauthenticated-response
         '429': *rate-limit-exceeded-response
     post:
@@ -1245,6 +1257,7 @@ paths:
       summary: List monitors
       tags: [Monitors]
       security: *api-auth
+      parameters: *list-limit-after-parameters
       responses:
         '200':
           description: Monitor list
@@ -1252,7 +1265,7 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [monitors, total]
+                required: [monitors, total, hasMore]
                 properties:
                   monitors:
                     type: array
@@ -1260,12 +1273,17 @@ paths:
                       $ref: '#/components/schemas/Monitor'
                     example: []
                   total:
+                    description: Account monitors on this page.
                     type: integer
                     minimum: 0
                     example: 0
+                  hasMore: *boolean-example-false
+                  nextCursor: *short-id-example-schema
               example:
                 monitors: []
                 total: 0
+                hasMore: false
+        '400': *invalid-input-response
         '401': *unauthenticated-response
         '429': *rate-limit-exceeded-response
     post:
@@ -1371,6 +1389,7 @@ paths:
       summary: List keyword monitors
       tags: [Monitors]
       security: *api-auth
+      parameters: *list-limit-after-parameters
       responses:
         '200':
           description: Keyword monitor list
@@ -1378,7 +1397,7 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [monitors, total]
+                required: [monitors, total, hasMore]
                 properties:
                   monitors:
                     type: array
@@ -1386,12 +1405,17 @@ paths:
                       $ref: '#/components/schemas/KeywordMonitor'
                     example: []
                   total:
+                    description: Keyword monitors on this page.
                     type: integer
                     minimum: 0
                     example: 0
+                  hasMore: *boolean-example-false
+                  nextCursor: *short-id-example-schema
               example:
                 monitors: []
                 total: 0
+                hasMore: false
+        '400': *invalid-input-response
         '401': *unauthenticated-response
         '429': *rate-limit-exceeded-response
     post:
@@ -2081,7 +2105,7 @@ paths:
         - name: untilDate
           in: query
           schema: { type: string, format: date }
-          description: Include results on or before this date.
+          description: Include results on or before this date, inclusive.
       responses:
         '200':
           description: Exported file
@@ -2375,6 +2399,7 @@ paths:
       summary: List webhooks
       tags: [Webhooks]
       security: *api-auth
+      parameters: *list-limit-after-parameters
       responses:
         '200':
           description: Webhook list
@@ -2382,15 +2407,19 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [webhooks]
+                required: [webhooks, hasMore]
                 properties:
                   webhooks:
                     type: array
                     items:
                       $ref: '#/components/schemas/Webhook'
                     example: []
+                  hasMore: *boolean-example-false
+                  nextCursor: *short-id-example-schema
               example:
                 webhooks: []
+                hasMore: false
+        '400': *invalid-input-response
         '401': *unauthenticated-response
         '429': *rate-limit-exceeded-response
     post:
@@ -2516,11 +2545,15 @@ paths:
   /webhooks/{id}/deliveries:
     get:
       operationId: listWebhookDeliveries
-      description: Returns recent delivery attempts and response outcomes.
+      description:
+        Returns delivery attempts and response outcomes, newest first.
       summary: List webhook deliveries
       tags: [Webhooks]
       security: *api-auth
-      parameters: *resource-id-parameters
+      parameters:
+        - $ref: '#/components/parameters/ResourceId'
+        - $ref: '#/components/parameters/DeliveryLimit'
+        - $ref: '#/components/parameters/After'
       responses:
         '200':
           description: Delivery list
@@ -2528,15 +2561,18 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [deliveries]
+                required: [deliveries, hasMore]
                 properties:
                   deliveries:
                     type: array
                     items:
                       $ref: '#/components/schemas/Delivery'
                     example: []
+                  hasMore: *boolean-example-false
+                  nextCursor: *short-id-example-schema
               example:
                 deliveries: []
+                hasMore: false
         '400': *invalid-input-response
         '401': *unauthenticated-response
         '404': *not-found-response
@@ -3109,7 +3145,8 @@ paths:
             type: string
             format: date
           description:
-            End date as a UTC day. It takes the same date forms as sinceDate.
+            End date as a UTC day, inclusive, so its own posts count. It takes
+            the same date forms as sinceDate.
         - $ref: '#/components/parameters/MediaType'
         - $ref: '#/components/parameters/MinLikes'
         - $ref: '#/components/parameters/MinRetweets'
@@ -4967,10 +5004,13 @@ paths:
         '429': *rate-limit-exceeded-response-2
     get:
       operationId: listTickets
-      description: Returns support tickets owned by the authenticated user.
+      description: >
+        Returns support tickets owned by the authenticated user, latest activity
+        first.
       summary: List user's support tickets
       tags: [Support]
       security: *api-auth
+      parameters: *list-limit-after-parameters
       responses:
         '200':
           description: List of tickets
@@ -4978,7 +5018,7 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [tickets]
+                required: [tickets, hasMore]
                 properties:
                   tickets:
                     type: array
@@ -5020,6 +5060,8 @@ paths:
                         messageCount: 2
                         createdAt: '2025-01-15T12:00:00Z'
                         updatedAt: '2025-01-16T09:30:00Z'
+                  hasMore: *boolean-example-false
+                  nextCursor: *short-id-example-schema
               example:
                 tickets:
                   - publicId: 'tkt_a1b2c3d4e5f6a1b2c3d4e5f6'
@@ -5028,6 +5070,8 @@ paths:
                     messageCount: 2
                     createdAt: '2025-01-15T12:00:00Z'
                     updatedAt: '2025-01-16T09:30:00Z'
+                hasMore: false
+        '400': *invalid-input-response
         '401': *unauthenticated-response
         '429': *rate-limit-exceeded-response-2
   /support/tickets/{id}:
@@ -8471,6 +8515,28 @@ components:
         minimum: 1
         maximum: 100
         default: 50
+    ListLimit:
+      name: limit
+      in: query
+      description: >
+        Maximum items per page: 1 to 200, default 200. Pass nextCursor as cursor
+        for the next page.
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 200
+        default: 200
+    DeliveryLimit:
+      name: limit
+      in: query
+      description: >
+        Maximum deliveries per page: 1 to 100, default 100. Pass nextCursor as
+        cursor for the next page.
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 100
     ResultPageSize:
       name: pageSize
       in: query
@@ -8739,7 +8805,9 @@ components:
       schema:
         type: string
         format: date
-      description: End date in YYYY-MM-DD format, as a UTC day.
+      description:
+        End date in YYYY-MM-DD format, as a UTC day, inclusive, so its own posts
+        count.
     MediaType:
       name: mediaType
       in: query

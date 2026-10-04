@@ -26,7 +26,19 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
     ```json
     {
-      "keys": []
+      "keys": [],
+      "hasMore": false
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="400" id="response-api-keys-list-400">
+
+    ```json
+    {
+      "error": "invalid_input",
+      "message": "Invalid input. Check the request body."
     }
     ```
 
@@ -259,6 +271,16 @@ Dashboard session cookie. Format: `session_token=YOUR_SESSION_TOKEN`.
 
 </ParamField>
 
+## Query parameters
+
+<ParamField query="limit" type="integer">
+  Maximum items per page: 1 to 200, default 200.
+</ParamField>
+<ParamField query="cursor" type="string">
+  `nextCursor` from the previous page. The `after` alias also works. Offset pagination is not
+  supported.
+</ParamField>
+
 ## Response
 
 ### 200 OK
@@ -301,6 +323,13 @@ Array of API key objects.
 
 </ResponseField>
 
+<ResponseField name="hasMore" type="boolean">
+  Whether more rows follow this page.
+</ResponseField>
+<ResponseField name="nextCursor" type="string">
+  Pass it as `cursor` for the next page. Present when `hasMore` is `true`.
+</ResponseField>
+
 ```json
 {
   "keys": [
@@ -319,9 +348,21 @@ Array of API key objects.
       "isActive": true,
       "createdAt": "2026-02-20T09:00:00.000Z"
     }
-  ]
+  ],
+  "hasMore": false
 }
 ```
+
+### 400 Invalid cursor
+
+```json
+{
+  "error": "invalid_input",
+  "message": "Cursor invalid. Use nextCursor from the previous page, or omit it to start over."
+}
+```
+
+The `cursor` is not one this list returned. Send the `nextCursor` of the previous page, or omit it.
 
 ### 401 Unauthenticated
 
