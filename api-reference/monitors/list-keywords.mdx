@@ -19,7 +19,19 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
     ```json
     {
       "monitors": [],
-      "total": 0
+      "total": 0,
+      "hasMore": false
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="400" id="response-monitors-list-keywords-400">
+
+    ```json
+    {
+      "error": "invalid_input",
+      "message": "Invalid input. Check the request body."
     }
     ```
 
@@ -56,7 +68,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 ## Reconcile every keyword monitor
 
 Use this endpoint when the exact monitor ID is unknown. It returns up to 200
-stored searches plus `total`. It does not paginate the inventory.
+stored searches per page plus `total`. Follow `nextCursor` for the rest.
 
 | Monitor list check     | Inventory calculation                  | Reconciliation decision                                  |
 | ---------------------- | -------------------------------------- | -------------------------------------------------------- |
@@ -357,6 +369,16 @@ Your API key. Session cookie authentication is also supported. Generate a key fr
 
 </ParamField>
 
+## Query parameters
+
+<ParamField query="limit" type="integer">
+  Maximum items per page: 1 to 200, default 200.
+</ParamField>
+<ParamField query="cursor" type="string">
+  `nextCursor` from the previous page. The `after` alias also works. Offset pagination is not
+  supported.
+</ParamField>
+
 ## Response
 
 ### 200 OK
@@ -383,7 +405,13 @@ Your API key. Session cookie authentication is also supported. Generate a key fr
   Next hourly credit charge time for active monitor billing.
 </ResponseField>
 <ResponseField name="total" type="number">
-  Total number of keyword monitors.
+  Keyword monitors on this page.
+</ResponseField>
+<ResponseField name="hasMore" type="boolean">
+  Whether more rows follow this page.
+</ResponseField>
+<ResponseField name="nextCursor" type="string">
+  Pass it as `cursor` for the next page. Present when `hasMore` is `true`.
 </ResponseField>
 
 ```json
@@ -398,9 +426,21 @@ Your API key. Session cookie authentication is also supported. Generate a key fr
       "nextBillingAt": "2026-02-24T11:30:00.000Z"
     }
   ],
-  "total": 1
+  "total": 1,
+  "hasMore": false
 }
 ```
+
+### 400 Invalid cursor
+
+```json
+{
+  "error": "invalid_input",
+  "message": "Cursor invalid. Use nextCursor from the previous page, or omit it to start over."
+}
+```
+
+The `cursor` is not one this list returned. Send the `nextCursor` of the previous page, or omit it.
 
 ### 401 Unauthenticated
 
@@ -424,7 +464,7 @@ Too many requests. Wait for the `Retry-After` header before retrying.
 
 <Info>
 
-Returns up to 200 keyword monitors. The route has no pagination. [Contact support](mailto:support@xquik.com) if you need more.
+Returns up to 200 keyword monitors per page. Pass `nextCursor` as `cursor` for the next page.
 
 </Info>
 

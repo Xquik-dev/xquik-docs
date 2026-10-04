@@ -25,13 +25,13 @@ describe("list writing styles documentation", (): void => {
 
     expect({
       emptyListDocumented: source.includes('"styles": []'),
-      noCursorDocumented: source.includes("The response contains no pagination cursor."),
+      cursorDocumented: source.includes("The response pages by cursor."),
       sampleCountDocumented:
         /It only\s+counts the tweet samples stored for this writing-style profile\./u.test(source),
       summaryOnlyDocumented: source.includes("This endpoint returns summaries only."),
     }).toStrictEqual({
       emptyListDocumented: true,
-      noCursorDocumented: true,
+      cursorDocumented: true,
       sampleCountDocumented: true,
       summaryOnlyDocumented: true,
     });
