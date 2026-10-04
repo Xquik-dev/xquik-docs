@@ -2846,6 +2846,133 @@ paths:
         '429': *rate-limit-exceeded-response
         '424': *x-api-error-response
 
+  /x/trends/locations:
+    get:
+      operationId: getXTrendLocations
+      description: Returns the places X offers trends for. Pass a location's woeid to
+        /x/trends. Each returned location costs 1 credit.
+      summary: List the locations X offers trends for
+      tags:
+        - Trends
+      security: *read-auth
+      parameters:
+        - name: country
+          in: query
+          schema:
+            type: string
+          description: Country name or 2-letter code, such as Turkey or TR. Case
+            insensitive. Returns the country & its towns.
+        - name: placeType
+          in: query
+          schema:
+            type: string
+            enum: [country, town, worldwide, unknown]
+          description: Kind of place. Case insensitive. X labels a few towns unknown.
+        - name: q
+          in: query
+          schema:
+            type: string
+          description: Text the location name contains, such as york. Case insensitive.
+            Alias query.
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+          description: Maximum locations to return. Omit it for every match. Credits can
+            return fewer. Aliases pageSize, count & max_results.
+      responses:
+        '200':
+          description: Locations X offers trends for
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [locations, count, total]
+                properties:
+                  locations:
+                    type: array
+                    items:
+                      type: object
+                      required:
+                        - woeid
+                        - name
+                        - country
+                        - countryCode
+                        - placeType
+                        - placeTypeCode
+                        - parentWoeid
+                        - url
+                      properties:
+                        woeid:
+                          type: integer
+                          minimum: 1
+                          description: Location ID. Pass it as woeid to /x/trends.
+                          example: 2344116
+                        name:
+                          type: string
+                          example: 'Istanbul'
+                        country:
+                          type: [string, 'null']
+                          description: Country name. Null for Worldwide.
+                          example: 'Turkey'
+                        countryCode:
+                          type: [string, 'null']
+                          description: 2-letter country code. Null for Worldwide.
+                          example: 'TR'
+                        placeType:
+                          type: [string, 'null']
+                          description: X's kind of place. Town, Country, Supername for
+                            Worldwide, or Unknown.
+                          example: 'Town'
+                        placeTypeCode:
+                          type: [integer, 'null']
+                          description: X's numeric code for the kind of place.
+                          example: 7
+                        parentWoeid:
+                          type: [integer, 'null']
+                          description: WOEID of the country or region above it. Null for
+                            Worldwide.
+                          example: 23424969
+                        url:
+                          type: [string, 'null']
+                          description: X's legacy Yahoo GeoPlanet reference. It may not
+                            resolve.
+                          example: 'http://where.yahooapis.com/v1/place/2344116'
+                  count:
+                    type: integer
+                    minimum: 0
+                    description: Locations returned & charged.
+                    example: 1
+                  total:
+                    type: integer
+                    minimum: 0
+                    description: Locations that match the filters, before limit.
+                    example: 1
+                  message:
+                    type: string
+                    description: What to send instead. Present only when no location
+                      matches.
+              example:
+                locations:
+                  - woeid: 2344116
+                    name: 'Istanbul'
+                    country: 'Turkey'
+                    countryCode: 'TR'
+                    placeType: 'Town'
+                    placeTypeCode: 7
+                    parentWoeid: 23424969
+                    url: 'http://where.yahooapis.com/v1/place/2344116'
+                count: 1
+                total: 1
+        '401': *anonymous-guest-authentication-response
+        '402': *payment-required-response
+        '502': *x-api-error-response
+        '503':
+          $ref: '#/components/responses/ReadBusy'
+        '429': *rate-limit-exceeded-response
+        '424': *x-api-error-response
+
   /x/tweets/search:
     get:
       operationId: searchTweets
