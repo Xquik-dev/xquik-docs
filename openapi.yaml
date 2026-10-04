@@ -62,7 +62,7 @@ tags:
   - name: Guest Wallets
     description: Accountless prepaid access for paid read endpoints
   - name: Lists
-    description: X List followers, members, and tweets
+    description: X List details, followers, members, and tweets
   - name: Media
     description: Media upload and download
   - name: Monitors
@@ -6682,6 +6682,95 @@ paths:
       security: *read-auth
       parameters: *communitySearchParameters
       responses: *communitySearchResponses
+
+  /x/lists/{id}:
+    get:
+      operationId: getList
+      summary: Get an X List's name, description, counts and owner
+      description:
+        Returns one public X List as its page on X shows it. Accepts the List ID
+        or the URL-encoded List URL, such as x.com/i/lists/4143408. A private
+        List answers 404.
+      tags:
+        - Lists
+      security: *read-auth
+      x-payment-info:
+        offers:
+          - amount: '150'
+            currency: *tempo-usd
+            intent: charge
+            method: tempo
+      parameters:
+        - $ref: '#/components/parameters/ListPathId'
+      responses:
+        '200':
+          description: List details
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [list]
+                properties:
+                  list:
+                    type: object
+                    description: Public X List
+                    required: [id, name]
+                    properties:
+                      id:
+                        type: string
+                        description: Numeric List ID
+                        example: '4143408'
+                      name:
+                        type: string
+                        description: Display name of the List
+                        example: 'NASA Centers'
+                      description:
+                        type: string
+                        description: About text of the List
+                        example: 'NASA has 10 centers'
+                      memberCount:
+                        type: integer
+                        minimum: 0
+                        description: Accounts the List holds
+                        example: 11
+                      subscriberCount:
+                        type: integer
+                        minimum: 0
+                        description: Accounts that follow the List
+                        example: 859
+                      createdAt:
+                        type: string
+                        format: date-time
+                        description: When the List was made
+                        example: '2009-12-02T22:41:02.000Z'
+                      bannerUrl:
+                        type: string
+                        description: List banner image URL
+                        example: 'https://pbs.twimg.com/media/example.png'
+                      owner:
+                        $ref: '#/components/schemas/UserProfile'
+              example:
+                list:
+                  id: '4143408'
+                  name: 'NASA Centers'
+                  description: 'NASA has 10 centers'
+                  memberCount: 11
+                  subscriberCount: 859
+                  createdAt: '2009-12-02T22:41:02.000Z'
+                  bannerUrl: 'https://pbs.twimg.com/media/example.png'
+                  owner:
+                    id: '11348282'
+                    username: 'NASA'
+                    name: 'NASA'
+        '400': *invalid-input-response
+        '401': *unauthenticated-response
+        '402': *payment-required-response
+        '404': *not-found-response
+        '424': *x-api-error-response
+        '429': *rate-limit-exceeded-response-2
+        '502': *x-api-error-response
+        '503':
+          $ref: '#/components/responses/ReadBusy'
 
   /x/lists/{id}/followers:
     get:
