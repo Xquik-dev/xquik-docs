@@ -33,13 +33,11 @@ describe("Mintlify ignore rules", (): void => {
     const matcher = createMintIgnoreMatcher(ignoreEntries(".mintignore"));
     const tooling = [
       "mintignore.test.ts",
-      "scripts/responses/main.go",
-      "config/dependency-license-policy.json",
+      "scripts/response-examples.ts",
+      "osv-scanner.toml",
       "patches/comply-licensing.patch",
       "package.json",
       "package-lock.json",
-      "go.mod",
-      "go.sum",
       "tsconfig.json",
       "LICENSES/MIT.txt",
     ];

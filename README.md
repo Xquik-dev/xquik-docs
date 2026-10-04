@@ -92,16 +92,16 @@ openapi.yaml        OpenAPI 3.1 source of truth
 
 ## Local development
 
-Install Bun, Go, Gitleaks, shfmt & uv. Use the pinned npm version in `package.json`.
+Install Bun, rustup, OSV-Scanner, Gitleaks & ShellCheck. Use the pinned npm version in `package.json`.
 
 ```bash
 bunx --bun npm@12.0.1 ci --ignore-scripts
 bun run check:all
 ```
 
-Clone the application beside this repository for product contract checks.
-Otherwise, set `XQUIK_ROOT` & `XQUIK_PRODUCT_ROOT` to the application candidate.
-Missing product source fails validation.
+Contract checks compare this repository's `openapi.yaml` with the application's.
+Clone the application beside this repository, or set `XQUIK_PRODUCT_ROOT` to it.
+Without it, those checks skip & say so.
 Reuse verified static checks through the application's existing validation cache.
 Changes to docs, dependencies, or commands invalidate those results.
 Full tests, coverage, LOC checks, and measurement reports always run.
