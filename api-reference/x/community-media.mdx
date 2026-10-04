@@ -1,0 +1,390 @@
+---
+title: "X Community media tab API: photos & video posts"
+sidebarTitle: "Get community media"
+description: "Export the posts on an X (Twitter) Community's Media tab, newest first, with authors, text, counts, photos, and videos. Filter them like posts. 1 credit each."
+api: "GET /x/communities/{id}/media"
+keywords:
+  [
+    "Twitter Community media",
+    "X Community photos API",
+    "Community video posts",
+    "Twitter Community media tab",
+    "export Community images",
+  ]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+import AudienceCommunityApiLinks from "/snippets/x-audience-community-api-links.mdx";
+import TweetResultFilterParams from "/snippets/tweet-result-filter-params.mdx";
+import TweetRowFilterParams from "/snippets/tweet-row-filter-params.mdx";
+import TweetWithinTimeParam from "/snippets/tweet-within-time-param.mdx";
+
+{/* GENERATED RESPONSE EXAMPLES START */}
+
+<Panel>
+
+<Tabs defaultTabIndex={0} sync={false}>
+
+  <Tab title="200" id="response-x-community-media-200">
+
+    ```json
+    {
+      "tweets": [],
+      "has_next_page": false,
+      "next_cursor": ""
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="400" id="response-x-community-media-400">
+
+    ```json
+    {
+      "error": "invalid_input",
+      "message": "Invalid input. Check the request body."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="401" id="response-x-community-media-401">
+
+    ```json
+    {
+      "error": "unauthenticated",
+      "message": "Authentication required."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="402" id="response-x-community-media-402">
+
+    ```json
+    {
+      "error": "insufficient_credits",
+      "message": "Insufficient credits. Top up or subscribe to continue."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="404" id="response-x-community-media-404">
+
+    ```json
+    {
+      "error": "not_found",
+      "message": "Resource not found."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="424" id="response-x-community-media-424">
+
+    ```json
+    {
+      "error": "x_api_unavailable",
+      "message": "X data source temporarily unavailable. Try again later."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="429" id="response-x-community-media-429">
+
+    ```json
+    {
+      "error": "rate_limit_exceeded",
+      "message": "Too many requests. Try again later.",
+      "retryAfter": 60
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="502" id="response-x-community-media-502">
+
+    ```json
+    {
+      "error": "x_api_unavailable",
+      "message": "X data source temporarily unavailable. Try again later."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="503" id="response-x-community-media-503">
+
+    ```json
+    {
+      "error": "x_api_unavailable",
+      "message": "Xquik is busy right now. Retry shortly."
+    }
+    ```
+
+  </Tab>
+</Tabs>
+
+</Panel>
+{/* GENERATED RESPONSE EXAMPLES END */}
+<LlmsDirective />
+<TweetResultFilterParams />
+<TweetRowFilterParams />
+<TweetWithinTimeParam />
+
+<Callout icon="coins" color="#5c3327">
+
+**1 credit per tweet returned** · [All plans](https://xquik.com/#pricing) from $0.00012/credit
+
+</Callout>
+
+<CodeGroup>
+
+```bash cURL
+curl https://xquik.com/api/v1/x/communities/1472105760389668865/media \
+  -H "x-api-key: xq_your_api_key_here" | jq
+```
+
+```javascript Node.js
+const response = await fetch("https://xquik.com/api/v1/x/communities/1472105760389668865/media", {
+  headers: { "x-api-key": "xq_your_api_key_here" },
+});
+const data = await response.json();
+for (const tweet of data.tweets) {
+  const urls = (tweet.media ?? []).map((item) => item.mediaUrl).join(" ");
+  process.stdout.write(`${tweet.id} ${urls}\n`);
+}
+```
+
+```python Python
+import requests
+
+response = requests.get(
+    "https://xquik.com/api/v1/x/communities/1472105760389668865/media",
+    headers={"x-api-key": "xq_your_api_key_here"},
+)
+for tweet in response.json()["tweets"]:
+    urls = [item["mediaUrl"] for item in tweet.get("media", [])]
+    print(tweet["id"], " ".join(urls))
+```
+
+</CodeGroup>
+
+Use `GET /x/communities/{id}/media` to export the posts on a Community's Media tab.
+Each post has a photo or a video. Rows come newest first, like the tab on x.com.
+Each tweet costs 1 credit. Filters run before billing, so filtered-out rows cost nothing.
+
+## Media tab or all posts?
+
+| Need                        | Route                        | Rows returned                   |
+| --------------------------- | ---------------------------- | ------------------------------- |
+| Photo & video posts only    | `/x/communities/{id}/media`  | Media posts, newest first.      |
+| Every post of the Community | `/x/communities/{id}/tweets` | All posts, newest first or Top. |
+
+Follow `next_cursor` until `has_next_page` is `false` for the whole tab.
+
+## Path parameters
+
+<ParamField path="id" type="string" required>
+
+Community ID (numeric string).
+
+</ParamField>
+
+## Query parameters
+
+<ParamField query="cursor" type="string">
+
+Pagination cursor from a previous response. Omit for the first page.
+
+</ParamField>
+
+<ParamField query="pageSize" type="number">
+
+Upper bound for tweets per page. Range: 1-100. Default: `20`.
+
+</ParamField>
+
+## Headers
+
+<ParamField header="x-api-key" type="string">
+
+Full account key. Sessions and OAuth also work.
+
+</ParamField>
+
+<ParamField header="Authorization" type="string">
+
+`Bearer xq_your_guest_key_here` for `paid_reads`.
+
+</ParamField>
+
+## Response
+
+### 200 OK
+
+<ResponseField name="tweets" type="object[]">
+
+Media tweets of the Community, newest first.
+**Tweet object fields.**
+
+<ResponseField name="id" type="string">Tweet ID.</ResponseField>
+<ResponseField name="text" type="string">Contains the complete Tweet text.</ResponseField>
+<ResponseField name="type" type="string">Classifies the Tweet when X returns a type.</ResponseField>
+<ResponseField name="createdAt" type="string">ISO 8601 creation timestamp.</ResponseField>
+<ResponseField name="isNoteTweet" type="boolean">Whether this is a Note Tweet. Omitted if unavailable.</ResponseField>
+<ResponseField name="isPinned" type="boolean">Whether the author pinned this post to their profile. Omitted if unavailable.</ResponseField>
+<ResponseField name="likeCount" type="number">Reports the number of likes when available.</ResponseField>
+<ResponseField name="retweetCount" type="number">Reports the number of reposts when available.</ResponseField>
+<ResponseField name="replyCount" type="number">Reports the number of replies when available.</ResponseField>
+<ResponseField name="quoteCount" type="number">Reports the number of quotes when available.</ResponseField>
+<ResponseField name="viewCount" type="number">Reports the number of views when available.</ResponseField>
+<ResponseField name="bookmarkCount" type="number">Reports the number of bookmarks when available.</ResponseField>
+<ResponseField name="url" type="string">Permalink URL on X. Omitted if unavailable.</ResponseField>
+<ResponseField name="lang" type="string">Reports the Tweet language code when available.</ResponseField>
+<ResponseField name="isReply" type="boolean">Whether the tweet is a reply. Omitted if unavailable.</ResponseField>
+<ResponseField name="inReplyToId" type="string">Tweet ID being replied to. Omitted if not a reply.</ResponseField>
+<ResponseField name="inReplyToUserId" type="string">Identifies the replied-to user when available.</ResponseField>
+<ResponseField name="inReplyToUsername" type="string">Reports the replied-to username when available.</ResponseField>
+<ResponseField name="conversationId" type="string">Conversation thread ID. Omitted if unavailable.</ResponseField>
+<ResponseField name="source" type="string">Client used to post the tweet. Omitted if unavailable.</ResponseField>
+<ResponseField name="displayTextRange" type="number[]">Start and end offsets for rendered tweet text. Omitted if unavailable.</ResponseField>
+<ResponseField name="isLimitedReply" type="boolean">Whether replies are limited. Omitted if unavailable.</ResponseField>
+<ResponseField name="isQuoteStatus" type="boolean">Whether this tweet quotes another tweet. Omitted if unavailable.</ResponseField>
+<ResponseField name="isRetweet" type="boolean">Whether this row is a retweet. `text` carries the original post in full.</ResponseField>
+<ResponseField name="entities" type="object">Parsed entities. Omitted if unavailable.</ResponseField>
+<ResponseField name="contentDisclosure" type="object">Returns paid-promotion and AI-generated-media labels when available. Includes `advertising.isPaidPromotion` and `aiGenerated.hasAiGeneratedMedia`.</ResponseField>
+<ResponseField name="author" type="object">
+
+      Tweet author profile. Omitted if unavailable.
+      **Author object fields.**
+        <ResponseField name="id" type="string">Author user ID.</ResponseField>
+        <ResponseField name="username" type="string">Author X username.</ResponseField>
+        <ResponseField name="name" type="string">Author display name.</ResponseField>
+        <ResponseField name="followers" type="number">Reports the author's follower count when available.</ResponseField>
+        <ResponseField name="verified" type="boolean">Whether the author is verified. Omitted if unavailable.</ResponseField>
+        <ResponseField name="profilePicture" type="string">Profile picture URL. Omitted if unavailable.</ResponseField>
+
+    </ResponseField>
+    <ResponseField name="media" type="object[]">
+
+      Lists media items attached to the Tweet. Omitted when none exist.
+      **Media object fields.**
+        <ResponseField name="mediaUrl" type="string">Provides the direct media URL.</ResponseField>
+        <ResponseField name="videoVariants" type="object[]">Lists available video renditions and playback details. Omitted for images.</ResponseField>
+        <ResponseField name="type" type="string">Identifies the attached media type.</ResponseField>
+        <ResponseField name="url" type="string">Shortened URL from the tweet text.</ResponseField>
+
+    </ResponseField>
+    <ResponseField name="quoted_tweet" type="object">Embedded quoted tweet. Omitted if not a quote tweet.</ResponseField>
+    <ResponseField name="retweeted_tweet" type="object">Original retweeted tweet. Omitted if not a retweet.</ResponseField>
+
+</ResponseField>
+<ResponseField name="has_next_page" type="boolean">Whether more results are available.</ResponseField>
+<ResponseField name="next_cursor" type="string">Cursor for the next page. Pass as the `cursor` query parameter.</ResponseField>
+
+```json
+{
+  "tweets": [
+    {
+      "id": "1893456789012345678",
+      "text": "Community post content",
+      "createdAt": "2026-02-24T10:00:00.000Z",
+      "likeCount": 150,
+      "retweetCount": 42,
+      "replyCount": 10,
+      "viewCount": 12400,
+      "author": {
+        "id": "987654321",
+        "username": "username",
+        "name": "Xquik",
+        "followers": 12400,
+        "verified": true,
+        "profilePicture": "https://pbs.twimg.com/profile_images/example.jpg"
+      }
+    }
+  ],
+  "has_next_page": true,
+  "next_cursor": "DAACCgACGE..."
+}
+```
+
+### 400 Invalid community ID
+
+```json
+{ "error": "invalid_community_id" }
+```
+
+The community ID is empty or invalid.
+
+### 401 Unauthenticated
+
+Anonymous requests get `WWW-Authenticate: Bearer` and a guest wallet checkout action. This is not a Payment challenge.
+
+```json
+{ "error": "unauthenticated" }
+```
+
+Missing or invalid API key.
+
+### 402 Payment required
+
+Account keys get account options. Guest keys get guest top-up only.
+No checkout starts automatically. Confirm any payment action.
+
+### 404 Community not found
+
+```json
+{ "error": "not_found" }
+```
+
+Xquik could not resolve the Community. Check the Community ID.
+
+### 502 X API unavailable
+
+```json
+{ "error": "x_api_unavailable" }
+```
+
+The read service returned an error. Retry after a short delay.
+
+### 429 Rate limit exceeded
+
+```json
+{ "error": "rate_limit_exceeded", "retryAfter": 60 }
+```
+
+The request exceeded your tier rate limit. Wait for the `Retry-After` header before retrying.
+
+### 424 Dependency failed
+
+```json
+{ "error": "x_api_unavailable" }
+```
+
+The read service was unavailable. Retry after a short delay.
+
+## X Community media questions
+
+### Which posts does the Media tab hold?
+
+The Community's posts that carry a photo or a video, newest first.
+
+### Can I filter the media posts?
+
+Yes. The tweet filters of Community tweets work here too, such as `minLikes` or `mediaType`.
+
+### Does this replace X's official API?
+
+No. This page documents Xquik, an independent third-party service.
+It does not document X's official API.
+
+<Note>
+
+**Next steps.** [Community tweets](/api-reference/x/community-tweets) reads every post of the Community.
+
+</Note>
+
+<AudienceCommunityApiLinks />
