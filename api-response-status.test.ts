@@ -21,6 +21,10 @@ const PROJECT_ROOT = process.cwd();
 const spec = Bun.YAML.parse(
   readFileSync(join(PROJECT_ROOT, "openapi.yaml"), "utf8"),
 ) as OpenApiSpec;
+// Every write operation in the spec has 1 page.
+const WRITE_OPERATION_COUNT = Object.values(spec.paths ?? {})
+  .flatMap((methods) => Object.values(methods))
+  .filter((operation) => operation["x-write-action"] !== undefined).length;
 const WRITE_ACTION_LIFECYCLE_SNIPPET_PATH = join(
   PROJECT_ROOT,
   "snippets/write-action-lifecycle-response.mdx",
@@ -279,7 +283,7 @@ describe("API success response status documentation", (): void => {
       }),
     );
 
-    expect(writeDocs).toHaveLength(19);
+    expect(writeDocs).toHaveLength(WRITE_OPERATION_COUNT);
     expect(findings).toStrictEqual([]);
   });
 
@@ -308,7 +312,7 @@ describe("API success response status documentation", (): void => {
         .map(([, snippet]): string => `${file}: incorrect retry guidance ${snippet}`);
     });
 
-    expect(pages).toHaveLength(19);
+    expect(pages).toHaveLength(WRITE_OPERATION_COUNT);
     expect(findings).toStrictEqual([]);
   });
 });
