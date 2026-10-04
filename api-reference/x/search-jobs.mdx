@@ -221,6 +221,8 @@ An unknown value returns `400 invalid_job_filter`. Its message names the values 
 
 Each page returns `has_next_page` and `next_cursor`. Send `next_cursor` back as `cursor` with the same query and filters. Stop when `has_next_page` is `false`.
 
+A cursor X refuses or that expired returns `400 invalid_cursor`, which is free. Start again without `cursor`, then use `next_cursor`.
+
 A job that closed is left out of the page and costs nothing. A page can therefore hold fewer jobs than `pageSize`.
 
 Use the job `id` as the key in your store. Overlapping searches then add no duplicates.
@@ -380,7 +382,7 @@ Array of matching job listings.
 }
 ```
 
-### 400 Missing query or unknown filter value
+### 400 Missing query, unknown filter, or invalid cursor
 
 ```json
 {
@@ -389,7 +391,16 @@ Array of matching job listings.
 }
 ```
 
-A request without `q` returns `missing_query`. Both answers are free.
+A request without `q` returns `missing_query`. A cursor X cannot read returns `invalid_cursor`:
+
+```json
+{
+  "error": "invalid_cursor",
+  "message": "Cursor invalid or expired. Start again without cursor, then use next_cursor."
+}
+```
+
+Start again without `cursor`. All 3 answers are free.
 
 ### 401 Unauthenticated
 
