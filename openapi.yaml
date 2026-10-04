@@ -71,6 +71,8 @@ tags:
     description: Saved or bulk data extraction (23 tool types)
   - name: Guest Wallets
     description: Accountless prepaid access for paid read endpoints
+  - name: Jobs
+    description: Public X job listings, search and details
   - name: Lists
     description: X List search, details, followers, members, and tweets
   - name: Media
@@ -6848,6 +6850,242 @@ paths:
       parameters: *communitySearchParameters
       responses: *communitySearchResponses
 
+  /x/jobs/search:
+    get:
+      operationId: searchJobs
+      summary: Search public X job listings by keyword
+      description: >
+        Returns job listings with title, location, salary, company & apply link.
+        Add filters to narrow them. A job that closed is left out & free. Follow
+        next_cursor for more.
+      tags:
+        - Jobs
+      security: *read-auth
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema: { type: string }
+          description: 'Keyword, such as a job title or skill. Alias: query.'
+          example: engineer
+        - name: location
+          in: query
+          schema: { type: string }
+          description: City, region or country as text, such as Berlin.
+          example: Berlin
+        - name: locationId
+          in: query
+          schema: { type: string }
+          description: >
+            Location ID from GET /x/jobs/locations. Replaces location when both
+            are sent.
+          example: '1720462281849397612'
+        - name: locationType
+          in: query
+          schema: { type: string }
+          description: >
+            Where the work happens. Comma list of onsite, remote & hybrid. Any
+            case works, with spaces or hyphens between words.
+          example: remote,hybrid
+        - name: seniority
+          in: query
+          schema: { type: string }
+          description: >
+            Comma list of intern, entry_level, junior, mid_level, senior, lead,
+            manager & executive. Any case works, with spaces or hyphens between
+            words.
+          example: senior,lead
+        - name: employmentType
+          in: query
+          schema: { type: string }
+          description: >
+            Comma list of full_time, full_time_contract, part_time &
+            contract_to_hire. Any case works, with spaces or hyphens between
+            words.
+          example: full_time
+        - name: company
+          in: query
+          schema: { type: string }
+          description: Company name to match.
+          example: SpaceX
+        - $ref: '#/components/parameters/CollectionCursor'
+        - $ref: '#/components/parameters/ResultPageSize'
+      responses:
+        '200':
+          description: Job listings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedJobs'
+              example:
+                jobs:
+                  - id: '1899202395210649861'
+                    title: 'Engineer'
+                    url: 'https://x.com/i/jobs/1899202395210649861'
+                    applyUrl: 'https://xquik.com/example'
+                    location: 'United States'
+                    formattedSalary: 'Starting at $225K'
+                    salaryMin: 225000
+                    salaryCurrencyCode: 'USD'
+                    salaryInterval: 'annually'
+                    account:
+                      id: '1812126202804711425'
+                      username: 'commonwarexyz'
+                      name: 'commonware'
+                      verified: true
+                      verifiedType: 'Business'
+                has_next_page: true
+                next_cursor: 'DAACCgACGRElMJcAAA'
+        '400':
+          description: >
+            Missing query returns missing_query. An unknown filter value returns
+            invalid_job_filter & names the values the filter takes.
+          content:
+            application/json:
+              schema: *error-schema
+              example:
+                error: 'invalid_job_filter'
+                message:
+                  'Unknown locationType "moon". Use onsite, remote or hybrid.'
+        '401': *anonymous-guest-authentication-response
+        '402': *payment-required-response
+        '424': { $ref: '#/components/responses/XApiError' }
+        '429': *rate-limit-exceeded-response-2
+        '502': { $ref: '#/components/responses/XApiError' }
+        '503':
+          $ref: '#/components/responses/ReadBusy'
+
+  /x/jobs/locations:
+    get:
+      operationId: getJobLocations
+      summary: Find job search locations by name
+      description: >
+        Returns the places whose names match a query, each with the location ID
+        that GET /x/jobs/search takes. No match returns an empty list, free.
+      tags:
+        - Jobs
+      security: *read-auth
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema: { type: string }
+          description:
+            'Place name or its start, such as new york. Alias: query.'
+          example: new york
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+          description: >
+            Most places to return. Without it, every match returns. Aliases:
+            pageSize, count & max_results.
+          example: 5
+      responses:
+        '200':
+          description: Matching places
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobLocations'
+              example:
+                locations:
+                  - id: '1720462281849397612'
+                    name: 'New York, US'
+                  - id: '1720462281920696805'
+                    name: 'New York City, NY'
+                count: 2
+        '400':
+          description: Missing place name
+          content:
+            application/json:
+              schema: *error-schema
+              example:
+                error: 'missing_query'
+                message: 'Search query required. Use q.'
+        '401': *anonymous-guest-authentication-response
+        '402': *payment-required-response
+        '424': { $ref: '#/components/responses/XApiError' }
+        '429': *rate-limit-exceeded-response-2
+        '502': { $ref: '#/components/responses/XApiError' }
+        '503':
+          $ref: '#/components/responses/ReadBusy'
+
+  /x/jobs/{id}:
+    get:
+      operationId: getJob
+      summary: Get one X job listing with its full description
+      description: >
+        Returns a public job listing with its description as text & Markdown,
+        work type, seniority, salary, company & apply link. A job that closed
+        returns job_not_found & is free.
+      tags:
+        - Jobs
+      security: *read-auth
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+          description: >
+            Job ID or URL-encoded job URL, such as x.com/i/jobs/123. Anything
+            else gets 400 `invalid_job_id`.
+          example: '1899202395210649861'
+      responses:
+        '200':
+          description: Job listing
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [job]
+                properties:
+                  job:
+                    $ref: '#/components/schemas/Job'
+              example:
+                job:
+                  id: '1899202395210649861'
+                  title: 'Engineer'
+                  url: 'https://x.com/i/jobs/1899202395210649861'
+                  applyUrl: 'https://xquik.com/example'
+                  location: 'United States'
+                  locationType: 'remote'
+                  employmentType: 'full_time'
+                  seniorityLevel: 'lead'
+                  jobFunction: 'software_engineering'
+                  formattedSalary: 'Starting at $225K'
+                  salaryMin: 225000
+                  salaryCurrencyCode: 'USD'
+                  salaryInterval: 'annually'
+                  featured: true
+                  shortDescription: 'Commonware is hiring founding engineers.'
+                  description: 'What is Commonware? We build open primitives.'
+                  descriptionMarkdown: '# What is Commonware?'
+                  account:
+                    id: '1812126202804711425'
+                    username: 'commonwarexyz'
+                    name: 'commonware'
+                    verified: true
+                    verifiedType: 'Business'
+        '400':
+          description: Invalid job ID
+          content:
+            application/json:
+              schema: *error-schema
+              example:
+                error: 'invalid_job_id'
+                message: 'Send a job ID or job URL, such as x.com/i/jobs/123.'
+        '401': *anonymous-guest-authentication-response
+        '402': *payment-required-response
+        '404':
+          description: Job not found
+          content:
+            application/json:
+              schema: *error-schema
+              example:
+                error: 'job_not_found'
+                message: 'Job not found. Check the job ID or x.com/i/jobs URL.'
   /x/lists/search:
     get:
       operationId: searchLists
@@ -12282,6 +12520,7 @@ components:
                 - invalid_username
                 - invalid_json
                 - insufficient_credits
+                - job_not_found
                 - login_cooldown
                 - login_failed
                 - media_download_failed
@@ -12327,6 +12566,8 @@ components:
                 - invalid_coverage_cursor
                 - invalid_coverage_request
                 - invalid_idempotency_key
+                - invalid_job_filter
+                - invalid_job_id
                 - invalid_list_id
                 - invalid_output_options
                 - invalid_payment_amount
@@ -13544,6 +13785,209 @@ components:
           type: boolean
         protected:
           type: boolean
+
+    JobAccount:
+      description: The X account that posted a job.
+      type: object
+      required: [id, verified]
+      properties:
+        id:
+          type: string
+          description: X user ID of the account.
+          example: '1812126202804711425'
+        username:
+          type: string
+          description: Handle without @.
+          example: 'commonwarexyz'
+        name:
+          type: string
+          description: Display name of the account that posted the job.
+          example: 'commonware'
+        verified:
+          type: boolean
+          description: Whether X shows a verification badge on the account.
+          example: true
+        verifiedType:
+          type: string
+          description: Badge type, such as Business or Government.
+          example: 'Business'
+        description:
+          type: string
+          description: Bio of the account. A job lookup returns it.
+        profilePicture:
+          type: string
+          description: Avatar URL of the account that posted the job.
+        profileImageShape:
+          type: string
+          description: Avatar shape, such as Circle or Square.
+          example: 'Square'
+
+    JobCompany:
+      description: The company profile of a job X imported from a job board.
+      type: object
+      required: [id]
+      properties:
+        id:
+          type: string
+          description: X company profile ID.
+          example: '1714017006498824192'
+        name:
+          type: string
+          description: Company name.
+          example: 'TotalMed'
+        logoUrl:
+          type: string
+          description: Company logo URL.
+
+    Job:
+      description: >
+        Public X job listing. A search returns the fields down to the salary,
+        plus company & account. A lookup adds work type, seniority, function,
+        team & descriptions. A field X leaves empty is left out.
+      type: object
+      example:
+        {
+          id: '1899202395210649861',
+          title: 'Engineer',
+          url: 'https://x.com/i/jobs/1899202395210649861',
+        }
+      required: [id, url]
+      properties:
+        id:
+          type: string
+          description: Job ID.
+          example: '1899202395210649861'
+        title:
+          type: string
+          description: Job title.
+          example: 'Engineer'
+        url:
+          type: string
+          description: The job page on X.
+          example: 'https://x.com/i/jobs/1899202395210649861'
+        applyUrl:
+          type: string
+          description: Where applicants apply, off X.
+          example: 'https://xquik.com/example'
+        location:
+          type: string
+          description: Location as the employer wrote it.
+          example: 'United States'
+        locationType:
+          type: string
+          description: Where the work happens (onsite, remote or hybrid).
+          example: 'remote'
+        employmentType:
+          type: string
+          description: >
+            Contract type (full_time, full_time_contract, part_time or
+            contract_to_hire).
+          example: 'full_time'
+        seniorityLevel:
+          type: string
+          description: >
+            Seniority (intern, entry_level, junior, mid_level, senior, lead,
+            manager or executive).
+          example: 'lead'
+        jobFunction:
+          type: string
+          description: Job function, such as software_engineering.
+          example: 'software_engineering'
+        team:
+          type: string
+          description: Team inside the company.
+          example: 'Protocol'
+        postedAt:
+          type: string
+          format: date-time
+          description: When the employer posted the job.
+          example: '2025-10-04T08:30:00.000Z'
+        formattedSalary:
+          type: string
+          description: Salary as X shows it.
+          example: 'Starting at $225K'
+        salaryMin:
+          type: number
+          description: Lowest salary, in salaryCurrencyCode per salaryInterval.
+          example: 225000
+        salaryMax:
+          type: number
+          description: Highest salary, in salaryCurrencyCode per salaryInterval.
+          example: 300000
+        salaryCurrencyCode:
+          type: string
+          description: ISO 4217 currency code of the salary.
+          example: 'USD'
+        salaryInterval:
+          type: string
+          description: Pay period of the salary (annually or hourly).
+          example: 'annually'
+        featured:
+          type: boolean
+          description: Whether X features the job.
+        shortDescription:
+          type: string
+          description: Short summary of the job, as plain text.
+        description:
+          type: string
+          description: Full description as plain text, 1 line per paragraph.
+        descriptionMarkdown:
+          type: string
+          description: >
+            Full description as Markdown, with headings, lists, links, bold &
+            italics.
+        company:
+          $ref: '#/components/schemas/JobCompany'
+        account:
+          $ref: '#/components/schemas/JobAccount'
+
+    JobLocation:
+      description: A place a job search can name by its ID.
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: string
+          description: Location ID, which the job search locationId takes.
+          example: '1720462281849397612'
+        name:
+          type: string
+          description: Place name with its region or country code.
+          example: 'New York, US'
+
+    JobLocations:
+      description: The places whose names match a query.
+      type: object
+      required: [locations, count]
+      properties:
+        locations:
+          type: array
+          description: Matching places, best match first.
+          items:
+            $ref: '#/components/schemas/JobLocation'
+          example:
+            - id: '1720462281849397612'
+              name: 'New York, US'
+        count:
+          type: integer
+          minimum: 0
+          description: Places returned, each charged 1 credit.
+          example: 1
+
+    PaginatedJobs:
+      description: >
+        One page of job listings. Follow next_cursor while the response reports
+        more pages.
+      type: object
+      example: { jobs: [], has_next_page: false, next_cursor: '' }
+      required: [jobs, has_next_page, next_cursor]
+      properties:
+        jobs:
+          type: array
+          items:
+            $ref: '#/components/schemas/Job'
+        has_next_page: *boolean-example-true
+        next_cursor: *cursor-example-schema
 
     TweetMedia:
       description: Tweet media.
