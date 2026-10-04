@@ -3634,6 +3634,84 @@ paths:
         '429': *rate-limit-exceeded-response-2
         '424': *x-api-error-response
 
+  /x/search/autocomplete:
+    get:
+      operationId: autocompleteSearch
+      description:
+        Returns the accounts, topics, hashtags & cashtags X suggests while
+        someone types a search. X may rank them differently per request. Costs 1
+        credit per suggestion.
+      summary: Get search suggestions for a partial query
+      tags:
+        - Users
+      security: *read-auth
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            example: nasa
+          description: >
+            Text typed so far. Start with # for hashtags or $ for cashtags. A #
+            query returns hashtags only, unless types leaves hashtags out.
+            Alias: query.
+        - name: types
+          in: query
+          schema:
+            type: string
+            default: users,topics,hashtags,cashtags
+            example: users,topics
+          description: >
+            Comma-separated suggestion types: users, topics, hashtags or
+            cashtags. Omit for all. With only hashtags or only cashtags, the
+            query gets its # or $ when it lacks one.
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          description: >
+            Most suggestions to return: 1 to 100, default 20. Accounts fill it
+            first, then topics, hashtags & cashtags. Credits can return fewer.
+            Aliases: pageSize, count & max_results.
+      responses:
+        '200':
+          description: Search suggestions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchSuggestions'
+        '400':
+          description: Missing query or unknown type
+          content:
+            application/json:
+              schema: *error-schema
+              examples:
+                missingQuery:
+                  summary: No query
+                  value:
+                    error: 'missing_query'
+                    message: 'Search query required. Use q.'
+                unknownType:
+                  summary: Unknown type
+                  value:
+                    error: 'invalid_params'
+                    message:
+                      'Send types as users, topics, hashtags or cashtags,
+                      separated by commas.'
+                    parameter: 'types'
+        '401': *anonymous-guest-authentication-response
+        '402': *payment-required-response
+        '502': *x-api-error-response
+        '503':
+          $ref: '#/components/responses/ReadBusy'
+        '429': *rate-limit-exceeded-response-2
+        '424': *x-api-error-response
+
   /x/users/{id}:
     get:
       operationId: getUser
@@ -10564,6 +10642,259 @@ components:
               name: 'Elon Musk'
         has_next_page: *boolean-example-true
         next_cursor: *cursor-example-schema
+    SearchSuggestions:
+      description: >
+        What X suggests for a partial search query. Each list keeps X's order. A
+        list is empty when X suggests none of its type or types leaves it out.
+      type: object
+      required: [query, users, topics, hashtags, cashtags, count]
+      example:
+        query: nasa
+        users:
+          - id: '11348282'
+            username: NASA
+            name: NASA
+            verified: true
+            isBlueVerified: true
+            isVerified: false
+            verifiedType: Government
+            protected: false
+            location: Pale Blue Dot
+            profilePicture: 'https://pbs.twimg.com/profile_images/1321163587679784960/0ZxKlEKB_normal.jpg'
+            badges: []
+            isPersonaMediaGenable: false
+            score: 0
+            tokens: []
+            inline: false
+        topics:
+          - topic: nasa
+            score: 0
+            tokens: []
+            inline: false
+        hashtags: []
+        cashtags: []
+        count: 2
+      properties:
+        query:
+          type: string
+          description: The query you sent, trimmed.
+          example: nasa
+        users:
+          type: array
+          description: Suggested accounts.
+          items:
+            $ref: '#/components/schemas/SearchSuggestionUser'
+        topics:
+          type: array
+          description: Suggested search phrases that are not hashtags.
+          items:
+            $ref: '#/components/schemas/SearchSuggestionTopic'
+        hashtags:
+          type: array
+          description: Suggested hashtags.
+          items:
+            $ref: '#/components/schemas/SearchSuggestionHashtag'
+        cashtags:
+          type: array
+          description: Suggested stocks & crypto tokens.
+          items:
+            $ref: '#/components/schemas/SearchSuggestionCashtag'
+        count:
+          type: integer
+          minimum: 0
+          description:
+            Suggestions returned across all 4 lists. Each costs 1 credit.
+          example: 2
+    SearchSuggestionUser:
+      description: An account X suggests for the query.
+      type: object
+      required: [id, username, name]
+      properties:
+        id:
+          type: string
+          description: X user ID.
+          example: '11348282'
+        username:
+          type: string
+          description: Handle without the @.
+          example: NASA
+        name:
+          type: string
+          description: Display name.
+          example: NASA
+        verified:
+          type: boolean
+          description: Whether X shows any verification badge.
+          example: true
+        isBlueVerified:
+          type: boolean
+          description: Whether X shows a blue verification badge.
+          example: true
+        isVerified:
+          type: boolean
+          description: Whether the account holds X's legacy verification.
+          example: false
+        verifiedType:
+          type: string
+          description:
+            Verification category, such as Government or Business. Omitted when
+            X names none.
+          example: Government
+        protected:
+          type: boolean
+          description: Whether the account protects its posts.
+          example: false
+        location:
+          type: string
+          description: Public profile location text. Omitted when empty.
+          example: Pale Blue Dot
+        profilePicture:
+          type: string
+          format: uri
+          description: Avatar URL.
+          example: 'https://pbs.twimg.com/profile_images/1321163587679784960/0ZxKlEKB_normal.jpg'
+        badges:
+          type: array
+          description: Affiliation badges X shows beside the name.
+          items:
+            type: object
+            description: 1 affiliation badge.
+            properties:
+              badgeType:
+                type: string
+                description: Kind of badge.
+                example: BusinessLabel
+              badgeUrl:
+                type: string
+                format: uri
+                description: Badge image URL.
+                example: 'https://pbs.twimg.com/profile_images/1321163587679784960/0ZxKlEKB_bigger.jpg'
+              description:
+                type: string
+                description: Name of the affiliated account.
+                example: NASA
+        isPersonaMediaGenable:
+          type: boolean
+          description:
+            X's flag for whether media can be generated from this account's
+            persona.
+          example: false
+        score:
+          type: number
+          description: X's rounded relevance score for the account.
+          example: 0
+        tokens:
+          type: array
+          description: Normalized text tokens X matches the account by.
+          items:
+            type: string
+            example: nasa
+          example: []
+        inline:
+          type: boolean
+          description: X's inline flag for the account.
+          example: false
+    SearchSuggestionTopic:
+      description: A search phrase X suggests for the query.
+      type: object
+      required: [topic]
+      properties:
+        topic:
+          type: string
+          description: Suggested search phrase.
+          example: nasa xolane program
+        score:
+          type: number
+          description: X's rounded relevance score for the phrase.
+          example: 0
+        tokens:
+          type: array
+          description: Normalized text tokens X matches the phrase by.
+          items:
+            type: string
+            example: nasa
+          example: []
+        inline:
+          type: boolean
+          description: X's inline flag for the phrase.
+          example: false
+    SearchSuggestionHashtag:
+      description: A hashtag X suggests for the query.
+      type: object
+      required: [hashtag]
+      properties:
+        hashtag:
+          type: string
+          description: Suggested hashtag, with its #.
+          example: '#nasuanimalkingdom'
+        score:
+          type: number
+          description: X's rounded relevance score for the hashtag.
+          example: 600
+        tokens:
+          type: array
+          description: Normalized text tokens X matches the hashtag by.
+          items:
+            type: string
+            example: '#nasuanimalkingdom'
+          example: ['#nasuanimalkingdom']
+        inline:
+          type: boolean
+          description: X's inline flag for the hashtag.
+          example: false
+    SearchSuggestionCashtag:
+      description: A stock or crypto token X suggests for the query.
+      type: object
+      required: [ticker]
+      properties:
+        ticker:
+          type: string
+          description: Ticker symbol without the $.
+          example: TSLA
+        name:
+          type: string
+          description: Company or token name.
+          example: Tesla Inc
+        smartTag:
+          type: string
+          description:
+            X's tag for the asset. $TICKER for a stock, chain:contract for a
+            token.
+          example: $TSLA
+        currency:
+          type: string
+          description: Currency of price & marketCap.
+          example: USD
+        price:
+          type: string
+          description: Latest price as decimal text, which keeps every digit.
+          example: '370.589999999'
+        marketCap:
+          type: string
+          description: Market capitalization as decimal text.
+          example: '1463662787286.778808593'
+        dailyChangePercent:
+          type: number
+          description: Price change over the last 24 hours, in percent.
+          example: 4.6539
+        logoUrl:
+          type: string
+          format: uri
+          description: Logo image URL.
+          example: 'https://abs.twimg.com/finance/v1/stock/TSLA.png'
+        exchangeShortName:
+          type: string
+          description: Stock exchange. Stocks only.
+          example: NASDAQ
+        contractAddress:
+          type: string
+          description: Token contract address. Tokens only.
+          example: '0x322f0929c4625ed5bad873c95208d54e1c003b2d'
+        chainLogoUrl:
+          type: string
+          format: uri
+          description: Logo of the token's chain. Tokens only.
+          example: 'https://abs.twimg.com/finance/v1/crypto/robinhood/native.png'
     UserListCoverageStrategy:
       description: Result counts and stop reason for one relationship strategy.
       type: object
