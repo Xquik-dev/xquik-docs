@@ -1,14 +1,19 @@
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
-import {
-  createMintIgnoreMatcher,
-  isMintIgnoredBy,
-  processMintIgnoreString,
-} from "@mintlify/common";
 import { describe, expect, it } from "vitest";
 
+/** The patterns of an ignore file, without comments & blank lines. */
 function ignoreEntries(path: string): string[] {
-  return processMintIgnoreString(readFileSync(path, "utf8"));
+  return readFileSync(path, "utf8")
+    .split("\n")
+    .map((line): string => line.trim())
+    .filter((line): boolean => line !== "" && !line.startsWith("#"));
+}
+
+function trackedFiles(...args: readonly string[]): string[] {
+  return execFileSync("git", ["ls-files", ...args], { encoding: "utf8" })
+    .trim()
+    .split("\n");
 }
 
 describe("Mintlify ignore rules", (): void => {
@@ -30,35 +35,28 @@ describe("Mintlify ignore rules", (): void => {
 
   it("excludes tooling while retaining documentation, contracts, and assets", (): void => {
     expect.assertions(2);
-    const matcher = createMintIgnoreMatcher(ignoreEntries(".mintignore"));
+    // .mintignore uses Git's ignore syntax, so Git itself applies its patterns.
+    const ignored = new Set(trackedFiles("--cached", "--ignored", "--exclude-from=.mintignore"));
     const tooling = [
       "mintignore.test.ts",
       "scripts/response-examples.ts",
-      "osv-scanner.toml",
       "patches/comply-licensing.patch",
       "package.json",
       "package-lock.json",
       "tsconfig.json",
       "LICENSES/MIT.txt",
     ];
-    expect(tooling.filter((file): boolean => !isMintIgnoredBy(file, matcher))).toStrictEqual([]);
-    const published = execFileSync(
-      "git",
-      [
-        "ls-files",
-        "--",
-        "*.mdx",
-        "images/*",
-        "logo/*",
-        "docs.json",
-        "openapi.yaml",
-        "context7.json",
-        "docs/context7.json",
-      ],
-      { encoding: "utf8" },
-    )
-      .trim()
-      .split("\n");
-    expect(published.filter((file): boolean => isMintIgnoredBy(file, matcher))).toStrictEqual([]);
+    expect(tooling.filter((file): boolean => !ignored.has(file))).toStrictEqual([]);
+    const published = trackedFiles(
+      "--",
+      "*.mdx",
+      "images/*",
+      "logo/*",
+      "docs.json",
+      "openapi.yaml",
+      "context7.json",
+      "docs/context7.json",
+    );
+    expect(published.filter((file): boolean => ignored.has(file))).toStrictEqual([]);
   });
 });

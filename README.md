@@ -110,7 +110,7 @@ Coverage compares the full suite against the parent commit.
 Retain its verified reports under Git's `coverage-baselines/<parent SHA>/` directory.
 Missing parent evidence fails validation.
 
-Run `bun run --bun --no-install mint dev` when visual previewing is necessary.
+Run `bunx --bun mint@4.2.949 dev` when visual previewing is necessary.
 
 ## Deployment
 
