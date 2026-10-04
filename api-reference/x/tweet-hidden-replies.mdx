@@ -1,16 +1,16 @@
 ---
-title: "Twitter articles API & user article list export"
-sidebarTitle: "Get user articles"
-description: "List the X Articles a Twitter or X profile published, newest first. Export Article posts with titles, previews, covers, and metrics. 1 credit per post."
-api: "GET /x/users/{id}/articles"
+title: "Hidden replies API for tweets on Twitter & X"
+sidebarTitle: "Get hidden replies"
+description: "Get the replies a tweet's author hid on Twitter or X, oldest first. Export hidden replies with authors, parents, metrics, and cursors. 1 credit per reply."
+api: "GET /x/tweets/{id}/hidden-replies"
 keywords:
   [
-    "Twitter Articles API",
-    "X Articles API",
-    "user Articles",
-    "Articles tab",
-    "X Article list",
-    "profile Articles export",
+    "hidden replies API",
+    "Twitter hidden replies",
+    "X hidden replies",
+    "tweet hidden replies",
+    "hidden reply export",
+    "moderated replies",
   ]
 ---
 
@@ -27,7 +27,7 @@ import TweetWithinTimeParam from "/snippets/tweet-within-time-param.mdx";
 
 <Tabs defaultTabIndex={0} sync={false}>
 
-  <Tab title="200" id="response-x-user-articles-200">
+  <Tab title="200" id="response-x-tweet-hidden-replies-200">
 
     ```json
     {
@@ -39,7 +39,7 @@ import TweetWithinTimeParam from "/snippets/tweet-within-time-param.mdx";
 
   </Tab>
 
-  <Tab title="400" id="response-x-user-articles-400">
+  <Tab title="400" id="response-x-tweet-hidden-replies-400">
 
     ```json
     {
@@ -50,7 +50,7 @@ import TweetWithinTimeParam from "/snippets/tweet-within-time-param.mdx";
 
   </Tab>
 
-  <Tab title="401" id="response-x-user-articles-401">
+  <Tab title="401" id="response-x-tweet-hidden-replies-401">
 
     ```json
     {
@@ -61,7 +61,7 @@ import TweetWithinTimeParam from "/snippets/tweet-within-time-param.mdx";
 
   </Tab>
 
-  <Tab title="402" id="response-x-user-articles-402">
+  <Tab title="402" id="response-x-tweet-hidden-replies-402">
 
     ```json
     {
@@ -72,29 +72,18 @@ import TweetWithinTimeParam from "/snippets/tweet-within-time-param.mdx";
 
   </Tab>
 
-  <Tab title="403" id="response-x-user-articles-403">
+  <Tab title="404" id="response-x-tweet-hidden-replies-404">
 
     ```json
     {
-      "error": "x_account_protected",
-      "message": "Account is protected. Choose a public account."
+      "error": "tweet_not_found",
+      "message": "Tweet not found. Check the tweet ID."
     }
     ```
 
   </Tab>
 
-  <Tab title="404" id="response-x-user-articles-404">
-
-    ```json
-    {
-      "error": "user_not_found",
-      "message": "X user not found. Check the username."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="424" id="response-x-user-articles-424">
+  <Tab title="424" id="response-x-tweet-hidden-replies-424">
 
     ```json
     {
@@ -105,7 +94,7 @@ import TweetWithinTimeParam from "/snippets/tweet-within-time-param.mdx";
 
   </Tab>
 
-  <Tab title="429" id="response-x-user-articles-429">
+  <Tab title="429" id="response-x-tweet-hidden-replies-429">
 
     ```json
     {
@@ -117,7 +106,7 @@ import TweetWithinTimeParam from "/snippets/tweet-within-time-param.mdx";
 
   </Tab>
 
-  <Tab title="502" id="response-x-user-articles-502">
+  <Tab title="502" id="response-x-tweet-hidden-replies-502">
 
     ```json
     {
@@ -128,7 +117,7 @@ import TweetWithinTimeParam from "/snippets/tweet-within-time-param.mdx";
 
   </Tab>
 
-  <Tab title="503" id="response-x-user-articles-503">
+  <Tab title="503" id="response-x-tweet-hidden-replies-503">
 
     ```json
     {
@@ -159,34 +148,39 @@ Requested result counts are upper bounds for paid authenticated calls. When rema
 <CodeGroup>
 
 ```bash cURL
-curl https://xquik.com/api/v1/x/users/nasa/articles \
+curl https://xquik.com/api/v1/x/tweets/1893456789012345678/hidden-replies \
   -H "x-api-key: xq_your_api_key_here" | jq
 
 # Page 2
-curl -G https://xquik.com/api/v1/x/users/nasa/articles \
+curl -G https://xquik.com/api/v1/x/tweets/1893456789012345678/hidden-replies \
   --data-urlencode "cursor=abc123" \
   -H "x-api-key: xq_your_api_key_here" | jq
 ```
 
 ```javascript Node.js
-const user = "nasa";
+const tweetId = "1893456789012345678";
 let pageCursor = "";
+let position = 0;
 
 for (let pageIndex = 0; pageIndex < 3; pageIndex += 1) {
   const params = pageCursor === "" ? "" : `?${new URLSearchParams({ cursor: pageCursor })}`;
-  const response = await fetch(`https://xquik.com/api/v1/x/users/${user}/articles${params}`, {
-    headers: { "x-api-key": "xq_your_api_key_here" },
-  });
+  const response = await fetch(
+    `https://xquik.com/api/v1/x/tweets/${tweetId}/hidden-replies${params}`,
+    {
+      headers: { "x-api-key": "xq_your_api_key_here" },
+    },
+  );
   const page = await response.json();
   if (!response.ok) throw new Error(JSON.stringify(page));
 
   for (const tweet of page.tweets) {
-    const articleRow = {
-      source_user: user,
-      article_id: tweet.article?.id ?? null,
-      article_title: tweet.article?.title ?? null,
-      article_preview: tweet.article?.previewText ?? null,
-      tweet_id: tweet.id,
+    position += 1;
+    const hiddenReplyRow = {
+      source_tweet_id: tweetId,
+      hidden_position: position,
+      reply_id: tweet.id,
+      in_reply_to_id: tweet.inReplyToId ?? null,
+      author_username: tweet.author?.username ?? null,
       text: tweet.text,
       tweet_url: tweet.url ?? null,
       created_at: tweet.createdAt ?? null,
@@ -194,7 +188,7 @@ for (let pageIndex = 0; pageIndex < 3; pageIndex += 1) {
       view_count: tweet.viewCount ?? null,
       page_cursor: pageCursor,
     };
-    process.stdout.write(`${JSON.stringify(articleRow)}\n`);
+    process.stdout.write(`${JSON.stringify(hiddenReplyRow)}\n`);
   }
 
   if (!page.has_next_page || page.next_cursor === "") break;
@@ -206,13 +200,14 @@ for (let pageIndex = 0; pageIndex < 3; pageIndex += 1) {
 import json
 import requests
 
-user = "nasa"
+tweet_id = "1893456789012345678"
 page_cursor = ""
+position = 0
 
 for page_index in range(3):
     params = {"cursor": page_cursor} if page_cursor else {}
     response = requests.get(
-        f"https://xquik.com/api/v1/x/users/{user}/articles",
+        f"https://xquik.com/api/v1/x/tweets/{tweet_id}/hidden-replies",
         params=params,
         headers={"x-api-key": "xq_your_api_key_here"},
     )
@@ -221,13 +216,13 @@ for page_index in range(3):
         raise RuntimeError(page)
 
     for tweet in page["tweets"]:
-        article = tweet.get("article") or {}
-        article_row = {
-            "source_user": user,
-            "article_id": article.get("id"),
-            "article_title": article.get("title"),
-            "article_preview": article.get("previewText"),
-            "tweet_id": tweet["id"],
+        position += 1
+        hidden_reply_row = {
+            "source_tweet_id": tweet_id,
+            "hidden_position": position,
+            "reply_id": tweet["id"],
+            "in_reply_to_id": tweet.get("inReplyToId"),
+            "author_username": (tweet.get("author") or {}).get("username"),
             "text": tweet["text"],
             "tweet_url": tweet.get("url"),
             "created_at": tweet.get("createdAt"),
@@ -235,7 +230,7 @@ for page_index in range(3):
             "view_count": tweet.get("viewCount"),
             "page_cursor": page_cursor,
         }
-        print(json.dumps(article_row, separators=(",", ":")))
+        print(json.dumps(hidden_reply_row, separators=(",", ":")))
 
     if not page["has_next_page"] or not page["next_cursor"]:
         break
@@ -246,14 +241,14 @@ for page_index in range(3):
 
 ## Order and empty results
 
-Use `GET /x/users/{id}/articles` for the posts on a profile's Articles tab.
-Rows arrive newest first. Each post's `article` holds the Article's `id`,
-`title`, `previewText`, `coverMediaUrl`, and dates.
+Use `GET /x/tweets/{id}/hidden-replies` for the replies a post's author hid.
+X lists them under "Hidden replies" on the post. Rows arrive oldest first. The
+examples above save that order as `hidden_position`.
 
-The list holds no Article body. Pass a post's `id` to
-[`GET /x/articles/{tweetId}`](/api-reference/x/get-article) for the full text.
+The list also holds the replies to a hidden reply. Use `inReplyToId` to tell
+them apart from replies to the post.
 
-A user without Articles returns an empty list, not an error:
+A post without hidden replies returns an empty list, not an error:
 
 ```json
 { "tweets": [], "has_next_page": false, "next_cursor": "" }
@@ -261,27 +256,25 @@ A user without Articles returns an empty list, not an error:
 
 The last page looks the same. Stop paging when `has_next_page` is `false`.
 
-A protected account returns 403 `x_account_protected`. Xquik charges nothing.
+A post X does not have returns 404 `tweet_not_found`. Xquik charges nothing.
 
-## Which profile endpoint?
+## Which reply endpoint?
 
-- Use `GET /api/v1/x/users/{id}/articles` for the Articles a profile published.
-- Use `GET /api/v1/x/articles/{tweetId}` for 1 Article's full text.
-- Use `GET /api/v1/x/users/{id}/tweets` for the whole profile timeline.
-- Use `GET /api/v1/x/users/{id}/media` when every row must be a media tweet.
+- Use `GET /api/v1/x/tweets/{id}/hidden-replies` for replies the author hid.
+- Use `GET /api/v1/x/tweets/{id}/replies` for the replies X shows under a post.
+- Use `GET /api/v1/x/tweets/{id}/thread` for the conversation around a post.
 
-| Profile feed     | Route                    | Rows returned                      |
-| ---------------- | ------------------------ | ---------------------------------- |
-| Articles tab     | `/x/users/{id}/articles` | Article posts, newest first.       |
-| Profile timeline | `/x/users/{id}/tweets`   | Original profile posts by default. |
-| Media-only posts | `/x/users/{id}/media`    | Profile tweets that contain media. |
+| Reply view     | Route                           | Rows returned                         |
+| -------------- | ------------------------------- | ------------------------------------- |
+| Hidden replies | `/x/tweets/{id}/hidden-replies` | Replies the author hid, oldest first. |
+| Shown replies  | `/x/tweets/{id}/replies`        | Replies X shows under the post.       |
+| Thread context | `/x/tweets/{id}/thread`         | The conversation around the post.     |
 
 ## Path parameters
 
 <ParamField path="id" type="string" required>
 
-User ID, username with or without `@`, or URL-encoded profile URL, such as
-`x.com/nasa`. See [path IDs](/api-reference/overview#path-ids).
+Post ID or URL-encoded post URL, such as `x.com/nasa/status/20`. See [path IDs](/api-reference/overview#path-ids).
 
 </ParamField>
 
@@ -302,7 +295,7 @@ Tweets per page. Range: `1-100`. Defaults to `20`.
 ### Tweet result filters
 
 These optional filters apply to `tweets[]` returned by this route. They keep the
-same Articles target. Xquik filters rows after it fetches each page. Selective
+same hidden replies target. Xquik filters rows after it fetches each page. Selective
 filters can return fewer rows than an unfiltered page.
 
 <TweetResultFilterParams />
@@ -329,7 +322,7 @@ Full account key. Sessions and OAuth also work.
 
 <ResponseField name="tweets" type="object[]">
 
-Array of Article tweets, newest first.
+Array of hidden replies, oldest first.
 **Tweet object fields.**
 
 <ResponseField name="id" type="string">Tweet ID.</ResponseField>
@@ -380,7 +373,6 @@ Array of Article tweets, newest first.
         <ResponseField name="url" type="string">Shortened URL from the tweet text.</ResponseField>
 
     </ResponseField>
-    <ResponseField name="article" type="object">The Article this post carries: `id`, `title`, `previewText`, `coverMediaUrl`, `coverMedia`, `metadata`, and `lifecycleState`. It holds no body.</ResponseField>
     <ResponseField name="quoted_tweet" type="object">Embedded quoted tweet. Omitted if not a quote tweet.</ResponseField>
     <ResponseField name="retweeted_tweet" type="object">Original retweeted tweet. Omitted if not a retweet.</ResponseField>
 
@@ -401,12 +393,8 @@ Opaque cursor for the next page. Empty string when no more results.
   "tweets": [
     {
       "id": "1893456789012345678",
-      "text": "Read all the new updates",
-      "article": {
-        "id": "1893400000000000000",
-        "title": "What changed this month",
-        "previewText": "A summary of this month's updates."
-      },
+      "text": "A reply the author hid",
+      "inReplyToId": "1893456789012345000",
       "createdAt": "2026-02-24T10:00:00.000Z",
       "likeCount": 200,
       "viewCount": 15000,
@@ -426,30 +414,18 @@ Opaque cursor for the next page. Empty string when no more results.
 }
 ```
 
-### 400 Invalid user ID
+### 400 Invalid tweet ID
 
 ```json
-{
-  "error": "invalid_user_id",
-  "message": "Send a user ID, @username or profile URL, such as x.com/nasa."
-}
+{ "error": "invalid_tweet_id" }
 ```
 
-The user ID is empty or invalid.
+The tweet ID is empty or invalid.
 
-### 403 Protected account
-
-```json
-{
-  "error": "x_account_protected",
-  "message": "Account is protected. Choose a public account."
-}
-```
-
-### 404 User not found
+### 404 Tweet not found
 
 ```json
-{ "error": "user_not_found", "message": "X user not found. Check the username." }
+{ "error": "tweet_not_found", "message": "Tweet not found. Check the tweet ID." }
 ```
 
 ### 401 Unauthenticated
@@ -493,7 +469,7 @@ The normalized v1 response contract can return 424 when the read service is unav
 
 <Note>
 
-**Related.** [Get X article](/api-reference/x/get-article) · [Get user timeline](/api-reference/x/user-tweets) · [User highlights](/api-reference/x/user-highlights)
+**Related.** [Tweet replies](/api-reference/x/tweet-replies) · [Tweet thread](/api-reference/x/tweet-thread) · [Get tweet](/api-reference/x/get-tweet)
 
 </Note>
 
