@@ -1921,7 +1921,7 @@ const REQUIRED_MCP_CONTRACT_SNIPPETS = [
   "Operations in `support`: create, list, read, reply, and close tickets.",
   "Operations across `x-accounts` and `x-write`:",
   '<Card title="Tweets, profiles & followers" icon="search">',
-  "Operations in `twitter`: batch and single tweet lookup, tweet search, article lookup, user Article lists, hidden replies, user lookup, follower and following ID lists, creator subscriptions, affiliates, follow checks, trends, bookmarks, notifications, timeline, DM history, likes, media, highlights, followers, replies, communities, and lists.",
+  "Operations in `twitter`: batch and single tweet lookup, tweet search, article lookup, user Article lists, hidden replies, user lookup, repost checks, follower and following ID lists, creator subscriptions, affiliates, follow checks, trends, bookmarks, notifications, timeline, DM history, likes, media, highlights, followers, replies, communities, and lists.",
   '<Card title="X accounts and writes" icon="send">',
   "Operations across `x-accounts` and `x-write`: connect accounts, resolve challenges, post tweets, like, retweet, follow, remove followers, send and delete DMs, upload media, update profiles, and manage communities.",
   '<Card title="Monitor billing" icon="radio">',
@@ -5928,6 +5928,7 @@ const HIGH_VALUE_ROW_HANDOFF_API_PAGES = [
   { file: "api-reference/x/tweet-hidden-replies.mdx", label: "Hidden replies endpoint page" },
   { file: "api-reference/x/follower-ids.mdx", label: "Follower IDs endpoint page" },
   { file: "api-reference/x/following-ids.mdx", label: "Following IDs endpoint page" },
+  { file: "api-reference/x/tweet-repost-check.mdx", label: "Repost check endpoint page" },
   { file: "api-reference/x/user-subscriptions.mdx", label: "Creator subscriptions endpoint page" },
   { file: "api-reference/x/user-affiliates.mdx", label: "Affiliates endpoint page" },
   {
