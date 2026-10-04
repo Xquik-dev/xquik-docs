@@ -2973,7 +2973,8 @@ paths:
             minimum: 1
           description:
             Maximum locations to return. Omit it for every match. Credits can
-            return fewer. Aliases pageSize, count & max_results.
+            return fewer. Aliases pageSize, count, max_results, maxItems,
+            max_items & per_page.
       responses:
         '200':
           description: Locations X offers trends for
@@ -3106,11 +3107,13 @@ paths:
           required: false
           schema:
             type: string
-            enum: [Latest, Top]
             default: Latest
           description:
-            'Latest is chronological; Top ranks engagement. Aliases:
-            result_type, sort_order.'
+            Latest is chronological; Top ranks engagement. Any case works.
+            Photos, Videos & Media read Latest with mediaType images, videos or
+            media, unless mediaType is set. People & Lists answer 400 & point to
+            /x/users/search & /x/lists/search. Aliases result_type, sort_order,
+            type, search_type, product, category & section.
         - $ref: '#/components/parameters/AutomaticCoverageMode'
         - $ref: '#/components/parameters/AutomaticCoverageCursor'
         - $ref: '#/components/parameters/TweetSinceTime'
@@ -3127,7 +3130,7 @@ paths:
             coverage defaults to 2000. At the deadline it returns kept rows &
             diagnostics. Only returned rows are billed; credits can cut results,
             & 0 affordable rows returns 402. Aliases: pageSize, count,
-            max_results.
+            max_results, maxItems, max_items & per_page.
         - $ref: '#/components/parameters/FromUser'
         - $ref: '#/components/parameters/ToUser'
         - $ref: '#/components/parameters/Mentioning'
@@ -3394,10 +3397,14 @@ paths:
                       retweetCount:
                         type: integer
                         minimum: 0
+                        description: Reposts of the Article's post. 0 or more.
                         example: 105
                       bookmarkCount:
                         type: integer
                         minimum: 0
+                        description:
+                          Accounts that bookmarked the Article's post. 0 or
+                          more.
                         example: 423
                       viewCount:
                         type: integer
@@ -3765,7 +3772,8 @@ paths:
           description: >
             Most suggestions to return: 1 to 100, default 20. Accounts fill it
             first, then topics, hashtags & cashtags. Credits can return fewer.
-            Aliases: pageSize, count & max_results.
+            Aliases: pageSize, count, max_results, maxItems, max_items &
+            per_page.
       responses:
         '200':
           description: Search suggestions
@@ -7085,7 +7093,7 @@ paths:
             minimum: 1
           description: >
             Most places to return. Without it, every match returns. Aliases:
-            pageSize, count & max_results.
+            pageSize, count, max_results, maxItems, max_items & per_page.
           example: 5
       responses:
         '200':
@@ -8810,8 +8818,8 @@ components:
       in: query
       description: >
         Items per page (1-100, default 20). Source, filters or credits can
-        return fewer. Follow next_cursor for more pages. Aliases: limit, count &
-        max_results.
+        return fewer. Follow next_cursor for more pages. Aliases: limit, count,
+        max_results, maxItems, max_items & per_page.
       schema:
         type: integer
         minimum: 1
@@ -8841,7 +8849,8 @@ components:
       in: query
       description: >
         Automatic pages accept 1-300 Tweets, standard pages 1-100. Default 20.
-        Follow next_cursor for more pages. Aliases: limit, count & max_results.
+        Follow next_cursor for more pages. Aliases: limit, count, max_results,
+        maxItems, max_items & per_page.
       schema:
         type: integer
         minimum: 1
@@ -8896,7 +8905,7 @@ components:
       description: >
         Profiles to request from this page (1-200, default 200). Source, filters
         or credits can return fewer. Follow next_cursor for more pages. Aliases:
-        limit, count & max_results.
+        limit, count, max_results, maxItems, max_items & per_page.
       schema:
         type: integer
         minimum: 1
@@ -8907,8 +8916,8 @@ components:
       in: query
       description: >
         User IDs to request from this page (1-5000, default 5000). Credits can
-        return fewer. Follow next_cursor for more pages. Aliases: limit, count &
-        max_results.
+        return fewer. Follow next_cursor for more pages. Aliases: limit, count,
+        max_results, maxItems, max_items & per_page.
       schema:
         type: integer
         minimum: 1
@@ -8935,8 +8944,8 @@ components:
       in: query
       description: >
         Up to 300 user profiles in automatic mode, 200 in standard. Sources can
-        return fewer. Follow next_cursor for more pages. Aliases: limit, count &
-        max_results.
+        return fewer. Follow next_cursor for more pages. Aliases: limit, count,
+        max_results, maxItems, max_items & per_page.
       schema:
         type: integer
         minimum: 1
@@ -13169,7 +13178,9 @@ components:
             list_post_extractor.
         targetSpaceId:
           type: string
-          description: Required for space_explorer.
+          description:
+            Required for space_explorer. X names a Space's hosts & speakers
+            without profile counts, so their rows carry none.
         targetTweetIds:
           type: array
           minItems: 1
@@ -14000,7 +14011,12 @@ components:
         xUserId: { type: string }
         xUsername: { type: string }
         xDisplayName: { type: string }
-        xFollowersCount: *whole-number
+        xFollowersCount:
+          type: integer
+          minimum: 0
+          description:
+            Followers of the account. Absent when X sends no count, as for the
+            hosts & speakers of a Space, and never 0 in its place.
         xVerified: { type: boolean }
         xProfileImageUrl: { type: string, format: uri }
         tweetId: { type: string }
@@ -14192,7 +14208,9 @@ components:
           type: boolean
 
     JobAccount:
-      description: The X account that posted a job.
+      description: >
+        The X account that posted a job. A job has none when X imported it from
+        a job board or no longer shows the account.
       type: object
       required: [id, verified]
       properties:
@@ -15522,23 +15540,42 @@ components:
           description: Whether the profile keeps X's default avatar.
         hasExtendedProfile:
           type: boolean
+          description:
+            Whether the profile filled X's extended fields, such as a birth
+            date. True or false.
         isTranslationEnabled:
           type: boolean
+          description:
+            Whether the account turned on X's translation of its posts. True or
+            false.
         geoEnabled:
           type: boolean
           description: Whether the profile may add a location to posts.
         advertiserAccountType:
           type: string
+          description:
+            The account's X Ads type. `none` for an account without ads, or
+            `promotable_user` for one that may run them.
           example: none
         advertiserAccountServiceLevels:
           type: array
+          description:
+            X Ads services the account uses, such as `analytics`, `media_studio`
+            or `smb`. Empty for an account without ads.
           items:
             type: string
         businessProfileState:
           type: string
+          description:
+            Whether X treats the profile as a business profile. `none` or
+            `enabled`.
           example: none
         subscribersCount:
-          $ref: '#/components/schemas/WholeNumber'
+          type: integer
+          minimum: 0
+          description:
+            Accounts subscribed to the profile's paid Subscriptions. 0 when it
+            has none.
         verificationReason:
           type: object
           description: X's text on why the profile is verified, with its links.
