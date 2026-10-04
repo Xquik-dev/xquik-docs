@@ -13,7 +13,7 @@ metadata:
 
 ## Product summary
 
-Xquik is an X data platform with 130 documented REST operations, webhooks, Docs MCP, and API MCP. Full account credentials cover account workflows. Accountless guest keys cover 30 prepaid GET reads. Seven fixed-price operations also accept direct MPP. The REST base URL is `https://xquik.com/api/v1`. Primary docs: https://docs.xquik.com
+Xquik is an X data platform with a documented REST API, webhooks, Docs MCP, and API MCP. Full account credentials cover account workflows. Accountless guest keys cover the prepaid GET reads. Fixed-price operations also accept direct MPP. The REST base URL is `https://xquik.com/api/v1`. Primary docs: https://docs.xquik.com
 
 ## When to use
 
@@ -25,7 +25,7 @@ Reach for Xquik when:
 - **Running giveaway draws.** Run random tweet draws with public result pages.
 - **Composing posts.** Get editorial guidance, Radar research suggestions, and deterministic draft checks.
 - **Connecting AI agents.** Use Docs MCP for no-auth docs search and page retrieval, and API MCP for authenticated account actions.
-- **Running accountless reads.** Use a prepaid guest `paid_reads` key on 30 GET routes or direct MPP on 7 fixed-price operations.
+- **Running accountless reads.** Use a prepaid guest `paid_reads` key on the eligible GET routes or direct MPP on fixed-price operations.
 - **Analyzing styles.** Analyze tweet styles, compare accounts, track engagement performance, or save drafts.
 - **Writing to X.** Post tweets, like, retweet, follow, send DMs, upload media, or manage community membership from connected accounts.
 - **Trending data.** Access current X trends across 12 regions plus Radar topics.
@@ -53,7 +53,7 @@ Retry safe reads only on `429` and temporary `5xx` responses. For writes, poll
 the returned action. Never resubmit an ambiguous write. Start a new attempt only
 when `safeToRetry` is true.
 
-### API endpoints (130 documented operations)
+### API endpoints
 
 - **Monitors and Events.** Create account and keyword monitors, retrieve events, and manage webhooks.
 - **Extractions.** 23 tools for bulk data extraction.
@@ -99,7 +99,7 @@ when `safeToRetry` is true.
 - **Use Docs MCP** for AI agents that need read-only docs search and page retrieval for API parameters, examples, error codes, billing rules, webhook setup, or SDK guidance.
 - **Use API MCP** for AI agents that need authenticated Xquik account actions in Claude, ChatGPT, Cursor, VS Code, Codex, and similar clients.
 - **Use a guest wallet** for prepaid GET reads without an account. Require explicit confirmation before creating a $10-$250 USD hosted checkout.
-- **Use direct MPP** for anonymous per-request payment on 7 fixed-price reads.
+- **Use direct MPP** for anonymous per-request payment on fixed-price reads.
 - **Use webhooks** when monitor events must reach an HTTPS endpoint. Add them when pushed events fit better than polling.
 
 ## Workflows
@@ -145,7 +145,7 @@ when `safeToRetry` is true.
 
 1. Add Docs MCP at `https://docs.xquik.com/mcp` for read-only docs search and page retrieval.
 2. Configure API MCP at `https://xquik.com/mcp` for live authenticated calls.
-3. Use full credentials for 119 JSON or text routes. Use REST for excluded downloads. Guest keys expose 30 GET routes.
+3. Use full credentials for every JSON or text route. Use REST for excluded downloads. Guest keys expose the eligible GET routes.
 4. Use `docs` for guidance, `search` for contracts, and `execute` for allowed requests.
    Inspect `spec.paths`; follow response references into `spec.components.schemas`.
 5. Add `?codemode=false` only when the client needs OpenAPI-native tools.
@@ -181,7 +181,7 @@ Docs MCP at `https://docs.xquik.com/mcp` needs no authentication.
 2. Call `POST /api/v1/guest-wallets` through direct REST with the confirmed amount and a random UUID v4 `Idempotency-Key`.
 3. Store `api_key` and the idempotency key before sharing `checkout_url`.
 4. The user completes the hosted checkout. Poll status every `poll_after_seconds` until `latest_purchase.status` is no longer `pending`.
-5. Use the key only when `usable` is `true`. It can call exactly the 30 eligible paid-read GET routes.
+5. Use the key only when `usable` is `true`. It can call exactly the eligible paid-read GET routes.
 
 The creation request does not charge the user. The key stays inactive until payment is verified. Use `POST /api/v1/guest-wallets/topups` only after another explicit confirmation. Never execute guest credential routes through MCP.
 

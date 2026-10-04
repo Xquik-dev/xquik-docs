@@ -109,13 +109,12 @@ describe("MCP 2026-07-28 documentation contract", (): void => {
   });
 
   it("documents optional OpenAPI-native tools without changing the default", (): void => {
-    expect.assertions(7);
+    expect.assertions(6);
 
     expect(OVERVIEW).toContain("https://xquik.com/mcp?codemode=false");
     expect(OVERVIEW).toContain("Code Mode is the default");
     expect(OVERVIEW).toContain("one tool per OpenAPI operation");
-    expect(TOOLS).toContain("121 tools");
-    expect(TOOLS).toContain("32 tools");
+    expect(TOOLS).toContain("get `docs`, `readSavedResult`, and 1 tool for each");
     expect(TOOLS).toContain("embeds no model prompt");
     expect(README).toContain("OpenAPI-native tools");
   });
