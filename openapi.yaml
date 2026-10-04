@@ -9,6 +9,14 @@ info:
     2.1. Shared-account reads return public posts only.
 
 
+    ## Rate limits
+
+
+    Every authenticated response carries `RateLimit-Policy`, your limit for that
+    kind of request, and `RateLimit`, your requests left & seconds until the
+    window resets. A refused request gets 429 with `Retry-After`.
+
+
     ## Client Libraries
 
 
@@ -6040,6 +6048,60 @@ paths:
         '429': *rate-limit-exceeded-response-2
         '424': *x-api-error-response
 
+  /x/users/{id}/affiliates:
+    parameters:
+      - $ref: '#/components/parameters/UserPathId'
+    get:
+      operationId: getUserAffiliates
+      description:
+        Returns the accounts an organization lists as its affiliates, in X's
+        order. An account without affiliates returns an empty list.
+      summary: List the affiliates of an organization
+      tags:
+        - Users
+      security: *read-auth
+      parameters: *profile-page-parameters
+      responses:
+        '200':
+          description: List of affiliated accounts
+          content: *paginated-users-content
+        '400': *invalid-input-response
+        '401': *anonymous-guest-authentication-response
+        '402': *payment-required-response
+        '404': *user-not-found-response
+        '502': *x-api-error-response
+        '503':
+          $ref: '#/components/responses/ReadBusy'
+        '429': *rate-limit-exceeded-response-2
+        '424': *x-api-error-response
+
+  /x/users/{id}/subscriptions:
+    parameters:
+      - $ref: '#/components/parameters/UserPathId'
+    get:
+      operationId: getUserSubscriptions
+      description:
+        Returns the creators the selected user subscribes to, in X's order. An
+        account that hides its subscriptions returns an empty list.
+      summary: List the creators a user subscribes to
+      tags:
+        - Users
+      security: *read-auth
+      parameters: *profile-page-parameters
+      responses:
+        '200':
+          description: List of creators
+          content: *paginated-users-content
+        '400': *invalid-input-response
+        '401': *anonymous-guest-authentication-response
+        '402': *payment-required-response
+        '404': *user-not-found-response
+        '502': *x-api-error-response
+        '503':
+          $ref: '#/components/responses/ReadBusy'
+        '429': *rate-limit-exceeded-response-2
+        '424': *x-api-error-response
+
   /x/users/{id}/articles:
     parameters:
       - $ref: '#/components/parameters/UserPathId'
@@ -6145,7 +6207,9 @@ paths:
           schema: &cursor-example-schema
             type: string
             example: 'DAACCgACGRElMJcAAA'
-          description: Pagination cursor for bookmarks
+          description:
+            Pagination cursor for bookmarks. Also read as next_cursor,
+            next_token, pagination_token or continuation_token.
       responses:
         '200':
           description: List of bookmarked tweets
@@ -7636,7 +7700,9 @@ components:
       name: cursor
       in: query
       schema: { type: string }
-      description: Pagination cursor for collection results.
+      description:
+        Pagination cursor for collection results. Also read as next_cursor,
+        next_token, pagination_token or continuation_token.
     TweetPathId:
       name: id
       in: path
@@ -7705,7 +7771,9 @@ components:
       name: cursor
       in: query
       schema: { type: string }
-      description: Pagination cursor for community search
+      description:
+        Pagination cursor for community search. Also read as next_cursor,
+        next_token, pagination_token or continuation_token.
     WriteIdempotencyKey:
       name: Idempotency-Key
       in: header
@@ -7811,7 +7879,8 @@ components:
       description: >
         Cursor from the previous response. Existing unprefixed cursors keep
         legacy standard behavior. Pages can be empty before more rows; follow
-        next_cursor.
+        next_cursor. Also read as next_cursor, next_token, pagination_token or
+        continuation_token.
     AutomaticCoverageMode:
       name: mode
       in: query
@@ -8332,6 +8401,21 @@ components:
       description: Raw advanced search query appended as-is.
 
   headers:
+    RateLimit:
+      description: >
+        Your requests left in this window & seconds until it resets, for the
+        limit this request counts against.
+      schema:
+        type: string
+        pattern: '^"[a-z-]+";r=\d+;t=\d+$'
+        example: '"read";r=499;t=1'
+    RateLimitPolicy:
+      description: >
+        Your limit for this kind of request: q requests per w seconds.
+      schema:
+        type: string
+        pattern: '^"[a-z-]+";q=\d+;w=\d+$'
+        example: '"read";q=500;w=1'
     BusyRetryAfter:
       description: Seconds before a retry.
       schema: *positive-integer
@@ -8732,13 +8816,18 @@ components:
             error: 'tweet_not_found'
             message: 'Tweet not found. Check the tweet ID.'
     UserNotFound:
-      description: X user not found
+      description: >
+        X shows no profile for the account. `reason` says why: `not_found` for a
+        handle or ID no account holds, which X answers for a deactivated account
+        too, or `suspended` with the message "X suspended this account. Choose
+        another account." when X suspended it.
       content:
         application/json:
           schema: *error-schema
           example:
             error: 'user_not_found'
             message: 'X user not found. Check the username.'
+            reason: 'not_found'
     PaymentRequired:
       description: >
         Payment required. MPP reads include `WWW-Authenticate`. Authenticated
@@ -8989,7 +9078,9 @@ components:
       description: >
         Dependency unavailable, unauthorized, or limited. Default v1 uses 502;
         best-practice responses use 424 for transparent dependency failures.
-        Search answers 424 `search_unavailable` when X fails the query itself.
+        Search answers 424 `search_unavailable` when X fails the query itself,
+        or when its filters matched none of the last 3,000 posts read. The
+        message says how far back the search read.
       content:
         application/json:
           schema: *error-schema
@@ -9176,6 +9267,9 @@ components:
       description: >
         Each user gets 500 reads/s, 120 writes/min & 60 deletes/min. Wait
         `Retry-After` seconds.
+      headers:
+        RateLimit: { $ref: '#/components/headers/RateLimit' }
+        RateLimit-Policy: { $ref: '#/components/headers/RateLimitPolicy' }
       content:
         application/json:
           schema: *retry-after-error-schema
@@ -10198,10 +10292,11 @@ components:
           example: pending
     PaginatedTweets:
       description: >
-        Follow next_cursor while the response reports more pages. An empty
-        filtered page can still require continuation. Automatic search, user
-        Tweet & reply coverage keeps shape, filters, aliases & billing.
-        Unprefixed cursors are legacy.
+        Follow next_cursor while the response reports more pages. A page can
+        hold fewer rows than its limit & still report more. That report decides,
+        not the row count. An empty filtered page can still require
+        continuation. Automatic search, user Tweet & reply coverage keeps shape,
+        filters, aliases & billing. Unprefixed cursors are legacy.
       type: object
       example: { tweets: [], has_next_page: false, next_cursor: '' }
       required: [tweets, has_next_page, next_cursor]
@@ -11789,7 +11884,10 @@ components:
           example: 'Invalid input. Check the request body.'
         reason:
           type: string
-          description: Machine-readable login failure reason.
+          description: >
+            Machine-readable reason. A login failure names its cause, such as
+            temporary_issue. A user_not_found answer names why X shows no
+            profile: not_found or suspended.
           example: temporary_issue
         retryAfter:
           type: integer
