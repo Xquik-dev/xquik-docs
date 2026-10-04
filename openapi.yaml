@@ -70,7 +70,7 @@ tags:
   - name: Guest Wallets
     description: Accountless prepaid access for paid read endpoints
   - name: Lists
-    description: X List details, followers, members, and tweets
+    description: X List search, details, followers, members, and tweets
   - name: Media
     description: Media upload and download
   - name: Monitors
@@ -6846,6 +6846,49 @@ paths:
       parameters: *communitySearchParameters
       responses: *communitySearchResponses
 
+  /x/lists/search:
+    get:
+      operationId: searchLists
+      summary: Search public X Lists by keyword
+      description:
+        Returns one page of public Lists with member counts, banners & owner
+        profiles. X may rank the Lists differently per request. Pass next_cursor
+        as cursor for the next page.
+      tags:
+        - Lists
+      security: *read-auth
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Keywords to find Lists by, such as a topic. Alias query.
+        - $ref: '#/components/parameters/CollectionCursor'
+        - $ref: '#/components/parameters/ResultPageSize'
+      responses:
+        '200':
+          description: Lists that match the keywords
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedLists'
+        '400':
+          description: No keywords. Send them in q.
+          content:
+            application/json:
+              schema: *error-schema
+              example:
+                error: 'missing_query'
+                message: 'Search query required. Use q.'
+        '401': *anonymous-guest-authentication-response
+        '402': *payment-required-response
+        '424': *x-api-error-response
+        '429': *rate-limit-exceeded-response-2
+        '502': *x-api-error-response
+        '503':
+          $ref: '#/components/responses/ReadBusy'
+
   /x/lists/{id}:
     get:
       operationId: getList
@@ -6875,43 +6918,7 @@ paths:
                 required: [list]
                 properties:
                   list:
-                    type: object
-                    description: Public X List
-                    required: [id, name]
-                    properties:
-                      id:
-                        type: string
-                        description: Numeric List ID
-                        example: '4143408'
-                      name:
-                        type: string
-                        description: Display name of the List
-                        example: 'NASA Centers'
-                      description:
-                        type: string
-                        description: About text of the List
-                        example: 'NASA has 10 centers'
-                      memberCount:
-                        type: integer
-                        minimum: 0
-                        description: Accounts the List holds
-                        example: 11
-                      subscriberCount:
-                        type: integer
-                        minimum: 0
-                        description: Accounts that follow the List
-                        example: 859
-                      createdAt:
-                        type: string
-                        format: date-time
-                        description: When the List was made
-                        example: '2009-12-02T22:41:02.000Z'
-                      bannerUrl:
-                        type: string
-                        description: List banner image URL
-                        example: 'https://pbs.twimg.com/media/example.png'
-                      owner:
-                        $ref: '#/components/schemas/UserProfile'
+                    $ref: '#/components/schemas/XList'
               example:
                 list:
                   id: '4143408'
@@ -6919,12 +6926,14 @@ paths:
                   description: 'NASA has 10 centers'
                   memberCount: 11
                   subscriberCount: 859
-                  createdAt: '2009-12-02T22:41:02.000Z'
-                  bannerUrl: 'https://pbs.twimg.com/media/example.png'
                   owner:
                     id: '11348282'
                     username: 'NASA'
                     name: 'NASA'
+                  url: 'https://x.com/i/lists/4143408'
+                  createdAt: '2009-12-02T22:41:02.000Z'
+                  bannerUrl: 'https://pbs.twimg.com/media/example.png'
+                  membersContext: '11 members'
         '400': *invalid-input-response
         '401': *unauthenticated-response
         '402': *payment-required-response
@@ -10990,6 +10999,134 @@ components:
           format: uri
           description: Logo of the token's chain. Tokens only.
           example: 'https://abs.twimg.com/finance/v1/crypto/robinhood/native.png'
+    XListBanner:
+      description: Banner image of an X List.
+      type: object
+      required: [url]
+      example:
+        url: 'https://pbs.twimg.com/media/GkIQyCGWYAA4UdW.png'
+        width: 1125
+        height: 375
+      properties:
+        url: { type: string, description: Banner image URL. }
+        width:
+          { type: integer, minimum: 0, description: Banner width in pixels. }
+        height:
+          { type: integer, minimum: 0, description: Banner height in pixels. }
+        salientRect:
+          type: object
+          description: Area X marks as the subject of the banner, in pixels.
+          properties:
+            left:
+              type: integer
+              minimum: 0
+              description: Pixels from the banner's left.
+            top:
+              type: integer
+              minimum: 0
+              description: Pixels from the banner's top.
+            width:
+              type: integer
+              minimum: 0
+              description: Width of the marked area.
+            height:
+              type: integer
+              minimum: 0
+              description: Height of the marked area.
+        mediaId: { type: string, description: Media ID of an uploaded banner. }
+        mediaKey:
+          { type: string, description: Stable media key of an uploaded banner. }
+        palette:
+          type: array
+          description: Dominant colors of an uploaded banner and their shares.
+          items:
+            type: object
+            properties:
+              percentage:
+                { type: number, description: Share of the banner, 0-100. }
+              rgb:
+                type: object
+                description: The color's red, green and blue values.
+                properties:
+                  red: { type: integer, minimum: 0, maximum: 255 }
+                  green: { type: integer, minimum: 0, maximum: 255 }
+                  blue: { type: integer, minimum: 0, maximum: 255 }
+    XList:
+      description: >
+        Public X List with its owner's public profile. Leaves out what X tells
+        the reading account, such as whether it follows the List.
+      type: object
+      required: [id, name]
+      example:
+        id: '1284239399492833280'
+        name: '#Mars2020 Science & Tech'
+        description: 'Official accounts on the Perseverance Mars rover mission.'
+        memberCount: 35
+        subscriberCount: 76
+        owner:
+          id: '1232783237623119872'
+          username: NASAPersevere
+          name: "NASA's Perseverance Mars Rover"
+        url: 'https://x.com/i/lists/1284239399492833280'
+        createdAt: '2020-07-17T21:31:47.000Z'
+      properties:
+        id: { type: string, description: Numeric ID of the List. }
+        name: { type: string, description: Name the owner gave the List. }
+        description:
+          type: string
+          description: About text of the List. Empty when the owner wrote none.
+        memberCount:
+          { type: integer, minimum: 0, description: Accounts on the List. }
+        subscriberCount:
+          type: integer
+          minimum: 0
+          description: Accounts that follow the List, which X calls followers.
+        owner:
+          type: object
+          $ref: '#/components/schemas/UserProfile'
+          description: Public profile of the account that owns the List.
+        url: { type: string, description: List page on x.com. }
+        createdAt:
+          type: string
+          format: date-time
+          description: When the owner made the List.
+        bannerUrl:
+          type: string
+          description: >
+            URL of the banner the owner uploaded. Absent when the owner uploaded
+            none.
+        customBanner:
+          type: object
+          $ref: '#/components/schemas/XListBanner'
+          description: Banner the owner uploaded.
+        defaultBanner:
+          type: object
+          $ref: '#/components/schemas/XListBanner'
+          description: >
+            Banner X shows when the owner uploaded none. X picks it per reading
+            account, so 2 calls can return different ones.
+        facepileUrls:
+          type: array
+          description:
+            Avatar URLs of a few List members, which X may pick per request.
+          items: { type: string }
+        membersContext:
+          type: string
+          description: Member count as X words it, such as 35 members.
+    PaginatedLists:
+      description: >
+        One page of public X Lists. Follow next_cursor while the response
+        reports more pages. Each returned List costs 1 credit.
+      type: object
+      example: { lists: [], has_next_page: false, next_cursor: '' }
+      required: [lists, has_next_page, next_cursor]
+      properties:
+        lists:
+          type: array
+          items:
+            $ref: '#/components/schemas/XList'
+        has_next_page: *boolean-example-true
+        next_cursor: *cursor-example-schema
     UserListCoverageStrategy:
       description: Result counts and stop reason for one relationship strategy.
       type: object
