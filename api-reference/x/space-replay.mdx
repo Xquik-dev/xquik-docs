@@ -1,0 +1,391 @@
+---
+title: "Twitter spaces replay API: get a recording URL"
+sidebarTitle: "Get Space replay"
+description: "Get the replay of an ended Twitter or X Space as an HLS playback URL, by Space ID or URL. Live and scheduled Spaces answer 409. Costs 1 credit per call."
+api: "GET /x/spaces/{id}/replay"
+keywords:
+  [
+    "Twitter Spaces replay",
+    "X Space recording",
+    "Twitter Space recording URL",
+    "Space replay API",
+    "HLS playlist",
+    "download Twitter Space",
+    "MPP",
+  ]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+import TweetReadApiLinks from "/snippets/x-tweet-read-api-links.mdx";
+
+{/* GENERATED RESPONSE EXAMPLES START */}
+
+<Panel>
+
+<Tabs defaultTabIndex={0} sync={false}>
+
+  <Tab title="200" id="response-x-space-replay-200">
+
+    ```json
+    {
+      "replay": {
+        "url": "https://prod-fastly-us-east-1.video.pscp.tv/Transcoding/v1/hls/example/audio-space/playlist.m3u8?type=replay",
+        "streamType": "HLS",
+        "status": "LIVE_PUBLIC"
+      }
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="400" id="response-x-space-replay-400">
+
+    ```json
+    {
+      "error": "invalid_input",
+      "message": "Invalid input. Check the request body."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="401" id="response-x-space-replay-401">
+
+    ```json
+    {
+      "error": "unauthenticated",
+      "message": "Authentication required. Provide a valid API key or bearer token."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="402" id="response-x-space-replay-402">
+
+    ```json
+    {
+      "error": "insufficient_credits",
+      "message": "Insufficient credits. Top up or subscribe to continue."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="404" id="response-x-space-replay-404">
+
+    ```json
+    {
+      "error": "not_found",
+      "message": "Resource not found."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="409" id="response-x-space-replay-409">
+
+    ```json
+    {
+      "error": "space_not_ended",
+      "message": "This Space has not ended. Its replay is ready after it ends."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="424" id="response-x-space-replay-424">
+
+    ```json
+    {
+      "error": "x_api_unavailable",
+      "message": "X data source temporarily unavailable. Try again later."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="429" id="response-x-space-replay-429">
+
+    ```json
+    {
+      "error": "rate_limit_exceeded",
+      "message": "Too many requests. Try again later.",
+      "retryAfter": 60
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="502" id="response-x-space-replay-502">
+
+    ```json
+    {
+      "error": "x_api_unavailable",
+      "message": "X data source temporarily unavailable. Try again later."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="503" id="response-x-space-replay-503">
+
+    ```json
+    {
+      "error": "x_api_unavailable",
+      "message": "Xquik is busy right now. Retry shortly."
+    }
+    ```
+
+  </Tab>
+</Tabs>
+
+</Panel>
+{/* GENERATED RESPONSE EXAMPLES END */}
+<LlmsDirective />
+
+<Callout icon="coins" color="#5c3327">
+
+**1 credit per call** · [All plans](https://xquik.com/#pricing) from $0.00012/credit · Direct [MPP](/mpp/machine-payments-protocol): USD 0.00015 per call
+
+</Callout>
+
+Get Space replay returns the recording X plays back once a Space is over.
+The endpoint is `GET /api/v1/x/spaces/{id}/replay`.
+
+<CodeGroup>
+
+```bash cURL
+curl https://xquik.com/api/v1/x/spaces/1OGwblLjnQMKB/replay \
+  -H "x-api-key: xq_your_api_key_here" | jq
+```
+
+```javascript Node.js
+const spaceId = "1OGwblLjnQMKB";
+const response = await fetch(`https://xquik.com/api/v1/x/spaces/${spaceId}/replay`, {
+  headers: { "x-api-key": "xq_your_api_key_here" },
+});
+const data = await response.json();
+if (!response.ok) throw new Error(JSON.stringify(data));
+const replayRow = {
+  space_id: spaceId,
+  replay_url: data.replay.url,
+  stream_type: data.replay.streamType ?? null,
+  stream_status: data.replay.status ?? null,
+};
+process.stdout.write(`${JSON.stringify(replayRow)}\n`);
+```
+
+```python Python
+import json
+import requests
+
+space_id = "1OGwblLjnQMKB"
+response = requests.get(
+    f"https://xquik.com/api/v1/x/spaces/{space_id}/replay",
+    headers={"x-api-key": "xq_your_api_key_here"},
+)
+data = response.json()
+if not response.ok:
+    raise RuntimeError(data)
+replay = data["replay"]
+replay_row = {
+    "space_id": space_id,
+    "replay_url": replay["url"],
+    "stream_type": replay.get("streamType"),
+    "stream_status": replay.get("status"),
+}
+print(json.dumps(replay_row))
+```
+
+</CodeGroup>
+
+Each call costs 1 credit. A refused request costs nothing.
+
+## Get the recording of an ended Space
+
+Use `GET /x/spaces/{id}/replay` once a Space is over, in state `Ended` or
+`TimedOut`. Check `state` and `isAvailableForReplay` with
+[Get Space](/api-reference/x/get-space) first.
+
+- An ended Space with a recording returns its HLS playlist in `replay.url`.
+- A live or scheduled Space answers 409 `space_not_ended`. Its replay is ready
+  after it ends.
+- A Space whose host kept no recording, or cancelled it, answers 404
+  `replay_unavailable`.
+
+`replay.url` is an HLS playlist. Play it in a player that reads HLS, or pass it
+to a tool that saves HLS streams.
+
+## Path parameters
+
+<ParamField path="id" type="string" required>
+
+X Space ID, or the URL-encoded Space URL, such as `x.com/i/spaces/1OGwblLjnQMKB`.
+
+</ParamField>
+
+## Headers
+
+<ParamField header="x-api-key" type="string">
+
+Full account key. Sessions and OAuth also work.
+
+</ParamField>
+
+<ParamField header="Authorization" type="string">
+
+`Bearer xq_your_guest_key_here` authenticates `paid_reads` guest keys. Direct MPP uses the `Payment ...` credential. Get it from the `WWW-Authenticate: Payment` challenge.
+
+</ParamField>
+
+## Response
+
+### 200 OK
+
+<ResponseField name="replay" type="object">
+
+Recording of an ended Space.
+**Replay object fields.**
+
+<ResponseField name="url" type="string">
+  HLS playlist of the recording.
+</ResponseField>
+<ResponseField name="streamType" type="string">
+  Stream format, as X names it.
+</ResponseField>
+<ResponseField name="status" type="string">
+  Stream status, as X names it.
+</ResponseField>
+
+</ResponseField>
+
+```json
+{
+  "replay": {
+    "url": "https://prod-fastly-us-east-1.video.pscp.tv/Transcoding/v1/hls/example/audio-space/playlist.m3u8?type=replay",
+    "streamType": "HLS",
+    "status": "LIVE_PUBLIC"
+  }
+}
+```
+
+### 400 Invalid Space ID
+
+```json
+{
+  "error": "invalid_space_id",
+  "message": "Send a Space ID or URL, such as x.com/i/spaces/1OGwblLjnQMKB."
+}
+```
+
+The path is not a Space ID or a Space URL. The request costs nothing.
+
+### 401 Unauthenticated
+
+```json
+{ "error": "unauthenticated" }
+```
+
+Missing or invalid API key. Check the `x-api-key` header value.
+
+### 402 Payment required
+
+Account keys get account options. Guest keys get guest top-up only.
+Anonymous calls receive a direct MPP `WWW-Authenticate: Payment` challenge plus a guest wallet creation action.
+No checkout starts automatically. Confirm any payment action.
+
+### 404 No replay
+
+```json
+{
+  "error": "replay_unavailable",
+  "message": "This Space has no replay. Its host kept no recording."
+}
+```
+
+The host kept no recording, or cancelled the Space. The request costs nothing.
+
+### 404 Space not found
+
+```json
+{ "error": "not_found", "message": "Resource not found." }
+```
+
+X has no such Space, or X limits it to subscribers or a community. The request costs nothing.
+
+### 409 Space not ended
+
+```json
+{
+  "error": "space_not_ended",
+  "message": "This Space has not ended. Its replay is ready after it ends."
+}
+```
+
+The Space is live or scheduled. Call again after it ends. The request costs nothing.
+
+### 502 X API unavailable
+
+```json
+{ "error": "x_api_unavailable" }
+```
+
+The read service returned an error. Retry after a short delay.
+
+### 503 Service busy
+
+```json
+{ "error": "x_api_unavailable" }
+```
+
+X returned no playback URL, or Xquik is busy. Wait for `Retry-After`, then retry. The request costs nothing.
+
+### 429 Rate limit exceeded
+
+```json
+{ "error": "rate_limit_exceeded", "retryAfter": 60 }
+```
+
+You exceeded your tier rate limit. Wait for the `Retry-After` header before retrying.
+
+### 424 Dependency failed
+
+```json
+{ "error": "x_api_unavailable" }
+```
+
+The normalized v1 response contract can return 424 when the read service is unavailable.
+
+## Twitter Spaces replay questions
+
+### How do I get the recording of a Twitter Space?
+
+Call `GET /x/spaces/{id}/replay` with the Space ID or its URL. An ended Space
+with a recording returns its HLS playlist in `replay.url`.
+
+### Can I get the stream of a live Space?
+
+No. A live or scheduled Space answers 409 `space_not_ended`. Call again after
+it ends.
+
+### Why does an ended Space have no replay?
+
+Its host kept no recording. Check `isAvailableForReplay` with
+[Get Space](/api-reference/x/get-space) before you call.
+
+### How much does a replay lookup cost?
+
+Each replay returned costs 1 credit. A refused request costs nothing.
+
+### Does this replace X's official API?
+
+No. This page documents Xquik, an independent third-party service.
+It does not document X's official API.
+
+<Note>
+
+**Next steps.** [Get Space](/api-reference/x/get-space) for the Space's state & listener counts, or [Search Spaces](/api-reference/x/search-spaces) to find more Spaces.
+
+</Note>
+
+<TweetReadApiLinks />
