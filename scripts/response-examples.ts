@@ -1,8 +1,8 @@
 #!/usr/bin/env bun
 /**
- * `bun run sync:response-examples` writes each API reference page's response
- * tabs from `openapi.yaml`. `bun run check:response-examples` fails when a
- * page's tabs differ from what the spec gives.
+ * `bun run sync` writes each API reference page's response tabs from
+ * `openapi.yaml`, after it copies the spec. `bun run check:response-examples`
+ * fails when a page's tabs differ from what the spec gives.
  */
 import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, relative, sep } from "node:path";

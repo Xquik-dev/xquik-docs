@@ -7,7 +7,7 @@ Thanks for helping improve the Xquik docs. This file covers how to set up your e
 1. Fork the repository or create a branch if you have write access.
 2. Install the latest stable Node.js, Bun, and rustup.
 3. Run `bun run install:frozen` and `bun run install:licenses`.
-4. Edit the relevant `.mdx`, `.md`, `openapi.yaml`, or `docs.json`.
+4. Edit the relevant `.mdx`, `.md`, or `docs.json`.
 5. Run every static check listed below.
 6. Sign off your commit.
 7. Push and open a pull request against `main`.
@@ -41,7 +41,7 @@ Ask for acceptance criteria when the scope is unclear.
 - New or improved code samples (curl, Python, TypeScript, etc.) on endpoint pages.
 - New guides for common integration patterns. Open an issue first so we can agree on scope.
 - New factual comparison and migration guides that help users evaluate X workflow options.
-- OpenAPI spec corrections when documented behaviour does not match the live API. Verify against the live API before submitting.
+- Reports of OpenAPI spec errors, when the spec does not match the live API. Open an issue, since the spec is copied from the application.
 - SDK landing-page updates when an SDK adds a feature or changes auth semantics.
 
 ## What we do not accept here
@@ -81,11 +81,11 @@ These are non-negotiable for merged PRs.
 
 ## OpenAPI changes
 
-`openapi.yaml` is the source of truth that drives the rendered REST reference and the generated SDKs. Treat it carefully.
+`openapi.yaml` drives the rendered REST reference. It is an exact copy of the application's spec, and a check fails when it is edited here.
 
-- Run `npm run docs:validate` locally before pushing.
-- Do not introduce new endpoints here speculatively. Endpoints are added only after they ship in the live API.
-- Breaking changes require coordination with the SDK release process; flag them in the PR description.
+- Maintainers run `bun run sync` beside an application checkout. It copies the spec and rewrites each page's response examples.
+- Document the fields the new spec adds in the same pull request.
+- Run `bun run docs:validate` before pushing.
 
 ## Dependency changes
 
@@ -95,7 +95,7 @@ Inspect lifecycle scripts before adding a package.
 
 Regenerate `package-lock.json` with scripts disabled.
 
-Run the audit and dependency policy before requesting review.
+Run the dependency audit and the exact-version check before requesting review.
 
 ## Commit and PR conventions
 

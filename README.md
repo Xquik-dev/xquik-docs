@@ -87,7 +87,7 @@ x-api-quickstart.mdx      2-minute quickstart
 docs.json           Navigation + theme config
 custom.css          Custom styling
 llms.txt            AI-readable site index
-openapi.yaml        OpenAPI 3.1 source of truth
+openapi.yaml        OpenAPI 3.1 spec, copied from the application
 ```
 
 ## Local development
@@ -99,9 +99,10 @@ bunx --bun npm@12.0.1 ci --ignore-scripts
 bun run check:all
 ```
 
-Contract checks compare this repository's `openapi.yaml` with the application's.
+`openapi.yaml` is an exact copy of the application's spec. Never edit it here.
 Clone the application beside this repository, or set `XQUIK_PRODUCT_ROOT` to it.
-Without it, those checks skip & say so.
+`bun run sync` then copies the spec & rewrites each page's response examples.
+The parity test needs that checkout too. Without it, the test skips & says so.
 Reuse verified static checks through the application's existing validation cache.
 Changes to docs, dependencies, or commands invalidate those results.
 Full tests, coverage, LOC checks, and measurement reports always run.
