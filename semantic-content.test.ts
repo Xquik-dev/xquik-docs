@@ -83,6 +83,13 @@ const REQUIRED_OPERATIONAL_CONTENT = [
     ],
   },
   {
+    file: "api-reference/x/user-articles.mdx",
+    snippets: [
+      "| Profile feed | Route | Rows returned |",
+      "| Articles tab | `/x/users/{id}/articles` | Article posts, newest first. |",
+    ],
+  },
+  {
     file: "api-reference/x/twitter-profile-lookup.mdx",
     snippets: [
       "| Profile column | Response field | CRM or warehouse rule |",
