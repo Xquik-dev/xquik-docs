@@ -56,6 +56,7 @@ const LINK_CLUSTERS: readonly LinkCluster[] = [
       "/api-reference/x/tweet-thread",
       "/api-reference/x/tweet-hidden-replies",
       "/api-reference/x/tweet-translation",
+      "/api-reference/x/resolve-links",
       "/api-reference/x/get-article",
       "/api-reference/x/tweet-replies",
       "/api-reference/x/tweet-quotes",
