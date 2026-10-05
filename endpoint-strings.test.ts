@@ -104,7 +104,7 @@ function normalizeDocumentedPath(rawPath: string): string {
   let normalized = rawPath.trim();
   normalized = normalized.replace(/^["'`]+/u, "");
   normalized = normalized.replace(/^https:\/\/xquik\.com/u, "");
-  normalized = normalized.replace(/["'`.,;\]]+$/u, "");
+  normalized = normalized.replace(/["'`.,;:\]]+$/u, "");
   normalized = normalized.replace(/^\/api\/v1(?=\/)/u, "");
   normalized = normalized.split(/[?#]/u)[0] ?? normalized;
   normalized = normalized.replace(/\/$/u, "");
