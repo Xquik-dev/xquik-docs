@@ -30,10 +30,12 @@ import AudienceCommunityApiLinks from "/snippets/x-audience-community-api-links.
 
     ```json
     {
-      "isFollowing": true,
-      "isFollowedBy": false,
-      "sourceUsername": "elonmusk",
-      "targetUsername": "jack"
+      "isFollowing": false,
+      "isFollowedBy": true,
+      "sourceId": "11348282",
+      "sourceUsername": "nasa",
+      "targetId": "34743251",
+      "targetUsername": "spacex"
     }
     ```
 
@@ -121,7 +123,7 @@ import AudienceCommunityApiLinks from "/snippets/x-audience-community-api-links.
 {/* GENERATED RESPONSE EXAMPLES END */}
 <LlmsDirective />
 
-This route checks one follow relationship in both directions. Supply 2 usernames and store both boolean results.
+This route checks one follow relationship in both directions. Supply 2 accounts, each by user ID or username, and store both boolean results.
 
 <Callout icon="coins" color="#5c3327">
 
@@ -133,9 +135,9 @@ This route checks one follow relationship in both directions. Supply 2 usernames
 
 Check follower verifies one known relationship without exporting a follower
 list. Pass the participant as `source` and the required brand, creator, or
-partner account as `target`. Each input accepts a username, `@username`, or
-supported X or Twitter profile URL. Xquik resolves profile URLs and converts
-both usernames to lowercase before lookup. The response returns both directions:
+partner account as `target`. Each input accepts a user ID, a username,
+`@username`, or supported X or Twitter profile URL. Xquik resolves profile URLs
+and converts both usernames to lowercase before lookup. The response returns both directions:
 `isFollowing` for source-to-target proof and `isFollowedBy` for
 target-to-source context.
 
@@ -227,7 +229,7 @@ matched or not-matched state.
 ## Campaign follow-check handoff
 
 Use `GET /api/v1/x/followers/check` when a workflow already has both usernames,
-`@usernames`, or supported profile URLs. It returns one proof for a follow task.
+`@usernames`, user IDs, or supported profile URLs. It returns one proof for a follow task.
 Use it for campaign entry validation, giveaway eligibility, creator
 partnerships, CRM qualification, and agent review queues.
 
@@ -246,9 +248,8 @@ partnerships, CRM qualification, and agent review queues.
   </Card>
   <Card title="Accepted inputs" icon="at-sign">
 
-    Pass a username, `@username`, or supported X or Twitter profile URL.
-    The route does not accept numeric user IDs. Use [Get user](/api-reference/x/twitter-profile-lookup)
-    first when you only have a numeric ID.
+    Pass a user ID, a username, `@username`, or supported X or Twitter profile URL.
+    A number is a user ID. An `x.com/i/user/<id>` link names an account by ID too.
 
   </Card>
   <Card title="Audit row" icon="clipboard-check">
@@ -275,17 +276,19 @@ partnerships, CRM qualification, and agent review queues.
 
 <ParamField query="source" type="string" required>
 
-Source username, `@username`, or supported X or Twitter profile URL. Xquik
-resolves profile URLs and converts the username to lowercase. In campaign
-verification, this is usually the participant or entrant.
+Source user ID, username, `@username`, or supported X or Twitter profile URL,
+such as `x.com/i/user/11348282`. A number is a user ID. Xquik resolves profile
+URLs and converts the username to lowercase. In campaign verification, this is
+usually the participant or entrant.
 
 </ParamField>
 
 <ParamField query="target" type="string" required>
 
-Target username, `@username`, or supported X or Twitter profile URL. Xquik
-resolves profile URLs and converts the username to lowercase. In campaign
-verification, this is usually the required brand, creator, or partner account.
+Target user ID, username, `@username`, or supported X or Twitter profile URL,
+such as `x.com/i/user/11348282`. A number is a user ID. Xquik resolves profile
+URLs and converts the username to lowercase. In campaign verification, this is
+usually the required brand, creator, or partner account.
 
 </ParamField>
 
@@ -348,11 +351,17 @@ Full account key. Sessions and OAuth also work.
 
 ### 200 OK
 
+<ResponseField name="sourceId" type="string">
+  The source account's user ID, as X gives it. Omitted when X names no account.
+</ResponseField>
 <ResponseField name="sourceUsername" type="string">
-  Lowercase username resolved from `source`.
+  The source account's username, in lowercase.
+</ResponseField>
+<ResponseField name="targetId" type="string">
+  The target account's user ID, as X gives it. Omitted when X names no account.
 </ResponseField>
 <ResponseField name="targetUsername" type="string">
-  Lowercase username resolved from `target`.
+  The target account's username, in lowercase.
 </ResponseField>
 <ResponseField name="isFollowing" type="boolean">
   `true` if the source user follows the target user.
@@ -363,10 +372,12 @@ Full account key. Sessions and OAuth also work.
 
 ```json
 {
-  "sourceUsername": "participant_handle",
-  "targetUsername": "brand_handle",
-  "isFollowing": true,
-  "isFollowedBy": false
+  "sourceId": "11348282",
+  "sourceUsername": "nasa",
+  "targetId": "34743251",
+  "targetUsername": "spacex",
+  "isFollowing": false,
+  "isFollowedBy": true
 }
 ```
 
@@ -375,7 +386,7 @@ Full account key. Sessions and OAuth also work.
 ```json
 {
   "error": "missing_params",
-  "message": "Both source and target usernames are required.",
+  "message": "Send both source and target, each a user ID or username.",
   "required": ["source", "target"]
 }
 ```
@@ -385,12 +396,12 @@ One or both query parameters are missing. Provide both `source` and `target`.
 ```json
 {
   "error": "invalid_username",
-  "message": "Invalid source username. Use username, @username, or an X or Twitter profile URL.",
+  "message": "Invalid source. Use a user ID, username, @username or X profile URL.",
   "parameter": "source"
 }
 ```
 
-The named parameter is invalid. Use a username, `@username`, or supported X or Twitter profile URL. The API rejects numeric IDs, foreign hosts, profile status URLs, credentials, and custom ports.
+The named parameter is invalid. Use a user ID, a username, `@username`, or supported X or Twitter profile URL. The API rejects foreign hosts, profile status URLs, credentials, and custom ports.
 
 ### 401 Unauthenticated
 
