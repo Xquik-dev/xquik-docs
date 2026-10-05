@@ -203,6 +203,7 @@ const handoff = {
   created_at: data.article.createdAt ?? null,
   cover_image_url: data.article.coverImageUrl ?? null,
   body_text: bodyBlocks.map((block) => block.text).join("\n\n"),
+  body_markdown: data.article.bodyMarkdown ?? null,
   block_count: contentBlocks.length,
   block_types: contentBlocks.map((block) => block.type ?? "unknown"),
   formatted_blocks: formattedBlocks,
@@ -245,6 +246,7 @@ handoff = {
     "created_at": data["article"].get("createdAt"),
     "cover_image_url": data["article"].get("coverImageUrl"),
     "body_text": "\n\n".join(block["text"] for block in body_blocks),
+    "body_markdown": data["article"].get("bodyMarkdown"),
     "block_count": len(content_blocks),
     "block_types": [block.get("type") for block in content_blocks],
     "formatted_blocks": formatted_blocks,
@@ -259,8 +261,8 @@ The examples build article rows, not raw lookup dumps.
 Use `GET /api/v1/x/articles/{tweetId}` when a workflow needs one long-form post
 body plus article metadata. Store `tweet_id`,
 `article_title`, `preview_text`, `author_id`, `author_username`, `author_name`,
-`author_profile_picture`, `created_at`, `cover_image_url`, and `body_text` with
-the record you pass on. Store `block_count`, `block_types`, `formatted_blocks`,
+`author_profile_picture`, `created_at`, `cover_image_url`, `body_text`, and
+`body_markdown` with the record you pass on. Store `block_count`, `block_types`, `formatted_blocks`,
 and `media_urls` when your archive, article index, or agent handoff needs
 block-level completeness and formatting checks.
 
@@ -475,6 +477,7 @@ The article data.
 <ResponseField name="metadata" type="object">Public article metadata. X defines its fields.</ResponseField>
 <ResponseField name="lifecycleState" type="object">Public lifecycle metadata. X defines its fields.</ResponseField>
 <ResponseField name="bodyText" type="string">Plain text joined from all article content blocks. Omitted if unavailable.</ResponseField>
+<ResponseField name="bodyMarkdown" type="string">Article body as Markdown, built from the content blocks. Keeps headings, lists, bold, italic, links, images & embedded posts as their x.com URLs. Holds no HTML. Omitted if unavailable.</ResponseField>
 <ResponseField name="contents" type="object[]">
 
       Article body as an array of content blocks.
@@ -493,7 +496,7 @@ The article data.
           **Style range fields.**
             <ResponseField name="offset" type="number">Character offset where the style starts.</ResponseField>
             <ResponseField name="length" type="number">Number of characters the style spans.</ResponseField>
-            <ResponseField name="style" type="string">Draft.js style token such as `BOLD` or `ITALIC`.</ResponseField>
+            <ResponseField name="style" type="string">X's name for the style, such as `Bold` or `Italic`.</ResponseField>
 
         </ResponseField>
 
@@ -598,9 +601,10 @@ The article author. Omitted if author data is unavailable.
       {
         "type": "paragraph",
         "text": "What really matters is the hook.",
-        "inlineStyleRanges": [{ "offset": 23, "length": 8, "style": "BOLD" }]
+        "inlineStyleRanges": [{ "offset": 23, "length": 8, "style": "Bold" }]
       }
     ],
+    "bodyMarkdown": "Creating organic videos for Instagram Reels and TikTok is one of the most effective ways to attract customers.\n\n## The problem\n\n1. Your account isn't properly set up\n\n![](https://pbs.twimg.com/media/HDm1eekbQAAzP9c.png)\n\nWhat really matters is **the hook**.",
     "createdAt": "Tue Mar 17 13:03:00 +0000 2026",
     "likeCount": 156,
     "replyCount": 9,
