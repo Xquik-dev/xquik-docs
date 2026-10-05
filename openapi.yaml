@@ -8765,13 +8765,15 @@ paths:
                   tweetId: '2102882545427714266'
                   language: tr
                   sourceLanguage: en
-                  text: 'Artemis Anlaşmaları’na Hoş Geldiniz, Hırvatistan'
+                  text:
+                    'Artemis Anlaşmaları’na Hoş Geldiniz, Hırvatistan
+                    https://t.co/Xe1nm2pkSX'
                   entities:
                     urls:
                       - url: 'https://t.co/Xe1nm2pkSX'
                         expanded_url: 'https://go.nasa.gov/3VcvAQn'
                         display_url: go.nasa.gov/3VcvAQn
-                        indices: [154, 177]
+                        indices: [49, 72]
         '400': *invalid-input-response
         '401': *unauthenticated-response
         '402': *payment-required-response
@@ -8851,6 +8853,72 @@ paths:
           $ref: '#/components/responses/ReadBusy'
         '429': *rate-limit-exceeded-response-2
         '424': *x-api-error-response
+
+  /x/links/resolve:
+    get:
+      operationId: resolveLinks
+      description:
+        Returns where each t.co link leads, as X's own redirect says. Xquik
+        reads the redirect and never visits the target site. A link t.co does
+        not have comes back without `resolvedUrl` and costs nothing. A link X
+        does not answer for in time comes back in `unprocessedUrls`, free. Each
+        resolved link costs 1 credit.
+      summary: Resolve t.co links to their target URLs
+      tags:
+        - Tweets
+      security: *read-auth
+      parameters:
+        - name: urls
+          in: query
+          required: true
+          description:
+            1 to 100 links of the form `https://t.co/Xe1nm2pkSX`, separated by
+            commas. Any other link is refused.
+          schema:
+            type: string
+            example: 'https://t.co/Xe1nm2pkSX'
+      responses:
+        '200':
+          description: Resolved links in the order sent
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [links, unprocessedUrls]
+                properties:
+                  links:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ResolvedLink'
+                    example:
+                      - url: 'https://t.co/Xe1nm2pkSX'
+                        resolvedUrl: 'https://go.nasa.gov/3VcvAQn'
+                  unprocessedUrls:
+                    type: array
+                    description:
+                      Links not read, in the order sent. X did not answer for
+                      them in time, or available credits ran out. Send them
+                      again.
+                    items:
+                      type: string
+                      example: 'https://t.co/QQGjcE6KKq'
+                    example: []
+              example:
+                links:
+                  - url: 'https://t.co/Xe1nm2pkSX'
+                    resolvedUrl: 'https://go.nasa.gov/3VcvAQn'
+                unprocessedUrls: []
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '401': *anonymous-guest-authentication-response
+        '402': *payment-required-response
+        '502':
+          $ref: '#/components/responses/XApiError'
+        '503':
+          $ref: '#/components/responses/ReadBusy'
+        '429': *rate-limit-exceeded-response-2
+        '424':
+          $ref: '#/components/responses/XApiError'
 
   /x/users/{id}/follower-ids:
     parameters:
@@ -15439,6 +15507,23 @@ components:
         editableUntilMsecs: { type: string }
         initialTweetId: { type: string }
 
+    ResolvedLink:
+      description: Pairs one t.co link with the URL it leads to.
+      type: object
+      required: [url]
+      properties:
+        url:
+          type: string
+          description: The t.co link, as `https://t.co/<code>`.
+        resolvedUrl:
+          type: string
+          description:
+            Target URL, as the link's author set it. Xquik does not check it.
+            Absent for a link t.co does not have.
+      example:
+        url: 'https://t.co/Xe1nm2pkSX'
+        resolvedUrl: 'https://go.nasa.gov/3VcvAQn'
+
     TweetEmbed:
       description: Holds the HTML that embeds one tweet on a website.
       type: object
@@ -15552,20 +15637,24 @@ components:
         text:
           type: string
           description: Translated tweet text.
-          example: 'Artemis Anlaşmaları’na Hoş Geldiniz, Hırvatistan'
+          example:
+            'Artemis Anlaşmaları’na Hoş Geldiniz, Hırvatistan
+            https://t.co/Xe1nm2pkSX'
         entities:
           $ref: '#/components/schemas/TweetEntities'
       example:
         tweetId: '2102882545427714266'
         language: tr
         sourceLanguage: en
-        text: 'Artemis Anlaşmaları’na Hoş Geldiniz, Hırvatistan'
+        text:
+          'Artemis Anlaşmaları’na Hoş Geldiniz, Hırvatistan
+          https://t.co/Xe1nm2pkSX'
         entities:
           urls:
             - url: 'https://t.co/Xe1nm2pkSX'
               expanded_url: 'https://go.nasa.gov/3VcvAQn'
               display_url: go.nasa.gov/3VcvAQn
-              indices: [154, 177]
+              indices: [49, 72]
 
     TweetUrlEntity:
       description:
