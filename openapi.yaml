@@ -3849,6 +3849,67 @@ paths:
         '429': *rate-limit-exceeded-response-2
         '424': *x-api-error-response
 
+  /x/users/batch/tweets:
+    get:
+      operationId: getBatchUserTweets
+      description:
+        Returns the newest posts of up to 20 users, named by user ID, username
+        or profile link, in the order named. Send ids or usernames, not both.
+        Each post costs 1 credit. A user in unavailable_ids or unprocessed_ids
+        costs nothing.
+      summary: List the newest tweets of multiple users in one call
+      tags:
+        - Users
+      security: *read-auth
+      parameters:
+        - name: ids
+          in: query
+          schema:
+            type: string
+          description:
+            Comma-separated numeric user IDs (1-20 values). Duplicate IDs are
+            ignored while preserving first-seen order.
+        - name: usernames
+          in: query
+          schema:
+            type: string
+          example: 'nasa,@OpenAI,x.com/verge'
+          description:
+            Comma-separated X usernames, with or without @, or profile links
+            such as x.com/nasa (1-20 values), in place of ids. A name in another
+            case is the same account.
+        - name: pageSize
+          in: query
+          description: >
+            Posts per user (1-20, default 20). Credits can return fewer.
+            Aliases: limit, count, max_results, maxItems, max_items & per_page.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 20
+            default: 20
+      responses:
+        '200':
+          description: Each user's newest posts, plus the users not read.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchUserTweets'
+              example:
+                tweets: *example-launch-tweets
+                has_next_page: false
+                next_cursor: ''
+                unavailable_ids: ['1234567890']
+                unprocessed_ids: []
+        '400': *invalid-input-response
+        '401': *anonymous-guest-authentication-response
+        '402': *payment-required-response
+        '502': *x-api-error-response
+        '503':
+          $ref: '#/components/responses/ReadBusy'
+        '429': *rate-limit-exceeded-response-2
+        '424': *x-api-error-response
+
   /x/users/search:
     get:
       operationId: searchUsers
@@ -6061,12 +6122,13 @@ paths:
       operationId: getUserTweets
       summary: List recent tweets posted by one user
       description: >
-        For 2 or more users, use createExtraction with tweet_search_extractor &
-        targetUsernames. Omit mode for automatic maximum coverage. Pass
-        next_cursor unchanged; unprefixed cursors are legacy. The first page
-        opens with the pinned tweet, flagged isPinned, unless replies are
-        included. Rows stay newest first. x.com's Posts tab groups self-threads
-        & hides reposts; retweets=exclude drops reposts.
+        For the newest posts of 2 to 20 users, use getBatchUserTweets. For more,
+        use createExtraction with tweet_search_extractor & targetUsernames. Omit
+        mode for automatic maximum coverage. Pass next_cursor unchanged;
+        unprefixed cursors are legacy. The first page opens with the pinned
+        tweet, flagged isPinned, unless replies are included. Rows stay newest
+        first. x.com's Posts tab groups self-threads & hides reposts;
+        retweets=exclude drops reposts.
       tags:
         - Users
       security: *read-auth
@@ -13255,6 +13317,44 @@ components:
           description:
             Requested IDs skipped because available credits limited processing.
             Retry these IDs after adding credits.
+          items: *batch-user-id
+          example: []
+    BatchUserTweets:
+      description: >
+        Each user's newest posts, in the order the users were named, with the
+        pinned post first. The ID lists name the requested IDs or usernames. A
+        profile link is named by its username.
+      type: object
+      required:
+        [tweets, has_next_page, next_cursor, unavailable_ids, unprocessed_ids]
+      properties:
+        tweets:
+          type: array
+          items:
+            $ref: '#/components/schemas/SearchTweet'
+          example: *example-launch-tweets
+        has_next_page:
+          type: boolean
+          const: false
+          description: Always false. The answer holds every post in 1 page.
+        next_cursor:
+          type: string
+          description: Always empty. The answer holds every post in 1 page.
+          maxLength: 0
+          example: ''
+        unavailable_ids:
+          type: array
+          description:
+            Users with no account on X or with protected posts, in first-seen
+            request order. They cost nothing.
+          items: *batch-user-id
+          example: ['1234567890']
+        unprocessed_ids:
+          type: array
+          description:
+            Users the call did not read, in first-seen request order. Their read
+            failed, the call ran out of time or credits ran out. They cost
+            nothing. Send them again.
           items: *batch-user-id
           example: []
     GuestWalletAmount:
