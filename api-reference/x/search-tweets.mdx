@@ -386,6 +386,23 @@ several authors are unaffected.
 
 Tweet search costs 1 credit per tweet returned. Retry `429` with the `Retry-After` header. Retry `502` after a short backoff. Change the query after `424 search_unavailable`.
 
+## Matched text ranges
+
+Each row says where its `text` matches the search, in `textHighlights`. Use the
+ranges to bold the matched words or to cut a snippet around them.
+
+- `startIndex` is the first code point of a match. `endIndex` is the first one after it.
+- Offsets count code points of the row's `text`, as `displayTextRange` does.
+- JavaScript counts some characters, such as most emoji, as 2 units. Split the text by code point first.
+- The list is empty when X marks nothing, such as for a `from:` search without words.
+
+```javascript
+const characters = [...tweet.text];
+const matches = tweet.textHighlights.map(({ startIndex, endIndex }) =>
+  characters.slice(startIndex, endIndex).join(""),
+);
+```
+
 ## Query parameters
 
 <ParamField query="q" type="string" required>
@@ -502,6 +519,7 @@ The API omits fields absent from a source tweet.
 <ResponseField name="conversationId" type="string">Conversation thread ID.</ResponseField>
 <ResponseField name="source" type="string">Tweet client.</ResponseField>
 <ResponseField name="displayTextRange" type="number[]">Rendered text offsets.</ResponseField>
+<ResponseField name="textHighlights" type="object[]">Where `text` matches the search. Each item has `startIndex` & `endIndex`, counted in code points of `text`. Empty when X marks nothing in the post.</ResponseField>
 <ResponseField name="isLimitedReply" type="boolean">Whether replies are limited.</ResponseField>
 <ResponseField name="isQuoteStatus" type="boolean">Whether this tweet quotes another.</ResponseField>
 <ResponseField name="isRetweet" type="boolean">Whether this row is a retweet. `text` carries the original post in full.</ResponseField>
