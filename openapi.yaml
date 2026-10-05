@@ -62,7 +62,7 @@ tags:
   - name: Broadcasts
     description: X live video details, watch counts, and broadcaster
   - name: Communities
-    description: X Community info, members, and tweets
+    description: Find X Communities & read their info, members, posts & media
   - name: Composition
     description: AI tweet composition, drafts, writing styles, and radar
   - name: Draws
@@ -6908,98 +6908,7 @@ paths:
                 required: [community]
                 properties:
                   community:
-                    type: object
-                    description: Community info object
-                    example:
-                      id: '1500000000000000000'
-                      name: 'Tesla Fans'
-                    properties:
-                      id:
-                        type: string
-                        description: Unique community identifier
-                      name:
-                        type: string
-                        description: Display name of the community
-                      description:
-                        type: string
-                        description: About text for the community
-                      banner_url:
-                        type: string
-                        description: Community banner image URL
-                      created_at:
-                        type: string
-                        description: Community creation timestamp
-                      join_policy:
-                        type: string
-                        description: Join policy (open or restricted)
-                      invites_policy:
-                        type: string
-                        description: Invitation policy
-                      is_nsfw:
-                        type: boolean
-                        description: Whether the community is marked sensitive
-                      creator:
-                        description:
-                          The creator's public profile, or the ID, username and
-                          badge alone when X sends no profile
-                        anyOf:
-                          - $ref: '#/components/schemas/UserProfile'
-                          - type: object
-                            required: [id, username, verified]
-                            properties:
-                              id:
-                                type: string
-                              username:
-                                type: string
-                              verified:
-                                type: boolean
-                      admin:
-                        $ref: '#/components/schemas/UserProfile'
-                      question:
-                        type: string
-                        description: What the community asks a user who joins
-                        example: 'What are you working on?'
-                      searchTags:
-                        type: array
-                        description: Tags X finds the community by
-                        items:
-                          type: string
-                        example: ['buildinpublic']
-                      member_count:
-                        type: integer
-                        minimum: 0
-                        description: Total member count
-                      membersFacepile:
-                        type: array
-                        description:
-                          The members X previews beside the member count
-                        items:
-                          $ref: '#/components/schemas/UserProfile'
-                      moderator_count:
-                        type: integer
-                        minimum: 0
-                        description: Total moderator count
-                      primary_topic:
-                        type: object
-                        description: Primary topic
-                        properties:
-                          id:
-                            type: string
-                          name:
-                            type: string
-                      rules:
-                        type: array
-                        description: Community rules
-                        items:
-                          type: object
-                          properties:
-                            id:
-                              type: string
-                            name:
-                              type: string
-                            description:
-                              type: string
-                    required: [id]
+                    $ref: '#/components/schemas/Community'
               example:
                 community:
                   id: '1500000000000000000'
@@ -7010,6 +6919,7 @@ paths:
                   join_policy: 'open'
                   member_count: 10000
                   moderator_count: 5
+                  is_nsfw: false
         '400': *invalid-input-response
         '401': *unauthenticated-response
         '402': *payment-required-response
@@ -7110,12 +7020,54 @@ paths:
       - $ref: '#/components/parameters/CommunityPathId'
     get:
       operationId: getCommunityTweets
-      description: Returns public tweets posted within one community.
+      description:
+        Returns public tweets posted within one community, newest first by
+        default. Send queryType=Top for the posts X ranks highest. Each tweet
+        costs 1 credit.
       summary: List tweets posted in a community
       tags:
         - Communities
       security: *read-auth
-      parameters: *tweet-row-page-parameters
+      parameters:
+        - $ref: '#/components/parameters/CollectionCursor'
+        - $ref: '#/components/parameters/ResultPageSize'
+        - $ref: '#/components/parameters/CommunityPostOrder'
+        - $ref: '#/components/parameters/FromUser'
+        - $ref: '#/components/parameters/ToUser'
+        - $ref: '#/components/parameters/Mentioning'
+        - $ref: '#/components/parameters/Language'
+        - $ref: '#/components/parameters/SinceDate'
+        - $ref: '#/components/parameters/UntilDate'
+        - $ref: '#/components/parameters/MediaType'
+        - $ref: '#/components/parameters/MinLikes'
+        - $ref: '#/components/parameters/MinRetweets'
+        - $ref: '#/components/parameters/MinReplies'
+        - $ref: '#/components/parameters/MinQuotes'
+        - $ref: '#/components/parameters/MinViews'
+        - $ref: '#/components/parameters/MinBookmarks'
+        - $ref: '#/components/parameters/MaxFaves'
+        - $ref: '#/components/parameters/MaxRetweets'
+        - $ref: '#/components/parameters/MaxReplies'
+        - $ref: '#/components/parameters/MaxQuotes'
+        - $ref: '#/components/parameters/BlueVerifiedOnly'
+        - $ref: '#/components/parameters/SinceId'
+        - $ref: '#/components/parameters/MaxId'
+        - $ref: '#/components/parameters/WithinTime'
+        - $ref: '#/components/parameters/NativeRetweets'
+        - $ref: '#/components/parameters/VerifiedOnly'
+        - $ref: '#/components/parameters/Replies'
+        - $ref: '#/components/parameters/Retweets'
+        - $ref: '#/components/parameters/Quotes'
+        - $ref: '#/components/parameters/ExactPhrase'
+        - $ref: '#/components/parameters/ExcludeWords'
+        - $ref: '#/components/parameters/AnyWords'
+        - $ref: '#/components/parameters/Hashtags'
+        - $ref: '#/components/parameters/Cashtags'
+        - $ref: '#/components/parameters/Url'
+        - $ref: '#/components/parameters/ConversationId'
+        - $ref: '#/components/parameters/InReplyToTweetId'
+        - $ref: '#/components/parameters/QuotesOfTweetId'
+        - $ref: '#/components/parameters/RetweetsOfTweetId'
       responses:
         '200':
           description: List of community tweets
@@ -7132,11 +7084,256 @@ paths:
         '503':
           $ref: '#/components/responses/ReadBusy'
 
+  /x/communities/{id}/media:
+    parameters:
+      - $ref: '#/components/parameters/CommunityPathId'
+    get:
+      operationId: getCommunityMedia
+      description:
+        Returns the tweets with photos or videos on one community's Media tab,
+        newest first. Each tweet costs 1 credit.
+      summary: List media tweets posted in a community
+      tags:
+        - Communities
+      security: *read-auth
+      parameters: *tweet-row-page-parameters
+      responses:
+        '200':
+          description: Media tweets of the community
+          content: *paginated-tweets-content
+        '400': *invalid-input-response
+        '401': *anonymous-guest-authentication-response
+        '402': *payment-required-response
+        '404': *not-found-response
+        '424':
+          $ref: '#/components/responses/XApiError'
+        '429': *rate-limit-exceeded-response-2
+        '502':
+          $ref: '#/components/responses/XApiError'
+        '503':
+          $ref: '#/components/responses/ReadBusy'
+
+  /x/communities/find:
+    get:
+      operationId: findCommunities
+      summary: Find X Communities by keyword
+      description:
+        Returns the communities X finds for a keyword, in X's order. Each
+        community costs 1 credit. To search the tweets inside 1 community, use
+        /x/communities/search.
+      tags:
+        - Communities
+      security: *read-auth
+      parameters:
+        - $ref: '#/components/parameters/CommunityFindQuery'
+        - $ref: '#/components/parameters/CollectionCursor'
+        - $ref: '#/components/parameters/ResultPageSize'
+      responses:
+        '200':
+          description: Communities X finds for the keyword
+          content: &community-page-content
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommunityPage'
+              example:
+                communities: &community-rows-example
+                  - id: '1472105760389668865'
+                    name: 'Tech Twitter'
+                    member_count: 121468
+                    is_nsfw: false
+                    primary_topic: { name: 'Technology' }
+                    banner_url: 'https://pbs.twimg.com/community_banner_img/example.jpg'
+                    membersFacepile:
+                      - id: '2864203879'
+                        profilePicture: 'https://pbs.twimg.com/profile_images/example.jpg'
+                has_next_page: true
+                next_cursor: 'WzM1LjUxMjQ5N10='
+        '400': *invalid-input-response
+        '401': *anonymous-guest-authentication-response
+        '402': *payment-required-response
+        '424':
+          $ref: '#/components/responses/XApiError'
+        '429': *rate-limit-exceeded-response-2
+        '502':
+          $ref: '#/components/responses/XApiError'
+        '503':
+          $ref: '#/components/responses/ReadBusy'
+
+  /x/communities/popular:
+    get:
+      operationId: getPopularCommunities
+      summary: List the most popular X Communities of a topic
+      description:
+        Returns the communities X ranks highest under a topic or subtopic. Name
+        it by topicId or by topic name from /x/communities/topics. Each
+        community costs 1 credit. A missing or unknown topic returns
+        invalid_community_topic & lists the topic names.
+      tags:
+        - Communities
+      security: *read-auth
+      parameters:
+        - $ref: '#/components/parameters/CommunityTopicId'
+        - $ref: '#/components/parameters/CommunityTopicName'
+        - $ref: '#/components/parameters/CollectionCursor'
+        - $ref: '#/components/parameters/ResultPageSize'
+      responses:
+        '200':
+          description: Popular communities of the topic
+          content: *community-page-content
+        '400': *invalid-input-response
+        '401': *anonymous-guest-authentication-response
+        '402': *payment-required-response
+        '424':
+          $ref: '#/components/responses/XApiError'
+        '429': *rate-limit-exceeded-response-2
+        '502':
+          $ref: '#/components/responses/XApiError'
+        '503':
+          $ref: '#/components/responses/ReadBusy'
+
+  /x/communities/topics:
+    get:
+      operationId: getCommunityTopics
+      summary: List the topics X groups communities under
+      description:
+        Returns the community topics with their subtopics. Pass an ID as
+        topicId, or a name as topic, to /x/communities/popular. Each top-level
+        topic costs 1 credit, its subtopics included.
+      tags:
+        - Communities
+      security: *read-auth
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+          description:
+            Maximum topics to return. Omit it for every topic. Credits can
+            return fewer. Aliases pageSize, count, max_results, maxItems,
+            max_items & per_page.
+      responses:
+        '200':
+          description: Community topics with their subtopics
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [topics, count]
+                properties:
+                  topics:
+                    type: array
+                    description: Topics in X's order
+                    items:
+                      $ref: '#/components/schemas/CommunityTopic'
+                    example: &community-topics-example
+                      - id: '301'
+                        name: 'Technology'
+                        subtopics:
+                          - id: '302'
+                            name: 'Artificial Intelligence'
+                          - id: '303'
+                            name: 'Software'
+                  count:
+                    type: integer
+                    minimum: 0
+                    description: Top-level topics returned & charged
+                    example: 1
+                  message:
+                    type: string
+                    description:
+                      What to do next. Present only when X lists no topic.
+                    example: 'X listed no community topics. Try again soon.'
+              example:
+                topics: *community-topics-example
+                count: 1
+        '400': *invalid-input-response
+        '401': *anonymous-guest-authentication-response
+        '402': *payment-required-response
+        '424':
+          $ref: '#/components/responses/XApiError'
+        '429': *rate-limit-exceeded-response-2
+        '502':
+          $ref: '#/components/responses/XApiError'
+        '503':
+          $ref: '#/components/responses/ReadBusy'
+
+  /x/communities/suggested:
+    get:
+      operationId: getSuggestedCommunities
+      summary: List the X Communities X suggests to join
+      description:
+        Returns the communities X suggests, with their full public fields. X
+        picks them per request, so 2 calls can differ. Each community costs 1
+        credit.
+      tags:
+        - Communities
+      security: *read-auth
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+          description:
+            Maximum communities to return. Omit it for every suggestion. Credits
+            can return fewer. Aliases pageSize, count, max_results, maxItems,
+            max_items & per_page.
+      responses:
+        '200':
+          description: Communities X suggests
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [communities, count]
+                properties:
+                  communities:
+                    type: array
+                    description: Suggested communities in X's order
+                    items:
+                      $ref: '#/components/schemas/Community'
+                    example: *community-rows-example
+                  count:
+                    type: integer
+                    minimum: 0
+                    description: Communities returned & charged
+                    example: 1
+                  message:
+                    type: string
+                    description:
+                      What to do next. Present only when X suggests none.
+                    example: 'X suggested no communities. Try again soon.'
+              example:
+                communities:
+                  - id: '1472105760389668865'
+                    name: 'Tech Twitter'
+                    member_count: 121468
+                    is_nsfw: false
+                    primary_topic: { name: 'Technology' }
+                    banner_url: 'https://pbs.twimg.com/community_banner_img/example.jpg'
+                    membersFacepile:
+                      - id: '2864203879'
+                        profilePicture: 'https://pbs.twimg.com/profile_images/example.jpg'
+                count: 1
+        '400': *invalid-input-response
+        '401': *anonymous-guest-authentication-response
+        '402': *payment-required-response
+        '424':
+          $ref: '#/components/responses/XApiError'
+        '429': *rate-limit-exceeded-response-2
+        '502':
+          $ref: '#/components/responses/XApiError'
+        '503':
+          $ref: '#/components/responses/ReadBusy'
+
   /x/communities/search:
     get:
       operationId: searchCommunities
       summary: Search tweets within an X Community by keyword
-      description: Returns one tweet page, not community records.
+      description:
+        Returns one tweet page, not community records. To find communities by
+        keyword, use /x/communities/find.
       tags:
         - Communities
       security: *read-auth
@@ -9248,6 +9445,34 @@ components:
       in: query
       schema: { type: string, enum: [Latest, Top], default: Latest }
       description: Sort order (Latest or Top)
+    CommunityFindQuery:
+      name: q
+      in: query
+      required: true
+      schema: { type: string }
+      description: Keyword to find communities by, such as ai. Alias query.
+    CommunityTopicId:
+      name: topicId
+      in: query
+      schema: { type: string }
+      description:
+        Topic or subtopic ID from /x/communities/topics, such as 301. Wins over
+        topic.
+    CommunityTopicName:
+      name: topic
+      in: query
+      schema: { type: string }
+      description:
+        Topic or subtopic name in any case, such as technology. Send this or
+        topicId.
+    CommunityPostOrder:
+      name: queryType
+      in: query
+      schema: { type: string, enum: [Latest, Top], default: Latest }
+      description:
+        Latest for newest first, or Top for the posts X ranks highest. Any case.
+        Aliases ranking & sort, which also take Recency & Relevance. Send the
+        same value with each cursor.
     CommunityCursor:
       name: cursor
       in: query
@@ -13527,6 +13752,7 @@ components:
                 - idempotency_key_conflict
                 - invalid_broadcast_id
                 - invalid_community_id
+                - invalid_community_topic
                 - invalid_complete_replies_request
                 - invalid_coverage_cursor
                 - invalid_coverage_request
@@ -16443,6 +16669,236 @@ components:
         payPalHandle: { type: string }
         venmoHandle: { type: string }
 
+    CommunityPage:
+      description: 1 page of X Communities, in X's order.
+      type: object
+      required: [communities, has_next_page, next_cursor]
+      properties:
+        communities:
+          type: array
+          description: Communities in X's order
+          items:
+            $ref: '#/components/schemas/Community'
+          example: *community-rows-example
+        has_next_page:
+          type: boolean
+          description: Whether another page of communities follows
+          example: true
+        next_cursor:
+          type: string
+          description:
+            Cursor for the next page of communities. Empty at the end.
+          example: 'WzM1LjUxMjQ5N10='
+    Community:
+      description: Public X Community, as every Community read returns it.
+      type: object
+      required: [id, name, member_count, is_nsfw]
+      example:
+        id: '1500000000000000000'
+        name: 'Tesla Fans'
+        member_count: 10000
+        is_nsfw: false
+      properties:
+        id:
+          type: string
+          description: Unique community identifier
+        name:
+          type: string
+          description: Display name of the community
+        description:
+          type: string
+          description: About text for the community
+        member_count:
+          type: integer
+          minimum: 0
+          description: Total member count
+        moderator_count:
+          type: integer
+          minimum: 0
+          description: Total moderator count
+        is_nsfw:
+          type: boolean
+          description: Whether the community is marked sensitive
+        primary_topic:
+          type: object
+          description:
+            Primary topic. Its id is absent when X lists the community in a
+            keyword or topic result.
+          required: [name]
+          properties:
+            id:
+              type: string
+              description: Topic ID that /x/communities/popular takes
+            name:
+              type: string
+              description: Topic name X shows on the community
+        created_at:
+          type: string
+          description: Community creation timestamp
+        join_policy:
+          type: string
+          description: Join policy (open or restricted)
+        invites_policy:
+          type: string
+          description: Invitation policy
+        question:
+          type: string
+          description: What the community asks a user who joins
+          example: 'What are you working on?'
+        rules:
+          type: array
+          description: Community rules
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                description: Rule ID
+              name:
+                type: string
+                description: Rule title
+              description:
+                type: string
+                description: What the rule asks of members
+        searchTags:
+          type: array
+          description: Tags X finds the community by
+          items:
+            type: string
+          example: ['buildinpublic']
+        creator:
+          description:
+            The creator's public profile, or the ID, username and badge alone
+            when X sends no profile
+          anyOf:
+            - $ref: '#/components/schemas/UserProfile'
+            - type: object
+              required: [id, username, verified]
+              properties:
+                id:
+                  type: string
+                  description: Numeric X user ID of the creator
+                username:
+                  type: string
+                  description: X username of the creator
+                verified:
+                  type: boolean
+                  description: Whether X shows the creator a badge
+        admin:
+          $ref: '#/components/schemas/UserProfile'
+        membersFacepile:
+          type: array
+          description:
+            The members X previews beside the member count. A keyword or topic
+            result gives each member's ID & picture only.
+          items:
+            anyOf:
+              - $ref: '#/components/schemas/UserProfile'
+              - $ref: '#/components/schemas/CommunityMemberPreview'
+        banner_url:
+          type: string
+          description: Community banner image URL
+        banner:
+          $ref: '#/components/schemas/CommunityBanner'
+    CommunityBanner:
+      description: The banner X shows for a community, with its size & colors.
+      type: object
+      required: [url]
+      properties:
+        url:
+          type: string
+          description: Banner image URL at its original size
+        width:
+          type: integer
+          minimum: 0
+          description: Banner width in pixels
+        height:
+          type: integer
+          minimum: 0
+          description: Banner height in pixels
+        colors:
+          type: array
+          description: Main colors of the banner, largest share first
+          items:
+            type: object
+            required: [percentage, red, green, blue]
+            properties:
+              percentage:
+                type: number
+                minimum: 0
+                description: Share of the banner in this color
+              red:
+                type: integer
+                minimum: 0
+                maximum: 255
+                description: Red value of the color
+              green:
+                type: integer
+                minimum: 0
+                maximum: 255
+                description: Green value of the color
+              blue:
+                type: integer
+                minimum: 0
+                maximum: 255
+                description: Blue value of the color
+        focus:
+          type: object
+          description:
+            Area X keeps in view when it crops the banner, in pixels from the
+            top left
+          properties:
+            left:
+              type: integer
+              minimum: 0
+              description: Distance from the left edge
+            top:
+              type: integer
+              minimum: 0
+              description: Distance from the top edge
+            width:
+              type: integer
+              minimum: 0
+              description: Width of the area
+            height:
+              type: integer
+              minimum: 0
+              description: Height of the area
+    CommunityMemberPreview:
+      description: A member X previews by ID & profile picture only.
+      type: object
+      required: [id]
+      properties:
+        id:
+          type: string
+          description: Numeric X user ID of the member
+        profilePicture:
+          type: string
+          description: Profile picture URL of the member
+    CommunityTopic:
+      description: A topic X groups communities under, with its subtopics.
+      type: object
+      required: [id, name, subtopics]
+      properties:
+        id:
+          type: string
+          description: Topic ID. Pass it as topicId to /x/communities/popular.
+        name:
+          type: string
+          description: Topic name, which topic on /x/communities/popular takes
+        subtopics:
+          type: array
+          description: Narrower topics inside this topic
+          items:
+            type: object
+            required: [id, name]
+            properties:
+              id:
+                type: string
+                description: Subtopic ID, which topicId also takes
+              name:
+                type: string
+                description: Subtopic name, which topic also takes
     AccountBasedIn:
       description: >-
         X's best-effort public label inferred from aggregated account-access IP
