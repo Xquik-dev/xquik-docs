@@ -11201,6 +11201,15 @@ components:
                 answers: { sentiment: 'mixed', intensity: 1, sarcasm: 0.03 }
                 sourceDomains: []
                 cashtags: []
+                monitor:
+                  configurationFingerprint: '9f2c4e1b7a5d3c8e6f0a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f6a'
+                  baselineDatasetId: null
+                  status: 'changed'
+                  changedQuestionIds: ['sentiment']
+                  changes:
+                    - questionId: 'sentiment'
+                      previous: 'positive'
+                      current: 'mixed'
             unanalyzed:
               - id: '1893456789012345679'
                 status: 'skipped'
@@ -11231,6 +11240,14 @@ components:
               targets: []
               cashtags: []
               sourceDomains: []
+              monitor:
+                statuses: { changed: 1 }
+                changedRows:
+                  - tweetId: '1893456789012345678'
+                    changes:
+                      - questionId: 'sentiment'
+                        previous: 'positive'
+                        current: 'mixed'
             has_next_page: false
             next_cursor: ''
     RepliesIncomplete:
@@ -11297,12 +11314,10 @@ components:
             message: 'This X account is already connected.'
     ConnectLoginFailed:
       description: >
-        Login requires new credentials, account verification, or a wait.
-        Cooldowns include `retryAfterMs` and `Retry-After`. Codes are
-        `login_failed` or `passkey_required`. `reason` is `account_not_found`
-        (unknown username), `repeated_login_error`, or `login_unconfirmed` (X
-        showed no known page after the password). Retrying a `login_unconfirmed`
-        login before `Retry-After` can make X lock the account.
+        Login requires new credentials or account verification. Cooldowns
+        include `retryAfterMs` and `Retry-After`. Codes are `login_failed` or
+        `passkey_required`. `reason` is `account_not_found` (unknown username)
+        or `repeated_login_error`.
       headers:
         Retry-After:
           description: Cooldown duration in seconds, when retrying must wait.
@@ -18113,6 +18128,51 @@ components:
             example: 'We shipped dark mode today. Tell us what breaks.'
         analysis:
           $ref: '#/components/schemas/TweetAnalysisSettings'
+        baseline:
+          type: array
+          maxItems: 10000
+          description:
+            Rows of an earlier answer to compare with, such as its results. Each
+            needs the post's id, or tweet.id, & its answers. Send monitor too,
+            so other settings show as not_comparable. Each result's monitor says
+            whether the post is new, changed or unchanged. The comparison costs
+            nothing extra.
+          example:
+            - id: '1893456789012345678'
+              answers: { sentiment: 'positive', intensity: 1, sarcasm: 0.04 }
+          items:
+            type: object
+            required: [answers]
+            properties:
+              id:
+                type: string
+                minLength: 1
+                description: Post ID, or text:1 & so on. Else tweet.id counts.
+                example: '1893456789012345678'
+              tweet:
+                type: object
+                required: [id]
+                properties:
+                  id:
+                    {
+                      type: string,
+                      minLength: 1,
+                      example: '1893456789012345678',
+                    }
+              answers:
+                type: object
+                description: The earlier answers by question ID.
+                additionalProperties:
+                  type: [string, number]
+                  example: 'positive'
+                example: { sentiment: 'positive', intensity: 1 }
+              monitor:
+                type: object
+                description: The earlier row's monitor, with its fingerprint.
+                properties:
+                  configurationFingerprint:
+                    type: string
+                    example: '9f2c4e1b7a5d3c8e6f0a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f6a'
 
     TweetAnalysisSettings:
       description:
@@ -18316,7 +18376,7 @@ components:
     TweetAnalysisResult:
       description: 1 analyzed post with its answers.
       type: object
-      required: [tweet, analysis, answers, sourceDomains, cashtags]
+      required: [tweet, analysis, answers, sourceDomains, cashtags, monitor]
       properties:
         tweet:
           type: object
@@ -18391,11 +18451,12 @@ components:
           type: object
           description:
             Each question's decision by question ID. A choice gives its
-            category, a score its level & a probability its value from 0 to 1.
+            category, a score its level from 0, which can have decimals, & a
+            probability its value from 0 to 1.
           additionalProperties:
             type: [string, number]
             example: 'negative'
-          example: { sentiment: 'negative', intensity: 2, sarcasm: 0.08 }
+          example: { sentiment: 'negative', intensity: 1.86, sarcasm: 0.08 }
         sourceDomains:
           type: array
           description: Hostnames the post links to, without t.co.
@@ -18451,6 +18512,63 @@ components:
             algorithmWeightedSum: 412
             actualEngagementRate: 1.2874
             weightsVersion: 'x_algorithm_params:2026-09-18'
+        monitor:
+          $ref: '#/components/schemas/TweetAnalysisComparison'
+
+    TweetAnalysisComparison:
+      description:
+        How the post's answers compare with its row in baseline, as the AI
+        Actors compare a run with an earlier dataset.
+      type: object
+      required:
+        - configurationFingerprint
+        - baselineDatasetId
+        - status
+        - changedQuestionIds
+        - changes
+      properties:
+        configurationFingerprint:
+          type: string
+          description:
+            Hash of the questions, targets & context. Rows with another hash are
+            not_comparable.
+          example: '9f2c4e1b7a5d3c8e6f0a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f6a'
+        baselineDatasetId:
+          type: 'null'
+          description: Always null. The baseline is the rows you sent.
+          example: null
+        status:
+          type: string
+          enum:
+            [
+              first_run,
+              new_to_baseline,
+              unchanged,
+              changed,
+              not_comparable,
+              analysis_unavailable,
+            ]
+          description:
+            first_run without baseline. new_to_baseline for a post baseline
+            lacks. changed when an answer clearly left its earlier decision.
+            not_comparable when other settings made the earlier row or it
+            answers none of these questions.
+          example: 'changed'
+        changedQuestionIds:
+          type: array
+          description: IDs of the questions whose decision changed.
+          example: ['sentiment']
+          items: { type: string, example: 'sentiment' }
+        changes:
+          type: array
+          description: Each changed decision, earlier & now.
+          items:
+            type: object
+            required: [questionId, previous, current]
+            properties:
+              questionId: { type: string, example: 'sentiment' }
+              previous: { type: string, example: 'positive' }
+              current: { type: string, example: 'negative' }
 
     TweetAnalysisAnswer:
       description:
@@ -18481,7 +18599,9 @@ components:
           example: 'choice'
         value:
           type: [string, number]
-          description: The chosen category, or the level from 0.
+          description:
+            The chosen category, or the level from 0, which can have decimals,
+            such as 1.4 between levels 1 & 2.
           example: 'negative'
         confidence:
           type: number
@@ -18551,6 +18671,7 @@ components:
         - targets
         - cashtags
         - sourceDomains
+        - monitor
       properties:
         schemaVersion:
           type: integer
@@ -18670,3 +18791,31 @@ components:
             unscored: 0
             averageScore: 58
             verdicts: { send_it: 6, edit_first: 9, sleep_on_it: 5 }
+        monitor:
+          type: [object, 'null']
+          description:
+            Posts per comparison status, & up to 50 changed posts with their
+            changes. Null when the answer holds no post.
+          required: [statuses, changedRows]
+          properties:
+            statuses:
+              type: object
+              description: Posts per monitor status.
+              additionalProperties: { type: integer, minimum: 0, example: 3 }
+              example: { unchanged: 17, changed: 2, new_to_baseline: 1 }
+            changedRows:
+              type: array
+              items:
+                type: object
+                required: [tweetId, changes]
+                properties:
+                  tweetId: { type: string, example: '1893456789012345678' }
+                  changes:
+                    type: array
+                    items:
+                      type: object
+                      required: [questionId, previous, current]
+                      properties:
+                        questionId: { type: string, example: 'sentiment' }
+                        previous: { type: string, example: 'positive' }
+                        current: { type: string, example: 'negative' }
