@@ -35,7 +35,7 @@ const REQUIRED_RULE_SNIPPETS = [
   "x-api-quickstart.mdx",
   "api-reference/overview.mdx",
   "the documented REST operations",
-  "the prepaid paid-read GET routes",
+  "the prepaid paid-read routes",
   "fixed-price direct MPP operations",
   "sdks/",
   "mcp/",

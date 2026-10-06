@@ -17,7 +17,7 @@ fixes or validating contracts. Generated client APIs live in the SDK repositorie
 
 - [Quickstart](https://docs.xquik.com/x-api-quickstart). Make the first authenticated API call.
 - [API reference](https://docs.xquik.com/api-reference). Browse every OpenAPI-backed operation.
-- [Guest wallets](https://docs.xquik.com/guides/guest-wallets). Fund accountless GET routes through a confirmed hosted checkout.
+- [Guest wallets](https://docs.xquik.com/guides/guest-wallets). Fund accountless paid-read routes through a confirmed hosted checkout.
 - [Direct MPP](https://docs.xquik.com/mpp/machine-payments-protocol). Pay per request on fixed-price GET operations.
 - [SDKs](https://docs.xquik.com/sdks). Use TypeScript, Python, Go, Java, Kotlin, C#, Ruby, PHP, CLI, and Terraform clients.
 - [Tweet search export](https://docs.xquik.com/guides/tweet-scraper-csv-export). Export tweets by keyword to CSV, JSON, or XLSX.

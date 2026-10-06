@@ -1,16 +1,16 @@
 ---
-title: "Twitter stock & crypto signals API for cashtags"
-sidebarTitle: "Market signals"
-description: "Read bullish and bearish stock and crypto stances in X posts with AI. Get content type, conviction, relevance, and cashtag totals. 2 credits per analyzed post."
-api: "POST /x/analysis/market-signals"
+title: "Tweet viral score API for X posts and drafts"
+sidebarTitle: "Viral score"
+description: "Score how viral X posts and drafts read with AI. Get a Viral Score from 0 to 100, a verdict, and the 8 traits behind it. Costs 2 credits per analyzed post."
+api: "POST /x/analysis/viral-score"
 keywords:
   [
-    "Twitter stock sentiment API",
-    "crypto sentiment API",
-    "cashtag sentiment",
-    "bullish bearish signals",
-    "X market signals",
-    "fintwit API",
+    "tweet viral score API",
+    "viral tweet checker",
+    "tweet draft scoring",
+    "X engagement prediction",
+    "hook analysis",
+    "ragebait detection",
     "AI tweet analysis",
   ]
 ---
@@ -27,7 +27,7 @@ import TweetReadApiLinks from "/snippets/x-tweet-read-api-links.mdx";
 
 <Tabs defaultTabIndex={0} sync={false}>
 
-  <Tab title="200" id="response-x-market-signals-200">
+  <Tab title="200" id="response-x-viral-score-200">
 
     ```json
     {
@@ -118,7 +118,7 @@ import TweetReadApiLinks from "/snippets/x-tweet-read-api-links.mdx";
 
   </Tab>
 
-  <Tab title="400" id="response-x-market-signals-400">
+  <Tab title="400" id="response-x-viral-score-400">
 
     ```json
     {
@@ -129,7 +129,7 @@ import TweetReadApiLinks from "/snippets/x-tweet-read-api-links.mdx";
 
   </Tab>
 
-  <Tab title="401" id="response-x-market-signals-401">
+  <Tab title="401" id="response-x-viral-score-401">
 
     ```json
     {
@@ -140,7 +140,7 @@ import TweetReadApiLinks from "/snippets/x-tweet-read-api-links.mdx";
 
   </Tab>
 
-  <Tab title="402" id="response-x-market-signals-402">
+  <Tab title="402" id="response-x-viral-score-402">
 
     ```json
     {
@@ -151,7 +151,7 @@ import TweetReadApiLinks from "/snippets/x-tweet-read-api-links.mdx";
 
   </Tab>
 
-  <Tab title="403" id="response-x-market-signals-403">
+  <Tab title="403" id="response-x-viral-score-403">
 
     ```json
     {
@@ -162,7 +162,7 @@ import TweetReadApiLinks from "/snippets/x-tweet-read-api-links.mdx";
 
   </Tab>
 
-  <Tab title="424" id="response-x-market-signals-424">
+  <Tab title="424" id="response-x-viral-score-424">
 
     ```json
     {
@@ -173,7 +173,7 @@ import TweetReadApiLinks from "/snippets/x-tweet-read-api-links.mdx";
 
   </Tab>
 
-  <Tab title="429" id="response-x-market-signals-429">
+  <Tab title="429" id="response-x-viral-score-429">
 
     ```json
     {
@@ -185,7 +185,7 @@ import TweetReadApiLinks from "/snippets/x-tweet-read-api-links.mdx";
 
   </Tab>
 
-  <Tab title="502" id="response-x-market-signals-502">
+  <Tab title="502" id="response-x-viral-score-502">
 
     ```json
     {
@@ -196,7 +196,7 @@ import TweetReadApiLinks from "/snippets/x-tweet-read-api-links.mdx";
 
   </Tab>
 
-  <Tab title="503" id="response-x-market-signals-503">
+  <Tab title="503" id="response-x-viral-score-503">
 
     ```json
     {
@@ -218,64 +218,65 @@ import TweetReadApiLinks from "/snippets/x-tweet-read-api-links.mdx";
 
 </Callout>
 
-Market signals reads each post with AI and answers 4 questions about an asset.
-The endpoint is `POST /api/v1/x/analysis/market-signals`.
+Viral score reads each post or draft with AI, answers 8 questions about its
+wording, and turns them into a Viral Score from `0` to `100`. The endpoint is
+`POST /api/v1/x/analysis/viral-score`.
 
-| Answer       | Type        | Values                                                                      |
-| ------------ | ----------- | --------------------------------------------------------------------------- |
-| `stance`     | Choice      | `bullish`, `bearish`, `neutral`, `mixed`, or `unclear`                      |
-| `content`    | Choice      | `analysis`, `news`, `trade`, `promotion`, `humor`, `question`, or `unclear` |
-| `conviction` | Score       | `0` no stance or hedged, `1` a reasoned view, `2` a firm call               |
-| `relevance`  | Probability | From `0` to `1`, the chance the post treats the target as an asset          |
+The score rates the wording. It does not predict likes or views.
 
-The summary counts bullish and bearish posts per cashtag. Name the asset in
-`analysis.targets`.
+| Answer        | Type        | Values                                                         |
+| ------------- | ----------- | -------------------------------------------------------------- |
+| `hook`        | Score       | `0` no hook, `1` a clear opening, `2` a sharp opening          |
+| `clarity`     | Score       | `0` confusing, `1` takes effort, `2` clear on first read       |
+| `informative` | Score       | `0` none, `1` a familiar point, `2` a useful takeaway          |
+| `funny`       | Score       | `0` not funny, `1` mildly amusing, `2` funny enough to share   |
+| `ragebait`    | Probability | From `0` to `1`, the chance it mainly provokes outrage         |
+| `ai_written`  | Probability | From `0` to `1`, the chance it reads like generic machine copy |
+| `spam`        | Probability | From `0` to `1`, the chance it reads like spam or a scam       |
+| `reaction`    | Choice      | `share`, `reply`, `like`, `argue`, or `ignore`                 |
 
 <CodeGroup>
 
 ```bash cURL
-curl -X POST https://xquik.com/api/v1/x/analysis/market-signals \
+curl -X POST https://xquik.com/api/v1/x/analysis/viral-score \
   -H "x-api-key: xq_your_api_key_here" \
   -H "Content-Type: application/json" \
   -d '{
-    "query": "$NVDA lang:en",
-    "limit": 50,
-    "analysis": { "targets": [{ "name": "NVIDIA", "aliases": ["NVDA"] }] }
+    "texts": [
+      "We cut our build time from 9 minutes to 40 seconds. Here is the 1 config change that did it.",
+      "Big news coming soon!!! Stay tuned 🚀🚀🚀"
+    ]
   }' | jq
 ```
 
 ```javascript Node.js
-const response = await fetch("https://xquik.com/api/v1/x/analysis/market-signals", {
+const response = await fetch("https://xquik.com/api/v1/x/analysis/viral-score", {
   method: "POST",
   headers: {
     "x-api-key": "xq_your_api_key_here",
     "Content-Type": "application/json",
   },
   body: JSON.stringify({
-    query: "$NVDA lang:en",
-    limit: 50,
-    analysis: { targets: [{ name: "NVIDIA", aliases: ["NVDA"] }] },
+    texts: [
+      "We cut our build time from 9 minutes to 40 seconds. Here is the 1 config change that did it.",
+      "Big news coming soon!!! Stay tuned 🚀🚀🚀",
+    ],
   }),
 });
 const data = await response.json();
 if (!response.ok) throw new Error(`${data.error}: ${data.message}`);
 
-const signalRows = data.results
-  .filter((result) => result.answers.relevance >= 0.5)
-  .filter((result) => result.answers.content !== "promotion")
-  .map((result) => ({
-    tweet_id: result.tweet.id,
-    stance: result.answers.stance,
-    content: result.answers.content,
-    conviction: result.answers.conviction,
-    cashtags: result.cashtags,
-  }));
-const cashtagSignals = data.analysisSummary.cashtags.map(({ cashtag, signal }) => ({
-  cashtag,
-  ...signal,
+const drafts = data.results.map((result) => ({
+  text: result.tweet.text,
+  score: result.viralScore,
+  verdict: result.viralVerdict,
+  stops: result.viral.stops,
+  hook: result.answers.hook,
 }));
 
-process.stdout.write(`${JSON.stringify({ rows: signalRows.length, cashtagSignals })}\n`);
+process.stdout.write(
+  `${JSON.stringify({ drafts, average: data.analysisSummary.viral.averageScore })}\n`,
+);
 ```
 
 ```python Python
@@ -283,12 +284,13 @@ import json
 import requests
 
 response = requests.post(
-    "https://xquik.com/api/v1/x/analysis/market-signals",
+    "https://xquik.com/api/v1/x/analysis/viral-score",
     headers={"x-api-key": "xq_your_api_key_here"},
     json={
-        "query": "$NVDA lang:en",
-        "limit": 50,
-        "analysis": {"targets": [{"name": "NVIDIA", "aliases": ["NVDA"]}]},
+        "texts": [
+            "We cut our build time from 9 minutes to 40 seconds. Here is the 1 config change that did it.",
+            "Big news coming soon!!! Stay tuned 🚀🚀🚀",
+        ],
     },
     timeout=120,
 )
@@ -296,96 +298,79 @@ data = response.json()
 if not response.ok:
     raise RuntimeError(f"{data['error']}: {data['message']}")
 
-signal_rows = [
+drafts = [
     {
-        "tweet_id": result["tweet"]["id"],
-        "stance": result["answers"]["stance"],
-        "content": result["answers"]["content"],
-        "conviction": result["answers"]["conviction"],
-        "cashtags": result["cashtags"],
+        "text": result["tweet"]["text"],
+        "score": result["viralScore"],
+        "verdict": result["viralVerdict"],
+        "stops": result["viral"]["stops"],
+        "hook": result["answers"]["hook"],
     }
     for result in data["results"]
-    if result["answers"]["relevance"] >= 0.5 and result["answers"]["content"] != "promotion"
 ]
-cashtag_signals = [
-    {"cashtag": entry["cashtag"], **entry.get("signal", {})}
-    for entry in data["analysisSummary"]["cashtags"]
-]
-print(json.dumps({"rows": len(signal_rows), "cashtag_signals": cashtag_signals}))
+print(json.dumps({"drafts": drafts, "average": data["analysisSummary"]["viral"]["averageScore"]}))
 ```
 
 </CodeGroup>
 
-The snippets keep relevant posts that are not promotion, then print the signal
-per cashtag. They do not print the full response.
+The snippets print each draft's score, verdict, and hook. They do not print the
+full response.
 
-## Name the asset
+## Score drafts before you post
 
-Put the asset in `analysis.targets`, with its ticker and other names as
-aliases. A post mentions the target when its text contains the name or an
-alias, in any letter case.
+Send up to 100 drafts in `texts`. Xquik reads nothing from X for them, and each
+draft costs the same as 1 analyzed post. Drafts come back with the IDs
+`text:1`, `text:2`, and so on.
+
+Rewrite a draft with a low `hook` or `clarity` first. Those 2 traits carry half
+of the score.
+
+## Read the Viral Score
+
+Hook, clarity, payoff, and the expected reaction raise the score. Payoff is the
+higher of `informative` and `funny`. Wording that reads like generic machine
+copy lowers it.
+
+| `viralVerdict` | Score     |
+| -------------- | --------- |
+| `send_it`      | 70 to 100 |
+| `edit_first`   | 40 to 69  |
+| `sleep_on_it`  | 0 to 39   |
+
+Hard stops cap the score of likely spam, ragebait, and generic machine copy.
+`viral.stops` lists the stops that applied, such as `spam`. `viral.weights`
+names the version of these rules, such as `viral_lite:1`.
+
+`viralScore` is `null` when a trait has no answer. Xquik never fills a missing
+score with a guess.
+
+## Compare with real engagement
+
+For posts read from X, `viralAlgorithmScore` applies X's published ranking
+weights to the post's public counts: like `0.5`, reply `5`, repost `1`, and
+quote `5`. It divides the sum by views and multiplies by 1,000. A post without
+a view count uses followers. `viral.algorithmBasis` names the divisor.
+
+The AI never sees these counts. It reads the text and its context only. The
+estimate is not the score X computes, since X uses signals public data does not
+show.
+
+`viralActualEngagementRate` is `log10(1 + weighted engagement per 1,000
+followers)`. `analysisSummary.viral.calibration` compares it with the Viral
+Score across the posts.
+
+## Score an account's posts
+
+Send `username` to score an account's recent posts. `analysisSummary.viral`
+then holds a report per author in `accounts` and a `leaderboard`.
 
 ```json
-{ "name": "NVIDIA", "aliases": ["NVDA", "Nvidia"] }
+{ "username": "NASA", "limit": 50 }
 ```
-
-`relevance` says whether a post discusses the target as an asset, a position,
-or a price. Posts about the wider market, competitors, or suppliers do not
-count. Neither does a ticker in a list of tags.
-
-Filter rows on `relevance` before you count stances. The snippets keep posts
-from `0.5`.
-
-## Read the market answers
-
-`results[].answers` holds each decision by question ID.
-
-| `stance`  | Meaning                                       |
-| --------- | --------------------------------------------- |
-| `bullish` | Expects the price or outlook to rise          |
-| `bearish` | Expects the price or outlook to fall          |
-| `neutral` | Discusses the asset without a direction       |
-| `mixed`   | Combines rising and falling expectations      |
-| `unclear` | Names no identifiable asset or states no view |
-
-`stance` classifies the author's own view, not quoted views or ads.
-
-| `content`   | Meaning                                                       |
-| ----------- | ------------------------------------------------------------- |
-| `analysis`  | Reasoning from data, charts, fundamentals, or events          |
-| `news`      | Reports an event, filing, or announcement                     |
-| `trade`     | Describes a position, entry, exit, or trade plan              |
-| `promotion` | Sells a service, signal group, or product, or shills an asset |
-| `humor`     | A joke, meme, or venting without a claim                      |
-| `question`  | Asks for views or information                                 |
-| `unclear`   | Not enough context                                            |
-
-`conviction` judges how firmly the text states the stance, not engagement or
-follower counts. A post with no stance on the target scores `0`.
-
-The answers describe what posts say, not whether claims are true. They are not
-investment advice.
-
-## Read the signal per cashtag
-
-`analysisSummary.cashtags` lists up to 20 cashtags, most posts first. Each entry
-has `rows`, the category counts in `choices`, and `signal`.
-
-`signal` holds `bullish` and `bearish` post counts and a `score` from `-1` to
-`1`. The score is bullish minus bearish posts, divided by the cashtag's posts.
-
-`results[].cashtags` lists the cashtags in each post's text, in upper case. A
-post with 2 cashtags counts toward both.
-
-`analysisSummary.targets` counts the posts that mention each target, with their
-category counts.
 
 ## Pick the posts to analyze
 
 <TweetAnalysisSources />
-
-`query` takes cashtags and operators, such as `$NVDA lang:en`. Send `username`
-to read 1 trader's or analyst's posts.
 
 ## Budget the analysis
 
@@ -427,7 +412,7 @@ Each analyzed post with its answers. Each row costs 2 credits.
       The post, as [Search Tweets](/api-reference/x/search-tweets) returns it. Your own texts have the IDs `text:1`, `text:2`, and so on.
     </ResponseField>
     <ResponseField name="answers" type="object">
-      Each decision by question ID. `stance` and `content` are categories, `conviction` a level from `0`, and `relevance` a probability from `0` to `1`.
+      Each decision by question ID. `hook`, `clarity`, `informative`, and `funny` are levels from `0`, `reaction` a category, and the rest probabilities from `0` to `1`.
     </ResponseField>
     <ResponseField name="analysis" type="object">
       The answers in full. `status` is `succeeded`. `answers` gives each answer's `value`, `confidence`, and `probabilities`, or a `probability`. `questions` names the ID and version of each question. `contextBytes` and `contextAvailability` say what the AI read beside the post's text.
@@ -437,6 +422,21 @@ Each analyzed post with its answers. Each row costs 2 credits.
     </ResponseField>
     <ResponseField name="cashtags" type="string[]">
       Cashtags in the post's text, in upper case.
+    </ResponseField>
+    <ResponseField name="viralScore" type="integer | null">
+      How viral the wording reads, from `0` to `100`. `null` when a trait has no answer.
+    </ResponseField>
+    <ResponseField name="viralVerdict" type="string | null">
+      `send_it` from `70`, `edit_first` from `40`, else `sleep_on_it`.
+    </ResponseField>
+    <ResponseField name="viralAlgorithmScore" type="number | null">
+      The post's public counts under X's published ranking weights, per 1,000 views or followers.
+    </ResponseField>
+    <ResponseField name="viralActualEngagementRate" type="number | null">
+      `log10` of 1 plus the weighted engagement per 1,000 followers. `null` without a follower count.
+    </ResponseField>
+    <ResponseField name="viral" type="object">
+      The score with its rules version in `weights`, the hard `stops` that capped it, and the engagement comparison.
     </ResponseField>
 
   </Expandable>
@@ -475,16 +475,19 @@ Totals of the answers across the analyzed posts.
       Likes, reposts, replies, and quotes of the analyzed posts.
     </ResponseField>
     <ResponseField name="questions" type="object">
-      Totals by question ID. `stance` and `content` have `counts`, `shares`, `engagementShares`, and `top` posts per category. `conviction` has `mean`, `engagementWeightedMean`, and `levels`. `relevance` has `mean`, `yes`, and `no`.
+      Totals by question ID. Scores have `mean`, `engagementWeightedMean`, and `levels`. Probabilities have `mean`, `yes`, and `no`. `reaction` has `counts`, `shares`, `engagementShares`, and `top` posts.
     </ResponseField>
     <ResponseField name="targets" type="object[]">
       Per target in `analysis.targets`: `name`, `mentions`, `share`, `engagement`, `choices`, and `top` posts.
     </ResponseField>
     <ResponseField name="cashtags" type="object[]">
-      Per cashtag, most posts first, up to 20: `cashtag`, `rows`, `choices`, and `signal` with `bullish`, `bearish`, and `score`.
+      Posts and category counts per cashtag, most posts first, up to 20.
     </ResponseField>
     <ResponseField name="sourceDomains" type="object[]">
       Posts per linked hostname, most posts first, up to 20.
+    </ResponseField>
+    <ResponseField name="viral" type="object">
+      `scored` and `unscored` posts, `averageScore`, `verdicts` counts, the `calibration` of scores against actual engagement, a report per author in `accounts`, and the `leaderboard`.
     </ResponseField>
 
   </Expandable>
@@ -497,74 +500,72 @@ Totals of the answers across the analyzed posts.
   "results": [
     {
       "tweet": {
-        "id": "1893456789012345678",
-        "text": "$NVDA cleared its 50-day average on volume. Adding to my position, target 160.",
-        "likeCount": 212,
-        "retweetCount": 18,
-        "replyCount": 25
+        "id": "text:1",
+        "text": "We cut our build time from 9 minutes to 40 seconds. Here is the 1 config change that did it.",
+        "type": "text"
       },
       "analysis": {
         "status": "succeeded",
         "answers": [
           {
-            "questionId": "stance",
-            "questionVersion": "market:4",
-            "type": "choice",
-            "value": "bullish",
-            "confidence": 0.94,
-            "probabilities": {
-              "bullish": 0.94,
-              "bearish": 0.01,
-              "neutral": 0.02,
-              "mixed": 0.02,
-              "unclear": 0.01
-            }
+            "questionId": "hook",
+            "questionVersion": "viral_lite:1",
+            "type": "score",
+            "value": 2,
+            "confidence": 0.86
           },
           {
-            "questionId": "relevance",
-            "questionVersion": "market:4",
+            "questionId": "spam",
+            "questionVersion": "viral_lite:1",
             "type": "probability",
-            "probability": 0.97
+            "probability": 0.02
           }
         ]
       },
-      "answers": { "stance": "bullish", "content": "trade", "conviction": 2, "relevance": 0.97 },
+      "answers": {
+        "hook": 2,
+        "clarity": 2,
+        "informative": 2,
+        "funny": 0,
+        "ragebait": 0.01,
+        "ai_written": 0.06,
+        "spam": 0.02,
+        "reaction": "share"
+      },
       "sourceDomains": [],
-      "cashtags": ["$NVDA"]
+      "cashtags": [],
+      "viralScore": 99,
+      "viralVerdict": "send_it",
+      "viralAlgorithmScore": null,
+      "viralActualEngagementRate": null,
+      "viral": {
+        "score": 99,
+        "verdict": "send_it",
+        "weights": "viral_lite:1",
+        "stops": [],
+        "algorithmScore": null,
+        "actualEngagementRate": null
+      }
     }
   ],
   "unanalyzed": [],
   "analysisSummary": {
     "schemaVersion": 1,
     "rows": { "analyzed": 1, "failed": 0, "skipped": 0 },
-    "engagement": 255,
+    "engagement": 0,
     "questions": {
-      "stance": {
-        "type": "choice",
-        "counts": { "bullish": 1, "bearish": 0, "neutral": 0, "mixed": 0, "unclear": 0 }
-      }
+      "hook": { "type": "score", "mean": 2 }
     },
-    "targets": [
-      {
-        "name": "NVIDIA",
-        "mentions": 1,
-        "share": 1,
-        "engagement": 255,
-        "choices": { "stance": { "bullish": 1 } },
-        "top": {
-          "stance": { "bullish": [{ "tweetId": "1893456789012345678", "engagement": 255 }] }
-        }
-      }
-    ],
-    "cashtags": [
-      {
-        "cashtag": "$NVDA",
-        "rows": 1,
-        "choices": { "stance": { "bullish": 1 }, "content": { "trade": 1 } },
-        "signal": { "bullish": 1, "bearish": 0, "score": 1 }
-      }
-    ],
-    "sourceDomains": []
+    "targets": [],
+    "cashtags": [],
+    "sourceDomains": [],
+    "viral": {
+      "weights": "viral_lite:1",
+      "scored": 1,
+      "unscored": 0,
+      "averageScore": 99,
+      "verdicts": { "send_it": 1, "edit_first": 0, "sleep_on_it": 0 }
+    }
   },
   "has_next_page": false,
   "next_cursor": ""
@@ -574,10 +575,7 @@ Totals of the answers across the analyzed posts.
 ### 400 Invalid input
 
 ```json
-{
-  "error": "invalid_input",
-  "message": "Send tweetIds, texts, or a search such as query or username."
-}
+{ "error": "invalid_input", "message": "Send 1 to 100 texts in texts, each with words in it." }
 ```
 
 The body names no posts, names more than 1 source, or has an invalid field.
@@ -641,33 +639,32 @@ You exceeded your tier rate limit. Wait for the `Retry-After` header before retr
 
 The normalized v1 response contract can return 424 when the read service is unavailable.
 
-## Stock & crypto sentiment API questions
+## Tweet viral score API questions
 
-### How do I get the sentiment of a stock or coin on X?
+### How do I check if a tweet will go viral?
 
-Search its cashtag in `query` and name it in `analysis.targets`. Each row in
-`results` holds the post's `stance`, and `analysisSummary.cashtags` counts
-bullish and bearish posts.
+Send the draft in `texts`. `viralScore` rates its wording from `0` to `100`,
+and `viralVerdict` says whether to post it, edit it, or wait.
 
-### What does the cashtag score mean?
+### Does the score predict likes or views?
 
-`signal.score` is bullish minus bearish posts, divided by the cashtag's posts.
-`1` means every post is bullish, and `-1` means every post is bearish.
+No. It rates the wording only. Timing, followers, and X's ranking decide the
+reach. `viralAlgorithmScore` shows how a posted tweet actually performed.
 
-### How do I drop spam and shilling?
+### Why did my draft score low?
 
-Skip rows whose `content` is `promotion`, and keep rows with high `relevance`.
-That drops signal groups, ads, and tickers used as tags.
+Read `answers`. A low `hook` or `clarity` costs the most points. `viral.stops`
+names any hard stop, such as `spam` or `ragebait`, that capped the score.
 
-### Does it work for crypto?
+### Can I score someone else's posts?
 
-Yes. Name the coin in `analysis.targets`, such as `Bitcoin` with the alias
-`BTC`. Cashtags like `$BTC` count in `analysisSummary.cashtags`.
+Yes. Send their handle in `username`, post IDs in `tweetIds`, or a search in
+`query`.
 
-### How much do market signals cost?
+### How much does the viral score cost?
 
-Each analyzed post costs 2 credits. Posts in `unanalyzed` and refused requests
-cost nothing.
+Each analyzed post or draft costs 2 credits. Posts in `unanalyzed` and refused
+requests cost nothing.
 
 ### Does this replace X's official API?
 
@@ -676,7 +673,7 @@ It does not document X's official API.
 
 <Note>
 
-**Next steps.** [Sentiment analysis](/api-reference/x/sentiment-analysis) reads the general attitude of posts, or [Search Tweets](/api-reference/x/search-tweets) previews the posts a query returns.
+**Next steps.** [Classify posts](/api-reference/x/classify-tweets) asks your own questions, or [Sentiment analysis](/api-reference/x/sentiment-analysis) reads the attitude of posts.
 
 </Note>
 

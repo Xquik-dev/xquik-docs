@@ -1,8 +1,31 @@
-Send exactly 1 of `tweetIds`, `query`, or `texts`. Sending none, or more than 1,
-returns `400 invalid_input`.
+Send `tweetIds`, `texts`, or a search, never more than 1. Sending none, or more
+than 1, returns `400 invalid_input`.
 
-| Source         | Send                                                   | Posts analyzed                     |
-| -------------- | ------------------------------------------------------ | ---------------------------------- |
-| Post IDs       | `tweetIds`, up to 100 post IDs or post URLs            | Each post once                     |
-| X search       | `query`, with optional `queryType`, `limit` & `cursor` | Up to `limit` posts, 20 by default |
-| Your own texts | `texts`, up to 100 strings                             | Each text. Reads nothing from X    |
+| Source         | Send                                        | Posts analyzed                     |
+| -------------- | ------------------------------------------- | ---------------------------------- |
+| Post IDs       | `tweetIds`, up to 100 post IDs or post URLs | Each post once                     |
+| Your own texts | `texts`, up to 100 strings                  | Each text. Reads nothing from X    |
+| A search       | 1 or more of the search fields below        | Up to `limit` posts, 20 by default |
+
+A search combines every search field you send into 1 X search.
+
+| Search field              | Posts it finds                                                                     |
+| ------------------------- | ---------------------------------------------------------------------------------- |
+| `query`                   | An X search, with the operators of [Search Tweets](/api-reference/x/search-tweets) |
+| `username`                | 1 account's posts. A handle, `@handle`, or profile URL                             |
+| `listId`                  | A public List's posts. A List ID or URL                                            |
+| `quotesOf`                | The quotes of 1 post. A post ID or URL                                             |
+| `repliesTo`               | The replies in 1 post's conversation. A post ID or URL                             |
+| `sinceTime` & `untilTime` | Posts between 2 times. An ISO 8601 time or Unix seconds                            |
+
+`queryType` sets the order, `Latest` or `Top`. For more posts than 1 call
+returns, send the same search again with `cursor` set to `next_cursor`. Stop
+when `has_next_page` is `false`.
+
+```json
+{
+  "username": "NASA",
+  "sinceTime": "2026-09-25T00:00:00Z",
+  "untilTime": "2026-09-26T00:00:00Z"
+}
+```

@@ -1,16 +1,16 @@
 ---
-title: "Twitter stock & crypto signals API for cashtags"
-sidebarTitle: "Market signals"
-description: "Read bullish and bearish stock and crypto stances in X posts with AI. Get content type, conviction, relevance, and cashtag totals. 2 credits per analyzed post."
-api: "POST /x/analysis/market-signals"
+title: "Twitter news monitoring API to classify posts"
+sidebarTitle: "News classification"
+description: "Classify news posts on X with AI: reporting, commentary, or rumor, the source attribution, and the relevance to your topic. 2 credits per analyzed post."
+api: "POST /x/analysis/news"
 keywords:
   [
-    "Twitter stock sentiment API",
-    "crypto sentiment API",
-    "cashtag sentiment",
-    "bullish bearish signals",
-    "X market signals",
-    "fintwit API",
+    "Twitter news monitoring API",
+    "X news API",
+    "news classification API",
+    "source attribution",
+    "rumor detection",
+    "media monitoring API",
     "AI tweet analysis",
   ]
 ---
@@ -27,7 +27,7 @@ import TweetReadApiLinks from "/snippets/x-tweet-read-api-links.mdx";
 
 <Tabs defaultTabIndex={0} sync={false}>
 
-  <Tab title="200" id="response-x-market-signals-200">
+  <Tab title="200" id="response-x-news-classification-200">
 
     ```json
     {
@@ -118,7 +118,7 @@ import TweetReadApiLinks from "/snippets/x-tweet-read-api-links.mdx";
 
   </Tab>
 
-  <Tab title="400" id="response-x-market-signals-400">
+  <Tab title="400" id="response-x-news-classification-400">
 
     ```json
     {
@@ -129,7 +129,7 @@ import TweetReadApiLinks from "/snippets/x-tweet-read-api-links.mdx";
 
   </Tab>
 
-  <Tab title="401" id="response-x-market-signals-401">
+  <Tab title="401" id="response-x-news-classification-401">
 
     ```json
     {
@@ -140,7 +140,7 @@ import TweetReadApiLinks from "/snippets/x-tweet-read-api-links.mdx";
 
   </Tab>
 
-  <Tab title="402" id="response-x-market-signals-402">
+  <Tab title="402" id="response-x-news-classification-402">
 
     ```json
     {
@@ -151,7 +151,7 @@ import TweetReadApiLinks from "/snippets/x-tweet-read-api-links.mdx";
 
   </Tab>
 
-  <Tab title="403" id="response-x-market-signals-403">
+  <Tab title="403" id="response-x-news-classification-403">
 
     ```json
     {
@@ -162,7 +162,7 @@ import TweetReadApiLinks from "/snippets/x-tweet-read-api-links.mdx";
 
   </Tab>
 
-  <Tab title="424" id="response-x-market-signals-424">
+  <Tab title="424" id="response-x-news-classification-424">
 
     ```json
     {
@@ -173,7 +173,7 @@ import TweetReadApiLinks from "/snippets/x-tweet-read-api-links.mdx";
 
   </Tab>
 
-  <Tab title="429" id="response-x-market-signals-429">
+  <Tab title="429" id="response-x-news-classification-429">
 
     ```json
     {
@@ -185,7 +185,7 @@ import TweetReadApiLinks from "/snippets/x-tweet-read-api-links.mdx";
 
   </Tab>
 
-  <Tab title="502" id="response-x-market-signals-502">
+  <Tab title="502" id="response-x-news-classification-502">
 
     ```json
     {
@@ -196,7 +196,7 @@ import TweetReadApiLinks from "/snippets/x-tweet-read-api-links.mdx";
 
   </Tab>
 
-  <Tab title="503" id="response-x-market-signals-503">
+  <Tab title="503" id="response-x-news-classification-503">
 
     ```json
     {
@@ -218,64 +218,63 @@ import TweetReadApiLinks from "/snippets/x-tweet-read-api-links.mdx";
 
 </Callout>
 
-Market signals reads each post with AI and answers 4 questions about an asset.
-The endpoint is `POST /api/v1/x/analysis/market-signals`.
+News classification reads each post with AI and answers 3 questions about your
+topic. The endpoint is `POST /api/v1/x/analysis/news`.
 
-| Answer       | Type        | Values                                                                      |
-| ------------ | ----------- | --------------------------------------------------------------------------- |
-| `stance`     | Choice      | `bullish`, `bearish`, `neutral`, `mixed`, or `unclear`                      |
-| `content`    | Choice      | `analysis`, `news`, `trade`, `promotion`, `humor`, `question`, or `unclear` |
-| `conviction` | Score       | `0` no stance or hedged, `1` a reasoned view, `2` a firm call               |
-| `relevance`  | Probability | From `0` to `1`, the chance the post treats the target as an asset          |
+| Answer        | Type        | Values                                                                                     |
+| ------------- | ----------- | ------------------------------------------------------------------------------------------ |
+| `format`      | Choice      | `reporting`, `commentary`, `speculation`, `promotion`, `satire`, `unrelated`, or `unclear` |
+| `attribution` | Choice      | `named`, `linked`, `firsthand`, `absent`, or `unclear`                                     |
+| `relevance`   | Probability | From `0` to `1`, the chance the post concerns your topic                                   |
 
-The summary counts bullish and bearish posts per cashtag. Name the asset in
-`analysis.targets`.
+Name the topic in `analysis.targets`. The answers classify what a post says.
+They do not check whether its claims are true.
 
 <CodeGroup>
 
 ```bash cURL
-curl -X POST https://xquik.com/api/v1/x/analysis/market-signals \
+curl -X POST https://xquik.com/api/v1/x/analysis/news \
   -H "x-api-key: xq_your_api_key_here" \
   -H "Content-Type: application/json" \
   -d '{
-    "query": "$NVDA lang:en",
+    "query": "(Artemis OR SLS OR Orion) NASA lang:en -filter:nativeretweets",
     "limit": 50,
-    "analysis": { "targets": [{ "name": "NVIDIA", "aliases": ["NVDA"] }] }
+    "analysis": {
+      "targets": [{ "name": "Artemis program", "aliases": ["Artemis II", "SLS", "Orion"] }]
+    }
   }' | jq
 ```
 
 ```javascript Node.js
-const response = await fetch("https://xquik.com/api/v1/x/analysis/market-signals", {
+const response = await fetch("https://xquik.com/api/v1/x/analysis/news", {
   method: "POST",
   headers: {
     "x-api-key": "xq_your_api_key_here",
     "Content-Type": "application/json",
   },
   body: JSON.stringify({
-    query: "$NVDA lang:en",
+    query: "(Artemis OR SLS OR Orion) NASA lang:en -filter:nativeretweets",
     limit: 50,
-    analysis: { targets: [{ name: "NVIDIA", aliases: ["NVDA"] }] },
+    analysis: {
+      targets: [{ name: "Artemis program", aliases: ["Artemis II", "SLS", "Orion"] }],
+    },
   }),
 });
 const data = await response.json();
 if (!response.ok) throw new Error(`${data.error}: ${data.message}`);
 
-const signalRows = data.results
+const sourcedReports = data.results
   .filter((result) => result.answers.relevance >= 0.5)
-  .filter((result) => result.answers.content !== "promotion")
+  .filter((result) => result.answers.format === "reporting")
+  .filter((result) => ["named", "linked"].includes(result.answers.attribution))
   .map((result) => ({
     tweet_id: result.tweet.id,
-    stance: result.answers.stance,
-    content: result.answers.content,
-    conviction: result.answers.conviction,
-    cashtags: result.cashtags,
+    text: result.tweet.text,
+    sources: result.sourceDomains,
   }));
-const cashtagSignals = data.analysisSummary.cashtags.map(({ cashtag, signal }) => ({
-  cashtag,
-  ...signal,
-}));
+const topSources = data.analysisSummary.sourceDomains.slice(0, 5);
 
-process.stdout.write(`${JSON.stringify({ rows: signalRows.length, cashtagSignals })}\n`);
+process.stdout.write(`${JSON.stringify({ reports: sourcedReports.length, topSources })}\n`);
 ```
 
 ```python Python
@@ -283,12 +282,14 @@ import json
 import requests
 
 response = requests.post(
-    "https://xquik.com/api/v1/x/analysis/market-signals",
+    "https://xquik.com/api/v1/x/analysis/news",
     headers={"x-api-key": "xq_your_api_key_here"},
     json={
-        "query": "$NVDA lang:en",
+        "query": "(Artemis OR SLS OR Orion) NASA lang:en -filter:nativeretweets",
         "limit": 50,
-        "analysis": {"targets": [{"name": "NVIDIA", "aliases": ["NVDA"]}]},
+        "analysis": {
+            "targets": [{"name": "Artemis program", "aliases": ["Artemis II", "SLS", "Orion"]}],
+        },
     },
     timeout=120,
 )
@@ -296,96 +297,92 @@ data = response.json()
 if not response.ok:
     raise RuntimeError(f"{data['error']}: {data['message']}")
 
-signal_rows = [
+sourced_reports = [
     {
         "tweet_id": result["tweet"]["id"],
-        "stance": result["answers"]["stance"],
-        "content": result["answers"]["content"],
-        "conviction": result["answers"]["conviction"],
-        "cashtags": result["cashtags"],
+        "text": result["tweet"]["text"],
+        "sources": result["sourceDomains"],
     }
     for result in data["results"]
-    if result["answers"]["relevance"] >= 0.5 and result["answers"]["content"] != "promotion"
+    if result["answers"]["relevance"] >= 0.5
+    and result["answers"]["format"] == "reporting"
+    and result["answers"]["attribution"] in ("named", "linked")
 ]
-cashtag_signals = [
-    {"cashtag": entry["cashtag"], **entry.get("signal", {})}
-    for entry in data["analysisSummary"]["cashtags"]
-]
-print(json.dumps({"rows": len(signal_rows), "cashtag_signals": cashtag_signals}))
+top_sources = data["analysisSummary"]["sourceDomains"][:5]
+print(json.dumps({"reports": len(sourced_reports), "top_sources": top_sources}))
 ```
 
 </CodeGroup>
 
-The snippets keep relevant posts that are not promotion, then print the signal
-per cashtag. They do not print the full response.
+The snippets keep relevant reports that cite a source, then print the most
+linked sites. They do not print the full response.
 
-## Name the asset
+## Name the topic
 
-Put the asset in `analysis.targets`, with its ticker and other names as
-aliases. A post mentions the target when its text contains the name or an
-alias, in any letter case.
+Put the topic in `analysis.targets`, with its other names as aliases. A topic
+can be an event, a company, a person, a ticker, or a product.
 
 ```json
-{ "name": "NVIDIA", "aliases": ["NVDA", "Nvidia"] }
+{ "name": "Artemis program", "aliases": ["Artemis II", "SLS", "Orion"] }
 ```
 
-`relevance` says whether a post discusses the target as an asset, a position,
-or a price. Posts about the wider market, competitors, or suppliers do not
-count. Neither does a ticker in a list of tags.
+`relevance` is high only when the post names the topic or reports an event
+about it. Posts about the same industry, competitors, or the wider market do
+not count. Filter rows on `relevance` before you count answers.
 
-Filter rows on `relevance` before you count stances. The snippets keep posts
-from `0.5`.
-
-## Read the market answers
+## Read the news answers
 
 `results[].answers` holds each decision by question ID.
 
-| `stance`  | Meaning                                       |
-| --------- | --------------------------------------------- |
-| `bullish` | Expects the price or outlook to rise          |
-| `bearish` | Expects the price or outlook to fall          |
-| `neutral` | Discusses the asset without a direction       |
-| `mixed`   | Combines rising and falling expectations      |
-| `unclear` | Names no identifiable asset or states no view |
+| `format`      | Meaning                                  |
+| ------------- | ---------------------------------------- |
+| `reporting`   | Reports a specific event or announcement |
+| `commentary`  | Opinion or interpretation of events      |
+| `speculation` | An uncertain prediction or a rumor       |
+| `promotion`   | Advertising or promotional content       |
+| `satire`      | Parody or satire                         |
+| `unrelated`   | Not about the topic                      |
+| `unclear`     | Not enough context                       |
 
-`stance` classifies the author's own view, not quoted views or ads.
+| `attribution` | Meaning                                                           |
+| ------------- | ----------------------------------------------------------------- |
+| `named`       | Names the source, such as an outlet, a report, or a quoted person |
+| `linked`      | Links to a source without naming it                               |
+| `firsthand`   | The author reports their own observation or announcement          |
+| `absent`      | Gives no source for its claims                                    |
+| `unclear`     | Attribution cannot be determined                                  |
 
-| `content`   | Meaning                                                       |
-| ----------- | ------------------------------------------------------------- |
-| `analysis`  | Reasoning from data, charts, fundamentals, or events          |
-| `news`      | Reports an event, filing, or announcement                     |
-| `trade`     | Describes a position, entry, exit, or trade plan              |
-| `promotion` | Sells a service, signal group, or product, or shills an asset |
-| `humor`     | A joke, meme, or venting without a claim                      |
-| `question`  | Asks for views or information                                 |
-| `unclear`   | Not enough context                                            |
+`attribution` says whether a source is given. It does not rate the source.
 
-`conviction` judges how firmly the text states the stance, not engagement or
-follower counts. A post with no stance on the target scores `0`.
+## Separate reports from rumors
 
-The answers describe what posts say, not whether claims are true. They are not
-investment advice.
+Keep `reporting` with `named` or `linked` attribution for sourced news. Watch
+`speculation` with `absent` attribution for rumors that spread without a
+source.
 
-## Read the signal per cashtag
+`analysisSummary.questions.format.shares` holds each format's share of posts.
+Store it per run to see when speculation outgrows reporting.
 
-`analysisSummary.cashtags` lists up to 20 cashtags, most posts first. Each entry
-has `rows`, the category counts in `choices`, and `signal`.
+## Track the sources
 
-`signal` holds `bullish` and `bearish` post counts and a `score` from `-1` to
-`1`. The score is bullish minus bearish posts, divided by the cashtag's posts.
+`results[].sourceDomains` lists the sites each post links to. The summary's
+`sourceDomains` counts posts per site, most posts first, up to 20.
 
-`results[].cashtags` lists the cashtags in each post's text, in upper case. A
-post with 2 cashtags counts toward both.
+For more posts than 1 call returns, send the same body again with `cursor` set
+to `next_cursor`. Add `sinceTime` and `untilTime` to read 1 day or 1 hour.
 
-`analysisSummary.targets` counts the posts that mention each target, with their
-category counts.
+```json
+{
+  "query": "Artemis II",
+  "sinceTime": "2026-09-25T00:00:00Z",
+  "untilTime": "2026-09-26T00:00:00Z",
+  "analysis": { "targets": [{ "name": "Artemis program" }] }
+}
+```
 
 ## Pick the posts to analyze
 
 <TweetAnalysisSources />
-
-`query` takes cashtags and operators, such as `$NVDA lang:en`. Send `username`
-to read 1 trader's or analyst's posts.
 
 ## Budget the analysis
 
@@ -427,7 +424,7 @@ Each analyzed post with its answers. Each row costs 2 credits.
       The post, as [Search Tweets](/api-reference/x/search-tweets) returns it. Your own texts have the IDs `text:1`, `text:2`, and so on.
     </ResponseField>
     <ResponseField name="answers" type="object">
-      Each decision by question ID. `stance` and `content` are categories, `conviction` a level from `0`, and `relevance` a probability from `0` to `1`.
+      Each decision by question ID. `format` and `attribution` are categories, and `relevance` a probability from `0` to `1`.
     </ResponseField>
     <ResponseField name="analysis" type="object">
       The answers in full. `status` is `succeeded`. `answers` gives each answer's `value`, `confidence`, and `probabilities`, or a `probability`. `questions` names the ID and version of each question. `contextBytes` and `contextAvailability` say what the AI read beside the post's text.
@@ -475,13 +472,13 @@ Totals of the answers across the analyzed posts.
       Likes, reposts, replies, and quotes of the analyzed posts.
     </ResponseField>
     <ResponseField name="questions" type="object">
-      Totals by question ID. `stance` and `content` have `counts`, `shares`, `engagementShares`, and `top` posts per category. `conviction` has `mean`, `engagementWeightedMean`, and `levels`. `relevance` has `mean`, `yes`, and `no`.
+      Totals by question ID. `format` and `attribution` have `counts`, `shares`, `engagementShares`, and `top` posts per category. `relevance` has `mean`, `yes`, and `no`.
     </ResponseField>
     <ResponseField name="targets" type="object[]">
       Per target in `analysis.targets`: `name`, `mentions`, `share`, `engagement`, `choices`, and `top` posts.
     </ResponseField>
     <ResponseField name="cashtags" type="object[]">
-      Per cashtag, most posts first, up to 20: `cashtag`, `rows`, `choices`, and `signal` with `bullish`, `bearish`, and `score`.
+      Posts and category counts per cashtag, most posts first, up to 20.
     </ResponseField>
     <ResponseField name="sourceDomains" type="object[]">
       Posts per linked hostname, most posts first, up to 20.
@@ -498,73 +495,90 @@ Totals of the answers across the analyzed posts.
     {
       "tweet": {
         "id": "1893456789012345678",
-        "text": "$NVDA cleared its 50-day average on volume. Adding to my position, target 160.",
-        "likeCount": 212,
-        "retweetCount": 18,
-        "replyCount": 25
+        "text": "NASA confirms the Artemis II crew will fly in April, per today's briefing. nasa.gov/artemis",
+        "likeCount": 512,
+        "retweetCount": 88,
+        "replyCount": 40
       },
       "analysis": {
         "status": "succeeded",
         "answers": [
           {
-            "questionId": "stance",
-            "questionVersion": "market:4",
+            "questionId": "format",
+            "questionVersion": "news:3",
             "type": "choice",
-            "value": "bullish",
+            "value": "reporting",
             "confidence": 0.94,
             "probabilities": {
-              "bullish": 0.94,
-              "bearish": 0.01,
-              "neutral": 0.02,
-              "mixed": 0.02,
+              "reporting": 0.94,
+              "commentary": 0.02,
+              "speculation": 0.02,
+              "promotion": 0.01,
+              "satire": 0,
+              "unrelated": 0,
+              "unclear": 0.01
+            }
+          },
+          {
+            "questionId": "attribution",
+            "questionVersion": "news:3",
+            "type": "choice",
+            "value": "named",
+            "confidence": 0.9,
+            "probabilities": {
+              "named": 0.9,
+              "linked": 0.07,
+              "firsthand": 0.01,
+              "absent": 0.01,
               "unclear": 0.01
             }
           },
           {
             "questionId": "relevance",
-            "questionVersion": "market:4",
+            "questionVersion": "news:3",
             "type": "probability",
-            "probability": 0.97
+            "probability": 0.99
           }
         ]
       },
-      "answers": { "stance": "bullish", "content": "trade", "conviction": 2, "relevance": 0.97 },
-      "sourceDomains": [],
-      "cashtags": ["$NVDA"]
+      "answers": { "format": "reporting", "attribution": "named", "relevance": 0.99 },
+      "sourceDomains": ["nasa.gov"],
+      "cashtags": []
     }
   ],
   "unanalyzed": [],
   "analysisSummary": {
     "schemaVersion": 1,
     "rows": { "analyzed": 1, "failed": 0, "skipped": 0 },
-    "engagement": 255,
+    "engagement": 640,
     "questions": {
-      "stance": {
+      "format": {
         "type": "choice",
-        "counts": { "bullish": 1, "bearish": 0, "neutral": 0, "mixed": 0, "unclear": 0 }
+        "counts": {
+          "reporting": 1,
+          "commentary": 0,
+          "speculation": 0,
+          "promotion": 0,
+          "satire": 0,
+          "unrelated": 0,
+          "unclear": 0
+        }
       }
     },
     "targets": [
       {
-        "name": "NVIDIA",
+        "name": "Artemis program",
         "mentions": 1,
         "share": 1,
-        "engagement": 255,
-        "choices": { "stance": { "bullish": 1 } },
+        "engagement": 640,
+        "choices": { "format": { "reporting": 1 }, "attribution": { "named": 1 } },
         "top": {
-          "stance": { "bullish": [{ "tweetId": "1893456789012345678", "engagement": 255 }] }
+          "format": { "reporting": [{ "tweetId": "1893456789012345678", "engagement": 640 }] }
         }
       }
     ],
-    "cashtags": [
-      {
-        "cashtag": "$NVDA",
-        "rows": 1,
-        "choices": { "stance": { "bullish": 1 }, "content": { "trade": 1 } },
-        "signal": { "bullish": 1, "bearish": 0, "score": 1 }
-      }
-    ],
-    "sourceDomains": []
+    "cashtags": [],
+    "sourceDomains": [{ "domain": "nasa.gov", "posts": 1 }]
   },
   "has_next_page": false,
   "next_cursor": ""
@@ -641,30 +655,29 @@ You exceeded your tier rate limit. Wait for the `Retry-After` header before retr
 
 The normalized v1 response contract can return 424 when the read service is unavailable.
 
-## Stock & crypto sentiment API questions
+## News monitoring API questions
 
-### How do I get the sentiment of a stock or coin on X?
+### How do I monitor news about a topic on X?
 
-Search its cashtag in `query` and name it in `analysis.targets`. Each row in
-`results` holds the post's `stance`, and `analysisSummary.cashtags` counts
-bullish and bearish posts.
+Search the topic in `query` and name it in `analysis.targets`. Each row in
+`results` holds the post's `format`, `attribution`, and `relevance`.
 
-### What does the cashtag score mean?
+### Does it check whether a post is true?
 
-`signal.score` is bullish minus bearish posts, divided by the cashtag's posts.
-`1` means every post is bullish, and `-1` means every post is bearish.
+No. The answers say what kind of post it is and whether it names a source.
+They do not verify claims or rate the source.
 
-### How do I drop spam and shilling?
+### How do I find rumors?
 
-Skip rows whose `content` is `promotion`, and keep rows with high `relevance`.
-That drops signal groups, ads, and tickers used as tags.
+Keep rows whose `format` is `speculation`. Rows with `absent` attribution give
+no source for their claims.
 
-### Does it work for crypto?
+### Can I follow 1 outlet or reporter?
 
-Yes. Name the coin in `analysis.targets`, such as `Bitcoin` with the alias
-`BTC`. Cashtags like `$BTC` count in `analysisSummary.cashtags`.
+Yes. Send their handle in `username`, and name your topic in
+`analysis.targets`.
 
-### How much do market signals cost?
+### How much does news classification cost?
 
 Each analyzed post costs 2 credits. Posts in `unanalyzed` and refused requests
 cost nothing.
@@ -676,7 +689,7 @@ It does not document X's official API.
 
 <Note>
 
-**Next steps.** [Sentiment analysis](/api-reference/x/sentiment-analysis) reads the general attitude of posts, or [Search Tweets](/api-reference/x/search-tweets) previews the posts a query returns.
+**Next steps.** [Market signals](/api-reference/x/market-signals) reads stock and crypto stances, or [Classify posts](/api-reference/x/classify-tweets) asks your own questions.
 
 </Note>
 
