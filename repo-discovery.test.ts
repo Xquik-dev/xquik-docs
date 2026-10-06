@@ -134,6 +134,8 @@ const REQUIRED_INTRODUCTION_SNIPPETS = [
   "[Xquik Skill](https://github.com/Xquik-dev/x-twitter-scraper)",
   "https://xquik.com/mcp",
   "npx skills add Xquik-dev/x-twitter-scraper",
+  "[X API alternative Skill](https://github.com/Xquik-dev/x-api)",
+  "npx skills add Xquik-dev/x-api",
 ] as const;
 
 const FORBIDDEN_INTRODUCTION_CONFIDENTIALITY_SNIPPETS = [
