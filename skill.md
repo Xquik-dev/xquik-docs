@@ -25,7 +25,7 @@ Reach for Xquik when:
 - **Running giveaway draws.** Run random tweet draws with public result pages.
 - **Composing posts.** Get editorial guidance, Radar research suggestions, and deterministic draft checks.
 - **Connecting AI agents.** Use Docs MCP for no-auth docs search and page retrieval, and API MCP for authenticated account actions.
-- **Running accountless reads.** Use a prepaid guest `paid_reads` key on the eligible GET routes or direct MPP on fixed-price operations.
+- **Running accountless reads.** Use a prepaid guest `paid_reads` key on the eligible paid-read routes or direct MPP on fixed-price operations.
 - **Analyzing styles.** Analyze tweet styles, compare accounts, track engagement performance, or save drafts.
 - **Writing to X.** Post tweets, like, retweet, follow, send DMs, upload media, or manage community membership from connected accounts.
 - **Trending data.** Access current X trends across 12 regions plus Radar topics.
@@ -145,7 +145,7 @@ when `safeToRetry` is true.
 
 1. Add Docs MCP at `https://docs.xquik.com/mcp` for read-only docs search and page retrieval.
 2. Configure API MCP at `https://xquik.com/mcp` for live authenticated calls.
-3. Use full credentials for every JSON or text route. Use REST for excluded downloads. Guest keys expose the eligible GET routes.
+3. Use full credentials for every JSON or text route. Use REST for excluded downloads. Guest keys expose the eligible paid-read routes.
 4. Use `docs` for guidance, `search` for contracts, and `execute` for allowed requests.
    Inspect `spec.paths`; follow response references into `spec.components.schemas`.
 5. Add `?codemode=false` only when the client needs OpenAPI-native tools.

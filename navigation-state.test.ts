@@ -43,6 +43,7 @@ interface DocsConfig {
 const X_API_GROUPS = [
   "Users",
   "Tweets",
+  "Analysis",
   "Relationships",
   "Engagement",
   "Timeline & DMs",

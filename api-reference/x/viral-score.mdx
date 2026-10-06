@@ -1,0 +1,680 @@
+---
+title: "Tweet viral score API for X posts and drafts"
+sidebarTitle: "Viral score"
+description: "Score how viral X posts and drafts read with AI. Get a Viral Score from 0 to 100, a verdict, and the 8 traits behind it. Costs 2 credits per analyzed post."
+api: "POST /x/analysis/viral-score"
+keywords:
+  [
+    "tweet viral score API",
+    "viral tweet checker",
+    "tweet draft scoring",
+    "X engagement prediction",
+    "hook analysis",
+    "ragebait detection",
+    "AI tweet analysis",
+  ]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+import TweetAnalysisBodyParams from "/snippets/tweet-analysis-body-params.mdx";
+import TweetAnalysisBudget from "/snippets/tweet-analysis-budget.mdx";
+import TweetAnalysisSources from "/snippets/tweet-analysis-sources.mdx";
+import TweetReadApiLinks from "/snippets/x-tweet-read-api-links.mdx";
+
+{/* GENERATED RESPONSE EXAMPLES START */}
+
+<Panel>
+
+<Tabs defaultTabIndex={0} sync={false}>
+
+  <Tab title="200" id="response-x-viral-score-200">
+
+    ```json
+    {
+      "results": [
+        {
+          "tweet": {
+            "id": "1893456789012345678",
+            "text": "The new headphones sound great. The app keeps crashing.",
+            "retweetCount": 4,
+            "replyCount": 2,
+            "likeCount": 31
+          },
+          "analysis": {
+            "status": "succeeded",
+            "answers": [
+              {
+                "questionId": "sentiment",
+                "questionVersion": "sentiment:2",
+                "type": "choice",
+                "value": "mixed",
+                "confidence": 0.88
+              }
+            ],
+            "questions": [
+              {
+                "id": "sentiment",
+                "version": "sentiment:2"
+              }
+            ],
+            "contextBytes": 612,
+            "contextAvailability": {
+              "quote": "not_applicable",
+              "reply": "not_applicable",
+              "author": "available",
+              "media": "not_supplied",
+              "article": "not_supplied"
+            }
+          },
+          "answers": {
+            "sentiment": "mixed",
+            "intensity": 1,
+            "sarcasm": 0.03
+          },
+          "sourceDomains": [],
+          "cashtags": []
+        }
+      ],
+      "unanalyzed": [
+        {
+          "id": "1893456789012345679",
+          "status": "skipped",
+          "reason": "post_unavailable"
+        }
+      ],
+      "analysisSummary": {
+        "schemaVersion": 1,
+        "rows": {
+          "analyzed": 1,
+          "failed": 0,
+          "skipped": 0
+        },
+        "engagement": 37,
+        "questions": {
+          "sentiment": {
+            "type": "choice",
+            "counts": {
+              "positive": 0,
+              "negative": 0,
+              "mixed": 1,
+              "neutral": 0,
+              "unclear": 0
+            },
+            "shares": {
+              "positive": 0,
+              "negative": 0,
+              "mixed": 1,
+              "neutral": 0,
+              "unclear": 0
+            }
+          }
+        },
+        "targets": []
+      },
+      "has_next_page": false,
+      "next_cursor": ""
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="400" id="response-x-viral-score-400">
+
+    ```json
+    {
+      "error": "invalid_input",
+      "message": "Invalid input. Check the request body."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="401" id="response-x-viral-score-401">
+
+    ```json
+    {
+      "error": "unauthenticated",
+      "message": "Authentication required."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="402" id="response-x-viral-score-402">
+
+    ```json
+    {
+      "error": "insufficient_credits",
+      "message": "Insufficient credits. Top up or subscribe to continue."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="403" id="response-x-viral-score-403">
+
+    ```json
+    {
+      "error": "x_account_protected",
+      "message": "Account is protected. Choose a public account."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="424" id="response-x-viral-score-424">
+
+    ```json
+    {
+      "error": "x_api_unavailable",
+      "message": "X data source temporarily unavailable. Try again later."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="429" id="response-x-viral-score-429">
+
+    ```json
+    {
+      "error": "rate_limit_exceeded",
+      "message": "Too many requests. Try again later.",
+      "retryAfter": 60
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="502" id="response-x-viral-score-502">
+
+    ```json
+    {
+      "error": "x_api_unavailable",
+      "message": "X data source temporarily unavailable. Try again later."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="503" id="response-x-viral-score-503">
+
+    ```json
+    {
+      "error": "x_api_unavailable",
+      "message": "Xquik is busy right now. Retry shortly."
+    }
+    ```
+
+  </Tab>
+</Tabs>
+
+</Panel>
+{/* GENERATED RESPONSE EXAMPLES END */}
+<LlmsDirective />
+
+<Callout icon="coins" color="#5c3327">
+
+**2 credits per analyzed post** · [All plans](https://xquik.com/#pricing) from $0.00012/credit · Supports [guest paid reads](/guides/guest-wallets)
+
+</Callout>
+
+Viral score reads each post or draft with AI, answers 8 questions about its
+wording, and turns them into a Viral Score from `0` to `100`. The endpoint is
+`POST /api/v1/x/analysis/viral-score`.
+
+The score rates the wording. It does not predict likes or views.
+
+| Answer        | Type        | Values                                                         |
+| ------------- | ----------- | -------------------------------------------------------------- |
+| `hook`        | Score       | `0` no hook, `1` a clear opening, `2` a sharp opening          |
+| `clarity`     | Score       | `0` confusing, `1` takes effort, `2` clear on first read       |
+| `informative` | Score       | `0` none, `1` a familiar point, `2` a useful takeaway          |
+| `funny`       | Score       | `0` not funny, `1` mildly amusing, `2` funny enough to share   |
+| `ragebait`    | Probability | From `0` to `1`, the chance it mainly provokes outrage         |
+| `ai_written`  | Probability | From `0` to `1`, the chance it reads like generic machine copy |
+| `spam`        | Probability | From `0` to `1`, the chance it reads like spam or a scam       |
+| `reaction`    | Choice      | `share`, `reply`, `like`, `argue`, or `ignore`                 |
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://xquik.com/api/v1/x/analysis/viral-score \
+  -H "x-api-key: xq_your_api_key_here" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "texts": [
+      "We cut our build time from 9 minutes to 40 seconds. Here is the 1 config change that did it.",
+      "Big news coming soon!!! Stay tuned 🚀🚀🚀"
+    ]
+  }' | jq
+```
+
+```javascript Node.js
+const response = await fetch("https://xquik.com/api/v1/x/analysis/viral-score", {
+  method: "POST",
+  headers: {
+    "x-api-key": "xq_your_api_key_here",
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    texts: [
+      "We cut our build time from 9 minutes to 40 seconds. Here is the 1 config change that did it.",
+      "Big news coming soon!!! Stay tuned 🚀🚀🚀",
+    ],
+  }),
+});
+const data = await response.json();
+if (!response.ok) throw new Error(`${data.error}: ${data.message}`);
+
+const drafts = data.results.map((result) => ({
+  text: result.tweet.text,
+  score: result.viralScore,
+  verdict: result.viralVerdict,
+  stops: result.viral.stops,
+  hook: result.answers.hook,
+}));
+
+process.stdout.write(
+  `${JSON.stringify({ drafts, average: data.analysisSummary.viral.averageScore })}\n`,
+);
+```
+
+```python Python
+import json
+import requests
+
+response = requests.post(
+    "https://xquik.com/api/v1/x/analysis/viral-score",
+    headers={"x-api-key": "xq_your_api_key_here"},
+    json={
+        "texts": [
+            "We cut our build time from 9 minutes to 40 seconds. Here is the 1 config change that did it.",
+            "Big news coming soon!!! Stay tuned 🚀🚀🚀",
+        ],
+    },
+    timeout=120,
+)
+data = response.json()
+if not response.ok:
+    raise RuntimeError(f"{data['error']}: {data['message']}")
+
+drafts = [
+    {
+        "text": result["tweet"]["text"],
+        "score": result["viralScore"],
+        "verdict": result["viralVerdict"],
+        "stops": result["viral"]["stops"],
+        "hook": result["answers"]["hook"],
+    }
+    for result in data["results"]
+]
+print(json.dumps({"drafts": drafts, "average": data["analysisSummary"]["viral"]["averageScore"]}))
+```
+
+</CodeGroup>
+
+The snippets print each draft's score, verdict, and hook. They do not print the
+full response.
+
+## Score drafts before you post
+
+Send up to 100 drafts in `texts`. Xquik reads nothing from X for them, and each
+draft costs the same as 1 analyzed post. Drafts come back with the IDs
+`text:1`, `text:2`, and so on.
+
+Rewrite a draft with a low `hook` or `clarity` first. Those 2 traits carry half
+of the score.
+
+## Read the Viral Score
+
+Hook, clarity, payoff, and the expected reaction raise the score. Payoff is the
+higher of `informative` and `funny`. Wording that reads like generic machine
+copy lowers it.
+
+| `viralVerdict` | Score     |
+| -------------- | --------- |
+| `send_it`      | 70 to 100 |
+| `edit_first`   | 40 to 69  |
+| `sleep_on_it`  | 0 to 39   |
+
+Hard stops cap the score of likely spam, ragebait, and generic machine copy.
+`viral.stops` lists the stops that applied, such as `spam`. `viral.weights`
+names the version of these rules, such as `viral_lite:1`.
+
+`viralScore` is `null` when a trait has no answer. Xquik never fills a missing
+score with a guess.
+
+## Compare with real engagement
+
+For posts read from X, `viralAlgorithmScore` applies X's published ranking
+weights to the post's public counts: like `0.5`, reply `5`, repost `1`, and
+quote `5`. It divides the sum by views and multiplies by 1,000. A post without
+a view count uses followers. `viral.algorithmBasis` names the divisor.
+
+The AI never sees these counts. It reads the text and its context only. The
+estimate is not the score X computes, since X uses signals public data does not
+show.
+
+`viralActualEngagementRate` is `log10(1 + weighted engagement per 1,000
+followers)`. `analysisSummary.viral.calibration` compares it with the Viral
+Score across the posts.
+
+## Score an account's posts
+
+Send `username` to score an account's recent posts. `analysisSummary.viral`
+then holds a report per author in `accounts` and a `leaderboard`.
+
+```json
+{ "username": "NASA", "limit": 50 }
+```
+
+## Pick the posts to analyze
+
+<TweetAnalysisSources />
+
+## Budget the analysis
+
+<TweetAnalysisBudget />
+
+<TweetAnalysisBodyParams />
+
+## Headers
+
+<ParamField header="x-api-key" type="string">
+
+Full account API key. An OAuth bearer token also works.
+
+</ParamField>
+
+<ParamField header="Authorization" type="string">
+
+Send `Bearer xq_your_guest_key_here` for an active `paid_reads` guest key.
+
+</ParamField>
+
+<ParamField header="Content-Type" type="string" required>
+
+Must be `application/json`. The body can be up to 256 KB.
+
+</ParamField>
+
+## Response
+
+### 200 OK
+
+<ResponseField name="results" type="object[]">
+
+Each analyzed post with its answers. Each row costs 2 credits.
+
+  <Expandable title="Result fields">
+
+    <ResponseField name="tweet" type="object">
+      The post, as [Search Tweets](/api-reference/x/search-tweets) returns it. Your own texts have the IDs `text:1`, `text:2`, and so on.
+    </ResponseField>
+    <ResponseField name="answers" type="object">
+      Each decision by question ID. `hook`, `clarity`, `informative`, and `funny` are levels from `0`, `reaction` a category, and the rest probabilities from `0` to `1`.
+    </ResponseField>
+    <ResponseField name="analysis" type="object">
+      The answers in full. `status` is `succeeded`. `answers` gives each answer's `value`, `confidence`, and `probabilities`, or a `probability`. `questions` names the ID and version of each question. `contextBytes` and `contextAvailability` say what the AI read beside the post's text.
+    </ResponseField>
+    <ResponseField name="sourceDomains" type="string[]">
+      Hostnames the post links to, without `t.co`.
+    </ResponseField>
+    <ResponseField name="cashtags" type="string[]">
+      Cashtags in the post's text, in upper case.
+    </ResponseField>
+    <ResponseField name="viralScore" type="integer | null">
+      How viral the wording reads, from `0` to `100`. `null` when a trait has no answer.
+    </ResponseField>
+    <ResponseField name="viralVerdict" type="string | null">
+      `send_it` from `70`, `edit_first` from `40`, else `sleep_on_it`.
+    </ResponseField>
+    <ResponseField name="viralAlgorithmScore" type="number | null">
+      The post's public counts under X's published ranking weights, per 1,000 views or followers.
+    </ResponseField>
+    <ResponseField name="viralActualEngagementRate" type="number | null">
+      `log10` of 1 plus the weighted engagement per 1,000 followers. `null` without a follower count.
+    </ResponseField>
+    <ResponseField name="viral" type="object">
+      The score with its rules version in `weights`, the hard `stops` that capped it, and the engagement comparison.
+    </ResponseField>
+
+  </Expandable>
+</ResponseField>
+<ResponseField name="unanalyzed" type="object[]">
+
+Each post without an analysis. These cost nothing.
+
+  <Expandable title="Unanalyzed fields">
+
+    <ResponseField name="id" type="string">
+      Post ID, or `text:1` and so on for your own texts.
+    </ResponseField>
+    <ResponseField name="status" type="string">
+      `skipped` or `failed`.
+    </ResponseField>
+    <ResponseField name="reason" type="string">
+      `post_unavailable`, `missing_text`, `insufficient_credits`, or `context_limit`. Any other reason means the analysis failed. Send the post again.
+    </ResponseField>
+
+  </Expandable>
+</ResponseField>
+<ResponseField name="analysisSummary" type="object">
+
+Totals of the answers across the analyzed posts.
+
+  <Expandable title="Summary fields">
+
+    <ResponseField name="schemaVersion" type="integer">
+      Version of the summary's shape.
+    </ResponseField>
+    <ResponseField name="rows" type="object">
+      Posts by outcome: `analyzed`, `failed`, and `skipped`.
+    </ResponseField>
+    <ResponseField name="engagement" type="integer">
+      Likes, reposts, replies, and quotes of the analyzed posts.
+    </ResponseField>
+    <ResponseField name="questions" type="object">
+      Totals by question ID. Scores have `mean`, `engagementWeightedMean`, and `levels`. Probabilities have `mean`, `yes`, and `no`. `reaction` has `counts`, `shares`, `engagementShares`, and `top` posts.
+    </ResponseField>
+    <ResponseField name="targets" type="object[]">
+      Per target in `analysis.targets`: `name`, `mentions`, `share`, `engagement`, `choices`, and `top` posts.
+    </ResponseField>
+    <ResponseField name="cashtags" type="object[]">
+      Posts and category counts per cashtag, most posts first, up to 20.
+    </ResponseField>
+    <ResponseField name="sourceDomains" type="object[]">
+      Posts per linked hostname, most posts first, up to 20.
+    </ResponseField>
+    <ResponseField name="viral" type="object">
+      `scored` and `unscored` posts, `averageScore`, `verdicts` counts, the `calibration` of scores against actual engagement, a report per author in `accounts`, and the `leaderboard`.
+    </ResponseField>
+
+  </Expandable>
+</ResponseField>
+<ResponseField name="has_next_page" type="boolean">Whether the search has more posts. Always `false` for `tweetIds` and `texts`.</ResponseField>
+<ResponseField name="next_cursor" type="string">Send it as `cursor` with the same search for the next page. Empty when there is none.</ResponseField>
+
+```json
+{
+  "results": [
+    {
+      "tweet": {
+        "id": "text:1",
+        "text": "We cut our build time from 9 minutes to 40 seconds. Here is the 1 config change that did it.",
+        "type": "text"
+      },
+      "analysis": {
+        "status": "succeeded",
+        "answers": [
+          {
+            "questionId": "hook",
+            "questionVersion": "viral_lite:1",
+            "type": "score",
+            "value": 2,
+            "confidence": 0.86
+          },
+          {
+            "questionId": "spam",
+            "questionVersion": "viral_lite:1",
+            "type": "probability",
+            "probability": 0.02
+          }
+        ]
+      },
+      "answers": {
+        "hook": 2,
+        "clarity": 2,
+        "informative": 2,
+        "funny": 0,
+        "ragebait": 0.01,
+        "ai_written": 0.06,
+        "spam": 0.02,
+        "reaction": "share"
+      },
+      "sourceDomains": [],
+      "cashtags": [],
+      "viralScore": 99,
+      "viralVerdict": "send_it",
+      "viralAlgorithmScore": null,
+      "viralActualEngagementRate": null,
+      "viral": {
+        "score": 99,
+        "verdict": "send_it",
+        "weights": "viral_lite:1",
+        "stops": [],
+        "algorithmScore": null,
+        "actualEngagementRate": null
+      }
+    }
+  ],
+  "unanalyzed": [],
+  "analysisSummary": {
+    "schemaVersion": 1,
+    "rows": { "analyzed": 1, "failed": 0, "skipped": 0 },
+    "engagement": 0,
+    "questions": {
+      "hook": { "type": "score", "mean": 2 }
+    },
+    "targets": [],
+    "cashtags": [],
+    "sourceDomains": [],
+    "viral": {
+      "weights": "viral_lite:1",
+      "scored": 1,
+      "unscored": 0,
+      "averageScore": 99,
+      "verdicts": { "send_it": 1, "edit_first": 0, "sleep_on_it": 0 }
+    }
+  },
+  "has_next_page": false,
+  "next_cursor": ""
+}
+```
+
+### 400 Invalid input
+
+```json
+{ "error": "invalid_input", "message": "Send 1 to 100 texts in texts, each with words in it." }
+```
+
+The body names no posts, names more than 1 source, or has an invalid field.
+The message says what to send instead. The request costs nothing.
+
+### 401 Unauthenticated
+
+Anonymous requests get `WWW-Authenticate: Bearer` and a guest wallet checkout action. This is not a Payment challenge.
+
+```json
+{ "error": "unauthenticated" }
+```
+
+Missing or invalid API key. Check the `x-api-key` header value.
+
+### 402 Payment required
+
+Full account keys can receive `no_subscription`, `subscription_inactive`, `no_credits`, or `insufficient_credits` with account payment options. Guest keys receive only the guest top-up action.
+
+The failed request creates no checkout. Ask the user to confirm before calling any checkout or top-up route.
+
+### 403 Protected account
+
+```json
+{ "error": "x_account_protected" }
+```
+
+A search that needs a protected author returns this. Choose a public account.
+The request costs nothing.
+
+### 502 X API unavailable
+
+```json
+{ "error": "x_api_unavailable" }
+```
+
+The read service returned an error. Retry after a short delay.
+
+### 503 Service busy
+
+```json
+{ "error": "x_api_unavailable" }
+```
+
+Xquik is busy. Wait for the `Retry-After` header, then send the request again.
+The request costs nothing.
+
+### 429 Rate limit exceeded
+
+```json
+{ "error": "rate_limit_exceeded", "retryAfter": 60 }
+```
+
+You exceeded your tier rate limit. Wait for the `Retry-After` header before retrying.
+
+### 424 Dependency failed
+
+```json
+{ "error": "x_api_unavailable" }
+```
+
+The normalized v1 response contract can return 424 when the read service is unavailable.
+
+## Tweet viral score API questions
+
+### How do I check if a tweet will go viral?
+
+Send the draft in `texts`. `viralScore` rates its wording from `0` to `100`,
+and `viralVerdict` says whether to post it, edit it, or wait.
+
+### Does the score predict likes or views?
+
+No. It rates the wording only. Timing, followers, and X's ranking decide the
+reach. `viralAlgorithmScore` shows how a posted tweet actually performed.
+
+### Why did my draft score low?
+
+Read `answers`. A low `hook` or `clarity` costs the most points. `viral.stops`
+names any hard stop, such as `spam` or `ragebait`, that capped the score.
+
+### Can I score someone else's posts?
+
+Yes. Send their handle in `username`, post IDs in `tweetIds`, or a search in
+`query`.
+
+### How much does the viral score cost?
+
+Each analyzed post or draft costs 2 credits. Posts in `unanalyzed` and refused
+requests cost nothing.
+
+### Does this replace X's official API?
+
+No. This page documents Xquik, an independent third-party service.
+It does not document X's official API.
+
+<Note>
+
+**Next steps.** [Classify posts](/api-reference/x/classify-tweets) asks your own questions, or [Sentiment analysis](/api-reference/x/sentiment-analysis) reads the attitude of posts.
+
+</Note>
+
+<TweetReadApiLinks />

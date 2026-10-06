@@ -1,0 +1,696 @@
+---
+title: "Twitter news monitoring API to classify posts"
+sidebarTitle: "News classification"
+description: "Classify news posts on X with AI: reporting, commentary, or rumor, the source attribution, and the relevance to your topic. 2 credits per analyzed post."
+api: "POST /x/analysis/news"
+keywords:
+  [
+    "Twitter news monitoring API",
+    "X news API",
+    "news classification API",
+    "source attribution",
+    "rumor detection",
+    "media monitoring API",
+    "AI tweet analysis",
+  ]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+import TweetAnalysisBodyParams from "/snippets/tweet-analysis-body-params.mdx";
+import TweetAnalysisBudget from "/snippets/tweet-analysis-budget.mdx";
+import TweetAnalysisSources from "/snippets/tweet-analysis-sources.mdx";
+import TweetReadApiLinks from "/snippets/x-tweet-read-api-links.mdx";
+
+{/* GENERATED RESPONSE EXAMPLES START */}
+
+<Panel>
+
+<Tabs defaultTabIndex={0} sync={false}>
+
+  <Tab title="200" id="response-x-news-classification-200">
+
+    ```json
+    {
+      "results": [
+        {
+          "tweet": {
+            "id": "1893456789012345678",
+            "text": "The new headphones sound great. The app keeps crashing.",
+            "retweetCount": 4,
+            "replyCount": 2,
+            "likeCount": 31
+          },
+          "analysis": {
+            "status": "succeeded",
+            "answers": [
+              {
+                "questionId": "sentiment",
+                "questionVersion": "sentiment:2",
+                "type": "choice",
+                "value": "mixed",
+                "confidence": 0.88
+              }
+            ],
+            "questions": [
+              {
+                "id": "sentiment",
+                "version": "sentiment:2"
+              }
+            ],
+            "contextBytes": 612,
+            "contextAvailability": {
+              "quote": "not_applicable",
+              "reply": "not_applicable",
+              "author": "available",
+              "media": "not_supplied",
+              "article": "not_supplied"
+            }
+          },
+          "answers": {
+            "sentiment": "mixed",
+            "intensity": 1,
+            "sarcasm": 0.03
+          },
+          "sourceDomains": [],
+          "cashtags": []
+        }
+      ],
+      "unanalyzed": [
+        {
+          "id": "1893456789012345679",
+          "status": "skipped",
+          "reason": "post_unavailable"
+        }
+      ],
+      "analysisSummary": {
+        "schemaVersion": 1,
+        "rows": {
+          "analyzed": 1,
+          "failed": 0,
+          "skipped": 0
+        },
+        "engagement": 37,
+        "questions": {
+          "sentiment": {
+            "type": "choice",
+            "counts": {
+              "positive": 0,
+              "negative": 0,
+              "mixed": 1,
+              "neutral": 0,
+              "unclear": 0
+            },
+            "shares": {
+              "positive": 0,
+              "negative": 0,
+              "mixed": 1,
+              "neutral": 0,
+              "unclear": 0
+            }
+          }
+        },
+        "targets": []
+      },
+      "has_next_page": false,
+      "next_cursor": ""
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="400" id="response-x-news-classification-400">
+
+    ```json
+    {
+      "error": "invalid_input",
+      "message": "Invalid input. Check the request body."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="401" id="response-x-news-classification-401">
+
+    ```json
+    {
+      "error": "unauthenticated",
+      "message": "Authentication required."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="402" id="response-x-news-classification-402">
+
+    ```json
+    {
+      "error": "insufficient_credits",
+      "message": "Insufficient credits. Top up or subscribe to continue."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="403" id="response-x-news-classification-403">
+
+    ```json
+    {
+      "error": "x_account_protected",
+      "message": "Account is protected. Choose a public account."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="424" id="response-x-news-classification-424">
+
+    ```json
+    {
+      "error": "x_api_unavailable",
+      "message": "X data source temporarily unavailable. Try again later."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="429" id="response-x-news-classification-429">
+
+    ```json
+    {
+      "error": "rate_limit_exceeded",
+      "message": "Too many requests. Try again later.",
+      "retryAfter": 60
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="502" id="response-x-news-classification-502">
+
+    ```json
+    {
+      "error": "x_api_unavailable",
+      "message": "X data source temporarily unavailable. Try again later."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="503" id="response-x-news-classification-503">
+
+    ```json
+    {
+      "error": "x_api_unavailable",
+      "message": "Xquik is busy right now. Retry shortly."
+    }
+    ```
+
+  </Tab>
+</Tabs>
+
+</Panel>
+{/* GENERATED RESPONSE EXAMPLES END */}
+<LlmsDirective />
+
+<Callout icon="coins" color="#5c3327">
+
+**2 credits per analyzed post** · [All plans](https://xquik.com/#pricing) from $0.00012/credit · Supports [guest paid reads](/guides/guest-wallets)
+
+</Callout>
+
+News classification reads each post with AI and answers 3 questions about your
+topic. The endpoint is `POST /api/v1/x/analysis/news`.
+
+| Answer        | Type        | Values                                                                                     |
+| ------------- | ----------- | ------------------------------------------------------------------------------------------ |
+| `format`      | Choice      | `reporting`, `commentary`, `speculation`, `promotion`, `satire`, `unrelated`, or `unclear` |
+| `attribution` | Choice      | `named`, `linked`, `firsthand`, `absent`, or `unclear`                                     |
+| `relevance`   | Probability | From `0` to `1`, the chance the post concerns your topic                                   |
+
+Name the topic in `analysis.targets`. The answers classify what a post says.
+They do not check whether its claims are true.
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://xquik.com/api/v1/x/analysis/news \
+  -H "x-api-key: xq_your_api_key_here" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "(Artemis OR SLS OR Orion) NASA lang:en -filter:nativeretweets",
+    "limit": 50,
+    "analysis": {
+      "targets": [{ "name": "Artemis program", "aliases": ["Artemis II", "SLS", "Orion"] }]
+    }
+  }' | jq
+```
+
+```javascript Node.js
+const response = await fetch("https://xquik.com/api/v1/x/analysis/news", {
+  method: "POST",
+  headers: {
+    "x-api-key": "xq_your_api_key_here",
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    query: "(Artemis OR SLS OR Orion) NASA lang:en -filter:nativeretweets",
+    limit: 50,
+    analysis: {
+      targets: [{ name: "Artemis program", aliases: ["Artemis II", "SLS", "Orion"] }],
+    },
+  }),
+});
+const data = await response.json();
+if (!response.ok) throw new Error(`${data.error}: ${data.message}`);
+
+const sourcedReports = data.results
+  .filter((result) => result.answers.relevance >= 0.5)
+  .filter((result) => result.answers.format === "reporting")
+  .filter((result) => ["named", "linked"].includes(result.answers.attribution))
+  .map((result) => ({
+    tweet_id: result.tweet.id,
+    text: result.tweet.text,
+    sources: result.sourceDomains,
+  }));
+const topSources = data.analysisSummary.sourceDomains.slice(0, 5);
+
+process.stdout.write(`${JSON.stringify({ reports: sourcedReports.length, topSources })}\n`);
+```
+
+```python Python
+import json
+import requests
+
+response = requests.post(
+    "https://xquik.com/api/v1/x/analysis/news",
+    headers={"x-api-key": "xq_your_api_key_here"},
+    json={
+        "query": "(Artemis OR SLS OR Orion) NASA lang:en -filter:nativeretweets",
+        "limit": 50,
+        "analysis": {
+            "targets": [{"name": "Artemis program", "aliases": ["Artemis II", "SLS", "Orion"]}],
+        },
+    },
+    timeout=120,
+)
+data = response.json()
+if not response.ok:
+    raise RuntimeError(f"{data['error']}: {data['message']}")
+
+sourced_reports = [
+    {
+        "tweet_id": result["tweet"]["id"],
+        "text": result["tweet"]["text"],
+        "sources": result["sourceDomains"],
+    }
+    for result in data["results"]
+    if result["answers"]["relevance"] >= 0.5
+    and result["answers"]["format"] == "reporting"
+    and result["answers"]["attribution"] in ("named", "linked")
+]
+top_sources = data["analysisSummary"]["sourceDomains"][:5]
+print(json.dumps({"reports": len(sourced_reports), "top_sources": top_sources}))
+```
+
+</CodeGroup>
+
+The snippets keep relevant reports that cite a source, then print the most
+linked sites. They do not print the full response.
+
+## Name the topic
+
+Put the topic in `analysis.targets`, with its other names as aliases. A topic
+can be an event, a company, a person, a ticker, or a product.
+
+```json
+{ "name": "Artemis program", "aliases": ["Artemis II", "SLS", "Orion"] }
+```
+
+`relevance` is high only when the post names the topic or reports an event
+about it. Posts about the same industry, competitors, or the wider market do
+not count. Filter rows on `relevance` before you count answers.
+
+## Read the news answers
+
+`results[].answers` holds each decision by question ID.
+
+| `format`      | Meaning                                  |
+| ------------- | ---------------------------------------- |
+| `reporting`   | Reports a specific event or announcement |
+| `commentary`  | Opinion or interpretation of events      |
+| `speculation` | An uncertain prediction or a rumor       |
+| `promotion`   | Advertising or promotional content       |
+| `satire`      | Parody or satire                         |
+| `unrelated`   | Not about the topic                      |
+| `unclear`     | Not enough context                       |
+
+| `attribution` | Meaning                                                           |
+| ------------- | ----------------------------------------------------------------- |
+| `named`       | Names the source, such as an outlet, a report, or a quoted person |
+| `linked`      | Links to a source without naming it                               |
+| `firsthand`   | The author reports their own observation or announcement          |
+| `absent`      | Gives no source for its claims                                    |
+| `unclear`     | Attribution cannot be determined                                  |
+
+`attribution` says whether a source is given. It does not rate the source.
+
+## Separate reports from rumors
+
+Keep `reporting` with `named` or `linked` attribution for sourced news. Watch
+`speculation` with `absent` attribution for rumors that spread without a
+source.
+
+`analysisSummary.questions.format.shares` holds each format's share of posts.
+Store it per run to see when speculation outgrows reporting.
+
+## Track the sources
+
+`results[].sourceDomains` lists the sites each post links to. The summary's
+`sourceDomains` counts posts per site, most posts first, up to 20.
+
+For more posts than 1 call returns, send the same body again with `cursor` set
+to `next_cursor`. Add `sinceTime` and `untilTime` to read 1 day or 1 hour.
+
+```json
+{
+  "query": "Artemis II",
+  "sinceTime": "2026-09-25T00:00:00Z",
+  "untilTime": "2026-09-26T00:00:00Z",
+  "analysis": { "targets": [{ "name": "Artemis program" }] }
+}
+```
+
+## Pick the posts to analyze
+
+<TweetAnalysisSources />
+
+## Budget the analysis
+
+<TweetAnalysisBudget />
+
+<TweetAnalysisBodyParams />
+
+## Headers
+
+<ParamField header="x-api-key" type="string">
+
+Full account API key. An OAuth bearer token also works.
+
+</ParamField>
+
+<ParamField header="Authorization" type="string">
+
+Send `Bearer xq_your_guest_key_here` for an active `paid_reads` guest key.
+
+</ParamField>
+
+<ParamField header="Content-Type" type="string" required>
+
+Must be `application/json`. The body can be up to 256 KB.
+
+</ParamField>
+
+## Response
+
+### 200 OK
+
+<ResponseField name="results" type="object[]">
+
+Each analyzed post with its answers. Each row costs 2 credits.
+
+  <Expandable title="Result fields">
+
+    <ResponseField name="tweet" type="object">
+      The post, as [Search Tweets](/api-reference/x/search-tweets) returns it. Your own texts have the IDs `text:1`, `text:2`, and so on.
+    </ResponseField>
+    <ResponseField name="answers" type="object">
+      Each decision by question ID. `format` and `attribution` are categories, and `relevance` a probability from `0` to `1`.
+    </ResponseField>
+    <ResponseField name="analysis" type="object">
+      The answers in full. `status` is `succeeded`. `answers` gives each answer's `value`, `confidence`, and `probabilities`, or a `probability`. `questions` names the ID and version of each question. `contextBytes` and `contextAvailability` say what the AI read beside the post's text.
+    </ResponseField>
+    <ResponseField name="sourceDomains" type="string[]">
+      Hostnames the post links to, without `t.co`.
+    </ResponseField>
+    <ResponseField name="cashtags" type="string[]">
+      Cashtags in the post's text, in upper case.
+    </ResponseField>
+
+  </Expandable>
+</ResponseField>
+<ResponseField name="unanalyzed" type="object[]">
+
+Each post without an analysis. These cost nothing.
+
+  <Expandable title="Unanalyzed fields">
+
+    <ResponseField name="id" type="string">
+      Post ID, or `text:1` and so on for your own texts.
+    </ResponseField>
+    <ResponseField name="status" type="string">
+      `skipped` or `failed`.
+    </ResponseField>
+    <ResponseField name="reason" type="string">
+      `post_unavailable`, `missing_text`, `insufficient_credits`, or `context_limit`. Any other reason means the analysis failed. Send the post again.
+    </ResponseField>
+
+  </Expandable>
+</ResponseField>
+<ResponseField name="analysisSummary" type="object">
+
+Totals of the answers across the analyzed posts.
+
+  <Expandable title="Summary fields">
+
+    <ResponseField name="schemaVersion" type="integer">
+      Version of the summary's shape.
+    </ResponseField>
+    <ResponseField name="rows" type="object">
+      Posts by outcome: `analyzed`, `failed`, and `skipped`.
+    </ResponseField>
+    <ResponseField name="engagement" type="integer">
+      Likes, reposts, replies, and quotes of the analyzed posts.
+    </ResponseField>
+    <ResponseField name="questions" type="object">
+      Totals by question ID. `format` and `attribution` have `counts`, `shares`, `engagementShares`, and `top` posts per category. `relevance` has `mean`, `yes`, and `no`.
+    </ResponseField>
+    <ResponseField name="targets" type="object[]">
+      Per target in `analysis.targets`: `name`, `mentions`, `share`, `engagement`, `choices`, and `top` posts.
+    </ResponseField>
+    <ResponseField name="cashtags" type="object[]">
+      Posts and category counts per cashtag, most posts first, up to 20.
+    </ResponseField>
+    <ResponseField name="sourceDomains" type="object[]">
+      Posts per linked hostname, most posts first, up to 20.
+    </ResponseField>
+
+  </Expandable>
+</ResponseField>
+<ResponseField name="has_next_page" type="boolean">Whether the search has more posts. Always `false` for `tweetIds` and `texts`.</ResponseField>
+<ResponseField name="next_cursor" type="string">Send it as `cursor` with the same search for the next page. Empty when there is none.</ResponseField>
+
+```json
+{
+  "results": [
+    {
+      "tweet": {
+        "id": "1893456789012345678",
+        "text": "NASA confirms the Artemis II crew will fly in April, per today's briefing. nasa.gov/artemis",
+        "likeCount": 512,
+        "retweetCount": 88,
+        "replyCount": 40
+      },
+      "analysis": {
+        "status": "succeeded",
+        "answers": [
+          {
+            "questionId": "format",
+            "questionVersion": "news:3",
+            "type": "choice",
+            "value": "reporting",
+            "confidence": 0.94,
+            "probabilities": {
+              "reporting": 0.94,
+              "commentary": 0.02,
+              "speculation": 0.02,
+              "promotion": 0.01,
+              "satire": 0,
+              "unrelated": 0,
+              "unclear": 0.01
+            }
+          },
+          {
+            "questionId": "attribution",
+            "questionVersion": "news:3",
+            "type": "choice",
+            "value": "named",
+            "confidence": 0.9,
+            "probabilities": {
+              "named": 0.9,
+              "linked": 0.07,
+              "firsthand": 0.01,
+              "absent": 0.01,
+              "unclear": 0.01
+            }
+          },
+          {
+            "questionId": "relevance",
+            "questionVersion": "news:3",
+            "type": "probability",
+            "probability": 0.99
+          }
+        ]
+      },
+      "answers": { "format": "reporting", "attribution": "named", "relevance": 0.99 },
+      "sourceDomains": ["nasa.gov"],
+      "cashtags": []
+    }
+  ],
+  "unanalyzed": [],
+  "analysisSummary": {
+    "schemaVersion": 1,
+    "rows": { "analyzed": 1, "failed": 0, "skipped": 0 },
+    "engagement": 640,
+    "questions": {
+      "format": {
+        "type": "choice",
+        "counts": {
+          "reporting": 1,
+          "commentary": 0,
+          "speculation": 0,
+          "promotion": 0,
+          "satire": 0,
+          "unrelated": 0,
+          "unclear": 0
+        }
+      }
+    },
+    "targets": [
+      {
+        "name": "Artemis program",
+        "mentions": 1,
+        "share": 1,
+        "engagement": 640,
+        "choices": { "format": { "reporting": 1 }, "attribution": { "named": 1 } },
+        "top": {
+          "format": { "reporting": [{ "tweetId": "1893456789012345678", "engagement": 640 }] }
+        }
+      }
+    ],
+    "cashtags": [],
+    "sourceDomains": [{ "domain": "nasa.gov", "posts": 1 }]
+  },
+  "has_next_page": false,
+  "next_cursor": ""
+}
+```
+
+### 400 Invalid input
+
+```json
+{
+  "error": "invalid_input",
+  "message": "Send tweetIds, texts, or a search such as query or username."
+}
+```
+
+The body names no posts, names more than 1 source, or has an invalid field.
+The message says what to send instead. The request costs nothing.
+
+### 401 Unauthenticated
+
+Anonymous requests get `WWW-Authenticate: Bearer` and a guest wallet checkout action. This is not a Payment challenge.
+
+```json
+{ "error": "unauthenticated" }
+```
+
+Missing or invalid API key. Check the `x-api-key` header value.
+
+### 402 Payment required
+
+Full account keys can receive `no_subscription`, `subscription_inactive`, `no_credits`, or `insufficient_credits` with account payment options. Guest keys receive only the guest top-up action.
+
+The failed request creates no checkout. Ask the user to confirm before calling any checkout or top-up route.
+
+### 403 Protected account
+
+```json
+{ "error": "x_account_protected" }
+```
+
+A search that needs a protected author returns this. Choose a public account.
+The request costs nothing.
+
+### 502 X API unavailable
+
+```json
+{ "error": "x_api_unavailable" }
+```
+
+The read service returned an error. Retry after a short delay.
+
+### 503 Service busy
+
+```json
+{ "error": "x_api_unavailable" }
+```
+
+Xquik is busy. Wait for the `Retry-After` header, then send the request again.
+The request costs nothing.
+
+### 429 Rate limit exceeded
+
+```json
+{ "error": "rate_limit_exceeded", "retryAfter": 60 }
+```
+
+You exceeded your tier rate limit. Wait for the `Retry-After` header before retrying.
+
+### 424 Dependency failed
+
+```json
+{ "error": "x_api_unavailable" }
+```
+
+The normalized v1 response contract can return 424 when the read service is unavailable.
+
+## News monitoring API questions
+
+### How do I monitor news about a topic on X?
+
+Search the topic in `query` and name it in `analysis.targets`. Each row in
+`results` holds the post's `format`, `attribution`, and `relevance`.
+
+### Does it check whether a post is true?
+
+No. The answers say what kind of post it is and whether it names a source.
+They do not verify claims or rate the source.
+
+### How do I find rumors?
+
+Keep rows whose `format` is `speculation`. Rows with `absent` attribution give
+no source for their claims.
+
+### Can I follow 1 outlet or reporter?
+
+Yes. Send their handle in `username`, and name your topic in
+`analysis.targets`.
+
+### How much does news classification cost?
+
+Each analyzed post costs 2 credits. Posts in `unanalyzed` and refused requests
+cost nothing.
+
+### Does this replace X's official API?
+
+No. This page documents Xquik, an independent third-party service.
+It does not document X's official API.
+
+<Note>
+
+**Next steps.** [Market signals](/api-reference/x/market-signals) reads stock and crypto stances, or [Classify posts](/api-reference/x/classify-tweets) asks your own questions.
+
+</Note>
+
+<TweetReadApiLinks />
