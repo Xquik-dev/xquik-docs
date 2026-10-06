@@ -1,0 +1,765 @@
+---
+title: "Twitter sentiment analysis API for X posts with AI"
+sidebarTitle: "Sentiment analysis"
+description: "Analyze the sentiment of X posts, searches, or your drafts with AI. Get each post's attitude, intensity, and sarcasm probability. 2 credits per analyzed post."
+api: "POST /x/analysis/sentiment"
+keywords:
+  [
+    "Twitter sentiment analysis API",
+    "X sentiment analysis",
+    "tweet sentiment API",
+    "sarcasm detection API",
+    "social listening API",
+    "brand sentiment tracking",
+    "AI tweet analysis",
+  ]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+import TweetReadApiLinks from "/snippets/x-tweet-read-api-links.mdx";
+
+{/* GENERATED RESPONSE EXAMPLES START */}
+
+<Panel>
+
+<Tabs defaultTabIndex={0} sync={false}>
+
+  <Tab title="200" id="response-x-sentiment-analysis-200">
+
+    ```json
+    {
+      "results": [
+        {
+          "tweet": {
+            "id": "1893456789012345678",
+            "text": "The new headphones sound great. The app keeps crashing.",
+            "retweetCount": 4,
+            "replyCount": 2,
+            "likeCount": 31
+          },
+          "analysis": {
+            "status": "succeeded",
+            "answers": [
+              {
+                "questionId": "sentiment",
+                "questionVersion": "sentiment:2",
+                "type": "choice",
+                "value": "mixed",
+                "confidence": 0.88
+              }
+            ],
+            "questions": [
+              {
+                "id": "sentiment",
+                "version": "sentiment:2"
+              }
+            ],
+            "contextBytes": 612,
+            "contextAvailability": {
+              "quote": "not_applicable",
+              "reply": "not_applicable",
+              "author": "available",
+              "media": "not_supplied",
+              "article": "not_supplied"
+            }
+          },
+          "answers": {
+            "sentiment": "mixed",
+            "intensity": 1,
+            "sarcasm": 0.03
+          },
+          "sourceDomains": [],
+          "cashtags": []
+        }
+      ],
+      "unanalyzed": [
+        {
+          "id": "1893456789012345679",
+          "status": "skipped",
+          "reason": "post_unavailable"
+        }
+      ],
+      "analysisSummary": {
+        "schemaVersion": 1,
+        "rows": {
+          "analyzed": 1,
+          "failed": 0,
+          "skipped": 0
+        },
+        "engagement": 37,
+        "questions": {
+          "sentiment": {
+            "type": "choice",
+            "counts": {
+              "positive": 0,
+              "negative": 0,
+              "mixed": 1,
+              "neutral": 0,
+              "unclear": 0
+            },
+            "shares": {
+              "positive": 0,
+              "negative": 0,
+              "mixed": 1,
+              "neutral": 0,
+              "unclear": 0
+            }
+          }
+        },
+        "targets": []
+      },
+      "has_next_page": false,
+      "next_cursor": ""
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="400" id="response-x-sentiment-analysis-400">
+
+    ```json
+    {
+      "error": "invalid_input",
+      "message": "Invalid input. Check the request body."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="401" id="response-x-sentiment-analysis-401">
+
+    ```json
+    {
+      "error": "unauthenticated",
+      "message": "Authentication required."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="402" id="response-x-sentiment-analysis-402">
+
+    ```json
+    {
+      "error": "insufficient_credits",
+      "message": "Insufficient credits. Top up or subscribe to continue."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="403" id="response-x-sentiment-analysis-403">
+
+    ```json
+    {
+      "error": "x_account_protected",
+      "message": "Account is protected. Choose a public account."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="424" id="response-x-sentiment-analysis-424">
+
+    ```json
+    {
+      "error": "x_api_unavailable",
+      "message": "X data source temporarily unavailable. Try again later."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="429" id="response-x-sentiment-analysis-429">
+
+    ```json
+    {
+      "error": "rate_limit_exceeded",
+      "message": "Too many requests. Try again later.",
+      "retryAfter": 60
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="502" id="response-x-sentiment-analysis-502">
+
+    ```json
+    {
+      "error": "x_api_unavailable",
+      "message": "X data source temporarily unavailable. Try again later."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="503" id="response-x-sentiment-analysis-503">
+
+    ```json
+    {
+      "error": "x_api_unavailable",
+      "message": "Xquik is busy right now. Retry shortly."
+    }
+    ```
+
+  </Tab>
+</Tabs>
+
+</Panel>
+{/* GENERATED RESPONSE EXAMPLES END */}
+<LlmsDirective />
+
+<Callout icon="coins" color="#5c3327">
+
+**2 credits per analyzed post** · [All plans](https://xquik.com/#pricing) from $0.00012/credit · Supports [guest paid reads](/guides/guest-wallets)
+
+</Callout>
+
+Sentiment analysis reads each post with AI and answers 3 questions about it.
+The endpoint is `POST /api/v1/x/analysis/sentiment`.
+
+| Answer      | Type        | Values                                                   |
+| ----------- | ----------- | -------------------------------------------------------- |
+| `sentiment` | Choice      | `positive`, `negative`, `mixed`, `neutral`, or `unclear` |
+| `intensity` | Score       | `0` no attitude, `1` measured, `2` emphatic              |
+| `sarcasm`   | Probability | From `0` to `1`, the chance the wording means otherwise  |
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://xquik.com/api/v1/x/analysis/sentiment \
+  -H "x-api-key: xq_your_api_key_here" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "Sony WH-1000XM6 lang:en",
+    "limit": 20,
+    "analysis": { "targets": [{ "name": "Sony", "aliases": ["WH-1000XM6"] }] }
+  }' | jq
+```
+
+```javascript Node.js
+const response = await fetch("https://xquik.com/api/v1/x/analysis/sentiment", {
+  method: "POST",
+  headers: {
+    "x-api-key": "xq_your_api_key_here",
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    query: "Sony WH-1000XM6 lang:en",
+    limit: 20,
+    analysis: { targets: [{ name: "Sony", aliases: ["WH-1000XM6"] }] },
+  }),
+});
+const data = await response.json();
+if (!response.ok) throw new Error(`${data.error}: ${data.message}`);
+
+const sentimentRows = data.results.map((result) => ({
+  tweet_id: result.tweet.id,
+  text: result.tweet.text,
+  sentiment: result.answers.sentiment,
+  intensity: result.answers.intensity,
+  sarcasm: result.answers.sarcasm,
+}));
+const shares = data.analysisSummary.questions.sentiment.shares;
+const retryIds = data.unanalyzed.filter((post) => post.status === "failed").map((post) => post.id);
+
+process.stdout.write(`${JSON.stringify({ rows: sentimentRows.length, shares, retryIds })}\n`);
+```
+
+```python Python
+import json
+import requests
+
+response = requests.post(
+    "https://xquik.com/api/v1/x/analysis/sentiment",
+    headers={"x-api-key": "xq_your_api_key_here"},
+    json={
+        "query": "Sony WH-1000XM6 lang:en",
+        "limit": 20,
+        "analysis": {"targets": [{"name": "Sony", "aliases": ["WH-1000XM6"]}]},
+    },
+    timeout=120,
+)
+data = response.json()
+if not response.ok:
+    raise RuntimeError(f"{data['error']}: {data['message']}")
+
+sentiment_rows = [
+    {
+        "tweet_id": result["tweet"]["id"],
+        "text": result["tweet"]["text"],
+        "sentiment": result["answers"]["sentiment"],
+        "intensity": result["answers"]["intensity"],
+        "sarcasm": result["answers"]["sarcasm"],
+    }
+    for result in data["results"]
+]
+shares = data["analysisSummary"]["questions"]["sentiment"]["shares"]
+retry_ids = [post["id"] for post in data["unanalyzed"] if post["status"] == "failed"]
+print(json.dumps({"rows": len(sentiment_rows), "shares": shares, "retry_ids": retry_ids}))
+```
+
+</CodeGroup>
+
+The snippets build 1 row per analyzed post and print the totals. They do not
+print the full response.
+
+## Pick the posts to analyze
+
+Send exactly 1 of `tweetIds`, `query`, or `texts`. Sending none, or more than 1,
+returns `400 invalid_input`.
+
+| Source         | Send                                                   | Posts analyzed                     |
+| -------------- | ------------------------------------------------------ | ---------------------------------- |
+| Post IDs       | `tweetIds`, up to 100 post IDs or post URLs            | Each post once                     |
+| X search       | `query`, with optional `queryType`, `limit` & `cursor` | Up to `limit` posts, 20 by default |
+| Your own texts | `texts`, up to 100 strings                             | Each text. Reads nothing from X    |
+
+`query` takes the operators of [Search Tweets](/api-reference/x/search-tweets),
+such as `from:nasa` or `lang:en`. Your own texts come back with the IDs
+`text:1`, `text:2`, and so on.
+
+```json
+{
+  "texts": ["We shipped dark mode today. Tell us what breaks."]
+}
+```
+
+## Read the sentiment answers
+
+`results[].answers` holds each decision by question ID. Store it beside the post.
+
+| `sentiment` | Meaning                                                      |
+| ----------- | ------------------------------------------------------------ |
+| `positive`  | Praise, satisfaction, excitement, or support                 |
+| `negative`  | Criticism, frustration, disappointment, or hostility         |
+| `mixed`     | Both positive and negative judgments                         |
+| `neutral`   | Information, listings, deals, or questions without a verdict |
+| `unclear`   | The subject or attitude cannot be established                |
+
+Upbeat deals, ads, and giveaways that state no opinion count as `neutral`.
+
+`intensity` judges wording, emphasis, and emoji, not engagement counts.
+`sarcasm` is high when the literal wording contradicts the intended attitude.
+
+`results[].analysis.answers` adds the `confidence` of each answer and the
+probability of each category or level. Use it to set your own thresholds.
+
+## Judge the attitude toward a brand
+
+Name the brand, person, or product in `analysis.targets`, with its aliases.
+The AI then judges the attitude toward that target. Without targets, it judges
+the attitude toward the post's main subject.
+
+`analysisSummary.targets` counts each target's mentions and sentiment
+categories. It also lists the most engaged posts per category.
+
+## Track sentiment over time
+
+`analysisSummary.questions.sentiment` counts posts per category. `shares` holds
+each category's share of posts, and `engagementShares` its share of
+engagement. Store both per run to chart a trend.
+
+For more posts than 1 call returns, send the same body again with `cursor` set
+to `next_cursor`. Stop when `has_next_page` is `false`.
+
+## Budget the analysis
+
+Each analyzed post costs 2 credits. Each text in `texts` costs the same. Posts
+in `unanalyzed` cost nothing.
+
+When credits cover fewer posts than you asked for, fewer come back. The posts
+left over appear in `unanalyzed` with `insufficient_credits`. If credits cover
+no post, the call returns `402 insufficient_credits`.
+
+| `unanalyzed[].reason`  | Meaning                                  | What to do                       |
+| ---------------------- | ---------------------------------------- | -------------------------------- |
+| `post_unavailable`     | X returns no such post                   | Skip the post                    |
+| `missing_text`         | The post has no text                     | Skip the post                    |
+| `insufficient_credits` | Credits ran out                          | Add credits, then send it again  |
+| `context_limit`        | The settings leave the post no room      | Shorten the context or questions |
+| Any other reason       | The analysis failed (`status: "failed"`) | Send the post again              |
+
+## Ask your own questions
+
+Send `analysis.questions` to ask up to 8 questions of your own. They replace
+the 3 sentiment questions, and the price stays the same.
+
+A choice picks 1 category, a score picks 1 level, and a probability answers
+yes or no. Write question IDs and category names in lower case without
+hyphens, such as `feature_request`.
+
+## Body
+
+<ParamField body="tweetIds" type="string[]">
+
+Up to 100 post IDs or post URLs, such as `x.com/nasa/status/20`. A post named
+twice is analyzed once. Send `tweetIds`, `query`, or `texts`, not more than 1.
+
+</ParamField>
+
+<ParamField body="query" type="string">
+
+X search to analyze, with the operators of [Search Tweets](/api-reference/x/search-tweets).
+
+</ParamField>
+
+<ParamField body="queryType" type="string">
+
+Search order for `query`: `Latest` or `Top`. Defaults to `Latest`.
+
+</ParamField>
+
+<ParamField body="limit" type="integer">
+
+Maximum posts to analyze from `query`. Range: `1-100`. Defaults to `20`.
+Credits can return fewer.
+
+</ParamField>
+
+<ParamField body="cursor" type="string">
+
+The `next_cursor` of the page before, for `query`.
+
+</ParamField>
+
+<ParamField body="texts" type="string[]">
+
+Up to 100 texts of your own, such as drafts. Each must contain words. Reads
+nothing from X.
+
+</ParamField>
+
+<ParamField body="analysis" type="object">
+
+Optional settings. Leave it out to ask the 3 sentiment questions.
+
+  <Expandable title="Analysis fields">
+
+    <ParamField body="targets" type="object[]">
+
+      Up to 100 brands, people, or topics to judge the attitude toward. Each
+      has a `name` and optional `aliases`.
+
+    </ParamField>
+
+    <ParamField body="context" type="string">
+
+      Background the AI reads with every post, such as your product category.
+
+    </ParamField>
+
+    <ParamField body="questions" type="object[]">
+
+      1 to 8 questions of your own, which replace the sentiment questions. Each
+      needs an `id`, a `type` of `choice`, `score`, or `probability`, a
+      `version`, and `instructions`. A choice adds `categories`, a score adds
+      `levels`, and a probability can add `criteria`.
+
+    </ParamField>
+
+    <ParamField body="preset" type="string">
+
+      A ready set of questions, used when `questions` is left out: `brand`,
+      `complaints`, `competitors`, `purchase_intent`, `product_feedback`,
+      `news`, `sentiment`, or `market`. `complaints`, `competitors`,
+      `purchase_intent`, and `product_feedback` need `targets`.
+
+    </ParamField>
+
+    <ParamField body="maxContextBytes" type="integer">
+
+      Bytes of post, quote, and settings the AI reads. Range: `1-64000`.
+      Defaults to `64000`. Xquik cuts a longer post to fit.
+
+    </ParamField>
+
+    <ParamField body="concurrency" type="integer">
+
+      Posts analyzed at the same time. Range: `1-16`. Defaults to `16`.
+
+    </ParamField>
+
+  </Expandable>
+
+</ParamField>
+
+## Headers
+
+<ParamField header="x-api-key" type="string">
+
+Full account API key. Session cookie and OAuth authentication also work.
+
+</ParamField>
+
+<ParamField header="Authorization" type="string">
+
+Send `Bearer xq_your_guest_key_here` for an active `paid_reads` guest key.
+
+</ParamField>
+
+<ParamField header="Content-Type" type="string" required>
+
+Must be `application/json`. The body can be up to 256 KB.
+
+</ParamField>
+
+## Response
+
+### 200 OK
+
+<ResponseField name="results" type="object[]">
+
+Each analyzed post with its answers. Each row costs 2 credits.
+
+  <Expandable title="Result fields">
+
+    <ResponseField name="tweet" type="object">
+      The post, as [Search Tweets](/api-reference/x/search-tweets) returns it. Your own texts have the IDs `text:1`, `text:2`, and so on.
+    </ResponseField>
+    <ResponseField name="answers" type="object">
+      Each decision by question ID. `sentiment` is a category, `intensity` a level from `0`, and `sarcasm` a probability from `0` to `1`.
+    </ResponseField>
+    <ResponseField name="analysis" type="object">
+      The answers in full. `status` is `succeeded`. `answers` gives each answer's `value`, `confidence`, and `probabilities`, or a `probability`. `questions` names the ID and version of each question. `contextBytes` and `contextAvailability` say what the AI read beside the post's text.
+    </ResponseField>
+    <ResponseField name="sourceDomains" type="string[]">
+      Hostnames the post links to, without `t.co`.
+    </ResponseField>
+    <ResponseField name="cashtags" type="string[]">
+      Cashtags in the post's text, in upper case.
+    </ResponseField>
+
+  </Expandable>
+</ResponseField>
+<ResponseField name="unanalyzed" type="object[]">
+
+Each post without an analysis. These cost nothing.
+
+  <Expandable title="Unanalyzed fields">
+
+    <ResponseField name="id" type="string">
+      Post ID, or `text:1` and so on for your own texts.
+    </ResponseField>
+    <ResponseField name="status" type="string">
+      `skipped` or `failed`.
+    </ResponseField>
+    <ResponseField name="reason" type="string">
+      `post_unavailable`, `missing_text`, `insufficient_credits`, or `context_limit`. Any other reason means the analysis failed. Send the post again.
+    </ResponseField>
+
+  </Expandable>
+</ResponseField>
+<ResponseField name="analysisSummary" type="object">
+
+Totals of the answers across the analyzed posts.
+
+  <Expandable title="Summary fields">
+
+    <ResponseField name="schemaVersion" type="integer">
+      Version of the summary's shape.
+    </ResponseField>
+    <ResponseField name="rows" type="object">
+      Posts by outcome: `analyzed`, `failed`, and `skipped`.
+    </ResponseField>
+    <ResponseField name="engagement" type="integer">
+      Likes, reposts, replies, and quotes of the analyzed posts.
+    </ResponseField>
+    <ResponseField name="questions" type="object">
+      Totals by question ID. `sentiment` has `counts`, `shares`, `engagementShares`, and `top` posts per category. `intensity` has `mean`, `engagementWeightedMean`, and `levels`. `sarcasm` has `mean`, `yes`, and `no`.
+    </ResponseField>
+    <ResponseField name="targets" type="object[]">
+      Per target in `analysis.targets`: `name`, `mentions`, `share`, `engagement`, `choices`, and `top` posts.
+    </ResponseField>
+    <ResponseField name="cashtags" type="object[]">
+      Posts and category counts per cashtag, most posts first, up to 20.
+    </ResponseField>
+    <ResponseField name="sourceDomains" type="object[]">
+      Posts per linked hostname, most posts first, up to 20.
+    </ResponseField>
+
+  </Expandable>
+</ResponseField>
+<ResponseField name="has_next_page" type="boolean">Whether `query` has more posts. Always `false` for `tweetIds` and `texts`.</ResponseField>
+<ResponseField name="next_cursor" type="string">Send it as `cursor` for the next page of `query`. Empty when there is none.</ResponseField>
+
+```json
+{
+  "results": [
+    {
+      "tweet": {
+        "id": "1893456789012345678",
+        "text": "The new headphones sound great. The app keeps crashing.",
+        "likeCount": 31,
+        "retweetCount": 4,
+        "replyCount": 2
+      },
+      "analysis": {
+        "status": "succeeded",
+        "answers": [
+          {
+            "questionId": "sentiment",
+            "questionVersion": "sentiment:2",
+            "type": "choice",
+            "value": "mixed",
+            "confidence": 0.88,
+            "probabilities": {
+              "positive": 0.06,
+              "negative": 0.04,
+              "mixed": 0.88,
+              "neutral": 0.01,
+              "unclear": 0.01
+            }
+          },
+          {
+            "questionId": "intensity",
+            "questionVersion": "sentiment:2",
+            "type": "score",
+            "value": 1,
+            "confidence": 0.81
+          },
+          {
+            "questionId": "sarcasm",
+            "questionVersion": "sentiment:2",
+            "type": "probability",
+            "probability": 0.03
+          }
+        ]
+      },
+      "answers": { "sentiment": "mixed", "intensity": 1, "sarcasm": 0.03 },
+      "sourceDomains": [],
+      "cashtags": []
+    }
+  ],
+  "unanalyzed": [
+    { "id": "1893456789012345679", "status": "skipped", "reason": "post_unavailable" }
+  ],
+  "analysisSummary": {
+    "schemaVersion": 1,
+    "rows": { "analyzed": 1, "failed": 0, "skipped": 0 },
+    "engagement": 37,
+    "questions": {
+      "sentiment": {
+        "type": "choice",
+        "counts": { "positive": 0, "negative": 0, "mixed": 1, "neutral": 0, "unclear": 0 },
+        "shares": { "positive": 0, "negative": 0, "mixed": 1, "neutral": 0, "unclear": 0 }
+      }
+    },
+    "targets": [],
+    "cashtags": [],
+    "sourceDomains": []
+  },
+  "has_next_page": false,
+  "next_cursor": ""
+}
+```
+
+### 400 Invalid input
+
+```json
+{ "error": "invalid_input", "message": "Send only 1 of tweetIds, query & texts." }
+```
+
+The body names no posts, names more than 1 source, or has an invalid field.
+The message says what to send instead. The request costs nothing.
+
+### 401 Unauthenticated
+
+Anonymous requests get `WWW-Authenticate: Bearer` and a guest wallet checkout action. This is not a Payment challenge.
+
+```json
+{ "error": "unauthenticated" }
+```
+
+Missing or invalid API key. Check the `x-api-key` header value.
+
+### 402 Payment required
+
+Full account keys can receive `no_subscription`, `subscription_inactive`, `no_credits`, or `insufficient_credits` with account payment options. Guest keys receive only the guest top-up action.
+
+The failed request creates no checkout. Ask the user to confirm before calling any checkout or top-up route.
+
+### 403 Protected account
+
+```json
+{ "error": "x_account_protected" }
+```
+
+A `query` that needs a protected author returns this. Choose a public account.
+The request costs nothing.
+
+### 502 X API unavailable
+
+```json
+{ "error": "x_api_unavailable" }
+```
+
+The read service returned an error. Retry after a short delay.
+
+### 503 Service busy
+
+```json
+{ "error": "x_api_unavailable" }
+```
+
+Xquik is busy. Wait for the `Retry-After` header, then send the request again.
+The request costs nothing.
+
+### 429 Rate limit exceeded
+
+```json
+{ "error": "rate_limit_exceeded", "retryAfter": 60 }
+```
+
+You exceeded your tier rate limit. Wait for the `Retry-After` header before retrying.
+
+### 424 Dependency failed
+
+```json
+{ "error": "x_api_unavailable" }
+```
+
+The normalized v1 response contract can return 424 when the read service is unavailable.
+
+## Twitter sentiment analysis API questions
+
+### How do I analyze the sentiment of tweets?
+
+Send a search in `query`, or post IDs in `tweetIds`, to this endpoint.
+Each row in `results` holds the post and its `sentiment`, `intensity`, and
+`sarcasm` answers.
+
+### Can I measure the sentiment toward my brand?
+
+Yes. Name the brand in `analysis.targets`, with its product names as aliases.
+The AI judges the attitude toward the brand, and `analysisSummary.targets`
+counts its mentions.
+
+### Does it detect sarcasm?
+
+Yes. `sarcasm` is the probability, from `0` to `1`, that the literal wording
+contradicts the intended attitude. Read it beside `sentiment` before you act on
+a post.
+
+### Can I check a draft before I post it?
+
+Yes. Send the draft in `texts`. Xquik reads nothing from X, and each text costs
+2 credits.
+
+### How much does sentiment analysis cost?
+
+Each analyzed post costs 2 credits. Posts in `unanalyzed` and refused requests
+cost nothing.
+
+### Does this replace X's official API?
+
+No. This page documents Xquik, an independent third-party service.
+It does not document X's official API.
+
+<Note>
+
+**Next steps.** [Market signals](/api-reference/x/market-signals) reads stock and crypto stances, or [Search Tweets](/api-reference/x/search-tweets) previews the posts a query returns.
+
+</Note>
+
+<TweetReadApiLinks />
