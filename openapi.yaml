@@ -11368,17 +11368,34 @@ components:
     RateLimitExceeded:
       description: >
         Each user gets 500 reads/s, 120 writes/min & 60 deletes/min. Wait
-        `Retry-After` seconds.
+        `Retry-After` seconds. A read answers `x_api_rate_limited` when every X
+        account that may serve it used X's read limit: your own accounts for a
+        read of your own data, else every account Xquik reads with. It sent
+        nothing to X & costs nothing. `Retry-After` & `retryAfter` say when the
+        first of those accounts gets its limit back.
       headers:
         RateLimit: { $ref: '#/components/headers/RateLimit' }
         RateLimit-Policy: { $ref: '#/components/headers/RateLimitPolicy' }
+        Retry-After:
+          description: Seconds to wait before a retry.
+          schema: *positive-integer
       content:
         application/json:
           schema: *retry-after-error-schema
-          example:
-            error: 'rate_limit_exceeded'
-            message: 'Too many requests. Try again later.'
-            retryAfter: 60
+          examples:
+            xquikLimit:
+              summary: Xquik limit
+              value:
+                error: 'rate_limit_exceeded'
+                message: 'Too many requests. Try again later.'
+                retryAfter: 60
+            xReadLimit:
+              summary: X read limit
+              value:
+                error: 'x_api_rate_limited'
+                message:
+                  "Your X account hit X's read limit. Try again in 10 minutes."
+                retryAfter: 600
     GuestWalletRateLimited:
       description: Guest wallet request limit exceeded.
       headers:
