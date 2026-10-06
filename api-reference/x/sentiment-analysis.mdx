@@ -16,6 +16,9 @@ keywords:
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
+import TweetAnalysisBodyParams from "/snippets/tweet-analysis-body-params.mdx";
+import TweetAnalysisBudget from "/snippets/tweet-analysis-budget.mdx";
+import TweetAnalysisSources from "/snippets/tweet-analysis-sources.mdx";
 import TweetReadApiLinks from "/snippets/x-tweet-read-api-links.mdx";
 
 {/* GENERATED RESPONSE EXAMPLES START */}
@@ -306,14 +309,7 @@ print the full response.
 
 ## Pick the posts to analyze
 
-Send exactly 1 of `tweetIds`, `query`, or `texts`. Sending none, or more than 1,
-returns `400 invalid_input`.
-
-| Source         | Send                                                   | Posts analyzed                     |
-| -------------- | ------------------------------------------------------ | ---------------------------------- |
-| Post IDs       | `tweetIds`, up to 100 post IDs or post URLs            | Each post once                     |
-| X search       | `query`, with optional `queryType`, `limit` & `cursor` | Up to `limit` posts, 20 by default |
-| Your own texts | `texts`, up to 100 strings                             | Each text. Reads nothing from X    |
+<TweetAnalysisSources />
 
 `query` takes the operators of [Search Tweets](/api-reference/x/search-tweets),
 such as `from:nasa` or `lang:en`. Your own texts come back with the IDs
@@ -365,20 +361,7 @@ to `next_cursor`. Stop when `has_next_page` is `false`.
 
 ## Budget the analysis
 
-Each analyzed post costs 2 credits. Each text in `texts` costs the same. Posts
-in `unanalyzed` cost nothing.
-
-When credits cover fewer posts than you asked for, fewer come back. The posts
-left over appear in `unanalyzed` with `insufficient_credits`. If credits cover
-no post, the call returns `402 insufficient_credits`.
-
-| `unanalyzed[].reason`  | Meaning                                  | What to do                       |
-| ---------------------- | ---------------------------------------- | -------------------------------- |
-| `post_unavailable`     | X returns no such post                   | Skip the post                    |
-| `missing_text`         | The post has no text                     | Skip the post                    |
-| `insufficient_credits` | Credits ran out                          | Add credits, then send it again  |
-| `context_limit`        | The settings leave the post no room      | Shorten the context or questions |
-| Any other reason       | The analysis failed (`status: "failed"`) | Send the post again              |
+<TweetAnalysisBudget />
 
 ## Ask your own questions
 
@@ -389,100 +372,7 @@ A choice picks 1 category, a score picks 1 level, and a probability answers
 yes or no. Write question IDs and category names in lower case without
 hyphens, such as `feature_request`.
 
-## Body
-
-<ParamField body="tweetIds" type="string[]">
-
-Up to 100 post IDs or post URLs, such as `x.com/nasa/status/20`. A post named
-twice is analyzed once. Send `tweetIds`, `query`, or `texts`, not more than 1.
-
-</ParamField>
-
-<ParamField body="query" type="string">
-
-X search to analyze, with the operators of [Search Tweets](/api-reference/x/search-tweets).
-
-</ParamField>
-
-<ParamField body="queryType" type="string">
-
-Search order for `query`: `Latest` or `Top`. Defaults to `Latest`.
-
-</ParamField>
-
-<ParamField body="limit" type="integer">
-
-Maximum posts to analyze from `query`. Range: `1-100`. Defaults to `20`.
-Credits can return fewer.
-
-</ParamField>
-
-<ParamField body="cursor" type="string">
-
-The `next_cursor` of the page before, for `query`.
-
-</ParamField>
-
-<ParamField body="texts" type="string[]">
-
-Up to 100 texts of your own, such as drafts. Each must contain words. Reads
-nothing from X.
-
-</ParamField>
-
-<ParamField body="analysis" type="object">
-
-Optional settings. Leave it out to ask the 3 sentiment questions.
-
-  <Expandable title="Analysis fields">
-
-    <ParamField body="targets" type="object[]">
-
-      Up to 100 brands, people, or topics to judge the attitude toward. Each
-      has a `name` and optional `aliases`.
-
-    </ParamField>
-
-    <ParamField body="context" type="string">
-
-      Background the AI reads with every post, such as your product category.
-
-    </ParamField>
-
-    <ParamField body="questions" type="object[]">
-
-      1 to 8 questions of your own, which replace the sentiment questions. Each
-      needs an `id`, a `type` of `choice`, `score`, or `probability`, a
-      `version`, and `instructions`. A choice adds `categories`, a score adds
-      `levels`, and a probability can add `criteria`.
-
-    </ParamField>
-
-    <ParamField body="preset" type="string">
-
-      A ready set of questions, used when `questions` is left out: `brand`,
-      `complaints`, `competitors`, `purchase_intent`, `product_feedback`,
-      `news`, `sentiment`, or `market`. `complaints`, `competitors`,
-      `purchase_intent`, and `product_feedback` need `targets`.
-
-    </ParamField>
-
-    <ParamField body="maxContextBytes" type="integer">
-
-      Bytes of post, quote, and settings the AI reads. Range: `1-64000`.
-      Defaults to `64000`. Xquik cuts a longer post to fit.
-
-    </ParamField>
-
-    <ParamField body="concurrency" type="integer">
-
-      Posts analyzed at the same time. Range: `1-16`. Defaults to `16`.
-
-    </ParamField>
-
-  </Expandable>
-
-</ParamField>
+<TweetAnalysisBodyParams />
 
 ## Headers
 
