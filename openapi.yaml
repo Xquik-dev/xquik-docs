@@ -10827,7 +10827,8 @@ components:
       description: >
         Payment required. MPP reads include `WWW-Authenticate`. Authenticated
         reads include balances and checkout; a failed request never creates
-        checkout. Guest keys offer top-up.
+        checkout. A caller on a plan gets top-up only, plus `credits_renew_at`
+        when the plan renews. Guest keys offer top-up.
       headers:
         WWW-Authenticate:
           description:
@@ -13869,7 +13870,8 @@ components:
     AuthenticatedPaymentRequired:
       description:
         Authenticated credit or subscription error with confirmation-gated
-        hosted checkout actions.
+        hosted checkout actions. A caller on a plan, including one whose
+        payment failed, gets no subscription option.
       type: object
       additionalProperties: false
       required:
@@ -13888,6 +13890,13 @@ components:
           pattern: '^\d+$'
           description: Available credits as a decimal string.
           example: '0'
+        credits_renew_at:
+          type: string
+          format: date-time
+          description:
+            When the caller's active plan renews and grants its next credits.
+            Present only for a plan that renews.
+          example: '2026-10-10T08:30:00.000Z'
         dashboard:
           type: string
           const: /dashboard/account
@@ -13895,6 +13904,11 @@ components:
         error: *credit-access-error-schema
         message:
           type: string
+          description:
+            What happened and the next step. A caller whose plan renews hears
+            when, as in "Your credits renew on Oct 10, 2026. Top up to keep
+            reading." A caller whose plan payment failed hears to update the
+            payment or top up.
           example: Insufficient credits. Top up or subscribe to continue.
         next_step:
           type: string
@@ -13903,7 +13917,7 @@ components:
         payment_options:
           type: object
           additionalProperties: false
-          required: [credits, subscription]
+          required: [credits]
           properties:
             credits:
               type: object
@@ -13948,6 +13962,7 @@ components:
             subscription:
               type: object
               additionalProperties: false
+              description: Absent for a caller on an active plan.
               required: [create_checkout]
               properties:
                 create_checkout:
