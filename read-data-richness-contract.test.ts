@@ -66,6 +66,7 @@ const TWEET_FIELDS = [
   "textHighlights",
   "contentDisclosure",
   "communityId",
+  "communityName",
   "conversationControl",
   "coordinates",
   "geo",
