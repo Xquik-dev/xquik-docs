@@ -91,6 +91,7 @@ const LINK_CLUSTERS: readonly LinkCluster[] = [
       "/api-reference/x/get-space",
       "/api-reference/x/space-replay",
       "/api-reference/x/get-broadcast",
+      "/api-reference/x/user-live-status",
       "/api-reference/x/hashflags",
       "/api-reference/x/search-places",
       "/api-reference/x/download-media",
