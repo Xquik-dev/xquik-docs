@@ -9297,6 +9297,58 @@ paths:
         '429': *rate-limit-exceeded-response-2
         '424': *x-api-error-response
 
+  /x/tweets/{id}/retweeter-ids:
+    get:
+      operationId: getTweetRetweeterIds
+      description:
+        Returns the user IDs of a post's reposters, in the order & pages of
+        /x/tweets/{id}/retweeters. Use it when you need IDs only. Each ID costs
+        1 credit. A post nobody reposted returns an empty list for free.
+      summary: List the user IDs of users who retweeted a tweet
+      tags:
+        - Tweets
+      security: *read-auth
+      parameters:
+        - $ref: '#/components/parameters/TweetPathId'
+        - $ref: '#/components/parameters/CollectionCursor'
+        - $ref: '#/components/parameters/FollowerPageSize'
+      responses:
+        '200':
+          description: A page of reposter IDs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedUserIds'
+        '400':
+          description: >
+            A post ID that is not a number returns invalid_tweet_id, & a cursor
+            X cannot read returns invalid_cursor; start again without it.
+            Neither costs a credit.
+          content:
+            application/json:
+              schema: *error-schema
+              examples:
+                invalid_tweet_id:
+                  value:
+                    error: 'invalid_tweet_id'
+                    message:
+                      'Send a tweet ID or tweet URL, such as
+                      x.com/nasa/status/20.'
+                invalid_cursor:
+                  value:
+                    error: 'invalid_cursor'
+                    message:
+                      'Cursor invalid or expired. Start again without cursor,
+                      then use next_cursor.'
+        '401': *anonymous-guest-authentication-response
+        '402': *payment-required-response
+        '404': *tweet-not-found-response
+        '502': *x-api-error-response
+        '503':
+          $ref: '#/components/responses/ReadBusy'
+        '429': *rate-limit-exceeded-response-2
+        '424': *x-api-error-response
+
   /x/tweets/{id}/hidden-replies:
     parameters:
       - $ref: '#/components/parameters/TweetPathId'

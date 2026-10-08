@@ -1,0 +1,322 @@
+---
+title: "Twitter retweeter IDs API for a post's reposters"
+sidebarTitle: "Get retweeter IDs"
+description: "Get the user IDs of the accounts that reposted a Twitter or X post, page by page, in X's order. Use them for fast syncs and set comparisons. 1 credit per ID."
+api: "GET /x/tweets/{id}/retweeter-ids"
+keywords:
+  [
+    "Twitter retweeter IDs API",
+    "X retweeters IDs",
+    "retweeters ids",
+    "reposter IDs",
+    "who retweeted a tweet",
+    "retweet export",
+  ]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+import TweetReadApiLinks from "/snippets/x-tweet-read-api-links.mdx";
+
+{/* GENERATED RESPONSE EXAMPLES START */}
+
+<Panel>
+
+<Tabs defaultTabIndex={0} sync={false}>
+
+  <Tab title="200" id="response-x-retweeter-ids-200">
+
+    ```json
+    {
+      "ids": [
+        "9876543210"
+      ],
+      "has_next_page": true,
+      "next_cursor": "1878079982871151535"
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="400" id="response-x-retweeter-ids-400">
+
+    ```json
+    {
+      "error": "invalid_tweet_id",
+      "message": "Send a tweet ID or tweet URL, such as x.com/nasa/status/20."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="401" id="response-x-retweeter-ids-401">
+
+    ```json
+    {
+      "error": "unauthenticated",
+      "message": "Authentication required."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="402" id="response-x-retweeter-ids-402">
+
+    ```json
+    {
+      "error": "insufficient_credits",
+      "message": "Insufficient credits. Top up or subscribe to continue."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="404" id="response-x-retweeter-ids-404">
+
+    ```json
+    {
+      "error": "tweet_not_found",
+      "message": "Tweet not found. Check the tweet ID."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="424" id="response-x-retweeter-ids-424">
+
+    ```json
+    {
+      "error": "x_api_unavailable",
+      "message": "X data source temporarily unavailable. Try again later."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="429" id="response-x-retweeter-ids-429">
+
+    ```json
+    {
+      "error": "rate_limit_exceeded",
+      "message": "Too many requests. Try again later.",
+      "retryAfter": 60
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="502" id="response-x-retweeter-ids-502">
+
+    ```json
+    {
+      "error": "x_api_unavailable",
+      "message": "X data source temporarily unavailable. Try again later."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="503" id="response-x-retweeter-ids-503">
+
+    ```json
+    {
+      "error": "x_api_unavailable",
+      "message": "Xquik is busy right now. Retry shortly."
+    }
+    ```
+
+  </Tab>
+</Tabs>
+
+</Panel>
+{/* GENERATED RESPONSE EXAMPLES END */}
+<LlmsDirective />
+
+<Note>
+
+Requested result counts are upper bounds for paid authenticated calls. When remaining credits cannot cover the full page or ID list, Xquik returns fewer results. If zero paid results are affordable, it returns `402 insufficient_credits`.
+
+</Note>
+
+<Callout icon="coins" color="#5c3327">
+
+**1 credit per ID returned** · A post nobody reposted is free · [All plans](https://xquik.com/#pricing) from $0.00012/credit · Supports [guest paid reads](/guides/guest-wallets)
+
+</Callout>
+
+<CodeGroup>
+
+```bash cURL
+curl https://xquik.com/api/v1/x/tweets/2106061652617568263/retweeter-ids \
+  -H "x-api-key: xq_your_api_key_here" | jq
+```
+
+```javascript Node.js
+const tweetId = "2106061652617568263";
+let pageCursor = "";
+
+for (let pageIndex = 0; pageIndex < 3; pageIndex += 1) {
+  const params = pageCursor === "" ? "" : `?${new URLSearchParams({ cursor: pageCursor })}`;
+  const response = await fetch(
+    `https://xquik.com/api/v1/x/tweets/${tweetId}/retweeter-ids${params}`,
+    {
+      headers: { "x-api-key": "xq_your_api_key_here" },
+    },
+  );
+  const page = await response.json();
+  if (!response.ok) throw new Error(JSON.stringify(page));
+
+  for (const userId of page.ids) {
+    process.stdout.write(`${JSON.stringify({ tweet_id: tweetId, user_id: userId })}\n`);
+  }
+
+  if (!page.has_next_page || page.next_cursor === "") break;
+  pageCursor = page.next_cursor;
+}
+```
+
+```python Python
+import json
+import requests
+
+tweet_id = "2106061652617568263"
+page_cursor = ""
+
+for page_index in range(3):
+    params = {"cursor": page_cursor} if page_cursor else {}
+    response = requests.get(
+        f"https://xquik.com/api/v1/x/tweets/{tweet_id}/retweeter-ids",
+        params=params,
+        headers={"x-api-key": "xq_your_api_key_here"},
+    )
+    page = response.json()
+    if not response.ok:
+        raise RuntimeError(page)
+
+    for user_id in page["ids"]:
+        print(json.dumps({"tweet_id": tweet_id, "user_id": user_id}))
+
+    if not page["has_next_page"] or not page["next_cursor"]:
+        break
+    page_cursor = page["next_cursor"]
+```
+
+</CodeGroup>
+
+## IDs of a post's reposters
+
+Use `GET /x/tweets/{id}/retweeter-ids` for the user IDs of the accounts that reposted a post. IDs arrive in the order &
+pages of [Get retweeters](/api-reference/x/retweeters), without profiles.
+
+Pass up to 100 IDs to [`GET /x/users/batch`](/api-reference/x/batch-users) when you need profiles. Stop paging when
+`has_next_page` is `false`.
+
+A post nobody reposted returns an empty list for free. A deleted post returns 404, also free.
+
+## Path parameters
+
+<ParamField path="id" type="string" required>
+
+Tweet ID or URL-encoded post URL. See [path IDs](/api-reference/overview#path-ids).
+
+</ParamField>
+
+## Query parameters
+
+<ParamField query="cursor" type="string">
+
+Pagination cursor. Pass the `next_cursor` value from the previous response to fetch the next page.
+
+</ParamField>
+
+<ParamField query="pageSize" type="integer">
+
+User IDs per page. Range: `1-200`. Defaults to `200`.
+
+</ParamField>
+
+## Headers
+
+<ParamField header="x-api-key" type="string">
+
+Full account key. Sessions and OAuth also work.
+
+</ParamField>
+
+<ParamField header="Authorization" type="string">
+
+`Bearer xq_your_guest_key_here` for `paid_reads`.
+
+</ParamField>
+
+## Response
+
+### 200 OK
+
+<ResponseField name="ids" type="string[]">
+
+User IDs of the reposters, in X's order.
+
+</ResponseField>
+<ResponseField name="has_next_page" type="boolean">
+
+Whether more results are available.
+
+</ResponseField>
+<ResponseField name="next_cursor" type="string">
+
+Opaque cursor for the next page. Empty string when no more results.
+
+</ResponseField>
+
+### 400 Invalid input
+
+```json
+{ "error": "invalid_tweet_id" }
+```
+
+The post ID is empty or invalid. A cursor X cannot read returns `invalid_cursor`; start again without it.
+
+### 404 Tweet not found
+
+```json
+{ "error": "tweet_not_found" }
+```
+
+### 401 Unauthenticated
+
+Anonymous requests get `WWW-Authenticate: Bearer` and a guest wallet checkout action. This is not a Payment challenge.
+
+```json
+{ "error": "unauthenticated" }
+```
+
+Missing or invalid API key.
+
+### 402 Payment required
+
+Account keys get account options. Guest keys get guest top-up only.
+No checkout starts automatically. Confirm any payment action.
+
+### 502 X API unavailable
+
+```json
+{ "error": "x_api_unavailable" }
+```
+
+The read service returned an error. Retry after a short delay.
+
+### 429 Rate limit exceeded
+
+```json
+{ "error": "rate_limit_exceeded", "retryAfter": 60 }
+```
+
+You exceeded your tier rate limit. Wait for the `Retry-After` header before retrying.
+
+<Note>
+
+**Related.** [Get retweeters](/api-reference/x/retweeters) · [Check repost](/api-reference/x/tweet-repost-check) · [Batch users](/api-reference/x/batch-users)
+
+</Note>
+
+<TweetReadApiLinks />
