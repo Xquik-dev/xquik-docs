@@ -2489,11 +2489,17 @@ paths:
         - name: sinceDate
           in: query
           schema: { type: string, format: date }
-          description: Include results on or after this date.
+          description:
+            Include results on or after this date, from 00:00 UTC. An ISO 8601
+            time starts at that instant. Results without a post date are left
+            out. An empty value sets no filter.
         - name: untilDate
           in: query
           schema: { type: string, format: date }
-          description: Include results on or before this date, inclusive.
+          description:
+            Include results on or before this date, inclusive, through 23:59:59
+            UTC. An ISO 8601 time ends at that instant. Results without a post
+            date are left out. An empty value sets no filter.
       responses:
         '200':
           description: Exported file
@@ -3685,7 +3691,9 @@ paths:
             12/25/2026 also work, since each has 1 reading. 04/01/2026 has 2 &
             answers 424 with the form to write. `since_time:` & `until_time:`
             take Unix seconds or an ISO 8601 time. `list:` takes a public List's
-            ID. A private List answers 404 list_not_found.
+            ID. A private List answers 404 list_not_found. X searches up to 512
+            characters. A longer query answers 424 before any read, unless a
+            term of its first OR group fits alone.
         - name: queryType
           in: query
           required: false
@@ -15813,7 +15821,10 @@ components:
           uniqueItems: true
           items:
             type: string
-          description: Search queries processed as one collection job.
+          description:
+            Search queries processed as one collection job. Each follows the
+            rules of searchQuery, its structured fields & 512-character limit
+            included.
         targets:
           type: array
           maxItems: 10000
@@ -16044,8 +16055,11 @@ components:
         searchQuery:
           type: string
           description:
-            Required for tweet_search_extractor & community_search. Passed
-            unchanged.
+            Required for tweet_search_extractor, people_search &
+            community_search. tweet_search_extractor adds the structured search
+            fields, such as fromUser & minFaves, to this query. X searches up to
+            512 characters. A longer tweet or people search answers 400, counted
+            with the added fields.
         fromUser:
           type: string
           description: Filter by author username (tweet_search_extractor)
@@ -20045,7 +20059,8 @@ components:
           minLength: 1
           description:
             X search to analyze, with the operators of /x/tweets/search, such as
-            from:nasa or lang:en.
+            from:nasa or lang:en. X searches up to 512 characters, counted with
+            the other search fields, as /x/tweets/search counts q.
           example: 'Sony WH-1000XM6 lang:en'
         username:
           type: string
