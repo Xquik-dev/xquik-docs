@@ -9561,6 +9561,49 @@ paths:
         '429': *rate-limit-exceeded-response-2
         '424': *x-api-error-response
 
+  /x/users/{id}/live:
+    get:
+      operationId: getUserLiveStatus
+      description:
+        Says whether one user is broadcasting live video on X right now, with
+        their latest broadcast, live or ended. Each check costs 1 credit.
+      summary: Check whether a user is live on X now
+      tags:
+        - Users
+      security: *read-auth
+      parameters:
+        - $ref: '#/components/parameters/UserPathId'
+      responses:
+        '200':
+          description: Live status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserLiveStatus'
+              example:
+                live: false
+                userId: '11348282'
+                userName: NASA
+                broadcast:
+                  id: '1DxLdZyVPMMxm'
+                  title: "NASA's SpaceX Crew-12 Re-Entry & Splashdown"
+                  state: 'Ended'
+                  startedAt: '2026-10-08T14:20:33.863Z'
+                  endedAt: '2026-10-08T16:38:16.770Z'
+                  totalWatched: 220908
+                  totalWatching: 119617
+                  width: 3840
+                  height: 2160
+        '400': *invalid-input-response
+        '401': *anonymous-guest-authentication-response
+        '402': *payment-required-response
+        '404': *user-not-found-response
+        '502': *x-api-error-response
+        '503':
+          $ref: '#/components/responses/ReadBusy'
+        '429': *rate-limit-exceeded-response-2
+        '424': *x-api-error-response
+
   /x/tweets/{id}/embed:
     get:
       operationId: getTweetEmbed
@@ -17590,6 +17633,43 @@ components:
               expanded_url: 'https://go.nasa.gov/3VcvAQn'
               display_url: go.nasa.gov/3VcvAQn
               indices: [49, 72]
+
+    UserLiveStatus:
+      description:
+        Says whether a user broadcasts live video on X now. `broadcast` is their
+        latest broadcast, live or ended, and null when X shows none.
+      type: object
+      required: [live, broadcast, userId, userName]
+      properties:
+        live:
+          type: boolean
+          description: True while the user's latest broadcast is running.
+          example: false
+        broadcast:
+          anyOf:
+            - $ref: '#/components/schemas/Broadcast'
+            - type: 'null'
+          description: Latest broadcast, live or ended. Null when X shows none.
+          example:
+            id: '1DxLdZyVPMMxm'
+            title: "NASA's SpaceX Crew-12 Re-Entry & Splashdown"
+            state: 'Ended'
+        userId:
+          type: string
+          description: ID of the user.
+          example: '11348282'
+        userName:
+          type: string
+          description: Username of the user.
+          example: NASA
+      example:
+        live: false
+        userId: '11348282'
+        userName: NASA
+        broadcast:
+          id: '1DxLdZyVPMMxm'
+          title: "NASA's SpaceX Crew-12 Re-Entry & Splashdown"
+          state: 'Ended'
 
     ProfileTranslation:
       description:
