@@ -9466,6 +9466,72 @@ paths:
         '429': *rate-limit-exceeded-response-2
         '424': *x-api-error-response
 
+  /x/users/{id}/translation:
+    get:
+      operationId: translateUserBio
+      description:
+        Returns X's own translation of one profile's bio into the language you
+        pick, with the links, mentions, and tags X places in the translated
+        text. A profile without a bio returns translation null & a message, free
+        of charge.
+      summary: Translate a user's bio into a chosen language
+      tags:
+        - Users
+      security: *read-auth
+      parameters:
+        - $ref: '#/components/parameters/UserPathId'
+        - name: language
+          in: query
+          required: true
+          description:
+            Language code to translate into, such as `es`, `tr`, `pt-br`, or
+            `zh-tw`. Upper and lower case both work.
+          schema:
+            type: string
+            example: es
+      responses:
+        '200':
+          description: Translated bio
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [translation]
+                properties:
+                  translation:
+                    anyOf:
+                      - $ref: '#/components/schemas/ProfileTranslation'
+                      - type: 'null'
+                    description: Null when the profile has no bio.
+                    example:
+                      userId: '11348282'
+                      userName: NASA
+                      language: es
+                      sourceLanguage: en
+                      text: 'Haciendo lo aparentemente imposible, posible. ✨'
+                      entities: {}
+                  message:
+                    type: string
+                    description: Says why translation is null.
+                    example: This profile has no bio to translate.
+              example:
+                translation:
+                  userId: '11348282'
+                  userName: NASA
+                  language: es
+                  sourceLanguage: en
+                  text: 'Haciendo lo aparentemente imposible, posible. ✨'
+                  entities: {}
+        '400': *invalid-input-response
+        '401': *anonymous-guest-authentication-response
+        '402': *payment-required-response
+        '404': *user-not-found-response
+        '502': *x-api-error-response
+        '503':
+          $ref: '#/components/responses/ReadBusy'
+        '429': *rate-limit-exceeded-response-2
+        '424': *x-api-error-response
+
   /x/tweets/{id}/embed:
     get:
       operationId: getTweetEmbed
@@ -17452,6 +17518,44 @@ components:
               expanded_url: 'https://go.nasa.gov/3VcvAQn'
               display_url: go.nasa.gov/3VcvAQn
               indices: [49, 72]
+
+    ProfileTranslation:
+      description:
+        Holds X's translation of one profile's bio into the requested language.
+        `entities` holds the links, mentions, and tags with their offsets in the
+        translated text, and is empty when the text has none.
+      type: object
+      required: [userId, userName, language, text, entities]
+      properties:
+        userId:
+          type: string
+          description: ID of the account whose bio X translated.
+          example: '11348282'
+        userName:
+          type: string
+          description: Username of that account.
+          example: NASA
+        language:
+          type: string
+          description: Language code of the translated bio, in lower case.
+          example: es
+        sourceLanguage:
+          type: string
+          description: Language code X detects in the bio, when it names one.
+          example: en
+        text:
+          type: string
+          description: Translated bio.
+          example: 'Haciendo lo aparentemente imposible, posible. ✨'
+        entities:
+          $ref: '#/components/schemas/TweetEntities'
+      example:
+        userId: '11348282'
+        userName: NASA
+        language: es
+        sourceLanguage: en
+        text: 'Haciendo lo aparentemente imposible, posible. ✨'
+        entities: {}
 
     TweetUrlEntity:
       description:

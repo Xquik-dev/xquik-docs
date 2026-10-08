@@ -28,6 +28,7 @@ const LINK_CLUSTERS: readonly LinkCluster[] = [
       "/api-reference/x/user-subscriptions",
       "/api-reference/x/user-affiliates",
       "/api-reference/x/user-similar",
+      "/api-reference/x/user-bio-translation",
       "/api-reference/x/verified-followers",
       "/api-reference/x/followers-you-know",
       "/api-reference/x/check-follower",
