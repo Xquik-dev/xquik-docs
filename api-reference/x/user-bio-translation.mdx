@@ -1,0 +1,304 @@
+---
+title: "Twitter bio translation API for X profiles"
+sidebarTitle: "Translate user bio"
+description: "Translate a Twitter or X profile's bio into the language you pick with X's own translation. Get the text, its source language, and links. 1 credit per call."
+api: "GET /x/users/{id}/translation"
+keywords:
+  [
+    "bio translation API",
+    "translate Twitter bio",
+    "X profile translation",
+    "translate X profile",
+    "multilingual audience research",
+    "profile language detection",
+  ]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+import AudienceCommunityApiLinks from "/snippets/x-audience-community-api-links.mdx";
+
+{/* GENERATED RESPONSE EXAMPLES START */}
+
+<Panel>
+
+<Tabs defaultTabIndex={0} sync={false}>
+
+  <Tab title="200" id="response-x-user-bio-translation-200">
+
+    ```json
+    {
+      "translation": {
+        "userId": "11348282",
+        "userName": "NASA",
+        "language": "es",
+        "sourceLanguage": "en",
+        "text": "Haciendo lo aparentemente imposible, posible. ✨"
+      }
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="400" id="response-x-user-bio-translation-400">
+
+    ```json
+    {
+      "error": "invalid_input",
+      "message": "Invalid input. Check the request body."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="401" id="response-x-user-bio-translation-401">
+
+    ```json
+    {
+      "error": "unauthenticated",
+      "message": "Authentication required."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="402" id="response-x-user-bio-translation-402">
+
+    ```json
+    {
+      "error": "insufficient_credits",
+      "message": "Insufficient credits. Top up or subscribe to continue."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="404" id="response-x-user-bio-translation-404">
+
+    ```json
+    {
+      "error": "user_not_found",
+      "message": "X user not found. Check the username."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="424" id="response-x-user-bio-translation-424">
+
+    ```json
+    {
+      "error": "x_api_unavailable",
+      "message": "X data source temporarily unavailable. Try again later."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="429" id="response-x-user-bio-translation-429">
+
+    ```json
+    {
+      "error": "rate_limit_exceeded",
+      "message": "Too many requests. Try again later.",
+      "retryAfter": 60
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="502" id="response-x-user-bio-translation-502">
+
+    ```json
+    {
+      "error": "x_api_unavailable",
+      "message": "X data source temporarily unavailable. Try again later."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="503" id="response-x-user-bio-translation-503">
+
+    ```json
+    {
+      "error": "x_api_unavailable",
+      "message": "Xquik is busy right now. Retry shortly."
+    }
+    ```
+
+  </Tab>
+</Tabs>
+
+</Panel>
+{/* GENERATED RESPONSE EXAMPLES END */}
+<LlmsDirective />
+
+<Callout icon="coins" color="#5c3327">
+
+**1 credit per translation** · A profile without a bio is free · [All plans](https://xquik.com/#pricing) from $0.00012/credit · Supports [guest paid reads](/guides/guest-wallets)
+
+</Callout>
+
+<CodeGroup>
+
+```bash cURL
+curl "https://xquik.com/api/v1/x/users/nasa/translation?language=es" \
+  -H "x-api-key: xq_your_api_key_here" | jq
+```
+
+```javascript Node.js
+const params = new URLSearchParams({ language: "es" });
+const response = await fetch(`https://xquik.com/api/v1/x/users/nasa/translation?${params}`, {
+  headers: { "x-api-key": "xq_your_api_key_here" },
+});
+const body = await response.json();
+if (!response.ok) throw new Error(JSON.stringify(body));
+
+if (body.translation === null) {
+  console.log(body.message);
+} else {
+  console.log(
+    `${body.translation.sourceLanguage} -> ${body.translation.language}: ${body.translation.text}`,
+  );
+}
+```
+
+```python Python
+import requests
+
+response = requests.get(
+    "https://xquik.com/api/v1/x/users/nasa/translation",
+    params={"language": "es"},
+    headers={"x-api-key": "xq_your_api_key_here"},
+)
+body = response.json()
+if not response.ok:
+    raise RuntimeError(body)
+
+translation = body["translation"]
+if translation is None:
+    print(body["message"])
+else:
+    print(f'{translation.get("sourceLanguage")} -> {translation["language"]}: {translation["text"]}')
+```
+
+</CodeGroup>
+
+## A bio in the language you pick
+
+Use `GET /x/users/{id}/translation` to read a profile's bio in another language. X translates it, as x.com does when it
+shows a translated bio. Name the profile by user ID, username, or profile URL.
+
+`sourceLanguage` is the language X detects in the bio, when it names one. `entities` holds the links, mentions, and
+tags of the translated text with their offsets.
+
+A profile without a bio returns `translation: null` & a `message`, free of charge.
+
+## Path parameters
+
+<ParamField path="id" type="string" required>
+
+User ID, username with or without `@`, or URL-encoded profile URL, such as `x.com/nasa`. See
+[path IDs](/api-reference/overview#path-ids).
+
+</ParamField>
+
+## Query parameters
+
+<ParamField query="language" type="string" required>
+
+Language code to translate into, such as `es`, `tr`, `pt-br`, or `zh-tw`. Upper and lower case both work.
+
+</ParamField>
+
+## Headers
+
+<ParamField header="x-api-key" type="string">
+
+Full account key. Sessions and OAuth also work.
+
+</ParamField>
+
+<ParamField header="Authorization" type="string">
+
+`Bearer xq_your_guest_key_here` for `paid_reads`.
+
+</ParamField>
+
+## Response
+
+### 200 OK
+
+<ResponseField name="translation" type="object | null">
+
+X's translation of the bio, or `null` when the profile has no bio.
+
+<ResponseField name="userId" type="string">
+  ID of the account whose bio X translated.
+</ResponseField>
+<ResponseField name="userName" type="string">
+  Username of that account.
+</ResponseField>
+<ResponseField name="language" type="string">
+  Language code of the translated text, in lower case.
+</ResponseField>
+<ResponseField name="sourceLanguage" type="string">
+  Language code X detects in the bio. Omitted when X names none.
+</ResponseField>
+<ResponseField name="text" type="string">
+  Translated bio.
+</ResponseField>
+<ResponseField name="entities" type="object">
+  Links, mentions, and tags of the translated text, with their offsets. Empty when the text has
+  none.
+</ResponseField>
+
+</ResponseField>
+<ResponseField name="message" type="string">
+
+Says why `translation` is `null`.
+
+</ResponseField>
+
+### 400 Invalid input
+
+```json
+{ "error": "invalid_language" }
+```
+
+Send `language` as a language code, such as `es`. An empty or invalid profile name returns `invalid_user_id`.
+
+### 404 User not found
+
+```json
+{ "error": "user_not_found", "message": "X user not found. Check the username." }
+```
+
+### 401 Unauthenticated
+
+Anonymous requests get `WWW-Authenticate: Bearer` and a guest wallet checkout action. This is not a Payment challenge.
+
+```json
+{ "error": "unauthenticated" }
+```
+
+### 402 Payment required
+
+Account keys get account options. Guest keys get guest top-up only.
+No checkout starts automatically. Confirm any payment action.
+
+### 502 X API unavailable
+
+```json
+{ "error": "x_api_unavailable" }
+```
+
+The read service returned an error. Retry after a short delay.
+
+<Note>
+
+**Related.** [Get user](/api-reference/x/twitter-profile-lookup) · [Translate tweet](/api-reference/x/tweet-translation) · [Batch users](/api-reference/x/batch-users)
+
+</Note>
+
+<AudienceCommunityApiLinks />
