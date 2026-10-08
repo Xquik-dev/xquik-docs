@@ -62,6 +62,7 @@ const TWEET_FIELDS = [
   "inReplyToId",
   "inReplyToUserId",
   "inReplyToUsername",
+  "parentTweet",
   "displayTextRange",
   "textHighlights",
   "contentDisclosure",
