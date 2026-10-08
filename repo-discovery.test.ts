@@ -2299,9 +2299,9 @@ const REQUIRED_BILLING_MPP_SNIPPETS = [
   "Use [MPP overview](/mpp/machine-payments-protocol#eligible-endpoints) for the complete list.",
   "Direct MPP uses fixed `charge` pricing:",
   '<Card title="USD 0.00015 units" icon="coins">',
-  "`GET /x/tweets/{id}`, `GET /x/tweets/{id}/translation`, `GET /x/tweets/{id}/embed`, `GET /x/users/{id}`, `GET /x/spaces/{id}`, `GET /x/spaces/{id}/replay`, `GET /x/broadcasts/{id}`, and `GET /x/communities/{id}/info` cost USD 0.00015 per call.",
+  "`GET /x/tweets/{id}`, `GET /x/tweets/{id}/translation`, `GET /x/tweets/{id}/embed`, `GET /x/users/{id}`, `GET /x/followers/check`, `GET /x/spaces/{id}`, `GET /x/spaces/{id}/replay`, `GET /x/broadcasts/{id}`, and `GET /x/communities/{id}/info` cost USD 0.00015 per call.",
   '<Card title="USD 0.00075 calls" icon="badge-dollar-sign">',
-  "`GET /x/followers/check` and `GET /x/articles/{tweetId}` cost USD 0.00075 per call.",
+  "`GET /x/articles/{tweetId}` costs USD 0.00075 per call.",
   '<Card title="USD 0.00045 trends" icon="trending-up">',
   "Trend lookups use flat charge intent pricing: `GET /trends` and `GET /x/trends`.",
   '<Card title="Fixed charge intent" icon="receipt">',
@@ -5141,7 +5141,7 @@ const FORBIDDEN_CHECK_FOLLOWER_RENDER_RISK_SNIPPETS = [
 ] as const;
 
 const REQUIRED_CHECK_FOLLOWER_API_HANDOFF_SNIPPETS = [
-  'description: "Check whether one X user follows another in either direction for giveaway eligibility, campaign proof, CRM flags, and relationship audits. 5 credits per call."',
+  'description: "Check whether one X user follows another in either direction for giveaway eligibility, campaign proof, CRM flags, and relationship audits. 1 credit per call."',
   "Check follower verifies one known relationship without exporting a follower",
   "`isFollowing` for source-to-target proof and `isFollowedBy` for",
   "async function buildFollowCheckAudit()",
