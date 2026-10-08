@@ -1214,7 +1214,9 @@ paths:
           in: query
           schema:
             type: string
-          description: Cursor for pagination (from prior response nextCursor).
+          description:
+            Cursor for pagination, from the prior response's nextCursor. A
+            cursor the radar can't read gets 400 `invalid_input`.
         - name: category
           in: query
           schema:
@@ -2300,7 +2302,8 @@ paths:
       summary: Cancel extraction
       tags: [Extractions]
       security: *api-auth-2
-      parameters: *resource-id-parameters
+      parameters:
+        - $ref: '#/components/parameters/ExtractionId'
       responses:
         '200':
           description: Extraction canceled
@@ -2331,7 +2334,7 @@ paths:
       tags: [Extractions]
       security: *api-auth-2
       parameters:
-        - $ref: '#/components/parameters/ResourceId'
+        - $ref: '#/components/parameters/ExtractionId'
         - name: limit
           in: query
           description: Maximum results per page (1-1000, default 100).
@@ -2409,12 +2412,7 @@ paths:
       tags: [Extractions]
       security: *api-auth-2
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-          description: Extraction public ID
+        - $ref: '#/components/parameters/ExtractionId'
         - name: format
           in: query
           required: true
@@ -2594,21 +2592,28 @@ paths:
                   example: 30
                 filterLanguage:
                   type: string
+                  maxLength: 35
                   example: en
                 requiredHashtags:
                   type: array
+                  maxItems: 25
                   items:
                     type: string
+                    maxLength: 100
                   example: ['#giveaway']
                 requiredKeywords:
                   type: array
+                  maxItems: 25
                   items:
                     type: string
+                    maxLength: 100
                   example: ['entered']
                 requiredMentions:
                   type: array
+                  maxItems: 25
                   items:
                     type: string
+                    maxLength: 100
                   example: ['@elonmusk']
             example:
               tweetUrl: 'https://x.com/elonmusk/status/1234567890'
@@ -4771,7 +4776,9 @@ paths:
                 file:
                   type: string
                   format: binary
-                  description: Media file to upload
+                  description:
+                    Media file to upload, up to 15 MB. A larger file gets 413
+                    `media_too_large` before any account lookup.
                   example: 'binary-content'
                 is_long_video:
                   type: boolean
@@ -4796,7 +4803,10 @@ paths:
                 url:
                   type: string
                   format: uri
-                  description: HTTPS URL to download and upload as media
+                  pattern: '^https://'
+                  description:
+                    HTTPS URL to download and upload as media, up to 15 MB.
+                    Another scheme gets 400 `invalid_media_url`.
                   example: 'https://example.com/image.png'
             example:
               account: '@elonmusk'
@@ -4815,8 +4825,7 @@ paths:
         required: true
         description:
           Single tweet URL/ID, accepted aliases, or array of up to 50 tweet
-          URLs/IDs for bulk download. When `tweetIds` contains at least one
-          string value, bulk mode is used.
+          URLs/IDs for bulk download. A non-empty `tweetIds` uses bulk mode.
         content:
           application/json:
             schema:
@@ -4840,7 +4849,8 @@ paths:
                     type: string
                   maxItems: 50
                   description:
-                    Array of tweet URLs or IDs (bulk, max 50 string items)
+                    Up to 50 tweet URLs or IDs. An item that names no post gets
+                    400 `invalid_tweet_id`, which says which item.
                   example: ['1234567890', '1234567891']
             examples:
               url:
@@ -5078,7 +5088,10 @@ paths:
                   example: '@elonmusk'
                 name:
                   type: string
-                  description: Community name
+                  minLength: 1
+                  maxLength: 100
+                  description:
+                    Community name, 1 to 100 characters, as X takes it
                   example: 'Example Name'
                 description:
                   type: string
@@ -5100,7 +5113,7 @@ paths:
       security: *api-auth
       parameters: &resource-write-parameters
         - $ref: '#/components/parameters/WriteIdempotencyKey'
-        - $ref: '#/components/parameters/ResourceId'
+        - $ref: '#/components/parameters/CommunityWriteId'
       requestBody:
         required: true
         description: Account and community name for deletion confirmation.
@@ -5364,7 +5377,8 @@ paths:
       summary: Submit X account email verification code
       tags: [X Accounts]
       security: *api-auth
-      parameters: *resource-id-parameters
+      parameters:
+        - $ref: '#/components/parameters/ConnectionChallengeId'
       requestBody:
         required: true
         description: Email verification code requested during account connect.
@@ -6304,7 +6318,9 @@ paths:
                   example: 10
                 locale:
                   type: string
-                  description: Optional checkout locale. Defaults to en.
+                  description:
+                    Optional site language for Stripe's return page. An
+                    unsupported 1 uses en, the default.
                   example: en
             example:
               dollars: 10
@@ -10459,6 +10475,17 @@ components:
       required: true
       schema: { type: string }
       description: X Community ID.
+    CommunityWriteId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: '^[1-9][0-9]{0,18}$'
+        example: '1500000000000000000'
+      description:
+        X Community ID, a number up to 19 digits. Another value gets 400
+        `invalid_community_id` before the write is reserved.
     ListPathId:
       name: id
       in: path
@@ -10601,6 +10628,28 @@ components:
       schema:
         type: string
       description: Resource ID returned by the matching create or list endpoint.
+    ExtractionId:
+      name: id
+      in: path
+      required: true
+      description:
+        Extraction ID returned by `POST /extractions` or the extraction list.
+        Another shape gets 400 `invalid_id`.
+      schema:
+        type: string
+        pattern: '^[A-Za-z0-9_-]{12}$'
+        example: 'L3NjAbCdEfGh'
+    ConnectionChallengeId:
+      name: id
+      in: path
+      required: true
+      description:
+        Challenge ID returned when connecting an X account asks for an email
+        code. Another shape gets 400 `invalid_id`.
+      schema:
+        type: string
+        pattern: '^xch_[A-Za-z0-9_-]{16}$'
+        example: 'xch_AbCdEfGhIjKlMnOp'
     ConnectionAttemptId:
       name: id
       in: path
