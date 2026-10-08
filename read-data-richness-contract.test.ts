@@ -43,8 +43,6 @@ const TWEET_REPLIES = readFileSync(join(PROJECT_ROOT, "api-reference/x/tweet-rep
 const DOCS_CONFIG = readFileSync(join(PROJECT_ROOT, "docs.json"), "utf8");
 const LLMS_INDEX = readFileSync(join(PROJECT_ROOT, "llms.txt"), "utf8");
 
-/** Fields only reply rows carry. SearchTweet types them, and the replies page documents them. */
-const REPLY_ROW_FIELDS = ["hiddenByAuthor"];
 const TWEET_FIELDS = [
   "id",
   "text",
@@ -278,18 +276,13 @@ function parameterName(
 describe("read data richness documentation", (): void => {
   it("documents every normalized field from the OpenAPI contract", (): void => {
     const fields = [...TWEET_FIELDS, ...PROFILE_FIELDS, ...MEDIA_FIELDS];
-    expect.assertions(fields.length + REPLY_ROW_FIELDS.length + 4);
+    expect.assertions(fields.length + 4);
 
     for (const field of fields) {
       expect(GUIDE, `guide omits ${field}`).toContain(`\`${field}\``);
     }
-    for (const field of REPLY_ROW_FIELDS) {
-      expect(TWEET_REPLIES, `replies page omits ${field}`).toContain(`"${field}"`);
-    }
     expect(schemaFields(PARSED_OPENAPI, "TweetDetail")).toStrictEqual(sortedFields(TWEET_FIELDS));
-    expect(schemaFields(PARSED_OPENAPI, "SearchTweet")).toStrictEqual(
-      sortedFields([...TWEET_FIELDS, ...REPLY_ROW_FIELDS]),
-    );
+    expect(schemaFields(PARSED_OPENAPI, "SearchTweet")).toStrictEqual(sortedFields(TWEET_FIELDS));
     expect(schemaFields(PARSED_OPENAPI, "UserProfile")).toStrictEqual(sortedFields(PROFILE_FIELDS));
     expect(schemaFields(PARSED_OPENAPI, "TweetMedia")).toStrictEqual(sortedFields(MEDIA_FIELDS));
   });

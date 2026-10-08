@@ -455,7 +455,7 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
         ...tweetReplies,
         ...replyDiagnostic,
         ...replyRichness,
-        ...searchTweet,
+        ...schemaPropertyNames(spec, "ReplyTweet"),
         ...userProfile,
         ...searchTweetMedia,
       ]),
