@@ -120,8 +120,31 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/NlwebAskRequest'
-            example:
-              query: How does MCP OAuth work?
+            examples:
+              flat:
+                summary: 'A flat request'
+                value:
+                  query: 'How does MCP OAuth work?'
+                  site: 'docs.xquik.com'
+                  streaming: false
+                  response_format: 'conversational_search'
+                  mode: 'list'
+                  context:
+                    previous_query: 'How does OAuth work?'
+                  meta:
+                    api_version: '0.55'
+              structured:
+                summary: 'A structured request'
+                value:
+                  query:
+                    text: 'How does MCP OAuth work?'
+                    site: 'docs.xquik.com'
+                  prefer:
+                    mode: 'list'
+                    response_format: 'chatgpt_app'
+                    streaming: false
+                  meta:
+                    api_version: '0.55'
           application/x-www-form-urlencoded:
             schema:
               $ref: '#/components/schemas/NlwebAskRequest'
@@ -719,10 +742,34 @@ paths:
                 - $ref: '#/components/schemas/ComposePrepareRequest'
                 - $ref: '#/components/schemas/ComposeRefineRequest'
                 - $ref: '#/components/schemas/ComposeScoreRequest'
-            example:
-              step: compose
-              topic: PostgreSQL query planning
-              goal: engagement
+            examples:
+              compose:
+                summary: 'Start a draft'
+                value:
+                  step: 'compose'
+                  topic: 'PostgreSQL query planning'
+                  goal: 'engagement'
+                  styleUsername: 'example_user'
+              refine:
+                summary: 'Refine the draft'
+                value:
+                  step: 'refine'
+                  topic: 'PostgreSQL query planning'
+                  goal: 'authority'
+                  tone: 'professional'
+                  mediaType: 'photo'
+                  callToAction: 'Reply with your slowest query.'
+                  additionalContext:
+                    'Audience: backend engineers. Keep it under 280 characters.'
+              score:
+                summary: 'Check a finished draft'
+                value:
+                  step: 'score'
+                  draft:
+                    'EXPLAIN ANALYZE shows where PostgreSQL spends its time. Run
+                    it on your slowest query today.'
+                  hasLink: false
+                  hasMedia: false
       responses:
         '200':
           description: Result for the requested workflow step
@@ -1325,8 +1372,11 @@ paths:
                   $ref: '#/components/schemas/EventTypeArray'
                   example: [tweet.new, tweet.reply]
             example:
-              username: elonmusk
-              eventTypes: [tweet.new, tweet.reply]
+              username: 'elonmusk'
+              name: 'Launch watch'
+              eventTypes:
+                - 'tweet.new'
+                - 'tweet.reply'
       responses:
         '201':
           description: Monitor created
@@ -1461,7 +1511,9 @@ paths:
                   example: [tweet.new]
             example:
               query: 'xquik OR "x api"'
-              eventTypes: [tweet.new]
+              name: 'Launch mentions'
+              eventTypes:
+                - 'tweet.new'
       responses:
         '201':
           description: Keyword monitor created
@@ -1544,8 +1596,10 @@ paths:
                     New label for the keyword monitor. Send null to remove it.
                   example: Launch mentions
             example:
-              eventTypes: [tweet.new]
+              eventTypes:
+                - 'tweet.new'
               isActive: true
+              name: 'Launch mentions'
       responses:
         '200':
           description: Keyword monitor updated
@@ -1630,8 +1684,10 @@ paths:
                     label.
                   example: Launch watch
             example:
-              eventTypes: [tweet.new]
+              eventTypes:
+                - 'tweet.new'
               isActive: true
+              name: 'Launch watch'
       responses:
         '200':
           description: Monitor updated
@@ -1822,6 +1878,302 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/ExtractionRequest'
+            examples:
+              followers: &extraction-followers-example
+                summary: 'Followers, with profile filters'
+                value:
+                  toolType: 'follower_explorer'
+                  targetUsername: 'NASA'
+                  enrichProfiles: true
+                  minFollowers: 1000
+                  maxFollowers: 1000000
+                  minFollowing: 10
+                  maxFollowing: 5000
+                  minPosts: 100
+                  maxPosts: 100000
+                  minAccountAgeDays: 365
+                  verifiedType: 'Business'
+                  hasWebsite: true
+                  hasLocation: true
+                  bioContains: 'space, astronomy'
+                  locationContains: 'Houston'
+                  usernameContains: 'space'
+                  resultsLimit: 500
+              following: &extraction-following-example
+                summary: 'Accounts a user follows'
+                value:
+                  toolType: 'following_explorer'
+                  targetUsername: 'NASA'
+                  resultsLimit: 200
+              verifiedFollowers: &extraction-verifiedFollowers-example
+                summary: 'Verified followers'
+                value:
+                  toolType: 'verified_follower_explorer'
+                  targetUsername: 'NASA'
+                  resultsLimit: 200
+              relations: &extraction-relations-example
+                summary: 'Followers & following of several accounts, merged'
+                value:
+                  toolType: 'follower_explorer'
+                  relationTargets:
+                    - relation: 'followers'
+                      value: 'NASA'
+                    - relation: 'following'
+                      value: 'SpaceX'
+                  dedupeAcrossTargets: true
+                  dedupeMode: 'merge'
+                  overlapMode: true
+                  includeTargetMetadata: true
+                  maxItemsPerTarget: 500
+                  resultsLimit: 1000
+              posts: &extraction-posts-example
+                summary: "A user's posts"
+                value:
+                  toolType: 'post_extractor'
+                  targetUsername: 'NASA'
+                  resultsLimit: 100
+              postsOfSeveral: &extraction-postsOfSeveral-example
+                summary: 'Posts of several users'
+                value:
+                  toolType: 'post_extractor'
+                  targetUsernames:
+                    - 'NASA'
+                    - 'SpaceX'
+                    - 'esa'
+                  resultsLimit: 300
+              media: &extraction-media-example
+                summary: "A user's media posts"
+                value:
+                  toolType: 'user_media'
+                  targetUsername: 'NASA'
+                  resultsLimit: 100
+              likes: &extraction-likes-example
+                summary: "A user's likes"
+                value:
+                  toolType: 'user_likes'
+                  targetUsername: 'NASA'
+                  resultsLimit: 100
+              mentions: &extraction-mentions-example
+                summary: 'Posts that mention a user'
+                value:
+                  toolType: 'mention_extractor'
+                  targetUsername: 'NASA'
+                  resultsLimit: 100
+              replies: &extraction-replies-example
+                summary: 'Replies to a post, newest first'
+                value:
+                  toolType: 'reply_extractor'
+                  targetTweetId: '2082577277246972300'
+                  collectionStrategy: 'auto'
+                  scope: 'all'
+                  maxDepth: 2
+                  sort: 'latest'
+                  excludeOriginalAuthor: true
+                  includeOriginalPost: true
+                  hasMediaOnly: false
+                  sinceTime: '2026-09-01T00:00:00Z'
+                  untilTime: '2026-09-30T23:59:59Z'
+                  maxPagesPerTarget: 5
+                  startCursor: 'xqcv1_tkGoEx1UJRqeog9a2BJdmzUZTMCoU_M8kb'
+                  resultsLimit: 500
+              quotes: &extraction-quotes-example
+                summary: 'Quotes of a post'
+                value:
+                  toolType: 'quote_extractor'
+                  targetTweetId: '2102882545427714266'
+                  resultsLimit: 100
+              quotesOfSeveral: &extraction-quotesOfSeveral-example
+                summary: 'Quotes of several posts'
+                value:
+                  toolType: 'quote_extractor'
+                  targetTweetIds:
+                    - '2102882545427714266'
+                    - '2102761519985332442'
+                  resultsLimit: 200
+              reposters: &extraction-reposters-example
+                summary: 'Accounts that reposted a post'
+                value:
+                  toolType: 'repost_extractor'
+                  targetTweetId: '2106061652617568263'
+                  resultsLimit: 200
+              likers: &extraction-likers-example
+                summary: 'Accounts that liked a post'
+                value:
+                  toolType: 'favoriters'
+                  targetTweetId: '2102882545427714266'
+                  resultsLimit: 200
+              thread: &extraction-thread-example
+                summary: "A post's thread"
+                value:
+                  toolType: 'thread_extractor'
+                  targetTweetId: '2102882545427714266'
+              article: &extraction-article-example
+                summary: 'An X Article'
+                value:
+                  toolType: 'article_extractor'
+                  targetTweetId: '2002118205729562949'
+              communityMembers: &extraction-communityMembers-example
+                summary: 'Community members'
+                value:
+                  toolType: 'community_extractor'
+                  targetCommunityId: '1493446837214187523'
+                  resultsLimit: 200
+              communityModerators: &extraction-communityModerators-example
+                summary: 'Community moderators'
+                value:
+                  toolType: 'community_moderator_explorer'
+                  targetCommunityId: '1493446837214187523'
+              communityPosts: &extraction-communityPosts-example
+                summary: 'Posts in several Communities'
+                value:
+                  toolType: 'community_post_extractor'
+                  targetCommunityIds:
+                    - '1493446837214187523'
+                  resultsLimit: 200
+              communitySearch: &extraction-communitySearch-example
+                summary: 'A search inside a Community'
+                value:
+                  toolType: 'community_search'
+                  targetCommunityId: '1493446837214187523'
+                  searchQuery: 'startup'
+                  language: 'en'
+                  sinceDate: '2026-09-01'
+                  untilDate: '2026-09-30'
+                  resultsLimit: 100
+              listMembers: &extraction-listMembers-example
+                summary: 'List members'
+                value:
+                  toolType: 'list_member_extractor'
+                  targetListId: '4143408'
+              listFollowers: &extraction-listFollowers-example
+                summary: 'List followers'
+                value:
+                  toolType: 'list_follower_explorer'
+                  targetListId: '4143408'
+                  resultsLimit: 200
+              listPosts: &extraction-listPosts-example
+                summary: "A List's posts"
+                value:
+                  toolType: 'list_post_extractor'
+                  targetListId: '4143408'
+                  resultsLimit: 200
+              space: &extraction-space-example
+                summary: "A Space's hosts, speakers & listeners"
+                value:
+                  toolType: 'space_explorer'
+                  targetSpaceId: '1OGwblLjnQMKB'
+              people: &extraction-people-example
+                summary: 'A people search'
+                value:
+                  toolType: 'people_search'
+                  searchQuery: 'astronomy'
+                  enrichProfiles: true
+                  resultsLimit: 100
+              search: &extraction-search-example
+                summary: 'A post search with engagement filters'
+                value:
+                  toolType: 'tweet_search_extractor'
+                  searchQuery: 'Artemis'
+                  queryType: 'Top'
+                  fromUser: 'NASA'
+                  language: 'en'
+                  sinceDate: '2026-09-01'
+                  untilDate: '2026-09-30'
+                  mediaType: 'images'
+                  minFaves: 100
+                  minRetweets: 10
+                  minReplies: 5
+                  minQuotes: 1
+                  minViews: 10000
+                  minBookmarks: 5
+                  maxLikes: 1000000
+                  maxRetweets: 100000
+                  maxReplies: 100000
+                  maxQuotes: 10000
+                  verifiedOnly: true
+                  blueVerifiedOnly: false
+                  replies: 'exclude'
+                  retweets: 'exclude'
+                  quotes: 'include'
+                  nativeRetweets: false
+                  safe: true
+                  news: false
+                  resultsLimit: 200
+              searchWords: &extraction-searchWords-example
+                summary: 'A post search by words, links & apps'
+                value:
+                  toolType: 'tweet_search_extractor'
+                  searchQuery: 'moon'
+                  queryType: 'Latest'
+                  exactPhrase: 'Artemis II'
+                  excludeWords: 'rumor'
+                  anyWords: 'launch, crew'
+                  hashtags: '#Artemis'
+                  cashtags: '$BA'
+                  url: 'nasa.gov'
+                  cardName: 'summary_large_image'
+                  source: 'Sprinklr'
+                  excludeSource: 'IFTTT'
+                  toUser: 'NASA'
+                  mentioning: 'NASA'
+                  withinTime: '7d'
+                  sinceId: '2102000000000000000'
+                  maxId: '2102882545427714266'
+                  advancedQuery: 'filter:links'
+                  resultsLimit: 200
+              searchNear: &extraction-searchNear-example
+                summary: 'A post search near a place'
+                value:
+                  toolType: 'tweet_search_extractor'
+                  searchQuery: 'launch'
+                  near: 'Cape Canaveral'
+                  within: '25mi'
+                  placeCountry: 'US'
+                  resultsLimit: 100
+              searchArea: &extraction-searchArea-example
+                summary: 'A post search inside an area'
+                value:
+                  toolType: 'tweet_search_extractor'
+                  searchQuery: 'launch'
+                  geocode: '28.39,-80.60,25mi'
+                  place: '5e02a0f0d91c76d2'
+                  pointRadius: '-80.60 28.39 25mi'
+                  boundingBox: '-81.0 28.0 -80.4 28.8'
+                  resultsLimit: 100
+              searchConversation: &extraction-searchConversation-example
+                summary: 'Replies, quotes & reposts of a post'
+                value:
+                  toolType: 'tweet_search_extractor'
+                  searchQuery: 'Artemis'
+                  conversationId: '2102882545427714266'
+                  inReplyToTweetId: '2102882545427714266'
+                  quotesOfTweetId: '2102882545427714266'
+                  retweetsOfTweetId: '2102882545427714266'
+                  listId: '4143408'
+                  resultsLimit: 100
+              searchCollection: &extraction-searchCollection-example
+                summary: 'Several searches, accounts, Lists & posts in 1 job'
+                value:
+                  toolType: 'tweet_search_extractor'
+                  searchQueries:
+                    - 'Artemis'
+                    - 'Starship'
+                  targetUsernames:
+                    - 'NASA'
+                    - 'SpaceX'
+                  targetListIds:
+                    - '4143408'
+                  targetTweetIds:
+                    - '2102882545427714266'
+                  targets:
+                    - kind: 'profile'
+                      value: 'NASA'
+                    - kind: 'replies'
+                      value: '2082577277246972300'
+                  includeSearchTerms: true
+                  dedupeAcrossTargets: true
+                  maxItemsPerTarget: 100
+                  resultsLimit: 500
       responses:
         '200':
           description: Dry-run estimate
@@ -1893,6 +2245,38 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/ExtractionRequest'
+            examples:
+              followers: *extraction-followers-example
+              following: *extraction-following-example
+              verifiedFollowers: *extraction-verifiedFollowers-example
+              relations: *extraction-relations-example
+              posts: *extraction-posts-example
+              postsOfSeveral: *extraction-postsOfSeveral-example
+              media: *extraction-media-example
+              likes: *extraction-likes-example
+              mentions: *extraction-mentions-example
+              replies: *extraction-replies-example
+              quotes: *extraction-quotes-example
+              quotesOfSeveral: *extraction-quotesOfSeveral-example
+              reposters: *extraction-reposters-example
+              likers: *extraction-likers-example
+              thread: *extraction-thread-example
+              article: *extraction-article-example
+              communityMembers: *extraction-communityMembers-example
+              communityModerators: *extraction-communityModerators-example
+              communityPosts: *extraction-communityPosts-example
+              communitySearch: *extraction-communitySearch-example
+              listMembers: *extraction-listMembers-example
+              listFollowers: *extraction-listFollowers-example
+              listPosts: *extraction-listPosts-example
+              space: *extraction-space-example
+              people: *extraction-people-example
+              search: *extraction-search-example
+              searchWords: *extraction-searchWords-example
+              searchNear: *extraction-searchNear-example
+              searchArea: *extraction-searchArea-example
+              searchConversation: *extraction-searchConversation-example
+              searchCollection: *extraction-searchCollection-example
       responses:
         '200':
           description: Extraction estimate
@@ -2223,7 +2607,19 @@ paths:
             example:
               tweetUrl: 'https://x.com/elonmusk/status/1234567890'
               winnerCount: 3
+              backupCount: 2
+              uniqueAuthorsOnly: true
               mustRetweet: true
+              mustFollowUsername: 'elonmusk'
+              filterMinFollowers: 50
+              filterAccountAgeDays: 30
+              filterLanguage: 'en'
+              requiredHashtags:
+                - '#giveaway'
+              requiredKeywords:
+                - 'entered'
+              requiredMentions:
+                - '@elonmusk'
       responses:
         '201':
           description: Draw completed
@@ -2506,6 +2902,8 @@ paths:
                 isActive: *boolean-example-true
             example:
               url: 'https://example.com/webhook'
+              eventTypes:
+                - 'tweet.new'
               isActive: true
       responses:
         '200':
@@ -2784,9 +3182,35 @@ paths:
                     video up to 100 MB. Media adds 2 credits per started MB
                     across all files.
                   example: ['https://example.com/video.mp4']
-            example:
-              account: '@elonmusk'
-              text: *launch-text
+            examples:
+              post:
+                summary: 'A post with a video'
+                value:
+                  account: '@elonmusk'
+                  text: 'Just launched our new feature!'
+                  media:
+                    - 'https://example.com/video.mp4'
+              reply:
+                summary: 'A reply'
+                value:
+                  account: '@elonmusk'
+                  text: 'Thanks for the feedback!'
+                  reply_to_tweet_id: '1234567890'
+              community:
+                summary: 'A post in a Community'
+                value:
+                  account: '@elonmusk'
+                  text: 'Weekly build update.'
+                  community_id: '1500000000000000000'
+              note:
+                summary: 'A long post'
+                value:
+                  account: '@elonmusk'
+                  is_note_tweet: true
+                  text:
+                    'Release notes for this week. We rebuilt search, cut page
+                    load time in half, and fixed 40 reported bugs. Thank you to
+                    everyone who sent feedback.'
       responses: &media-write-responses
         '200':
           $ref: '#/components/responses/WriteActionCompleted'
@@ -3760,6 +4184,8 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/XAccountBody'
+            example:
+              account: '@elonmusk'
       responses: *x-rate-limited-write-responses
 
   /x/tweets/{id}/retweet:
@@ -4411,8 +4837,25 @@ paths:
                   description:
                     Array of tweet URLs or IDs (bulk, max 50 string items)
                   example: ['1234567890', '1234567891']
-            example:
-              tweetInput: 'https://x.com/elonmusk/status/1234567890'
+            examples:
+              url:
+                summary: '1 post by URL'
+                value:
+                  tweetInput: 'https://x.com/elonmusk/status/1234567890'
+              id:
+                summary: '1 post by ID'
+                value:
+                  tweetId: '1234567890'
+              urlAlias:
+                summary: '1 post by URL alias'
+                value:
+                  tweetUrl: 'https://x.com/elonmusk/status/1234567890'
+              bulk:
+                summary: 'Up to 50 posts'
+                value:
+                  tweetIds:
+                    - '1234567890'
+                    - 'https://x.com/elonmusk/status/1234567891'
       responses:
         '200':
           description:
@@ -5860,6 +6303,7 @@ paths:
                   example: en
             example:
               dollars: 10
+              locale: 'en'
       responses:
         '200':
           description: Top-up checkouts
@@ -9368,6 +9812,71 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/TweetAnalysisRequest'
+            examples:
+              search: &analysis-search-example
+                summary: 'A search, newest posts first'
+                value:
+                  query: 'Artemis lang:en'
+                  queryType: 'Latest'
+                  sinceTime: '2026-09-01T00:00:00Z'
+                  untilTime: '2026-09-30T23:59:59Z'
+                  limit: 20
+              nextPage: &analysis-nextPage-example
+                summary: 'The next page of a search'
+                value:
+                  query: 'Artemis lang:en'
+                  cursor: 'xqcv1_tkGoEx1UJRqeog9a2BJdmzUZTMCoU_M8kb'
+                  limit: 20
+              account: &analysis-account-example
+                summary: "1 account's posts"
+                value:
+                  username: '@NASA'
+                  limit: 20
+              list: &analysis-list-example
+                summary: "A List's posts"
+                value:
+                  listId: '4143408'
+                  limit: 20
+              quotes: &analysis-quotes-example
+                summary: 'Quotes of a post'
+                value:
+                  quotesOf: '2102882545427714266'
+                  limit: 20
+              replies: &analysis-replies-example
+                summary: 'Replies to a post'
+                value:
+                  repliesTo: '2102882545427714266'
+                  limit: 20
+              posts: &analysis-posts-example
+                summary: 'Posts by ID or URL'
+                value:
+                  tweetIds:
+                    - '2102882545427714266'
+                    - 'https://x.com/NASA/status/2102761519985332442'
+              texts: &analysis-texts-example
+                summary: 'Your own texts'
+                value:
+                  texts:
+                    - 'We shipped dark mode today. Tell us what breaks.'
+                    - 'My headphones stopped charging after 2 days. Who can
+                      help?'
+              baseline: &analysis-baseline-example
+                summary: 'Compared with an earlier answer'
+                value:
+                  tweetIds:
+                    - '2102882545427714266'
+                  baseline:
+                    - id: '2102882545427714266'
+                      answers:
+                        sentiment: 'positive'
+                        intensity: 1
+              own:
+                summary: 'Your own context'
+                value:
+                  query: 'Sony WH-1000XM6 lang:en'
+                  limit: 20
+                  analysis:
+                    context: 'Consumer headphones & customer service.'
       responses:
         '200':
           $ref: '#/components/responses/TweetAnalysisPage'
@@ -9408,6 +9917,26 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/TweetAnalysisRequest'
+            examples:
+              search: *analysis-search-example
+              nextPage: *analysis-nextPage-example
+              account: *analysis-account-example
+              list: *analysis-list-example
+              quotes: *analysis-quotes-example
+              replies: *analysis-replies-example
+              posts: *analysis-posts-example
+              texts: *analysis-texts-example
+              baseline: *analysis-baseline-example
+              own:
+                summary: 'Your brand & its aliases'
+                value:
+                  query: 'Sony WH-1000XM6 lang:en'
+                  limit: 20
+                  analysis:
+                    targets:
+                      - name: 'Sony'
+                        aliases:
+                          - 'WH-1000XM6'
       responses:
         '200':
           $ref: '#/components/responses/TweetAnalysisPage'
@@ -9448,6 +9977,24 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/TweetAnalysisRequest'
+            examples:
+              search: *analysis-search-example
+              nextPage: *analysis-nextPage-example
+              account: *analysis-account-example
+              list: *analysis-list-example
+              quotes: *analysis-quotes-example
+              replies: *analysis-replies-example
+              posts: *analysis-posts-example
+              texts: *analysis-texts-example
+              baseline: *analysis-baseline-example
+              own:
+                summary: 'The story you follow'
+                value:
+                  query: 'Artemis lang:en'
+                  limit: 20
+                  analysis:
+                    targets:
+                      - name: 'Artemis program'
       responses:
         '200':
           $ref: '#/components/responses/TweetAnalysisPage'
@@ -9488,6 +10035,26 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/TweetAnalysisRequest'
+            examples:
+              search: *analysis-search-example
+              nextPage: *analysis-nextPage-example
+              account: *analysis-account-example
+              list: *analysis-list-example
+              quotes: *analysis-quotes-example
+              replies: *analysis-replies-example
+              posts: *analysis-posts-example
+              texts: *analysis-texts-example
+              baseline: *analysis-baseline-example
+              own:
+                summary: 'The asset you follow'
+                value:
+                  query: '$NVDA lang:en'
+                  limit: 20
+                  analysis:
+                    targets:
+                      - name: 'NVIDIA'
+                        aliases:
+                          - '$NVDA'
       responses:
         '200':
           $ref: '#/components/responses/TweetAnalysisPage'
@@ -9529,6 +10096,23 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/TweetAnalysisRequest'
+            examples:
+              search: *analysis-search-example
+              nextPage: *analysis-nextPage-example
+              account: *analysis-account-example
+              list: *analysis-list-example
+              quotes: *analysis-quotes-example
+              replies: *analysis-replies-example
+              posts: *analysis-posts-example
+              texts: *analysis-texts-example
+              baseline: *analysis-baseline-example
+              own:
+                summary: 'Your own context'
+                value:
+                  texts:
+                    - 'We shipped dark mode today. Tell us what breaks.'
+                  analysis:
+                    context: "A developer tool's launch posts."
       responses:
         '200':
           $ref: '#/components/responses/TweetAnalysisPage'
@@ -9570,6 +10154,32 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/TweetAnalysisRequest'
+            examples:
+              search: *analysis-search-example
+              nextPage: *analysis-nextPage-example
+              account: *analysis-account-example
+              list: *analysis-list-example
+              quotes: *analysis-quotes-example
+              replies: *analysis-replies-example
+              posts: *analysis-posts-example
+              texts: *analysis-texts-example
+              baseline: *analysis-baseline-example
+              own:
+                summary: 'Your own questions'
+                value:
+                  texts:
+                    - 'My headphones stopped charging after 2 days. Who can
+                      help?'
+                  analysis:
+                    questions:
+                      - id: 'request'
+                        type: 'choice'
+                        version: '1'
+                        instructions: 'What does the author ask for?'
+                        categories:
+                          support: 'Help with a problem.'
+                          recommendation: 'Advice on choosing a product.'
+                          other: 'Neither request.'
       responses:
         '200':
           $ref: '#/components/responses/TweetAnalysisPage'
@@ -12884,7 +13494,207 @@ components:
       description: >
         Direct reply rows. No-mode requests use resumable automatic coverage.
         Complete mode also returns nested replies and coverage diagnostics.
-      example: { tweets: [], has_next_page: false, next_cursor: '' }
+      example:
+        tweets:
+          - id: '2083169393878684056'
+            text:
+              '@OpenAI A model optimizing its own serving cost after deployment
+              is a neat flywheel to see in production ⚙️'
+            retweetCount: 0
+            replyCount: 0
+            likeCount: 1
+            quoteCount: 0
+            viewCount: 473
+            bookmarkCount: 1
+            conversationId: '2082577277246972300'
+            displayTextRange:
+              - 8
+              - 107
+            edit:
+              editableUntilMsecs: '1785504861000'
+              editTweetIds:
+                - '2083169393878684056'
+            entities:
+              hashtags: []
+              urls: []
+              user_mentions:
+                - id_str: '4398626122'
+                  indices:
+                    - 0
+                    - 7
+                  name: 'OpenAI'
+                  screen_name: 'OpenAI'
+            inReplyToId: '2082577277246972300'
+            inReplyToUserId: '4398626122'
+            inReplyToUsername: 'OpenAI'
+            isNoteTweet: false
+            isPinned: false
+            isQuoteStatus: false
+            isReply: true
+            isRetweet: false
+            isTranslatable: false
+            lang: 'en'
+            source:
+              '<a href="https://mobile.twitter.com" rel="nofollow">Twitter Web
+              App</a>'
+            type: 'reply'
+            url: 'https://x.com/PublicAI_/status/2083169393878684056'
+            viewState: 'EnabledWithCount'
+            hasCommunityNotes: false
+            createdAt: 'Fri Jul 31 12:34:21 +0000 2026'
+            author:
+              id: '1615238618301501440'
+              username: 'PublicAI_'
+              name: 'PublicAI'
+              followers: 210053
+              following: 173
+              verified: true
+              isBlueVerified: true
+              isVerified: true
+              profilePicture: 'https://pbs.twimg.com/profile_images/1936462795584729088/c3advPaX_normal.jpg'
+              coverPicture: 'https://pbs.twimg.com/profile_banners/1615238618301501440/1744434414'
+              profileBannerUrl: 'https://pbs.twimg.com/profile_banners/1615238618301501440/1744434414'
+              description:
+                'AI data research lab. We ship products that collect real human
+                work for models. Backed by @StanfordSBA. PublicAI LLM Index
+                @PublicAIData.'
+              location: 'Mars'
+              createdAt: 'Tue Jan 17 06:44:40 +0000 2023'
+              statusesCount: 2936
+              mediaCount: 535
+              protected: false
+              url: 'http://PublicAi.io'
+              favouritesCount: 3726
+              isTranslator: false
+              possiblySensitive: false
+              pinnedTweetIds:
+                - '2092582845722292633'
+              verifiedType: 'Blue'
+              profile_bio:
+                description:
+                  'AI data research lab. We ship products that collect real
+                  human work for models. Backed by @StanfordSBA. PublicAI LLM
+                  Index @PublicAIData.'
+                entities:
+                  description: {}
+                  url:
+                    urls:
+                      - display_url: 'PublicAi.io'
+                        expanded_url: 'http://PublicAi.io'
+                        indices:
+                          - 0
+                          - 23
+                        url: 'https://t.co/4HO9Tpo2aA'
+              hasGraduatedAccess: true
+              parodyCommentaryFanLabel: 'None'
+              professional:
+                category:
+                  - icon_name: 'IconBriefcaseStroke'
+                    id: 713
+                    name: 'Science & Technology'
+                professional_type: 'Business'
+                rest_id: '1856812443324092849'
+              profileDescriptionLanguage: 'en'
+              profileImageShape: 'Circle'
+              profileTranslatorType: 'none'
+              superFollowEligible: false
+          - id: '2082911177416568983'
+            text: '@OpenAI Cheaper, faster, better'
+            retweetCount: 0
+            replyCount: 0
+            likeCount: 2
+            quoteCount: 0
+            viewCount: 1072
+            bookmarkCount: 0
+            conversationId: '2082577277246972300'
+            displayTextRange:
+              - 8
+              - 31
+            edit:
+              editableUntilMsecs: '1785443297000'
+              editTweetIds:
+                - '2082911177416568983'
+            entities:
+              hashtags: []
+              urls: []
+              user_mentions:
+                - id_str: '4398626122'
+                  indices:
+                    - 0
+                    - 7
+                  name: 'OpenAI'
+                  screen_name: 'OpenAI'
+            inReplyToId: '2082577277246972300'
+            inReplyToUserId: '4398626122'
+            inReplyToUsername: 'OpenAI'
+            isNoteTweet: false
+            isPinned: false
+            isQuoteStatus: false
+            isReply: true
+            isRetweet: false
+            isTranslatable: false
+            lang: 'en'
+            source:
+              '<a href="https://mobile.twitter.com" rel="nofollow">Twitter Web
+              App</a>'
+            type: 'reply'
+            url: 'https://x.com/Wager_Predict/status/2082911177416568983'
+            viewState: 'EnabledWithCount'
+            hasCommunityNotes: false
+            createdAt: 'Thu Jul 30 19:28:17 +0000 2026'
+            author:
+              id: '1513781916990083073'
+              username: 'Wager_Predict'
+              name: 'Wager Predict'
+              followers: 54048
+              following: 76
+              verified: true
+              isBlueVerified: false
+              isVerified: true
+              profilePicture: 'https://pbs.twimg.com/profile_images/2076634676228407298/O2FJ2EIM_normal.jpg'
+              coverPicture: 'https://pbs.twimg.com/profile_banners/1513781916990083073/1784142396'
+              profileBannerUrl: 'https://pbs.twimg.com/profile_banners/1513781916990083073/1784142396'
+              description:
+                "Trade on what happens next. | The Markets are brewing Up.\nTGE:
+                Soon!"
+              createdAt: 'Tue Apr 12 07:32:01 +0000 2022'
+              statusesCount: 1918
+              mediaCount: 280
+              protected: false
+              url: 'http://wagerpredict.com'
+              favouritesCount: 1360
+              isTranslator: false
+              possiblySensitive: false
+              pinnedTweetIds:
+                - '2077051650754367854'
+              verifiedType: 'Business'
+              profile_bio:
+                description:
+                  "Trade on what happens next. | The Markets are brewing
+                  Up.\nTGE: Soon!"
+                entities:
+                  description: {}
+                  url:
+                    urls:
+                      - display_url: 'wagerpredict.com'
+                        expanded_url: 'http://wagerpredict.com'
+                        indices:
+                          - 0
+                          - 23
+                        url: 'https://t.co/1MgjWEdMLw'
+              hasGraduatedAccess: true
+              parodyCommentaryFanLabel: 'None'
+              professional:
+                category: []
+                professional_type: 'Business'
+                rest_id: '1560458726439788544'
+              profileDescriptionLanguage: 'en'
+              profileImageShape: 'Square'
+              profileTranslatorType: 'none'
+              superFollowEligible: false
+        has_next_page: true
+        next_cursor: 'xqcv1_tkGoEx1UJRqeog9a2BJdmzUZTMCoU_M8kb6ZZwaDFa0.1'
+        filtered_count: 0
       allOf:
         - $ref: '#/components/schemas/PaginatedTweets'
         - type: object
