@@ -3173,7 +3173,13 @@ paths:
                   type: string
                   description: Tweet text (optional when media is provided)
                   example: 'Just launched our new feature!'
-                reply_to_tweet_id: *tweet-id-example-schema
+                reply_to_tweet_id:
+                  type: string
+                  pattern: '^[1-9][0-9]{0,18}$'
+                  description:
+                    The post to reply to. Any X post ID works, from 1 to 19
+                    digits.
+                  example: '1880000000000000000'
                 is_note_tweet: *boolean-example-false
                 media:
                   type: array
@@ -3198,7 +3204,7 @@ paths:
                 value:
                   account: '@elonmusk'
                   text: 'Thanks for the feedback!'
-                  reply_to_tweet_id: '1234567890'
+                  reply_to_tweet_id: '1880000000000000000'
               note:
                 summary: 'A long post'
                 value:
@@ -13889,10 +13895,14 @@ components:
         - $ref: '#/components/schemas/PaginatedTweets'
         - type: object
           properties:
+            tweets:
+              type: array
+              items:
+                $ref: '#/components/schemas/ReplyTweet'
             nested_replies:
               type: array
               items:
-                $ref: '#/components/schemas/SearchTweet'
+                $ref: '#/components/schemas/ReplyTweet'
               description: Nested replies. Excluded from direct coverage.
             diagnostic:
               $ref: '#/components/schemas/ReplyCoverageDiagnostic'
@@ -18491,6 +18501,14 @@ components:
           properties:
             author:
               $ref: '#/components/schemas/UserProfile'
+
+    ReplyTweet:
+      description:
+        Reply row. A reply the post's author hid carries hiddenByAuthor.
+      allOf:
+        - $ref: '#/components/schemas/SearchTweet'
+        - type: object
+          properties:
             hiddenByAuthor:
               type: boolean
               const: true
