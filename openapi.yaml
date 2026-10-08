@@ -7547,6 +7547,63 @@ paths:
         '503':
           $ref: '#/components/responses/ReadBusy'
 
+  /x/communities/{id}/members/search:
+    get:
+      operationId: searchCommunityMembers
+      summary: Search members of a community by name
+      description:
+        Finds a community's members by name or username, as the search box on
+        X's members page does. X checks up to 10 accounts that match, & the
+        answer holds the members among them, each with its role. Each member
+        costs 1 credit. An answer without members is free.
+      tags:
+        - Communities
+      security: *read-auth
+      parameters:
+        - $ref: '#/components/parameters/CommunityPathId'
+        - $ref: '#/components/parameters/CommunityMemberQuery'
+        - $ref: '#/components/parameters/UserMinFollowers'
+        - $ref: '#/components/parameters/UserMaxFollowers'
+        - $ref: '#/components/parameters/UserMinFollowing'
+        - $ref: '#/components/parameters/UserMaxFollowing'
+        - $ref: '#/components/parameters/UserMinStatuses'
+        - $ref: '#/components/parameters/UserMaxStatuses'
+        - $ref: '#/components/parameters/UserMinAccountAgeDays'
+        - $ref: '#/components/parameters/UserVerifiedOnly'
+        - $ref: '#/components/parameters/UserVerifiedType'
+        - $ref: '#/components/parameters/UserHasWebsite'
+        - $ref: '#/components/parameters/UserHasLocation'
+        - $ref: '#/components/parameters/UserBioContains'
+        - $ref: '#/components/parameters/UserLocationContains'
+        - $ref: '#/components/parameters/UserUsernameContains'
+      responses:
+        '200':
+          description: Community members X found for the name
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedUsers'
+              example:
+                users:
+                  - id: '641633'
+                    username: marckohlbrugge
+                    name: Marc Köhlbrugge
+                    communityRole: Admin
+                    profilePicture: https://pbs.twimg.com/profile_images/1857124042433572864/iMivVaYP_normal.jpg
+                    isBlueVerified: true
+                has_next_page: false
+                next_cursor: ''
+        '400': *invalid-input-response
+        '401': *anonymous-guest-authentication-response
+        '402': *payment-required-response
+        '424':
+          $ref: '#/components/responses/XApiError'
+        '429': *rate-limit-exceeded-response-2
+        '502':
+          $ref: '#/components/responses/XApiError'
+        '503':
+          $ref: '#/components/responses/ReadBusy'
+
   /x/communities/{id}/moderators:
     get:
       operationId: getCommunityModerators
@@ -10316,6 +10373,14 @@ components:
       required: true
       schema: { type: string }
       description: Keyword to find communities by, such as ai. Alias query.
+    CommunityMemberQuery:
+      name: q
+      in: query
+      required: true
+      schema: { type: string }
+      description:
+        Name or username to find members by, such as marckohlbrugge. A leading @
+        is dropped. Alias query.
     CommunityTopicId:
       name: topicId
       in: query
