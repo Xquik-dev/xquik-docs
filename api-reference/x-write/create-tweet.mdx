@@ -399,7 +399,7 @@ func main() {
 
 ## Choose the Twitter post request
 
-Choose among 5 tweet request formats. Include only the fields required below.
+Choose among 6 tweet request formats. Include only the fields required below.
 
 | Post intent    | Required fields                                              | Validation before sending                                              |
 | -------------- | ------------------------------------------------------------ | ---------------------------------------------------------------------- |
@@ -408,8 +408,19 @@ Choose among 5 tweet request formats. Include only the fields required below.
 | Image tweet    | `account`, optional `text`, and 1 to 4 image URLs in `media` | Use public HTTPS JPEG, PNG, GIF, WebP, or AVIF URLs.                   |
 | Video tweet    | `account`, optional `text`, and 1 MP4 URL in `media`         | Keep the public MP4 at 100 MB or less. Do not mix video and images.    |
 | Note tweet     | `account`, `text`, and `is_note_tweet: true`                 | Keep note tweet text at 25,000 characters or fewer.                    |
+| Community post | `account`, `text`, and `community_id`                        | Join the Community from that account first. Don't add a reply ID.      |
 
-Xquik can't post into a Community yet. A request with `community_id` gets 400 `unknown_field`.
+Xquik checks a Community post 3 times so it doesn't go out to everyone. It
+picks the Community in X's composer and checks it again before Post. It lets
+only a post request that names the Community reach X, then reads the post. A
+post X puts outside the Community is deleted, and the write fails uncharged.
+
+| Error                        | What happened                                                    |
+| ---------------------------- | ---------------------------------------------------------------- |
+| `x_community_not_joined`     | The account isn't in the Community. Join it on x.com.            |
+| `x_community_not_selectable` | X's composer couldn't pick the Community. Check it on x.com.     |
+| `x_community_post_removed`   | X put the post outside the Community, and Xquik deleted it.      |
+| `x_community_post_public`    | X put the post outside the Community. Delete it on x.com.        |
 
 Create one `Idempotency-Key` for each posting request.
 Reuse that key only when replaying the same network request. A new
@@ -532,6 +543,12 @@ Send up to 280 characters for a standard tweet. Note tweets accept up to 25,000 
 <ParamField body="reply_to_tweet_id" type="string">
 
 Set the parent Tweet ID. Xquik posts the new tweet inside that thread.
+
+</ParamField>
+
+<ParamField body="community_id" type="string">
+
+Set the X Community to post into, from 1 to 19 digits. The connected account must be a member. Leave out `reply_to_tweet_id`, since X keeps replies public.
 
 </ParamField>
 
