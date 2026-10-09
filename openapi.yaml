@@ -3185,6 +3185,17 @@ paths:
                     The post to reply to. Any X post ID works, from 1 to 19
                     digits.
                   example: '1880000000000000000'
+                community_id:
+                  type: string
+                  pattern: '^[1-9][0-9]{0,18}$'
+                  description:
+                    The Community to post into, from 1 to 19 digits. The account
+                    must be a member. Xquik picks the Community in X's composer,
+                    checks the post request names it & reads the post after. A
+                    post X puts outside the Community is deleted & fails
+                    uncharged. Not with `reply_to_tweet_id`, since X keeps
+                    replies public.
+                  example: '1500000000000000000'
                 is_note_tweet: *boolean-example-false
                 media:
                   type: array
@@ -3210,6 +3221,12 @@ paths:
                   account: '@elonmusk'
                   text: 'Thanks for the feedback!'
                   reply_to_tweet_id: '1880000000000000000'
+              community:
+                summary: 'A post in a Community'
+                value:
+                  account: '@elonmusk'
+                  text: 'Weekly build update.'
+                  community_id: '1500000000000000000'
               note:
                 summary: 'A long post'
                 value:
@@ -9630,6 +9647,81 @@ paths:
         '429': *rate-limit-exceeded-response-2
         '424': *x-api-error-response
 
+  /x/users/{id}/insights:
+    get:
+      operationId: getUserInsights
+      description: >
+        Returns engagement insights for one profile: engagement rate, averages
+        per post and posting rate, from its counts and its last 20 posts.
+        Reposts and the pinned post stay out of the averages. Each report costs
+        1 credit, whatever it reads.
+      summary: Get a user's engagement rate and averages
+      tags:
+        - Users
+      security: *read-auth
+      parameters:
+        - $ref: '#/components/parameters/UserPathId'
+      responses:
+        '200':
+          description: Profile insights
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [insights]
+                properties:
+                  insights:
+                    $ref: '#/components/schemas/UserInsights'
+                  message:
+                    type: string
+                    description: Says why the report has counts only.
+                    example: >-
+                      This account's posts are private, so the report has its
+                      counts only.
+        '400': *invalid-input-response
+        '401': *anonymous-guest-authentication-response
+        '402': *payment-required-response
+        '404': *user-not-found-response
+        '502': *x-api-error-response
+        '503':
+          $ref: '#/components/responses/ReadBusy'
+        '429': *rate-limit-exceeded-response-2
+        '424': *x-api-error-response
+
+  /x/tweets/{id}/insights:
+    get:
+      operationId: getTweetInsights
+      description: >
+        Returns engagement insights for one tweet: engagements per hour since it
+        went up, per view and per follower of its author, and how far it spread.
+        Each report costs 1 credit, whatever it reads.
+      summary: Get a tweet's engagement rate and velocity
+      tags:
+        - Tweets
+      security: *read-auth
+      parameters:
+        - $ref: '#/components/parameters/TweetPathId'
+      responses:
+        '200':
+          description: Tweet insights
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [insights]
+                properties:
+                  insights:
+                    $ref: '#/components/schemas/TweetInsights'
+        '400': *invalid-input-response
+        '401': *anonymous-guest-authentication-response
+        '402': *payment-required-response
+        '404': *tweet-not-found-response
+        '502': *x-api-error-response
+        '503':
+          $ref: '#/components/responses/ReadBusy'
+        '429': *rate-limit-exceeded-response-2
+        '424': *x-api-error-response
+
   /x/users/{id}/live:
     get:
       operationId: getUserLiveStatus
@@ -11986,7 +12078,11 @@ components:
         `x_automation_refused` needs no wait. `x_reply_not_allowed` repeats X's
         refusal of a reply for 1 hour, 4 hours after X refuses it again & 24
         hours after each later refusal, with `Retry-After`. Media fails on URL,
-        size, origin & timeout.
+        size, origin & timeout. A post into a Community gets
+        `x_community_not_joined` when the account isn't a member,
+        `x_community_not_selectable` when X's composer can't pick it, &
+        `x_community_post_removed` or `x_community_post_public` when X put it
+        outside the Community. Each is uncharged.
       headers:
         Retry-After:
           description: Seconds until X may take the reply again, when known.
@@ -15789,6 +15885,10 @@ components:
                 - x_api_unauthorized
                 - x_auth_failure
                 - x_automation_refused
+                - x_community_not_joined
+                - x_community_not_selectable
+                - x_community_post_public
+                - x_community_post_removed
                 - x_content_too_long
                 - x_daily_limit
                 - x_dm_not_allowed
@@ -17705,6 +17805,259 @@ components:
               expanded_url: 'https://go.nasa.gov/3VcvAQn'
               display_url: go.nasa.gov/3VcvAQn
               indices: [49, 72]
+
+    PostEngagementMetrics:
+      description: The public counts of one tweet.
+      type: object
+      required: [likes, replies, reposts, quotes, bookmarks, views]
+      properties:
+        likes:
+          type: number
+          description: Likes.
+          example: 9043
+        replies:
+          type: number
+          description: Replies.
+          example: 207
+        reposts:
+          type: number
+          description: Reposts.
+          example: 772
+        quotes:
+          type: number
+          description: Quotes.
+          example: 100
+        bookmarks:
+          type: number
+          description: Bookmarks.
+          example: 661
+        views:
+          type: number
+          description: Views.
+          example: 1291231
+
+    UserInsights:
+      description: >
+        Engagement insights of one profile. Engagements are likes, replies,
+        reposts and quotes. A rate is null when nothing divides it, such as a
+        profile without posts of its own.
+      type: object
+      required:
+        - userId
+        - userName
+        - followers
+        - following
+        - posts
+        - accountAgeDays
+        - postsPrivate
+        - sample
+        - averages
+        - engagementRate
+        - engagementPerView
+        - postsPerDay
+        - topPostId
+      properties:
+        userId:
+          type: string
+          description: ID of the profile the insights describe.
+          example: '11348282'
+        userName:
+          type: string
+          description: Username of that profile.
+          example: NASA
+        followers:
+          type: number
+          description: Followers.
+          example: 92376187
+        following:
+          type: number
+          description: Accounts the user follows.
+          example: 115
+        posts:
+          type: number
+          description: Posts the user has made.
+          example: 74336
+        accountAgeDays:
+          type: [number, 'null']
+          description: Whole days since the account joined X.
+          example: 6858
+        postsPrivate:
+          type: boolean
+          description: >-
+            True when only the account's followers see its posts. The report
+            then has its counts only.
+          example: false
+        sample:
+          type: object
+          description: The recent posts the averages read.
+          required: [posts, oldestAt, newestAt]
+          properties:
+            posts:
+              type: number
+              description: Posts read.
+              example: 10
+            oldestAt:
+              type: [string, 'null']
+              format: date-time
+              description: When the oldest of them went up.
+              example: '2026-09-23T13:15:28.000Z'
+            newestAt:
+              type: [string, 'null']
+              format: date-time
+              description: When the newest of them went up.
+              example: '2026-09-28T22:12:05.000Z'
+          example:
+            posts: 10
+            oldestAt: '2026-09-23T13:15:28.000Z'
+            newestAt: '2026-09-28T22:12:05.000Z'
+        averages:
+          description: Each count per post of the sample. Null without posts.
+          anyOf:
+            - allOf:
+                - $ref: '#/components/schemas/PostEngagementMetrics'
+                - type: object
+                  required: [engagements]
+                  properties:
+                    engagements:
+                      type: number
+                      description: Likes, replies, reposts and quotes per post.
+                      example: 4331.7
+            - type: 'null'
+          example:
+            likes: 3684.2
+            replies: 142.7
+            reposts: 459.8
+            quotes: 45
+            bookmarks: 209.7
+            views: 785247.8
+            engagements: 4331.7
+        engagementRate:
+          type: [number, 'null']
+          description: Average engagements per post, as a percent of followers.
+          example: 0.0047
+        engagementPerView:
+          type: [number, 'null']
+          description: Engagements as a percent of views across the sample.
+          example: 0.5516
+        postsPerDay:
+          type: [number, 'null']
+          description: Sampled posts per day, from the oldest one until now.
+          example: 1.6814
+        topPostId:
+          type: [string, 'null']
+          description: The sampled post with the most engagements.
+          example: '2102761519985332442'
+      example:
+        userId: '11348282'
+        userName: NASA
+        followers: 92376187
+        following: 115
+        posts: 74336
+        accountAgeDays: 6858
+        postsPrivate: false
+        sample:
+          posts: 10
+          oldestAt: '2026-09-23T13:15:28.000Z'
+          newestAt: '2026-09-28T22:12:05.000Z'
+        averages:
+          likes: 3684.2
+          replies: 142.7
+          reposts: 459.8
+          quotes: 45
+          bookmarks: 209.7
+          views: 785247.8
+          engagements: 4331.7
+        engagementRate: 0.0047
+        engagementPerView: 0.5516
+        postsPerDay: 1.6814
+        topPostId: '2102761519985332442'
+
+    TweetInsights:
+      description: >
+        Engagement insights of one tweet. Engagements are likes, replies,
+        reposts and quotes. A rate is null when nothing divides it, such as a
+        tweet without views.
+      type: object
+      required:
+        - tweetId
+        - authorId
+        - authorUserName
+        - createdAt
+        - ageHours
+        - metrics
+        - engagements
+        - engagementsPerHour
+        - engagementPerView
+        - engagementRate
+        - amplification
+        - conversation
+      properties:
+        tweetId:
+          type: string
+          description: ID of the tweet the insights describe.
+          example: '2102882545427714266'
+        authorId:
+          type: [string, 'null']
+          description: ID of the author.
+          example: '11348282'
+        authorUserName:
+          type: [string, 'null']
+          description: Username of the author.
+          example: NASA
+        createdAt:
+          type: [string, 'null']
+          format: date-time
+          description: When the tweet went up.
+          example: '2026-09-23T22:07:23.000Z'
+        ageHours:
+          type: [number, 'null']
+          description: Hours since the tweet went up.
+          example: 133.88
+        metrics:
+          $ref: '#/components/schemas/PostEngagementMetrics'
+        engagements:
+          type: number
+          description: Likes, replies, reposts and quotes.
+          example: 10122
+        engagementsPerHour:
+          type: [number, 'null']
+          description: Engagements per hour since the tweet went up.
+          example: 75.605
+        engagementPerView:
+          type: [number, 'null']
+          description: Engagements as a percent of views.
+          example: 0.7839
+        engagementRate:
+          type: [number, 'null']
+          description: Engagements as a percent of the author's followers.
+          example: 0.011
+        amplification:
+          type: [number, 'null']
+          description: Reposts and quotes per like.
+          example: 0.0964
+        conversation:
+          type: [number, 'null']
+          description: Replies per like.
+          example: 0.0229
+      example:
+        tweetId: '2102882545427714266'
+        authorId: '11348282'
+        authorUserName: NASA
+        createdAt: '2026-09-23T22:07:23.000Z'
+        ageHours: 133.88
+        metrics:
+          likes: 9043
+          replies: 207
+          reposts: 772
+          quotes: 100
+          bookmarks: 661
+          views: 1291231
+        engagements: 10122
+        engagementsPerHour: 75.605
+        engagementPerView: 0.7839
+        engagementRate: 0.011
+        amplification: 0.0964
+        conversation: 0.0229
 
     UserLiveStatus:
       description:
