@@ -207,6 +207,7 @@ const MEDIA_FIELDS = [
   "id",
   "indices",
   "mediaKey",
+  "grokImageAnnotation",
   "grokPostId",
   "monetizable",
   "otherSensitiveContent",
