@@ -3841,6 +3841,73 @@ paths:
         '503':
           $ref: '#/components/responses/MaximumCoverageBusy'
 
+  /x/tweets/top:
+    get:
+      operationId: getTopTweets
+      summary: List the top tweets on X by likes, replies or views
+      description: >
+        Returns the tweets X ranks highest by one metric over the last day, week
+        or month, as x.com's Inspiration page shows them. Covers all of X unless
+        you pick a country or a language. Pages hold up to 20 tweets, and the
+        list ends at 100. Each tweet costs 1 credit.
+      tags:
+        - Tweets
+      security: *read-auth
+      parameters:
+        - name: metric
+          in: query
+          description: >
+            What to rank tweets by. Defaults to likes. Singular names work too,
+            such as like.
+          schema:
+            type: string
+            enum: [likes, replies, quotes, bookmarks, shares, views]
+            default: likes
+            example: likes
+        - name: window
+          in: query
+          description: >
+            How far back to look. Defaults to day. Also takes 24h, 7d, 30d,
+            daily, weekly and monthly.
+          schema:
+            type: string
+            enum: [day, week, month]
+            default: day
+            example: day
+        - name: country
+          in: query
+          description: >
+            Only tweets from one country, as a 2- or 3-letter ISO 3166 code,
+            such as US or USA. Send country or language, not both.
+          schema:
+            type: string
+            example: US
+        - name: language
+          in: query
+          description: >
+            Only tweets in one language, as a 2-letter code, such as en. Send
+            country or language, not both.
+          schema:
+            type: string
+            example: en
+        - $ref: '#/components/parameters/CollectionCursor'
+        - $ref: '#/components/parameters/ResultPageSize'
+      responses:
+        '200':
+          description: Top tweets
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedTweets'
+        '400': *invalid-input-response
+        '401': *anonymous-guest-authentication-response
+        '402': *payment-required-response
+        '502': *x-api-error-response
+        '503':
+          $ref: '#/components/responses/ReadBusy'
+        '429': *rate-limit-exceeded-response-2
+        '424': *x-api-error-response
+
   /x/articles/{tweetId}:
     get:
       operationId: getArticle
