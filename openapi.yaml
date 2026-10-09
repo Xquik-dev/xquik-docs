@@ -510,6 +510,9 @@ paths:
               properties:
                 username:
                   type: string
+                  minLength: 1
+                  maxLength: 15
+                  pattern: '^[A-Za-z0-9_]{1,15}$'
                   description: X username without @
                   example: elonmusk
             example:
@@ -853,6 +856,10 @@ paths:
               properties:
                 text:
                   type: string
+                  minLength: 1
+                  maxLength: 25000
+                  description:
+                    Draft text, up to 25,000 characters. An emoji counts as 2.
                   example: 'AI is the future of productivity'
                 topic:
                   type: string
@@ -1072,13 +1079,17 @@ paths:
               properties:
                 label:
                   type: string
+                  maxLength: 50
                   description:
-                    Optional display label. When sent, it must match the path
-                    ID, ignoring case and a leading @. The path ID names the
-                    style when it is left out.
+                    Optional display label of up to 50 characters. When sent, it
+                    must match the path ID, ignoring case and a leading @. When
+                    it is left out, the path ID names the style and must fit the
+                    same limit.
                   example: 'Professional Voice'
                 tweets:
                   type: array
+                  minItems: 1
+                  maxItems: 100
                   items:
                     type: object
                     required: [text]
@@ -1359,7 +1370,9 @@ paths:
               properties:
                 username:
                   type: string
-                  description: X username (without @)
+                  maxLength: 16
+                  pattern: '^@?[A-Za-z0-9_]{1,15}$'
+                  description: X username to monitor, with or without @
                   example: elonmusk
                 name:
                   type: string
@@ -2581,7 +2594,13 @@ paths:
                   example: 2
                 uniqueAuthorsOnly: *boolean-example-true
                 mustRetweet: *boolean-example-true
-                mustFollowUsername: *handle-example-schema
+                mustFollowUsername:
+                  type: string
+                  maxLength: 16
+                  pattern: '^@?[A-Za-z0-9_]{1,15}$'
+                  description:
+                    X username entrants must follow, with or without @
+                  example: elonmusk
                 filterMinFollowers:
                   type: integer
                   minimum: 0
@@ -3180,6 +3199,7 @@ paths:
                   example: 'Just launched our new feature!'
                 reply_to_tweet_id:
                   type: string
+                  maxLength: 19
                   pattern: '^[1-9][0-9]{0,18}$'
                   description:
                     The post to reply to. Any X post ID works, from 1 to 19
@@ -5024,14 +5044,21 @@ paths:
                   example: '@elonmusk'
                 name:
                   type: string
-                  description: Display name
+                  minLength: 1
+                  maxLength: 50
+                  description:
+                    Display name, 1 to 50 characters. An emoji counts as 2.
                   example: 'Example Name'
                 description:
                   type: string
-                  description: Bio description
+                  maxLength: 160
+                  description: Bio, up to 160 characters. An emoji counts as 2.
                   example: 'CEO of Tesla, SpaceX, and X'
                 location:
                   type: string
+                  maxLength: 30
+                  description:
+                    Location, up to 30 characters. An emoji counts as 2.
                   example: 'Austin, TX'
                 url:
                   type: string
@@ -5328,7 +5355,10 @@ paths:
               properties:
                 username:
                   type: string
-                  description: X username
+                  maxLength: 16
+                  pattern: '^@?[A-Za-z0-9_]{1,15}$'
+                  description:
+                    X username of the account to connect, with or without @
                   example: 'your_x_username'
                 email:
                   type: string
@@ -5474,6 +5504,8 @@ paths:
               properties:
                 email_code:
                   type: string
+                  minLength: 4
+                  maxLength: 64
                   description: Code sent to the account email.
                   example: '<EMAIL_VERIFICATION_CODE>'
             example:
@@ -9545,6 +9577,7 @@ paths:
             `zh-tw`. Upper and lower case both work.
           schema:
             type: string
+            maxLength: 12
             example: tr
       responses:
         '200':
@@ -10671,7 +10704,10 @@ components:
       name: messageId
       in: path
       required: true
-      schema: { type: string }
+      schema:
+        type: string
+        maxLength: 19
+        pattern: '^[1-9][0-9]{0,18}$'
       description: DM ID from DM history, else 400 `invalid_message_id`.
     CommunityPathId:
       name: id
@@ -10685,6 +10721,7 @@ components:
       required: true
       schema:
         type: string
+        maxLength: 19
         pattern: '^[1-9][0-9]{0,18}$'
         example: '1500000000000000000'
       description:
@@ -10841,6 +10878,7 @@ components:
         Another shape gets 400 `invalid_id`.
       schema:
         type: string
+        maxLength: 12
         pattern: '^[A-Za-z0-9_-]{12}$'
         example: 'L3NjAbCdEfGh'
     ConnectionChallengeId:
@@ -10852,6 +10890,7 @@ components:
         code. Another shape gets 400 `invalid_id`.
       schema:
         type: string
+        maxLength: 20
         pattern: '^xch_[A-Za-z0-9_-]{16}$'
         example: 'xch_AbCdEfGhIjKlMnOp'
     ConnectionAttemptId:
@@ -10861,6 +10900,7 @@ components:
       description: Connection attempt ID returned by `POST /x/accounts`.
       schema:
         type: string
+        maxLength: 37
         pattern: '^xatt_[0-9a-f]{32}$'
         example: 'xatt_0123456789abcdef0123456789abcdef'
     DrawId:
@@ -20658,13 +20698,17 @@ components:
             Analyze the replies in 1 post's conversation. Send its ID or URL.
           example: '1893456789012345678'
         sinceTime:
-          type: string
+          type: [string, integer]
+          minLength: 1
+          minimum: 0
           description:
             Inclusive start of the search, such as 2026-09-25T00:00:00Z. Unix
             seconds also work. A time without an offset is UTC.
           example: '2026-09-25T00:00:00Z'
         untilTime:
-          type: string
+          type: [string, integer]
+          minLength: 1
+          minimum: 0
           description:
             Exclusive end of the search, such as 2026-09-26T00:00:00Z. Unix
             seconds also work. A time without an offset is UTC.
@@ -20787,10 +20831,11 @@ components:
             - news
             - sentiment
             - market
+            - viral_lite
           description:
             A ready set of questions, used when questions is left out.
             complaints, competitors, purchase_intent & product_feedback need
-            targets.
+            targets. viral_lite scores how viral the wording reads.
           example: 'complaints'
         targets:
           type: array
@@ -20823,12 +20868,13 @@ components:
           example: 'Consumer headphones & customer service.'
         maxContextBytes:
           type: integer
-          minimum: 1
+          minimum: 219
           maximum: 64000
           default: 64000
           description:
             Bytes of post, quote & settings the AI reads. Longer posts are cut
-            to fit.
+            to fit. Empty settings take 219 bytes, so a smaller value gets a
+            400.
           example: 64000
         concurrency:
           type: integer
@@ -20859,7 +20905,10 @@ components:
         id:
           type: string
           pattern: '^[a-z][a-z0-9_]*$'
-          description: Name of the answer, such as request.
+          description:
+            Name of the answer, such as request. A name the response renames or
+            drops gets a 400, such as created_at, favorite_count, muting or
+            blocking.
           example: 'request'
         type:
           type: string
