@@ -3185,6 +3185,17 @@ paths:
                     The post to reply to. Any X post ID works, from 1 to 19
                     digits.
                   example: '1880000000000000000'
+                community_id:
+                  type: string
+                  pattern: '^[1-9][0-9]{0,18}$'
+                  description:
+                    The Community to post into, from 1 to 19 digits. The account
+                    must be a member. Xquik picks the Community in X's composer,
+                    checks the post request names it & reads the post after. A
+                    post X puts outside the Community is deleted & fails
+                    uncharged. Not with `reply_to_tweet_id`, since X keeps
+                    replies public.
+                  example: '1500000000000000000'
                 is_note_tweet: *boolean-example-false
                 media:
                   type: array
@@ -3210,6 +3221,12 @@ paths:
                   account: '@elonmusk'
                   text: 'Thanks for the feedback!'
                   reply_to_tweet_id: '1880000000000000000'
+              community:
+                summary: 'A post in a Community'
+                value:
+                  account: '@elonmusk'
+                  text: 'Weekly build update.'
+                  community_id: '1500000000000000000'
               note:
                 summary: 'A long post'
                 value:
@@ -12061,7 +12078,11 @@ components:
         `x_automation_refused` needs no wait. `x_reply_not_allowed` repeats X's
         refusal of a reply for 1 hour, 4 hours after X refuses it again & 24
         hours after each later refusal, with `Retry-After`. Media fails on URL,
-        size, origin & timeout.
+        size, origin & timeout. A post into a Community gets
+        `x_community_not_joined` when the account isn't a member,
+        `x_community_not_selectable` when X's composer can't pick it, &
+        `x_community_post_removed` or `x_community_post_public` when X put it
+        outside the Community. Each is uncharged.
       headers:
         Retry-After:
           description: Seconds until X may take the reply again, when known.
@@ -15864,6 +15885,10 @@ components:
                 - x_api_unauthorized
                 - x_auth_failure
                 - x_automation_refused
+                - x_community_not_joined
+                - x_community_not_selectable
+                - x_community_post_public
+                - x_community_post_removed
                 - x_content_too_long
                 - x_daily_limit
                 - x_dm_not_allowed
