@@ -3134,7 +3134,8 @@ paths:
           description:
             1 to 100 posts, separated by commas. Each is a tweet ID or a tweet
             URL, such as x.com/nasa/status/20. A post named twice is read once.
-            Anything else gets 400 `invalid_tweet_id`.
+            Any other entry is skipped & listed under `skipped` with why. A
+            batch without 1 post gets 400 `invalid_tweet_id`.
       responses:
         '200':
           description: >-
@@ -3143,7 +3144,29 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PaginatedTweets'
+                allOf:
+                  - $ref: '#/components/schemas/PaginatedTweets'
+                  - type: object
+                    properties:
+                      skipped:
+                        type: array
+                        description:
+                          Each `ids` entry that names no post, with why. Absent
+                          when every entry names a post.
+                        items:
+                          type: object
+                          required:
+                            - entry
+                            - reason
+                          properties:
+                            entry:
+                              type: string
+                              description: The entry as sent.
+                              example: x.com/nasa
+                            reason:
+                              type: string
+                              description: Why the entry names no post.
+                              example: x.com/nasa is a profile, not a post.
               example:
                 tweets: &example-launch-tweets
                   - id: '1234567890'
@@ -5689,8 +5712,9 @@ paths:
             minimum: 1
             default: 1
           description:
-            'Region Yahoo WOEID code (1=Worldwide, 23424977=US, 23424975=UK,
-            23424969=Turkey)'
+            'The WOEID of any place X lists trends for (1=Worldwide,
+            23424977=US, 23424975=UK, 23424969=Turkey). List places with GET
+            /x/trends/locations.'
         - name: count
           in: query
           description: Number of trending topics returned (1-50, default 30)
