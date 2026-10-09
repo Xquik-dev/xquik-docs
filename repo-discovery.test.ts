@@ -4911,12 +4911,13 @@ const FORBIDDEN_COMMUNITY_TWEETS_API_RAW_OUTPUT_SNIPPETS = [
 
 const REQUIRED_COMMUNITY_SEARCH_API_HANDOFF_SNIPPETS = [
   'title: "Twitter community search API & keyword tweet results"',
-  "Use Twitter community search to filter posts inside one known Community.",
-  "Twitter search in community posts with a numeric Community ID and query.",
+  "Use Twitter community search to filter posts in one known Community, or across",
+  "every Community. Run a Twitter search in community posts with a query.",
   "## Twitter community search questions",
   "### Does this endpoint find communities to join?",
   "[X Communities guide](https://help.x.com/en/using-x/communities)",
-  "Send `communityId` and `q`. Omit `queryType` to use `Latest`.",
+  "Send `q`, and `communityId` to stay in 1 Community. Omit `communityId` to",
+  "search every Community. Omit `queryType` to use `Latest`.",
   "### Why does Twitter community search return no results?",
   "### Can I find active authors in matching tweets?",
   "They do not prove influence,",
