@@ -29,6 +29,7 @@ const LINK_CLUSTERS: readonly LinkCluster[] = [
       "/api-reference/x/user-affiliates",
       "/api-reference/x/user-similar",
       "/api-reference/x/user-bio-translation",
+      "/api-reference/x/user-engagement-insights",
       "/api-reference/x/verified-followers",
       "/api-reference/x/followers-you-know",
       "/api-reference/x/check-follower",
@@ -57,6 +58,7 @@ const LINK_CLUSTERS: readonly LinkCluster[] = [
     snippet: "x-tweet-read-api-links.mdx",
     routes: [
       "/api-reference/x/get-tweet",
+      "/api-reference/x/tweet-engagement-insights",
       "/api-reference/x/batch-tweets",
       "/api-reference/x/tweet-thread",
       "/api-reference/x/tweet-hidden-replies",
