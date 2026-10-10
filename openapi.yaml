@@ -4087,20 +4087,65 @@ paths:
                                 'This is the first paragraph of the article.'
                             url:
                               type: string
-                              description: Media URL for media blocks
+                              description:
+                                Image URL of an image block. A video or GIF
+                                block lists its files in `variants`.
                               example: 'https://pbs.twimg.com/media/example.jpg'
                             previewUrl:
                               type: string
-                              description: Preview image URL for media blocks
+                              description:
+                                Image of a media block, or the preview image of
+                                a video or GIF
                               example: 'https://pbs.twimg.com/media/example.jpg'
                             width:
                               type: integer
                               minimum: 0
+                              description: Width of the image or preview image
                               example: 1200
                             height:
                               type: integer
                               minimum: 0
+                              description: Height of the image or preview image
                               example: 675
+                            mediaType:
+                              type: string
+                              enum: [image, video, gif]
+                              description: What a media block holds
+                              example: video
+                            caption:
+                              type: string
+                              description:
+                                Caption the author wrote under a media block
+                              example:
+                                'Wordle is excellent because of its simplicity'
+                            altText:
+                              type: string
+                              description:
+                                Alt text of the image or preview image
+                              example: 'A chart of daily active users'
+                            durationMs:
+                              type: integer
+                              minimum: 0
+                              description: Length of a video, in milliseconds
+                              example: 42376
+                            variants:
+                              type: array
+                              description:
+                                Files of a video or GIF block, in X's order
+                              items:
+                                type: object
+                                required: [contentType, url]
+                                properties:
+                                  bitrate:
+                                    type: integer
+                                    minimum: 0
+                                    example: 832000
+                                  contentType:
+                                    type: string
+                                    example: video/mp4
+                                  url:
+                                    type: string
+                                    example: 'https://video.twimg.com/ext_tw_video/1765989573685837824/pu/vid/avc1/462x360/RbrgrAMdncI-EzW7.mp4?tag=12'
                             inlineStyleRanges:
                               type: array
                               description: Inline text formatting ranges
@@ -17823,6 +17868,7 @@ components:
       required: [text]
       properties:
         indices: { type: array, items: *whole-number }
+        tag: { $ref: '#/components/schemas/TweetSmartTag' }
         text: { type: string }
 
     TweetSymbol:
@@ -17832,17 +17878,29 @@ components:
         indices: { type: array, items: *whole-number }
         seconds: { type: number }
         text: { type: string }
-        tag:
+        tag: { $ref: '#/components/schemas/TweetSmartTag' }
+
+    TweetSmartTag:
+      description:
+        X's SmartTag for a cashtag, smarttag or hashtag. Xquik leaves out X's
+        trading platforms, which differ by reader.
+      type: object
+      properties:
+        id:
+          type: string
+          description: X's ID for the SmartTag.
+          example: U21hcnRUYWc6VFNMQQ==
+        info:
           type: object
           properties:
             info:
               type: object
               properties:
-                info:
-                  type: object
-                  properties:
-                    name: { type: string }
-                    ticker: { type: string }
+                active:
+                  type: boolean
+                  description: Whether X marks the SmartTag active.
+                name: { type: string, example: Tesla Inc }
+                ticker: { type: string, example: TSLA }
 
     TweetTranslation:
       description:
@@ -18737,6 +18795,43 @@ components:
           description: The author's ID when X withholds the author's profile.
         card:
           $ref: '#/components/schemas/TweetCard'
+        cashtagAttachments:
+          type: array
+          description: >
+            Price charts the author attached under the post, 1 per cashtag.
+            Absent when the post has none. X may send a cashtag without a chart
+            window.
+          items:
+            type: object
+            required: [cashtag]
+            properties:
+              cashtag:
+                type: string
+                description: The cashtag with its `$`.
+                example: $TSLA
+              candleSize:
+                type: string
+                description: Span of each candle.
+                example: 5m
+              timeframe:
+                type: string
+                description: Span the chart covers.
+                example: 1D
+              startTime:
+                type: string
+                format: date-time
+                description: Time of the chart's first candle.
+                example: '2026-10-09T13:30:00.000Z'
+              endTime:
+                type: string
+                format: date-time
+                description: Time of the chart's last price.
+                example: '2026-10-09T13:42:08.796Z'
+              sizeVariant:
+                type: integer
+                minimum: 0
+                description: X's size for the chart.
+                example: 1
         communityId: { type: string, description: Community ID. }
         communityName:
           type: string
