@@ -168,6 +168,7 @@ const PROFILE_FIELDS = [
   "communityRole",
   "profile_bio",
   "accountBasedInAccurate",
+  "affiliateUsername",
   "connectedVia",
   "connectedViaAccurate",
   "usernameChanges",
