@@ -109,6 +109,7 @@ const TWEET_FIELDS = [
   "grokTranslatedPost",
   "hasCommunityNotes",
   "quotedTweetPermalink",
+  "quotedTweetUnavailable",
   "unavailableAuthorId",
 ] as const;
 
