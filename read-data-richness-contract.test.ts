@@ -96,6 +96,7 @@ const TWEET_FIELDS = [
   "quotedTweetId",
   "retweeted_tweet",
   "tombstone",
+  "interstitial",
   "unmentionedUserIds",
   "author",
   "media",
