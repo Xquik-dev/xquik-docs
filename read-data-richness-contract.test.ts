@@ -76,6 +76,7 @@ const TWEET_FIELDS = [
   "article",
   "authorUnavailable",
   "card",
+  "cashtagAttachments",
   "communityNote",
   "edit",
   "exclusiveContent",
