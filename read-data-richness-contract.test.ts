@@ -89,6 +89,7 @@ const TWEET_FIELDS = [
   "previousCounts",
   "reactionContext",
   "sportsContext",
+  "subscriberBadge",
   "viewState",
   "scopes",
   "entities",
