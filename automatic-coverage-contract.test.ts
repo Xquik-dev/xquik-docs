@@ -41,9 +41,9 @@ describe("automatic maximum coverage contract", (): void => {
     expect(source).toContain("has_next_page=false");
     expect(source).toContain("409 coverage_cursor_unavailable");
     expect(source).toContain("`Retry-After`");
-    expect(source).toContain("retry the same cursor once.");
+    expect(source).toContain("Wait, then send the same cursor again.");
     expect(source).toContain("410 coverage_cursor_gone");
-    expect(source).toContain("The response omits `Retry-After`.");
+    expect(source).toMatch(/The\s+response omits `Retry-After`\./u);
     expect(source).toContain("identity-mismatched cursors");
     expect(source).toContain("400 invalid_coverage_cursor");
     expect(source).toContain("Restart without them.");
@@ -52,7 +52,7 @@ describe("automatic maximum coverage contract", (): void => {
     expect(source).toContain("Repeated busy responses never authorize restarting");
     expect(source).toContain("Repeating a cursorless request starts a separate extraction.");
     expect(source).toContain(
-      "You cannot replay earlier or terminal responses after their cursors become unavailable.",
+      "A cursor sent again within 10 minutes returns the same page at no charge.",
     );
     expect(replies).toContain("Automatic pages accept `1` through `300`.");
     expect(followers).toContain("Automatic pages accept `20` through `300`.");
