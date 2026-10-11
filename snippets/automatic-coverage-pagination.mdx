@@ -18,15 +18,17 @@ First-page requests do not support `Idempotency-Key` retries.
 Repeating a cursorless request starts a separate extraction.
 Results returned by that extraction incur their normal charges.
 Save each response before requesting its next page.
-You cannot replay earlier or terminal responses after their cursors become unavailable.
+A cursor sent again within 10 minutes returns the same page at no charge.
+After 10 minutes, you cannot replay earlier or terminal responses.
 
 If automatic coverage is busy, an initial request returns a standard data page.
-Live coverage cursors remain atomic. Concurrent use returns
-`409 coverage_cursor_unavailable` with exact `Retry-After` seconds. Wait, then
-retry the same cursor once.
+Live coverage cursors remain atomic. A cursor whose page is still being read
+returns `409 coverage_cursor_unavailable` with exact `Retry-After` seconds.
+Wait, then send the same cursor again. It returns that page.
 Repeated busy responses never authorize restarting with another cursor.
 
-Finished, expired, superseded, or identity-mismatched cursors return
-`410 coverage_cursor_gone`. The response omits `Retry-After`. Restart without
-a cursor. Keep received results. Deduplicate restarted results by `id`.
+Expired, superseded, or identity-mismatched cursors return
+`410 coverage_cursor_gone`. So does a cursor sent again after 10 minutes. The
+response omits `Retry-After`. Restart without a cursor. Keep received results.
+Deduplicate restarted results by `id`.
 Malformed cursors return `400 invalid_coverage_cursor`. Restart without them.
