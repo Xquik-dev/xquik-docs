@@ -2115,7 +2115,7 @@ paths:
                   news: false
                   resultsLimit: 200
               searchWords: &extraction-searchWords-example
-                summary: 'A post search by words, links & apps'
+                summary: 'A post search by words & links'
                 value:
                   toolType: 'tweet_search_extractor'
                   searchQuery: 'moon'
@@ -2127,8 +2127,6 @@ paths:
                   cashtags: '$BA'
                   url: 'nasa.gov'
                   cardName: 'summary_large_image'
-                  source: 'Sprinklr'
-                  excludeSource: 'IFTTT'
                   toUser: 'NASA'
                   mentioning: 'NASA'
                   withinTime: '7d'
@@ -2142,7 +2140,6 @@ paths:
                   toolType: 'tweet_search_extractor'
                   searchQuery: 'launch'
                   near: 'Cape Canaveral'
-                  within: '25mi'
                   placeCountry: 'US'
                   resultsLimit: 100
               searchArea: &extraction-searchArea-example
@@ -2150,7 +2147,6 @@ paths:
                 value:
                   toolType: 'tweet_search_extractor'
                   searchQuery: 'launch'
-                  geocode: '28.39,-80.60,25mi'
                   place: '5e02a0f0d91c76d2'
                   pointRadius: '-80.60 28.39 25mi'
                   boundingBox: '-81.0 28.0 -80.4 28.8'
@@ -2306,6 +2302,7 @@ paths:
         '403':
           $ref: '#/components/responses/ProtectedTarget'
         '404': *not-found-response
+        '424': *x-api-error-response
         '429': *rate-limit-exceeded-response
 
   /extractions/{id}:
@@ -16392,13 +16389,24 @@ components:
           description: Require Tweet cards whose name matches this value.
         source:
           type: string
-          description: Require Tweets from this source application.
+          deprecated: true
+          description:
+            X search no longer supports source. An extraction with it answers
+            424 `search_unavailable` & charges nothing.
         excludeSource:
           type: string
-          description: Drop Tweets from this source application.
+          deprecated: true
+          description:
+            X search ignores excludeSource, so an extraction with it returns
+            unfiltered rows. Its answers carry `Deprecation` & `Sunset` headers.
+            From 2027-01-15 an extraction with it answers 424
+            `search_unavailable` & charges nothing.
         geocode:
           type: string
-          description: Restrict Tweets by latitude, longitude, and radius.
+          deprecated: true
+          description:
+            X search no longer supports geocode. An extraction with it answers
+            424 `search_unavailable` & charges nothing.
         sinceId:
           type: string
           description: Require Tweet IDs above this ID.
@@ -16410,7 +16418,10 @@ components:
           description: Restrict Tweet search to this place name.
         within:
           type: string
-          description: Set the radius around the requested place.
+          deprecated: true
+          description:
+            X search no longer supports within. An extraction with it answers
+            424 `search_unavailable` & charges nothing. Use near alone.
         withinTime:
           type: string
           description: Restrict Tweets to this recent time window.
@@ -16425,7 +16436,10 @@ components:
         news:
           type: boolean
           default: false
-          description: X dropped filter:news. Leave it false.
+          deprecated: true
+          description:
+            X search no longer supports filter:news. An extraction with news
+            true answers 424 `search_unavailable` & charges nothing.
         minFollowers:
           type: integer
           minimum: 0
