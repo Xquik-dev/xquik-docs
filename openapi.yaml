@@ -17,6 +17,14 @@ info:
     window resets. A refused request gets 429 with `Retry-After`.
 
 
+    ## Credits charged
+
+
+    An answer to a read carries `X-Xquik-Credits-Charged`, the credits that
+    request charged. It is 0 for a page a filter empties & for a page sent
+    again. A write names its charge in its body's `billing`.
+
+
     ## Client Libraries
 
 
@@ -4618,9 +4626,11 @@ paths:
       responses:
         '200':
           description: User search results
-          headers: &profile-enrichment-headers
+          headers: &user-list-headers
             X-Xquik-Profile-Enrichment:
               $ref: '#/components/headers/ProfileEnrichment'
+            X-Xquik-Credits-Charged:
+              $ref: '#/components/headers/CreditsCharged'
           content: &paginated-users-content
             application/json:
               schema:
@@ -9638,7 +9648,7 @@ paths:
       responses:
         '200':
           description: List of retweeters
-          headers: *profile-enrichment-headers
+          headers: *user-list-headers
           content: *paginated-users-content
         '400':
           description: >
@@ -10334,7 +10344,7 @@ paths:
       responses:
         '200':
           description: List of user followers
-          headers: *profile-enrichment-headers
+          headers: *user-list-headers
           content: *user-list-content
         '400': *invalid-input-response
         '401': *anonymous-guest-authentication-response
@@ -10364,7 +10374,7 @@ paths:
       responses:
         '200':
           description: List of following
-          headers: *profile-enrichment-headers
+          headers: *user-list-headers
           content: *user-list-content
         '400': *invalid-input-response
         '401': *anonymous-guest-authentication-response
@@ -10460,7 +10470,7 @@ paths:
       responses:
         '200':
           description: List of verified followers
-          headers: *profile-enrichment-headers
+          headers: *user-list-headers
           content: *user-list-content
         '400': *invalid-input-response
         '401': *anonymous-guest-authentication-response
@@ -11787,6 +11797,14 @@ components:
         type: string
         pattern: '^"[a-z-]+";r=\d+;t=\d+$'
         example: '"read";r=499;t=1'
+    CreditsCharged:
+      description: >
+        Credits this request charged. 0 when it charged none, as for a page a
+        filter empties or a page sent again.
+      schema:
+        type: string
+        pattern: '^\d+$'
+        example: '3'
     RateLimitPolicy:
       description: >
         Your limit for this kind of request: q requests per w seconds.
