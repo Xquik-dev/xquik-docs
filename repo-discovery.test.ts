@@ -12304,6 +12304,7 @@ const SENTENCE_CASE_PROPER_WORDS: ReadonlySet<string> = new Set([
   "MCP",
   "OAuth",
   "SDK",
+  "Telegram",
   "Twitter",
   "URL",
   "WOEID",
