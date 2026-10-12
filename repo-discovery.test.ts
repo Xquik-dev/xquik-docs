@@ -1560,7 +1560,7 @@ const REQUIRED_TERRAFORM_PROVIDER_WORKFLOW_SNIPPETS = [
   "`tweet.new`",
   "`tweet.reply`",
   "Webhook operations are free.",
-  "Active monitors check every second and cost 21",
+  "Active monitors check every second and cost 30",
   "credits per monitor-hour.",
   "Terraform state can contain the webhook `secret` returned at creation time.",
   "`sensitive = true`",
