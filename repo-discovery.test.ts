@@ -6872,7 +6872,7 @@ const REQUIRED_EXTRACTION_EXPORT_COLUMNS_SNIPPETS = [
   '<Card title="Audience metrics" icon="chart-no-axes-column">',
   "`Followers`, `Following`, `Posts`, `Media Count`, and `Favorites`.",
   '<Card title="Profile context" icon="file-text">',
-  "`Description`, `Location`, and `Cover Picture`.",
+  "`Description`, `Location`, `Email`, and `Cover Picture`.",
   '<Card title="Tweet content" icon="message-square">',
   "`Tweet ID`, `Tweet URL`, `Tweet Text`, and `Tweet Created At`.",
   "`Tweet URL` falls back to the status URL when the username is unavailable.",
