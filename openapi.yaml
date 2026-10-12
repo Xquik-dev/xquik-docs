@@ -2984,7 +2984,8 @@ paths:
                   format: uri
                   description: >
                     HTTPS URL. A Discord channel webhook URL gets each event as
-                    a Discord message.
+                    a Discord message. To deliver to Telegram, use POST
+                    /webhooks/telegram instead.
                   example: 'https://example.com/webhook'
                 eventTypes: *event-types
             example:
@@ -3022,6 +3023,66 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '429': *rate-limit-exceeded-response
+  /webhooks/telegram:
+    post:
+      operationId: createTelegramLink
+      description: >
+        Returns a t.me link to @XquikBot that connects a Telegram chat to the
+        account's monitor events. Opening it & pressing Start connects the chat,
+        which then gets each event as a message. The link works once, within 15
+        minutes. The chat appears in the webhook list with the URL
+        telegram:<chat ID>, with deliveries, retries & resume as any webhook. In
+        the chat, /stop pauses its alerts. It costs no credits.
+      summary: Connect a Telegram chat
+      tags: [Webhooks]
+      security: *api-auth-2
+      requestBody:
+        required: false
+        description: The event types the chat gets. Every type when omitted.
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                eventTypes: *event-types
+            example:
+              eventTypes: [tweet.new, tweet.reply]
+      responses:
+        '201':
+          description: Telegram link created
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [url, expiresAt]
+                properties:
+                  url:
+                    type: string
+                    format: uri
+                    description: Opens @XquikBot with the link's code.
+                    example: 'https://t.me/XquikBot?start=Q2hhdExpbmtDb2RlRXhhbXBsZTAx'
+                  expiresAt:
+                    type: string
+                    format: date-time
+                    description: When the link stops working, 15 minutes on.
+                    example: '2025-01-15T12:15:00.000Z'
+              example:
+                url: 'https://t.me/XquikBot?start=Q2hhdExpbmtDb2RlRXhhbXBsZTAx'
+                expiresAt: '2025-01-15T12:15:00.000Z'
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '429': *rate-limit-exceeded-response
+        '503':
+          description: Telegram delivery is off for now.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: 'telegram_unavailable'
+                message: 'Telegram alerts are off right now. Try again later.'
   /webhooks/{id}:
     patch:
       operationId: updateWebhook
@@ -16409,6 +16470,7 @@ components:
                 - space_not_ended
                 - support_media_rate_limit
                 - support_request_rate_limit
+                - telegram_unavailable
                 - too_many_ids
                 - too_many_streams
                 - too_many_tweets
