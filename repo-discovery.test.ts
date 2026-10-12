@@ -2302,7 +2302,7 @@ const REQUIRED_BILLING_MPP_SNIPPETS = [
   "`GET /x/tweets/{id}`, `GET /x/tweets/{id}/translation`, `GET /x/tweets/{id}/embed`, `GET /x/users/{id}`, `GET /x/followers/check`, `GET /x/spaces/{id}`, `GET /x/spaces/{id}/replay`, `GET /x/broadcasts/{id}`, and `GET /x/communities/{id}/info` cost USD 0.00015 per call.",
   '<Card title="USD 0.00075 calls" icon="badge-dollar-sign">',
   "`GET /x/articles/{tweetId}` costs USD 0.00075 per call.",
-  '<Card title="USD 0.00045 trends" icon="trending-up">',
+  '<Card title="USD 0.00015 trends" icon="trending-up">',
   "Trend lookups use flat charge intent pricing: `GET /trends` and `GET /x/trends`.",
   '<Card title="Fixed charge intent" icon="receipt">',
   "Every direct MPP operation advertises one fixed `charge` offer per request.",
