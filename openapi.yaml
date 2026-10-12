@@ -1801,6 +1801,78 @@ paths:
         '400': *invalid-input-response
         '401': *unauthenticated-response
         '429': *rate-limit-exceeded-response
+  /events/stream:
+    get:
+      operationId: streamEvents
+      description: >
+        Streams the account's monitor events as server-sent events, each named
+        by its event type and numbered by its event ID. A reconnect that sends
+        Last-Event-ID first gets every event after that one from the last 30
+        days, then each new event. A connection lasts up to 30 minutes and sends
+        a comment every 15 seconds while idle. Keep up to 5 streams open per
+        account. Events and streams cost no credits.
+      summary: Stream events
+      tags: [Events]
+      security: *api-auth-2
+      parameters:
+        - name: Last-Event-ID
+          in: header
+          description:
+            The last event ID the client got. The stream first sends every event
+            after it.
+          schema:
+            type: string
+          example: '42'
+      responses:
+        '200':
+          description:
+            Server-sent events. Each event's data line holds 1 Event as JSON.
+          content:
+            text/event-stream:
+              schema:
+                type: string
+              example: |-
+                id: 42
+                event: tweet.new
+                data: {"id":"42","type":"tweet.new","monitorId":"7","monitorType":"account","occurredAt":"2025-01-15T12:00:00.000Z","data":{}}
+        '401': *unauthenticated-response
+        '429':
+          description: >
+            The account has 5 streams open, or used Xquik's read limit. Close a
+            stream, or wait `Retry-After` seconds.
+          headers:
+            RateLimit: { $ref: '#/components/headers/RateLimit' }
+            RateLimit-Policy: { $ref: '#/components/headers/RateLimitPolicy' }
+            Retry-After:
+              description:
+                Seconds to wait before a retry, sent with the read limit.
+              schema:
+                type: integer
+                minimum: 1
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Error'
+                  - type: object
+                    properties:
+                      retryAfter:
+                        type: integer
+                        minimum: 0
+                        example: 60
+              examples:
+                tooManyStreams:
+                  summary: 5 streams open
+                  value:
+                    error: 'too_many_streams'
+                    message:
+                      'Close a stream first. Keep up to 5 open per account.'
+                xquikLimit:
+                  summary: Xquik limit
+                  value:
+                    error: 'rate_limit_exceeded'
+                    message: 'Too many requests. Try again later.'
+                    retryAfter: 60
   /events/{id}:
     get:
       operationId: getEvent
@@ -2895,7 +2967,9 @@ paths:
                 url:
                   type: string
                   format: uri
-                  description: HTTPS URL
+                  description: >
+                    HTTPS URL. A Discord channel webhook URL gets each event as
+                    a Discord message.
                   example: 'https://example.com/webhook'
                 eventTypes: *event-types
             example:
@@ -8751,6 +8825,7 @@ paths:
         - $ref: '#/components/parameters/AutomaticCoverageMode'
         - $ref: '#/components/parameters/LegacyCursorAlias'
         - $ref: '#/components/parameters/AutomaticFollowerPageSize'
+        - $ref: '#/components/parameters/UserListMaxScan'
         - $ref: '#/components/parameters/UserMinFollowers'
         - $ref: '#/components/parameters/UserMaxFollowers'
         - $ref: '#/components/parameters/UserMinFollowing'
@@ -10330,6 +10405,7 @@ paths:
         - $ref: '#/components/parameters/AutomaticCoverageMode'
         - $ref: '#/components/parameters/LegacyCursorAlias'
         - $ref: '#/components/parameters/AutomaticFollowerPageSize'
+        - $ref: '#/components/parameters/UserListMaxScan'
         - $ref: '#/components/parameters/UserMinFollowers'
         - $ref: '#/components/parameters/UserMaxFollowers'
         - $ref: '#/components/parameters/UserMinFollowing'
@@ -11420,6 +11496,16 @@ components:
       in: query
       schema: { type: boolean }
       description: Only return profiles with a location.
+    UserListMaxScan:
+      name: maxScan
+      in: query
+      schema: { type: integer, minimum: 1 }
+      description: >
+        Most profiles 1 request reads, kept or dropped by the filters. A filter
+        that keeps few profiles reads up to 65 s a request without it. The
+        request then answers the profiles it kept, the count it dropped & the
+        cursor to read on. Automatic mode only.
+      example: 10000
     UserHasEmail:
       name: hasEmail
       in: query
@@ -16308,6 +16394,7 @@ components:
                 - support_media_rate_limit
                 - support_request_rate_limit
                 - too_many_ids
+                - too_many_streams
                 - too_many_tweets
                 - unknown_field
                 - unsupported_media_combination
