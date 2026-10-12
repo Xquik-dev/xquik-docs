@@ -2487,6 +2487,18 @@ paths:
                   pollAfterMs: { type: integer, minimum: 0, example: 0 }
                   waitUrl: *extraction-wait-url
                   nextCursor: { type: string, example: 'abc123' }
+              example:
+                job:
+                  id: 'ext_123'
+                  toolType: follower_explorer
+                  status: completed
+                  totalResults: 0
+                  createdAt: '2026-08-23T10:00:00Z'
+                  completedAt: '2026-08-23T10:00:05Z'
+                results: []
+                hasMore: false
+                pollAfterMs: 0
+                waitUrl: '/api/v1/extractions/ext_123?wait=10&limit=1&outputMode=compact'
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401': *unauthenticated-response
@@ -2879,6 +2891,9 @@ paths:
                     items:
                       $ref: '#/components/schemas/Winner'
                     example: []
+              example:
+                draw: *draw-detail-example
+                winners: []
         '401': *unauthenticated-response
         '404': *not-found-response
         '429': *rate-limit-exceeded-response
@@ -11504,7 +11519,8 @@ components:
         Most profiles 1 request reads, kept or dropped by the filters. A filter
         that keeps few profiles reads up to 65 s a request without it. The
         request then answers the profiles it kept, the count it dropped & the
-        cursor to read on. Automatic mode only.
+        cursor to read on. Each request of a cursor may send its own value.
+        Automatic mode only.
       example: 10000
     UserHasEmail:
       name: hasEmail
@@ -16541,8 +16557,10 @@ components:
         fires once X confirms the account deleted a post the monitor saw. Its
         data is the post as last seen. broadcast.started & space.started fire
         when the account posts its running live video or Space. Their data is
-        that post. A live the account does not post is not seen. Keyword
-        monitors take the 10 post types only.
+        that post. A live the account does not post is not seen. following.added
+        & following.removed fire when the account follows or unfollows someone,
+        with that account's profile. Keyword monitors take the 10 post types
+        only.
       type: string
       enum:
         - tweet.new
@@ -16569,6 +16587,8 @@ components:
         - tweet.deleted
         - broadcast.started
         - space.started
+        - following.added
+        - following.removed
       example: 'tweet.new'
 
     EventTypeArray:
