@@ -1,0 +1,144 @@
+---
+title: "Choose Twitter API response fields: fields & omit"
+sidebarTitle: "Choose fields"
+description: "Return only the tweet, profile, and list fields you need from the X API. Use fields and omit on REST, MCP, and RapidAPI reads. Same price, smaller answers."
+keywords:
+  [
+    "Twitter API fields parameter",
+    "X API field selection",
+    "tweet.fields alternative",
+    "Twitter API partial response",
+    "select tweet fields",
+    "Twitter API omit fields",
+    "smaller Twitter API response",
+    "MCP response fields",
+  ]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+<LlmsDirective />
+
+Every read returns each row with every public field by default.
+Add `fields` to keep only the fields you name.
+Add `omit` to drop fields and keep the rest.
+The price stays the same. A row costs the same with 2 fields or 200.
+
+## Keep the fields you need
+
+Name fields in a comma-separated list. Use a dot for a nested field.
+
+```bash
+curl "https://xquik.com/api/v1/x/tweets/search?q=artemis&fields=id,text,author.username" \
+  -H "x-api-key: xq_YOUR_KEY_HERE"
+```
+
+```json
+{
+  "tweets": [
+    {
+      "id": "1893704267862470862",
+      "text": "A public tweet about Artemis.",
+      "author": { "username": "example" }
+    }
+  ],
+  "has_next_page": true,
+  "next_cursor": "DAACCgACGRElMJcAAA"
+}
+```
+
+Cursors, counts, and diagnostics always stay, so pagination keeps working.
+The row count and row order never change.
+
+## Drop the fields you do not need
+
+`omit` takes the same names. It keeps every other field.
+
+```bash
+curl "https://xquik.com/api/v1/x/tweets/search?q=artemis&omit=entities,media" \
+  -H "x-api-key: xq_YOUR_KEY_HERE"
+```
+
+Send both to keep a parent and drop part of it.
+`fields=id,author&omit=author.description` returns each author without its bio.
+
+## How to name a field
+
+| You want                             | Send                                  |
+| ------------------------------------ | ------------------------------------- |
+| A top-level field                    | `fields=id,text,likeCount`            |
+| A field inside an object             | `fields=author.username`              |
+| A whole object                       | `fields=author`                       |
+| A field in each item of a list       | `fields=media.type`                   |
+| A field of a quoted or reposted post | `fields=quoted_tweet.author.username` |
+
+- Case and underscores do not matter. `likeCount` and `like_count` name 1 field.
+- A row that lacks a field leaves it out. The API adds no empty value.
+- A name may start with the list it belongs to. `tweets.id` equals `id`.
+- Each parameter takes up to 100 names.
+
+## Lookups return 1 record
+
+A lookup keeps the named fields in each record of its answer.
+`GET /x/tweets/{id}` returns a `tweet` and its `author`.
+
+```bash
+curl "https://xquik.com/api/v1/x/tweets/1893704267862470862?fields=text,author.username" \
+  -H "x-api-key: xq_YOUR_KEY_HERE"
+```
+
+```json
+{
+  "tweet": { "text": "A public tweet about Artemis." },
+  "author": { "username": "example" }
+}
+```
+
+`GET /x/users/{id}` returns the profile itself, so name its fields directly.
+`fields=id,username,followers` returns those 3 fields.
+
+## Unknown names answer 400
+
+A name the answer does not document returns `400 unknown_field`.
+Xquik checks names before it reads X, so the request costs nothing.
+The error names a close field when there is one, and lists the valid ones.
+
+```json
+{
+  "error": "unknown_field",
+  "message": "Unknown field author.usrname. Did you mean author.username?",
+  "fieldErrors": [
+    {
+      "code": "unknown_field",
+      "field": "author.usrname",
+      "message": "Unknown field author.usrname. Did you mean author.username?",
+      "path": "query.fields",
+      "suggestion": "author.username"
+    }
+  ],
+  "allowedFields": ["author.id", "author.username", "author.name"]
+}
+```
+
+`allowedFields` holds every valid name at the place the unknown name stopped.
+The example shows 3 of them.
+
+## Use it from MCP, RapidAPI, and SDKs
+
+- MCP read tools take `fields` and `omit` with the same names.
+  A smaller answer fits more rows in 1 tool result.
+- RapidAPI answers use `snake_case`. Name fields in either style.
+  `fields=like_count` and `fields=likeCount` return `like_count`.
+- SDK methods pass both parameters through.
+  A typed row then holds only the fields you named.
+
+## Which endpoints take it
+
+Every read that returns rows or 1 record takes `fields` and `omit`.
+That covers tweets, replies, quotes, timelines, users, followers, lists,
+communities, trends, jobs, Spaces, and lookups.
+Endpoints that return bare IDs, such as follower IDs, ignore both parameters.
+Each endpoint page in the [API reference](/api-reference/overview) lists them.
+
+For every field a tweet or profile can hold, see the
+[API field guide](/guides/tweet-profile-api-fields).
