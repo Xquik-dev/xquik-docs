@@ -7852,7 +7852,7 @@ const REQUIRED_WEBHOOK_VERIFICATION_SNIPPETS = [
 const REQUIRED_WEBHOOK_OVERVIEW_SNIPPETS = [
   "Account and keyword monitors check every second.",
   "Webhooks deliver matched events",
-  "Keyword monitors support tweet event types only.",
+  "Keyword monitors support the 10 tweet types only.",
   "Output: monitor ID, username or query, and selected event types.",
   "## Choose the webhook source",
   '<Card title="Account activity" icon="user-round">',
