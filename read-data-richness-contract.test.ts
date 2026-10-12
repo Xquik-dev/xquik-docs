@@ -175,6 +175,8 @@ const PROFILE_FIELDS = [
   "connectedViaAccurate",
   "usernameChanges",
   "birthdate",
+  "email",
+  "contactInfo",
   "listedCount",
   "fastFollowersCount",
   "normalFollowersCount",
