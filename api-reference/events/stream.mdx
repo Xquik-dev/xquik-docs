@@ -1,0 +1,234 @@
+---
+title: "Stream monitor events live over server-sent events"
+sidebarTitle: "Stream events"
+description: "Get each monitor event over 1 open HTTP connection as Xquik stores it. Reconnect with Last-Event-ID to replay what you missed. Streaming costs no credits."
+api: "GET /events/stream"
+keywords: ["events", "stream", "server-sent events", "SSE", "Last-Event-ID", "real-time"]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+{/* GENERATED RESPONSE EXAMPLES START */}
+
+<Panel>
+
+<Tabs defaultTabIndex={0} sync={false}>
+
+  <Tab title="200" id="response-events-stream-200">
+
+    ```text
+    id: 42
+    event: tweet.new
+    data: {"id":"42","type":"tweet.new","monitorId":"7","monitorType":"account","occurredAt":"2025-01-15T12:00:00.000Z","data":{}}
+    ```
+
+  </Tab>
+
+  <Tab title="401" id="response-events-stream-401">
+
+    ```json
+    {
+      "error": "unauthenticated",
+      "message": "Authentication required. Provide a valid API key or bearer token."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="429" id="response-events-stream-429">
+
+    ```json
+    {
+      "error": "too_many_streams",
+      "message": "Close a stream first. Keep up to 5 open per account."
+    }
+    ```
+
+  </Tab>
+</Tabs>
+
+</Panel>
+{/* GENERATED RESPONSE EXAMPLES END */}
+<LlmsDirective />
+
+<Callout icon="circle-check" color="#16a34a">
+
+**Free.** Streaming does not consume credits.
+
+</Callout>
+
+Open 1 connection and read your monitor events as they arrive. You need no
+public endpoint and no signature check. Use it beside webhooks or instead of
+them.
+
+## How the stream works
+
+- Each event arrives as a server-sent event. `event` is its type, `id` is its
+  event ID, and `data` is the event object [List events](/api-reference/events/list)
+  returns.
+- A new connection gets each event stored after it opens.
+- To catch up after a drop, reconnect with `Last-Event-ID`. The stream first
+  sends every event after that ID, oldest first, then the new ones.
+- Events expire 30 days after Xquik creates them, so a replay reaches back 30
+  days at most. An ID Xquik no longer keeps replays every event it still keeps.
+- The first frame is `retry: 3000`, so a client waits 3 s before it reconnects.
+- An idle stream sends a `: keep-alive` comment every 15 s.
+- A connection ends after 30 minutes. Reconnect with the last ID you got.
+  SSE libraries do this for you.
+- Keep up to 5 streams open per account. Xquik may answer `429` with
+  `too_many_streams` to a 6th.
+
+<CodeGroup>
+
+```bash cURL
+curl -N "https://xquik.com/api/v1/events/stream" \
+  -H "x-api-key: xq_YOUR_KEY_HERE" \
+  -H "Last-Event-ID: 42"
+```
+
+```javascript Node.js
+let lastEventId;
+
+async function readStream() {
+  const response = await fetch("https://xquik.com/api/v1/events/stream", {
+    headers: {
+      "x-api-key": "xq_YOUR_KEY_HERE",
+      ...(lastEventId === undefined ? {} : { "Last-Event-ID": lastEventId }),
+    },
+  });
+  if (!response.ok) throw new Error(`Stream refused: ${response.status}`);
+  const decoder = new TextDecoder();
+  let buffer = "";
+  for await (const chunk of response.body) {
+    buffer += decoder.decode(chunk, { stream: true });
+    const frames = buffer.split("\n\n");
+    buffer = frames.pop() ?? "";
+    for (const frame of frames) {
+      const fields = Object.fromEntries(
+        frame
+          .split("\n")
+          .filter((line) => line !== "" && !line.startsWith(":"))
+          .map((line) => [line.slice(0, line.indexOf(":")), line.slice(line.indexOf(":") + 2)]),
+      );
+      if (fields.data === undefined) continue;
+      lastEventId = fields.id;
+      const event = JSON.parse(fields.data);
+      process.stdout.write(`${JSON.stringify({ id: event.id, type: event.type })}\n`);
+    }
+  }
+}
+
+// The stream ends after 30 minutes. Reconnect with the last ID.
+for (;;) {
+  await readStream().catch((error) => console.error(error.message));
+  await new Promise((resolve) => setTimeout(resolve, 3000));
+}
+```
+
+```python Python
+import json
+import time
+
+import requests
+
+last_event_id = None
+
+
+def read_stream():
+    global last_event_id
+    headers = {"x-api-key": "xq_YOUR_KEY_HERE"}
+    if last_event_id is not None:
+        headers["Last-Event-ID"] = last_event_id
+    with requests.get(
+        "https://xquik.com/api/v1/events/stream",
+        headers=headers,
+        stream=True,
+        timeout=(10, 60),
+    ) as response:
+        response.raise_for_status()
+        fields = {}
+        for line in response.iter_lines(decode_unicode=True):
+            if line == "":
+                if "data" in fields:
+                    last_event_id = fields.get("id")
+                    event = json.loads(fields["data"])
+                    print(json.dumps({"id": event["id"], "type": event["type"]}))
+                fields = {}
+            elif not line.startswith(":"):
+                name, _, value = line.partition(": ")
+                fields[name] = value
+
+
+# The stream ends after 30 minutes. Reconnect with the last ID.
+while True:
+    try:
+        read_stream()
+    except requests.RequestException as error:
+        print(error)
+    time.sleep(3)
+```
+
+</CodeGroup>
+
+These examples print 1 line per event and keep the last event ID for the next
+connection. Store that ID if your process restarts, so its first connection
+replays what it missed.
+
+## Headers
+
+<ParamField header="x-api-key" type="string" required>
+
+Your API key.
+
+</ParamField>
+
+<ParamField header="Last-Event-ID" type="string">
+
+The last event ID your client got. The stream first sends every event after
+it. SSE libraries send it on their own when they reconnect.
+
+</ParamField>
+
+## Response
+
+### 200 OK
+
+```text
+retry: 3000
+
+id: 42
+event: tweet.new
+data: {"id":"42","type":"tweet.new","monitorId":"7","monitorType":"account","occurredAt":"2025-01-15T12:00:00.000Z","data":{}}
+
+: keep-alive
+```
+
+A `text/event-stream` body. Each event's `data` line holds the event object
+that [List events](/api-reference/events/list) documents, as 1 line of JSON.
+
+### 401 Unauthenticated
+
+```json
+{ "error": "unauthenticated" }
+```
+
+Missing or invalid API key. Check the `x-api-key` header value.
+
+### 429 Too many streams or requests
+
+```json
+{
+  "error": "too_many_streams",
+  "message": "Close a stream first. Keep up to 5 open per account."
+}
+```
+
+`too_many_streams` means the account has 5 streams open. Close 1, then
+connect again. `rate_limit_exceeded` means too many requests. Wait for the
+`Retry-After` header before you retry.
+
+<Note>
+
+**Related.** [List Events](/api-reference/events/list) &middot; [Get Event](/api-reference/events/get) &middot; [Webhooks overview](/webhooks/overview)
+
+</Note>
