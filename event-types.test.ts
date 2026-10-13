@@ -8,7 +8,7 @@ const DOC_EXTENSIONS = new Set([".md", ".mdx", ".txt"]);
 const EXCLUDED_DIRS = new Set([".git", "node_modules"]);
 const EXCLUDED_FILES = new Set(["DOCS_QUALITY_POLL.md"]);
 const EVENT_TYPE_TOKEN_PATTERN =
-  /\b(?:follower\.(?:added|gained|lost|removed)|tweet\.(?:created|deleted|hashtag|link|longform|media|mention|new|poll|quote|reply|retweet)|(?:broadcast|space)\.started|following\.(?:added|removed)|profile\.(?:avatar|banner|bio|location|name|pinned_tweet|protected|unavailable|url|username|verified)\.changed|webhook\.test)\b/gu;
+  /\b(?:follower\.(?:added|gained|lost|removed)|tweet\.(?:created|deleted|hashtag|link|longform|media|mention|new|poll|quote|reply|retweet)|(?:broadcast|space)\.started|following\.(?:added|removed)|profile\.(?:avatar|banner|bio|followers|following|location|name|pinned_tweet|protected|unavailable|url|username|verified)\.changed|webhook\.test)\b/gu;
 const EXPECTED_SUBSCRIBABLE_EVENT_TYPES = [
   "tweet.new",
   "tweet.quote",
@@ -38,6 +38,8 @@ const EXPECTED_SUBSCRIBABLE_EVENT_TYPES = [
   "following.removed",
   "follower.added",
   "follower.removed",
+  "profile.followers.changed",
+  "profile.following.changed",
 ] as const;
 const EXPECTED_KEYWORD_EVENT_TYPES = [
   "tweet.new",
