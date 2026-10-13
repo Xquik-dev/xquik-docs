@@ -8,8 +8,7 @@ const DOC_EXTENSIONS = new Set([".md", ".mdx", ".txt"]);
 const EXCLUDED_DIRS = new Set([".git", "node_modules"]);
 const EXCLUDED_FILES = new Set(["DOCS_QUALITY_POLL.md"]);
 const EVENT_TYPE_TOKEN_PATTERN =
-  /\b(?:follower\.(?:gained|lost)|tweet\.(?:created|deleted|hashtag|link|longform|media|mention|new|poll|quote|reply|retweet)|(?:broadcast|space)\.started|following\.(?:added|removed)|profile\.(?:avatar|banner|bio|location|name|pinned_tweet|protected|unavailable|url|username|verified)\.changed|webhook\.test)\b/gu;
-const RETIRED_EVENT_PHRASE_PATTERN = /\bfollower (?:changes|events?)\b/giu;
+  /\b(?:follower\.(?:added|gained|lost|removed)|tweet\.(?:created|deleted|hashtag|link|longform|media|mention|new|poll|quote|reply|retweet)|(?:broadcast|space)\.started|following\.(?:added|removed)|profile\.(?:avatar|banner|bio|location|name|pinned_tweet|protected|unavailable|url|username|verified)\.changed|webhook\.test)\b/gu;
 const EXPECTED_SUBSCRIBABLE_EVENT_TYPES = [
   "tweet.new",
   "tweet.quote",
@@ -37,6 +36,8 @@ const EXPECTED_SUBSCRIBABLE_EVENT_TYPES = [
   "space.started",
   "following.added",
   "following.removed",
+  "follower.added",
+  "follower.removed",
 ] as const;
 const EXPECTED_KEYWORD_EVENT_TYPES = [
   "tweet.new",
@@ -178,28 +179,6 @@ function collectUnsupportedEventTypeFindings(
   return findings;
 }
 
-function collectRetiredEventPhraseFindings(): readonly Finding[] {
-  const findings: Finding[] = [];
-
-  for (const file of listDocFiles(PROJECT_ROOT)) {
-    if (HISTORICAL_EVENT_TYPE_FILES.has(file)) {
-      continue;
-    }
-
-    const source = readFileSync(join(PROJECT_ROOT, file), "utf8");
-    for (const match of source.matchAll(RETIRED_EVENT_PHRASE_PATTERN)) {
-      findings.push({
-        eventType: match[0],
-        file,
-        issue: "Current docs should not describe retired follower event support.",
-        line: lineNumberForIndex(source, match.index ?? 0),
-      });
-    }
-  }
-
-  return findings;
-}
-
 function missingEventTypeMentions(
   file: string,
   requiredEventTypes: readonly string[],
@@ -266,12 +245,6 @@ describe("documented event types", (): void => {
     );
     const allowedEventTypes = new Set([...subscribableEventTypes, ...NON_SUBSCRIBABLE_EVENT_TYPES]);
     expect(collectUnsupportedEventTypeFindings(allowedEventTypes)).toStrictEqual([]);
-  });
-
-  it("does not describe retired follower event support in current docs", (): void => {
-    expect.assertions(1);
-
-    expect(collectRetiredEventPhraseFindings()).toStrictEqual([]);
   });
 
   it("lists every subscribable event type in core event docs", (): void => {
