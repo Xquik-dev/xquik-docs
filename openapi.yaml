@@ -11582,11 +11582,12 @@ components:
       in: query
       schema: { type: integer, minimum: 1 }
       description: >
-        Most profiles 1 request reads, kept or dropped by the filters. A filter
-        that keeps few profiles reads up to 65 s a request without it. The
+        Most profiles 1 request reads, kept or dropped by the filters. The
         request then answers the profiles it kept, the count it dropped & the
         cursor to read on. Each request of a cursor may send its own value.
-        Automatic mode only.
+        Without it, a filtered read scans at most 100,000 profiles of the list
+        across all its pages, & the page that reaches them ends the list with
+        `scanLimit`. An unfiltered read has no scan limit. Automatic mode only.
       example: 10000
     UserHasEmail:
       name: hasEmail
@@ -15629,11 +15630,47 @@ components:
               const: ''
             diagnostic:
               $ref: '#/components/schemas/UserListCoverageDiagnostic'
+    UserListScanLimit:
+      description: >
+        Present on the last page of a filtered automatic read that sent no
+        maxScan, once the list scanned 100,000 profiles across its pages. That
+        page is the list's last.
+      type: object
+      required: [limit, rowsRead, message]
+      properties:
+        limit:
+          type: integer
+          const: 100000
+          description:
+            The profiles a filtered read scans of a list without maxScan.
+        rowsRead:
+          type: integer
+          minimum: 100000
+          description: >
+            Profiles the list read across its pages, kept or dropped by the
+            filters. The last page may read past the limit.
+          example: 100000
+        message:
+          type: string
+          description: What stopped the list & how to read further.
+          example:
+            Stopped at the scan limit of 100,000 profiles. Read the list again
+            with a higher maxScan to read further.
+    UserListPage:
+      description:
+        A relationship page. A filtered read's last page may name the scan limit
+        that ended it.
+      allOf:
+        - $ref: '#/components/schemas/PaginatedUsers'
+        - type: object
+          properties:
+            scanLimit:
+              $ref: '#/components/schemas/UserListScanLimit'
     UserListResult:
       description: A standard or terminal maximum-coverage relationship page.
       example: { users: [], has_next_page: false, next_cursor: '' }
       oneOf:
-        - $ref: '#/components/schemas/PaginatedUsers'
+        - $ref: '#/components/schemas/UserListPage'
         - $ref: '#/components/schemas/UserListCoverageResponse'
     BatchUsers:
       description: >
