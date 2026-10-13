@@ -3522,9 +3522,12 @@ paths:
       operationId: getXTrends
       description:
         Returns X's current trends for a place you choose. Pick it by woeid,
-        country or location name. Without one, trends are worldwide. Each
-        request costs 1 credit, however many trends it returns.
-      summary: Get trending hashtags and topics from X by region
+        country or location name. Without one, trends are worldwide. Add at to
+        read what was trending on Twitter at a past time, such as yesterday.
+        Xquik keeps a Twitter trends archive from 2026-10-13 02:20 UTC on, with
+        1 list per place every 5 minutes. Each request costs 1 credit, however
+        many trends it returns.
+      summary: Get trending hashtags and topics from X by region, now or earlier
       tags:
         - Trends
       security: *read-auth
@@ -3567,6 +3570,18 @@ paths:
             default: 30
             minimum: 1
             maximum: 50
+        - name: at
+          in: query
+          schema:
+            type: string
+          description:
+            A past time, to read what was trending on Twitter then. Takes an ISO
+            8601 time, a date such as 2026-10-13, or Unix seconds. A time
+            without a zone reads as UTC. The answer is the stored list nearest
+            that time, with its own time in capturedAt. History starts
+            2026-10-13 02:20 UTC. A time over 24 hours from every stored list
+            answers 400 at no charge.
+          example: '2026-10-13T14:00:00Z'
         - $ref: '#/components/parameters/Fields'
         - $ref: '#/components/parameters/Omit'
       responses:
@@ -3640,20 +3655,282 @@ paths:
                       placeTypeCode: 7
                       parentWoeid: 23424969
                       url: 'http://where.yahooapis.com/v1/place/2344116'
+                  capturedAt:
+                    type: string
+                    format: date-time
+                    description:
+                      When Xquik read this list from X. It comes from the stored
+                      list and is never estimated.
+                    example: '2026-10-13T14:00:26.000Z'
+                  requestedAt:
+                    type: string
+                    format: date-time
+                    description:
+                      The time at asked for, as Xquik read it. Present only with
+                      at.
+                    example: '2026-10-13T14:00:00.000Z'
         '400':
-          description: Unknown country or location
+          description:
+            Unknown country or location, a time that does not read, or no stored
+            list within 24 hours of at
+          content:
+            application/json:
+              schema: *error-schema
+              examples:
+                unknownPlace:
+                  summary: X lists no such place
+                  value:
+                    error: 'invalid_input'
+                    message:
+                      'X lists no trends for that place. List places with GET
+                      /x/trends/locations.'
+                beforeHistory:
+                  summary: The time is before the first stored list
+                  value:
+                    error: 'invalid_input'
+                    message:
+                      'Trends history for this place starts 2026-10-13 02:20
+                      UTC. Ask for a later time.'
+                noListNear:
+                  summary: No list is stored within 24 hours of the time
+                  value:
+                    error: 'invalid_input'
+                    message:
+                      'No trends are stored within 24 hours of that time. The
+                      nearest list is from 2026-10-14 10:05 UTC.'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
+        '502': *x-api-error-response
+        '503':
+          $ref: '#/components/responses/ReadBusy'
+        '429': *rate-limit-exceeded-response
+        '424': *x-api-error-response
+
+  /x/trends/history:
+    get:
+      operationId: getXTrendsHistory
+      description:
+        Returns the Twitter trends archive of a place, as the lists X showed
+        there over a range of time. Use it for trending on Twitter yesterday,
+        last week or any day since 2026-10-13 02:20 UTC. Xquik stores 1 list per
+        place every 5 minutes and keeps it for 25 months. Pick the place by
+        woeid, country or location name, the range with from & to, and the step
+        with every. Each step returns the first list stored in it, with its own
+        time. Each returned list costs 1 credit, so 24 lists cost 24 credits. A
+        step with no stored list returns none and costs nothing. 1 request
+        returns 24 lists, or up to 100 with limit.
+      summary: Get the X (Twitter) trends archive of a place by date
+      tags:
+        - Trends
+      security: *read-auth
+      parameters:
+        - name: woeid
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description:
+            WOEID of the place, such as 1 for Worldwide or 23424969 for Turkey.
+            It wins over country & location. /x/trends/locations lists every
+            WOEID.
+        - name: country
+          in: query
+          schema:
+            type: string
+          description:
+            Country to read trends history for, by name or 2-letter code, such
+            as Turkey or TR. Case insensitive.
+        - name: location
+          in: query
+          schema:
+            type: string
+          description:
+            Town or country to read trends history for, by name, such as
+            Istanbul. Case insensitive. Add country when 2 towns share a name.
+            /x/trends/locations lists every name.
+        - name: from
+          in: query
+          schema:
+            type: string
+          description:
+            Start of the range. Takes an ISO 8601 time, a date such as
+            2026-10-13, or Unix seconds. A time without a zone reads as UTC.
+            Defaults to 24 hours before to. History starts 2026-10-13 02:20 UTC,
+            and a range that begins earlier returns the stored part. Alias
+            sinceTime.
+          example: '2026-10-13'
+        - name: to
+          in: query
+          schema:
+            type: string
+          description:
+            End of the range, which it leaves out. Takes the forms of from.
+            Defaults to now. Alias untilTime.
+          example: '2026-10-14'
+        - name: every
+          in: query
+          schema:
+            type: string
+            default: 1h
+          description:
+            Step between 2 returned lists, as a number & m, h or d, such as 15m,
+            1h or 1d. A step under 5m returns every stored list.
+          example: 1h
+        - name: count
+          in: query
+          description: Trends to return in each list, from 1 to 50.
+          schema:
+            type: integer
+            default: 30
+            minimum: 1
+            maximum: 50
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 24
+            minimum: 1
+            maximum: 100
+          description:
+            Maximum lists 1 request returns & charges. A wider range gives a
+            next_cursor for the next lists. Credits can return fewer.
+        - name: cursor
+          in: query
+          schema:
+            type: string
+          description: The next_cursor of the page before, for the next lists.
+          example: '2026-10-14T00:00:00.000Z'
+        - $ref: '#/components/parameters/Fields'
+        - $ref: '#/components/parameters/Omit'
+      responses:
+        '200':
+          description: Stored trend lists of the place, oldest first
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [snapshots, count, woeid, has_next_page, next_cursor]
+                properties:
+                  snapshots:
+                    type: array
+                    description:
+                      1 stored list per step, oldest first. A step with no
+                      stored list is left out.
+                    items:
+                      type: object
+                      required: [capturedAt, count, trends]
+                      properties:
+                        capturedAt:
+                          type: string
+                          format: date-time
+                          description:
+                            When Xquik read this stored list from X. Xquik never
+                            estimates it.
+                          example: '2026-10-13T14:00:26.000Z'
+                        count:
+                          type: integer
+                          minimum: 0
+                          description: Trends in this list.
+                          example: 1
+                        trends:
+                          type: array
+                          items:
+                            type: object
+                            required: [name]
+                            properties:
+                              name:
+                                type: string
+                                example: '#AI'
+                              description:
+                                type: string
+                                example: 'Artificial intelligence discussions'
+                              query:
+                                type: string
+                                example: '%23AI'
+                              promotedContent:
+                                type: [string, 'null']
+                                description:
+                                  X's promotion ID of a promoted trend. Null for
+                                  the others.
+                              rank:
+                                type: integer
+                                minimum: 1
+                                description:
+                                  The trend's place in X's list at that time.
+                                example: 1
+                              tweetVolume:
+                                type: [integer, 'null']
+                                minimum: 0
+                                description:
+                                  X's post count for the trend at that time,
+                                  when X showed one.
+                                example: 250000
+                              url:
+                                type: string
+                                format: uri
+                                description: The trend's search link on X.
+                          example: *trends-example
+                    example:
+                      - capturedAt: '2026-10-13T14:00:26.000Z'
+                        count: 1
+                        trends: *trends-example
+                  count:
+                    type: integer
+                    minimum: 0
+                    description: Lists returned & charged.
+                    example: 1
+                  woeid: *integer-example-one
+                  location:
+                    type: object
+                    $ref: '#/components/schemas/TrendLocation'
+                    description:
+                      The place the request named by country or location. Absent
+                      when it sent a woeid or named no place.
+                    example:
+                      woeid: 23424969
+                      name: 'Turkey'
+                      country: 'Turkey'
+                      countryCode: 'TR'
+                      placeType: 'Country'
+                      placeTypeCode: 12
+                      parentWoeid: 1
+                      url: 'http://where.yahooapis.com/v1/place/23424969'
+                  has_next_page:
+                    type: boolean
+                    description: Whether the range holds more lists.
+                    example: false
+                  next_cursor:
+                    type: string
+                    description:
+                      Send it as cursor for the next lists. Empty on the last
+                      page.
+                    example: ''
+              example:
+                snapshots:
+                  - capturedAt: '2026-10-13T14:00:26.000Z'
+                    count: 1
+                    trends: *trends-example
+                count: 1
+                woeid: 1
+                has_next_page: false
+                next_cursor: ''
+        '400':
+          description:
+            Unknown country or location, a time or step that does not read, or a
+            range that ends before the first stored list
           content:
             application/json:
               schema: *error-schema
               example:
                 error: 'invalid_input'
                 message:
-                  'X lists no trends for that place. List places with GET
-                  /x/trends/locations.'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '402':
-          $ref: '#/components/responses/PaymentRequired'
+                  'Trends history for this place starts 2026-10-13 02:20 UTC.
+                  Ask for a later time.'
+        '401': *anonymous-guest-authentication-response
+        '402': *payment-required-response
         '502': *x-api-error-response
         '503':
           $ref: '#/components/responses/ReadBusy'

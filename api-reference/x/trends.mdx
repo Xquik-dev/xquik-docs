@@ -250,6 +250,12 @@ Number of trends to return. Default `30`, max `50`. Invalid or below-minimum val
 
 </ParamField>
 
+<ParamField query="at" type="string">
+
+A past time, to read what was trending on Twitter then. Takes an ISO 8601 time, a date such as `2026-10-13`, or Unix seconds. A time without a zone reads as UTC. The answer is the stored list nearest that time, with its own time in `capturedAt`. History starts 2026-10-13 02:20 UTC. A time over 24 hours from every stored list returns 400 and costs nothing. [Get trends history](/api-reference/x/trends-history) reads a range.
+
+</ParamField>
+
 ### Choose fields
 
 <FieldSelectionParams />
@@ -305,6 +311,12 @@ Array of trending topics.
 <ResponseField name="location" type="object">
   The place `country` or `location` named, with the fields of a [trend location](/api-reference/x/trend-locations). Absent when `woeid` picked the place or the request named none.
 </ResponseField>
+<ResponseField name="capturedAt" type="string">
+  When Xquik read this list from X, as ISO 8601 in UTC. Present only with `at`. It comes from the stored list and is never estimated.
+</ResponseField>
+<ResponseField name="requestedAt" type="string">
+  The time `at` asked for, as Xquik read it. Present only with `at`.
+</ResponseField>
 
 ```json
 {
@@ -354,6 +366,15 @@ A request with `location=Istanbul` also names the place it read:
 ```
 
 X lists no trends for that `country` or `location`. The request costs nothing.
+
+With `at`, a time before the place's first stored list returns 400 and names that first time.
+
+```json
+{
+  "error": "invalid_input",
+  "message": "Trends history for this place starts 2026-10-13 02:20 UTC. Ask for a later time."
+}
+```
 
 ### 401 Unauthenticated
 
