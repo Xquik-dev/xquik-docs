@@ -430,9 +430,11 @@ These filters apply before billing. Selective filters can return fewer rows.
 <ParamField query="maxScan" type="integer">
 
 Most profiles 1 request reads, kept or dropped by the filters.
-Without it, a filter that keeps few profiles reads up to 65 s a request.
 The answer then holds the kept profiles, the dropped count & the next cursor.
 Each request may send its own value.
+Without it, a filtered read scans at most 100,000 profiles of the list across all its pages.
+The page that reaches them ends the list & names `scanLimit`.
+An unfiltered read has no scan limit.
 
 </ParamField>
 
@@ -556,6 +558,11 @@ Array of list followers.
 </ResponseField>
 <ResponseField name="has_next_page" type="boolean">Shows if another page exists.</ResponseField>
 <ResponseField name="next_cursor" type="string">Gives the next cursor. Pass it as the `cursor` query value.</ResponseField>
+<ResponseField name="scanLimit" type="object">
+Present on the last page of a filtered read without `maxScan` that scanned 100,000 profiles of the list.
+`limit` is 100000, `rowsRead` counts the profiles read across all pages, kept or dropped, & `message` says how to read further.
+`has_next_page` is false on that page.
+</ResponseField>
 
 ```json
 {
