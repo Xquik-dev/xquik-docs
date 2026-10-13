@@ -46,6 +46,8 @@ import FieldSelectionParams from "/snippets/field-selection-params.mdx";
         }
       ],
       "count": 1,
+      "fromTime": "2026-10-13T00:00:00.000Z",
+      "toTime": "2026-10-14T00:00:00.000Z",
       "woeid": 1,
       "has_next_page": false,
       "next_cursor": ""
@@ -218,6 +220,8 @@ A step with no stored list returns nothing and costs nothing.
 
 Pick the place by `country`, `location`, or `woeid`. Without one, trends are worldwide.
 Set the range with `from` and `to`, and the step with `every`.
+`from` and `to` take a time or a span back from now, such as `7d`. A schedule can then read the last day on every run.
+The answer names the range it read in `fromTime` and `toTime`.
 Each step returns the first list Xquik stored in it, oldest first.
 Every list carries `capturedAt`, the time Xquik read it from X. Xquik never estimates that time.
 
@@ -247,13 +251,13 @@ Town or country to read trends history for, by name, such as `Istanbul`. Case in
 
 <ParamField query="from" type="string">
 
-Start of the range. Takes an ISO 8601 time, a date such as `2026-10-13`, or Unix seconds. A time without a zone reads as UTC. Defaults to 24 hours before `to`. History starts 2026-10-13 02:20 UTC, and a range that begins earlier returns the stored part. Alias `sinceTime`.
+Start of the range. Takes an ISO 8601 time, a date such as `2026-10-13`, or Unix seconds. A time without a zone reads as UTC. It also takes a span back from now, as a number and `s`, `m`, `h`, or `d`, so `from=7d` reads the last 7 days. Defaults to 24 hours before `to`. History starts 2026-10-13 02:20 UTC, and a range that begins earlier returns the stored part. Alias `sinceTime`.
 
 </ParamField>
 
 <ParamField query="to" type="string">
 
-End of the range, which it leaves out. Takes the forms of `from`. Defaults to now. Alias `untilTime`.
+End of the range, which it leaves out. Takes the forms of `from`, so `from=2d` with `to=1d` reads the day before the last 24 hours. Defaults to now. Alias `untilTime`.
 
 </ParamField>
 
@@ -277,7 +281,7 @@ Maximum lists 1 request returns and charges. Default `24`, max `100`. Your credi
 
 <ParamField query="cursor" type="string">
 
-The `next_cursor` of the page before, for the next lists.
+The `next_cursor` of the page before, for the next lists. It keeps the time of the first request, so a range of spans stays the same on every page.
 
 </ParamField>
 
@@ -322,6 +326,12 @@ Send a full Xquik account API key.
 
 </ResponseField>
 <ResponseField name="count" type="number">Lists returned and charged.</ResponseField>
+<ResponseField name="fromTime" type="string">
+  Start of the range as Xquik read it, as ISO 8601 in UTC. A span such as `7d` shows here as the time it counted back to.
+</ResponseField>
+<ResponseField name="toTime" type="string">
+  End of the range as Xquik read it, which the range leaves out. Without `to`, it is the time of the first request.
+</ResponseField>
 <ResponseField name="woeid" type="number">WOEID used for the request.</ResponseField>
 <ResponseField name="location" type="object">
   The place `country` or `location` named, with the fields of a [trend location](/api-reference/x/trend-locations). Absent when `woeid` picked the place or the request named none.
@@ -351,6 +361,8 @@ Send a full Xquik account API key.
     }
   ],
   "count": 1,
+  "fromTime": "2026-10-13T00:00:00.000Z",
+  "toTime": "2026-10-14T00:00:00.000Z",
   "woeid": 1,
   "has_next_page": false,
   "next_cursor": ""
