@@ -71,6 +71,9 @@ tags:
     description: X live video details, watch counts, and broadcaster
   - name: Communities
     description: Find X Communities & read their info, members, posts & media
+  - name: Community Notes
+    description:
+      Community Notes contributors, their notes, ratings & deleted notes
   - name: Composition
     description: AI tweet composition, drafts, writing styles, and radar
   - name: Draws
@@ -9439,6 +9442,228 @@ paths:
         '503':
           $ref: '#/components/responses/ReadBusy'
 
+  /x/community-notes/contributors/{alias}:
+    get:
+      operationId: getCommunityNotesContributor
+      summary: Get a Community Notes contributor's note and rating counts
+      description:
+        Returns 1 Community Notes contributor by the alias X gives them.
+        Includes note counts by rating, rating counts & the deleted notes count.
+        Each lookup costs 1 credit.
+      tags:
+        - Community Notes
+      security: *read-auth
+      parameters:
+        - $ref: '#/components/parameters/ContributorPathAlias'
+        - $ref: '#/components/parameters/Fields'
+        - $ref: '#/components/parameters/Omit'
+      responses:
+        '200':
+          description: Contributor profile
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [contributor]
+                properties:
+                  contributor:
+                    $ref: '#/components/schemas/CommunityNotesContributor'
+              example:
+                contributor: &community-notes-contributor-example
+                  alias: 'ardent-beach-friarbird'
+                  deletedNotesCount: 0
+                  isApiContributor: false
+                  isTopWriter: false
+                  notesCount:
+                    awaitingMoreRatings: 18
+                    currentlyRatedHelpful: 1
+                    currentlyRatedNotHelpful: 2
+                    updatedAt: '2026-10-12T22:18:40.096Z'
+                  ratingsCount:
+                    awaitingMoreRatings: 703
+                    ratedAfterDecision: 154
+                    successful:
+                      helpfulCount: 27
+                      notHelpfulCount: 22
+                      total: 49
+                    unsuccessful:
+                      helpfulCount: 15
+                      notHelpfulCount: 4
+                    updatedAt: '2026-10-12T22:50:13.228Z'
+        '400':
+          description: The path names no contributor. Free.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: 'invalid_contributor_alias'
+                message:
+                  'Send a Community Notes alias or its x.com/i/communitynotes/u
+                  URL.'
+        '401': *anonymous-guest-authentication-response
+        '402': *payment-required-response
+        '404':
+          $ref: '#/components/responses/ContributorNotFound'
+        '424': { $ref: '#/components/responses/XApiError' }
+        '429': *rate-limit-exceeded-response-2
+        '502': { $ref: '#/components/responses/XApiError' }
+        '503':
+          $ref: '#/components/responses/ReadBusy'
+
+  /x/community-notes/contributors/{alias}/notes:
+    get:
+      operationId: listCommunityNotesContributorNotes
+      summary: List the Community Notes a contributor wrote, with their posts
+      description: >
+        Returns a contributor's notes, newest first, each with the post it is
+        on. Includes notes X has not rated helpful, which x.com shows under no
+        post. Each note costs 1 credit. Follow next_cursor for more.
+      tags:
+        - Community Notes
+      security: *read-auth
+      parameters: &contributor-notes-parameters
+        - $ref: '#/components/parameters/ContributorPathAlias'
+        - $ref: '#/components/parameters/CollectionCursor'
+        - $ref: '#/components/parameters/NotesPageSize'
+        - $ref: '#/components/parameters/Fields'
+        - $ref: '#/components/parameters/Omit'
+      responses:
+        '200':
+          description: Notes with their posts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCommunityNotes'
+              example:
+                notes:
+                  - id: '2026375778254868976'
+                    createdAt: '2026-02-24T19:16:48.435Z'
+                    language: 'en'
+                    classification: 'MisinformedOrPotentiallyMisleading'
+                    contributor:
+                      alias: 'ardent-beach-friarbird'
+                      notesCount:
+                        currentlyRatedHelpful: 1
+                        currentlyRatedNotHelpful: 2
+                      ratingsCount:
+                        successful:
+                          total: 49
+                        unsuccessful:
+                          helpfulCount: 15
+                          notHelpfulCount: 4
+                    text:
+                      "Since this is a wall of text article and the headline
+                      doesn't say, this quick-to-read context is
+                      necessary:\n\nDiscord is STILL rolling out Age
+                      Verification methods, just delayed to the second half of
+                      2026 per the very own article in this
+                      post.\n\nhttps://discord.com/blog/getting-global-age-assurance-right-what-we-got-wrong-and-whats-changing"
+                    entities:
+                      - fromIndex: 244
+                        toIndex: 340
+                        ref:
+                          type: 'TimelineUrl'
+                          url: 'https://t.co/7fJbcLrO1k'
+                    ratingStatus: 'CurrentlyRatedHelpful'
+                    helpfulTags: ['ImportantContext', 'Clear']
+                    decidedBy: 'CoreModel (v1.1)'
+                    fullyVisibleModel: true
+                    abovePcrhThreshold: false
+                    appealStatus: 'NotAppealed'
+                    deleted: false
+                    isApiAuthor: false
+                    isMediaNote: false
+                    mediaNoteMatchCount: 0
+                    isUrlNote: false
+                    isTranslatable: false
+                    timeToHelpfulFromNoteMs: 132890587
+                    timeToHelpfulFromPostMs: 136815576
+                    postId: '2026359315657805939'
+                    post:
+                      id: '2026359315657805939'
+                      text:
+                        "Getting Global Age Assurance Right: What We Got Wrong
+                        and What’s Changing. \n\nRead the update:
+                        https://t.co/h7aRGmN7xW"
+                      createdAt: 'Tue Feb 24 18:11:23 +0000 2026'
+                      retweetCount: 542
+                      replyCount: 4197
+                      likeCount: 3990
+                      quoteCount: 1122
+                      viewCount: 7038435
+                      bookmarkCount: 1472
+                      lang: 'en'
+                      url: 'https://x.com/discord/status/2026359315657805939'
+                      author:
+                        id: '3065618342'
+                        username: 'discord'
+                        name: 'Discord'
+                        verifiedType: 'Business'
+                has_next_page: true
+                next_cursor: '-1767098234260'
+        '400':
+          $ref: '#/components/responses/ContributorNotesInvalidInput'
+        '401': *anonymous-guest-authentication-response
+        '402': *payment-required-response
+        '404':
+          $ref: '#/components/responses/ContributorNotFound'
+        '424': { $ref: '#/components/responses/XApiError' }
+        '429': *rate-limit-exceeded-response-2
+        '502': { $ref: '#/components/responses/XApiError' }
+        '503':
+          $ref: '#/components/responses/ReadBusy'
+
+  /x/community-notes/contributors/{alias}/deleted-notes:
+    get:
+      operationId: listCommunityNotesContributorDeletedNotes
+      summary: List the Community Notes a contributor deleted
+      description: >
+        Returns the notes a contributor deleted, newest first. X keeps each
+        note's ID, times, rating & tags. A notice replaces its text & post. Each
+        note costs 1 credit. A contributor who deleted none returns an empty
+        list, free.
+      tags:
+        - Community Notes
+      security: *read-auth
+      parameters: *contributor-notes-parameters
+      responses:
+        '200':
+          description: Deleted notes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCommunityNotes'
+              example:
+                notes:
+                  - id: '2078950499982696756'
+                    createdAt: '2026-07-19T21:09:58.885Z'
+                    ratingStatus: 'CurrentlyRatedNotHelpful'
+                    notHelpfulTags: ['MissingKeyPoints', 'Incorrect']
+                    decidedBy: 'CoreModel (v1.1)'
+                    fullyVisibleModel: true
+                    abovePcrhThreshold: false
+                    appealStatus: 'NotAppealed'
+                    deleted: true
+                    tombstone: 'This note has been deleted'
+                    isApiAuthor: false
+                    isMediaNote: false
+                    mediaNoteMatchCount: 0
+                    isUrlNote: false
+                has_next_page: false
+                next_cursor: ''
+        '400':
+          $ref: '#/components/responses/ContributorNotesInvalidInput'
+        '401': *anonymous-guest-authentication-response
+        '402': *payment-required-response
+        '404':
+          $ref: '#/components/responses/ContributorNotFound'
+        '424': { $ref: '#/components/responses/XApiError' }
+        '429': *rate-limit-exceeded-response-2
+        '502': { $ref: '#/components/responses/XApiError' }
+        '503':
+          $ref: '#/components/responses/ReadBusy'
+
   /x/spaces/search:
     get:
       operationId: searchSpaces
@@ -11450,6 +11675,28 @@ components:
       description:
         X broadcast ID, or the URL-encoded broadcast URL, such as
         x.com/i/broadcasts/1nGeLMWbkpaKX.
+    ContributorPathAlias:
+      name: alias
+      in: path
+      required: true
+      schema: { type: string }
+      description:
+        Community Notes contributor alias, or the URL-encoded contributor URL,
+        such as x.com/i/communitynotes/u/ardent-beach-friarbird. Any letter case
+        works.
+      example: ardent-beach-friarbird
+    NotesPageSize:
+      name: pageSize
+      in: query
+      description: >
+        Notes per page (1-10, default 10). Credits can return fewer. Follow
+        next_cursor for more pages. Also read as limit, count, max_results,
+        maxItems, max_items & per_page.
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 10
+        default: 10
     SpacePathId:
       name: id
       in: path
@@ -12726,6 +12973,37 @@ components:
             error: 'user_not_found'
             message: 'X user not found. Check the username.'
             reason: 'not_found'
+    ContributorNotFound:
+      description: No contributor holds the alias. Free.
+      content:
+        application/json:
+          schema: *error-schema
+          example:
+            error: 'contributor_not_found'
+            message:
+              'Contributor not found. Check the alias on its
+              x.com/i/communitynotes/u page.'
+    ContributorNotesInvalidInput:
+      description: >
+        Text that is no alias returns invalid_contributor_alias. A cursor X
+        never issued returns invalid_cursor. Start again without it. Both are
+        free.
+      content:
+        application/json:
+          schema: *error-schema
+          examples:
+            invalid_contributor_alias:
+              value:
+                error: 'invalid_contributor_alias'
+                message:
+                  'Send a Community Notes alias or its x.com/i/communitynotes/u
+                  URL.'
+            invalid_cursor:
+              value:
+                error: 'invalid_cursor'
+                message:
+                  'Cursor invalid or expired. Start again without cursor, then
+                  use next_cursor.'
     PaymentRequired:
       description: >
         Payment required. MPP reads include `WWW-Authenticate`. Authenticated
@@ -16753,6 +17031,7 @@ components:
                 - checkout_unavailable
                 - connection_challenge_expired
                 - connection_challenge_inactive
+                - contributor_not_found
                 - coverage_cursor_gone
                 - coverage_cursor_unavailable
                 - cursor_account_unavailable
@@ -16771,6 +17050,7 @@ components:
                 - invalid_community_id
                 - invalid_community_topic
                 - invalid_complete_replies_request
+                - invalid_contributor_alias
                 - invalid_coverage_cursor
                 - invalid_coverage_request
                 - invalid_cursor
@@ -18395,6 +18675,282 @@ components:
         has_next_page: *boolean-example-true
         next_cursor: *cursor-example-schema
 
+    CommunityNotesContributor:
+      description: >
+        A Community Notes contributor. X names contributors by an alias, never
+        by their X account. A field X leaves out is left out. Beside a note, X
+        sends its writer with only some of the counts.
+      type: object
+      required: [alias]
+      example: *community-notes-contributor-example
+      properties:
+        alias:
+          type: string
+          description: The alias X gives the contributor.
+          example: 'ardent-beach-friarbird'
+        isTopWriter:
+          type: boolean
+          description: Whether X marks the contributor as a top writer.
+        isApiContributor:
+          type: boolean
+          description: Whether the contributor writes notes through X's API.
+        deletedNotesCount:
+          type: integer
+          $ref: '#/components/schemas/WholeNumber'
+          description: Notes the contributor deleted.
+        notesCount:
+          $ref: '#/components/schemas/CommunityNotesNoteCounts'
+        ratingsCount:
+          $ref: '#/components/schemas/CommunityNotesRatingCounts'
+
+    CommunityNotesNoteCounts:
+      description: How many notes a contributor wrote, by X's current rating.
+      type: object
+      properties:
+        awaitingMoreRatings:
+          type: integer
+          $ref: '#/components/schemas/WholeNumber'
+          description: Notes that need more ratings.
+        currentlyRatedHelpful:
+          type: integer
+          $ref: '#/components/schemas/WholeNumber'
+          description: Notes X rates helpful now.
+        currentlyRatedNotHelpful:
+          type: integer
+          $ref: '#/components/schemas/WholeNumber'
+          description: Notes X rates not helpful now.
+        updatedAt:
+          type: string
+          format: date-time
+          description: When X last counted the notes.
+
+    CommunityNotesRatingCounts:
+      description: How a contributor's ratings of other notes went.
+      type: object
+      properties:
+        awaitingMoreRatings:
+          type: integer
+          $ref: '#/components/schemas/WholeNumber'
+          description: Ratings on notes that need more ratings.
+        ratedAfterDecision:
+          type: integer
+          $ref: '#/components/schemas/WholeNumber'
+          description: Ratings made after X rated the note.
+        successful:
+          type: object
+          $ref: '#/components/schemas/CommunityNotesRatingOutcome'
+          description: Ratings that matched the rating X gave the note.
+        unsuccessful:
+          type: object
+          $ref: '#/components/schemas/CommunityNotesRatingOutcome'
+          description: Ratings that went against the rating X gave the note.
+        updatedAt:
+          type: string
+          format: date-time
+          description: When X last counted the ratings.
+
+    CommunityNotesRatingOutcome:
+      description: A group of a contributor's ratings, by what each one said.
+      type: object
+      properties:
+        helpfulCount:
+          type: integer
+          $ref: '#/components/schemas/WholeNumber'
+          description: Ratings that called a note helpful.
+        notHelpfulCount:
+          type: integer
+          $ref: '#/components/schemas/WholeNumber'
+          description: Ratings that called a note not helpful.
+        total:
+          type: integer
+          $ref: '#/components/schemas/WholeNumber'
+          description: All ratings in the group, when X sends the sum.
+
+    CommunityNote:
+      description: >
+        A Community Note as its writer's page lists it, with the post it is on.
+        A deleted note has no text, classification or post. A field X leaves out
+        is left out.
+      type: object
+      required: [id]
+      properties:
+        id:
+          type: string
+          description: Note ID.
+          example: '2026375778254868976'
+        createdAt:
+          type: string
+          format: date-time
+          description: When the contributor wrote the note.
+        language:
+          type: string
+          description: Language code of the note.
+          example: 'en'
+        classification:
+          type: string
+          description:
+            What the writer says of the post, such as
+            MisinformedOrPotentiallyMisleading or NotMisleading.
+          example: 'MisinformedOrPotentiallyMisleading'
+        text:
+          type: string
+          description: What the note says.
+        contributor:
+          type: object
+          $ref: '#/components/schemas/CommunityNotesContributor'
+          description:
+            The note's writer, with the counts X sends beside a note. GET
+            /x/community-notes/contributors/{alias} serves every count.
+        entities:
+          type: array
+          description:
+            Links, tags & accounts inside the text, by character range.
+          items:
+            $ref: '#/components/schemas/CommunityNoteEntity'
+        ratingStatus:
+          type: string
+          description:
+            X's current rating, such as NeedsMoreRatings, CurrentlyRatedHelpful
+            or CurrentlyRatedNotHelpful. x.com shows only helpful notes under
+            posts.
+          example: 'CurrentlyRatedHelpful'
+        helpfulTags:
+          type: array
+          items: { type: string }
+          description: Why raters called the note helpful.
+          example: ['ImportantContext', 'Clear']
+        notHelpfulTags:
+          type: array
+          items: { type: string }
+          description: Why raters called the note not helpful.
+          example: ['MissingKeyPoints', 'Incorrect']
+        decidedBy:
+          type: string
+          description: The X scoring model that set the rating.
+          example: 'CoreModel (v1.1)'
+        fullyVisibleModel:
+          type: boolean
+          description: Whether X marks that scoring model as fully visible.
+        abovePcrhThreshold:
+          type: boolean
+          description:
+            Whether the note scores above X's bar for a possible helpful rating.
+        appealStatus:
+          type: string
+          description: Whether the rating is under appeal.
+          example: 'NotAppealed'
+        deleted:
+          type: boolean
+          description: Whether the writer deleted the note.
+        tombstone:
+          type: string
+          description: X's notice in place of a deleted note.
+          example: 'This note has been deleted'
+        isApiAuthor:
+          type: boolean
+          description: Whether the note came through X's API.
+        isMediaNote:
+          type: boolean
+          description:
+            Whether the note is about the post's media. X can show such a note
+            on other posts.
+        mediaNoteMatchCount:
+          type: integer
+          $ref: '#/components/schemas/WholeNumber'
+          description: Other posts X matched a media note to.
+        isUrlNote:
+          type: boolean
+          description: Whether the note is on a link.
+        displayUrl:
+          type: string
+          description: The link a link note is on, as X shows it.
+        isTranslatable:
+          type: boolean
+          description: Whether X offers a translation of the note.
+        timeToHelpfulFromNoteMs:
+          type: integer
+          $ref: '#/components/schemas/WholeNumber'
+          description:
+            Milliseconds from the note's creation to its helpful rating.
+          example: 132890587
+        timeToHelpfulFromPostMs:
+          type: integer
+          $ref: '#/components/schemas/WholeNumber'
+          description:
+            Milliseconds from the post's creation to the note's helpful rating.
+          example: 136815576
+        impressionCount:
+          type: integer
+          $ref: '#/components/schemas/WholeNumber'
+          description: Views of the note, when X shares them.
+        postId:
+          type: string
+          description: ID of the post the note is on.
+          example: '2026359315657805939'
+        post:
+          anyOf:
+            - $ref: '#/components/schemas/SearchTweet'
+            - type: 'null'
+          description: The post the note is on. Null when X no longer shows it.
+        postUnavailable:
+          type: object
+          description: Why X shows no post, when X says.
+          required: [reason]
+          properties:
+            reason:
+              type: string
+              description: Why X shows no post, as X names it.
+              example: 'Suspended'
+
+    CommunityNoteEntity:
+      description: A link, tag or account inside a note's text.
+      type: object
+      properties:
+        fromIndex:
+          type: integer
+          $ref: '#/components/schemas/WholeNumber'
+          description: Where it starts in the text.
+        toIndex:
+          type: integer
+          $ref: '#/components/schemas/WholeNumber'
+          description: Where it ends in the text.
+        ref:
+          type: object
+          description: What it points at.
+          properties:
+            type:
+              type: string
+              description: X's kind, such as TimelineUrl.
+              example: 'TimelineUrl'
+            url:
+              type: string
+              description: The link.
+              example: 'https://t.co/7fJbcLrO1k'
+            urlType:
+              type: string
+              description: How X opens the link, such as ExternalUrl.
+            text:
+              type: string
+              description: A hashtag's or cashtag's text.
+            screenName:
+              type: string
+              description: A mentioned account's username.
+
+    PaginatedCommunityNotes:
+      description: >
+        One page of Community Notes. Follow next_cursor while the response
+        reports more pages.
+      type: object
+      example: { notes: [], has_next_page: false, next_cursor: '' }
+      required: [notes, has_next_page, next_cursor]
+      properties:
+        notes:
+          type: array
+          items:
+            $ref: '#/components/schemas/CommunityNote'
+        has_next_page: *boolean-example-true
+        next_cursor: *cursor-example-schema
+
     TweetMedia:
       description: Tweet media.
       type: object
@@ -19649,6 +20205,8 @@ components:
                       type: { type: string }
                       url: { type: string }
                       urlType: { type: string }
+                      text: { type: string }
+                      screenName: { type: string }
 
     TweetInterstitial:
       description: >-
@@ -19690,6 +20248,8 @@ components:
                         type: string
                         example: 'https://help.x.com/rules-and-policies/public-interest'
                       urlType: { type: string, example: ExternalUrl }
+                      text: { type: string }
+                      screenName: { type: string }
 
     TweetPublicDataBase:
       description: >-
