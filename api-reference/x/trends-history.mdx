@@ -1,0 +1,343 @@
+---
+title: "Twitter trends archive API & trends history by date"
+sidebarTitle: "Get trends history"
+description: "Read the Twitter trends archive of any place. Get past X trends by date and time, 1 stored list per step, from 2026-10-13 on. 1 credit per list returned."
+api: "GET /x/trends/history"
+keywords:
+  [
+    "Twitter trends archive",
+    "trending on Twitter yesterday",
+    "Twitter trends history",
+    "historical Twitter trends",
+    "past Twitter trends",
+    "X trends history",
+    "Twitter trends by date",
+    "trends history API",
+  ]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+import TweetReadApiLinks from "/snippets/x-tweet-read-api-links.mdx";
+import FieldSelectionParams from "/snippets/field-selection-params.mdx";
+
+{/* GENERATED RESPONSE EXAMPLES START */}
+{/* GENERATED RESPONSE EXAMPLES END */}
+<LlmsDirective />
+
+<Callout icon="coins" color="#5c3327">
+
+**1 credit per list returned** · [All plans](https://xquik.com/#pricing) from $0.00012/credit
+
+</Callout>
+
+<CodeGroup>
+
+```bash cURL
+curl -G https://xquik.com/api/v1/x/trends/history \
+  --data-urlencode "country=TR" \
+  --data-urlencode "from=2026-10-13" \
+  --data-urlencode "to=2026-10-14" \
+  --data-urlencode "every=1h" \
+  -H "x-api-key: xq_your_api_key_here" | jq
+```
+
+```javascript Node.js
+const params = new URLSearchParams({
+  country: "TR",
+  from: "2026-10-13",
+  to: "2026-10-14",
+  every: "1h",
+});
+const response = await fetch(`https://xquik.com/api/v1/x/trends/history?${params}`, {
+  headers: { "x-api-key": "xq_your_api_key_here" },
+});
+const data = await response.json();
+const trendRows = data.snapshots.flatMap((snapshot) =>
+  snapshot.trends.map((trend) => ({
+    captured_at: snapshot.capturedAt,
+    region_woeid: data.woeid,
+    rank: trend.rank,
+    trend_name: trend.name,
+    tweet_volume: trend.tweetVolume ?? null,
+  })),
+);
+
+for (const row of trendRows) {
+  process.stdout.write(`${JSON.stringify(row)}\n`);
+}
+```
+
+```python Python
+import json
+import requests
+
+response = requests.get(
+    "https://xquik.com/api/v1/x/trends/history",
+    params={"country": "TR", "from": "2026-10-13", "to": "2026-10-14", "every": "1h"},
+    headers={"x-api-key": "xq_your_api_key_here"},
+)
+data = response.json()
+trend_rows = [
+    {
+        "captured_at": snapshot["capturedAt"],
+        "region_woeid": data["woeid"],
+        "rank": trend["rank"],
+        "trend_name": trend["name"],
+        "tweet_volume": trend.get("tweetVolume"),
+    }
+    for snapshot in data["snapshots"]
+    for trend in snapshot["trends"]
+]
+for row in trend_rows:
+    print(json.dumps(row))
+```
+
+</CodeGroup>
+
+Use `GET /x/trends/history` to read the Twitter trends archive of a place.
+It answers what was trending on Twitter yesterday, last week, or on any day since 2026-10-13.
+Xquik stores 1 list per place every 5 minutes and keeps each list for 25 months.
+The archive starts 2026-10-13 02:20 UTC. Earlier trends are not available.
+Each returned list costs 1 credit, so 24 lists cost 24 credits.
+A step with no stored list returns nothing and costs nothing.
+
+## Read Twitter trends history by date
+
+Pick the place by `country`, `location`, or `woeid`. Without one, trends are worldwide.
+Set the range with `from` and `to`, and the step with `every`.
+Each step returns the first list Xquik stored in it, oldest first.
+Every list carries `capturedAt`, the time Xquik read it from X. Xquik never estimates that time.
+
+A request returns 24 lists, or up to 100 with `limit`.
+A wider range answers `has_next_page` as `true`. Send `next_cursor` as `cursor` for the next lists.
+For 1 past moment, send `at` to [Get X trends](/api-reference/x/trends) instead.
+
+## Query parameters
+
+<ParamField query="woeid" type="integer">
+
+Positive Where On Earth ID for the region. It wins over `country` and `location`. Invalid or nonpositive values fall back to those names, then to `1` (worldwide). [List trend locations](/api-reference/x/trend-locations) returns every place.
+
+</ParamField>
+
+<ParamField query="country" type="string">
+
+Country to read trends history for, by name or 2-letter code, such as `Turkey` or `TR`. Case insensitive.
+
+</ParamField>
+
+<ParamField query="location" type="string">
+
+Town or country to read trends history for, by name, such as `Istanbul`. Case insensitive. Add `country` when 2 towns share a name.
+
+</ParamField>
+
+<ParamField query="from" type="string">
+
+Start of the range. Takes an ISO 8601 time, a date such as `2026-10-13`, or Unix seconds. A time without a zone reads as UTC. Defaults to 24 hours before `to`. History starts 2026-10-13 02:20 UTC, and a range that begins earlier returns the stored part. Alias `sinceTime`.
+
+</ParamField>
+
+<ParamField query="to" type="string">
+
+End of the range, which it leaves out. Takes the forms of `from`. Defaults to now. Alias `untilTime`.
+
+</ParamField>
+
+<ParamField query="every" type="string">
+
+Step between 2 returned lists, as a number and `m`, `h`, or `d`, such as `15m`, `1h`, or `1d`. Default `1h`. A step under `5m` returns every stored list.
+
+</ParamField>
+
+<ParamField query="count" type="integer">
+
+Number of trends in each list. Default `30`, max `50`. Invalid or below-minimum values fall back to `30`.
+
+</ParamField>
+
+<ParamField query="limit" type="integer">
+
+Maximum lists 1 request returns and charges. Default `24`, max `100`. Your credit balance can return fewer.
+
+</ParamField>
+
+<ParamField query="cursor" type="string">
+
+The `next_cursor` of the page before, for the next lists.
+
+</ParamField>
+
+### Choose fields
+
+<FieldSelectionParams />
+
+## Headers
+
+<ParamField header="x-api-key" type="string">
+
+Send a full Xquik account API key.
+
+</ParamField>
+
+<ParamField header="Authorization" type="string">
+
+`Bearer xq_your_guest_key_here` for `paid_reads`.
+
+</ParamField>
+
+## Response
+
+### 200 OK
+
+<ResponseField name="snapshots" type="object[]">
+
+1 stored list per step, oldest first. A step with no stored list is left out.
+**Snapshot object fields.**
+
+<ResponseField name="capturedAt" type="string">
+  When Xquik read this list from X, as ISO 8601 in UTC. It comes from the stored list and is never estimated.
+</ResponseField>
+<ResponseField name="count" type="number">
+  Trends in this list.
+</ResponseField>
+<ResponseField name="trends" type="object[]">
+  The trends of the list, with the fields of [Get X trends](/api-reference/x/trends). `rank` is the trend's place in X's list at that time.
+</ResponseField>
+
+</ResponseField>
+<ResponseField name="count" type="number">Lists returned and charged.</ResponseField>
+<ResponseField name="woeid" type="number">WOEID used for the request.</ResponseField>
+<ResponseField name="location" type="object">
+  The place `country` or `location` named, with the fields of a [trend location](/api-reference/x/trend-locations). Absent when `woeid` picked the place or the request named none.
+</ResponseField>
+<ResponseField name="has_next_page" type="boolean">Whether the range holds more lists.</ResponseField>
+<ResponseField name="next_cursor" type="string">
+  Send it as `cursor` for the next lists. Empty on the last page.
+</ResponseField>
+
+```json
+{
+  "snapshots": [
+    {
+      "capturedAt": "2026-10-13T14:00:26.000Z",
+      "count": 1,
+      "trends": [
+        {
+          "name": "#AI",
+          "rank": 1,
+          "description": "Trending in Technology",
+          "query": "%23AI",
+          "promotedContent": null,
+          "tweetVolume": 250000,
+          "url": "https://x.com/search?q=%23AI"
+        }
+      ]
+    }
+  ],
+  "count": 1,
+  "woeid": 1,
+  "has_next_page": false,
+  "next_cursor": ""
+}
+```
+
+### 400 Invalid input
+
+```json
+{
+  "error": "invalid_input",
+  "message": "Trends history for this place starts 2026-10-13 02:20 UTC. Ask for a later time."
+}
+```
+
+The range ends before the place's first stored list. The message names that first time.
+An unknown place, a time or step Xquik cannot read, and a `from` after `to` also return 400.
+The request costs nothing.
+
+### 401 Unauthenticated
+
+Anonymous requests get `WWW-Authenticate: Bearer` and a guest wallet checkout action. This is not a Payment challenge.
+
+```json
+{ "error": "unauthenticated" }
+```
+
+### 402 Payment required
+
+Account keys get account options. Guest keys get guest top-up only.
+No checkout starts automatically. Confirm any payment action.
+
+### 502 X API unavailable
+
+```json
+{ "error": "x_api_unavailable" }
+```
+
+The read service returned an error. Retry after a short delay.
+
+### 503 Service busy
+
+```json
+{ "error": "x_api_unavailable" }
+```
+
+Xquik is busy. Wait for `Retry-After`, then retry.
+
+### 429 Rate limit exceeded
+
+```json
+{ "error": "rate_limit_exceeded", "retryAfter": 60 }
+```
+
+The Xquik tier limit blocked the request.
+Use `Retry-After` when present. Otherwise, use the JSON `retryAfter` field.
+
+### 424 Dependency failed
+
+```json
+{ "error": "x_api_unavailable" }
+```
+
+The opt-in normalized contract returns 424 when the read service fails.
+Send `xquik-api-contract: 2026-04-29` to opt in. Default v1 returns 502.
+
+## Twitter trends archive API questions
+
+### How do I see what was trending on Twitter yesterday?
+
+Call `GET /x/trends/history` with yesterday's date as `from` and today's date as `to`.
+Add `every=1h` for 1 list per hour, or `every=1d` for the first list of the day.
+
+### How far back does the Twitter trends archive go?
+
+It starts 2026-10-13 02:20 UTC. Xquik keeps each list for 25 months.
+A range that ends before the start returns 400 and costs nothing.
+
+### How often does Xquik store a list?
+
+Every 5 minutes, for every place X offers trends for.
+A step under `5m` returns every stored list.
+
+### How much does trends history cost?
+
+Each returned list costs 1 credit, so 24 lists cost 24 credits.
+A step with no stored list costs nothing. A request returns 100 lists at most.
+
+### What if no list matches a step?
+
+The response leaves that step out. Xquik never fills a gap with a made-up list.
+Each returned list states its own `capturedAt`.
+
+### Does this replace X's official API?
+
+No. This page documents Xquik, an independent third-party service.
+It does not document X's official API.
+
+<Note>
+
+**Next steps.** [Get X trends](/api-reference/x/trends) reads the current trends of a place, or 1 past moment with `at`.
+
+</Note>
+
+<TweetReadApiLinks />
