@@ -115,6 +115,15 @@ challenge to discover the authorization metadata. API-key clients should send
 `error="invalid_token"` and `error_description="Invalid access token"` to the
 challenge.
 
+The `error` text says what to fix when Xquik refuses a credential.
+
+| The request sends                                    | `error`                                                                           |
+| ---------------------------------------------------- | --------------------------------------------------------------------------------- |
+| No credential                                        | `Authentication required`                                                         |
+| An API key Xquik does not accept                     | `This API key is not valid. Create a key in your Xquik dashboard.`                |
+| An OAuth token that expired or was revoked           | `This access token expired or was revoked. Sign in again from your app.`          |
+| An `Authorization` header without `Bearer` & a token | `Xquik could not read the Authorization header. Send Bearer, a space & your key.` |
+
 ## Authentication
 
 The MCP server supports 2 authentication methods:
@@ -372,7 +381,19 @@ Codex supports plugins from your own repository marketplace.
 These packages can bundle Skills & MCP tools without public directory submission.
 Follow [OpenAI's packaging guide](https://developers.openai.com/plugins/build/plugins)
 to distribute your own package.
-Use the direct MCP setup above for Xquik today.
+
+Xquik's own plugin adds the MCP server as `xquik`, without a sign-in.
+Sign in once after the install.
+
+```bash
+codex plugin marketplace add Xquik-dev/x-twitter-scraper
+codex plugin add x-twitter-scraper@x-twitter-scraper
+codex mcp login xquik
+```
+
+In the Codex app, select **Authenticate** next to `xquik` instead.
+To use an API key, add the [API key configuration](#codex-api-key-authentication).
+It replaces the plugin's `xquik` entry.
 
 | Client                   | Connection & plugin limits                                                                                   |
 | ------------------------ | ------------------------------------------------------------------------------------------------------------ |
@@ -415,6 +436,7 @@ bearer_token_env_var = "XQUIK_API_KEY"
 ```
 
 Restart Codex & run `codex mcp list`. The configured key authenticates requests directly.
+This entry also replaces the `xquik` server that Xquik's plugin adds.
 Never commit the key or place its value in `config.toml`.
 
 ### Editor clients
