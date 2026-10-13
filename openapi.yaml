@@ -3586,10 +3586,12 @@ paths:
           description:
             A past time, to read what was trending on Twitter then. Takes an ISO
             8601 time, a date such as 2026-10-13, or Unix seconds. A time
-            without a zone reads as UTC. The answer is the stored list nearest
-            that time, with its own time in capturedAt. History starts
-            2026-10-13 02:20 UTC. A time over 24 hours from every stored list
-            answers 400 at no charge.
+            without a zone reads as UTC. It also takes a span back from now, as
+            a number & s, m, h or d. So at=24h reads what was trending on
+            Twitter yesterday at this hour, on every run of a schedule. The
+            answer is the stored list nearest that time, with its own time in
+            capturedAt. History starts 2026-10-13 02:20 UTC. A time over 24
+            hours from every stored list answers 400 at no charge.
           example: '2026-10-13T14:00:00Z'
         - $ref: '#/components/parameters/Fields'
         - $ref: '#/components/parameters/Omit'
@@ -3675,8 +3677,9 @@ paths:
                     type: string
                     format: date-time
                     description:
-                      The time at asked for, as Xquik read it. Present only with
-                      at.
+                      The time at asked for, as Xquik read it. A span such as
+                      24h shows here as the time it counted back to. Present
+                      only with at.
                     example: '2026-10-13T14:00:00.000Z'
         '400':
           description:
@@ -3726,10 +3729,12 @@ paths:
         last week or any day since 2026-10-13 02:20 UTC. Xquik stores 1 list per
         place every 5 minutes and keeps it for 25 months. Pick the place by
         woeid, country or location name, the range with from & to, and the step
-        with every. Each step returns the first list stored in it, with its own
-        time. Each returned list costs 1 credit, so 24 lists cost 24 credits. A
-        step with no stored list returns none and costs nothing. 1 request
-        returns 24 lists, or up to 100 with limit.
+        with every. from & to take a time or a span back from now, such as 7d,
+        so a schedule can read the last day on every run. Each step returns the
+        first list stored in it, with its own time. Each returned list costs 1
+        credit, so 24 lists cost 24 credits. A step with no stored list returns
+        none and costs nothing. 1 request returns 24 lists, or up to 100 with
+        limit.
       summary: Get the X (Twitter) trends archive of a place by date
       tags:
         - Trends
@@ -3766,18 +3771,20 @@ paths:
             type: string
           description:
             Start of the range. Takes an ISO 8601 time, a date such as
-            2026-10-13, or Unix seconds. A time without a zone reads as UTC.
-            Defaults to 24 hours before to. History starts 2026-10-13 02:20 UTC,
-            and a range that begins earlier returns the stored part. Alias
-            sinceTime.
+            2026-10-13, or Unix seconds. A time without a zone reads as UTC. It
+            also takes a span back from now, as a number & s, m, h or d, so
+            from=7d reads the last 7 days. Defaults to 24 hours before to.
+            History starts 2026-10-13 02:20 UTC, and a range that begins earlier
+            returns the stored part. Alias sinceTime.
           example: '2026-10-13'
         - name: to
           in: query
           schema:
             type: string
           description:
-            End of the range, which it leaves out. Takes the forms of from.
-            Defaults to now. Alias untilTime.
+            End of the range, which it leaves out. Takes the forms of from, so
+            from=2d with to=1d reads the day before the last 24 hours. Defaults
+            to now. Alias untilTime.
           example: '2026-10-14'
         - name: every
           in: query
@@ -3810,8 +3817,11 @@ paths:
           in: query
           schema:
             type: string
-          description: The next_cursor of the page before, for the next lists.
-          example: '2026-10-14T00:00:00.000Z'
+          description:
+            The next_cursor of the page before, for the next lists. It keeps the
+            time of the first request, so a range of spans stays the same on
+            every page.
+          example: '2026-10-14T00:00:00.000Z~1791979200000'
         - $ref: '#/components/parameters/Fields'
         - $ref: '#/components/parameters/Omit'
       responses:
@@ -3821,8 +3831,29 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [snapshots, count, woeid, has_next_page, next_cursor]
+                required:
+                  - snapshots
+                  - count
+                  - fromTime
+                  - toTime
+                  - woeid
+                  - has_next_page
+                  - next_cursor
                 properties:
+                  fromTime:
+                    type: string
+                    format: date-time
+                    description:
+                      Start of the range as Xquik read it. A span such as 7d
+                      shows here as the time it counted back to.
+                    example: '2026-10-13T00:00:00.000Z'
+                  toTime:
+                    type: string
+                    format: date-time
+                    description:
+                      End of the range as Xquik read it, which the range leaves
+                      out. Without to, it is the time of the first request.
+                    example: '2026-10-14T00:00:00.000Z'
                   snapshots:
                     type: array
                     description:
@@ -3918,6 +3949,8 @@ paths:
                       page.
                     example: ''
               example:
+                fromTime: '2026-10-13T00:00:00.000Z'
+                toTime: '2026-10-14T00:00:00.000Z'
                 snapshots:
                   - capturedAt: '2026-10-13T14:00:26.000Z'
                     count: 1
