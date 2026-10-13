@@ -17310,7 +17310,12 @@ components:
         with that account's profile. follower.added & follower.removed fire when
         someone follows the account or leaves its followers, with that account's
         profile. Lost followers are named for accounts with up to 100,000
-        followers. Keyword monitors take the 10 post types only.
+        followers. profile.followers.changed & profile.following.changed fire
+        when the account's follower or following count moves, at most once a
+        minute each. X shows counts that differ by a few between reads, so a
+        monitor holds the lowest. A fall counts once 2 reads show it, & a rise
+        once no read for a minute showed less. Keyword monitors take the 10 post
+        types only.
       type: string
       enum:
         - tweet.new
@@ -17341,6 +17346,8 @@ components:
         - following.removed
         - follower.added
         - follower.removed
+        - profile.followers.changed
+        - profile.following.changed
       example: 'tweet.new'
 
     EventTypeArray:
@@ -17349,7 +17356,7 @@ components:
       items:
         $ref: '#/components/schemas/EventType'
       minItems: 1
-      maxItems: 28
+      maxItems: 30
       example: ['tweet.new', 'tweet.reply']
 
     ExtractionToolType:
@@ -18254,12 +18261,22 @@ components:
           additionalProperties: true
 
     MonitorProfileChange:
-      description: Changed profile field with its previous and current values.
+      description:
+        Changed profile field with its previous and current values. The field of
+        a count event is followers or following, with both counts as integers.
       type: object
       required: [field, userId, username]
       properties:
         field:
           type: string
+        change:
+          type: integer
+          format: int64
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+          description:
+            Current count minus previous count. Only on the 2 count events.
+          example: -3
         userId:
           type: string
           description: Permanent X user ID.
@@ -18273,10 +18290,15 @@ components:
 
     MonitorProfileValue:
       description:
-        Profile text, flag, or pinned post IDs. Missing values are omitted.
+        Profile text, flag, count, or pinned post IDs. Missing values are
+        omitted.
       anyOf:
         - type: string
         - type: boolean
+        - type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
         - type: array
           items:
             type: string
