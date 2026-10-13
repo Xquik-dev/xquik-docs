@@ -188,7 +188,8 @@ Get replies by tweet ID for analysis, support, moderation, giveaways, and agents
 
 Reply visibility depends on X. Complete mode returns `424
   replies_incomplete` below 80% direct-reply coverage. A `sinceTime` or
-`untilTime` window read to its end returns 200. Retry only while
+`untilTime` window read to its end returns 200. A post that shows none of
+its counted replies returns 200 with `hiddenReplies`. Retry only while
 `diagnostic.sourcesEnded` is `false`.
 Never treat missing rows as proof that a user did not reply.
 
@@ -395,6 +396,7 @@ each conversation branch.
 | Time window                  | `sinceTime` and `untilTime`                | Keep both time values unchanged when retrying.                 |
 | Completion state             | `has_next_page` plus the terminal cursor   | Mark the export complete only after the final page.            |
 | Incomplete complete-mode run | `424 replies_incomplete` plus `diagnostic` | Keep rows, inspect evidence, and follow `recommendedFallback`. |
+| Post that shows no replies   | `200` with `hiddenReplies`                 | Stop reading. A retry returns the same replies.                |
 
 ## Which replies endpoint?
 
@@ -607,7 +609,7 @@ Array of reply tweets.
 <ResponseField name="nested_replies" type="object[]">Complete mode's nested replies. Exclude them from direct coverage.</ResponseField>
 <ResponseField name="orderPartial" type="boolean">Present with `latest` or `oldest` sort when some rows came from X views without date order. Rows stay sorted by date, but replies may be missing between them. Retry later for a gap-free order.</ResponseField>
 <ResponseField name="hiddenByAuthor" type="boolean">On a reply row: present when the post's author hid this reply. Complete mode adds such replies when `includeHidden=true`.</ResponseField>
-<ResponseField name="hiddenReplies" type="integer">Present on the last automatic page. X counts this many more replies but shows them to nobody. They may be hidden, protected or deleted. A retry returns the same replies.</ResponseField>
+<ResponseField name="hiddenReplies" type="integer">Present on the last automatic page & on a complete-mode answer without rows. X counts this many more replies but shows them to nobody. They may be hidden, protected or deleted. A retry returns the same replies.</ResponseField>
 <ResponseField name="diagnostic" type="object">
 
 Complete-mode coverage evidence. Omitted from standard responses.
