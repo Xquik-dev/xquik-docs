@@ -128,6 +128,7 @@ const PROFILE_FIELDS = [
   "isBlueVerified",
   "isVerified",
   "profilePicture",
+  "profilePictureOriginal",
   "coverPicture",
   "profileBannerUrl",
   "location",
