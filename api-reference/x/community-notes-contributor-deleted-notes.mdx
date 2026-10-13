@@ -1,0 +1,405 @@
+---
+title: "X community notes API for a writer's deleted notes"
+sidebarTitle: "Get deleted notes"
+description: "List the Community Notes a contributor deleted, with each note's ID, time, rating status, rater tags, and scoring model. 1 credit per note, empty lists free."
+api: "GET /x/community-notes/contributors/{alias}/deleted-notes"
+keywords:
+  [
+    "Community Notes API",
+    "deleted Community Notes",
+    "Birdwatch deleted notes",
+    "Community Notes contributor",
+    "X fact check history",
+    "note rating status",
+  ]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+import TweetReadApiLinks from "/snippets/x-tweet-read-api-links.mdx";
+import FieldSelectionParams from "/snippets/field-selection-params.mdx";
+
+{/* GENERATED RESPONSE EXAMPLES START */}
+
+<Panel>
+
+<Tabs defaultTabIndex={0} sync={false}>
+
+  <Tab title="200" id="response-x-community-notes-contributor-deleted-notes-200">
+
+    ```json
+    {
+      "notes": [
+        {
+          "id": "2078950499982696756",
+          "createdAt": "2026-07-19T21:09:58.885Z",
+          "ratingStatus": "CurrentlyRatedNotHelpful",
+          "notHelpfulTags": [
+            "MissingKeyPoints"
+          ],
+          "decidedBy": "CoreModel (v1.1)"
+        }
+      ],
+      "has_next_page": false,
+      "next_cursor": ""
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="400" id="response-x-community-notes-contributor-deleted-notes-400">
+
+    ```json
+    {
+      "error": "invalid_contributor_alias",
+      "message": "Send a Community Notes alias or its x.com/i/communitynotes/u URL."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="401" id="response-x-community-notes-contributor-deleted-notes-401">
+
+    ```json
+    {
+      "error": "unauthenticated",
+      "message": "Authentication required."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="402" id="response-x-community-notes-contributor-deleted-notes-402">
+
+    ```json
+    {
+      "error": "insufficient_credits",
+      "message": "Insufficient credits. Top up or subscribe to continue."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="404" id="response-x-community-notes-contributor-deleted-notes-404">
+
+    ```json
+    {
+      "error": "contributor_not_found",
+      "message": "Contributor not found. Check the alias on its x.com/i/communitynotes/u page."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="424" id="response-x-community-notes-contributor-deleted-notes-424">
+
+    ```json
+    {
+      "error": "x_api_unavailable",
+      "message": "X data source temporarily unavailable. Try again later."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="429" id="response-x-community-notes-contributor-deleted-notes-429">
+
+    ```json
+    {
+      "error": "rate_limit_exceeded",
+      "message": "Too many requests. Try again later.",
+      "retryAfter": 60
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="502" id="response-x-community-notes-contributor-deleted-notes-502">
+
+    ```json
+    {
+      "error": "x_api_unavailable",
+      "message": "X data source temporarily unavailable. Try again later."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="503" id="response-x-community-notes-contributor-deleted-notes-503">
+
+    ```json
+    {
+      "error": "x_api_unavailable",
+      "message": "Xquik is busy right now. Retry shortly."
+    }
+    ```
+
+  </Tab>
+</Tabs>
+
+</Panel>
+{/* GENERATED RESPONSE EXAMPLES END */}
+<LlmsDirective />
+
+List the Community Notes 1 contributor deleted, newest first.
+
+<Note>
+
+Requested result counts are upper bounds for paid authenticated calls. When remaining credits cannot cover the full page, Xquik returns fewer results. If zero paid results are affordable, it returns `402 insufficient_credits`.
+
+</Note>
+
+<Callout icon="coins" color="#5c3327">
+
+**1 credit per note returned** · [All plans](https://xquik.com/#pricing) from $0.00012/credit · Supports [guest paid reads](/guides/guest-wallets)
+
+</Callout>
+
+<CodeGroup>
+
+```bash cURL
+curl "https://xquik.com/api/v1/x/community-notes/contributors/ardent-beach-friarbird/deleted-notes" \
+  -H "x-api-key: xq_your_api_key_here" | jq
+```
+
+```javascript Node.js
+const alias = "ardent-beach-friarbird";
+const url = `https://xquik.com/api/v1/x/community-notes/contributors/${alias}/deleted-notes`;
+const response = await fetch(url, {
+  headers: { "x-api-key": "xq_your_api_key_here" },
+});
+const data = await response.json();
+if (!response.ok) throw new Error(JSON.stringify(data));
+
+const nextCursor = data.has_next_page ? data.next_cursor : null;
+const noteRows = data.notes.map((note) => ({
+  contributor_alias: alias,
+  note_id: note.id,
+  created_at: note.createdAt ?? null,
+  rating_status: note.ratingStatus ?? null,
+  next_cursor: nextCursor,
+}));
+```
+
+```python Python
+import requests
+
+alias = "ardent-beach-friarbird"
+response = requests.get(
+    f"https://xquik.com/api/v1/x/community-notes/contributors/{alias}/deleted-notes",
+    headers={"x-api-key": "xq_your_api_key_here"},
+)
+data = response.json()
+if not response.ok:
+    raise RuntimeError(data)
+
+next_cursor = data["next_cursor"] if data["has_next_page"] else None
+note_rows = [
+    {
+        "contributor_alias": alias,
+        "note_id": note["id"],
+        "created_at": note.get("createdAt"),
+        "rating_status": note.get("ratingStatus"),
+        "next_cursor": next_cursor,
+    }
+    for note in data["notes"]
+]
+```
+
+</CodeGroup>
+
+The Node.js and Python snippets build 1 row per note. Store the rows with the cursor before you request the next page.
+
+## What does X keep of a deleted note?
+
+X keeps each deleted note's ID, time, rating status, rater tags & scoring model. It shows a notice in place of the
+note's text, so `text`, `classification` & `post` are left out. `tombstone` holds that notice.
+
+A contributor who deleted no note returns an empty list, which is free.
+
+[Get notes contributor](/api-reference/x/community-notes-contributor) returns the count in `deletedNotesCount`.
+
+## Page through deleted notes
+
+Each page returns `has_next_page` and `next_cursor`. Send `next_cursor` back as `cursor`. Stop when `has_next_page` is
+`false`.
+
+A cursor X never issued returns `400 invalid_cursor`, which is free. Start again without `cursor`, then use
+`next_cursor`.
+
+## Path parameters
+
+<ParamField path="alias" type="string" required>
+
+Contributor alias, such as `ardent-beach-friarbird`. The URL-encoded contributor URL also works, such as
+`x.com/i/communitynotes/u/ardent-beach-friarbird`. Any letter case works.
+
+</ParamField>
+
+## Query parameters
+
+<ParamField query="cursor" type="string">
+
+Pagination cursor from a previous response. Omit for the first page.
+
+</ParamField>
+
+<ParamField query="pageSize" type="integer">
+
+Notes per page, from `1` to `10`. Defaults to `10`. Also read as `limit`, `count`, `max_results`, `maxItems`,
+`max_items` & `per_page`.
+
+</ParamField>
+
+### Choose fields
+
+<FieldSelectionParams />
+
+## Headers
+
+<ParamField header="x-api-key" type="string">
+
+Full account key. Sessions and OAuth also work.
+
+</ParamField>
+
+<ParamField header="Authorization" type="string">
+
+`Bearer xq_your_guest_key_here` for `paid_reads`.
+
+</ParamField>
+
+## Response
+
+### 200 OK
+
+X leaves out a field that a note lacks. Only `id` is always present.
+
+<ResponseField name="notes" type="object[]">
+
+The contributor's deleted notes, newest first.
+**Note object fields.**
+
+<ResponseField name="id" type="string">
+  Note ID.
+</ResponseField>
+<ResponseField name="createdAt" type="string">
+  When the contributor wrote the note, as ISO 8601.
+</ResponseField>
+<ResponseField name="ratingStatus" type="string">
+  X's rating of the note, such as `NeedsMoreRatings` or `CurrentlyRatedNotHelpful`.
+</ResponseField>
+<ResponseField name="helpfulTags" type="string[]">
+  Why raters called the note helpful.
+</ResponseField>
+<ResponseField name="notHelpfulTags" type="string[]">
+  Why raters called the note not helpful.
+</ResponseField>
+<ResponseField name="decidedBy" type="string">
+  The X scoring model that set the rating.
+</ResponseField>
+<ResponseField name="fullyVisibleModel" type="boolean">
+  Whether X marks that scoring model as fully visible.
+</ResponseField>
+<ResponseField name="abovePcrhThreshold" type="boolean">
+  Whether the note scores above X's bar for a possible helpful rating.
+</ResponseField>
+<ResponseField name="appealStatus" type="string">
+  Whether the rating is under appeal.
+</ResponseField>
+<ResponseField name="deleted" type="boolean">
+  `true` for a deleted note.
+</ResponseField>
+<ResponseField name="tombstone" type="string">
+  X's notice in place of the note, such as `This note has been deleted`.
+</ResponseField>
+<ResponseField name="isApiAuthor" type="boolean">
+  Whether the note came through X's API.
+</ResponseField>
+<ResponseField name="isMediaNote" type="boolean">
+  Whether the note was about a post's media.
+</ResponseField>
+<ResponseField name="mediaNoteMatchCount" type="number">
+  Other posts X matched a media note to.
+</ResponseField>
+<ResponseField name="isUrlNote" type="boolean">
+  Whether the note was on a link.
+</ResponseField>
+
+</ResponseField>
+<ResponseField name="has_next_page" type="boolean">
+
+Whether more notes follow.
+
+</ResponseField>
+<ResponseField name="next_cursor" type="string">
+
+Cursor for the next page. Empty at the end of the list.
+
+</ResponseField>
+
+### 400 Invalid alias or cursor
+
+```json
+{
+  "error": "invalid_contributor_alias",
+  "message": "Send a Community Notes alias or its x.com/i/communitynotes/u URL."
+}
+```
+
+A cursor X never issued returns `invalid_cursor`. Start again without `cursor`. Both answers are free.
+
+### 404 Contributor not found
+
+```json
+{
+  "error": "contributor_not_found",
+  "message": "Contributor not found. Check the alias on its x.com/i/communitynotes/u page."
+}
+```
+
+No contributor holds the alias. This answer is free.
+
+### 401 Unauthenticated
+
+Anonymous requests get `WWW-Authenticate: Bearer` and a guest wallet checkout action. This is not a Payment challenge.
+
+```json
+{ "error": "unauthenticated" }
+```
+
+### 402 Payment required
+
+Account keys get account options. Guest keys get guest top-up only.
+No checkout starts automatically. Confirm any payment action.
+
+### 502 X API unavailable
+
+```json
+{ "error": "x_api_unavailable" }
+```
+
+The read service returned an error. Retry after a short delay.
+
+### 429 Rate limit exceeded
+
+```json
+{ "error": "rate_limit_exceeded", "retryAfter": 60 }
+```
+
+You exceeded your tier rate limit. Wait for the `Retry-After` header before retrying.
+
+### 424 Dependency failed
+
+```json
+{ "error": "x_api_unavailable" }
+```
+
+The normalized v1 response contract can return 424 when the read service is unavailable.
+
+<Note>
+
+**Related.** [Get notes contributor](/api-reference/x/community-notes-contributor) · [Contributor notes](/api-reference/x/community-notes-contributor-notes) · [Get tweet](/api-reference/x/get-tweet)
+
+</Note>
+
+<TweetReadApiLinks />

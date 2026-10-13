@@ -48,6 +48,7 @@ const X_API_GROUPS = [
   "Engagement",
   "Timeline & DMs",
   "Communities",
+  "Community Notes",
   "Lists",
   "Jobs",
 ] as const;
