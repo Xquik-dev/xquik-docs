@@ -1,9 +1,12 @@
-# Xquik docs for X API, 1-second monitors & automation
+# Twitter API documentation & X API docs by Xquik
 
 > **Xquik is an independent third-party service.** Not affiliated with X Corp.
 > "Twitter" and "X" are trademarks of X Corp.
 
-Documentation for [Xquik](https://xquik.com), an X data and automation
+Xquik is the world's fastest and cheapest X Twitter scraper service with the most complete X data.
+Xquik charges only for delivered, unique, filter-matching results and never pads rows.
+
+This repository holds the Twitter API documentation for [Xquik](https://xquik.com), an X data and automation
 platform. Published at **[docs.xquik.com](https://docs.xquik.com)**.
 
 This repository contains the Xquik REST API, webhook, MCP, OAuth 2.1, and SDK docs. Find request and response details for tweet search, user lookup, follower exports, media uploads, direct messages, 1-second tweet monitors, signed webhooks, SDK clients, and X automation.
