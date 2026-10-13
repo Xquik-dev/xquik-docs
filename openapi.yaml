@@ -497,7 +497,21 @@ paths:
               locale: en
       responses:
         '200':
-          $ref: '#/components/responses/Success'
+          description: Locale updated
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - type: object
+                    required: [success]
+                    properties:
+                      success:
+                        type: boolean
+                        const: true
+                        example: true
+                  - $ref: '#/components/schemas/IgnoredFieldsNotice'
+              example:
+                success: true
         '400': &invalid-input-response
           $ref: '#/components/responses/InvalidInput'
         '401': *unauthenticated-response
@@ -886,10 +900,12 @@ paths:
       responses:
         '201':
           description: Draft created
-          content: &draft-detail-content
+          content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DraftDetail'
+                allOf:
+                  - $ref: '#/components/schemas/DraftDetail'
+                  - $ref: '#/components/schemas/IgnoredFieldsNotice'
               example:
                 id: '42'
                 text: 'AI is the future of productivity'
@@ -912,7 +928,17 @@ paths:
       responses:
         '200':
           description: Draft details
-          content: *draft-detail-content
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DraftDetail'
+              example:
+                id: '42'
+                text: 'AI is the future of productivity'
+                topic: 'AI trends'
+                goal: engagement
+                createdAt: '2025-01-15T12:00:00Z'
+                updatedAt: '2025-01-16T09:30:00Z'
         '400': *invalid-input-response
         '401': *unauthenticated-response
         '404': *not-found-response
@@ -22225,6 +22251,19 @@ components:
           example: 'Engagement'
         createdAt: *created-at-schema
 
+    IgnoredFieldsNotice:
+      description: The fields a write did not read, when the request sent any.
+      type: object
+      properties:
+        ignoredFields:
+          type: array
+          items:
+            type: string
+          description:
+            Fields the request sent that this route does not read, in the order
+            sent. They changed nothing. The answer leaves this out when the
+            route read every field.
+          example: [plan]
     DraftDetail:
       description: Full private Xquik draft including update timestamp.
       allOf:
