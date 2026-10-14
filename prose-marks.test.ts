@@ -8,7 +8,7 @@ import { describe, expect, it } from "vitest";
  * headings are checked like every other page. Remove a folder once its
  * sentences pass.
  */
-const PENDING = ["guides", "api-reference", "snippets"] as const;
+const PENDING = ["guides"] as const;
 
 /** The adopted Contributor Covenant text stays verbatim. */
 const VERBATIM_FILES = new Set<string>(["CODE_OF_CONDUCT.md"]);
