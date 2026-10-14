@@ -10,7 +10,7 @@ Email [support@xquik.com](mailto:support@xquik.com) with the subject `Security r
 
 Do **not** open a public GitHub issue, discussion, or pull request for security findings. Public disclosure before a fix is in place puts every Xquik user at risk.
 
-When reporting, include as much of the following as you can:
+When reporting, include as much of the following as you can.
 
 - A clear description of the issue.
 - Reproduction steps, including request/response samples or proof-of-concept code where relevant.
@@ -27,16 +27,16 @@ When reporting, include as much of the following as you can:
 
 ## Scope
 
-In scope:
+These items are in scope.
 
 - The `docs.xquik.com` Mintlify site.
 - The OpenAPI spec (`openapi.yaml`) when its description contradicts actual API behaviour in a way that creates a vulnerability for integrators.
 - Documentation that incorrectly describes authentication, signature verification, or scope semantics in a way that would lead a developer to build an insecure integration.
 
-Out of scope (handle through the main repo or normal channels):
+These items are out of scope. Handle them through the main repo or normal channels.
 
-- Bugs in the Xquik product itself - email [support@xquik.com](mailto:support@xquik.com) with the subject `Security report`; the team routes them to the right repository internally.
-- Typos, broken links, or content suggestions - open a normal GitHub issue or PR on this repository.
+- Bugs in the Xquik product itself. Email [support@xquik.com](mailto:support@xquik.com) with the subject `Security report`. The team routes them to the right repository internally.
+- Typos, broken links, or content suggestions. Open a normal GitHub issue or PR on this repository.
 - Findings that affect only the documentation hosting platform.
 
 ## Threat model
@@ -55,7 +55,7 @@ Validated fixes require tests, independent review, and coordinated disclosure.
 
 ## Safe harbor
 
-We will not pursue legal action against researchers who:
+We will not pursue legal action against researchers who meet these conditions.
 
 - Make a good-faith effort to comply with this policy.
 - Avoid privacy violations, destruction of data, or interruption of service.

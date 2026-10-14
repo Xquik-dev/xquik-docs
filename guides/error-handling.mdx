@@ -29,26 +29,26 @@ Start with HTTP status. Retry only when stated.
 
   <Card title="400 request validation" icon="circle-alert">
 
-    Retry: no. Fix the body, query, or path. Examples include
+    Do not retry. Fix the body, query, or path. Examples include
     `invalid_json`, `invalid_id`, `invalid_tweet_url`, `invalid_tweet_id`.
 
   </Card>
   <Card title="401 authentication" icon="key-round">
 
-    Retry: no. Check `x-api-key`, regenerate revoked keys, or re-authenticate
+    Do not retry. Check `x-api-key`, regenerate revoked keys, or re-authenticate
     the connected X account. Covers `unauthenticated` and `x_auth_failure`.
 
   </Card>
   <Card title="402 billing and credits" icon="credit-card">
 
-    Retry: no. Read `payment_options`, then get explicit user confirmation.
+    Do not retry. Read `payment_options`, then get explicit user confirmation.
     Covers `no_subscription`, `subscription_inactive`, `payment_failed`,
     `no_credits`, and `insufficient_credits`.
 
   </Card>
   <Card title="403 permissions and account health" icon="shield-alert">
 
-    Retry: no. Delete an extra key, check billing status, use a participating
+    Do not retry. Delete an extra key, check billing status, use a participating
     DM account, re-authenticate the X account, or resolve account health on
     x.com. Covers `api_key_limit_reached`, `dm_not_permitted`,
     `account_needs_reauth`, and `account_restricted`. For `x_account_protected`,
@@ -57,21 +57,21 @@ Start with HTTP status. Retry only when stated.
   </Card>
   <Card title="404 missing resource" icon="search-x">
 
-    Retry: no. Verify the resource ID & connected account. Codes include
+    Do not retry. Verify the resource ID & connected account. Codes include
     `account_not_found`, `user_not_found`, `tweet_not_found`, `no_media`,
     and other missing resources.
 
   </Card>
   <Card title="409 or 410 cursor state" icon="refresh-cw">
 
-    Busy cursor: follow `Retry-After`, then send the same cursor again. A
+    For a busy cursor, follow `Retry-After`, then send the same cursor again. A
     cursor sent again within 10 minutes returns the same page at no charge.
-    Gone cursor: restart cursorless and deduplicate IDs.
+    For a gone cursor, restart cursorless and deduplicate IDs.
 
   </Card>
   <Card title="422 write validation" icon="message-circle-warning">
 
-    Retry: no, except `x_automation_refused`. Fix the account capability,
+    Retry only `x_automation_refused`. Fix the account capability,
     target, content, DM permissions, or media URL before sending again.
     Covers `x_dm_not_allowed`, `x_reply_not_allowed`, `x_target_not_found`, `x_content_too_long`,
     and the other [422 codes](#common-error-codes).
@@ -79,13 +79,13 @@ Start with HTTP status. Retry only when stated.
   </Card>
   <Card title="202 active write" icon="clock">
 
-    Retry: no. Store the action and poll `statusUrl` while `terminal` is
+    Do not retry. Store the action and poll `statusUrl` while `terminal` is
     `false`. Follow `Retry-After`, `pollAfterMs`, and `nextAction`.
 
   </Card>
   <Card title="429 rate limit or cooldown" icon="timer">
 
-    Retry: mixed. Retry `rate_limit_exceeded` and `x_rate_limited` after
+    Retry depends on the code. Retry `rate_limit_exceeded` and `x_rate_limited` after
     `Retry-After` or exponential backoff. Wait out `login_cooldown` via
     `retryAfterMs`. Do not retry `x_daily_limit` on the same X account for 24
     hours.
@@ -93,10 +93,10 @@ Start with HTTP status. Retry only when stated.
   </Card>
   <Card title="500, 502, and 503 transient failures" icon="rotate-ccw">
 
-    Retry: yes for `internal_error`, `x_api_rate_limited`,
+    Retry `internal_error`, `x_api_rate_limited`,
     `x_api_unavailable` and `x_api_unauthorized`. For writes, retry only when
     `safeToRetry` is `true`, using a new `Idempotency-Key`.
-    Retry `pagination_stalled` once after 30 seconds. Keep returned results.
+    Retry `pagination_stalled` once after 30 seconds. Keep the returned results.
 
   </Card>
 </CardGroup>
@@ -369,7 +369,7 @@ responses also include `message`, `reason`, `retryAfter`, or `retryAfterMs`.
       </Card>
       <Card title="user_not_found" icon="users">
 
-        X shows no profile for the username or user ID. `reason` says why:
+        X shows no profile for the username or user ID. `reason` says why with
         `not_found` or `suspended`. Confirm the handle, or choose another
         account when X suspended it.
 

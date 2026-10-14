@@ -16,7 +16,7 @@ This page lists common issues, error codes, and fixes. If it does not cover your
 ### 401 Unauthenticated
 
 The API key or OAuth token is missing, invalid, expired, or revoked. Check the
-following:
+following items.
 
 - **API key header.** Send `x-api-key: xq_...` or `Authorization: Bearer xq_...`.
 - **OAuth header.** Send `Authorization: Bearer <access_token>`. OAuth clients normally manage this automatically.
@@ -38,7 +38,7 @@ curl https://xquik.com/api/v1/account
 
 Anonymous non-MPP paid reads return `401` with a Bearer challenge and guest wallet action. Direct MPP reads return `402` with a Payment challenge and the same action. Account or guest credit failures also return `402`. The failed request creates no checkout.
 
-Solutions:
+Try these fixes.
 
 - For account keys, check `GET /api/v1/account` and use only the advertised account payment action
 - For guest keys, check [guest wallet status](/api-reference/guest-wallets/status) and use only the advertised guest top-up action
@@ -57,16 +57,16 @@ require available credits while enabled.
 { "error": "insufficient_credits", "message": "Insufficient credits" }
 ```
 
-Solutions:
+Try these fixes.
 
 - Pause an unused account monitor with `PATCH /api/v1/monitors/{id}` and `{ "isActive": false }`
 - Pause an unused keyword monitor with `PATCH /api/v1/monitors/keywords/{id}` and `{ "isActive": false }`
 - Delete an unused monitor. Poll the returned `statusUrl` until it returns `404`.
-- Check current monitor billing: `GET /api/v1/account` shows `monitorsUsed` and `monitorBilling`
+- Check current monitor billing with `GET /api/v1/account`, which shows `monitorsUsed` and `monitorBilling`
 
 ### 429 Too many requests
 
-You've exceeded the API rate limit. The API uses fixed windows per tier:
+You've exceeded the API rate limit. The API uses fixed windows per tier.
 
 <CardGroup cols={3}>
 
@@ -87,7 +87,7 @@ You've exceeded the API rate limit. The API uses fixed windows per tier:
   </Card>
 </CardGroup>
 
-Solutions:
+Try these fixes.
 
 - Respect `Retry-After`. Otherwise start at 1 second, add jitter, and stop after 3 retries.
 - Requests sent before the fixed window resets keep returning `429` until `Retry-After` elapses.
@@ -101,7 +101,7 @@ See the [Rate Limits](/guides/rate-limits) guide for backoff code examples.
 
 The read service is temporarily unavailable or busy. This is usually transient.
 
-Solutions:
+Try these fixes.
 
 - Respect `Retry-After` when present, then retry the request
 - If no `Retry-After` header is present, retry after 5 to 10 seconds
@@ -114,7 +114,7 @@ The same applies to draws and tweet, profile, follower, reply, timeline, communi
 
 ### Webhooks not arriving?
 
-Webhook delivery can fail without a visible error. Check each item:
+Webhook delivery can fail without a visible error. Check each item.
 
 1. **Webhook is active.** Verify `isActive: true` and `deliveryStatus: "active"` via `GET /api/v1/webhooks`. Paused webhooks do not receive deliveries.
 2. **HTTPS required.** Xquik rejects HTTP endpoints. Your URL must start with `https://`.
@@ -129,7 +129,7 @@ Webhook delivery can fail without a visible error. Check each item:
 
 ### Monitor not tracking events?
 
-If your monitor is active but no events appear:
+If your monitor is active but no events appear, check these items.
 
 - **Check `isActive`.** Confirm via `GET /api/v1/monitors/{id}` that `isActive` is `true`. Paused monitors don't track.
 - **Event propagation delay.** Events take seconds to minutes to appear depending on X API latency. This is normal.
@@ -155,7 +155,7 @@ Inspect the durable action returned by the write.
 
 ### How do I check my usage?
 
-Call `GET /api/v1/account`. The `creditInfo` object shows your balance:
+Call `GET /api/v1/account`. The `creditInfo` object shows your balance.
 
 ```json
 {
@@ -168,7 +168,7 @@ Call `GET /api/v1/account`. The `creditInfo` object shows your balance:
 }
 ```
 
-- `creditInfo.balance`: Remaining credits available for metered calls
+- `creditInfo.balance` shows the remaining credits available for metered calls
 - When `balance` reaches `0`, Xquik rejects metered calls until you top up credits or auto top-up triggers
 - Auto top-up stops after 3 declined charges in a row. Update your card in the dashboard to restart it.
 
@@ -178,7 +178,7 @@ See [Billing & Usage](/guides/billing) for credit costs and billing.
 
 ### Can I use the API without a subscription?
 
-Yes. Full account metered operations work while enough available credits remain. Choose the access boundary:
+Yes. Full account metered operations work while enough available credits remain. Choose the access boundary.
 
 - **Guest wallet.** Prepay the eligible paid-read routes through a confirmed USD 10 to 250 hosted checkout.
 - **MPP.** Pay per request on fixed-price GET operations without an account or API key.
@@ -204,7 +204,7 @@ Xquik has 2 MCP servers. Choose based on what the agent needs to do.
   </Card>
 </CardGroup>
 
-Setup:
+Follow these setup steps.
 
 1. For docs search, add `https://docs.xquik.com/mcp`.
 2. For account actions, use a full API key or OAuth login. Prefer OAuth when the client supports browser authorization.
@@ -212,7 +212,7 @@ Setup:
 
 Guest wallet creation, status, and top-up are never executable through MCP.
 
-Current client paths are:
+These are the current client paths.
 
 - **OAuth 2.1.** Claude.ai, Claude Desktop, Claude Code, ChatGPT, Cursor, VS Code, Windsurf, OpenCode, Gemini CLI, GitHub Copilot CLI, Cline, Qwen Code, Pi, Goose, and Codex CLI
 - **API-key only.** Roo Code's archived final release has no MCP OAuth provider
@@ -222,19 +222,19 @@ See [Docs MCP server](/mcp/docs-mcp) for docs search, [MCP Server overview](/mcp
 
 ### MCP OAuth does not open or shows an unknown application
 
-Use this checklist:
+Use this checklist.
 
-1. Enter the exact server URL: `https://xquik.com/mcp`.
+1. Enter `https://xquik.com/mcp` as the exact server URL.
 2. Remove any manually entered client ID or client secret unless your client requires preregistration.
 3. Remove and re-add the connector to restart OAuth discovery.
 4. Start login from the MCP client. Do not open `/api/auth/google` directly.
 5. Allow the browser to return to the client's exact callback URL.
 
-Xquik publishes all required discovery documents:
+Xquik publishes all required discovery documents.
 
-- Protected resource metadata: `https://xquik.com/.well-known/oauth-protected-resource/mcp`
-- Authorization server metadata: `https://xquik.com/.well-known/oauth-authorization-server`
-- Agent-readable auth guide: `https://xquik.com/auth.md`
+- Protected resource metadata is at `https://xquik.com/.well-known/oauth-protected-resource/mcp`
+- Authorization server metadata is at `https://xquik.com/.well-known/oauth-authorization-server`
+- The agent-readable auth guide is at `https://xquik.com/auth.md`
 
 Xquik supports CIMD and DCR. Let the client use its documented registration
 flow. Claude selects CIMD when the authorization metadata advertises support
@@ -249,15 +249,15 @@ without a redirect. Repeat the exact URL in `client_id`. List the callback in
 
 Call `GET /api/v1/extractions/{id}/export?format=csv`. Other formats are `json`, `xlsx`, `md`, `md-document`, `pdf`, and `txt`. The response is a file download.
 
-Limits:
+Exports have these limits.
 
 - Maximum 100,000 rows per export (10,000 for PDF)
-- Available formats: CSV, JSON, Markdown, Markdown Document, PDF, TXT, XLSX
+- Available formats are CSV, JSON, Markdown, Markdown Document, PDF, TXT, and XLSX
 
 See [Export Extraction](/api-reference/extractions/export) for column details and code examples.
 
 ## Still stuck?
 
-- [Authentication](/api-reference/authentication): API key format, header requirements, and dual auth details.
-- [Error Handling](/guides/error-handling): Error codes, retry strategies, and graceful degradation.
-- [Billing & Usage](/guides/billing): Pricing, credits, and per-operation costs.
+- [Authentication](/api-reference/authentication) covers API key format, header requirements, and dual auth details.
+- [Error Handling](/guides/error-handling) covers error codes, retry strategies, and graceful degradation.
+- [Billing & Usage](/guides/billing) covers pricing, credits, and per-operation costs.
