@@ -83,7 +83,7 @@ foreach (SearchTweet tweet in page.Tweets)
 }
 ```
 
-## Workflow: search tweets to JSON Lines, CSV, or XLSX
+## Tweet search workflow to JSON Lines, CSV, or XLSX
 
 Use this workflow when a .NET worker, console job, or ASP.NET background service needs tweet search results in a durable handoff format for a queue, data lake, analyst CSV export, XLSX workbook, or CRM enrichment step.
 
@@ -231,7 +231,7 @@ Each `SearchTweet` includes typed properties such as `ID`, `Text`, `Author`, `Cr
 
 Tweet search costs 1 credit per tweet returned. If remaining credits cannot cover a bounded `Limit` request, the API can return fewer tweets. If 0 paid results are affordable, it returns `402 insufficient_credits`. The SDK retries connection errors, 408, 409, 429, and 5xx responses 2 times by default. For explicit `Limit` pulls, resume with the same query, filters, `QueryType`, and `Limit`. Only `Cursor` changes.
 
-## Workflow: follower export to CSV, JSON, or XLSX
+## Follower export workflow to CSV, JSON, or XLSX
 
 Use this workflow when a .NET worker, console job, or ASP.NET background service needs an owned follower list for a CRM import, warehouse load, analyst CSV file, XLSX workbook, or resumable JSON handoff.
 
@@ -341,7 +341,7 @@ await xlsxStream.CopyToAsync(xlsxFile);
 
 Cost: 1 credit per follower extracted or returned. Store `job.ID`, `targetUsername`, `estimate.EstimatedResults`, and `estimate.Source` before polling so a queue retry, Windows service restart, or worker restart can resume the same follower export. Keep `page.NextCursor` as the checkpoint when you stream followers to JSON Lines. Map exported `User ID` or row `xUserId` as the CRM unique key. Use `xquik-followers.jsonl` for queue replay or warehouse loads, `xquik-followers.json` for app ingestion, `xquik-followers.csv` for CRM import, and `xquik-followers.xlsx` for analyst handoff. Exports are free after the extraction job exists.
 
-## Workflow: tweet replies to CSV, JSON, or XLSX
+## Tweet replies workflow to CSV, JSON, or XLSX
 
 Use this workflow when a .NET worker needs every reply on a public tweet in a durable file for moderation review, customer support triage, analyst export, or a warehouse loader.
 
@@ -389,7 +389,7 @@ Keep the same `estimate.Allowed` credit branch from the follower export workflow
 
 Repeat the export with `new ExtractionExportResultsParams { Format = Format.Json }` and `File.WriteAllTextAsync("xquik-replies.json", await jsonResponse.ReadAsString())`. For XLSX, use `new ExtractionExportResultsParams { Format = Format.Xlsx }`, `File.Create("xquik-replies.xlsx")`, and stream-copy the response body. Use `xquik-replies.jsonl` for queue replay or warehouse loads, `xquik-replies.json` for app ingestion, `xquik-replies.csv` for CRM import, and `xquik-replies.xlsx` for analyst handoff. Cost: 1 credit per reply extracted or returned.
 
-## Workflow: post media tweets and DM attachments
+## Workflow to post media tweets and DM attachments
 
 Use this workflow to post a media tweet or reply, or to DM an uploaded local file. `client.X.Tweets.Create` maps to `POST /x/tweets`. Pass public media URLs through `Media`. Send up to 4 image URLs or exactly 1 MP4 video URL up to 100 MB. Do not mix video with other media. For replies, set `ReplyToTweetID` to the parent tweet ID. `client.X.Media.Upload` maps to `POST /x/media`. Use `media.MediaID` only for the one-item `MediaIds` handoff on `client.X.Dm.Send`.
 

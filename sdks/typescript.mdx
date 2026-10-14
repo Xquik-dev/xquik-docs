@@ -73,7 +73,7 @@ for (const row of tweetRows) {
 }
 ```
 
-## Workflow: search tweets to JSON Lines, CSV, or XLSX
+## Tweet search workflow to JSON Lines, CSV, or XLSX
 
 This job is for Node.js, Bun, and queue workers that need searchable tweet data in a stable handoff format for queues, data lakes, analyst CSV files, or XLSX workbooks. It calls `GET /x/tweets/search` through `client.x.tweets.search`, uses the generated `TweetSearchParams` shape, and writes each returned tweet as one projected JSON object per line.
 
@@ -189,7 +189,7 @@ The generated params map directly to the REST endpoint:
 
 Project `page.tweets` into JSON Lines rows in `xquik-tweet-search.jsonl` for queues and data lakes, transform the same projected records into CSV for analysts, or produce XLSX from those rows when account teams need spreadsheets. Store `tweet_id`, `author_username`, engagement counts, `page_index`, `page_cursor`, `next_cursor`, and `has_next_page` so a worker can resume from the last saved cursor without replaying raw SDK objects. For explicit `limit` pulls, resume with the same query, filters, `queryType`, and `limit`. Only `cursor` changes.
 
-## Workflow: follower export to CSV, JSON, or XLSX
+## Follower export workflow to CSV, JSON, or XLSX
 
 Use this workflow when a Node.js, Bun, or queue worker needs an owned follower list for CRM import, warehouse loading, account scoring, analyst CSV, XLSX workbook delivery, or a resumable JSON handoff. It calls `POST /extractions/estimate` through `client.extractions.estimateCost`, creates the job with `client.extractions.run`, reads saved rows with `client.extractions.retrieve`, and downloads files with `client.extractions.exportResults`.
 
@@ -272,7 +272,7 @@ await writeFile("xquik-followers.xlsx", Buffer.from(await xlsx.arrayBuffer()));
 
 `follower_explorer` requires `targetUsername`. Store `job.id`, `targetUsername`, `estimate.estimatedResults`, and `estimate.source` before polling so a queue retry, worker restart, or agent handoff can resume the same export. `client.extractions.retrieve` returns `results`, `hasMore`, and `nextCursor`. Pass `nextCursor` back as `cursor` when you need stored JSON pages before exporting files. Use `xquik-followers.jsonl` for queue replay or warehouse loads, `xquik-followers.json` for app ingestion, `xquik-followers.csv` for CRM import, and `xquik-followers.xlsx` for analyst handoff. Map exported `User ID` or row `xUserId` as the CRM unique key. Cost: 1 credit per follower extracted or returned. Exports are free after the extraction job exists.
 
-## Workflow: tweet replies to CSV, JSON, or XLSX
+## Tweet replies workflow to CSV, JSON, or XLSX
 
 Use this workflow when a TypeScript worker needs every reply under one tweet as a saved extraction, JSON Lines handoff, or CSV, JSON, or XLSX export. It uses `client.extractions.estimateCost`, `run`, `retrieve`, and `exportResults`.
 
@@ -310,7 +310,7 @@ await writeFile("xquik-replies.xlsx", Buffer.from(await xlsx.arrayBuffer()));
 
 `reply_extractor` requires `targetTweetId`. `client.extractions.retrieve` returns `results`, `hasMore`, and `nextCursor`. The shared pagination loop passes `nextCursor` back as `cursor`. Use `xquik-replies.jsonl` for queue replay or warehouse loads, `xquik-replies.json` for app ingestion, `xquik-replies.csv` for CRM import, and `xquik-replies.xlsx` for analyst handoff. `client.extractions.exportResults` supports `csv`, `json`, and `xlsx` for file handoff. Cost: 1 credit per reply extracted or returned.
 
-## Workflow: post media tweets and DM attachments
+## Workflow to post media tweets and DM attachments
 
 Use this workflow when a TypeScript worker, support queue, or agent service needs to post a media-backed tweet, reply with media, or send one uploaded media item in a DM.
 
