@@ -26,6 +26,10 @@ interface MarkedLine {
   readonly text: string;
 }
 
+interface Finding extends MarkedLine {
+  readonly file: string;
+}
+
 interface PageSections {
   readonly body: string;
   readonly metadata: readonly string[];
@@ -177,6 +181,7 @@ function markedFrontmatter(metadata: readonly string[]): readonly MarkedLine[] {
   return metadata.flatMap((text, index): MarkedLine[] => {
     const match = /^([A-Za-z]+):\s*(.*)$/u.exec(text);
     const value = (match?.[2] ?? "").replace(/^(["'])(.*)\1$/u, "$2");
+    // Metadata starts on page line 2, after the opening `---`.
     return FRONTMATTER_KEYS.has(match?.[1] ?? "") && MARK.test(value)
       ? [{ kind: "frontmatter", line: index + 2, text }]
       : [];
@@ -215,14 +220,14 @@ function pendingFolder(file: string): string | undefined {
   return PENDING.find((folder): boolean => file.startsWith(`${folder}/`));
 }
 
-function findings(kind: MarkKind, include: (file: string) => boolean): readonly string[] {
-  return trackedPages()
-    .filter(include)
-    .flatMap((file): string[] =>
-      markedLines(readFileSync(file, "utf8"))
-        .filter((marked): boolean => marked.kind === kind)
-        .map((marked): string => `${file}:${marked.line} ${marked.text}`),
-    );
+const FINDINGS: readonly Finding[] = trackedPages().flatMap((file): Finding[] =>
+  markedLines(readFileSync(file, "utf8")).map((marked): Finding => ({ ...marked, file })),
+);
+
+function report(include: (finding: Finding) => boolean): readonly string[] {
+  return FINDINGS.filter(include).map(
+    (finding): string => `${finding.file}:${finding.line} ${finding.text}`,
+  );
 }
 
 describe("Prose marks", (): void => {
@@ -277,20 +282,23 @@ describe("Prose marks", (): void => {
   it("writes front matter titles and descriptions without colons or semicolons", (): void => {
     expect.assertions(1);
 
-    expect(findings("frontmatter", (): boolean => true)).toStrictEqual([]);
+    expect(report((finding): boolean => finding.kind === "frontmatter")).toStrictEqual([]);
   });
 
   it("writes headings without colons or semicolons", (): void => {
     expect.assertions(1);
 
-    expect(findings("heading", (): boolean => true)).toStrictEqual([]);
+    expect(report((finding): boolean => finding.kind === "heading")).toStrictEqual([]);
   });
 
   it("writes sentences without colons or semicolons outside pending folders", (): void => {
     expect.assertions(1);
 
     expect(
-      findings("sentence", (file): boolean => pendingFolder(file) === undefined),
+      report(
+        (finding): boolean =>
+          finding.kind === "sentence" && pendingFolder(finding.file) === undefined,
+      ),
     ).toStrictEqual([]);
   });
 
@@ -298,8 +306,8 @@ describe("Prose marks", (): void => {
     expect.assertions(1);
 
     const stillMarked = new Set(
-      findings("sentence", (file): boolean => pendingFolder(file) !== undefined).map(
-        (finding): string | undefined => pendingFolder(finding),
+      FINDINGS.filter((finding): boolean => finding.kind === "sentence").map(
+        (finding): string | undefined => pendingFolder(finding.file),
       ),
     );
     expect(PENDING.filter((folder): boolean => !stillMarked.has(folder))).toStrictEqual([]);
