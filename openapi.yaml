@@ -107,7 +107,8 @@ tags:
   - name: Webhooks
     description: Webhook endpoint management and delivery
   - name: X Accounts
-    description: Connected X account management
+    description:
+      Connected X accounts. Sign-in & removal need a dashboard session.
   - name: X Write
     description: X write actions (tweets, likes, follows, DMs)
 paths:
@@ -597,6 +598,8 @@ paths:
                 hasMore: false
         '400': *invalid-input-response
         '401': *unauthenticated-response
+        '403':
+          $ref: '#/components/responses/SessionRequired'
         '429': *rate-limit-exceeded-response
     post:
       operationId: createApiKey
@@ -651,29 +654,45 @@ paths:
                 createdAt: '2025-01-15T12:00:00Z'
         '401': *unauthenticated-response
         '403':
-          description: API key limit reached
+          description:
+            API key limit reached, or an API key or OAuth token sent instead of
+            a dashboard session
           content:
             application/json:
               schema:
-                type: object
-                required: [error, limit, message]
-                properties:
-                  error:
-                    type: string
-                    const: api_key_limit_reached
-                    example: api_key_limit_reached
-                  limit:
-                    type: integer
-                    minimum: 1
-                    example: 100
-                  message:
-                    type: string
-                    example:
+                anyOf:
+                  - type: object
+                    title: ApiKeyLimitReached
+                    required: [error, limit, message]
+                    properties:
+                      error:
+                        type: string
+                        const: api_key_limit_reached
+                        example: api_key_limit_reached
+                      limit:
+                        type: integer
+                        minimum: 1
+                        example: 100
+                      message:
+                        type: string
+                        example:
+                          API key limit reached. Delete an existing key first.
+                  - $ref: '#/components/schemas/Error'
+              examples:
+                limitReached:
+                  summary: API key limit reached
+                  value:
+                    error: api_key_limit_reached
+                    limit: 100
+                    message:
                       API key limit reached. Delete an existing key first.
-              example:
-                error: api_key_limit_reached
-                limit: 100
-                message: API key limit reached. Delete an existing key first.
+                sessionRequired:
+                  summary: API key or OAuth token sent
+                  value: &session-required-example
+                    error: session_required
+                    message:
+                      API keys & OAuth tokens cannot use this route. Sign in at
+                      dashboard.xquik.com/account instead.
         '429': *rate-limit-exceeded-response
   /api-keys/{id}:
     delete:
@@ -690,6 +709,8 @@ paths:
           $ref: '#/components/responses/Success'
         '400': *invalid-input-response
         '401': *unauthenticated-response
+        '403':
+          $ref: '#/components/responses/SessionRequired'
         '404': &not-found-response
           $ref: '#/components/responses/NotFound'
         '429': *rate-limit-exceeded-response
@@ -700,8 +721,10 @@ paths:
       operationId: subscribe
       summary: Create subscription checkout
       description: >
-        Create a subscription checkout or billing-management URL only after the
-        user confirms. The request never completes payment by itself.
+        Create a subscription checkout URL or a billing page link only after the
+        user confirms. The request never completes payment by itself. An account
+        with a plan gets the dashboard billing page, where the user signs in to
+        manage billing.
       tags: [Subscribe]
       security: *api-auth
       requestBody:
@@ -731,6 +754,9 @@ paths:
                   url:
                     type: string
                     format: uri
+                    description:
+                      Checkout URL, or the dashboard billing page for an account
+                      with a plan.
                     example: 'https://xquik.com/billing/session'
                   status:
                     type: string
@@ -5998,10 +6024,14 @@ paths:
         '429': *rate-limit-exceeded-response-2
     post:
       operationId: connectXAccount
-      description: Starts an X account connection flow.
+      x-mcp-exclusion-reason:
+        &x-login-browser-auth X account sign-in & removal require browser auth.
+      description:
+        Starts an X account connection flow. Needs a dashboard session, so X
+        credentials never pass through an API key.
       summary: Connect X account
       tags: [X Accounts]
-      security: *api-auth
+      security: [{ cookieSession: [] }]
       requestBody:
         required: true
         description:
@@ -6082,6 +6112,8 @@ paths:
                 $ref: '#/components/schemas/XAccountConnectionContinuation'
         '400': *invalid-input-response
         '401': *unauthenticated-response
+        '403':
+          $ref: '#/components/responses/SessionRequired'
         '409':
           $ref: '#/components/responses/ConnectAlreadyConnected'
         '422':
@@ -6096,10 +6128,13 @@ paths:
   /x/account-connection-attempts/{id}:
     get:
       operationId: getXAccountConnectionAttempt
-      description: Returns progress for an X account connection attempt.
+      x-mcp-exclusion-reason: *x-login-browser-auth
+      description:
+        Returns progress for an X account connection attempt. Needs a dashboard
+        session.
       summary: Get X account connection status
       tags: [X Accounts]
-      security: *api-auth
+      security: [{ cookieSession: [] }]
       parameters:
         - $ref: '#/components/parameters/ConnectionAttemptId'
       responses:
@@ -6142,15 +6177,20 @@ paths:
                 pollAfterMs: 3000
         '400': *invalid-input-response
         '401': *unauthenticated-response
+        '403':
+          $ref: '#/components/responses/SessionRequired'
         '429': *rate-limit-exceeded-response-2
 
   /x/account-connection-challenges/{id}/submit:
     post:
       operationId: submitXAccountConnectionChallenge
-      description: Submits the email code requested during X account connection.
+      x-mcp-exclusion-reason: *x-login-browser-auth
+      description:
+        Submits the email code requested during X account connection. Needs a
+        dashboard session.
       summary: Submit X account email verification code
       tags: [X Accounts]
-      security: *api-auth
+      security: [{ cookieSession: [] }]
       parameters:
         - $ref: '#/components/parameters/ConnectionChallengeId'
       requestBody:
@@ -6186,6 +6226,8 @@ paths:
                 $ref: '#/components/schemas/XAccountConnectionChallenge'
         '400': *invalid-input-response
         '401': *unauthenticated-response
+        '403':
+          $ref: '#/components/responses/SessionRequired'
         '404': *not-found-response
         '409':
           description: Verification challenge is no longer active
@@ -6230,27 +6272,34 @@ paths:
         '429': *rate-limit-exceeded-response-2
     delete:
       operationId: disconnectXAccount
-      description: Disconnects 1 X account and removes stored session access.
+      x-mcp-exclusion-reason: *x-login-browser-auth
+      description:
+        Disconnects 1 X account and removes stored session access. Needs a
+        dashboard session, since only a new sign-in restores the account.
       summary: Disconnect X account
       tags: [X Accounts]
-      security: *api-auth
+      security: [{ cookieSession: [] }]
       parameters: *resource-id-parameters
       responses:
         '200':
           $ref: '#/components/responses/Success'
         '400': *invalid-input-response
         '401': *unauthenticated-response
+        '403':
+          $ref: '#/components/responses/SessionRequired'
         '404': *not-found-response
         '429': *rate-limit-exceeded-response-2
 
   /x/accounts/{id}/reauth:
     post:
       operationId: reauthXAccount
+      x-mcp-exclusion-reason: *x-login-browser-auth
       description:
-        Starts re-authentication for an existing X account connection.
+        Starts re-authentication for an existing X account connection. Needs a
+        dashboard session, so X credentials never pass through an API key.
       summary: Re-authenticate X account
       tags: [X Accounts]
-      security: *api-auth
+      security: [{ cookieSession: [] }]
       parameters: *resource-id-parameters
       requestBody:
         required: true
@@ -6289,6 +6338,8 @@ paths:
                 $ref: '#/components/schemas/SanitizedXAccount'
         '400': *invalid-input-response
         '401': *unauthenticated-response
+        '403':
+          $ref: '#/components/responses/SessionRequired'
         '404':
           $ref: '#/components/responses/ReauthAccountNotFound'
         '422':
@@ -6301,13 +6352,14 @@ paths:
   /x/accounts/bulk-retry:
     post:
       operationId: bulkRetryXAccounts
+      x-mcp-exclusion-reason: *x-login-browser-auth
       summary: Bulk retry temporarily failed X accounts
       description: >
         Clears loginFailedAt and loginFailureReason for every account with a
         transient or automated failure reason. Each can then retry on its next
-        use.
+        use. Needs a dashboard session, since each retry signs in to X again.
       tags: [X Accounts]
-      security: *api-auth
+      security: [{ cookieSession: [] }]
       responses:
         '200':
           description: Accounts cleared for retry
@@ -6325,6 +6377,8 @@ paths:
               example:
                 cleared: 3
         '401': *unauthenticated-response
+        '403':
+          $ref: '#/components/responses/SessionRequired'
         '429': *rate-limit-exceeded-response-2
 
   # ── Trends ───────────────────────────────────────────────
@@ -7336,6 +7390,8 @@ paths:
                     outcome: declined
         '400': *invalid-input-response
         '401': *unauthenticated-response
+        '403':
+          $ref: '#/components/responses/SessionRequired'
         '429': *rate-limit-exceeded-response-2
   /x/tweets/{id}/favoriters:
     parameters:
@@ -12649,6 +12705,14 @@ components:
         example: 'enriched=180; requested=200'
 
   responses:
+    SessionRequired:
+      description: >
+        An API key or OAuth token called a route that needs a dashboard session.
+        Sign in at dashboard.xquik.com/account instead.
+      content:
+        application/json:
+          schema: *error-schema
+          example: *session-required-example
     IdempotencyConflict:
       description: Idempotency-Key was reused with another request.
       content:
@@ -17125,6 +17189,7 @@ components:
                 - payment_failed
                 - rate_limit_exceeded
                 - service_unavailable
+                - session_required
                 - style_not_found
                 - subscription_inactive
                 - tweet_not_found
