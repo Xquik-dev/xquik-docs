@@ -64,6 +64,17 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
   </Tab>
 
+  <Tab title="403" id="response-x-accounts-connect-403">
+
+    ```json
+    {
+      "error": "session_required",
+      "message": "API keys & OAuth tokens cannot use this route. Sign in at dashboard.xquik.com/account instead."
+    }
+    ```
+
+  </Tab>
+
   <Tab title="409" id="response-x-accounts-connect-409">
 
     ```json
@@ -132,6 +143,12 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <Warning>
 
+Connect X accounts at [dashboard.xquik.com/account](https://dashboard.xquik.com/account). This route serves only a signed-in dashboard session, so X passwords never pass through an API key. API keys and OAuth tokens get `403 session_required`.
+
+</Warning>
+
+<Warning>
+
 Xquik encrypts credentials at rest. It uses them only to maintain the
 connection. Xquik never stores plaintext passwords.
 
@@ -152,8 +169,10 @@ send the credentials again while the attempt is `pending`.
 <CodeGroup>
 
 ```bash cURL
-curl -X POST https://xquik.com/api/v1/x/accounts \
-  -H "x-api-key: xq_YOUR_KEY_HERE" \
+curl -X POST https://dashboard.xquik.com/api/v1/x/accounts \
+  -H "Cookie: __Host-xquik_session=YOUR_SESSION_COOKIE" \
+  -H "Origin: https://dashboard.xquik.com" \
+  -H "Sec-Fetch-Site: same-origin" \
   -H "Content-Type: application/json" \
   -d '{
     "username": "your_x_username",
@@ -164,10 +183,12 @@ curl -X POST https://xquik.com/api/v1/x/accounts \
 ```
 
 ```javascript Node.js
-const response = await fetch("https://xquik.com/api/v1/x/accounts", {
+const response = await fetch("https://dashboard.xquik.com/api/v1/x/accounts", {
   method: "POST",
   headers: {
-    "x-api-key": "xq_YOUR_KEY_HERE",
+    Cookie: "__Host-xquik_session=YOUR_SESSION_COOKIE",
+    Origin: "https://dashboard.xquik.com",
+    "Sec-Fetch-Site": "same-origin",
     "Content-Type": "application/json",
   },
   body: JSON.stringify({
@@ -178,61 +199,6 @@ const response = await fetch("https://xquik.com/api/v1/x/accounts", {
   }),
 });
 const data = await response.json();
-```
-
-```python Python
-import requests
-
-response = requests.post(
-    "https://xquik.com/api/v1/x/accounts",
-    headers={"x-api-key": "xq_YOUR_KEY_HERE"},
-    json={
-        "username": "your_x_username",
-        "email": "account@example.invalid",
-        "password": "<ACCOUNT_PASSWORD>",
-        "totp_secret": "<TOTP_SECRET>",
-    },
-)
-data = response.json()
-```
-
-```go Go
-package main
-
-import (
-    "bytes"
-    "encoding/json"
-    "fmt"
-    "net/http"
-)
-
-func main() {
-    body, _ := json.Marshal(map[string]interface{}{
-        "username":    "your_x_username",
-        "email":       "account@example.invalid",
-        "password":    "<ACCOUNT_PASSWORD>",
-        "totp_secret": "<TOTP_SECRET>",
-    })
-
-    req, err := http.NewRequest("POST", "https://xquik.com/api/v1/x/accounts", bytes.NewReader(body))
-    if err != nil {
-        panic(err)
-    }
-    req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
-    req.Header.Set("Content-Type", "application/json")
-
-    resp, err := http.DefaultClient.Do(req)
-    if err != nil {
-        panic(err)
-    }
-    defer resp.Body.Close()
-
-    var data map[string]interface{}
-    if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
-        panic(err)
-    }
-    fmt.Println(data)
-}
 ```
 
 </CodeGroup>
@@ -250,10 +216,14 @@ func main() {
 
 ## Headers
 
-<ParamField header="x-api-key" type="string" required>
+<ParamField header="Cookie" type="string" required>
+  Your signed-in dashboard session cookie, `__Host-xquik_session`. API keys and OAuth tokens get
+  `403 session_required`.
+</ParamField>
 
-Your API key. Session cookie authentication is also supported. Generate a key from the [dashboard](https://xquik.com/dashboard).
-
+<ParamField header="Origin" type="string" required>
+  Must be `https://dashboard.xquik.com`, sent with `Sec-Fetch-Site` set to `same-origin`. The
+  dashboard sends both.
 </ParamField>
 
 <ParamField header="Content-Type" type="string" required>
