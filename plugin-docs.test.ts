@@ -334,7 +334,7 @@ describe("Plugin docs", (): void => {
       "## Hermes Agent Twitter FAQ",
       "### Is Hermes tweet a Hermes Agent skill or plugin?",
       "A skill supplies operating guidance. The plugin supplies the Python tools that make API calls.",
-      "### Hermes Agent vs OpenClaw: which plugin should I use?",
+      "### Hermes Agent vs OpenClaw, which plugin should I use?",
       "Choose Hermes Tweet for Hermes Agent. Choose TweetClaw for OpenClaw.",
       "### Is Hermes tweet an MCP server?",
       "It needs no X developer credentials.",

@@ -51,7 +51,7 @@ export X_TWITTER_SCRAPER_API_KEY="xq_YOUR_KEY_HERE"
 
 ## Basic example
 
-Search tweets and write durable JSON Lines handoff rows:
+Search tweets and write durable JSON Lines handoff rows.
 
 ```csharp
 using System.Text.Json;
@@ -87,7 +87,7 @@ foreach (SearchTweet tweet in page.Tweets)
 
 Use this workflow when a .NET worker, console job, or ASP.NET background service needs tweet search results in a durable handoff format for a queue, data lake, analyst CSV export, XLSX workbook, or CRM enrichment step.
 
-`client.X.Tweets.Search` calls `GET /x/tweets/search`. Build a `TweetSearchParams` object with the same query parameters the REST API accepts: `Q`, `Limit`, `Cursor`, `SinceTime`, `UntilTime`, and `QueryType`.
+`client.X.Tweets.Search` calls `GET /x/tweets/search`. Build a `TweetSearchParams` object with the same query parameters the REST API accepts. They are `Q`, `Limit`, `Cursor`, `SinceTime`, `UntilTime`, and `QueryType`.
 
 ```csharp
 using System.Collections.Generic;
@@ -239,7 +239,7 @@ Use this workflow when a .NET worker, console job, or ASP.NET background service
 
 <Info>
 
-`client.Extractions.Run` returns the queued `202 Accepted` receipt from `POST /extractions`: REST `id`, `toolType`, and `status: "running"` as C# `job.ID`, `job.ToolType`, and `job.Status`. Store `job.ID` immediately, then poll `client.Extractions.Retrieve` before reading pages or calling `client.Extractions.ExportResults`. Credit reservation happens after the job starts. If available credits changed since `EstimateCost`, the run can fetch only the affordable count before export or mark the job `failed` with `insufficient_credits`.
+`client.Extractions.Run` returns the queued `202 Accepted` receipt from `POST /extractions`. C# exposes REST `id`, `toolType`, and `status: "running"` as `job.ID`, `job.ToolType`, and `job.Status`. Store `job.ID` immediately, then poll `client.Extractions.Retrieve` before reading pages or calling `client.Extractions.ExportResults`. Credit reservation happens after the job starts. If available credits changed since `EstimateCost`, the run can fetch only the affordable count before export or mark the job `failed` with `insufficient_credits`.
 
 </Info>
 
@@ -339,7 +339,7 @@ using FileStream xlsxFile = File.Create("xquik-followers.xlsx");
 await xlsxStream.CopyToAsync(xlsxFile);
 ```
 
-Cost: 1 credit per follower extracted or returned. Store `job.ID`, `targetUsername`, `estimate.EstimatedResults`, and `estimate.Source` before polling so a queue retry, Windows service restart, or worker restart can resume the same follower export. Keep `page.NextCursor` as the checkpoint when you stream followers to JSON Lines. Map exported `User ID` or row `xUserId` as the CRM unique key. Use `xquik-followers.jsonl` for queue replay or warehouse loads, `xquik-followers.json` for app ingestion, `xquik-followers.csv` for CRM import, and `xquik-followers.xlsx` for analyst handoff. Exports are free after the extraction job exists.
+The cost is 1 credit per follower extracted or returned. Store `job.ID`, `targetUsername`, `estimate.EstimatedResults`, and `estimate.Source` before polling so a queue retry, Windows service restart, or worker restart can resume the same follower export. Keep `page.NextCursor` as the checkpoint when you stream followers to JSON Lines. Map exported `User ID` or row `xUserId` as the CRM unique key. Use `xquik-followers.jsonl` for queue replay or warehouse loads, `xquik-followers.json` for app ingestion, `xquik-followers.csv` for CRM import, and `xquik-followers.xlsx` for analyst handoff. Exports are free after the extraction job exists.
 
 ## Tweet replies workflow to CSV, JSON, or XLSX
 
@@ -347,7 +347,7 @@ Use this workflow when a .NET worker needs every reply on a public tweet in a du
 
 `client.Extractions.EstimateCost` and `client.Extractions.Run` map to the extraction workflow. For tweet replies, use `ExtractionEstimateCostParamsToolType.ReplyExtractor` and `ExtractionRunParamsToolType.ReplyExtractor`. `reply_extractor` requires `TargetTweetID`. `client.Extractions.Retrieve` returns `Results`, `HasMore`, and `NextCursor` for pagination. `client.Extractions.ExportResults` returns an `HttpResponse`. Read CSV and JSON as strings, and copy XLSX from the response stream.
 
-Reuse the follower export loop above. Change only the required target, tool type, and output names:
+Reuse the follower export loop above. Change only the required target, tool type, and output names.
 
 ```csharp
 string targetTweetID = "1893704267862470862";
@@ -387,7 +387,7 @@ await File.WriteAllTextAsync("xquik-replies.csv", await csvResponse.ReadAsString
 
 Keep the same `estimate.Allowed` credit branch from the follower export workflow before calling `Run`. Store `job.ID` on the queue job, ticket, or warehouse batch before polling so another worker can resume with `client.Extractions.Retrieve`. Keep `page.NextCursor` as the checkpoint when you stream replies to JSON Lines. Pass it back as `Cursor` on the next `ExtractionRetrieveParams` call.
 
-Repeat the export with `new ExtractionExportResultsParams { Format = Format.Json }` and `File.WriteAllTextAsync("xquik-replies.json", await jsonResponse.ReadAsString())`. For XLSX, use `new ExtractionExportResultsParams { Format = Format.Xlsx }`, `File.Create("xquik-replies.xlsx")`, and stream-copy the response body. Use `xquik-replies.jsonl` for queue replay or warehouse loads, `xquik-replies.json` for app ingestion, `xquik-replies.csv` for CRM import, and `xquik-replies.xlsx` for analyst handoff. Cost: 1 credit per reply extracted or returned.
+Repeat the export with `new ExtractionExportResultsParams { Format = Format.Json }` and `File.WriteAllTextAsync("xquik-replies.json", await jsonResponse.ReadAsString())`. For XLSX, use `new ExtractionExportResultsParams { Format = Format.Xlsx }`, `File.Create("xquik-replies.xlsx")`, and stream-copy the response body. Use `xquik-replies.jsonl` for queue replay or warehouse loads, `xquik-replies.json` for app ingestion, `xquik-replies.csv` for CRM import, and `xquik-replies.xlsx` for analyst handoff. The cost is 1 credit per reply extracted or returned.
 
 ## Workflow to post media tweets and DM attachments
 

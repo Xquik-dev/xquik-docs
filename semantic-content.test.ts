@@ -506,7 +506,7 @@ const REQUIRED_OPERATIONAL_CONTENT = [
     snippets: [
       "| Profile avatar update column | Request or response source | Review rule |",
       "| Uploaded file | Request `file` | Accept JPEG or PNG up to 15 MiB. |",
-      "Twitter profile picture API: update avatar images",
+      "Twitter profile picture API to update avatar images",
       "This route updates one connected account's avatar.",
       "A request accepts a JPEG or PNG file.",
       "## Verify the updated Twitter profile image",
@@ -519,7 +519,7 @@ const REQUIRED_OPERATIONAL_CONTENT = [
     snippets: [
       "| Profile banner update column | Request or response source | Review rule |",
       "| Uploaded file | Request `file` | Accept JPEG or PNG up to 15 MiB. |",
-      "Twitter profile banner API: update header images",
+      "Twitter profile banner API to update header images",
       "## Prepare Twitter profile banner dimensions",
       "1500 × 500 pixels",
       "1500 × 500 source file",
@@ -654,7 +654,7 @@ const REQUIRED_OVERVIEW_KEYWORDS = [
 ] as const;
 
 const REQUIRED_CHANGELOG_CONTENT = [
-  'title: "Xquik changelog: Twitter API & scraper updates"',
+  'title: "Xquik changelog for Twitter API & scraper updates"',
   "Xquik documentation updates",
   "Xquik changelog",
   "API keys",
@@ -669,7 +669,7 @@ const REQUIRED_COMMUNITY_TIMELINE_CONTENT = [
 ] as const;
 
 const REQUIRED_QUICK_TOPUP_CONTENT = [
-  'title: "Twitter API billing: instant X API credit top-up"',
+  'title: "Twitter API billing & instant X API credit top-up"',
   "X API credits",
   "Twitter API billing",
 ] as const;
@@ -686,7 +686,7 @@ const REQUIRED_APIFY_COMPARISON_CONTENT = [
   "Match reply rows against",
   "Use full or raw output modes for optional profile metadata",
   'The row uses `resultType: "diagnostic"`.',
-  "For account backfills, pass a Search Terms value.",
+  "For account backfills, pass a Search Terms value such as",
   "Before production use, open the current Actor page.",
 ] as const;
 

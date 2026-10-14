@@ -13,11 +13,11 @@ metadata:
 
 ## Product summary
 
-Xquik is an X data platform with a documented REST API, webhooks, Docs MCP, and API MCP. Full account credentials cover account workflows. Accountless guest keys cover the prepaid GET reads. Fixed-price operations also accept direct MPP. The REST base URL is `https://xquik.com/api/v1`. Primary docs: https://docs.xquik.com
+Xquik is an X data platform with a documented REST API, webhooks, Docs MCP, and API MCP. Full account credentials cover account workflows. Accountless guest keys cover the prepaid GET reads. Fixed-price operations also accept direct MPP. The REST base URL is `https://xquik.com/api/v1`. Read the [primary docs](https://docs.xquik.com).
 
 ## When to use
 
-Reach for Xquik when:
+Reach for Xquik in these cases.
 
 - **Extracting X data.** Pull followers, replies, retweets, likes, community members, list data, or search results from public accounts, tweets, lists, communities, or Spaces.
 - **Monitoring accounts.** Check specific X accounts every second for supported events.
@@ -71,7 +71,7 @@ when `safeToRetry` is true.
 
 **User-based.** `follower_explorer`, `following_explorer`, `verified_follower_explorer`, `mention_extractor`, `post_extractor`, `user_likes`, `user_media`
 
-**Community target** (`targetCommunityId`): `community_extractor`, `community_moderator_explorer`, `community_post_extractor`, `community_search`
+**Community target.** These take `targetCommunityId`. `community_extractor`, `community_moderator_explorer`, `community_post_extractor`, `community_search`
 
 `community_search` also requires `searchQuery`. It searches matching posts within the selected community.
 
@@ -81,10 +81,10 @@ when `safeToRetry` is true.
 
 ### Event types
 
-- `tweet.new`: Original tweet from a monitored account.
-- `tweet.quote`: Quote tweet from a monitored account.
-- `tweet.reply`: Reply from a monitored account.
-- `tweet.retweet`: Retweet from a monitored account.
+- `tweet.new` is an original tweet from a monitored account.
+- `tweet.quote` is a quote tweet from a monitored account.
+- `tweet.reply` is a reply from a monitored account.
+- `tweet.retweet` is a retweet from a monitored account.
 
 ### Pagination
 
@@ -147,7 +147,7 @@ when `safeToRetry` is true.
 2. Configure API MCP at `https://xquik.com/mcp` for live authenticated calls.
 3. Use full credentials for every JSON or text route. Use REST for excluded downloads. Guest keys expose the eligible paid-read routes.
 4. Use `docs` for guidance, `search` for contracts, and `execute` for allowed requests.
-   Inspect `spec.paths`; follow response references into `spec.components.schemas`.
+   Inspect `spec.paths`. Follow response references into `spec.components.schemas`.
 5. Add `?codemode=false` only when the client needs OpenAPI-native tools.
 
 API MCP supports MCP `2026-07-28` over Streamable HTTP.
@@ -164,7 +164,7 @@ API-key lifecycle, saved-payment quick top-up, the account top-up redirect, and 
 
 ### Connect Codex with OAuth
 
-Add Xquik & complete browser authorization:
+Add Xquik and complete browser authorization.
 
 ```bash
 codex mcp add xquik --url https://xquik.com/mcp
@@ -209,20 +209,20 @@ Refunds and disputes reconcile affected-purchase credits only. Unrelated credits
 
 ## Resources
 
-- Docs index: https://docs.xquik.com/llms.txt
-- Quickstart: https://docs.xquik.com/x-api-quickstart
-- API overview: https://docs.xquik.com/api-reference/overview
-- Docs MCP server: https://docs.xquik.com/mcp
-- API MCP server: https://docs.xquik.com/mcp/overview
-- MCP tools reference: https://docs.xquik.com/mcp/tools
-- Agent Skills index: https://xquik.com/.well-known/agent-skills/index.json
-- Agent catalog: https://xquik.com/.well-known/agents.json
-- OAuth instructions: https://xquik.com/auth.md
-- Coding-agent setup: https://docs.xquik.com/mcp/coding-agents
-- Guest wallets: https://docs.xquik.com/guides/guest-wallets
-- Direct MPP: https://docs.xquik.com/mpp/machine-payments-protocol
-- Error handling: https://docs.xquik.com/guides/error-handling
-- Extraction workflow: https://docs.xquik.com/guides/extraction-workflow
-- Webhook verification: https://docs.xquik.com/webhooks/verification
+- [Docs index](https://docs.xquik.com/llms.txt)
+- [Quickstart](https://docs.xquik.com/x-api-quickstart)
+- [API overview](https://docs.xquik.com/api-reference/overview)
+- [Docs MCP server](https://docs.xquik.com/mcp)
+- [API MCP server](https://docs.xquik.com/mcp/overview)
+- [MCP tools reference](https://docs.xquik.com/mcp/tools)
+- [Agent Skills index](https://xquik.com/.well-known/agent-skills/index.json)
+- [Agent catalog](https://xquik.com/.well-known/agents.json)
+- [OAuth instructions](https://xquik.com/auth.md)
+- [Coding-agent setup](https://docs.xquik.com/mcp/coding-agents)
+- [Guest wallets](https://docs.xquik.com/guides/guest-wallets)
+- [Direct MPP](https://docs.xquik.com/mpp/machine-payments-protocol)
+- [Error handling](https://docs.xquik.com/guides/error-handling)
+- [Extraction workflow](https://docs.xquik.com/guides/extraction-workflow)
+- [Webhook verification](https://docs.xquik.com/webhooks/verification)
 
-> For additional documentation and navigation, see: https://docs.xquik.com/llms.txt
+> For additional documentation and navigation, see https://docs.xquik.com/llms.txt
