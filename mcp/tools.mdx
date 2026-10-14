@@ -166,7 +166,7 @@ Errors use `error.type`, `error.code`, and `error.message`, with fields such as 
 Write and media results follow the same contract. Read `tweet_id`, `write_action_id`, `charged_credits`, `media_id`, `media_url`, and `message_id` from `response.result`.
 
 Both `search` and `execute` return compact JSON within 24,000 characters. Whitespace inside strings stays unchanged. Native API tools apply the same limit to successful & failed responses.
-The limit bounds tool output, not catalog access or available results. Large schema selections can exceed it. Oversized output returns `isError: true` with a recoverable `response_too_large` diagnostic. It includes size, limit, and retry guidance, never partial JSON. An ordinary result containing an `error` field is not a tool failure.
+The limit bounds tool output, not catalog access or available results. Large schema selections can exceed it. Oversized output returns its first page, never an error. The page carries `characters`, `next_offset`, `next` & the page's `text`, which may cut JSON short. `next` says what to do for the rest. A saved answer adds `result_id` & a resource link. An answer too large to keep returns `characters`, `next` & any saved `reads`. An ordinary result containing an `error` field is not a tool failure.
 Output errors do not undo completed API actions or charges.
 Use REST, SDKs, or extraction exports to store every row.
 
@@ -185,11 +185,11 @@ The separate 24,000-character tool output limit still applies.
 
 ### Recover oversized results
 
-When saving succeeds, oversized API results include `result_id` and a resource link.
-Their `retry` names only tools your catalog lists. Use 1 of these retrieval methods.
+When saving succeeds, the first page of an oversized API result includes `result_id` and a resource link.
+Its `next` names only tools your catalog lists. Use 1 of these retrieval methods.
 
 - In Code Mode, pass `result_id` to `execute`, then project or page `xquik.result`.
-- In native mode, pass `result_id` to [`readSavedResult`](#readsavedresult) for every page.
+- In native mode, pass `result_id` & `next_offset` to [`readSavedResult`](#readsavedresult) for each next page.
 - Read `xquik://results/{result_id}` through MCP `resources/read`.
 
 Resources return complete `{ result, warnings? }` JSON.
@@ -203,13 +203,13 @@ Missing or unavailable results return an error.
 ```json
 {
   "code": "async () => xquik.result.tweets.slice(0, 10).map(({ id }) => id)",
-  "result_id": "<result_id from the output error>"
+  "result_id": "<result_id from the first page>"
 }
 ```
 
 Recovery applies only when the response supplies `result_id`.
 Every API answer MCP accepts fits in storage. A storage failure may still prevent saving.
-Search catalog errors still require a smaller selection.
+An oversized `search` answer is not saved. Return a smaller selection for the rest.
 Without a saved result, contact support before repeating paid requests.
 Verify completed writes before retrying them.
 
