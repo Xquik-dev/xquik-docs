@@ -6863,8 +6863,8 @@ const FORBIDDEN_DRAW_EXPORT_RESPONSE_SNIPPETS = [
 ] as const;
 
 const REQUIRED_EXTRACTION_EXPORT_COLUMNS_SNIPPETS = [
-  "The extraction tool type decides the columns. Default exports include 29",
-  "columns. `article_extractor` exports 10 article columns. JSON rows also keep",
+  "The extraction tool type decides the columns. Default exports include 33",
+  "columns. `article_extractor` exports 11 article columns. JSON rows also keep",
   "each result's nested `enrichmentData`, as",
   "All extraction tools except `article_extractor` use the default result column set.",
   "Some enrichment columns may be empty when the result does not include that data.",
@@ -6873,7 +6873,7 @@ const REQUIRED_EXTRACTION_EXPORT_COLUMNS_SNIPPETS = [
   '<Card title="Audience metrics" icon="chart-no-axes-column">',
   "`Followers`, `Following`, `Posts`, `Media Count`, and `Favorites`.",
   '<Card title="Profile context" icon="file-text">',
-  "`Description`, `Location`, `Email`, and `Cover Picture`.",
+  "`Description`, `Location`, `Email`, `Phones`, `Links`, and `Cover Picture`.",
   '<Card title="Tweet content" icon="message-square">',
   "`Tweet ID`, `Tweet URL`, `Tweet Text`, and `Tweet Created At`.",
   "`Tweet URL` falls back to the status URL when the username is unavailable.",
@@ -6882,10 +6882,10 @@ const REQUIRED_EXTRACTION_EXPORT_COLUMNS_SNIPPETS = [
   '<Card title="Tweet metadata" icon="braces">',
   "`Language`, `Source`, and `Conversation ID`.",
   '<Card title="Article metadata" icon="file-text">',
-  "`Article Title`, `Article Preview`, and `Article Body`.",
+  "`Article Title`, `Article Preview`, `Article Body`, and `Article Contents JSON`.",
   "`article_extractor` uses a shorter column set for articles.",
   '<Card title="Article identity" icon="file-text">',
-  "`Article Title`, `Cover Image`, and `Article Body`.",
+  "`Article Title`, `Cover Image`, `Article Body`, and `Article Contents JSON`.",
   '<Card title="Author identity" icon="user">',
   "`Author`, `Username`, and `Verified`.",
   '<Card title="Author reach" icon="chart-no-axes-column">',
