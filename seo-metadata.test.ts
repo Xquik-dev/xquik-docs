@@ -188,6 +188,26 @@ describe("SEO metadata", (): void => {
     expect(collectMetadataFindings()).toStrictEqual([]);
   });
 
+  it.each([
+    ["sdks/python.mdx", "Twitter API Python SDK"],
+    ["sdks/typescript.mdx", "Twitter API TypeScript SDK"],
+    ["sdks/go.mdx", "Twitter API Go SDK"],
+    ["sdks/ruby.mdx", "Twitter API Ruby SDK"],
+    ["sdks/csharp-x-api-sdk.mdx", "Twitter API C# SDK"],
+    ["sdks/java.mdx", "Twitter API Java SDK"],
+    ["sdks/kotlin.mdx", "Twitter API Kotlin SDK"],
+    ["sdks/php.mdx", "Twitter API PHP SDK"],
+    ["sdks/cli.mdx", "Twitter CLI & X CLI"],
+    ["mcp/overview.mdx", "Twitter MCP server & X MCP server"],
+    ["guides/billing.mdx", "Twitter API pricing"],
+    ["x-api-quickstart.mdx", "Twitter API quickstart"],
+  ])("opens the title of %s with the searched phrase", (file, phrase): void => {
+    expect.assertions(1);
+
+    const metadata = frontmatter(readFileSync(file, "utf8")) ?? "";
+    expect(frontmatterValue(metadata, "title")?.slice(0, phrase.length)).toBe(phrase);
+  });
+
   it("keeps the Go SDK navigation link descriptive", (): void => {
     expect.assertions(1);
 
