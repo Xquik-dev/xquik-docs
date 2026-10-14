@@ -165,6 +165,7 @@ const PROFILE_FIELDS = [
   "profileInterstitialType",
   "profileSortEnabled",
   "profileTranslatorType",
+  "redirectsToUsername",
   "superFollowEligible",
   "superFollowsUserProfileActive",
   "tipJar",
