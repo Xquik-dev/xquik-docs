@@ -98,7 +98,7 @@ openapi.yaml        OpenAPI 3.1 spec, copied from the application
 Install Bun, rustup, OSV-Scanner, Gitleaks & ShellCheck. Use the pinned npm version in `package.json`.
 
 ```bash
-bunx --bun npm@12.0.1 ci --ignore-scripts
+bunx --bun npm@12.2.0 ci --ignore-scripts
 bun run check:all
 ```
 
@@ -107,7 +107,7 @@ Clone the application beside this repository, or set `XQUIK_PRODUCT_ROOT` to it.
 `bun run sync` then copies the spec & rewrites each page's response examples.
 The parity test needs that checkout too. Without it, the test skips & says so.
 
-Run `bunx --bun mint@4.2.949 dev` when visual previewing is necessary.
+Run `bunx --bun mint@4.2.1035 dev` when visual previewing is necessary.
 
 ## Deployment
 
