@@ -15,8 +15,8 @@ describe("subscription checkout documentation", (): void => {
       paymentNotAutomatic: page.includes("It never completes payment automatically."),
       statusesDocumented: [
         "| No active subscription | `checkout_created` | Hosted subscription checkout |",
-        "| Active or trialing subscription | `already_subscribed` | Billing portal for plan or payment management |",
-        "| Past-due or incomplete subscription | `payment_issue` | Billing portal for payment recovery |",
+        "| Active or trialing subscription | `already_subscribed` | Dashboard billing page, after sign-in |",
+        "| Past-due or incomplete subscription | `payment_issue` | Dashboard billing page, to fix the payment |",
       ].every((row) => normalizedPage.includes(row)),
       pricingBoundaryDocumented: page.includes(
         "does not quote current Twitter API pricing or X API pricing.",
