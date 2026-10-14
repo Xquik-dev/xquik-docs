@@ -50,7 +50,7 @@ describe("compare tweet writing profiles documentation", (): void => {
         "It does not contact X, refresh\ntweets, or calculate a writing-style score.",
       ),
       observableReviewDocumented: source.includes(
-        "Use observable text features before assigning subjective labels:",
+        "Use observable text features before assigning subjective labels.",
       ),
       toneOutputDenied:
         /It does not\s+generate conclusions about voice, tone, vocabulary, readability, or sentiment\./u.test(
