@@ -3,13 +3,6 @@ import { readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
 
-/**
- * Folders whose body sentences are still being rewritten. Their titles and
- * headings are checked like every other page. Remove a folder once its
- * sentences pass.
- */
-const PENDING = ["guides"] as const;
-
 /** The adopted Contributor Covenant text stays verbatim. */
 const VERBATIM_FILES = new Set<string>(["CODE_OF_CONDUCT.md"]);
 
@@ -216,10 +209,6 @@ function trackedPages(): readonly string[] {
     .filter((file): boolean => !VERBATIM_FILES.has(file));
 }
 
-function pendingFolder(file: string): string | undefined {
-  return PENDING.find((folder): boolean => file.startsWith(`${folder}/`));
-}
-
 const FINDINGS: readonly Finding[] = trackedPages().flatMap((file): Finding[] =>
   markedLines(readFileSync(file, "utf8")).map((marked): Finding => ({ ...marked, file })),
 );
@@ -291,25 +280,9 @@ describe("Prose marks", (): void => {
     expect(report((finding): boolean => finding.kind === "heading")).toStrictEqual([]);
   });
 
-  it("writes sentences without colons or semicolons outside pending folders", (): void => {
+  it("writes sentences without colons or semicolons", (): void => {
     expect.assertions(1);
 
-    expect(
-      report(
-        (finding): boolean =>
-          finding.kind === "sentence" && pendingFolder(finding.file) === undefined,
-      ),
-    ).toStrictEqual([]);
-  });
-
-  it("keeps a folder pending only while its sentences still hold marks", (): void => {
-    expect.assertions(1);
-
-    const stillMarked = new Set(
-      FINDINGS.filter((finding): boolean => finding.kind === "sentence").map(
-        (finding): string | undefined => pendingFolder(finding.file),
-      ),
-    );
-    expect(PENDING.filter((folder): boolean => !stillMarked.has(folder))).toStrictEqual([]);
+    expect(report((finding): boolean => finding.kind === "sentence")).toStrictEqual([]);
   });
 });

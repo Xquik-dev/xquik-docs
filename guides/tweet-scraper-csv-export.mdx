@@ -163,7 +163,7 @@ Keep API keys outside code and logs. Store search results with tweet fields and 
 
 ## End-to-end export handoff
 
-Store one checkpoint that carries the search request through estimate, job creation, JSON pagination, and file export:
+Store one checkpoint that carries the search request through estimate, job creation, JSON pagination, and file export.
 
 Tweet search exports include base user fields, tweet fields, engagement counts, and metadata when available.
 
@@ -183,7 +183,7 @@ For direct GET /x/tweets/search, put the same operators in q. A plain Tweet ID o
 
 Create the job with the same toolType, searchQuery, filters, and resultsLimit.
 
-Store the creation response as a local handoff before polling:
+Store the creation response as a local handoff before polling.
 
 Poll by tweet_search_extraction_id. Keep search_query, filters, and results_limit with the audit record. Do not wait for totalResults or createdAt in the create response. Those fields arrive from `GET /extractions/{id}`.
 
@@ -199,7 +199,7 @@ Exports are free after the extraction job exists. Use CSV for spreadsheets, JSON
 
 ## Step 5. Hand off rows
 
-For API handoff, call `GET /extractions/{id}` with limit up to 1000. Pass `nextCursor` as `cursor` until `hasMore` is false. Store `job`, `results`, `hasMore`, and `nextCursor`. Normalize each tweet row before sending it downstream:
+For API handoff, call `GET /extractions/{id}` with limit up to 1000. Pass `nextCursor` as `cursor` until `hasMore` is false. Store `job`, `results`, `hasMore`, and `nextCursor`. Normalize each tweet row before sending it downstream.
 
 For direct API handoff, store tweets[].id, tweets[].text, and tweets[].createdAt. Also store tweets[].author.id, tweets[].author.username, has_next_page, and next_cursor.
 
@@ -213,13 +213,13 @@ The direct search API returns tweets, has_next_page, and next_cursor. Leave limi
 
 Set limit when you want Xquik to collect up to that count in one bounded request. If has_next_page is true, continue with the same query, filters, queryType, and limit. Set cursor to next_cursor. Cost is 1 credit per tweet returned.
 
-For account date windows, sinceTime and untilTime append since: and until: operators to the search query. A request such as q=from:username&sinceTime=2026-05-01&untilTime=2026-05-02 behaves like from:username since:2026-05-01 until:2026-05-02.
+For account date windows, sinceTime and untilTime append `since:` and `until:` operators to the search query. A request such as q=from:username&sinceTime=2026-05-01&untilTime=2026-05-02 behaves like from:username since:2026-05-01 until:2026-05-02.
 
 Use queryType=Latest for time-ordered backfills. Add a keyword, hashtag, or other operator when you need normal search ranking.
 
 A bare q=from:username request uses automatic timeline and search coverage. Continue while the response includes next_cursor.
 
-Use mode=standard with limit only when an old integration needs the legacy timeline read. That read returns a single page with has_next_page: false.
+Use mode=standard with limit only when an old integration needs the legacy timeline read. That read returns a single page where has_next_page is false.
 
 ## Failure handling
 
