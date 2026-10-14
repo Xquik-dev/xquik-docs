@@ -106,16 +106,16 @@ function isExpectedSectionHeaderSkip(result: CheckResult): boolean {
 }
 
 /**
- * Text as both the rendered page & its markdown source write it: straight
- * quotes for curly ones, single spaces & no space before punctuation.
+ * Text as both the rendered page & its markdown source write it, with
+ * straight quotes for curly ones & no whitespace. Mintlify renders the
+ * paragraphs inside a component such as `<Card>` as inline spans, so the
+ * HTML text joins them without a space, as in `cookie.X account`.
  */
 function plainText(text: string): string {
   return text
     .replaceAll(/[\u2018\u2019]/gu, "'")
     .replaceAll(/[\u201C\u201D]/gu, '"')
-    .replaceAll(/\s+/gu, " ")
-    .replaceAll(/ (?=[.,;:!?)])/gu, "")
-    .trim();
+    .replaceAll(/\s+/gu, "");
 }
 
 /**
