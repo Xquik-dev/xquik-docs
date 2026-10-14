@@ -305,13 +305,11 @@ function lineAt(text: string, offset: number): number {
 
 function patternMatches(text: string, firstLine: number): readonly PageFinding[] {
   return PATTERNS.flatMap(({ name, pattern }): PageFinding[] =>
-    [...text.matchAll(pattern)].map(
-      (match): PageFinding => ({
-        line: firstLine + lineAt(text, match.index) - 1,
-        rule: name,
-        text: match[0].replace(/\s+/gu, " "),
-      }),
-    ),
+    [...text.matchAll(pattern)].map((match): PageFinding => ({
+      line: firstLine + lineAt(text, match.index) - 1,
+      rule: name,
+      text: match[0].replace(/\s+/gu, " "),
+    })),
   );
 }
 

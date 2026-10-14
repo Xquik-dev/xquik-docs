@@ -169,7 +169,10 @@ export function pageProse(source: string): PageProse {
 }
 
 export function headingText(proseLine: string): string | undefined {
-  return /^\s*#{1,6}\s(.*)$/u.exec(proseLine)?.[1]?.replace(/\s#+\s*$/u, "").trim();
+  return /^\s*#{1,6}\s(.*)$/u
+    .exec(proseLine)?.[1]
+    ?.replace(/\s#+\s*$/u, "")
+    .trim();
 }
 
 export function trackedPages(): readonly string[] {
