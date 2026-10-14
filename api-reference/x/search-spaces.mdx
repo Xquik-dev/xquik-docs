@@ -204,14 +204,23 @@ The Node.js and Python snippets build 1 row per Space. Store `spaceRows` or
 ## Find Spaces by keyword, host, or topic
 
 Use `GET /x/spaces/search` when you know a topic or a host but not a Space ID.
-It returns the public Spaces that posts matching your query share. A Space can
-be live, scheduled, or ended.
+`queryType` picks how it finds Spaces.
 
-Each page reads up to `pageSize` posts, 20 by default, and returns each Space
-once, in the order the posts share them. Posts often share the same Space, so a
-page returns fewer Spaces. Send `pageSize=100` to read a search fastest. Follow
-`next_cursor`
-while `has_next_page` is `true`.
+- `Latest` and `Top` return the public Spaces that posts matching your query
+  share. A Space can be live, scheduled, or ended.
+- `Live` lists Spaces on air now and `Upcoming` lists scheduled ones. Both read
+  X's own Spaces search, which matches the words in Space titles. They find live
+  Spaces that no post shares yet.
+
+For `Latest` and `Top`, each page reads up to `pageSize` posts, 20 by default,
+and returns each Space once, in the order the posts share them. Posts often share
+the same Space, so a page returns fewer Spaces. Send `pageSize=100` to read a
+search fastest.
+
+For `Live` and `Upcoming`, each page returns up to `pageSize` Spaces, in X's
+order. Every row is the same full Space that Get Space returns.
+
+Follow `next_cursor` while `has_next_page` is `true`.
 
 Each Space carries the `id` that [Get Space](/api-reference/x/get-space) takes. Store the `id`,
 since a title can change. Use `state` to tell a live Space from a scheduled or
@@ -225,16 +234,18 @@ your query. It costs nothing.
 
 <ParamField query="q" type="string" required>
 
-Words, hashtags, or X search operators, such as `from:solana`. The search adds
-`filter:spaces`. Also read as `query`.
+Words, hashtags, or X search operators, such as `from:solana`. `Latest` and
+`Top` add `filter:spaces`. `Live` and `Upcoming` match title words only, without
+operators. Also read as `query`.
 
 </ParamField>
 
 <ParamField query="queryType" type="string" default="Latest">
 
-`Latest` sorts by post time. `Top` ranks by engagement. Any case works.
-Also read as `result_type`, `sort_order`, `type`, `search_type`, `product`,
-`category` or `section`.
+`Latest` finds Spaces in the newest posts. `Top` finds them in the most engaging
+posts. `Live` lists Spaces on air now. `Upcoming` lists scheduled ones. Any case
+works. Also read as `result_type`, `sort_order`, `type`, `search_type`,
+`product`, `category` or `section`.
 
 </ParamField>
 
@@ -246,9 +257,10 @@ Pagination cursor from a previous response. Omit for the first page.
 
 <ParamField query="pageSize" type="integer" default="20">
 
-Posts a page reads, 20 at a time. Accepts `1-100`. Posts often share the same
-Space, so a page returns fewer Spaces. Send `100` to read a search fastest.
-Also read as `limit`, `count`, `max_results`, `maxItems`, `max_items` or `per_page`.
+For `Latest` and `Top`, the posts a page reads, 20 at a time. Accepts `1-100`.
+Posts often share the same Space, so a page returns fewer Spaces. Send `100` to
+read a search fastest. For `Live` and `Upcoming`, the most Spaces a page
+returns. Also read as `limit`, `count`, `max_results`, `maxItems`, `max_items` or `per_page`.
 
 </ParamField>
 
