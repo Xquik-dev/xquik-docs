@@ -1,9 +1,4 @@
 #!/usr/bin/env bun
-/**
- * `bun run sync` writes each API reference page's response tabs from
- * `openapi.yaml`, after it copies the spec. `bun run check:response-examples`
- * fails when a page's tabs differ from what the spec gives.
- */
 import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 
@@ -45,13 +40,11 @@ function list(value: unknown): readonly unknown[] {
   return Array.isArray(value) ? value : [];
 }
 
-/** A property of an object, or an item of an array, else undefined. */
 function field(value: unknown, key: string): unknown {
   if (Array.isArray(value)) return value[Number(key)];
   return isNode(value) ? value[key] : undefined;
 }
 
-/** The value a local `$ref` such as `#/components/schemas/Tweet` points at. */
 function reference(document: unknown, ref: string): unknown {
   if (!ref.startsWith("#/")) {
     throw new Error(`Only local OpenAPI references are supported: ${ref}`);
@@ -65,7 +58,6 @@ function reference(document: unknown, ref: string): unknown {
     );
 }
 
-/** An example value for `schema`, from its own examples or its shape. */
 function schemaExample(
   document: unknown,
   schema: unknown,
@@ -114,7 +106,6 @@ function schemaExample(
   return "<string>";
 }
 
-/** `value` with 1 item per array & at most `limit` fields, 5 once nested. */
 function compact(value: unknown, limit: number, depth: number): unknown {
   if (Array.isArray(value)) return value.slice(0, 1).map((item) => compact(item, limit, depth + 1));
   if (!isNode(value)) return value;
@@ -126,7 +117,6 @@ function compact(value: unknown, limit: number, depth: number): unknown {
   );
 }
 
-/** The media type a response tab shows: JSON when the response offers it. */
 function shownContent(content: unknown): readonly [string, unknown] | undefined {
   const entries = Object.entries(isNode(content) ? content : {});
   return (
@@ -136,7 +126,6 @@ function shownContent(content: unknown): readonly [string, unknown] | undefined 
   );
 }
 
-/** The fields an error tab shows: the documented error fields, or the 1st 6. */
 function errorExample(value: Node): Node {
   const named = ERROR_FIELDS.filter((name) => name in value).map((name): [string, unknown] => [
     name,
@@ -148,7 +137,6 @@ function errorExample(value: Node): Node {
   );
 }
 
-/** The example of a media type: its own, its 1st named one, or its schema's. */
 function mediaExample(document: unknown, media: unknown): unknown {
   const examples = field(media, "examples");
   const [firstExample] = Object.values(isNode(examples) ? examples : {});
@@ -159,7 +147,6 @@ function mediaExample(document: unknown, media: unknown): unknown {
   );
 }
 
-/** The code block language & body of 1 response tab. */
 function responseExample(
   document: unknown,
   response: unknown,
@@ -190,7 +177,6 @@ function responseExample(
   return { language, value: compact(named, MAX_SUCCESS_FIELDS, 0) };
 }
 
-/** The generated block of an operation's response tabs, markers included. */
 function responseBlock(document: unknown, operation: unknown, scope: string): string {
   const responses = field(operation, "responses");
   const tabs = Object.entries(isNode(responses) ? responses : {}).map(([status, response]) => {
@@ -211,7 +197,6 @@ function responseBlock(document: unknown, operation: unknown, scope: string): st
   return `${START}\n\n<Panel>\n\n<Tabs defaultTabIndex={0} sync={false}>\n\n${tabs.join("\n\n")}\n</Tabs>\n\n</Panel>\n${END}`;
 }
 
-/** `source` with `block` after its imports, replacing an earlier block. */
 function replaceBlock(source: string, block: string): string {
   const start = source.indexOf(START);
   const end = source.indexOf(END);
@@ -231,11 +216,6 @@ function replaceBlock(source: string, block: string): string {
   return `${page.slice(0, insertion)}\n${block}\n${page.slice(insertion).replace(/^\r?\n*/u, "")}`;
 }
 
-/**
- * Checks or writes the response tabs of every API reference page under `root`
- * & returns the summary line. Throws with 1 line per stale or unknown page, &
- * writes nothing unless every page resolves.
- */
 function run(root: string, check: boolean): string {
   const document: unknown = Bun.YAML.parse(readFileSync(join(root, "openapi.yaml"), "utf8"));
   const pages = readdirSync(join(root, "api-reference"), { encoding: "utf8", recursive: true })

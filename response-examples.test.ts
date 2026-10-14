@@ -11,7 +11,6 @@ const PAGE =
   '---\napi: "GET /fixture"\n---\n\nimport Intro from "/intro.mdx";\n\nOriginal guidance.\n';
 const roots: string[] = [];
 
-/** A temporary docs root holding `files`, removed after the test. */
 function docsRoot(files: Readonly<Record<string, string>>): string {
   const root = mkdtempSync(join(tmpdir(), "response-examples-"));
   roots.push(root);
@@ -22,7 +21,6 @@ function docsRoot(files: Readonly<Record<string, string>>): string {
   return root;
 }
 
-/** The code block that syncing writes for a 200 response of `response`. */
 function syncedExample(response: unknown, components: unknown = {}): string {
   const root = docsRoot({
     "api-reference/a.mdx": PAGE,

@@ -6,8 +6,6 @@ const CONTEXT7_LIBRARY_URL = "https://context7.com/xquik-dev/xquik-docs";
 const CONTEXT7_WEBSITE_URL = "https://context7.com/websites/xquik";
 const PUBLIC_KEY_PREFIX = "pk_";
 const CONTEXT7_PUBLIC_KEY = "pk_oCPeRRqZFJsY4cCUSotDD";
-// Context7 parses only these folders & the root Markdown files, so the
-// OpenAPI copy, tests & package files stay out of the index.
 const DOC_FOLDERS = [
   "api-reference",
   "guides",
@@ -18,7 +16,6 @@ const DOC_FOLDERS = [
   "snippets",
   "webhooks",
 ] as const;
-// Root files that are not docs, pages that repeat others & retired pages.
 const REQUIRED_EXCLUDED_FILES = [
   "CODE_OF_CONDUCT.md",
   "CONTRIBUTING.md",

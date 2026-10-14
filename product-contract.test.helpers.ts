@@ -15,14 +15,9 @@ function asRecord(value: unknown): Spec | undefined {
 
 const PRODUCT_ROOT = findProductRoot();
 
-/**
- * The product's published OpenAPI spec, its stable public contract. This
- * repository holds an exact copy, which `openapi-parity.test.ts` checks.
- */
 const productSpec: Spec =
   asRecord(Bun.YAML.parse(readFileSync(join(import.meta.dirname, "openapi.yaml"), "utf8"))) ?? {};
 
-/** Follows local `$ref` pointers such as `#/components/responses/NotFound`. */
 function resolve(spec: Spec, value: unknown): Spec {
   let current = asRecord(value) ?? {};
   for (let hops = 0; typeof current["$ref"] === "string" && hops < 10; hops += 1) {
@@ -32,7 +27,6 @@ function resolve(spec: Spec, value: unknown): Spec {
   return current;
 }
 
-/** The property names of a schema, merging `allOf` parts. */
 function propertyNames(spec: Spec, schema: unknown): string[] {
   const resolved = resolve(spec, schema);
   const parts = Array.isArray(resolved["allOf"]) ? resolved["allOf"] : [resolved];
@@ -42,17 +36,12 @@ function propertyNames(spec: Spec, schema: unknown): string[] {
 }
 
 interface ProductOperation {
-  /** Parameter names, each marked `!` when required. */
   readonly parameters: readonly string[];
-  /** Response status codes in spec order. */
   readonly statuses: readonly string[];
-  /** Top-level property names of the success response body. */
   readonly successFields: readonly string[];
-  /** Resolves a property of the success body & returns its item's fields. */
   readonly itemFields: (property: string) => readonly string[];
 }
 
-/** An operation of `spec` by `operationId`, or undefined. */
 function findOperation(spec: Spec, operationId: string): Spec | undefined {
   return Object.values(asRecord(spec["paths"]) ?? {})
     .flatMap((path) => Object.values(asRecord(path) ?? {}))
@@ -60,12 +49,10 @@ function findOperation(spec: Spec, operationId: string): Spec | undefined {
     .find((candidate) => candidate?.["operationId"] === operationId);
 }
 
-/** The `security` of an operation of the spec, aliases resolved. */
 function docsSecurity(operationId: string): unknown {
   return findOperation(productSpec, operationId)?.["security"];
 }
 
-/** An operation of the product spec by `operationId`, or undefined. */
 function productOperation(spec: Spec, operationId: string): ProductOperation | undefined {
   const operation = findOperation(spec, operationId);
   if (operation === undefined) return undefined;
@@ -94,15 +81,11 @@ function productOperation(spec: Spec, operationId: string): ProductOperation | u
 }
 
 interface DocsContract {
-  /** Path & query parameter names, each marked `!` when required, sorted. */
   readonly parameters: readonly string[];
-  /** Response tab status codes in page order. */
   readonly statuses: readonly string[];
-  /** Every documented response field name. */
   readonly fields: readonly string[];
 }
 
-/** What an API reference page documents about its operation. */
 function docsContract(source: string): DocsContract {
   return {
     fields: [...source.matchAll(/<ResponseField name="([^"]+)"/gu)].map(([, name]) => name ?? ""),
@@ -113,7 +96,6 @@ function docsContract(source: string): DocsContract {
   };
 }
 
-/** Registers a check against the product spec. */
 function productCheck(name: string, run: (spec: Spec) => void): void {
   it(name, (): void => {
     run(productSpec);

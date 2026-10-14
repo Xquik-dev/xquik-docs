@@ -62,10 +62,6 @@ const PAGINATED_TWEET_PAGES = [
   "api-reference/x/user-mentions.mdx",
 ] as const;
 
-/**
- * The lists a filtered read can end at its scan limit. Their operations answer
- * `UserListResult`, whose standard page is `UserListPage`.
- */
 const USER_LIST_PAGES = [
   "api-reference/x/followers.mdx",
   "api-reference/x/following.mdx",
@@ -449,8 +445,6 @@ function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
     page,
     requiredFields: paginatedUserRequired,
   }));
-  // The spec's page of these lists adds the fields a page may leave out, such
-  // as the scan limit that ended a filtered read.
   const userListContracts = USER_LIST_PAGES.map((page): PageContract => ({
     allowedFields: uniqueSorted([...schemaPropertyNames(spec, "UserListPage"), ...userProfile]),
     page,

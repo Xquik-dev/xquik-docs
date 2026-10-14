@@ -105,12 +105,6 @@ function isExpectedSectionHeaderSkip(result: CheckResult): boolean {
   );
 }
 
-/**
- * Text as both the rendered page & its markdown source write it, with
- * straight quotes for curly ones & no whitespace. Mintlify renders the
- * paragraphs inside a component such as `<Card>` as inline spans, so the
- * HTML text joins them without a space, as in `cookie.X account`.
- */
 function plainText(text: string): string {
   return text
     .replaceAll(/[\u2018\u2019]/gu, "'")
@@ -118,13 +112,6 @@ function plainText(text: string): string {
     .replaceAll(/\s+/gu, "");
 }
 
-/**
- * The served markdown keeps Mintlify components such as `<Card title="...">`
- * as MDX. afdocs reads their titles & inner markdown links as raw HTML, so
- * text the markdown holds can count as missing. The markdown text of a page:
- * its component titles, and its prose with links reduced to their text & tags,
- * escapes, code marks & bold marks removed.
- */
 function markdownText(markdown: string): string {
   const titles = [...markdown.matchAll(/\btitle="([^"]*)"/gu)].map((match) => match[1]);
   const prose = markdown
@@ -135,10 +122,8 @@ function markdownText(markdown: string): string {
   return plainText([...titles, prose].join(" "));
 }
 
-/** Attempts per markdown fetch, so 1 dropped request cannot fail the crawl. */
 const FETCH_ATTEMPTS = 2;
 
-/** The body of `url`, or undefined when no attempt answers 200. */
 async function fetchText(url: URL): Promise<string | undefined> {
   for (let attempt = 1; attempt <= FETCH_ATTEMPTS; attempt += 1) {
     const response = await fetch(url).catch((): undefined => undefined);
@@ -147,10 +132,6 @@ async function fetchText(url: URL): Promise<string | undefined> {
   return undefined;
 }
 
-/**
- * Whether every text a parity warning names as missing is in that page's
- * served markdown, so the warning comes from MDX components alone.
- */
 async function parityWarningIsMdxOnly(result: CheckResult): Promise<boolean> {
   const pages = asRecordArray(asRecord(result.details)?.pageResults).filter(
     (page) => page.status === "warn",
@@ -175,12 +156,6 @@ async function parityWarningIsMdxOnly(result: CheckResult): Promise<boolean> {
   return pages.length > 0 && checks.every(Boolean);
 }
 
-/**
- * Whether every page an HTML size warning names has served markdown under the
- * size limit in the same crawl. afdocs converts the whole HTML, which holds
- * about 13,000 characters of sidebar on every page, so the limit applies to
- * the page's own content: its markdown. A page over the fail limit fails.
- */
 function htmlSizeWarningIsChromeOnly(
   html: CheckResult,
   markdown: CheckResult | undefined,
@@ -201,9 +176,7 @@ function htmlSizeWarningIsChromeOnly(
 }
 
 interface Accepted {
-  /** Whether an HTML size warning names only pages with small markdown. */
   readonly chromeOnlySizeWarning: boolean;
-  /** Whether a parity warning comes from MDX components alone. */
   readonly mdxOnlyParityWarning: boolean;
 }
 

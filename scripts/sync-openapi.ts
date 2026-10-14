@@ -1,10 +1,4 @@
 #!/usr/bin/env bun
-/**
- * `bun run sync` copies the application's `openapi.yaml` here, byte for byte,
- * as its checkout's commit holds it. The application owns the spec, so this
- * repository never edits it: the parity test fails unless the file is an exact
- * copy of a version the application holds.
- */
 import { execFileSync } from "node:child_process";
 import { writeFileSync } from "node:fs";
 

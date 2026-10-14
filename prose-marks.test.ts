@@ -4,7 +4,6 @@ import { describe, expect, it } from "vitest";
 
 import { headingText, pageProse, trackedPages } from "./prose.test.helpers.ts";
 
-/** A colon before a space or line end, a semicolon, or a full-width colon or semicolon. */
 const MARK = /:(?=\s|$)|[;：；]/u;
 
 type MarkKind = "frontmatter" | "heading" | "sentence";
@@ -19,7 +18,6 @@ interface Finding extends MarkedLine {
   readonly file: string;
 }
 
-/** Every front matter title or description, heading, and prose line of a page that holds a mark. */
 function markedLines(source: string): readonly MarkedLine[] {
   const { fields, rawLines, prose } = pageProse(source);
   const frontmatter = fields
