@@ -66,7 +66,7 @@ describe("API key list documentation", (): void => {
 
     expect(
       [
-        'title: "X API key management: list active Xquik keys"',
+        'title: "X API key management to list active Xquik keys"',
         '"X API key"',
         '"Twitter API key"',
         '"API key management"',

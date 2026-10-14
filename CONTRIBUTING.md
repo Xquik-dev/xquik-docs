@@ -12,7 +12,7 @@ Thanks for helping improve the Xquik docs. This file covers how to set up your e
 6. Sign off your commit.
 7. Push and open a pull request against `main`.
 
-Run these checks:
+Run these checks.
 
 ```sh
 bun run check:all
@@ -51,7 +51,7 @@ Ask for acceptance criteria when the scope is unclear.
 
 ## What we do not accept here
 
-- Changes to internal product behaviour. The Xquik app is closed-source and lives in a separate repository; documentation must follow real behaviour, not propose new behaviour.
+- Changes to internal product behaviour. The Xquik app is closed-source and lives in a separate repository. Documentation must follow real behaviour, not propose new behaviour.
 - Promotional or search-only content. Keep comparison pages factual, technical, and useful.
 - Auto-generated SDK code. Each SDK has its own repository under the [Xquik-dev](https://github.com/Xquik-dev) org.
 
@@ -62,13 +62,14 @@ These are non-negotiable for merged PRs.
 ### Wording
 
 - Active voice, imperative mood, no hedging. Under 15 words per sentence where possible.
-- Numerals over words ("3 retries", not "three retries"). Use `&` over "and" only inside titles or short labels; prose uses "and".
+- Numerals over words ("3 retries", not "three retries"). Use `&` over "and" only inside titles or short labels. Prose uses "and".
 - Use sentence case for page titles and section headings.
-- Errors should describe the problem and fix: "Insufficient credits. Top up or subscribe to continue."
+- Errors should describe the problem and fix, as in "Insufficient credits. Top up or subscribe to continue."
 
 ### Punctuation
 
 - Do not use U+2014 em dashes, U+2013 en dashes, or spaced double hyphens. Use a period or comma.
+- Do not use colons or semicolons in titles, headings, or sentences. End the sentence or split it. Colons in code, URLs, and times stay. `prose-marks.test.ts` checks this.
 - Use a real ellipsis character (`…`) for loading or "more" indicators rather than `...`.
 - Avoid emojis unless the page already uses them consistently.
 
@@ -82,7 +83,7 @@ These are non-negotiable for merged PRs.
 ### MDX components
 
 - Prefer Mintlify built-ins (`<CodeGroup>`, `<Tabs>`, `<Steps>`, `<Tip>`, `<Warning>`) over custom HTML.
-- Keep front-matter minimal: `title`, `description`, and where relevant `api` and `openapi`.
+- Keep front-matter minimal. Use `title`, `description`, and where relevant `api` and `openapi`.
 
 ## OpenAPI changes
 
@@ -104,13 +105,13 @@ Run the dependency audit and the exact-version check before requesting review.
 
 ## Commit and PR conventions
 
-- Use Conventional Commits prefixes: `docs:`, `fix:`, `feat:`, `chore:`. Most contributions here are `docs:` or `fix:`.
+- Use the Conventional Commits prefixes `docs:`, `fix:`, `feat:`, and `chore:`. Most contributions here are `docs:` or `fix:`.
 - Keep commit messages descriptive but tight. Reference any related GitHub issue using `Closes #123` or `Refs #123` in the PR body.
 - One logical change per PR. Combining a typo fix with a new guide makes review harder.
-- The PR description should answer: what changed, why it matters, how it was verified.
+- The PR description should answer what changed, why it matters, and how it was verified.
 - Sign every commit under the [Developer Certificate of Origin][dco].
 
-Use:
+Run this command.
 
 ```sh
 git commit --signoff
@@ -130,9 +131,9 @@ Be civil. Personal attacks, harassment, and discriminatory language are not tole
 
 ## Questions
 
-- General product questions: [support@xquik.com](mailto:support@xquik.com).
-- Security findings: [support@xquik.com](mailto:support@xquik.com) with the subject `Security report` (see [SECURITY.md](SECURITY.md)).
-- Anything else about this repository: open an issue.
+- Send general product questions to [support@xquik.com](mailto:support@xquik.com).
+- Send security findings to [support@xquik.com](mailto:support@xquik.com) with the subject `Security report`. See [SECURITY.md](SECURITY.md).
+- For anything else about this repository, open an issue.
 
 [dco]: https://developercertificate.org/
 [good-first-issues]: https://github.com/Xquik-dev/xquik-docs/labels/good%20first%20issue

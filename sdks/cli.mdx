@@ -27,7 +27,7 @@ Use the CLI when a shell script, cron job, CI workflow, or operations runbook ne
 go install github.com/Xquik-dev/x-twitter-scraper-cli/cmd/x-twitter-scraper@latest
 ```
 
-Confirm your Go bin directory is on `PATH`:
+Confirm your Go bin directory is on `PATH`.
 
 ```bash
 export PATH="$PATH:$(go env GOPATH)/bin"
@@ -50,17 +50,17 @@ x-twitter-scraper x:tweets search \
   --format json
 ```
 
-Use `--help` at any level:
+Use `--help` at any level.
 
 ```bash
 x-twitter-scraper x:tweets search --help
 ```
 
-## Workflow: search tweets to JSON Lines, CSV, or XLSX
+## Tweet search workflow to JSON Lines, CSV, or XLSX
 
 Use this workflow when an analyst, data engineer, or growth operator needs tweets from an X search query in a JSON Lines handoff, analyst CSV file, XLSX workbook, warehouse load, CRM enrichment job, or queue.
 
-The CLI command below calls `GET /x/tweets/search`. It maps the same REST API query parameters to flags: `--q`, `--limit`, `--cursor`, `--since-time`, `--until-time`, and `--query-type`.
+The CLI command below calls `GET /x/tweets/search`. It maps the same REST API query parameters to the flags `--q`, `--limit`, `--cursor`, `--since-time`, `--until-time`, and `--query-type`.
 
 ```bash
 query="from:username webhook OR SDK"
@@ -197,7 +197,7 @@ with open("xquik-tweet-search-from-jsonl.csv", "w", newline="", encoding="utf-8"
 PY
 ```
 
-Save the cursor with the job checkpoint before requesting the next page:
+Save the cursor with the job checkpoint before requesting the next page.
 
 ```bash
 tail -n 1 xquik-tweet-search.jsonl | jq '{query, page_index, next_cursor, has_next_page}'
@@ -209,7 +209,7 @@ Tweet search costs 1 credit per tweet returned. If remaining credits cannot cove
 
 For XLSX handoff, keep `xquik-tweet-search.jsonl` as the master file and convert the same projected rows in your pipeline when account managers need a workbook.
 
-## Workflow: follower export to CSV, JSON, or XLSX
+## Follower export workflow to CSV, JSON, or XLSX
 
 Use this workflow when sales, support, research, or marketing teams need an owned follower list in a CRM import, warehouse load, analyst CSV file, XLSX workbook, or resumable JSON handoff.
 
@@ -236,7 +236,7 @@ jq -e '.status == "running" and .toolType == "follower_explorer"' follower-run.j
 job_id="$(jq -r '.id' follower-run.json)"
 ```
 
-The run command calls `POST /extractions` and returns the queued `202 Accepted` receipt: `id`, `toolType`, and `status: "running"`. Store `follower-run.json`, `job_id`, the source username, and the estimate before polling. Credit reservation happens after the job starts. If available credits changed since the estimate, the run can fetch only the affordable count before export or mark the job `failed` with `insufficient_credits`.
+The run command calls `POST /extractions` and returns the queued `202 Accepted` receipt. The receipt holds `id`, `toolType`, and `status: "running"`. Store `follower-run.json`, `job_id`, the source username, and the estimate before polling. Credit reservation happens after the job starts. If available credits changed since the estimate, the run can fetch only the affordable count before export or mark the job `failed` with `insufficient_credits`.
 
 ```bash
 while :; do
@@ -293,10 +293,10 @@ x-twitter-scraper extractions export-results \
 
 Use `--format json --output xquik-followers.json` for app ingestion or `--format xlsx --output xquik-followers.xlsx` for XLSX handoff. Map `User ID` or result `xUserId` as the CRM unique key. Keep `xquik-followers.jsonl` for queue replay or warehouse loads, `xquik-followers.json` for app ingestion, `xquik-followers.csv` for CRM import, and `xquik-followers.xlsx` for analyst handoff.
 
-Cost: 1 credit per follower extracted or returned. Exports are free after the
+The cost is 1 credit per follower extracted or returned. Exports are free after the
 extraction job exists.
 
-## Workflow: tweet replies to CSV, JSON, or XLSX
+## Tweet replies workflow to CSV, JSON, or XLSX
 
 Use this workflow when you need every reply under one Tweet. Export CSV, JSON,
 or XLSX. Write a local JSON Lines file from paginated JSON rows.
@@ -322,7 +322,7 @@ job_id="$(x-twitter-scraper extractions run \
   --raw-output)"
 ```
 
-The run command calls `POST /extractions`. Store `job_id` before polling so a shell restart, queue retry, or CI rerun can resume the same extraction. Reuse the follower export polling loop above with reply filenames:
+The run command calls `POST /extractions`. Store `job_id` before polling so a shell restart, queue retry, or CI rerun can resume the same extraction. Reuse the follower export polling loop above with reply filenames.
 
 ```bash
 x-twitter-scraper extractions retrieve \
@@ -348,9 +348,9 @@ x-twitter-scraper extractions export-results \
   --output xquik-tweet-replies.csv
 ```
 
-The export command calls `GET /extractions/{id}/export` and writes bytes to `--output`. Use `--format csv`, `--format json` with `--output xquik-tweet-replies.json`, or `--format xlsx` with `--output xquik-tweet-replies.xlsx`. Cost: 1 credit per reply extracted or returned. Exports are free after the extraction job exists.
+The export command calls `GET /extractions/{id}/export` and writes bytes to `--output`. Use `--format csv`, `--format json` with `--output xquik-tweet-replies.json`, or `--format xlsx` with `--output xquik-tweet-replies.xlsx`. The cost is 1 credit per reply extracted or returned. Exports are free after the extraction job exists.
 
-## Workflow: post media tweets, replies, and DM attachments
+## Workflow to post media tweets, replies, and DM attachments
 
 Use this workflow when an operator, support queue, or agent needs to publish a media-backed tweet, reply with media, or send one media attachment in a DM from a connected X account.
 
@@ -377,7 +377,7 @@ x-twitter-scraper x:tweets create \
   --format-error json > posted-reply.json
 ```
 
-Send a unique `Idempotency-Key`. Store the durable action's `id`, `request.hash`, `billing`, `result`, and `statusUrl`. Poll while `terminal` is false. Retry only when `safeToRetry` is true, using a new key. Keep one JSON Lines handoff shape for every lifecycle state:
+Send a unique `Idempotency-Key`. Store the durable action's `id`, `request.hash`, `billing`, `result`, and `statusUrl`. Poll while `terminal` is false. Retry only when `safeToRetry` is true, using a new key. Keep one JSON Lines handoff shape for every lifecycle state.
 
 ```bash
 write_handoff() {
