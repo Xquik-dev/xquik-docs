@@ -26,7 +26,7 @@ Native names, schemas, and contracts come from OpenAPI. `compose` and
 `estimateExtraction` are read-only. Clients read each JSON Schema from
 `tools/list`. The server embeds no model prompt, routing, sample count, or endpoint preference.
 
-Use `https://xquik.com/mcp` for Code Mode. Choose native mode for one tool per operation. Binary downloads and credential lifecycle operations remain REST-only.
+Use `https://xquik.com/mcp` for Code Mode. Choose native mode for one tool per operation. Binary downloads, credential lifecycle, checkout, top-up and subscription operations remain REST-only.
 
 ## `docs`
 
@@ -85,6 +85,8 @@ async () => spec.components.schemas.PaginatedTweets.properties;
 ## `execute`
 
 Execute API calls allowed by the authenticated credential. Full account keys and OAuth tokens keep their existing account capabilities. Guest keys can execute only the eligible GET reads. The server injects authentication and required idempotency headers.
+
+For full credentials, `execute` carries `destructiveHint: true` and `openWorldHint: true`, so MCP clients such as Claude ask before each call. Guest keys see it as read-only. Native tools carry the hints of their operation, so reads run without a prompt.
 
 **Input.**
 
@@ -217,7 +219,7 @@ Verify completed writes before retrying them.
 
 The [MCP operation boundary](/mcp/overview#mcp-operation-boundary) lists excluded operations. Guest wallet credential routes and file downloads use REST. Guest keys expose only [eligible paid-read routes](/guides/guest-wallets#eligible-paid-read-routes).
 
-A `402` creates no checkout. Report its `payment_options`, ask the user to choose an amount and option, then wait for explicit confirmation. Full account MCP sessions may call only an advertised account checkout action present in their catalog. Guest wallet creation and top-up remain direct REST after confirmation.
+A `402` creates no checkout. Its MCP answer keeps `error`, `message`, `balance`, `required`, `credits_renew_at` when a plan renews, and `dashboard` as a full link. It leaves out `payment_options`, `next_step` and the top-up fields. Report the balance and send the user to the `dashboard` link to add credits.
 
 **Examples.**
 
@@ -732,19 +734,6 @@ async () => {
 };
 ```
 
-> Subscribe (free, returns checkout or billing portal URL)
-
-Run this call only after the user explicitly asks to subscribe or open billing.
-
-```javascript
-async () => {
-  return xquik.request({
-    path: "/api/v1/subscribe",
-    method: "POST",
-  });
-};
-```
-
 ## API endpoints
 
 The full MCP catalog groups its operations into 10 categories.
@@ -753,7 +742,7 @@ The full MCP catalog groups its operations into 10 categories.
 
   <Card title="Account, composition, and credits" icon="user">
 
-    MCP operations across `account`, `composition`, and `credits` cover account info, subscribe, X identity, compose, styles, drafts, radar, balance checks, checkout creation, and checkout status.
+    MCP operations across `account`, `composition`, and `credits` cover account info, X identity, compose, styles, drafts, radar, and balance checks.
 
   </Card>
   <Card title="Extractions and media" icon="download">
@@ -796,7 +785,7 @@ With a guest `paid_reads` key, `search` and `execute` expose only the eligible `
   </Card>
   <Card title="Free account and stored records" icon="circle-check">
 
-    Compose, cached styles, drafts, radar, subscribe, account, support, credits, X account management, webhooks, stored monitors, stored events, and existing extraction or draw reads are free.
+    Compose, cached styles, drafts, radar, account, support, credits, X account management, webhooks, stored monitors, stored events, and existing extraction or draw reads are free.
 
   </Card>
   <Card title="Metered reads and jobs" icon="gauge">
@@ -829,10 +818,10 @@ Never combine free and paid endpoints in a single `Promise.all`. A 402 error on 
 
 ## Error handling
 
-- **402 / `no_subscription` / `subscription_inactive`.** Report the billing state and available account actions. Existing available credits can still fund metered calls. Ask the user to choose and confirm before calling `POST /api/v1/subscribe`.
-- **402 / `no_credits` / `insufficient_credits`.** Report `payment_options`. Full account sessions may create account checkout after confirmation. Guest sessions may explain the direct REST top-up flow, but MCP cannot execute it.
+- **402 / `no_subscription` / `subscription_inactive`.** Report the billing state. Existing available credits can still fund metered calls. Send the user to the `dashboard` link to choose a plan.
+- **402 / `no_credits` / `insufficient_credits`.** Report `balance` and `required`, then send the user to the `dashboard` link to add credits. Guest sessions may explain the direct REST top-up flow, but MCP cannot execute it.
 - **429 / `rate_limit_exceeded`.** Respect `error.retry_after`, then retry safe reads with backoff.
 - **424 dependency errors.** Report `error.code`, keep partial aggregates, and retry only when `error.retryable` allows it.
 - **Validation errors.** Fix the path, query, or body before retrying.
 
-The MCP server never starts subscriptions, checkout, top-up, or other billing mutations in response to an API error. Guest credential routes are never executable through MCP.
+MCP has no subscription, checkout, top-up or guest wallet tool, so no MCP call moves money.
