@@ -2,7 +2,6 @@ import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-/** The patterns of an ignore file, without comments & blank lines. */
 function ignoreEntries(path: string): string[] {
   return readFileSync(path, "utf8")
     .split("\n")
@@ -35,7 +34,7 @@ describe("Mintlify ignore rules", (): void => {
 
   it("excludes tooling while retaining documentation, contracts, and assets", (): void => {
     expect.assertions(2);
-    // .mintignore uses Git's ignore syntax, so Git itself applies its patterns.
+    // .mintignore uses Git's ignore syntax, so Git itself applies its patterns. https://www.mintlify.com/docs/organize/mintignore#pattern-syntax
     const ignored = new Set(trackedFiles("--cached", "--ignored", "--exclude-from=.mintignore"));
     const tooling = [
       "mintignore.test.ts",

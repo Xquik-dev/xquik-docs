@@ -296,8 +296,6 @@ describe("read data richness documentation", (): void => {
     expect(schemaFields(PARSED_OPENAPI, "TweetMedia")).toStrictEqual(sortedFields(MEDIA_FIELDS));
   });
 
-  // Nested tweets type only the required fields & author, so the product's
-  // vacuum example check fits its limit. The other tweet fields stay allowed.
   it("types nested tweets with the required tweet fields and author", (): void => {
     expect.assertions(1);
     const embeddedTweet = PARSED_OPENAPI.components?.schemas?.["EmbeddedTweet"];

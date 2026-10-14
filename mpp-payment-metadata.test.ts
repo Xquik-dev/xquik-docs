@@ -48,7 +48,6 @@ function normalizeOperationKey(method: string, path: string): string {
   return `${method.toUpperCase()} /api/v1${productPath}`;
 }
 
-// Paid reads list credentials beside {}. Public operations list no credential.
 function hasOptionalCredential(operation: OpenApiOperation): boolean {
   const security = operation.security ?? [];
   return (

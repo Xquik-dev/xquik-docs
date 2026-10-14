@@ -21,11 +21,9 @@ const PROJECT_ROOT = process.cwd();
 const spec = Bun.YAML.parse(
   readFileSync(join(PROJECT_ROOT, "openapi.yaml"), "utf8"),
 ) as OpenApiSpec;
-// Every write operation in the spec has 1 page.
 const WRITE_OPERATION_COUNT = Object.values(spec.paths ?? {})
   .flatMap((methods) => Object.values(methods))
   .filter((operation) => operation["x-write-action"] !== undefined).length;
-// Every operation that answers 204 has 1 page.
 const NO_CONTENT_OPERATION_COUNT = Object.values(spec.paths ?? {})
   .flatMap((methods) => Object.values(methods))
   .filter((operation) => operation.responses?.["204"] !== undefined).length;

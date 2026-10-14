@@ -214,7 +214,6 @@ function requestBodyFields(spec: OpenApiSpec, operation: OpenApiOperation): Sche
   };
 }
 
-/** The operation's parameters after the ones its path lists for every operation. */
 function openApiParameters(
   spec: OpenApiSpec,
   path: string,
