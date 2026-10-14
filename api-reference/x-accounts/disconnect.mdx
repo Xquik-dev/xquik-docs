@@ -80,6 +80,12 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 </Callout>
 
+<Warning>
+
+Disconnect X accounts at [dashboard.xquik.com/account](https://dashboard.xquik.com/account). This route serves only a signed-in dashboard session, since only a new sign-in restores the account. API keys and OAuth tokens get `403 session_required`.
+
+</Warning>
+
 Use this endpoint when a connected account should no longer be available for write actions, DMs, media upload, or profile updates. It deletes only the stored Xquik connection for that account ID. It does not change the X account itself. After success, the old Xquik account ID returns `404`. Reconnect the account to get a new ID.
 
 ## What disconnect does
@@ -111,61 +117,22 @@ Use this endpoint when a connected account should no longer be available for wri
 <CodeGroup>
 
 ```bash cURL
-curl -X DELETE https://xquik.com/api/v1/x/accounts/3 \
-  -H "x-api-key: xq_YOUR_KEY_HERE" | jq
+curl -X DELETE https://dashboard.xquik.com/api/v1/x/accounts/3 \
+  -H "Cookie: __Host-xquik_session=YOUR_SESSION_COOKIE" \
+  -H "Origin: https://dashboard.xquik.com" \
+  -H "Sec-Fetch-Site: same-origin" | jq
 ```
 
 ```javascript Node.js
-const accountId = "3";
-const response = await fetch(`https://xquik.com/api/v1/x/accounts/${accountId}`, {
+const response = await fetch("https://dashboard.xquik.com/api/v1/x/accounts/3", {
   method: "DELETE",
   headers: {
-    "x-api-key": "xq_YOUR_KEY_HERE",
+    Cookie: "__Host-xquik_session=YOUR_SESSION_COOKIE",
+    Origin: "https://dashboard.xquik.com",
+    "Sec-Fetch-Site": "same-origin",
   },
 });
 const data = await response.json();
-```
-
-```python Python
-import requests
-
-account_id = "3"
-response = requests.delete(
-    f"https://xquik.com/api/v1/x/accounts/{account_id}",
-    headers={"x-api-key": "xq_YOUR_KEY_HERE"},
-)
-data = response.json()
-```
-
-```go Go
-package main
-
-import (
-    "encoding/json"
-    "fmt"
-    "net/http"
-)
-
-func main() {
-    accountID := "3"
-    req, err := http.NewRequest("DELETE", "https://xquik.com/api/v1/x/accounts/"+accountID, nil)
-    if err != nil {
-        panic(err)
-    }
-    req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
-
-    resp, err := http.DefaultClient.Do(req)
-    if err != nil {
-        panic(err)
-    }
-    defer resp.Body.Close()
-
-    var data map[string]interface{}
-    if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
-        panic(err)
-    }
-    fmt.Println(data)
-}
 ```
 
 </CodeGroup>
@@ -180,10 +147,14 @@ The unique account ID.
 
 ## Headers
 
-<ParamField header="x-api-key" type="string" required>
+<ParamField header="Cookie" type="string" required>
+  Your signed-in dashboard session cookie, `__Host-xquik_session`. API keys and OAuth tokens get
+  `403 session_required`.
+</ParamField>
 
-Your API key. Session cookie authentication is also supported. Generate a key from the [dashboard](https://xquik.com/dashboard).
-
+<ParamField header="Origin" type="string" required>
+  Must be `https://dashboard.xquik.com`, sent with `Sec-Fetch-Site` set to `same-origin`. The
+  dashboard sends both.
 </ParamField>
 
 ## Response

@@ -108,7 +108,9 @@ request then sends it as `x-api-key`. See
 ## Auth methods by endpoint
 
 The cards below list the auth method each endpoint accepts. Most
-routes accept an API key or dashboard session cookie.
+routes accept an API key or dashboard session cookie. Routes that manage
+credentials, saved-card charges, or X account sign-ins accept only the
+dashboard session.
 
 <CardGroup cols={2}>
 
@@ -119,12 +121,16 @@ routes accept an API key or dashboard session cookie.
   </Card>
   <Card title="Session cookie only" icon="shield">
 
-    `POST /api-keys`, `GET /api-keys`, and `DELETE /api-keys/{id}` require a dashboard session cookie. The session identifies the authenticated user.
+    `POST /api-keys`, `GET /api-keys`, `DELETE /api-keys/{id}`, and `POST /credits/quick-topup` require a dashboard session cookie.
+
+    X account sign-in and removal need it too. These are `POST /x/accounts`, `GET /x/account-connection-attempts/{id}`, `POST /x/account-connection-challenges/{id}/submit`, `POST /x/accounts/{id}/reauth`, `POST /x/accounts/bulk-retry`, and `DELETE /x/accounts/{id}`.
+
+    An API key or OAuth token gets `403 session_required` on these routes. Use [dashboard.xquik.com/account](https://dashboard.xquik.com/account) instead.
 
   </Card>
   <Card title="Account and billing" icon="user-cog">
 
-    `PATCH /account`, `PUT /account/x-identity`, and `POST /subscribe` accept either `x-api-key` or a dashboard session cookie.
+    `PATCH /account`, `PUT /account/x-identity`, `GET /credits`, `POST /credits/topup`, and `POST /subscribe` accept either `x-api-key` or a dashboard session cookie. For an account with a plan, `POST /subscribe` returns the dashboard billing page, where the user signs in.
 
   </Card>
   <Card title="Events and webhooks" icon="radio">
@@ -134,7 +140,7 @@ routes accept an API key or dashboard session cookie.
   </Card>
   <Card title="Tweets, exports, and X actions" icon="database">
 
-    `* /draws/*`, `* /extractions/*`, `* /x/*`, `POST /x/media/download`, `* /x-accounts/*`, and `* /x-write/*` accept either auth method.
+    `* /draws/*`, `* /extractions/*`, `* /x/*`, `POST /x/media/download`, `GET /x/accounts`, `GET /x/accounts/{id}`, and `* /x-write/*` accept either auth method. X account sign-in and removal need the dashboard session.
 
   </Card>
   <Card title="Content tools and support" icon="sparkles">
@@ -151,8 +157,10 @@ routes accept an API key or dashboard session cookie.
 
 <Info>
 
-API key creation, listing, and revocation require a same-origin dashboard
-session. API keys and OAuth bearer tokens cannot manage API keys.
+API key management, saved-card top-ups, and X account sign-in and removal
+require a same-origin dashboard session. API keys and OAuth bearer tokens get
+`403 session_required` there. A leaked key reads and acts on its account's
+data, but it never reaches credentials, saved cards, or X passwords.
 
 </Info>
 
