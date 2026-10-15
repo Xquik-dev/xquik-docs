@@ -25,12 +25,23 @@ info:
     again. A write names its charge in its body's `billing`.
 
 
+    ## Deprecation
+
+
+    v1 stays compatible. A breaking removal gets at least 90 days of notice. A
+    request with a deprecated query parameter or search filter gets an RFC 9745
+    `Deprecation` header. The answer's `Link` header points to the [deprecation
+    policy](https://xquik.com/deprecation-policy.md). Once a removal date is
+    set, an RFC 8594 `Sunset` header gives that date. Each operation that sends
+    these headers declares them on its success answer. The [versioning
+    guide](https://docs.xquik.com/guides/versioning) lists today's deprecations.
+
+
     ## Client libraries
 
 
-    [SDK, CLI, Terraform](https://docs.xquik.com/sdks),
-    [TweetClaw](https://docs.xquik.com/guides/tweetclaw), and [version
-    deprecation](https://xquik.com/deprecation-policy.md).
+    [SDK, CLI, Terraform](https://docs.xquik.com/sdks) and
+    [TweetClaw](https://docs.xquik.com/guides/tweetclaw).
   contact:
     name: Xquik
     url: https://xquik.com
@@ -260,6 +271,9 @@ paths:
       responses:
         '200':
           description: Account info
+          headers: &deprecated-read-headers
+            Deprecation: { $ref: '#/components/headers/Deprecation' }
+            Link: { $ref: '#/components/headers/DeprecationLink' }
           content:
             application/json:
               schema:
@@ -2336,6 +2350,10 @@ paths:
       responses:
         '200':
           description: Dry-run estimate
+          headers: &deprecated-search-headers
+            Deprecation: { $ref: '#/components/headers/Deprecation' }
+            Link: { $ref: '#/components/headers/DeprecationLink' }
+            Sunset: { $ref: '#/components/headers/Sunset' }
           content:
             application/json:
               schema:
@@ -2354,6 +2372,9 @@ paths:
             Idempotency-Replayed:
               description: Present as true when returning the original job.
               schema: { type: string, const: 'true' }
+            Deprecation: { $ref: '#/components/headers/Deprecation' }
+            Link: { $ref: '#/components/headers/DeprecationLink' }
+            Sunset: { $ref: '#/components/headers/Sunset' }
           content:
             application/json:
               schema:
@@ -2440,6 +2461,7 @@ paths:
       responses:
         '200':
           description: Extraction estimate
+          headers: *deprecated-search-headers
           content:
             application/json:
               schema:
@@ -2538,6 +2560,7 @@ paths:
       responses:
         '200':
           description: Extraction job with results
+          headers: *deprecated-read-headers
           content:
             application/json:
               schema:
@@ -9480,6 +9503,7 @@ paths:
       responses:
         '200':
           description: List profiles
+          headers: *deprecated-read-headers
           content: &user-list-content
             application/json:
               schema:
@@ -9514,6 +9538,7 @@ paths:
       responses:
         '200':
           description: List members
+          headers: *deprecated-read-headers
           content: *user-list-content
         '400': *invalid-input-response
         '401': *anonymous-guest-authentication-response
@@ -9606,6 +9631,7 @@ paths:
       responses:
         '200':
           description: List tweets
+          headers: *deprecated-read-headers
           content: *paginated-tweets-content
         '400': *invalid-input-response
         '401': *anonymous-guest-authentication-response
@@ -10435,6 +10461,7 @@ paths:
       responses:
         '200':
           description: List of replies
+          headers: *deprecated-read-headers
           content:
             application/json:
               schema:
@@ -11293,7 +11320,13 @@ paths:
       responses:
         '200':
           description: List of user followers
-          headers: *user-list-headers
+          headers: &deprecated-user-list-headers
+            X-Xquik-Profile-Enrichment:
+              $ref: '#/components/headers/ProfileEnrichment'
+            X-Xquik-Credits-Charged:
+              $ref: '#/components/headers/CreditsCharged'
+            Deprecation: { $ref: '#/components/headers/Deprecation' }
+            Link: { $ref: '#/components/headers/DeprecationLink' }
           content: *user-list-content
         '400': *invalid-input-response
         '401': *anonymous-guest-authentication-response
@@ -11323,7 +11356,7 @@ paths:
       responses:
         '200':
           description: List of following
-          headers: *user-list-headers
+          headers: *deprecated-user-list-headers
           content: *user-list-content
         '400': *invalid-input-response
         '401': *anonymous-guest-authentication-response
@@ -11419,7 +11452,7 @@ paths:
       responses:
         '200':
           description: List of verified followers
-          headers: *user-list-headers
+          headers: *deprecated-user-list-headers
           content: *user-list-content
         '400': *invalid-input-response
         '401': *anonymous-guest-authentication-response
@@ -12844,6 +12877,31 @@ components:
         type: string
         pattern: '^enriched=\d+; requested=\d+$'
         example: 'enriched=180; requested=200'
+    Deprecation:
+      description: >
+        Sent when this request uses a deprecated part of this operation, such as
+        a parameter, a search filter or a response field. It holds the Unix time
+        of the deprecation, as RFC 9745 defines.
+      schema:
+        type: string
+        pattern: '^@\d+$'
+        example: '@1777420800'
+    DeprecationLink:
+      description: >
+        Sent with Deprecation. Its rel="deprecation" link points to the
+        deprecation policy.
+      schema:
+        type: string
+        example:
+          '<https://xquik.com/deprecation-policy.md>; rel="deprecation";
+          type="text/markdown"'
+    Sunset:
+      description: >
+        Sent once a removal date is set. The deprecated part stops working on
+        this HTTP date, as RFC 8594 defines.
+      schema:
+        type: string
+        example: 'Fri, 15 Jan 2027 00:00:00 GMT'
 
   responses:
     SessionRequired:
