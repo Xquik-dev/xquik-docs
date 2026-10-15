@@ -12,40 +12,57 @@ keywords:
   ]
 ---
 
-The Xquik REST API is v1, and v1 stays compatible. Fields, parameters & endpoints can be added at any time. Your client should ignore fields it does not know.
+The Xquik REST API is v1, and v1 stays compatible. We add fields, parameters & endpoints without notice. Your client should ignore fields it doesn't know. This policy has applied since 2026-08-26.
 
 ## Notice for breaking removals
 
-- We announce a breaking removal at least 90 days in advance.
-- The [changelog](/changelog) lists every deprecation & removal.
-- OpenAPI marks a deprecated operation, field or parameter as `deprecated` until it is removed.
-- A security or legal emergency may shorten the notice. We explain every exception.
+- We announce a breaking removal at least 90 days before it happens.
+- A deprecated part keeps working until its removal date.
+- The [changelog](/changelog) announces each new deprecation & removal. The tables below list today's with their dates.
+- OpenAPI marks each deprecated operation, parameter & field `deprecated: true`.
+
+## Exceptions
+
+- If X stops running a feature, no request can return its data. Xquik then answers 424 right away & charges nothing.
+- A security or legal emergency may shorten the notice.
+- The changelog explains each exception.
 
 ## Headers on deprecated requests
 
-A response that touches a deprecated part of v1 carries these headers.
+A request with a deprecated query parameter or search filter gets these headers. `GET /api/v1/account` sends them too, because its answer still has `monitorsAllowed`. OpenAPI declares them on each success answer that sends them.
 
-| Header        | Example                                                                              | Meaning                                                                                                          |
-| ------------- | ------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
-| `Deprecation` | `@1783900800`                                                                        | Per [RFC 9745](https://www.rfc-editor.org/rfc/rfc9745), the Unix time when the item was marked deprecated.       |
-| `Link`        | `<https://xquik.com/deprecation-policy.md>; rel="deprecation"; type="text/markdown"` | Where the policy lives.                                                                                          |
-| `Sunset`      | `Wed, 31 Mar 2027 00:00:00 GMT`                                                      | Per [RFC 8594](https://www.rfc-editor.org/rfc/rfc8594), the removal date. Sent only once a removal is scheduled. |
+| Header        | Example                                                                              | Meaning                                                                                          |
+| ------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------ |
+| `Deprecation` | `@1777420800`                                                                        | The Unix time of the deprecation, as [RFC 9745](https://www.rfc-editor.org/rfc/rfc9745) defines. |
+| `Link`        | `<https://xquik.com/deprecation-policy.md>; rel="deprecation"; type="text/markdown"` | This policy in Markdown.                                                                         |
+| `Sunset`      | `Fri, 15 Jan 2027 00:00:00 GMT`                                                      | The removal date, as [RFC 8594](https://www.rfc-editor.org/rfc/rfc8594) defines. Sent once set.  |
 
 Log these headers in your client. A `Deprecation` header means a change is due. A `Sunset` header gives the date.
 
-## Deprecated today
+## Scheduled removals
 
-| Request                              | Deprecated item                   | Use instead                          | Since      |
-| ------------------------------------ | --------------------------------- | ------------------------------------ | ---------- |
-| `GET /api/v1/account`                | `monitorsAllowed` in the response | Nothing. Monitor slots are unlimited | 2026-07-13 |
-| `GET /api/v1/extractions/{id}`       | `includeRaw` parameter            | `outputMode=raw`                     | 2026-08-09 |
-| `GET /api/v1/x/users/{id}/followers` | `after` parameter                 | `cursor`                             | 2026-04-29 |
+| Request                                                          | Deprecated item                                         | Use instead                                           | Since      | Removal    |
+| ---------------------------------------------------------------- | ------------------------------------------------------- | ----------------------------------------------------- | ---------- | ---------- |
+| `POST /api/v1/extractions` & `POST /api/v1/extractions/estimate` | `excludeSource`, or `-source:` or `-within:` in a query | Nothing. X ignores them, so rows come back unfiltered | 2026-10-11 | 2027-01-15 |
 
-No removal is scheduled for these items, so their responses carry no `Sunset` header yet.
+From 2027-01-15 such an extraction answers 424 `search_unavailable` & charges nothing.
+
+## Deprecated with no removal date
+
+| Request                                                      | Deprecated item                   | Use instead                          | Since      |
+| ------------------------------------------------------------ | --------------------------------- | ------------------------------------ | ---------- |
+| `GET /api/v1/account`                                        | `monitorsAllowed` in the response | Nothing. Monitor slots are unlimited | 2026-07-13 |
+| `GET /api/v1/extractions/{id}`                               | `includeRaw` parameter            | `outputMode=raw`                     | 2026-08-09 |
+| `GET /api/v1/x/users/{id}/followers` & `/following`          | `after` parameter                 | `cursor`                             | 2026-04-29 |
+| `GET /api/v1/x/users/{id}/verified-followers`                | `after` parameter                 | `cursor`                             | 2026-08-09 |
+| `GET /api/v1/x/lists/{id}/followers`, `/members` & `/tweets` | `after` parameter                 | `cursor`                             | 2026-09-29 |
+| `GET /api/v1/x/tweets/{id}/replies`                          | `after` parameter                 | `cursor`                             | 2026-09-29 |
+
+OpenAPI is the full list. It marks a few more fields deprecated that send no header. `POST /api/v1/compose` ignores `hasLink`. It returns `radarRecommendations` & `examplePatterns` empty. Monitor events keep `userName` & `rawVerified`. Read `username` & `verified` instead.
 
 ## Check your integration
 
-1. Search your code for the items in the table above.
+1. Search your code for the items in the tables above.
 2. Watch for `Deprecation` & `Sunset` headers in responses.
 3. Read the [changelog](/changelog) before each upgrade.
 
