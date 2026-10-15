@@ -12,6 +12,7 @@ platform. Published at **[docs.xquik.com](https://docs.xquik.com)**.
 This repository contains the Xquik REST API, webhook, MCP, OAuth 2.1, and SDK docs. Find request and response details for tweet search, user lookup, follower exports, media uploads, direct messages, 1-second tweet monitors, signed webhooks, SDK clients, and X automation.
 
 <!-- trust:start -->
+
 ## Trust & usage
 
 [![Twitter API package downloads](https://img.shields.io/endpoint?url=https%3A%2F%2Fxquik.com%2Fbadges%2Fdownloads.json)](https://xquik.com/trust#downloads)
@@ -33,6 +34,7 @@ This repository contains the Xquik REST API, webhook, MCP, OAuth 2.1, and SDK do
 - 370+ GitHub stars across Xquik's repos ([source](https://github.com/Xquik-dev)) <!-- trust:github-stars 374 -->
 
 Checked on 2026-10-15. See each number with its date & source on [xquik.com/trust](https://xquik.com/trust) or as [JSON](https://xquik.com/trust.json).
+
 <!-- trust:end -->
 
 ## Choose this repository
