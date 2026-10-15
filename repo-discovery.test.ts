@@ -1789,7 +1789,7 @@ const REQUIRED_MCP_CONTRACT_SNIPPETS = [
   '`error="invalid_token"`',
   '`error_description="Invalid access token"`',
   "The JSON body is",
-  '`{ "error": "Authentication required" }`',
+  '`{ "error": "Sign in through your MCP client. Or send your Xquik API key as a Bearer token." }`',
   "API-key clients should send",
   "`x-api-key` on the first request.",
   "Full credentials see every JSON or text route. Private support media downloads use REST.",
