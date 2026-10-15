@@ -2678,7 +2678,7 @@ paths:
             Email column.
         - name: emailDomains
           in: query
-          schema: { type: string }
+          schema: { type: string, maxLength: 4096 }
           description: >
             Require the row's email at one of these domains. Separate domains
             with commas. Subdomains match.
@@ -2693,22 +2693,22 @@ paths:
           description: Filter by verified status.
         - name: lang
           in: query
-          schema: { type: string }
+          schema: { type: string, maxLength: 35 }
           description: Filter by language code.
         - name: search
           in: query
-          schema: { type: string }
+          schema: { type: string, maxLength: 512 }
           description: Search exported result text.
         - name: sinceDate
           in: query
-          schema: { type: string, format: date }
+          schema: { type: string, format: date, maxLength: 64 }
           description:
             Include results on or after this date, from 00:00 UTC. An ISO 8601
             time starts at that instant. The filter drops results without a post
             date. An empty value sets no filter.
         - name: untilDate
           in: query
-          schema: { type: string, format: date }
+          schema: { type: string, format: date, maxLength: 64 }
           description:
             Include results on or before this date, inclusive, through 23:59:59
             UTC. An ISO 8601 time ends at that instant. The filter drops results
@@ -3770,9 +3770,9 @@ paths:
                     type: string
                     format: date-time
                     description:
-                      The time at asked for, as Xquik read it. A span such as
-                      24h shows here as the time it counted back to. Present
-                      only with at.
+                      The time the at parameter asked for, as Xquik read it. A
+                      span such as 24h shows here as the time it counted back
+                      to. Present only with at.
                     example: '2026-10-13T14:00:00.000Z'
         '400':
           description:
@@ -4478,6 +4478,7 @@ paths:
           required: true
           schema:
             type: string
+            maxLength: 4096
           description:
             Query, Tweet ID, or URL. Alias query. Hyphens negate terms. Use
             exactPhrase for literals. `from:` & `-from:` take a handle or a user
@@ -4496,6 +4497,7 @@ paths:
           required: false
           schema:
             type: string
+            maxLength: 32
             default: Latest
           description:
             Latest lists posts newest first. Top keeps X's engagement ranking
@@ -4534,6 +4536,7 @@ paths:
           schema:
             type: string
             format: date
+            maxLength: 64
           description:
             Start date as a UTC day, written YYYY-MM-DD. 25/12/2026 & 12/25/2026
             also work, since each has 1 reading. A date that fits both orders
@@ -4543,6 +4546,7 @@ paths:
           schema:
             type: string
             format: date
+            maxLength: 64
           description:
             End date as a UTC day, inclusive, so its own posts count. It takes
             the same date forms as sinceDate.
@@ -4674,6 +4678,7 @@ paths:
             as US or USA. Send country or language, not both.
           schema:
             type: string
+            maxLength: 16
             example: US
         - name: language
           in: query
@@ -4682,6 +4687,7 @@ paths:
             country or language, not both.
           schema:
             type: string
+            maxLength: 16
             example: en
         - $ref: '#/components/parameters/CollectionCursor'
         - $ref: '#/components/parameters/ResultPageSize'
@@ -9997,8 +10003,8 @@ paths:
       description:
         Returns public Spaces each once, as GET /x/spaces/{id} serves them.
         Latest & Top find the Spaces that matching posts share, live, scheduled
-        or ended. Live & Upcoming read X's own Spaces search, in X's order. It
-        finds live or scheduled Spaces by the words in their titles. Costs 1
+        or ended. Live & Upcoming read X's own Spaces search, in X's order. They
+        find live or scheduled Spaces by the words in their titles. Costs 1
         credit per Space.
       tags:
         - Spaces
@@ -10055,7 +10061,9 @@ paths:
                   spaces:
                     type: array
                     description:
-                      Public Spaces, in the order the posts share them
+                      Public Spaces, each once. Latest & Top list them in the
+                      order the posts share them. Live & Upcoming keep X's
+                      order.
                     items:
                       $ref: '#/components/schemas/Space'
                     example:
@@ -10565,6 +10573,7 @@ paths:
                     example: true
                   retweetedAt:
                     type: [string, 'null']
+                    format: date-time
                     description: When the account reposted it, else null.
                     example: '2026-09-11T16:59:50.000Z'
                   retweetId:
@@ -10957,10 +10966,37 @@ paths:
                     $ref: '#/components/schemas/UserInsights'
                   message:
                     type: string
-                    description: Says why the report has counts only.
+                    description:
+                      Says why the report has counts only. Sent only when
+                      postsPrivate is true.
                     example: >-
                       This account's posts are private, so the report has its
                       counts only.
+              example:
+                insights: &user-insights-example
+                  userId: '11348282'
+                  userName: NASA
+                  followers: 92376187
+                  following: 115
+                  posts: 74336
+                  accountAgeDays: 6858
+                  postsPrivate: false
+                  sample:
+                    posts: 10
+                    oldestAt: '2026-09-23T13:15:28.000Z'
+                    newestAt: '2026-09-28T22:12:05.000Z'
+                  averages:
+                    likes: 3684.2
+                    replies: 142.7
+                    reposts: 459.8
+                    quotes: 45
+                    bookmarks: 209.7
+                    views: 785247.8
+                    engagements: 4331.7
+                  engagementRate: 0.0047
+                  engagementPerView: 0.5516
+                  postsPerDay: 1.6814
+                  topPostId: '2102761519985332442'
         '400': *invalid-input-response
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
@@ -12296,7 +12332,7 @@ components:
     TweetSinceTime:
       name: sinceTime
       in: query
-      schema: { type: string }
+      schema: { type: string, maxLength: 64 }
       description: >
         Inclusive ISO bound for Tweet creation time, such as
         2026-09-25T19:20:41Z. Unix seconds also work. A time without an offset
@@ -12304,7 +12340,7 @@ components:
     TweetUntilTime:
       name: untilTime
       in: query
-      schema: { type: string }
+      schema: { type: string, maxLength: 64 }
       description: >
         Exclusive ISO bound for Tweet creation time. Unix seconds also work. A
         time without an offset is UTC.
@@ -12440,7 +12476,7 @@ components:
     UserVerifiedType:
       name: verifiedType
       in: query
-      schema: { type: string }
+      schema: { type: string, maxLength: 100 }
       description: Match the verification type exactly, ignoring case.
     EnrichProfiles:
       name: enrichProfiles
@@ -12486,7 +12522,7 @@ components:
     UserEmailDomains:
       name: emailDomains
       in: query
-      schema: { type: string }
+      schema: { type: string, maxLength: 4096 }
       description: >
         Only return profiles with an email at one of these domains. Separate
         domains with commas. Subdomains match.
@@ -12494,18 +12530,18 @@ components:
     UserBioContains:
       name: bioContains
       in: query
-      schema: { type: string }
+      schema: { type: string, maxLength: 4096 }
       description: >
         Match any comma-separated or line-separated bio term, ignoring case.
     UserLocationContains:
       name: locationContains
       in: query
-      schema: { type: string }
+      schema: { type: string, maxLength: 100 }
       description: Match a location substring, ignoring case.
     UserUsernameContains:
       name: usernameContains
       in: query
-      schema: { type: string }
+      schema: { type: string, maxLength: 100 }
       description: Match a username substring, ignoring case.
     After:
       name: cursor
@@ -12528,24 +12564,28 @@ components:
       in: query
       schema:
         type: string
+        maxLength: 19
       description: Filter by author username.
     ToUser:
       name: toUser
       in: query
       schema:
         type: string
+        maxLength: 19
       description: Filter replies sent to a username.
     Mentioning:
       name: mentioning
       in: query
       schema:
         type: string
+        maxLength: 19
       description: Filter tweets mentioning a username.
     Language:
       name: language
       in: query
       schema:
         type: string
+        maxLength: 35
       description: Filter by language. Its alias is `lang`.
     SinceDate:
       name: sinceDate
@@ -12553,6 +12593,7 @@ components:
       schema:
         type: string
         format: date
+        maxLength: 64
       description: Start date in YYYY-MM-DD format, as a UTC day.
     UntilDate:
       name: untilDate
@@ -12560,6 +12601,7 @@ components:
       schema:
         type: string
         format: date
+        maxLength: 64
       description:
         End date in YYYY-MM-DD format, as a UTC day, inclusive, so its own posts
         count.
@@ -12631,52 +12673,52 @@ components:
     CardName:
       name: cardName
       in: query
-      schema: { type: string }
+      schema: { type: string, maxLength: 512 }
       description: >
         Keep only Tweets with this card type, such as poll2choice_text_only.
         Tweet search checks each Tweet's card.
     Source:
       name: source
       in: query
-      schema: { type: string }
+      schema: { type: string, maxLength: 512 }
       description: >
         X search no longer supports source. A Tweet search with it answers 424 &
         charges nothing.
     ExcludeSource:
       name: excludeSource
       in: query
-      schema: { type: string }
+      schema: { type: string, maxLength: 512 }
       description: >
         X search no longer supports excludeSource. A Tweet search with it
         answers 424 & charges nothing.
     Geocode:
       name: geocode
       in: query
-      schema: { type: string }
+      schema: { type: string, maxLength: 512 }
       description: >
         X search no longer supports geocode. A Tweet search with it answers 424
         & charges nothing.
     SinceId:
       name: sinceId
       in: query
-      schema: { type: string }
+      schema: { type: string, maxLength: 19 }
       description: Return Tweets whose IDs exceed this ID.
     MaxId:
       name: maxId
       in: query
-      schema: { type: string }
+      schema: { type: string, maxLength: 19 }
       description: Return Tweets at or below this ID.
     Near:
       name: near
       in: query
-      schema: { type: string }
+      schema: { type: string, maxLength: 512 }
       description: >
         A place name. A country, such as United States, works like placeCountry
         & keeps Tweets tagged there. A city keeps Tweets about it.
     Within:
       name: within
       in: query
-      schema: { type: string }
+      schema: { type: string, maxLength: 512 }
       description: >
         X search no longer supports within. A Tweet search with it answers 424 &
         charges nothing. Use near alone.
@@ -12685,6 +12727,7 @@ components:
       in: query
       schema:
         type: string
+        maxLength: 64
         example: '7d'
       description: >
         Keeps Tweets from a recent window, such as 90m or 7d. Use a whole number
@@ -12744,12 +12787,14 @@ components:
       in: query
       schema:
         type: string
+        maxLength: 4096
       description: Match this literal phrase, including any hyphens.
     ExcludeWords:
       name: excludeWords
       in: query
       schema:
         type: string
+        maxLength: 4096
       description:
         Words or quoted phrases to exclude. Separate with spaces, commas, or
         lines.
@@ -12758,6 +12803,7 @@ components:
       in: query
       schema:
         type: string
+        maxLength: 4096
       description:
         Words or quoted phrases where any one can match. Separate with spaces,
         commas, or lines.
@@ -12766,84 +12812,98 @@ components:
       in: query
       schema:
         type: string
+        maxLength: 4096
       description: Hashtags separated by spaces, commas, or lines.
     Cashtags:
       name: cashtags
       in: query
       schema:
         type: string
+        maxLength: 4096
       description: Cashtags separated by spaces, commas, or lines.
     Url:
       name: url
       in: query
       schema:
         type: string
+        maxLength: 2048
       description: URL substring or domain filter.
     ConversationId:
       name: conversationId
       in: query
       schema:
         type: string
+        maxLength: 19
       description: Conversation ID filter.
     InReplyToTweetId:
       name: inReplyToTweetId
       in: query
       schema:
         type: string
+        maxLength: 19
       description: Only replies to this tweet ID.
     QuotesOfTweetId:
       name: quotesOfTweetId
       in: query
       schema:
         type: string
+        maxLength: 19
       description: Only quotes of this tweet ID.
     RetweetsOfTweetId:
       name: retweetsOfTweetId
       in: query
       schema:
         type: string
+        maxLength: 19
       description: Only retweets of this tweet ID.
     Keywords:
       name: keywords
       in: query
       schema:
         type: string
+        maxLength: 4096
       description: Words the Tweets must match, in X search syntax.
     ListId:
       name: listId
       in: query
       schema:
         type: string
+        maxLength: 19
       description: Search within a list ID.
     Place:
       name: place
       in: query
       schema:
         type: string
+        maxLength: 512
       description: Search within a place ID.
     PlaceCountry:
       name: placeCountry
       in: query
       schema:
         type: string
+        maxLength: 512
       description: Search within a country code.
     PointRadius:
       name: pointRadius
       in: query
       schema:
         type: string
+        maxLength: 512
       description: Geo point radius, such as -73.99 40.73 25mi.
     BoundingBox:
       name: boundingBox
       in: query
       schema:
         type: string
+        maxLength: 512
       description: Geo bounding box, such as -74.1 40.6 -73.9 40.8.
     AdvancedQuery:
       name: advancedQuery
       in: query
       schema:
         type: string
+        maxLength: 4096
       description: Raw advanced search query appended as-is.
     Fields:
       name: fields
@@ -16438,7 +16498,10 @@ components:
             type: object
             properties:
               percentage:
-                { type: number, description: Share of the banner, 0-100. }
+                type: number
+                minimum: 0
+                maximum: 100
+                description: Share of the banner, from 0 to 100.
               rgb:
                 type: object
                 description: The color's red, green and blue values.
@@ -17740,18 +17803,23 @@ components:
           $ref: '#/components/schemas/ExtractionToolType'
         targetTweetId:
           type: string
+          maxLength: 19
         targetUsername:
           type: string
+          maxLength: 19
         targetCommunityId:
           type: string
+          maxLength: 19
           description: Required for community_post_extractor & community_search.
         targetListId:
           type: string
+          maxLength: 19
           description:
             Required for list_follower_explorer, list_member_extractor &
             list_post_extractor.
         targetSpaceId:
           type: string
+          maxLength: 13
           description:
             Required for space_explorer. X names a Space's hosts & speakers
             without counts or bio, so Xquik reads each one's profile. Rows carry
@@ -17763,6 +17831,7 @@ components:
           uniqueItems: true
           items:
             type: string
+            maxLength: 19
           description: Tweet IDs processed as 1 collection job.
         targetUsernames:
           type: array
@@ -17771,6 +17840,7 @@ components:
           uniqueItems: true
           items:
             type: string
+            maxLength: 19
           description:
             Usernames processed concurrently in 1 job. With
             tweet_search_extractor, each username collects posts. Post & media
@@ -17782,6 +17852,7 @@ components:
           uniqueItems: true
           items:
             type: string
+            maxLength: 19
           description: Community IDs processed as 1 collection job.
         targetListIds:
           type: array
@@ -17790,6 +17861,7 @@ components:
           uniqueItems: true
           items:
             type: string
+            maxLength: 19
           description: List IDs processed as 1 collection job.
         searchQueries:
           type: array
@@ -17798,6 +17870,7 @@ components:
           uniqueItems: true
           items:
             type: string
+            maxLength: 4096
           description:
             Search queries processed as 1 collection job. Each follows the rules
             of searchQuery, its structured fields & 512-character limit
@@ -17835,6 +17908,7 @@ components:
           description: Reply pages collected for each target.
         startCursor:
           type: string
+          maxLength: 4096
           minLength: 1
           description: Resume 1 reply target from this cursor.
         dedupeAcrossTargets:
@@ -17899,12 +17973,14 @@ components:
           oneOf:
             - type: string
               format: date-time
+              maxLength: 64
             - $ref: '#/components/schemas/WholeNumber'
           description: Reply start time as ISO 8601 or Unix seconds.
         untilTime:
           oneOf:
             - type: string
               format: date-time
+              maxLength: 64
             - $ref: '#/components/schemas/WholeNumber'
           description: Reply end time as ISO 8601 or Unix seconds.
         minViews:
@@ -17939,15 +18015,18 @@ components:
             users, return only profiles X marks as blue verified.
         cardName:
           type: string
+          maxLength: 512
           description: Require Tweet cards whose name matches this value.
         source:
           type: string
+          maxLength: 512
           deprecated: true
           description:
             X search no longer supports source. An extraction with it answers
             424 `search_unavailable` & charges nothing.
         excludeSource:
           type: string
+          maxLength: 512
           deprecated: true
           description:
             X search ignores excludeSource, so an extraction with it returns
@@ -17956,29 +18035,35 @@ components:
             `search_unavailable` & charges nothing.
         geocode:
           type: string
+          maxLength: 512
           deprecated: true
           description:
             X search no longer supports geocode. An extraction with it answers
             424 `search_unavailable` & charges nothing.
         sinceId:
           type: string
+          maxLength: 19
           description: Require Tweet IDs above this ID.
         maxId:
           type: string
+          maxLength: 19
           description: Require Tweet IDs at or below this ID.
         near:
           type: string
+          maxLength: 512
           description: >
             Restrict Tweet search to this place name. A country, such as Brazil,
             works like placeCountry. A city keeps Tweets about it.
         within:
           type: string
+          maxLength: 512
           deprecated: true
           description:
             X search no longer supports within. An extraction with it answers
             424 `search_unavailable` & charges nothing. Use near alone.
         withinTime:
           type: string
+          maxLength: 64
           description: Restrict Tweets to this recent time window.
         nativeRetweets:
           type: boolean
@@ -18025,6 +18110,7 @@ components:
           description: Minimum profile age in days.
         verifiedType:
           type: string
+          maxLength: 100
           description: Exact profile verification type.
         hasWebsite:
           type: boolean
@@ -18046,20 +18132,24 @@ components:
             Gmail.
         emailDomains:
           type: string
+          maxLength: 4096
           description:
             Require an email at one of these domains. Separate domains with
             commas. Subdomains match.
           example: acme.com,stanford.edu
         bioContains:
           type: string
+          maxLength: 4096
           description:
             Match any bio term, ignoring case. Separate terms with commas or
             lines.
         locationContains:
           type: string
+          maxLength: 100
           description: Required profile location text.
         usernameContains:
           type: string
+          maxLength: 100
           description: Required username text.
         resultsLimit:
           type: integer
@@ -18070,6 +18160,7 @@ components:
             this upper bound.
         searchQuery:
           type: string
+          maxLength: 4096
           description:
             Required for tweet_search_extractor, people_search &
             community_search. tweet_search_extractor adds the structured search
@@ -18078,23 +18169,29 @@ components:
             with the added fields.
         fromUser:
           type: string
+          maxLength: 19
           description: Filter by author username (tweet_search_extractor)
         toUser:
           type: string
+          maxLength: 19
           description: Replies to this username (tweet_search_extractor).
         mentioning:
           type: string
+          maxLength: 19
           description: Mentions this username (tweet_search_extractor).
         language:
           type: string
+          maxLength: 35
           description: Tweet or Community search language.
         sinceDate:
           type: string
           format: date
+          maxLength: 64
           description: Tweet or Community search start date.
         untilDate:
           type: string
           format: date
+          maxLength: 64
           description: Tweet or Community search end date.
         mediaType:
           type: string
@@ -18136,54 +18233,70 @@ components:
             Choose whether tweet search includes, excludes, or isolates quotes.
         exactPhrase:
           type: string
+          maxLength: 4096
           description: Exact phrase to match (tweet_search_extractor)
         excludeWords:
           type: string
+          maxLength: 4096
           description: Excluded terms or phrases (tweet_search_extractor).
         anyWords:
           type: string
+          maxLength: 4096
           description: Any matching term or phrase (tweet_search_extractor).
         hashtags:
           type: string
+          maxLength: 4096
           description: Matching hashtags (tweet_search_extractor).
         cashtags:
           type: string
+          maxLength: 4096
           description: Matching cashtags (tweet_search_extractor).
         url:
           type: string
+          maxLength: 2048
           description: URL substring or domain filter (tweet_search_extractor)
         conversationId:
           type: string
+          maxLength: 19
           description: Conversation ID filter (tweet_search_extractor)
         inReplyToTweetId:
           type: string
+          maxLength: 19
           description: Only replies to this tweet ID (tweet_search_extractor)
         quotesOfTweetId:
           type: string
+          maxLength: 19
           description: Only quotes of this tweet ID (tweet_search_extractor)
         retweetsOfTweetId:
           type: string
+          maxLength: 19
           description: Only retweets of this tweet ID (tweet_search_extractor)
         listId:
           type: string
+          maxLength: 19
           description: Search within a list ID (tweet_search_extractor)
         place:
           type: string
+          maxLength: 512
           description: Search within a place ID (tweet_search_extractor)
         placeCountry:
           type: string
+          maxLength: 512
           description: Search within a country code (tweet_search_extractor)
         pointRadius:
           type: string
+          maxLength: 512
           description:
             Geo point radius, such as -73.99 40.73 25mi (tweet_search_extractor)
         boundingBox:
           type: string
+          maxLength: 512
           description:
             Geo bounding box, such as -74.1 40.6 -73.9 40.8
             (tweet_search_extractor)
         advancedQuery:
           type: string
+          maxLength: 4096
           description:
             Raw advanced search query appended as-is (tweet_search_extractor)
 
@@ -18237,6 +18350,7 @@ components:
       description: 1 auto-routed target in a mixed Tweet collection.
       oneOf:
         - type: string
+          maxLength: 4096
           description: >
             X URL, numeric Tweet ID, @username, kind:value target, or search.
         - type: object
@@ -18259,6 +18373,7 @@ components:
                 - tweet
             value:
               type: string
+              maxLength: 4096
               minLength: 1
 
     ExtractionRelationTarget:
@@ -18277,6 +18392,7 @@ components:
             - verified_followers
         value:
           type: string
+          maxLength: 19
           minLength: 1
 
     ApiKey:
@@ -20112,30 +20228,7 @@ components:
           type: [string, 'null']
           description: The sampled post with the most engagements.
           example: '2102761519985332442'
-      example:
-        userId: '11348282'
-        userName: NASA
-        followers: 92376187
-        following: 115
-        posts: 74336
-        accountAgeDays: 6858
-        postsPrivate: false
-        sample:
-          posts: 10
-          oldestAt: '2026-09-23T13:15:28.000Z'
-          newestAt: '2026-09-28T22:12:05.000Z'
-        averages:
-          likes: 3684.2
-          replies: 142.7
-          reposts: 459.8
-          quotes: 45
-          bookmarks: 209.7
-          views: 785247.8
-          engagements: 4331.7
-        engagementRate: 0.0047
-        engagementPerView: 0.5516
-        postsPerDay: 1.6814
-        topPostId: '2102761519985332442'
+      example: *user-insights-example
 
     TweetInsights:
       description: >
