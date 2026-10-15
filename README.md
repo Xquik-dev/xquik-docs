@@ -11,6 +11,9 @@ platform. Published at **[docs.xquik.com](https://docs.xquik.com)**.
 
 This repository contains the Xquik REST API, webhook, MCP, OAuth 2.1, and SDK docs. Find request and response details for tweet search, user lookup, follower exports, media uploads, direct messages, 1-second tweet monitors, signed webhooks, SDK clients, and X automation.
 
+<!-- trust:start -->
+<!-- trust:end -->
+
 ## Choose this repository
 
 Use the hosted site for current guidance. Review this repository when proposing
