@@ -18,7 +18,7 @@ describe("published draft and style response contracts", (): void => {
     {
       operationId: "getStylePerformance",
       page: "api-reference/styles/performance.mdx",
-      statuses: ["200", "401", "402", "404", "422", "429"],
+      statuses: ["200", "400", "401", "402", "404", "422", "429"],
     },
   ]) {
     productCheck(`${operationId} publishes its documented response statuses`, (spec): void => {

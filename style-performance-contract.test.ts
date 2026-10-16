@@ -17,7 +17,7 @@ describe("tweet style performance documentation", (): void => {
     }).toStrictEqual({
       apiKeyDocumented: true,
       bearerDocumented: true,
-      responseTabs: ["200", "401", "402", "404", "422", "429"],
+      responseTabs: ["200", "400", "401", "402", "404", "422", "429"],
     });
   });
 
