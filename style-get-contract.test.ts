@@ -17,7 +17,7 @@ describe("get tweet style documentation", (): void => {
     }).toStrictEqual({
       apiKeyDocumented: true,
       bearerDocumented: true,
-      responseTabs: ["200", "401", "404", "429"],
+      responseTabs: ["200", "400", "401", "404", "429"],
     });
   });
 

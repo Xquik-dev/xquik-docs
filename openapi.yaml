@@ -882,6 +882,7 @@ paths:
           in: query
           schema:
             type: string
+            maxLength: 128
           description: Cursor for pagination. The after alias also works.
       responses:
         '200':
@@ -931,6 +932,10 @@ paths:
                   example: 'AI is the future of productivity'
                 topic:
                   type: string
+                  maxLength: 25000
+                  description:
+                    Optional topic, up to 25,000 characters. Xquik keeps the
+                    first 500.
                   example: 'AI trends'
                 goal:
                   type: string
@@ -1049,6 +1054,7 @@ paths:
               properties:
                 username:
                   type: string
+                  maxLength: 64
                   description: X username to analyze
                   example: elonmusk
             example:
@@ -1083,12 +1089,14 @@ paths:
           required: true
           schema:
             type: string
+            maxLength: 64
           description: First username to compare
         - name: username2
           in: query
           required: true
           schema:
             type: string
+            maxLength: 64
           description: Second username to compare
       responses:
         '200':
@@ -1138,6 +1146,8 @@ paths:
         '200':
           description: Style profile
           content: *style-profile-content-with-example
+        '400':
+          $ref: '#/components/responses/InvalidInput'
         '401': *unauthenticated-response
         '404': *not-found-response
         '429': *rate-limit-exceeded-response
@@ -1176,6 +1186,7 @@ paths:
                     properties:
                       text:
                         type: string
+                        maxLength: 25000
                         example: 'Excited to share our latest research.'
                   description: Array of tweet objects
                   example:
@@ -1215,6 +1226,8 @@ paths:
       responses:
         '204':
           $ref: '#/components/responses/NoContent'
+        '400':
+          $ref: '#/components/responses/InvalidInput'
         '401': *unauthenticated-response
         '404': *not-found-response
         '429': *rate-limit-exceeded-response
@@ -1286,6 +1299,8 @@ paths:
                         quoteCount: 3
                         bookmarkCount: 42
                         viewCount: 5000
+        '400':
+          $ref: '#/components/responses/InvalidInput'
         '401': *unauthenticated-response
         '402': *payment-required-response
         '404': *not-found-response
@@ -1305,6 +1320,7 @@ paths:
           in: query
           schema:
             type: string
+            maxLength: 128
           description:
             Cursor for pagination, from the prior response's nextCursor. A
             cursor the radar can't read gets 400 `invalid_input`.
@@ -1344,6 +1360,7 @@ paths:
           in: query
           schema:
             type: string
+            maxLength: 100
             default: global
           description:
             Region filter. Use `global` or a region code such as `US`, `GB`,
@@ -1851,12 +1868,14 @@ paths:
           description: Account monitor ID. The monitor_id alias also works.
           schema:
             type: string
+            maxLength: 32
         - name: keywordMonitorId
           in: query
           description:
             Keyword monitor ID. The keyword_monitor_id alias also works.
           schema:
             type: string
+            maxLength: 32
         - name: eventType
           in: query
           description: Filter events by type
@@ -1905,6 +1924,7 @@ paths:
             after it.
           schema:
             type: string
+            maxLength: 32
           example: '42'
       responses:
         '200':
@@ -1918,6 +1938,8 @@ paths:
                 id: 42
                 event: tweet.new
                 data: {"id":"42","type":"tweet.new","monitorId":"7","monitorType":"account","occurredAt":"2025-01-15T12:00:00.000Z","data":{}}
+        '400':
+          $ref: '#/components/responses/InvalidInput'
         '401': *unauthenticated-response
         '429':
           description: >
@@ -2784,6 +2806,7 @@ paths:
                 tweetUrl:
                   type: string
                   format: uri
+                  maxLength: 2048
                   example: 'https://x.com/elonmusk/status/1234567890'
                 winnerCount:
                   type: integer
@@ -2989,6 +3012,8 @@ paths:
               example:
                 draw: *draw-detail-example
                 winners: []
+        '400':
+          $ref: '#/components/responses/InvalidInput'
         '401': *unauthenticated-response
         '404': *not-found-response
         '429': *rate-limit-exceeded-response
@@ -3077,6 +3102,7 @@ paths:
                 url:
                   type: string
                   format: uri
+                  maxLength: 2048
                   description: >
                     HTTPS URL. A Discord channel webhook or a Slack incoming
                     webhook URL gets chat messages. The events of 1 post come as
@@ -3207,6 +3233,7 @@ paths:
                 url:
                   type: string
                   format: uri
+                  maxLength: 2048
                   example: 'https://example.com/webhook'
                 eventTypes: *single-event-type
                 isActive: *boolean-example-true
@@ -3608,6 +3635,7 @@ paths:
           required: true
           schema:
             type: string
+            maxLength: 32
           description: Write action ID returned by a pending write response.
       responses:
         '200':
@@ -6678,15 +6706,20 @@ paths:
           required: true
           schema:
             type: string
-          description: Support attachment public ID
+            maxLength: 28
+            pattern: '^att_[0-9a-f]{24}$'
+          description:
+            Support attachment public ID. Another shape gets 400 `invalid_id`.
           example: 'att_a1b2c3d4e5f6a1b2c3d4e5f6'
         - name: Range
           in: header
           required: false
           schema:
             type: string
-            pattern: '^bytes=(?:[0-9]+-[0-9]*|-[0-9]+)$'
-          description: Optional single byte range
+            maxLength: 45
+            pattern: '^bytes=(?:[0-9]{1,19}-[0-9]{0,19}|-[0-9]{1,19})$'
+          description:
+            Optional single byte range. Each position takes up to 19 digits.
           example: 'bytes=0-1048575'
       responses:
         '200':
@@ -6695,6 +6728,8 @@ paths:
         '206':
           description: Requested partial video bytes
           content: *binary-download-content
+        '400':
+          $ref: '#/components/responses/InvalidInput'
         '401': *unauthenticated-response
         '404': *not-found-response
         '416':
@@ -6852,7 +6887,10 @@ paths:
           required: true
           schema:
             type: string
-          description: Support ticket public ID
+            maxLength: 28
+            pattern: '^tkt_[0-9a-f]{24}$'
+          description:
+            Support ticket public ID. Another shape gets 400 `invalid_id`.
           example: 'tkt_a1b2c3d4e5f6a1b2c3d4e5f6'
       responses:
         '200':
@@ -6897,6 +6935,8 @@ paths:
                         sender: 'user'
                         createdAt: '2025-01-15T12:00:00Z'
                         attachments: []
+        '400':
+          $ref: '#/components/responses/InvalidInput'
         '401': *unauthenticated-response
         '404': *not-found-response
         '429': *rate-limit-exceeded-response-2
@@ -6912,7 +6952,11 @@ paths:
           required: true
           schema:
             type: string
-          description: Support ticket public ID to update
+            maxLength: 28
+            pattern: '^tkt_[0-9a-f]{24}$'
+          description:
+            Support ticket public ID to update. Another shape gets 400
+            `invalid_id`.
           example: 'tkt_a1b2c3d4e5f6a1b2c3d4e5f6'
       requestBody:
         required: true
@@ -6963,7 +7007,11 @@ paths:
           required: true
           schema:
             type: string
-          description: Support ticket public ID for the reply
+            maxLength: 28
+            pattern: '^tkt_[0-9a-f]{24}$'
+          description:
+            Support ticket public ID for the reply. Another shape gets 400
+            `invalid_id`.
           example: 'tkt_a1b2c3d4e5f6a1b2c3d4e5f6'
         - $ref: '#/components/parameters/SupportIdempotencyKey'
       requestBody:
@@ -7337,6 +7385,7 @@ paths:
                   example: 10
                 locale:
                   type: string
+                  maxLength: 35
                   description:
                     Optional site language for Stripe's return page. An
                     unsupported language uses en, the default.
@@ -7446,6 +7495,7 @@ paths:
           required: true
           schema:
             type: string
+            maxLength: 255
           description: Top-up session ID to inspect.
       responses:
         '200':
@@ -12209,6 +12259,7 @@ components:
       required: true
       schema:
         type: string
+        maxLength: 32
       description: Resource ID returned by the matching create or list endpoint.
     ExtractionId:
       name: id
@@ -12250,6 +12301,7 @@ components:
       required: true
       schema:
         type: string
+        maxLength: 36
         example: 'f4bd00a2-7b4e-4e59-8e1b-72e2c9f12345'
       description: Draw public ID returned by create and list draw responses.
     Limit:
@@ -12548,6 +12600,7 @@ components:
       in: query
       schema:
         type: string
+        maxLength: 128
       description: >
         Previous nextCursor. The after alias also works. Offset pagination is
         not supported.
@@ -12557,6 +12610,7 @@ components:
       required: true
       schema:
         type: string
+        maxLength: 64
       description:
         Style profile ID or X username. Case and a leading @ are ignored.
     FromUser:
@@ -14301,6 +14355,7 @@ components:
         topic:
           type: string
           minLength: 1
+          maxLength: 25000
           description: Subject for the post.
           example: PostgreSQL query planning
         goal:
@@ -14311,6 +14366,7 @@ components:
         styleUsername:
           type: string
           minLength: 1
+          maxLength: 64
           description: Username from a style analysis saved to this account.
           example: example_user
       additionalProperties: true
@@ -14325,6 +14381,7 @@ components:
         topic:
           type: string
           minLength: 1
+          maxLength: 25000
           description: Subject to refine into a post.
         goal:
           type: string
@@ -14333,6 +14390,7 @@ components:
         tone:
           type: string
           minLength: 1
+          maxLength: 500
           description: Requested writing tone.
           example: professional
         mediaType:
@@ -14342,10 +14400,12 @@ components:
         callToAction:
           type: string
           minLength: 1
+          maxLength: 500
           description: Specific action the draft should request.
         additionalContext:
           type: string
           minLength: 1
+          maxLength: 25000
           description: Audience, constraints, sources, or other writing context.
       additionalProperties: true
     ComposeScoreRequest:
@@ -14359,6 +14419,7 @@ components:
         draft:
           type: string
           minLength: 1
+          maxLength: 25000
           description:
             Full post text. The endpoint never assigns a ranking score.
         hasLink:
@@ -15008,7 +15069,13 @@ components:
       minItems: 1
       maxItems: 4
       example: ['screen.png']
-      items: { type: string, format: binary }
+      items:
+        type: string
+        format: binary
+        maxLength: 26214400
+        description:
+          Image up to 10 MiB or video up to 25 MiB. A message takes up to 30
+          MiB.
     SupportMessageSubmission:
       description: Support submission containing a message body.
       type: object
