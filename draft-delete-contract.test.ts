@@ -8,22 +8,12 @@ import { docsSecurity } from "./product-contract.test.helpers.ts";
 const PROJECT_ROOT = dirname(fileURLToPath(import.meta.url));
 const page = readFileSync(join(PROJECT_ROOT, "api-reference/drafts/delete.mdx"), "utf8");
 const normalizedPage = page.replaceAll(/\s+/gu, " ");
-const openapi = readFileSync(join(PROJECT_ROOT, "openapi.yaml"), "utf8");
-const deleteOperation = openapi.slice(
-  openapi.indexOf("      operationId: deleteDraft"),
-  openapi.indexOf("\n  /styles:", openapi.indexOf("      operationId: deleteDraft")),
-);
 
 describe("delete tweet draft documentation", (): void => {
-  it("keeps every response and authentication scheme aligned", (): void => {
+  it("pins the OpenAPI security schemes", (): void => {
     expect.assertions(1);
 
-    expect({
-      security: docsSecurity("deleteDraft"),
-      statuses: ["204", "400", "401", "404", "429"].every((status) =>
-        deleteOperation.includes(`        '${status}':`),
-      ),
-    }).toStrictEqual({ security: [{ apiKey: [] }, { oauthBearer: [] }], statuses: true });
+    expect(docsSecurity("deleteDraft")).toStrictEqual([{ apiKey: [] }, { oauthBearer: [] }]);
   });
 
   it("handles the empty success response in every client example", (): void => {

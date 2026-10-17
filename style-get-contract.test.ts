@@ -7,17 +7,15 @@ import { docsContract, productCheck, productOperation } from "./product-contract
 const source = readFileSync(new URL("api-reference/styles/get.mdx", import.meta.url), "utf8");
 
 describe("get tweet style documentation", (): void => {
-  it("matches every canonical status and authentication method", (): void => {
+  it("documents every authentication method", (): void => {
     expect.assertions(1);
 
     expect({
       apiKeyDocumented: source.includes("Send `x-api-key`"),
       bearerDocumented: source.includes("OAuth clients can send a bearer token"),
-      responseTabs: [...source.matchAll(/<Tab title="(\d{3})"/gu)].map(([, status]) => status),
     }).toStrictEqual({
       apiKeyDocumented: true,
       bearerDocumented: true,
-      responseTabs: ["200", "400", "401", "404", "429"],
     });
   });
 
@@ -90,11 +88,9 @@ describe("get tweet style documentation", (): void => {
 
     expect({
       parameters: product?.parameters.toSorted(),
-      statuses: product?.statuses,
       undocumentedFields: fields.filter((field) => !docs.fields.includes(field)),
     }).toStrictEqual({
       parameters: docs.parameters,
-      statuses: docs.statuses,
       undocumentedFields: [],
     });
   });

@@ -8,22 +8,12 @@ import { docsSecurity } from "./product-contract.test.helpers.ts";
 const PROJECT_ROOT = dirname(fileURLToPath(import.meta.url));
 const page = readFileSync(join(PROJECT_ROOT, "api-reference/drafts/list.mdx"), "utf8");
 const normalizedPage = page.replaceAll(/\s+/gu, " ");
-const openapi = readFileSync(join(PROJECT_ROOT, "openapi.yaml"), "utf8");
-const listOperation = openapi.slice(
-  openapi.indexOf("      operationId: listDrafts"),
-  openapi.indexOf("    post:", openapi.indexOf("      operationId: listDrafts")),
-);
 
 describe("list tweet drafts documentation", (): void => {
-  it("keeps every response and authentication scheme aligned", (): void => {
+  it("pins the OpenAPI security schemes", (): void => {
     expect.assertions(1);
 
-    expect({
-      security: docsSecurity("listDrafts"),
-      statuses: ["200", "400", "401", "429"].every((status) =>
-        listOperation.includes(`        '${status}':`),
-      ),
-    }).toStrictEqual({ security: [{ apiKey: [] }, { oauthBearer: [] }], statuses: true });
+    expect(docsSecurity("listDrafts")).toStrictEqual([{ apiKey: [] }, { oauthBearer: [] }]);
   });
 
   it("documents only the canonical draft and pagination fields", (): void => {

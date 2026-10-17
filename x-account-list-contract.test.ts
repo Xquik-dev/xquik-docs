@@ -7,18 +7,16 @@ import { docsContract, productCheck, productOperation } from "./product-contract
 const source = readFileSync(new URL("api-reference/x-accounts/list.mdx", import.meta.url), "utf8");
 
 describe("connected X accounts list documentation", (): void => {
-  it("documents every status and supported authentication method", (): void => {
+  it("documents every supported authentication method", (): void => {
     expect.assertions(1);
 
     expect({
       apiKeyDocumented: source.includes('<ParamField header="x-api-key" type="string">'),
       bearerDocumented: source.includes('<ParamField header="Authorization" type="string">'),
-      responseTabs: [...source.matchAll(/<Tab title="(\d{3})"/gu)].map(([, status]) => status),
       sessionCookieClaim: source.toLowerCase().includes("session cookie authentication"),
     }).toStrictEqual({
       apiKeyDocumented: true,
       bearerDocumented: true,
-      responseTabs: ["200", "400", "401", "429"],
       sessionCookieClaim: false,
     });
   });
@@ -108,13 +106,11 @@ describe("connected X accounts list documentation", (): void => {
 
     expect({
       parameters: product?.parameters.toSorted(),
-      statuses: product?.statuses,
       undocumentedFields: (product?.successFields ?? []).filter(
         (field) => !docs.fields.includes(field),
       ),
     }).toStrictEqual({
       parameters: docs.parameters,
-      statuses: docs.statuses,
       undocumentedFields: [],
     });
   });

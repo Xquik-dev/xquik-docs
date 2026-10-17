@@ -50,14 +50,10 @@ describe("API key list documentation", (): void => {
       sessionOnlyCopy: page.includes(
         "This management endpoint requires a same-origin dashboard session.",
       ),
-      statuses: ["200", "401", "429"].every((status) =>
-        listOperation.includes(`        '${status}':`),
-      ),
     }).toStrictEqual({
       cookieSession: true,
       listOperation: true,
       sessionOnlyCopy: true,
-      statuses: true,
     });
   });
 

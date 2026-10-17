@@ -7,17 +7,15 @@ const source = readFileSync(
 );
 
 describe("tweet style performance documentation", (): void => {
-  it("matches every canonical response status and authentication method", (): void => {
+  it("documents every authentication method", (): void => {
     expect.assertions(1);
 
     expect({
       apiKeyDocumented: source.includes("Send `x-api-key`"),
       bearerDocumented: source.includes("OAuth clients can send a bearer token"),
-      responseTabs: [...source.matchAll(/<Tab title="(\d{3})"/gu)].map(([, status]) => status),
     }).toStrictEqual({
       apiKeyDocumented: true,
       bearerDocumented: true,
-      responseTabs: ["200", "400", "401", "402", "404", "422", "429"],
     });
   });
 

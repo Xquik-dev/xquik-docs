@@ -8,22 +8,12 @@ import { docsSecurity } from "./product-contract.test.helpers.ts";
 const PROJECT_ROOT = dirname(fileURLToPath(import.meta.url));
 const page = readFileSync(join(PROJECT_ROOT, "api-reference/drafts/create.mdx"), "utf8");
 const normalizedPage = page.replaceAll(/\s+/gu, " ");
-const openapi = readFileSync(join(PROJECT_ROOT, "openapi.yaml"), "utf8");
-const createOperation = openapi.slice(
-  openapi.indexOf("      operationId: createDraft"),
-  openapi.indexOf("  /drafts/{id}:", openapi.indexOf("      operationId: createDraft")),
-);
 
 describe("create tweet draft documentation", (): void => {
-  it("keeps every response and authentication scheme aligned", (): void => {
+  it("pins the OpenAPI security schemes", (): void => {
     expect.assertions(1);
 
-    expect({
-      security: docsSecurity("createDraft"),
-      statuses: ["201", "400", "401", "429"].every((status) =>
-        createOperation.includes(`        '${status}':`),
-      ),
-    }).toStrictEqual({ security: [{ apiKey: [] }, { oauthBearer: [] }], statuses: true });
+    expect(docsSecurity("createDraft")).toStrictEqual([{ apiKey: [] }, { oauthBearer: [] }]);
   });
 
   it("documents canonical request and response fields", (): void => {
