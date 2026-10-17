@@ -88,11 +88,9 @@ describe("get tweet style documentation", (): void => {
 
     expect({
       parameters: product?.parameters.toSorted(),
-      statuses: product?.statuses,
       undocumentedFields: fields.filter((field) => !docs.fields.includes(field)),
     }).toStrictEqual({
       parameters: docs.parameters,
-      statuses: docs.statuses,
       undocumentedFields: [],
     });
   });

@@ -10,7 +10,7 @@ const page = readFileSync(join(PROJECT_ROOT, "api-reference/account/x-identity.m
 const normalizedPage = page.replaceAll(/\s+/gu, " ");
 
 describe("set X identity documentation", (): void => {
-  it("keeps every authentication scheme aligned", (): void => {
+  it("pins the OpenAPI security schemes", (): void => {
     expect.assertions(1);
 
     expect(docsSecurity("setXIdentity")).toStrictEqual([{ apiKey: [] }, { oauthBearer: [] }]);

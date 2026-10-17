@@ -10,7 +10,7 @@ const page = readFileSync(join(PROJECT_ROOT, "api-reference/drafts/get.mdx"), "u
 const normalizedPage = page.replaceAll(/\s+/gu, " ");
 
 describe("get tweet draft documentation", (): void => {
-  it("keeps every authentication scheme aligned", (): void => {
+  it("pins the OpenAPI security schemes", (): void => {
     expect.assertions(1);
 
     expect(docsSecurity("getDraft")).toStrictEqual([{ apiKey: [] }, { oauthBearer: [] }]);

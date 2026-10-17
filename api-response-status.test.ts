@@ -34,6 +34,23 @@ const WRITE_ACTION_LIFECYCLE_SNIPPET_PATH = join(
 const FRONTMATTER_API_PATTERN = /^api:\s*"([A-Z]+) ([^"]+)"/mu;
 const RESPONSE_STATUS_PATTERN = /(?:<Tab title="|^### |^  ```(?:json|text) )(\d{3})\b/gmu;
 const STATUS_CODE_PATTERN = /^\d{3}$/u;
+const HTTP_METHODS: ReadonlySet<string> = new Set([
+  "delete",
+  "get",
+  "head",
+  "options",
+  "patch",
+  "post",
+  "put",
+  "trace",
+]);
+const PAGELESS_OPERATIONS = [
+  "DELETE /extractions/{id}",
+  "GET /ask",
+  "GET /credits/topup/redirect",
+  "POST /ask",
+];
+const PAGES_WITHOUT_OPERATION = ["api-reference/authentication.mdx", "api-reference/overview.mdx"];
 interface ApiDoc {
   readonly file: string;
   readonly method: string;
@@ -221,6 +238,26 @@ describe("API success response status documentation", (): void => {
   ])("matches $issuePrefix\u200bresponse tabs to OpenAPI", (providers): void => {
     expect.assertions(1);
     expect(collectStatusFindings({ ...providers, spec })).toStrictEqual([]);
+  });
+
+  it("gives every OpenAPI operation 1 page unless it is listed as page-less", (): void => {
+    expect.assertions(2);
+
+    const operations = Object.entries(spec.paths ?? {}).flatMap(([path, item]) =>
+      Object.keys(item)
+        .filter((method): boolean => HTTP_METHODS.has(method))
+        .map((method): string => `${method.toUpperCase()} ${path}`),
+    );
+    const paged = readApiDocs().map(
+      ({ method, path }): string => `${method.toUpperCase()} ${path}`,
+    );
+    const unnamed = apiReferenceFiles.filter(
+      (file): boolean =>
+        !FRONTMATTER_API_PATTERN.test(readFileSync(join(PROJECT_ROOT, file), "utf8")),
+    );
+
+    expect([...paged, ...PAGELESS_OPERATIONS].toSorted()).toStrictEqual(operations.toSorted());
+    expect(unnamed).toStrictEqual(PAGES_WITHOUT_OPERATION);
   });
 
   it("keeps response tabs independent and success-first", (): void => {

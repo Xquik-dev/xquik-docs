@@ -37,7 +37,6 @@ function propertyNames(spec: Spec, schema: unknown): string[] {
 
 interface ProductOperation {
   readonly parameters: readonly string[];
-  readonly statuses: readonly string[];
   readonly successFields: readonly string[];
   readonly itemFields: (property: string) => readonly string[];
 }
@@ -75,14 +74,12 @@ function productOperation(spec: Spec, operationId: string): ProductOperation | u
         return `${String(resolved["name"])}${resolved["required"] === true ? "!" : ""}`;
       },
     ),
-    statuses: Object.keys(responses),
     successFields: propertyNames(spec, body),
   };
 }
 
 interface DocsContract {
   readonly parameters: readonly string[];
-  readonly statuses: readonly string[];
   readonly fields: readonly string[];
 }
 
@@ -92,7 +89,6 @@ function docsContract(source: string): DocsContract {
     parameters: [...source.matchAll(/<ParamField (?:path|query)="([^"]+)"([^>]*)>/gu)]
       .map(([, name, rest]) => `${name ?? ""}${/\brequired\b/u.test(rest ?? "") ? "!" : ""}`)
       .toSorted(),
-    statuses: [...source.matchAll(/<Tab title="(\d{3})"/gu)].map(([, status]) => status ?? ""),
   };
 }
 

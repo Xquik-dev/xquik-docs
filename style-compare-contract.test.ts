@@ -93,13 +93,11 @@ describe("compare tweet writing profiles documentation", (): void => {
 
     expect({
       parameters: product?.parameters.toSorted(),
-      statuses: product?.statuses,
       undocumentedFields: fields.filter(
         (field) => !docs.fields.includes(field) && !["style1", "style2"].includes(field),
       ),
     }).toStrictEqual({
       parameters: docs.parameters,
-      statuses: docs.statuses,
       undocumentedFields: [],
     });
   });

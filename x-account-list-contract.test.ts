@@ -106,13 +106,11 @@ describe("connected X accounts list documentation", (): void => {
 
     expect({
       parameters: product?.parameters.toSorted(),
-      statuses: product?.statuses,
       undocumentedFields: (product?.successFields ?? []).filter(
         (field) => !docs.fields.includes(field),
       ),
     }).toStrictEqual({
       parameters: docs.parameters,
-      statuses: docs.statuses,
       undocumentedFields: [],
     });
   });

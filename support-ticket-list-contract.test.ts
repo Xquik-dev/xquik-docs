@@ -40,7 +40,7 @@ describe("support ticket list documentation", (): void => {
     });
   });
 
-  it("keeps authentication and ticket state guidance aligned with OpenAPI", (): void => {
+  it("documents authentication and pins the OpenAPI ticket states", (): void => {
     expect.assertions(1);
 
     expect({
