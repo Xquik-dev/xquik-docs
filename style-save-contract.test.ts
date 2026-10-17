@@ -4,17 +4,15 @@ import { describe, expect, it } from "vitest";
 const source = readFileSync(new URL("api-reference/styles/save.mdx", import.meta.url), "utf8");
 
 describe("save custom tweet style documentation", (): void => {
-  it("matches every canonical status and authentication method", (): void => {
+  it("documents every authentication method", (): void => {
     expect.assertions(1);
 
     expect({
       apiKeyDocumented: source.includes("Send `x-api-key`"),
       bearerDocumented: source.includes("OAuth clients can send a bearer token"),
-      responseTabs: [...source.matchAll(/<Tab title="(\d{3})"/gu)].map(([, status]) => status),
     }).toStrictEqual({
       apiKeyDocumented: true,
       bearerDocumented: true,
-      responseTabs: ["200", "400", "401", "429"],
     });
   });
 

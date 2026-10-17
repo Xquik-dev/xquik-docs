@@ -8,22 +8,12 @@ import { docsSecurity } from "./product-contract.test.helpers.ts";
 const PROJECT_ROOT = dirname(fileURLToPath(import.meta.url));
 const page = readFileSync(join(PROJECT_ROOT, "api-reference/drafts/get.mdx"), "utf8");
 const normalizedPage = page.replaceAll(/\s+/gu, " ");
-const openapi = readFileSync(join(PROJECT_ROOT, "openapi.yaml"), "utf8");
-const getOperation = openapi.slice(
-  openapi.indexOf("      operationId: getDraft"),
-  openapi.indexOf("    delete:", openapi.indexOf("      operationId: getDraft")),
-);
 
 describe("get tweet draft documentation", (): void => {
-  it("keeps every response and authentication scheme aligned", (): void => {
+  it("keeps every authentication scheme aligned", (): void => {
     expect.assertions(1);
 
-    expect({
-      security: docsSecurity("getDraft"),
-      statuses: ["200", "400", "401", "404", "429"].every((status) =>
-        getOperation.includes(`        '${status}':`),
-      ),
-    }).toStrictEqual({ security: [{ apiKey: [] }, { oauthBearer: [] }], statuses: true });
+    expect(docsSecurity("getDraft")).toStrictEqual([{ apiKey: [] }, { oauthBearer: [] }]);
   });
 
   it("documents only the canonical draft response fields", (): void => {

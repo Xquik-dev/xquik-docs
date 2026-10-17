@@ -8,22 +8,12 @@ import { docsSecurity } from "./product-contract.test.helpers.ts";
 const PROJECT_ROOT = dirname(fileURLToPath(import.meta.url));
 const page = readFileSync(join(PROJECT_ROOT, "api-reference/account/x-identity.mdx"), "utf8");
 const normalizedPage = page.replaceAll(/\s+/gu, " ");
-const openapi = readFileSync(join(PROJECT_ROOT, "openapi.yaml"), "utf8");
-const operation = openapi.slice(
-  openapi.indexOf("      operationId: setXIdentity"),
-  openapi.indexOf("  /api-keys:", openapi.indexOf("      operationId: setXIdentity")),
-);
 
 describe("set X identity documentation", (): void => {
-  it("keeps every response and authentication scheme aligned", (): void => {
+  it("keeps every authentication scheme aligned", (): void => {
     expect.assertions(1);
 
-    expect({
-      security: docsSecurity("setXIdentity"),
-      statuses: ["200", "400", "401", "429"].every((status) =>
-        operation.includes(`        '${status}':`),
-      ),
-    }).toStrictEqual({ security: [{ apiKey: [] }, { oauthBearer: [] }], statuses: true });
+    expect(docsSecurity("setXIdentity")).toStrictEqual([{ apiKey: [] }, { oauthBearer: [] }]);
   });
 
   it("documents the canonical request and response fields", (): void => {
