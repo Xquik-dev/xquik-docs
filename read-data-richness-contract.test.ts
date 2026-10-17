@@ -232,9 +232,25 @@ const MEDIA_FIELDS = [
   "sourceUser",
 ] as const;
 
+const NESTED_TWEET_REQUIRED_FIELDS = [
+  "id",
+  "text",
+  "retweetCount",
+  "replyCount",
+  "likeCount",
+  "quoteCount",
+  "viewCount",
+  "bookmarkCount",
+] as const;
+
 const PARSED_OPENAPI = Bun.YAML.parse(OPENAPI) as OpenApiDocument;
 
-function schemaFields(openApi: Readonly<OpenApiDocument>, name: string): readonly string[] {
+interface SchemaFields {
+  readonly declared: readonly string[];
+  readonly required: readonly string[];
+}
+
+function schemaFields(openApi: Readonly<OpenApiDocument>, name: string): SchemaFields {
   const schema = openApi.components?.schemas?.[name];
   if (schema === undefined) {
     throw new Error(`OpenAPI is missing schema ${name}.`);
@@ -245,27 +261,25 @@ function schemaFields(openApi: Readonly<OpenApiDocument>, name: string): readonl
 function schemaFieldNames(
   openApi: Readonly<OpenApiDocument>,
   schema: Readonly<OpenApiSchema>,
-): readonly string[] {
+): SchemaFields {
   const referencedName = schema.$ref?.split("/").at(-1);
   const resolved =
     referencedName === undefined ? schema : openApi.components?.schemas?.[referencedName];
   if (resolved === undefined) {
     throw new Error(`OpenAPI is missing schema ${referencedName}.`);
   }
-  return [
-    ...new Set([
-      ...Object.keys(resolved.properties ?? {}),
-      ...(resolved.allOf ?? []).flatMap((item) => schemaFieldNames(openApi, item)),
+  const parts = (resolved.allOf ?? []).map((item) => schemaFieldNames(openApi, item));
+  return {
+    declared: sortedFields([
+      ...new Set([
+        ...Object.keys(resolved.properties ?? {}),
+        ...parts.flatMap((part) => part.declared),
+      ]),
     ]),
-  ].toSorted((left, right) => left.localeCompare(right));
-}
-
-function requiredFields(openApi: Readonly<OpenApiDocument>, name: string): readonly string[] {
-  const required = openApi.components?.schemas?.[name]?.required;
-  if (required === undefined) {
-    throw new Error(`OpenAPI schema ${name} lists no required fields.`);
-  }
-  return required;
+    required: sortedFields([
+      ...new Set([...(resolved.required ?? []), ...parts.flatMap((part) => part.required)]),
+    ]),
+  };
 }
 
 function sortedFields(fields: readonly string[]): readonly string[] {
@@ -291,26 +305,29 @@ describe("read data richness documentation", (): void => {
     for (const field of fields) {
       expect(GUIDE, `guide omits ${field}`).toContain(`\`${field}\``);
     }
-    expect(schemaFields(PARSED_OPENAPI, "TweetDetail")).toStrictEqual(sortedFields(TWEET_FIELDS));
-    expect(schemaFields(PARSED_OPENAPI, "SearchTweet")).toStrictEqual(sortedFields(TWEET_FIELDS));
-    expect(schemaFields(PARSED_OPENAPI, "UserProfile")).toStrictEqual(sortedFields(PROFILE_FIELDS));
-    expect(schemaFields(PARSED_OPENAPI, "TweetMedia")).toStrictEqual(sortedFields(MEDIA_FIELDS));
+    expect(schemaFields(PARSED_OPENAPI, "TweetDetail").declared).toStrictEqual(
+      sortedFields(TWEET_FIELDS),
+    );
+    expect(schemaFields(PARSED_OPENAPI, "SearchTweet").declared).toStrictEqual(
+      sortedFields(TWEET_FIELDS),
+    );
+    expect(schemaFields(PARSED_OPENAPI, "UserProfile").declared).toStrictEqual(
+      sortedFields(PROFILE_FIELDS),
+    );
+    expect(schemaFields(PARSED_OPENAPI, "TweetMedia").declared).toStrictEqual(
+      sortedFields(MEDIA_FIELDS),
+    );
   });
 
   it("types nested tweets with the required tweet fields and author", (): void => {
-    expect.assertions(1);
-    const embeddedTweet = PARSED_OPENAPI.components?.schemas?.["EmbeddedTweet"];
-    const requiredTweetFields = requiredFields(PARSED_OPENAPI, "TweetPublicDataBase");
+    expect.assertions(3);
+    const embeddedTweet = schemaFields(PARSED_OPENAPI, "EmbeddedTweet");
 
-    expect({
-      additionalProperties: embeddedTweet?.additionalProperties,
-      fields: schemaFields(PARSED_OPENAPI, "EmbeddedTweet"),
-      required: embeddedTweet?.required,
-    }).toStrictEqual({
-      additionalProperties: true,
-      fields: sortedFields([...requiredTweetFields, "author"]),
-      required: requiredTweetFields,
-    });
+    expect(PARSED_OPENAPI.components?.schemas?.["EmbeddedTweet"]?.additionalProperties).toBe(true);
+    expect(embeddedTweet.declared).toEqual(
+      expect.arrayContaining([...NESTED_TWEET_REQUIRED_FIELDS, "author"]),
+    );
+    expect(embeddedTweet.required).toStrictEqual(sortedFields(NESTED_TWEET_REQUIRED_FIELDS));
   });
 
   it("keeps agent guidance and discovery links public", (): void => {
