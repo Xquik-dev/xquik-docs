@@ -107,6 +107,7 @@ const TWEET_FIELDS = [
   "quoteCount",
   "viewCount",
   "bookmarkCount",
+  "unknownCounts",
   "grokTranslatedPost",
   "hasCommunityNotes",
   "quotedTweetPermalink",
