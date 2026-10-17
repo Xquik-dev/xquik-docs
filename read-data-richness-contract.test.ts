@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 
 interface OpenApiSchema {
   readonly $ref?: string;
-  readonly additionalProperties?: boolean;
+  readonly additionalProperties?: boolean | OpenApiSchema;
   readonly allOf?: readonly OpenApiSchema[];
   readonly maximum?: number;
   readonly properties?: Readonly<Record<string, unknown>>;
@@ -245,39 +245,37 @@ const NESTED_TWEET_REQUIRED_FIELDS = [
 
 const PARSED_OPENAPI = Bun.YAML.parse(OPENAPI) as OpenApiDocument;
 
-interface SchemaFields {
+interface SchemaFieldSets {
+  readonly closed: boolean;
   readonly declared: readonly string[];
   readonly required: readonly string[];
 }
 
-function schemaFields(openApi: Readonly<OpenApiDocument>, name: string): SchemaFields {
-  const schema = openApi.components?.schemas?.[name];
-  if (schema === undefined) {
-    throw new Error(`OpenAPI is missing schema ${name}.`);
-  }
-  return schemaFieldNames(openApi, schema);
-}
-
-function schemaFieldNames(
+function schemaFieldSets(
   openApi: Readonly<OpenApiDocument>,
   schema: Readonly<OpenApiSchema>,
-): SchemaFields {
+): SchemaFieldSets {
   const referencedName = schema.$ref?.split("/").at(-1);
-  const resolved =
-    referencedName === undefined ? schema : openApi.components?.schemas?.[referencedName];
-  if (resolved === undefined) {
-    throw new Error(`OpenAPI is missing schema ${referencedName}.`);
-  }
-  const parts = (resolved.allOf ?? []).map((item) => schemaFieldNames(openApi, item));
+  const referenced =
+    referencedName === undefined ? [] : [openApi.components?.schemas?.[referencedName]];
+  const members = [...(schema.allOf ?? []), ...referenced].map((member) => {
+    if (member === undefined) {
+      throw new Error(`OpenAPI is missing schema ${referencedName}.`);
+    }
+    return schemaFieldSets(openApi, member);
+  });
   return {
+    closed:
+      (schema.additionalProperties !== undefined && schema.additionalProperties !== true) ||
+      members.some((member) => member.closed),
     declared: sortedFields([
       ...new Set([
-        ...Object.keys(resolved.properties ?? {}),
-        ...parts.flatMap((part) => part.declared),
+        ...Object.keys(schema.properties ?? {}),
+        ...members.flatMap((member) => member.declared),
       ]),
     ]),
     required: sortedFields([
-      ...new Set([...(resolved.required ?? []), ...parts.flatMap((part) => part.required)]),
+      ...new Set([...(schema.required ?? []), ...members.flatMap((member) => member.required)]),
     ]),
   };
 }
@@ -305,25 +303,31 @@ describe("read data richness documentation", (): void => {
     for (const field of fields) {
       expect(GUIDE, `guide omits ${field}`).toContain(`\`${field}\``);
     }
-    expect(schemaFields(PARSED_OPENAPI, "TweetDetail").declared).toStrictEqual(
-      sortedFields(TWEET_FIELDS),
-    );
-    expect(schemaFields(PARSED_OPENAPI, "SearchTweet").declared).toStrictEqual(
-      sortedFields(TWEET_FIELDS),
-    );
-    expect(schemaFields(PARSED_OPENAPI, "UserProfile").declared).toStrictEqual(
-      sortedFields(PROFILE_FIELDS),
-    );
-    expect(schemaFields(PARSED_OPENAPI, "TweetMedia").declared).toStrictEqual(
-      sortedFields(MEDIA_FIELDS),
-    );
+    expect(
+      schemaFieldSets(PARSED_OPENAPI, { $ref: "#/components/schemas/TweetDetail" }).declared,
+    ).toStrictEqual(sortedFields(TWEET_FIELDS));
+    expect(
+      schemaFieldSets(PARSED_OPENAPI, { $ref: "#/components/schemas/SearchTweet" }).declared,
+    ).toStrictEqual(sortedFields(TWEET_FIELDS));
+    expect(
+      schemaFieldSets(PARSED_OPENAPI, { $ref: "#/components/schemas/UserProfile" }).declared,
+    ).toStrictEqual(sortedFields(PROFILE_FIELDS));
+    expect(
+      schemaFieldSets(PARSED_OPENAPI, { $ref: "#/components/schemas/TweetMedia" }).declared,
+    ).toStrictEqual(sortedFields(MEDIA_FIELDS));
   });
 
   it("types nested tweets with the required tweet fields and author", (): void => {
-    expect.assertions(3);
-    const embeddedTweet = schemaFields(PARSED_OPENAPI, "EmbeddedTweet");
+    expect.assertions(4);
+    const embeddedTweet = schemaFieldSets(PARSED_OPENAPI, {
+      $ref: "#/components/schemas/EmbeddedTweet",
+    });
 
     expect(PARSED_OPENAPI.components?.schemas?.["EmbeddedTweet"]?.additionalProperties).toBe(true);
+    expect(
+      embeddedTweet.closed,
+      "an allOf or $ref member of EmbeddedTweet rejects fields it does not declare",
+    ).toBe(false);
     expect(embeddedTweet.declared).toEqual(
       expect.arrayContaining([...NESTED_TWEET_REQUIRED_FIELDS, "author"]),
     );
