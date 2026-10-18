@@ -17373,7 +17373,9 @@ components:
       description:
         Authenticated credit or subscription error with confirmation-gated
         hosted checkout actions. A caller on a plan, including one whose payment
-        failed, gets no subscription option.
+        failed, gets no subscription option. A key that reads only cannot open
+        checkout, so it gets the account page as its next step and no
+        payment_options, top_up_endpoint or top_up_url.
       type: object
       additionalProperties: false
       required:
@@ -17382,10 +17384,7 @@ components:
         - error
         - message
         - next_step
-        - payment_options
         - required
-        - top_up_endpoint
-        - top_up_url
       properties:
         balance:
           type: string
@@ -17414,10 +17413,16 @@ components:
           example: Insufficient credits. Top up or subscribe to continue.
         next_step:
           type: string
-          const:
-            Ask the user to confirm a payment option before creating checkout.
+          description:
+            What to do next. A key that reads only gets the account page, since
+            it cannot open checkout.
+          enum:
+            - Ask the user to confirm a payment option before creating checkout.
+            - Ask the user to top up at /dashboard/account. This key cannot open
+              checkout.
         payment_options:
           type: object
+          description: Checkout actions. Absent for a key that reads only.
           additionalProperties: false
           required: [credits]
           properties:
