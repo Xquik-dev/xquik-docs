@@ -3438,11 +3438,13 @@ paths:
           required: true
           schema:
             type: string
+            maxLength: 13086
           description:
             1 to 100 posts, separated by commas. Each is a tweet ID or a tweet
             URL, such as x.com/nasa/status/20. Xquik reads a post named twice
             once. It skips any other entry & lists it under `skipped` with why.
-            A batch without 1 post gets 400 `invalid_tweet_id`.
+            A batch without 1 post gets 400 `invalid_tweet_id`. A longer URL
+            fails at the edge before Xquik reads it.
         - $ref: '#/components/parameters/Fields'
         - $ref: '#/components/parameters/Omit'
       responses:
@@ -3940,6 +3942,7 @@ paths:
           in: query
           schema:
             type: string
+            maxLength: 4096
           description:
             The next_cursor of the page before, for the next lists. It keeps the
             time of the first request, so a range of spans stays the same on
@@ -4084,8 +4087,9 @@ paths:
                 next_cursor: ''
         '400':
           description:
-            Unknown country or location, a time or step that does not read, or a
-            range that ends before the first stored list
+            Unknown country or location, a time or step that does not read, a
+            range that ends before the first stored list, or a value past its
+            maxLength
           content:
             application/json:
               schema: *error-schema
@@ -4211,7 +4215,7 @@ paths:
         - name: id
           in: path
           required: true
-          schema: { type: string }
+          schema: { type: string, maxLength: 2048 }
           description:
             X news story ID, or the URL-encoded story link, such as
             x.com/i/trending/2110209733533598095.
@@ -4280,7 +4284,7 @@ paths:
                       pricing and national security as Starlink seeks final
                       clearances."
         '400':
-          description: The path names no story. Free.
+          description: The path names no story or runs past its maxLength. Free.
           content:
             application/json:
               schema:
@@ -4761,6 +4765,7 @@ paths:
           required: true
           schema:
             type: string
+            maxLength: 2048
           description:
             Tweet ID of the article, 15-19 digits, or its URL-encoded tweet URL,
             such as x.com/nasa/status/2102882545427714266.
@@ -5189,18 +5194,22 @@ paths:
           in: query
           schema:
             type: string
+            maxLength: 13081
           description:
             Comma-separated numeric user IDs (1-100 values). Xquik ignores
-            duplicate IDs and keeps the first-seen order.
+            duplicate IDs and keeps the first-seen order. A longer URL fails at
+            the edge before Xquik reads it.
         - name: usernames
           in: query
           schema:
             type: string
+            maxLength: 13075
           example: 'nasa,@OpenAI,x.com/verge'
           description:
             Comma-separated X usernames, with or without @, or profile links
             such as x.com/nasa (1-100 values), in place of ids. A name in
-            another case is the same account.
+            another case is the same account. A longer URL fails at the edge
+            before Xquik reads it.
         - $ref: '#/components/parameters/UserMinFollowers'
         - $ref: '#/components/parameters/UserMaxFollowers'
         - $ref: '#/components/parameters/UserMinFollowing'
@@ -5267,18 +5276,22 @@ paths:
           in: query
           schema:
             type: string
+            maxLength: 13074
           description:
             Comma-separated numeric user IDs (1-20 values). Xquik ignores
-            duplicate IDs and keeps the first-seen order.
+            duplicate IDs and keeps the first-seen order. A longer URL fails at
+            the edge before Xquik reads it.
         - name: usernames
           in: query
           schema:
             type: string
+            maxLength: 13068
           example: 'nasa,@OpenAI,x.com/verge'
           description:
             Comma-separated X usernames, with or without @, or profile links
             such as x.com/nasa (1-20 values), in place of ids. A name in another
-            case is the same account. A number is a user ID.
+            case is the same account. A number is a user ID. A longer URL fails
+            at the edge before Xquik reads it.
         - name: pageSize
           in: query
           description: >
@@ -5589,6 +5602,7 @@ paths:
           required: true
           schema:
             type: string
+            maxLength: 2048
           description:
             Source user ID, username, @username, or X or Twitter profile URL,
             such as x.com/i/user/11348282. A number is a user ID.
@@ -5597,6 +5611,7 @@ paths:
           required: true
           schema:
             type: string
+            maxLength: 2048
           description:
             Target user ID, username, @username, or X or Twitter profile URL,
             such as x.com/i/user/11348282. A number is a user ID.
@@ -5637,7 +5652,7 @@ paths:
                 targetId: '34743251'
                 targetUsername: 'spacex'
         '400':
-          description: Missing or invalid params
+          description: Missing or invalid params, or a value past its maxLength
           content:
             application/json:
               schema: *error-schema
@@ -5811,20 +5826,24 @@ paths:
               properties:
                 tweetInput:
                   type: string
+                  maxLength: 2048
                   description: Tweet URL or ID (single tweet)
                   example: 'https://x.com/elonmusk/status/1234567890'
                 tweetId:
                   type: string
+                  maxLength: 2048
                   description: Numeric tweet ID alias for tweetInput
                   example: '1234567890'
                 tweetUrl:
                   type: string
+                  maxLength: 2048
                   description: Tweet URL alias for tweetInput
                   example: 'https://x.com/elonmusk/status/1234567890'
                 tweetIds:
                   type: array
                   items:
                     type: string
+                    maxLength: 2048
                   maxItems: 50
                   description:
                     Up to 50 tweet URLs or IDs. An item that names no post gets
@@ -8271,8 +8290,9 @@ paths:
           description: Optional bookmark folder ID. Folders need X Premium.
         - name: cursor
           in: query
-          schema: &cursor-example-schema
+          schema:
             type: string
+            maxLength: 4096
             example: 'DAACCgACGRElMJcAAA'
           description:
             Pagination cursor for bookmarks. Also read as next_cursor,
@@ -8281,6 +8301,8 @@ paths:
         '200':
           description: List of bookmarked tweets
           content: *paginated-tweets-content
+        '400':
+          $ref: '#/components/responses/InvalidInput'
         '401': *unauthenticated-response
         '402': *payment-required-response
         '429': *rate-limit-exceeded-response-2
@@ -8338,6 +8360,8 @@ paths:
                     name: 'Read Later'
                 has_next_page: false
                 next_cursor: ''
+        '400':
+          $ref: '#/components/responses/InvalidInput'
         '401': *unauthenticated-response
         '402': *payment-required-response
         '429': *rate-limit-exceeded-response-2
@@ -8397,7 +8421,8 @@ paths:
                         message: 'elonmusk liked your tweet'
                         timestamp: '2025-01-15T12:00:00Z'
                   has_next_page: *boolean-example-true
-                  next_cursor: *cursor-example-schema
+                  next_cursor:
+                    $ref: '#/components/schemas/NextCursor'
               example:
                 notifications:
                   - id: '1234567890'
@@ -8406,6 +8431,8 @@ paths:
                     timestamp: '2025-01-15T12:00:00Z'
                 has_next_page: true
                 next_cursor: 'DAACCgACGRElMJcAAA'
+        '400':
+          $ref: '#/components/responses/InvalidInput'
         '401': *unauthenticated-response
         '402': *payment-required-response
         '429': *rate-limit-exceeded-response-2
@@ -8432,14 +8459,17 @@ paths:
           in: query
           schema:
             type: string
+            maxLength: 13075
           description:
             Comma-separated tweet IDs to exclude from results. Xquik ignores
-            empty entries.
+            empty entries. A longer URL fails at the edge before Xquik reads it.
         - $ref: '#/components/parameters/CollectionCursor'
       responses:
         '200':
           description: List of timeline tweets
           content: *paginated-tweets-content
+        '400':
+          $ref: '#/components/responses/InvalidInput'
         '401': *unauthenticated-response
         '402': *payment-required-response
         '410':
@@ -8486,6 +8516,7 @@ paths:
           in: query
           schema:
             type: string
+            maxLength: 4096
           description: Legacy pagination cursor (backward compat)
       responses:
         '200':
@@ -8527,7 +8558,8 @@ paths:
                         senderId: '9876543210'
                         receiverId: '1234567890'
                   has_next_page: *boolean-example-true
-                  next_cursor: *cursor-example-schema
+                  next_cursor:
+                    $ref: '#/components/schemas/NextCursor'
               example:
                 messages:
                   - id: '1234567890123456789'
@@ -8541,6 +8573,7 @@ paths:
             Invalid input. `invalid_user_id` means the path user ID is empty or
             invalid. `account_required` means the `account` query parameter was
             missing or empty. `invalid_input` means `account` is over 64
+            characters. `invalid_cursor` means `cursor` or `maxId` is over 4,096
             characters.
           content:
             application/json:
@@ -9379,8 +9412,8 @@ paths:
           description: >
             Missing query returns missing_query. An unknown filter value returns
             invalid_job_filter & names the values the filter takes. A cursor X
-            cannot read returns invalid_cursor. Start again without it. All are
-            free.
+            cannot read, or one past its maxLength, returns invalid_cursor.
+            Start again without it. All are free.
           content:
             application/json:
               schema: *error-schema
@@ -9479,7 +9512,7 @@ paths:
         - name: id
           in: path
           required: true
-          schema: { type: string }
+          schema: { type: string, maxLength: 2048 }
           description: >
             Job ID or URL-encoded job URL, such as x.com/i/jobs/123. Anything
             else gets 400 `invalid_job_id`.
@@ -9523,7 +9556,7 @@ paths:
                     verified: true
                     verifiedType: 'Business'
         '400':
-          description: Invalid job ID
+          description: Invalid job ID, or one past its maxLength
           content:
             application/json:
               schema: *error-schema
@@ -9574,7 +9607,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedLists'
         '400':
-          description: No keywords. Send them in q.
+          description: >
+            No keywords. Send them in q. A cursor past its maxLength returns
+            invalid_cursor.
           content:
             application/json:
               schema: *error-schema
@@ -9884,7 +9919,7 @@ paths:
                     username: 'SpaceX'
                     name: 'SpaceX'
         '400':
-          description: The path names no broadcast
+          description: The path names no broadcast or runs past its maxLength
           content:
             application/json:
               schema:
@@ -9967,7 +10002,8 @@ paths:
                       notHelpfulCount: 4
                     updatedAt: '2026-10-12T22:50:13.228Z'
         '400':
-          description: The path names no contributor. Free.
+          description:
+            The path names no contributor or runs past its maxLength. Free.
           content:
             application/json:
               schema:
@@ -10218,7 +10254,8 @@ paths:
                         speakers: []
                         listeners: []
                   has_next_page: *boolean-example-true
-                  next_cursor: *cursor-example-schema
+                  next_cursor:
+                    $ref: '#/components/schemas/NextCursor'
               example:
                 spaces:
                   - id: '1OGwblLjnQMKB'
@@ -10689,6 +10726,7 @@ paths:
           required: true
           schema:
             type: string
+            maxLength: 2048
           example: 'nasa'
           description: User ID, username with or without @, or profile URL.
         - $ref: '#/components/parameters/Fields'
@@ -10816,8 +10854,9 @@ paths:
           content: *paginated-users-content
         '400':
           description: >
-            Invalid input returns invalid_input. A cursor X cannot read returns
-            invalid_cursor. Start again without it. Both are free.
+            Invalid input returns invalid_input. A cursor X cannot read, or one
+            past its maxLength, returns invalid_cursor. Start again without it.
+            Both are free.
           content:
             application/json:
               schema: *error-schema
@@ -10865,9 +10904,9 @@ paths:
                 $ref: '#/components/schemas/PaginatedUserIds'
         '400':
           description: >
-            A post ID that is not a number returns invalid_tweet_id, & a cursor
-            X cannot read returns invalid_cursor. Start again without it.
-            Neither costs a credit.
+            A post ID that is not a number returns invalid_tweet_id. A cursor X
+            cannot read, or one past its maxLength, returns invalid_cursor.
+            Start again without it. Neither costs a credit.
           content:
             application/json:
               schema: *error-schema
@@ -11323,9 +11362,11 @@ paths:
           required: true
           description:
             1 to 100 links of the form `https://t.co/Xe1nm2pkSX`, separated by
-            commas. Any other link is refused.
+            commas. Any other link is refused. A link sent twice counts once. A
+            longer URL fails at the edge before Xquik reads it.
           schema:
             type: string
+            maxLength: 13078
             example: 'https://t.co/Xe1nm2pkSX'
         - $ref: '#/components/parameters/Fields'
         - $ref: '#/components/parameters/Omit'
@@ -12122,7 +12163,7 @@ components:
     CollectionCursor:
       name: cursor
       in: query
-      schema: { type: string }
+      schema: { type: string, maxLength: 4096 }
       description:
         Pagination cursor for collection results. Also read as next_cursor,
         next_token, pagination_token or continuation_token.
@@ -12130,7 +12171,7 @@ components:
       name: id
       in: path
       required: true
-      schema: { type: string }
+      schema: { type: string, maxLength: 2048 }
       description: >
         Tweet ID or URL-encoded tweet URL, such as x.com/nasa/status/20. Takes
         x.com & twitter.com links with or without https://, www., mobile., a
@@ -12141,7 +12182,7 @@ components:
       name: id
       in: path
       required: true
-      schema: { type: string }
+      schema: { type: string, maxLength: 2048 }
       description: >
         User ID, username with or without @, or URL-encoded profile URL, such as
         x.com/nasa or x.com/i/user/11348282. A number is a user ID. Writes look
@@ -12152,7 +12193,7 @@ components:
       name: userId
       in: path
       required: true
-      schema: { type: string }
+      schema: { type: string, maxLength: 2048 }
       description: >
         The other person in the conversation, as a user ID, username with or
         without @, or URL-encoded profile URL, such as x.com/nasa. Xquik looks
@@ -12197,14 +12238,15 @@ components:
       name: id
       in: path
       required: true
-      schema: { type: string }
-      description: X List ID.
+      schema: { type: string, maxLength: 2048 }
+      description:
+        X List ID, or the URL-encoded List link, such as x.com/i/lists/4143408.
       example: '4143408'
     BroadcastPathId:
       name: id
       in: path
       required: true
-      schema: { type: string }
+      schema: { type: string, maxLength: 2048 }
       description:
         X broadcast ID, or the URL-encoded broadcast URL, such as
         x.com/i/broadcasts/1nGeLMWbkpaKX.
@@ -12213,7 +12255,7 @@ components:
       name: alias
       in: path
       required: true
-      schema: { type: string }
+      schema: { type: string, maxLength: 2048 }
       description:
         Community Notes contributor alias, or the URL-encoded contributor URL,
         such as x.com/i/communitynotes/u/ardent-beach-friarbird. Any letter case
@@ -12235,7 +12277,7 @@ components:
       name: id
       in: path
       required: true
-      schema: { type: string }
+      schema: { type: string, maxLength: 2048 }
       description:
         X Space ID, or the URL-encoded Space URL, such as
         x.com/i/spaces/1OGwblLjnQMKB.
@@ -12297,7 +12339,7 @@ components:
     CommunityCursor:
       name: cursor
       in: query
-      schema: { type: string }
+      schema: { type: string, maxLength: 4096 }
       description:
         Pagination cursor for community search. Also read as next_cursor,
         next_token, pagination_token or continuation_token.
@@ -12457,6 +12499,7 @@ components:
       in: query
       schema:
         type: string
+        maxLength: 4096
       description: >
         Cursor from the previous response. Existing unprefixed cursors keep
         legacy standard behavior. Pages can be empty before more rows. Follow
@@ -12504,6 +12547,7 @@ components:
       deprecated: true
       schema:
         type: string
+        maxLength: 4096
       description: Legacy cursor alias. Prefer cursor.
     LegacyPaginationMode:
       name: mode
@@ -13067,6 +13111,7 @@ components:
       in: query
       schema:
         type: string
+        maxLength: 13085
         example: id,text,author.username
       description: >
         Fields to keep in each row, comma-separated. Use dots for nested fields,
@@ -13074,16 +13119,19 @@ components:
         underscores do not matter. A row that lacks a field leaves it out.
         Cursors, counts & diagnostics always stay. An unknown name answers 400
         unknown_field with the valid names, before any read. The price stays the
-        same. SDK row types then hold only the named fields.
+        same. SDK row types then hold only the named fields. A longer URL fails
+        at the edge before Xquik reads it.
     Omit:
       name: omit
       in: query
       schema:
         type: string
+        maxLength: 13087
         example: entities,media
       description: >
         Fields to drop from each row, comma-separated. It takes the same names
-        as fields. With fields, it drops from the kept fields.
+        as fields. With fields, it drops from the kept fields. A longer URL
+        fails at the edge before Xquik reads it.
 
   headers:
     RateLimit:
@@ -13519,7 +13567,9 @@ components:
                   response_fields: [checkout_url, api_key, status_url]
                   response_url_field: checkout_url
     InvalidInput:
-      description: Invalid input
+      description: >
+        Invalid input. A value past its maxLength gets this answer, & the
+        message names the field & its limit.
       content:
         application/json:
           schema: *error-schema
@@ -14258,6 +14308,10 @@ components:
             message: 'X account not found.'
 
   schemas:
+    NextCursor:
+      description: Cursor for the next page. Send it unchanged.
+      type: string
+      example: 'DAACCgACGRElMJcAAA'
     WholeNumber:
       description: Whole number from 0.
       type: integer
@@ -15565,7 +15619,8 @@ components:
           example:
             - *user-tweet-example
         has_next_page: *boolean-example-true
-        next_cursor: *cursor-example-schema
+        next_cursor:
+          $ref: '#/components/schemas/NextCursor'
         readBackTo:
           type: string
           format: date-time
@@ -16234,7 +16289,8 @@ components:
             type: string
           example: ['9876543210', '44196397']
         has_next_page: *boolean-example-true
-        next_cursor: *cursor-example-schema
+        next_cursor:
+          $ref: '#/components/schemas/NextCursor'
     PaginatedUsers:
       description: >
         Profile coverage preserves shape, billing, aliases, and filters. Follow
@@ -16365,7 +16421,8 @@ components:
           example:
             - *similar-user-example
         has_next_page: *boolean-example-true
-        next_cursor: *cursor-example-schema
+        next_cursor:
+          $ref: '#/components/schemas/NextCursor'
     SearchSuggestions:
       description: >
         What X suggests for a partial search query. Each list keeps X's order. A
@@ -16800,7 +16857,8 @@ components:
           items:
             $ref: '#/components/schemas/XList'
         has_next_page: *boolean-example-true
-        next_cursor: *cursor-example-schema
+        next_cursor:
+          $ref: '#/components/schemas/NextCursor'
     UserListCoverageStrategy:
       description: Result counts and stop reason for 1 relationship strategy.
       type: object
@@ -19464,7 +19522,8 @@ components:
           items:
             $ref: '#/components/schemas/Job'
         has_next_page: *boolean-example-true
-        next_cursor: *cursor-example-schema
+        next_cursor:
+          $ref: '#/components/schemas/NextCursor'
 
     CommunityNotesContributor:
       description: >
@@ -19740,7 +19799,8 @@ components:
           items:
             $ref: '#/components/schemas/CommunityNote'
         has_next_page: *boolean-example-true
-        next_cursor: *cursor-example-schema
+        next_cursor:
+          $ref: '#/components/schemas/NextCursor'
 
     TweetMedia:
       description: Tweet media.
