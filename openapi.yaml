@@ -2723,14 +2723,15 @@ paths:
           description: Search exported result text.
         - name: sinceDate
           in: query
-          schema: { type: string, format: date, maxLength: 64 }
+          schema:
+            { type: string, format: date, maxLength: &time-max-length 128 }
           description:
             Include results on or after this date, from 00:00 UTC. An ISO 8601
             time starts at that instant. The filter drops results without a post
             date. An empty value sets no filter.
         - name: untilDate
           in: query
-          schema: { type: string, format: date, maxLength: 64 }
+          schema: { type: string, format: date, maxLength: *time-max-length }
           description:
             Include results on or before this date, inclusive, through 23:59:59
             UTC. An ISO 8601 time ends at that instant. The filter drops results
@@ -3711,7 +3712,7 @@ paths:
           in: query
           schema:
             type: string
-            maxLength: 64
+            maxLength: *time-max-length
           description:
             A past time, to read what was trending on Twitter then. Takes an ISO
             8601 time, a date such as 2026-10-13, or Unix seconds. A time
@@ -3902,7 +3903,7 @@ paths:
           in: query
           schema:
             type: string
-            maxLength: 64
+            maxLength: *time-max-length
           description:
             Start of the range. Takes an ISO 8601 time, a date such as
             2026-10-13, or Unix seconds. A time without a zone reads as UTC. It
@@ -3915,7 +3916,7 @@ paths:
           in: query
           schema:
             type: string
-            maxLength: 64
+            maxLength: *time-max-length
           description:
             End of the range, which it leaves out. Takes the forms of from, so
             from=2d with to=1d reads the day before the last 24 hours. Defaults
@@ -3925,7 +3926,7 @@ paths:
           in: query
           schema:
             type: string
-            maxLength: 64
+            maxLength: *time-max-length
             default: 1h
           description:
             Step between 2 returned lists, as a number & m, h or d, such as 15m,
@@ -4590,7 +4591,7 @@ paths:
           schema:
             type: string
             format: date
-            maxLength: 64
+            maxLength: *time-max-length
           description:
             Start date as a UTC day, written YYYY-MM-DD. 25/12/2026 & 12/25/2026
             also work, since each has 1 reading. A date that fits both orders
@@ -4600,7 +4601,7 @@ paths:
           schema:
             type: string
             format: date
-            maxLength: 64
+            maxLength: *time-max-length
           description:
             End date as a UTC day, inclusive, so its own posts count. It takes
             the same date forms as sinceDate.
@@ -12571,7 +12572,7 @@ components:
     TweetSinceTime:
       name: sinceTime
       in: query
-      schema: { type: string, maxLength: 64 }
+      schema: { type: string, maxLength: *time-max-length }
       description: >
         Inclusive ISO bound for Tweet creation time, such as
         2026-09-25T19:20:41Z. Unix seconds also work. A time without an offset
@@ -12579,7 +12580,7 @@ components:
     TweetUntilTime:
       name: untilTime
       in: query
-      schema: { type: string, maxLength: 64 }
+      schema: { type: string, maxLength: *time-max-length }
       description: >
         Exclusive ISO bound for Tweet creation time. Unix seconds also work. A
         time without an offset is UTC.
@@ -12836,7 +12837,7 @@ components:
       schema:
         type: string
         format: date
-        maxLength: 64
+        maxLength: *time-max-length
       description: Start date in YYYY-MM-DD format, as a UTC day.
     UntilDate:
       name: untilDate
@@ -12844,7 +12845,7 @@ components:
       schema:
         type: string
         format: date
-        maxLength: 64
+        maxLength: *time-max-length
       description:
         End date in YYYY-MM-DD format, as a UTC day, inclusive, so its own posts
         count.
@@ -12970,7 +12971,7 @@ components:
       in: query
       schema:
         type: string
-        maxLength: 64
+        maxLength: *time-max-length
         example: '7d'
       description: >
         Keeps Tweets from a recent window, such as 90m or 7d. Use a whole number
@@ -13717,9 +13718,10 @@ components:
     PaymentRequired:
       description: >
         Payment required. MPP reads include `WWW-Authenticate`. Authenticated
-        reads include balances and checkout. A failed request never creates
-        checkout. A caller on a plan gets top-up only, plus `credits_renew_at`
-        when the plan renews. Guest keys offer top-up.
+        reads include balances, plus checkout when the key can open it. A key
+        that reads only gets the account page instead. A failed request never
+        creates checkout. A caller on a plan gets top-up only, plus
+        `credits_renew_at` when the plan renews. Guest keys offer top-up.
       headers:
         WWW-Authenticate:
           description:
@@ -13733,12 +13735,13 @@ components:
             oneOf:
               - $ref: '#/components/schemas/XWritePaymentRequired'
               - $ref: '#/components/schemas/AuthenticatedPaymentRequired'
+              - $ref: '#/components/schemas/AccountPagePaymentRequired'
               - $ref: '#/components/schemas/GuestPaymentRequired'
               - allOf:
                   - $ref: '#/components/schemas/Error'
                   - type: object
                     propertyNames:
-                      not: { const: payment_options, type: string }
+                      not: { enum: [next_step, payment_options] }
                       type: string
           example:
             balance: '0'
@@ -17546,9 +17549,7 @@ components:
       description:
         Authenticated credit or subscription error with confirmation-gated
         hosted checkout actions. A caller on a plan, including one whose payment
-        failed, gets no subscription option. A key that reads only cannot open
-        checkout, so it gets the account page as its next step and no
-        payment_options, top_up_endpoint or top_up_url.
+        failed, gets no subscription option.
       type: object
       additionalProperties: false
       required:
@@ -17557,7 +17558,10 @@ components:
         - error
         - message
         - next_step
+        - payment_options
         - required
+        - top_up_endpoint
+        - top_up_url
       properties:
         balance:
           type: string
@@ -17586,16 +17590,10 @@ components:
           example: Insufficient credits. Top up or subscribe to continue.
         next_step:
           type: string
-          description:
-            What to do next. A key that reads only gets the account page, since
-            it cannot open checkout.
-          enum:
-            - Ask the user to confirm a payment option before creating checkout.
-            - Ask the user to top up at /dashboard/account. This key cannot open
-              checkout.
+          const:
+            Ask the user to confirm a payment option before creating checkout.
         payment_options:
           type: object
-          description: Checkout actions. Absent for a key that reads only.
           additionalProperties: false
           required: [credits]
           properties:
@@ -17680,6 +17678,31 @@ components:
         top_up_url:
           type: string
           const: POST /api/v1/credits/topup
+    AccountPagePaymentRequired:
+      description:
+        Authenticated credit or subscription error for a key that reads only.
+        Such a key cannot open checkout. The answer points to the account page
+        instead.
+      type: object
+      additionalProperties: false
+      required: [balance, dashboard, error, message, next_step, required]
+      properties:
+        balance:
+          $ref: '#/components/schemas/AuthenticatedPaymentRequired/properties/balance'
+        credits_renew_at:
+          $ref: '#/components/schemas/AuthenticatedPaymentRequired/properties/credits_renew_at'
+        dashboard:
+          $ref: '#/components/schemas/AuthenticatedPaymentRequired/properties/dashboard'
+        error: *credit-access-error-schema
+        message:
+          $ref: '#/components/schemas/AuthenticatedPaymentRequired/properties/message'
+        next_step:
+          type: string
+          const:
+            Ask the user to top up at /dashboard/account. This key cannot open
+            checkout.
+        required:
+          $ref: '#/components/schemas/AuthenticatedPaymentRequired/properties/required'
     MppPaymentRequired:
       description:
         Anonymous payment requirement for a direct MPP operation. The response
@@ -18262,14 +18285,14 @@ components:
           oneOf:
             - type: string
               format: date-time
-              maxLength: 64
+              maxLength: *time-max-length
             - $ref: '#/components/schemas/WholeNumber'
           description: Reply start time as ISO 8601 or Unix seconds.
         untilTime:
           oneOf:
             - type: string
               format: date-time
-              maxLength: 64
+              maxLength: *time-max-length
             - $ref: '#/components/schemas/WholeNumber'
           description: Reply end time as ISO 8601 or Unix seconds.
         minViews:
@@ -18352,7 +18375,7 @@ components:
             424 `search_unavailable` & charges nothing. Use near alone.
         withinTime:
           type: string
-          maxLength: 64
+          maxLength: *time-max-length
           description: Restrict Tweets to this recent time window.
         nativeRetweets:
           type: boolean
@@ -18475,12 +18498,12 @@ components:
         sinceDate:
           type: string
           format: date
-          maxLength: 64
+          maxLength: *time-max-length
           description: Tweet or Community search start date.
         untilDate:
           type: string
           format: date
-          maxLength: 64
+          maxLength: *time-max-length
           description: Tweet or Community search end date.
         mediaType:
           type: string
@@ -23624,7 +23647,7 @@ components:
         sinceTime:
           type: [string, integer]
           minLength: 1
-          maxLength: 64
+          maxLength: *time-max-length
           minimum: 0
           description:
             Inclusive start of the search, such as 2026-09-25T00:00:00Z. Unix
@@ -23633,7 +23656,7 @@ components:
         untilTime:
           type: [string, integer]
           minLength: 1
-          maxLength: 64
+          maxLength: *time-max-length
           minimum: 0
           description:
             Exclusive end of the search, such as 2026-09-26T00:00:00Z. Unix
