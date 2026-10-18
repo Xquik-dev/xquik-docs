@@ -8658,6 +8658,66 @@ paths:
         '503':
           $ref: '#/components/responses/ReadBusy'
 
+  /x/communities/{id}/analytics:
+    get:
+      operationId: getCommunityAnalytics
+      summary: Get community activity & growth
+      description:
+        Returns community activity for X's latest period. Includes likes, new
+        members, posts, replies & unique posters. Each metric includes its
+        change in percent from the period before. Each request costs 1 credit.
+      tags:
+        - Communities
+      security: *read-auth
+      x-payment-info:
+        offers:
+          - amount: '150'
+            currency: *tempo-usd
+            intent: charge
+            method: tempo
+      parameters:
+        - $ref: '#/components/parameters/CommunityPathId'
+        - $ref: '#/components/parameters/Fields'
+        - $ref: '#/components/parameters/Omit'
+      responses:
+        '200':
+          description: Community activity & growth for X's latest period
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommunityAnalytics'
+              example:
+                id: '1493446837214187523'
+                periodEndsAt: '2026-10-16T23:59:59.999Z'
+                metrics:
+                  likes:
+                    count: 15298
+                    changePercent: -1.2076202776880853
+                  newMembers:
+                    count: 557
+                    changePercent: -1.5901060070671376
+                  posts:
+                    count: 5108
+                    changePercent: 0.5907837731390311
+                  replies:
+                    count: 6851
+                    changePercent: -0.8251302837290099
+                  uniquePosters:
+                    count: 1800
+                    changePercent: -0.33222591362126247
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '401': *unauthenticated-response
+        '402': *payment-required-response
+        '404': *not-found-response
+        '424':
+          $ref: '#/components/responses/XApiError'
+        '429': *rate-limit-exceeded-response-2
+        '502':
+          $ref: '#/components/responses/XApiError'
+        '503':
+          $ref: '#/components/responses/ReadBusy'
+
   /x/communities/{id}/members:
     get:
       operationId: getCommunityMembers
@@ -22147,6 +22207,71 @@ components:
           description:
             Cursor for the next page of communities. Empty at the end.
           example: 'WzM1LjUxMjQ5N10='
+    CommunityAnalyticsMetric:
+      description:
+        A community metric for X's latest period & its percent change.
+      type: object
+      required: [count, changePercent]
+      properties:
+        count:
+          type: integer
+          minimum: 0
+          description: Total for this metric during X's latest period.
+          example: 15298
+        changePercent:
+          type: number
+          description:
+            Change in percent from the period before. Values stay unrounded.
+          example: -1.2076202776880853
+    CommunityAnalytics:
+      description: Community activity & growth for X's latest period.
+      type: object
+      required: [id, periodEndsAt, metrics]
+      properties:
+        id:
+          type: string
+          description: The community ID from your request.
+          example: '1493446837214187523'
+        periodEndsAt:
+          type: string
+          format: date-time
+          description: The end of X's latest period, in UTC.
+          example: '2026-10-16T23:59:59.999Z'
+        metrics:
+          type: object
+          description:
+            The period's activity, each with its change from the period before.
+            likes counts likes on community posts, newMembers the accounts that
+            joined, posts the community posts, replies the replies to them, and
+            uniquePosters the distinct accounts that posted.
+          required: [likes, newMembers, posts, replies, uniquePosters]
+          example:
+            likes:
+              count: 15298
+              changePercent: -1.2076202776880853
+            newMembers:
+              count: 557
+              changePercent: -1.5901060070671376
+            posts:
+              count: 5108
+              changePercent: 0.5907837731390311
+            replies:
+              count: 6851
+              changePercent: -0.8251302837290099
+            uniquePosters:
+              count: 1800
+              changePercent: -0.33222591362126247
+          properties:
+            likes:
+              $ref: '#/components/schemas/CommunityAnalyticsMetric'
+            newMembers:
+              $ref: '#/components/schemas/CommunityAnalyticsMetric'
+            posts:
+              $ref: '#/components/schemas/CommunityAnalyticsMetric'
+            replies:
+              $ref: '#/components/schemas/CommunityAnalyticsMetric'
+            uniquePosters:
+              $ref: '#/components/schemas/CommunityAnalyticsMetric'
     Community:
       description: Public X Community, as every Community read returns it.
       type: object

@@ -1,0 +1,317 @@
+---
+title: "X community analytics API for activity & growth"
+sidebarTitle: "Get community analytics"
+description: "Get an X community's likes, new members, posts, replies & unique posters for its latest period, with each change from the period before. Costs 1 credit."
+api: "GET /x/communities/{id}/analytics"
+keywords:
+  [
+    "X community analytics",
+    "Twitter community analytics",
+    "X communities API",
+    "community growth",
+    "community activity",
+    "community engagement",
+  ]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+import AudienceCommunityApiLinks from "/snippets/x-audience-community-api-links.mdx";
+import FieldSelectionParams from "/snippets/field-selection-params.mdx";
+
+{/* GENERATED RESPONSE EXAMPLES START */}
+
+<Panel>
+
+<Tabs defaultTabIndex={0} sync={false}>
+
+  <Tab title="200" id="response-x-community-analytics-200">
+
+    ```json
+    {
+      "id": "1493446837214187523",
+      "periodEndsAt": "2026-10-16T23:59:59.999Z",
+      "metrics": {
+        "likes": {
+          "count": 15298,
+          "changePercent": -1.2076202776880853
+        },
+        "newMembers": {
+          "count": 557,
+          "changePercent": -1.5901060070671376
+        },
+        "posts": {
+          "count": 5108,
+          "changePercent": 0.5907837731390311
+        },
+        "replies": {
+          "count": 6851,
+          "changePercent": -0.8251302837290099
+        },
+        "uniquePosters": {
+          "count": 1800,
+          "changePercent": -0.33222591362126247
+        }
+      }
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="400" id="response-x-community-analytics-400">
+
+    ```json
+    {
+      "error": "invalid_input",
+      "message": "Invalid input. Check the request body."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="401" id="response-x-community-analytics-401">
+
+    ```json
+    {
+      "error": "unauthenticated",
+      "message": "Authentication required. Provide a valid API key or bearer token."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="402" id="response-x-community-analytics-402">
+
+    ```json
+    {
+      "error": "insufficient_credits",
+      "message": "Insufficient credits. Top up or subscribe to continue."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="404" id="response-x-community-analytics-404">
+
+    ```json
+    {
+      "error": "not_found",
+      "message": "Resource not found."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="424" id="response-x-community-analytics-424">
+
+    ```json
+    {
+      "error": "x_api_unavailable",
+      "message": "X data source temporarily unavailable. Try again later."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="429" id="response-x-community-analytics-429">
+
+    ```json
+    {
+      "error": "rate_limit_exceeded",
+      "message": "Too many requests. Try again later.",
+      "retryAfter": 60
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="502" id="response-x-community-analytics-502">
+
+    ```json
+    {
+      "error": "x_api_unavailable",
+      "message": "X data source temporarily unavailable. Try again later."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="503" id="response-x-community-analytics-503">
+
+    ```json
+    {
+      "error": "x_api_unavailable",
+      "message": "Xquik is busy right now. Retry shortly."
+    }
+    ```
+
+  </Tab>
+</Tabs>
+
+</Panel>
+{/* GENERATED RESPONSE EXAMPLES END */}
+<LlmsDirective />
+
+Use the X community analytics API to see how active a community is. One call returns 5 activity counts for the latest period, each with its change in percent from the period before.
+
+## What each call returns
+
+- `likes` counts likes on the community's posts.
+- `newMembers` counts the accounts that joined.
+- `posts` counts the posts in the community.
+- `replies` counts the replies to those posts.
+- `uniquePosters` counts the distinct accounts that posted.
+
+Each metric has a `count` and a `changePercent`. A negative `changePercent` means the count fell. `periodEndsAt` gives the end of the period in UTC.
+
+## Track community growth over time
+
+Call the endpoint once a day for each community you follow. Store `periodEndsAt` with the 5 counts. A new `periodEndsAt` means a new period, so you can chart each metric over time.
+
+Compare communities with the same 5 metrics. `uniquePosters` against `posts` shows whether a few accounts write most posts.
+
+<Callout icon="coins" color="#5c3327">
+  Each successful call costs 1 credit. A refused ID, a missing community or a failed read costs
+  nothing.
+</Callout>
+
+<CodeGroup>
+
+```bash cURL
+curl "https://xquik.com/api/v1/x/communities/1493446837214187523/analytics" \
+  -H "x-api-key: $XQUIK_API_KEY"
+```
+
+```python Python
+import os
+
+import requests
+
+response = requests.get(
+    "https://xquik.com/api/v1/x/communities/1493446837214187523/analytics",
+    headers={"x-api-key": os.environ["XQUIK_API_KEY"]},
+    timeout=30,
+)
+response.raise_for_status()
+analytics = response.json()
+print(analytics["periodEndsAt"], analytics["metrics"]["posts"]["count"])
+```
+
+</CodeGroup>
+
+## Path parameters
+
+<ParamField path="id" type="string" required>
+  Numeric X Community ID, such as `1493446837214187523`. Copy it from the community's
+  `x.com/i/communities` link. Any other value gets a free 400.
+</ParamField>
+
+## Query parameters
+
+<FieldSelectionParams />
+
+## Headers
+
+<ParamField header="x-api-key" type="string">
+  Your API key. Send this header or `Authorization`.
+</ParamField>
+
+<ParamField header="Authorization" type="string">
+  `Bearer` followed by your API key or OAuth token.
+</ParamField>
+
+## Response
+
+### 200 OK
+
+<ResponseField name="id" type="string">
+  The community ID from your request.
+</ResponseField>
+<ResponseField name="periodEndsAt" type="string">
+  ISO 8601 end of the latest period, in UTC.
+</ResponseField>
+<ResponseField name="metrics" type="object">
+  The period's activity. Each metric holds `count` & `changePercent`.
+
+<Expandable title="metrics">
+  <ResponseField name="likes" type="object">
+    Likes on the community's posts.
+  </ResponseField>
+  <ResponseField name="newMembers" type="object">
+    Accounts that joined the community.
+  </ResponseField>
+  <ResponseField name="posts" type="object">
+    Posts in the community.
+  </ResponseField>
+  <ResponseField name="replies" type="object">
+    Replies to the community's posts.
+  </ResponseField>
+  <ResponseField name="uniquePosters" type="object">
+    Distinct accounts that posted.
+  </ResponseField>
+</Expandable>
+
+</ResponseField>
+
+Each metric object has these fields.
+
+<ResponseField name="count" type="integer">
+  The total for the period. It is never negative.
+</ResponseField>
+<ResponseField name="changePercent" type="number">
+  The change in percent from the period before, unrounded. A fall is negative.
+</ResponseField>
+
+### 400 Invalid community ID
+
+```json
+{ "error": "invalid_community_id" }
+```
+
+The ID is not a numeric Community ID. Send the number from the community's link. The call costs nothing.
+
+### 401 Unauthenticated
+
+```json
+{ "error": "unauthenticated" }
+```
+
+Missing or invalid API key.
+
+### 402 Payment required
+
+Account keys get account options. Guest keys get guest top-up only.
+Anonymous calls get a direct MPP `WWW-Authenticate: Payment` challenge.
+They also get a guest wallet creation action.
+No checkout starts automatically. Confirm any payment action.
+
+### 404 Community not found
+
+```json
+{ "error": "not_found" }
+```
+
+No community has this ID. Check the ID. The call costs nothing.
+
+### 429 Rate limit exceeded
+
+```json
+{ "error": "rate_limit_exceeded", "retryAfter": 60 }
+```
+
+You exceeded your tier rate limit. Wait for the `Retry-After` header before retrying.
+
+### 503 Read unavailable
+
+```json
+{ "error": "x_api_unavailable" }
+```
+
+The read failed. Retry shortly. The call costs nothing.
+
+<Note>
+
+**Next steps.** [Community Info](/api-reference/x/community-info) for the community's name & rules, or [Community Tweets](/api-reference/x/community-tweets) to read its posts.
+
+</Note>
+
+<AudienceCommunityApiLinks />
