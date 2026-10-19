@@ -30,8 +30,8 @@ const SKIPPED_PUBLIC_SCAN_DIRS = new Set<string>([".git", "node_modules", ".gith
 const CREDITS_QUICK_TOPUP_PAGE = "api-reference/credits/quick-topup.mdx";
 const API_KEYS_CREATE_PAGE = "api-reference/api-keys/create.mdx";
 const WRITE_ACTION_LIFECYCLE_SNIPPET_PATH = "snippets/write-action-lifecycle-response.mdx";
-const DOCS_FAVICON_SHA256 = "7b22cb7c5f5f9f154e1327210b7878e03e1028ef33857282701feb5fd5e96960";
-const DOCS_X_ONLY_ICON_SHA256 = "7002c1dd82b5b903d69777fa212f39b0e0410cb156e7bcb1b4426fcec3a7cdc5";
+const DOCS_FAVICON_SHA256 = "0ea82cbe1eda6dcd39d681af88f84b5f690327f15ab1459afc30a0cb51339791";
+const DOCS_X_ONLY_ICON_SHA256 = "cc21f3f3060a13057310819df2c970737314198c2ba51af76ee05a0a14c375bf";
 const MCP_GUIDANCE_FILES = [
   "mcp/coding-agents.mdx",
   "mcp/overview.mdx",
