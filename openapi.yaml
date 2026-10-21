@@ -7521,10 +7521,12 @@ paths:
           description: Billing session ID returned by the top-up billing flow.
       responses:
         '303':
-          description: Redirects to the active payment page.
+          description:
+            Redirects to the active payment page. A browser whose checkout ended
+            or is unknown goes to the account page.
           headers:
             Location:
-              description: Payment page URL.
+              description: Payment or account page URL.
               schema: &uri-string
                 type: string
                 format: uri
@@ -7612,12 +7614,17 @@ paths:
     post:
       operationId: quickTopUpCredits
       x-mcp-exclusion-reason: *browser-checkout
-      description:
-        Charges a saved payment method only after explicit confirmation.
+      description: >
+        Charges a saved payment method only after explicit confirmation. Send 1
+        Idempotency-Key per purchase. Reuse it within 24 hours to retry a lost
+        answer, & the retry replays the first charge. A second top-up for the
+        same account answers 409 while the first runs.
       summary: Charge saved card for credits
       tags:
         - Subscribe
       security: [{ cookieSession: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
       requestBody:
         required: true
         description: Dollar amount to charge the saved payment method.
@@ -7704,6 +7711,18 @@ paths:
         '401': *unauthenticated-response
         '403':
           $ref: '#/components/responses/SessionRequired'
+        '409':
+          description:
+            Another top-up for this account is still running. Check the balance
+            before you try again.
+          content:
+            application/json:
+              schema: *error-schema
+              example:
+                error: topup_in_progress
+                message:
+                  A top-up is already running. Check your balance before you try
+                  again.
         '429': *rate-limit-exceeded-response-2
   /x/tweets/{id}/favoriters:
     parameters:
@@ -16281,7 +16300,8 @@ components:
         pagesAttempted:
           type: integer
           minimum: 0
-          description: Pages attempted across strategies.
+          description:
+            Pages attempted across strategies & extra reads of the post's views.
         strategiesAttempted:
           type: array
           description: Pagination & contribution evidence per strategy.
@@ -17875,6 +17895,7 @@ components:
                 - too_many_ids
                 - too_many_streams
                 - too_many_tweets
+                - topup_in_progress
                 - unknown_field
                 - unsupported_media_combination
                 - unsupported_media_type
@@ -20646,7 +20667,9 @@ components:
           anyOf:
             - $ref: '#/components/schemas/Broadcast'
             - type: 'null'
-          description: Latest broadcast, live or ended. Null when X shows none.
+          description:
+            Latest broadcast, live or ended. Null when X shows none. Holds only
+            its ID & state when X can't read it in full.
           example:
             id: '1DxLdZyVPMMxm'
             title: "NASA's SpaceX Crew-12 Re-Entry & Splashdown"
@@ -21176,7 +21199,7 @@ components:
             entities:
               type: array
               description: Links inside the notice, by character range.
-              items:
+              items: &notice-entity
                 type: object
                 properties:
                   fromIndex: *whole-number
@@ -21233,8 +21256,7 @@ components:
         quotedTweetUnavailable:
           type: object
           description:
-            Why X shows no quoted post. Omitted when X names no reason, as its
-            legacy answers never do.
+            Why X shows no quoted post. Omitted when X names no reason.
           required: [reason]
           properties:
             reason:
@@ -21456,6 +21478,44 @@ components:
           $ref: '#/components/schemas/TweetTombstone'
         interstitial:
           $ref: '#/components/schemas/TweetInterstitial'
+        softIntervention:
+          type: object
+          description: >-
+            The label X shows under a post whose reach it limits. It links to
+            the page that explains it.
+          properties:
+            displayType:
+              type: string
+              description:
+                The label's kind. `Fosnr` marks a post X keeps up but shows to
+                fewer people.
+              example: Fosnr
+            engagementNudge:
+              type: boolean
+              description:
+                Whether X prompts readers before they engage with the post.
+            text:
+              type: object
+              properties:
+                text:
+                  type: string
+                  description: The label's text.
+                  example: This Post may violate X's rules against Abuse.
+                rtl:
+                  type: boolean
+                  description: Whether the label reads right to left.
+                entities:
+                  type: array
+                  description: Links inside the label, by character range.
+                  items: *notice-entity
+            url:
+              type: object
+              description: The page that explains the label.
+              properties:
+                url:
+                  type: string
+                  example: 'https://help.x.com/rules-and-policies/enforcement-options'
+                urlType: { type: string, example: ExternalUrl }
         unmentionedUserIds:
           type: array
           description: User IDs that left this conversation.
