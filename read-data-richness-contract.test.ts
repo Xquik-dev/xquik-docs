@@ -88,6 +88,7 @@ const TWEET_FIELDS = [
   "possiblySensitive",
   "previousCounts",
   "reactionContext",
+  "softIntervention",
   "sportsContext",
   "subscriberBadge",
   "viewState",
