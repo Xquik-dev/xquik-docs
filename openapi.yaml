@@ -105,6 +105,8 @@ tags:
     description: X account monitoring with 1-second checks
   - name: Spaces
     description: X Space details, host, and speakers
+  - name: Sports
+    description: NFL & college football games, scoreboards, plays & box scores
   - name: Subscribe
     description: Subscription, billing, and credits
   - name: Support
@@ -11019,6 +11021,201 @@ paths:
         '503':
           $ref: '#/components/responses/ReadBusy'
 
+  /x/sports/{league}/games:
+    get:
+      operationId: listFootballGames
+      summary: List football games
+      description:
+        Lists NFL or college football games in a time window, with teams &
+        scores. Use it to find game IDs & team IDs. Without from or to, X picks
+        about 5 weeks around today. Each request costs 1 credit.
+      tags:
+        - Sports
+      security: *read-auth
+      x-payment-info:
+        offers:
+          - amount: '150'
+            currency: *tempo-usd
+            intent: charge
+            method: tempo
+      parameters:
+        - $ref: '#/components/parameters/SportsLeague'
+        - name: from
+          in: query
+          schema:
+            type: string
+            maxLength: *time-max-length
+          description:
+            Start of the window. Takes an ISO 8601 date or time, such as
+            2026-10-01, or Unix seconds. A time without a zone reads as UTC.
+            Defaults to 7 days before to. Alias sinceTime.
+          example: '2026-10-01'
+        - name: to
+          in: query
+          schema:
+            type: string
+            maxLength: *time-max-length
+          description:
+            End of the window. Takes the forms of from. Defaults to 7 days after
+            from. Alias untilTime.
+          example: '2026-10-08'
+        - name: team
+          in: query
+          schema:
+            type: string
+            maxLength: 19
+            pattern: '^[1-9][0-9]{0,18}$'
+          description:
+            Keeps only 1 team's games, by team ID. Each game lists its teamIds.
+            Aliases teamId & team_id.
+          example: '689566294702555136'
+        - $ref: '#/components/parameters/Fields'
+        - $ref: '#/components/parameters/Omit'
+      responses:
+        '200':
+          description: The league's games in the window, earliest first
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FootballSchedule'
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '401': *unauthenticated-response
+        '402': *payment-required-response
+        '424':
+          $ref: '#/components/responses/XApiError'
+        '429': *rate-limit-exceeded-response-2
+        '502':
+          $ref: '#/components/responses/XApiError'
+        '503':
+          $ref: '#/components/responses/ReadBusy'
+
+  /x/sports/{league}/games/{id}:
+    get:
+      operationId: getFootballScoreboard
+      summary: Get a football scoreboard
+      description:
+        Returns 1 game's scoreboard. It has the teams, the score by period, the
+        status & clock, down & distance, the venue & the latest play. Each
+        request costs 1 credit.
+      tags:
+        - Sports
+      security: *read-auth
+      x-payment-info:
+        offers:
+          - amount: '150'
+            currency: *tempo-usd
+            intent: charge
+            method: tempo
+      parameters:
+        - $ref: '#/components/parameters/SportsLeague'
+        - $ref: '#/components/parameters/SportsGameId'
+        - $ref: '#/components/parameters/Fields'
+        - $ref: '#/components/parameters/Omit'
+      responses:
+        '200':
+          description: The game's scoreboard
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FootballScoreboard'
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '401': *unauthenticated-response
+        '402': *payment-required-response
+        '404': *not-found-response
+        '424':
+          $ref: '#/components/responses/XApiError'
+        '429': *rate-limit-exceeded-response-2
+        '502':
+          $ref: '#/components/responses/XApiError'
+        '503':
+          $ref: '#/components/responses/ReadBusy'
+
+  /x/sports/{league}/games/{id}/box-score:
+    get:
+      operationId: getFootballBoxScore
+      summary: Get a football box score
+      description:
+        Returns each team's totals & each player's stats for 1 game. Stats cover
+        passing, rushing, receiving, defense, kicking & returns. A game that has
+        not started has no stats yet. Each request costs 1 credit.
+      tags:
+        - Sports
+      security: *read-auth
+      x-payment-info:
+        offers:
+          - amount: '150'
+            currency: *tempo-usd
+            intent: charge
+            method: tempo
+      parameters:
+        - $ref: '#/components/parameters/SportsLeague'
+        - $ref: '#/components/parameters/SportsGameId'
+        - $ref: '#/components/parameters/Fields'
+        - $ref: '#/components/parameters/Omit'
+      responses:
+        '200':
+          description: The game's team & player stats
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FootballBoxScore'
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '401': *unauthenticated-response
+        '402': *payment-required-response
+        '404': *not-found-response
+        '424':
+          $ref: '#/components/responses/XApiError'
+        '429': *rate-limit-exceeded-response-2
+        '502':
+          $ref: '#/components/responses/XApiError'
+        '503':
+          $ref: '#/components/responses/ReadBusy'
+
+  /x/sports/{league}/games/{id}/plays:
+    get:
+      operationId: getFootballPlays
+      summary: Get football play-by-play
+      description:
+        Returns every drive & play of 1 game, by quarter. Each play has its
+        clock, down & distance, details, penalties & linked posts. Each request
+        costs 1 credit.
+      tags:
+        - Sports
+      security: *read-auth
+      x-payment-info:
+        offers:
+          - amount: '150'
+            currency: *tempo-usd
+            intent: charge
+            method: tempo
+      parameters:
+        - $ref: '#/components/parameters/SportsLeague'
+        - $ref: '#/components/parameters/SportsGameId'
+        - $ref: '#/components/parameters/Fields'
+        - $ref: '#/components/parameters/Omit'
+      responses:
+        '200':
+          description: The game's drives & plays
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FootballPlays'
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '401': *unauthenticated-response
+        '402': *payment-required-response
+        '404': *not-found-response
+        '424':
+          $ref: '#/components/responses/XApiError'
+        '429': *rate-limit-exceeded-response-2
+        '502':
+          $ref: '#/components/responses/XApiError'
+        '503':
+          $ref: '#/components/responses/ReadBusy'
+
   /x/tweets/{id}/quotes:
     get:
       operationId: getTweetQuotes
@@ -12786,6 +12983,29 @@ components:
       description:
         X Community ID, a number up to 19 digits. Another value gets a free 400
         `invalid_community_id` before X is read.
+    SportsLeague:
+      name: league
+      in: path
+      required: true
+      schema:
+        type: string
+        enum: [nfl, ncaafb]
+        example: nfl
+      description:
+        nfl for the NFL or ncaafb for college football, in any case. Another
+        value gets a free 400 `invalid_league` before X is read.
+    SportsGameId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        maxLength: 19
+        pattern: '^[1-9][0-9]{0,18}$'
+        example: '2055084502741811200'
+      description:
+        Game ID, a number up to 19 digits. GET /x/sports/{league}/games lists
+        them. Another value gets a free 400 `invalid_game_id` before X is read.
     CommunityWriteId:
       name: id
       in: path
@@ -23316,6 +23536,1760 @@ components:
               $ref: '#/components/schemas/CommunityAnalyticsMetric'
             uniquePosters:
               $ref: '#/components/schemas/CommunityAnalyticsMetric'
+    SportsTeam:
+      description: A team, as X's sports pages show it.
+      type: object
+      required:
+        [
+          id,
+          name,
+          shortName,
+          abbreviation,
+          alternateId,
+          location,
+          colors,
+          logos,
+          xUserId,
+        ]
+      example:
+        id: '689566294702555136'
+        name: San Francisco 49ers
+        shortName: 49ers
+        abbreviation: SF
+        alternateId: f0e724b0-4cbf-495a-be47-013907608da9
+        location: null
+        colors:
+          - r: 170
+            g: 0
+            b: 0
+          - r: 173
+            g: 153
+            b: 93
+        logos:
+          default: 'https://pbs.twimg.com/semantic_core_img/2094846255792873472/BUi2WqsC?format=png&name=orig'
+          light: 'https://pbs.twimg.com/semantic_core_img/2094841642129739776/YCBRBHV5?format=png&name=orig'
+          dark: 'https://pbs.twimg.com/semantic_core_img/2094848191451598848/82O7RY0H?format=png&name=orig'
+        xUserId: '43403778'
+      properties:
+        id:
+          type: string
+          description: The team ID that games & players refer to.
+          example: '689566294702555136'
+        name:
+          type: [string, 'null']
+          description: The team's full name.
+          example: San Francisco 49ers
+        shortName:
+          type: [string, 'null']
+          description: The team's short name.
+          example: 49ers
+        abbreviation:
+          type: [string, 'null']
+          description: The team's abbreviation.
+          example: SF
+        alternateId:
+          type: [string, 'null']
+          description: Another ID X keeps for the team.
+          example: f0e724b0-4cbf-495a-be47-013907608da9
+        location:
+          type: [string, 'null']
+          description:
+            The school or place a college team plays for. X sends it only in
+            college football schedules.
+          example: Virginia Tech
+        colors:
+          type: array
+          description: The team's colors, as red, green & blue from 0 to 255.
+          example:
+            - r: 170
+              g: 0
+              b: 0
+          items:
+            type: object
+            required: [r, g, b]
+            properties:
+              r:
+                type: [integer, 'null']
+                minimum: 0
+                maximum: 255
+                description: Red, from 0 to 255.
+                example: 170
+              g:
+                type: [integer, 'null']
+                minimum: 0
+                maximum: 255
+                description: Green, from 0 to 255.
+                example: 0
+              b:
+                type: [integer, 'null']
+                minimum: 0
+                maximum: 255
+                description: Blue, from 0 to 255.
+                example: 0
+        logos:
+          type: object
+          description: The team's logo images.
+          required: [default, light, dark]
+          example:
+            default: 'https://pbs.twimg.com/semantic_core_img/2094846255792873472/BUi2WqsC?format=png&name=orig'
+            light: 'https://pbs.twimg.com/semantic_core_img/2094841642129739776/YCBRBHV5?format=png&name=orig'
+            dark: 'https://pbs.twimg.com/semantic_core_img/2094848191451598848/82O7RY0H?format=png&name=orig'
+          properties:
+            default:
+              type: [string, 'null']
+              format: uri
+              description: The logo X shows by default.
+              example: 'https://pbs.twimg.com/semantic_core_img/2094846255792873472/BUi2WqsC?format=png&name=orig'
+            light:
+              type: [string, 'null']
+              format: uri
+              description: The logo for light backgrounds.
+              example: 'https://pbs.twimg.com/semantic_core_img/2094841642129739776/YCBRBHV5?format=png&name=orig'
+            dark:
+              type: [string, 'null']
+              format: uri
+              description: The logo for dark backgrounds.
+              example: 'https://pbs.twimg.com/semantic_core_img/2094848191451598848/82O7RY0H?format=png&name=orig'
+        xUserId:
+          type: [string, 'null']
+          description: The user ID of the team's X account.
+          example: '43403778'
+    FootballPlayer:
+      description: A football player, as X's sports pages show them.
+      type: object
+      required:
+        [
+          id,
+          teamId,
+          name,
+          shortName,
+          jersey,
+          position,
+          college,
+          birthPlace,
+          birthDate,
+          headshots,
+          xUser,
+        ]
+      example:
+        id: '1520565710329499648'
+        teamId: '689566294702555136'
+        name: Brock Purdy
+        shortName: B.Purdy
+        jersey: '13'
+        position: QB
+        college: Iowa State
+        birthPlace: Gilbert, AZ, USA
+        birthDate: '1999-12-27'
+        headshots:
+          original: 'https://ton.twimg.com/twitter-assets/sports-product/headshots/nfl/1520565710329499648_large_c96c3d47bd.png'
+          large: 'https://pbs.twimg.com/semantic_core_img/1960525277903106048/qEOJWYP6?format=png&name=orig'
+          medium: 'https://pbs.twimg.com/semantic_core_img/1960514226075602944/OZ6rz5aH?format=png&name=orig'
+          small: 'https://pbs.twimg.com/semantic_core_img/1960202905849405441/OnS0Xdd9?format=png&name=orig'
+        xUser:
+          id: '723177170382647296'
+          username: brockpurdy13
+          blueVerified: true
+      properties:
+        id:
+          type: string
+          description: The player ID that plays & stats refer to.
+          example: '1520565710329499648'
+        teamId:
+          type: [string, 'null']
+          description: The player's team, a key of teams.
+          example: '689566294702555136'
+        name:
+          type: [string, 'null']
+          description: The player's full name.
+          example: Brock Purdy
+        shortName:
+          type: [string, 'null']
+          description: The name play descriptions use.
+          example: B.Purdy
+        jersey:
+          type: [string, 'null']
+          description: The jersey number, as text.
+          example: '13'
+        position:
+          type: [string, 'null']
+          description: The position abbreviation, such as QB or DE.
+          example: QB
+        college:
+          type: [string, 'null']
+          description: The college the player came from.
+          example: Iowa State
+        birthPlace:
+          type: [string, 'null']
+          description: Where the player was born.
+          example: Gilbert, AZ, USA
+        birthDate:
+          type: [string, 'null']
+          description: The birth date, as YYYY-MM-DD.
+          example: '1999-12-27'
+        headshots:
+          type: object
+          description: Photos of the player. Any of them can be null.
+          required: [original, large, medium, small]
+          example:
+            original: 'https://ton.twimg.com/twitter-assets/sports-product/headshots/nfl/1520565710329499648_large_c96c3d47bd.png'
+            large: 'https://pbs.twimg.com/semantic_core_img/1960525277903106048/qEOJWYP6?format=png&name=orig'
+            medium: 'https://pbs.twimg.com/semantic_core_img/1960514226075602944/OZ6rz5aH?format=png&name=orig'
+            small: 'https://pbs.twimg.com/semantic_core_img/1960202905849405441/OnS0Xdd9?format=png&name=orig'
+          properties:
+            original:
+              type: [string, 'null']
+              format: uri
+              description: The photo X shows on the player's card.
+              example: 'https://ton.twimg.com/twitter-assets/sports-product/headshots/nfl/1520565710329499648_large_c96c3d47bd.png'
+            large:
+              type: [string, 'null']
+              format: uri
+              description: The large photo.
+              example: 'https://pbs.twimg.com/semantic_core_img/1960525277903106048/qEOJWYP6?format=png&name=orig'
+            medium:
+              type: [string, 'null']
+              format: uri
+              description: The medium photo.
+              example: 'https://pbs.twimg.com/semantic_core_img/1960514226075602944/OZ6rz5aH?format=png&name=orig'
+            small:
+              type: [string, 'null']
+              format: uri
+              description: The small photo.
+              example: 'https://pbs.twimg.com/semantic_core_img/1960202905849405441/OnS0Xdd9?format=png&name=orig'
+        xUser:
+          type: [object, 'null']
+          description: The player's X account, or null without one.
+          required: [id, username, blueVerified]
+          example:
+            id: '723177170382647296'
+            username: brockpurdy13
+            blueVerified: true
+          properties:
+            id:
+              type: string
+              description: The account's user ID.
+              example: '723177170382647296'
+            username:
+              type: [string, 'null']
+              description: The account's username, without @.
+              example: brockpurdy13
+            blueVerified:
+              type: [boolean, 'null']
+              description: Whether the account has a blue check.
+              example: true
+    FootballTeamScore:
+      description: A team's side of a game & its points.
+      type: object
+      required: [teamId, points]
+      example:
+        teamId: '689566294702555136'
+        points: 23
+      properties:
+        teamId:
+          type: [string, 'null']
+          description: The team, a key of teams.
+          example: '689566294702555136'
+        points:
+          type: [integer, 'null']
+          minimum: 0
+          description: The team's points so far.
+          example: 23
+    FootballSide:
+      description: A team's side of a scoreboard.
+      allOf:
+        - $ref: '#/components/schemas/FootballTeamScore'
+        - type: object
+          required: [timeoutsLeft]
+          properties:
+            timeoutsLeft:
+              type: [integer, 'null']
+              minimum: 0
+              description: The timeouts the team has left.
+              example: 2
+      example:
+        teamId: '689566294702555136'
+        points: 23
+        timeoutsLeft: 2
+    FootballSchedulePeriod:
+      description: A period of a listed game.
+      type: object
+      required: [type]
+      example:
+        type: Quarter
+      properties:
+        type:
+          type: [string, 'null']
+          description: X's name for the period, such as Quarter.
+          example: Quarter
+    FootballPeriod:
+      description: A period of a game & its points.
+      allOf:
+        - $ref: '#/components/schemas/FootballSchedulePeriod'
+        - type: object
+          required: [number, sequence, homePoints, awayPoints]
+          properties:
+            number:
+              type: [integer, 'null']
+              minimum: 0
+              description: The period's number, or null when X sends no digits.
+              example: 1
+            sequence:
+              type: [integer, 'null']
+              minimum: 0
+              description: The period's place in the game, from 1.
+              example: 1
+            homePoints:
+              type: [integer, 'null']
+              minimum: 0
+              description: The home team's points in the period.
+              example: 13
+            awayPoints:
+              type: [integer, 'null']
+              minimum: 0
+              description: The away team's points in the period.
+              example: 3
+      example:
+        number: 1
+        type: Quarter
+        sequence: 1
+        homePoints: 13
+        awayPoints: 3
+    FootballPlayDetail:
+      description: 1 step of a play, such as a pass, a tackle or a penalty.
+      type: object
+      required:
+        [sequence, category, description, direction, yards, players, penalty]
+      example:
+        sequence: 1
+        category: Penalty
+        description: False start
+        direction: null
+        yards: 5
+        players:
+          - playerId: '1916294127072718848'
+            playerRole: Penalty
+        penalty:
+          description: False start
+          nextDown: Repeats
+          result: Accepted
+          teamId: '689566294702555136'
+          yards: 5
+      properties:
+        sequence:
+          type: [integer, 'null']
+          minimum: 0
+          description: The step's place in the play, from 1.
+          example: 1
+        category:
+          type: [string, 'null']
+          description: X's kind of step, such as Pass, Tackle or Penalty.
+          example: Penalty
+        description:
+          type: [string, 'null']
+          description: What happened in the step.
+          example: False start
+        direction:
+          type: [string, 'null']
+          description: The direction X gives for the step.
+          example: Left
+        yards:
+          type: [integer, 'null']
+          minimum: -9007199254740991
+          description: The yards the step gained or lost.
+          example: 5
+        players:
+          type: array
+          description: The players in the step & their roles.
+          example:
+            - playerId: '1916294127072718848'
+              playerRole: Penalty
+          items:
+            type: object
+            required: [playerId, playerRole]
+            properties:
+              playerId:
+                type: [string, 'null']
+                description: The player, a key of players.
+                example: '1916294127072718848'
+              playerRole:
+                type: [string, 'null']
+                description: The player's role, such as Pass, Receive or Tackle.
+                example: Penalty
+        penalty:
+          type: [object, 'null']
+          description: The penalty this step called, or null.
+          required: [description, nextDown, result, teamId, yards]
+          example:
+            description: False start
+            nextDown: Repeats
+            result: Accepted
+            teamId: '689566294702555136'
+            yards: 5
+          properties:
+            description:
+              type: [string, 'null']
+              description: The penalty's name.
+              example: False start
+            nextDown:
+              type: [string, 'null']
+              description: What the penalty does to the down.
+              example: Repeats
+            result:
+              type: [string, 'null']
+              description: Whether the penalty was accepted or declined.
+              example: Accepted
+            teamId:
+              type: [string, 'null']
+              description: The penalized team, a key of teams.
+              example: '689566294702555136'
+            yards:
+              type: [integer, 'null']
+              minimum: -9007199254740991
+              description: The penalty's yards.
+              example: 5
+    FootballPlay:
+      description: A play, with its situation, steps & linked posts.
+      type: object
+      required:
+        [
+          id,
+          sequence,
+          clock,
+          type,
+          direction,
+          description,
+          scoring,
+          homePoints,
+          awayPoints,
+          score,
+          start,
+          onField,
+          details,
+          post,
+          videoPostId,
+          videoReplyPostId,
+        ]
+      example:
+        id: '170'
+        sequence: 9
+        clock: '00:10:58'
+        type: Pass
+        direction: Left
+        description:
+          (10:58) B.Purdy pass short left to G.Kittle for 11 yards, TOUCHDOWN.
+        scoring: true
+        homePoints: 6
+        awayPoints: 0
+        score:
+          homePoints: 6
+          awayPoints: 0
+          points: 6
+        start:
+          down: 1
+          yardsToGo: 10
+          yardline: 11
+          yardlineSide: Away
+          possession: null
+        onField: null
+        details:
+          - sequence: 1
+            category: Pass
+            description: Pass attempt
+            direction: null
+            yards: null
+            players:
+              - playerId: '1520565710329499648'
+                playerRole: Pass
+              - playerId: '940650611069960192'
+                playerRole: Receive
+            penalty: null
+        post:
+          id: '2112339130483151117'
+          username: null
+        videoPostId: '2112339130483151117'
+        videoReplyPostId: null
+      properties:
+        id:
+          type: [string, 'null']
+          description: X's ID for the play within the game.
+          example: '170'
+        sequence:
+          type: [integer, 'null']
+          minimum: 0
+          description:
+            The play's place in its drive, or null when X sends no digits.
+          example: 9
+        clock:
+          type: [string, 'null']
+          description: The game clock when the play started, as HH:MM:SS.
+          example: '00:10:58'
+        type:
+          type: [string, 'null']
+          description: X's kind of play, such as Pass, Rush, Punt or Conversion.
+          example: Pass
+        direction:
+          type: [string, 'null']
+          description: Where the play went, such as Left or Middle.
+          example: Left
+        description:
+          type: [string, 'null']
+          description: The play as the official play-by-play writes it.
+          example:
+            (10:58) B.Purdy pass short left to G.Kittle for 11 yards, TOUCHDOWN.
+        scoring:
+          type: [boolean, 'null']
+          description: Whether the play scored points.
+          example: true
+        homePoints:
+          type: [integer, 'null']
+          minimum: 0
+          description: The home team's points after the play.
+          example: 6
+        awayPoints:
+          type: [integer, 'null']
+          minimum: 0
+          description: The away team's points after the play.
+          example: 0
+        score:
+          type: [object, 'null']
+          description: The points a scoring play added, or null.
+          required: [homePoints, awayPoints, points]
+          example:
+            homePoints: 6
+            awayPoints: 0
+            points: 6
+          properties:
+            homePoints:
+              type: [integer, 'null']
+              minimum: 0
+              description: The home team's score once this scoring play counted.
+              example: 6
+            awayPoints:
+              type: [integer, 'null']
+              minimum: 0
+              description: The away team's score once this scoring play counted.
+              example: 0
+            points:
+              type: [integer, 'null']
+              minimum: 0
+              description: The points the play scored.
+              example: 6
+        start:
+          type: [object, 'null']
+          description: Down & distance when the play started, or null.
+          required: [down, yardsToGo, yardline, yardlineSide, possession]
+          example:
+            down: 1
+            yardsToGo: 10
+            yardline: 11
+            yardlineSide: Away
+            possession: null
+          properties:
+            down:
+              type: [integer, 'null']
+              minimum: 0
+              description: The down, from 1 to 4.
+              example: 1
+            yardsToGo:
+              type: [integer, 'null']
+              minimum: 0
+              description: The yards needed for a first down.
+              example: 10
+            yardline:
+              type: [integer, 'null']
+              minimum: 0
+              description: The yard line of the ball.
+              example: 11
+            yardlineSide:
+              type: [string, 'null']
+              description:
+                Whose half the ball was in. Home or Away in NFL games, the
+                team's alternateId in college games.
+              example: Away
+            possession:
+              type: [string, 'null']
+              description:
+                The team with the ball. Home or Away in NFL games, the team's
+                alternateId in college games.
+              example: 5c218a3b-a013-4037-97b6-603c9502b701
+        onField:
+          type: [object, 'null']
+          description: Flags X shows on the field for the play, or null.
+          required: [calledBack, penaltyOnField, timeout, underReview]
+          example:
+            calledBack: false
+            penaltyOnField: false
+            timeout: true
+            underReview: false
+          properties:
+            calledBack:
+              type: [boolean, 'null']
+              description: Whether a penalty called the play back.
+              example: false
+            penaltyOnField:
+              type: [boolean, 'null']
+              description: Whether a flag was thrown.
+              example: false
+            timeout:
+              type: [boolean, 'null']
+              description: Whether a timeout followed the play.
+              example: true
+            underReview:
+              type: [boolean, 'null']
+              description: Whether officials were reviewing the play.
+              example: false
+        details:
+          type: array
+          description: The play's steps, in order.
+          example:
+            - sequence: 1
+              category: Pass
+              description: Pass attempt
+              direction: null
+              yards: null
+              players:
+                - playerId: '1520565710329499648'
+                  playerRole: Pass
+              penalty: null
+          items:
+            $ref: '#/components/schemas/FootballPlayDetail'
+        post:
+          type: [object, 'null']
+          description: The post X links to the play, or null.
+          required: [id, username]
+          example:
+            id: '2112339130483151117'
+            username: null
+          properties:
+            id:
+              type: string
+              description: The post's ID.
+              example: '2112339130483151117'
+            username:
+              type: [string, 'null']
+              description: The username of the post's author, when X sends it.
+              example: null
+        videoPostId:
+          type: [string, 'null']
+          description: The ID of a post with the play's video.
+          example: '2112339130483151117'
+        videoReplyPostId:
+          type: [string, 'null']
+          description: The ID of a reply with the play's video.
+          example: null
+    FootballDrive:
+      description: A drive, with its result & plays.
+      type: object
+      required:
+        [
+          id,
+          sequence,
+          offense,
+          defense,
+          startClock,
+          endClock,
+          startReason,
+          endReason,
+          playCount,
+          firstDowns,
+          netYards,
+          scoring,
+          plays,
+        ]
+      example:
+        id: drive-2
+        sequence: 2
+        offense: Home
+        defense: null
+        startClock: '00:14:55'
+        endClock: null
+        startReason: Kickoff
+        endReason: Touchdown
+        playCount: 10
+        firstDowns: 0
+        netYards: 64
+        scoring: true
+        plays: []
+      properties:
+        id:
+          type: [string, 'null']
+          description: X's ID for the drive within the game.
+          example: drive-2
+        sequence:
+          type: [integer, 'null']
+          minimum: 0
+          description: The drive's place in the game, from 1.
+          example: 2
+        offense:
+          type: [string, 'null']
+          description:
+            The team that drove. Home or Away in NFL games, the team's
+            alternateId in college games.
+          example: Home
+        defense:
+          type: [string, 'null']
+          description:
+            The team on defense. Home or Away in NFL games, the team's
+            alternateId in college games.
+          example: Away
+        startClock:
+          type: [string, 'null']
+          description: The game clock when the drive started, as HH:MM:SS.
+          example: '00:14:55'
+        endClock:
+          type: [string, 'null']
+          description: The game clock when the drive ended, as HH:MM:SS.
+          example: '00:10:53'
+        startReason:
+          type: [string, 'null']
+          description: How the drive started, such as Kickoff or Punt.
+          example: Kickoff
+        endReason:
+          type: [string, 'null']
+          description: How the drive ended, such as Touchdown or Punt.
+          example: Touchdown
+        playCount:
+          type: [integer, 'null']
+          minimum: 0
+          description: The drive's plays.
+          example: 10
+        firstDowns:
+          type: [integer, 'null']
+          minimum: 0
+          description: The first downs the drive gained.
+          example: 0
+        netYards:
+          type: [integer, 'null']
+          minimum: -9007199254740991
+          description: The yards the drive gained.
+          example: 64
+        scoring:
+          type: [boolean, 'null']
+          description: Whether the drive scored.
+          example: true
+        plays:
+          type: array
+          description: The drive's plays, in order.
+          example: []
+          items:
+            $ref: '#/components/schemas/FootballPlay'
+    FootballQuarter:
+      description: A quarter & its drives.
+      type: object
+      required: [id, number, sequence, drives]
+      example:
+        id: quarter-1
+        number: 1
+        sequence: 1
+        drives: []
+      properties:
+        id:
+          type: [string, 'null']
+          description: X's ID for the quarter within the game.
+          example: quarter-1
+        number:
+          type: [integer, 'null']
+          minimum: 0
+          description: The quarter's number.
+          example: 1
+        sequence:
+          type: [integer, 'null']
+          minimum: 0
+          description: The quarter's place in the game, from 1.
+          example: 1
+        drives:
+          type: array
+          description: The quarter's drives, in order.
+          example: []
+          items:
+            $ref: '#/components/schemas/FootballDrive'
+    FootballScoreboard:
+      description: 1 game's scoreboard.
+      type: object
+      required:
+        [
+          id,
+          league,
+          seasonId,
+          seasonType,
+          week,
+          startsAt,
+          venue,
+          status,
+          clock,
+          quarter,
+          situation,
+          home,
+          away,
+          periods,
+          lastPlay,
+          teams,
+          players,
+        ]
+      example:
+        id: '2055084502741811200'
+        league: nfl
+        seasonId: '2039131233582546945'
+        seasonType: RegularSeason
+        week: 6
+        startsAt: '2026-10-20T00:15:00.000Z'
+        venue: Levi's Stadium
+        status: Closed
+        clock: '00:00:00'
+        quarter: 4
+        situation:
+          down: 3
+          yardsToGo: 22
+          yardline: 40
+          yardlineTeamId: '689566294702555136'
+          possessionTeamId: '689566304366292992'
+        home:
+          teamId: '689566294702555136'
+          points: 23
+          timeoutsLeft: 2
+        away:
+          teamId: '689566304366292992'
+          points: 17
+          timeoutsLeft: 0
+        periods:
+          - number: 1
+            type: Quarter
+            sequence: 1
+            homePoints: 13
+            awayPoints: 3
+        lastPlay: null
+        teams: {}
+        players: {}
+      properties:
+        id:
+          type: string
+          description: The game ID from your request.
+          example: '2055084502741811200'
+        league:
+          type: string
+          enum: [nfl, ncaafb]
+          description: The league from your request.
+          example: nfl
+        seasonId:
+          type: [string, 'null']
+          description: X's ID for the season. NFL games have one.
+          example: '2039131233582546945'
+        seasonType:
+          type: [string, 'null']
+          description: The part of the season, such as RegularSeason.
+          example: RegularSeason
+        week:
+          type: [integer, 'null']
+          minimum: 0
+          description: The week of the season.
+          example: 6
+        startsAt:
+          type: [string, 'null']
+          format: date-time
+          description:
+            The kickoff time in UTC, or null when X sends none Xquik can read.
+          example: '2026-10-20T00:15:00.000Z'
+        venue:
+          type: [string, 'null']
+          description: The stadium.
+          example: Levi's Stadium
+        status:
+          type: [string, 'null']
+          description: X's game status, such as Scheduled, InProgress or Closed.
+          example: Closed
+        clock:
+          type: [string, 'null']
+          description: The game clock, as X writes it.
+          example: '00:00:00'
+        quarter:
+          type: [integer, 'null']
+          minimum: 0
+          description: The current or last quarter.
+          example: 4
+        situation:
+          type: [object, 'null']
+          description: Down & distance now, or null before kickoff.
+          required:
+            [down, yardsToGo, yardline, yardlineTeamId, possessionTeamId]
+          example:
+            down: 3
+            yardsToGo: 22
+            yardline: 40
+            yardlineTeamId: '689566294702555136'
+            possessionTeamId: '689566304366292992'
+          properties:
+            down:
+              type: [integer, 'null']
+              minimum: 0
+              description: The current down, from 1 to 4.
+              example: 3
+            yardsToGo:
+              type: [integer, 'null']
+              minimum: 0
+              description: The yards the offense needs now for a first down.
+              example: 22
+            yardline:
+              type: [integer, 'null']
+              minimum: 0
+              description: The ball's current yard line.
+              example: 40
+            yardlineTeamId:
+              type: [string, 'null']
+              description: The team whose half the ball is in, a key of teams.
+              example: '689566294702555136'
+            possessionTeamId:
+              type: [string, 'null']
+              description: The team with the ball, a key of teams.
+              example: '689566304366292992'
+        home:
+          $ref: '#/components/schemas/FootballSide'
+        away:
+          $ref: '#/components/schemas/FootballSide'
+        periods:
+          type: array
+          description: Points by period, in order.
+          example:
+            - number: 1
+              type: Quarter
+              sequence: 1
+              homePoints: 13
+              awayPoints: 3
+          items:
+            $ref: '#/components/schemas/FootballPeriod'
+        lastPlay:
+          anyOf:
+            - $ref: '#/components/schemas/FootballPlay'
+            - type: 'null'
+          description: The latest play, or null before kickoff.
+          example: null
+        teams:
+          type: object
+          description: The teams this answer names, by team ID.
+          example: {}
+          additionalProperties:
+            $ref: '#/components/schemas/SportsTeam'
+        players:
+          type: object
+          description: The players this answer names, by player ID.
+          example: {}
+          additionalProperties:
+            $ref: '#/components/schemas/FootballPlayer'
+    FootballPlays:
+      description: 1 game's drives & plays, by quarter.
+      type: object
+      required: [id, league, homeTeamId, awayTeamId, quarters, teams, players]
+      example:
+        id: '2055084502741811200'
+        league: nfl
+        homeTeamId: '689566294702555136'
+        awayTeamId: '689566304366292992'
+        quarters:
+          - id: quarter-1
+            number: 1
+            sequence: 1
+            drives: []
+        teams: {}
+        players: {}
+      properties:
+        id:
+          type: string
+          description: The ID of the game these plays come from.
+          example: '2055084502741811200'
+        league:
+          type: string
+          enum: [nfl, ncaafb]
+          description: The league of the game these plays come from.
+          example: nfl
+        homeTeamId:
+          type: [string, 'null']
+          description: The home team, a key of teams.
+          example: '689566294702555136'
+        awayTeamId:
+          type: [string, 'null']
+          description: The away team, a key of teams.
+          example: '689566304366292992'
+        quarters:
+          type: array
+          description: The game's quarters, in order. Empty before kickoff.
+          example: []
+          items:
+            $ref: '#/components/schemas/FootballQuarter'
+        teams:
+          type: object
+          description: The teams these plays name, by team ID.
+          example: {}
+          additionalProperties:
+            $ref: '#/components/schemas/SportsTeam'
+        players:
+          type: object
+          description: The players these plays name, by player ID.
+          example: {}
+          additionalProperties:
+            $ref: '#/components/schemas/FootballPlayer'
+    FootballPassingStats:
+      description: Passing stats.
+      type: object
+      required:
+        [
+          attempts,
+          avgYards,
+          completions,
+          interceptions,
+          netYards,
+          rating,
+          sackYards,
+          sacks,
+          touchdowns,
+          yards,
+        ]
+      example:
+        attempts: 29
+        avgYards: 9.10345
+        completions: 21
+        interceptions: 0
+        netYards: null
+        rating: 111.85345
+        sackYards: 15
+        sacks: 2
+        touchdowns: 1
+        yards: 264
+      properties:
+        attempts:
+          type: [integer, 'null']
+          minimum: 0
+          description: Passes thrown.
+          example: 29
+        avgYards:
+          type: [number, 'null']
+          description: Yards per pass.
+          example: 9.10345
+        completions:
+          type: [integer, 'null']
+          minimum: 0
+          description: Passes caught.
+          example: 21
+        interceptions:
+          type: [integer, 'null']
+          minimum: 0
+          description: Passes intercepted.
+          example: 0
+        netYards:
+          type: [integer, 'null']
+          minimum: -9007199254740991
+          description: Passing yards minus sack yards.
+          example: 249
+        rating:
+          type: [number, 'null']
+          description: The passer rating.
+          example: 111.85345
+        sackYards:
+          type: [integer, 'null']
+          minimum: 0
+          description: Yards lost to sacks.
+          example: 15
+        sacks:
+          type: [integer, 'null']
+          minimum: 0
+          description: Times sacked.
+          example: 2
+        touchdowns:
+          type: [integer, 'null']
+          minimum: 0
+          description: Passing touchdowns.
+          example: 1
+        yards:
+          type: [integer, 'null']
+          minimum: -9007199254740991
+          description: Passing yards.
+          example: 264
+    FootballRushingStats:
+      description: Rushing stats.
+      type: object
+      required: [attempts, avgYards, longest, touchdowns, yards]
+      example:
+        attempts: 5
+        avgYards: 5.6
+        longest: 11
+        touchdowns: 0
+        yards: 28
+      properties:
+        attempts:
+          type: [integer, 'null']
+          minimum: 0
+          description: Rushes.
+          example: 5
+        avgYards:
+          type: [number, 'null']
+          description: Yards per rush.
+          example: 5.6
+        longest:
+          type: [integer, 'null']
+          minimum: -9007199254740991
+          description: The longest rush, in yards.
+          example: 11
+        touchdowns:
+          type: [integer, 'null']
+          minimum: 0
+          description: Rushing touchdowns.
+          example: 0
+        yards:
+          type: [integer, 'null']
+          minimum: -9007199254740991
+          description: Rushing yards.
+          example: 28
+    FootballFumbleStats:
+      description: Fumble stats.
+      type: object
+      required: [lost, opponentRecoveryTouchdowns, ownRecoveryTouchdowns]
+      example:
+        lost: 1
+        opponentRecoveryTouchdowns: null
+        ownRecoveryTouchdowns: null
+      properties:
+        lost:
+          type: [integer, 'null']
+          minimum: 0
+          description: Fumbles the other team recovered.
+          example: 1
+        opponentRecoveryTouchdowns:
+          type: [integer, 'null']
+          minimum: 0
+          description:
+            Touchdowns scored after recovering the other team's fumble.
+          example: 0
+        ownRecoveryTouchdowns:
+          type: [integer, 'null']
+          minimum: 0
+          description: Touchdowns scored after recovering an own fumble.
+          example: 0
+    FootballReturnStats:
+      description: Kick, punt or interception return stats.
+      type: object
+      required: [avgYards, longest, returns, touchdowns, yards]
+      example:
+        avgYards: 24
+        longest: 24
+        returns: 1
+        touchdowns: 0
+        yards: 24
+      properties:
+        avgYards:
+          type: [number, 'null']
+          description: Yards per return.
+          example: 24
+        longest:
+          type: [integer, 'null']
+          minimum: -9007199254740991
+          description: The longest return, in yards.
+          example: 24
+        returns:
+          type: [integer, 'null']
+          minimum: 0
+          description: Returns.
+          example: 1
+        touchdowns:
+          type: [integer, 'null']
+          minimum: 0
+          description: Return touchdowns.
+          example: 0
+        yards:
+          type: [integer, 'null']
+          minimum: -9007199254740991
+          description: Return yards.
+          example: 24
+    FootballTeamTotals:
+      description: A team's totals for 1 game.
+      type: object
+      required:
+        [
+          firstDowns,
+          thirdDowns,
+          fumbles,
+          passing,
+          penalties,
+          rushing,
+          timeOfPossessionSeconds,
+          totalYards,
+          turnovers,
+        ]
+      example:
+        firstDowns: 20
+        thirdDowns:
+          attempts: 14
+          successes: 7
+        fumbles:
+          lost: 1
+          opponentRecoveryTouchdowns: null
+          ownRecoveryTouchdowns: null
+        passing: null
+        penalties:
+          count: 11
+          yards: 88
+        rushing: null
+        timeOfPossessionSeconds: 1785
+        totalYards: 375
+        turnovers: 1
+      properties:
+        firstDowns:
+          type: [integer, 'null']
+          minimum: 0
+          description: First downs.
+          example: 20
+        thirdDowns:
+          type: [object, 'null']
+          description: Third downs tried & converted.
+          required: [attempts, successes]
+          example:
+            attempts: 14
+            successes: 7
+          properties:
+            attempts:
+              type: [integer, 'null']
+              minimum: 0
+              description: Third downs tried.
+              example: 14
+            successes:
+              type: [integer, 'null']
+              minimum: 0
+              description: Third downs converted.
+              example: 7
+        fumbles:
+          anyOf:
+            - $ref: '#/components/schemas/FootballFumbleStats'
+            - type: 'null'
+          description: The team's fumbles, or null.
+          example:
+            lost: 1
+            opponentRecoveryTouchdowns: null
+            ownRecoveryTouchdowns: null
+        passing:
+          anyOf:
+            - $ref: '#/components/schemas/FootballPassingStats'
+            - type: 'null'
+          description: The team's passing, or null.
+          example: null
+        penalties:
+          type: [object, 'null']
+          description: Penalties against the team.
+          required: [count, yards]
+          example:
+            count: 11
+            yards: 88
+          properties:
+            count:
+              type: [integer, 'null']
+              minimum: 0
+              description: Penalties.
+              example: 11
+            yards:
+              type: [integer, 'null']
+              minimum: 0
+              description: Penalty yards.
+              example: 88
+        rushing:
+          anyOf:
+            - $ref: '#/components/schemas/FootballRushingStats'
+            - type: 'null'
+          description: The team's rushing, or null.
+          example: null
+        timeOfPossessionSeconds:
+          type: [integer, 'null']
+          minimum: 0
+          description: Time with the ball, in seconds.
+          example: 1785
+        totalYards:
+          type: [integer, 'null']
+          minimum: -9007199254740991
+          description: Total yards.
+          example: 375
+        turnovers:
+          type: [integer, 'null']
+          minimum: 0
+          description: Turnovers.
+          example: 1
+    FootballPlayerStats:
+      description:
+        1 player's stats for 1 game. Only the stat groups X sent are present.
+      type: object
+      required: [playerId]
+      example:
+        playerId: '1520565710329499648'
+        passing:
+          attempts: 29
+          avgYards: 9.10345
+          completions: 21
+          interceptions: 0
+          netYards: null
+          rating: 111.85345
+          sackYards: 15
+          sacks: 2
+          touchdowns: 1
+          yards: 264
+        rushing:
+          attempts: 5
+          avgYards: 5.6
+          longest: 11
+          touchdowns: 0
+          yards: 28
+      properties:
+        playerId:
+          type: [string, 'null']
+          description: The player these stats belong to, a key of players.
+          example: '1520565710329499648'
+        passing:
+          $ref: '#/components/schemas/FootballPassingStats'
+        rushing:
+          $ref: '#/components/schemas/FootballRushingStats'
+        receiving:
+          type: object
+          description: Receiving stats.
+          required: [avgYards, longest, receptions, targets, touchdowns, yards]
+          example:
+            avgYards: 3
+            longest: 3
+            receptions: 1
+            targets: 1
+            touchdowns: 0
+            yards: 3
+          properties:
+            avgYards:
+              type: [number, 'null']
+              description: Yards per catch.
+              example: 3
+            longest:
+              type: [integer, 'null']
+              minimum: -9007199254740991
+              description: The longest catch, in yards.
+              example: 3
+            receptions:
+              type: [integer, 'null']
+              minimum: 0
+              description: Catches.
+              example: 1
+            targets:
+              type: [integer, 'null']
+              minimum: 0
+              description: Passes thrown to the player.
+              example: 1
+            touchdowns:
+              type: [integer, 'null']
+              minimum: 0
+              description: Receiving touchdowns.
+              example: 0
+            yards:
+              type: [integer, 'null']
+              minimum: -9007199254740991
+              description: Receiving yards.
+              example: 3
+        defense:
+          type: object
+          description: Defensive stats.
+          required:
+            [
+              combined,
+              forcedFumbles,
+              interceptions,
+              passesDefended,
+              sacks,
+              tackles,
+              tacklesForLoss,
+            ]
+          example:
+            combined: 8
+            forcedFumbles: 0
+            interceptions: 0
+            passesDefended: 0
+            sacks: 0.5
+            tackles: 6
+            tacklesForLoss: 0
+          properties:
+            combined:
+              type: [number, 'null']
+              minimum: 0
+              description: Solo & assisted tackles together.
+              example: 8
+            forcedFumbles:
+              type: [integer, 'null']
+              minimum: 0
+              description: Fumbles forced.
+              example: 0
+            interceptions:
+              type: [integer, 'null']
+              minimum: 0
+              description: Interceptions.
+              example: 0
+            passesDefended:
+              type: [integer, 'null']
+              minimum: 0
+              description: Passes defended.
+              example: 0
+            sacks:
+              type: [number, 'null']
+              minimum: 0
+              description: Sacks, with a shared sack as 0.5.
+              example: 0.5
+            tackles:
+              type: [number, 'null']
+              minimum: 0
+              description: Solo tackles.
+              example: 6
+            tacklesForLoss:
+              type: [number, 'null']
+              minimum: 0
+              description: Tackles for a loss.
+              example: 0
+        fumbles:
+          $ref: '#/components/schemas/FootballFumbleStats'
+        kickReturns:
+          $ref: '#/components/schemas/FootballReturnStats'
+        puntReturns:
+          $ref: '#/components/schemas/FootballReturnStats'
+        interceptionReturns:
+          $ref: '#/components/schemas/FootballReturnStats'
+        punts:
+          type: object
+          description: Punting stats.
+          required: [attempts, avgNetYards, avgYards, inside20, longest, yards]
+          example:
+            attempts: 4
+            avgNetYards: 47.8
+            avgYards: 47.75
+            inside20: 0
+            longest: 49
+            yards: 191
+          properties:
+            attempts:
+              type: [integer, 'null']
+              minimum: 0
+              description: Punts.
+              example: 4
+            avgNetYards:
+              type: [number, 'null']
+              description: Net yards per punt, after returns.
+              example: 47.8
+            avgYards:
+              type: [number, 'null']
+              description: Yards per punt.
+              example: 47.75
+            inside20:
+              type: [integer, 'null']
+              minimum: 0
+              description: Punts downed inside the 20.
+              example: 0
+            longest:
+              type: [integer, 'null']
+              minimum: -9007199254740991
+              description: The longest punt, in yards.
+              example: 49
+            yards:
+              type: [integer, 'null']
+              minimum: -9007199254740991
+              description: Punting yards.
+              example: 191
+        fieldGoals:
+          type: object
+          description: Field goal stats.
+          required: [attempts, longest, made]
+          example:
+            attempts: 1
+            longest: 33
+            made: 1
+          properties:
+            attempts:
+              type: [integer, 'null']
+              minimum: 0
+              description: Field goals tried.
+              example: 1
+            longest:
+              type: [integer, 'null']
+              minimum: 0
+              description: The longest made field goal, in yards.
+              example: 33
+            made:
+              type: [integer, 'null']
+              minimum: 0
+              description: Field goals made.
+              example: 1
+        extraPoints:
+          type: object
+          description: Extra point kicks.
+          required: [attempts, made]
+          example:
+            attempts: 3
+            made: 2
+          properties:
+            attempts:
+              type: [integer, 'null']
+              minimum: 0
+              description: Extra points tried.
+              example: 3
+            made:
+              type: [integer, 'null']
+              minimum: 0
+              description: Extra points made.
+              example: 2
+        conversions:
+          type: object
+          description: 2-point conversions.
+          required:
+            [defenseSuccesses, passSuccesses, rushSuccesses, turnoverSuccesses]
+          example:
+            defenseSuccesses: 0
+            passSuccesses: 1
+            rushSuccesses: 0
+            turnoverSuccesses: 0
+          properties:
+            defenseSuccesses:
+              type: [integer, 'null']
+              minimum: 0
+              description: Defensive 2-point returns.
+              example: 0
+            passSuccesses:
+              type: [integer, 'null']
+              minimum: 0
+              description: 2-point conversions by pass.
+              example: 1
+            rushSuccesses:
+              type: [integer, 'null']
+              minimum: 0
+              description: 2-point conversions by rush.
+              example: 0
+            turnoverSuccesses:
+              type: [integer, 'null']
+              minimum: 0
+              description: 2-point conversions after a turnover.
+              example: 0
+    FootballTeamBox:
+      description: 1 team's totals & player stats.
+      type: object
+      required: [teamId, totals, players]
+      example:
+        teamId: '689566294702555136'
+        totals: null
+        players: []
+      properties:
+        teamId:
+          type: [string, 'null']
+          description: The team these totals belong to, a key of teams.
+          example: '689566294702555136'
+        totals:
+          anyOf:
+            - $ref: '#/components/schemas/FootballTeamTotals'
+            - type: 'null'
+          description: The team's totals, or null before kickoff.
+          example: null
+        players:
+          type: array
+          description: Each player with stats, 1 entry per player.
+          example: []
+          items:
+            $ref: '#/components/schemas/FootballPlayerStats'
+    FootballBoxScore:
+      description: 1 game's team totals & player stats.
+      type: object
+      required: [id, league, home, away, teams, players]
+      example:
+        id: '2055084502741811200'
+        league: nfl
+        home:
+          teamId: '689566294702555136'
+          totals: null
+          players: []
+        away:
+          teamId: '689566304366292992'
+          totals: null
+          players: []
+        teams: {}
+        players: {}
+      properties:
+        id:
+          type: string
+          description: The ID of the game this box score covers.
+          example: '2055084502741811200'
+        league:
+          type: string
+          enum: [nfl, ncaafb]
+          description: The league of the game this box score covers.
+          example: nfl
+        home:
+          $ref: '#/components/schemas/FootballTeamBox'
+        away:
+          $ref: '#/components/schemas/FootballTeamBox'
+        teams:
+          type: object
+          description: The teams this box score names, by team ID.
+          example: {}
+          additionalProperties:
+            $ref: '#/components/schemas/SportsTeam'
+        players:
+          type: object
+          description: The players this box score names, by player ID.
+          example: {}
+          additionalProperties:
+            $ref: '#/components/schemas/FootballPlayer'
+    FootballOdds:
+      description: Betting odds titles for 1 team, as X shows them.
+      type: object
+      required: [moneyLine, spread, total]
+      example:
+        moneyLine: null
+        spread: null
+        total: null
+      properties:
+        moneyLine:
+          type: [string, 'null']
+          description: The money line. X sends it for the away team only.
+          example: null
+        spread:
+          type: [string, 'null']
+          description: The point spread.
+          example: null
+        total:
+          type: [string, 'null']
+          description: The over or under total.
+          example: null
+    FootballScheduleGame:
+      description: A listed game, with its teams & score.
+      type: object
+      required:
+        [
+          id,
+          seasonType,
+          week,
+          startsAt,
+          status,
+          clock,
+          quarter,
+          home,
+          away,
+          teamIds,
+          periods,
+          odds,
+        ]
+      example:
+        id: '2055084502741811200'
+        seasonType: RegularSeason
+        week: 6
+        startsAt: '2026-10-20T00:15:00.000Z'
+        status: Closed
+        clock: '00:00:00'
+        quarter: 4
+        home:
+          teamId: '689566294702555136'
+          points: 23
+        away:
+          teamId: '689566304366292992'
+          points: 17
+        teamIds: ['689566294702555136', '689566304366292992']
+        periods:
+          - type: Quarter
+        odds: null
+      properties:
+        id:
+          type: string
+          description: The game ID the other sports routes take.
+          example: '2055084502741811200'
+        seasonType:
+          type: [string, 'null']
+          description: This game's part of the season, such as RegularSeason.
+          example: RegularSeason
+        week:
+          type: [integer, 'null']
+          minimum: 0
+          description: This game's week of the season.
+          example: 6
+        startsAt:
+          type: [string, 'null']
+          format: date-time
+          description:
+            This game's kickoff time in UTC, or null when Xquik cannot read it.
+          example: '2026-10-20T00:15:00.000Z'
+        status:
+          type: [string, 'null']
+          description:
+            This game's status from X, such as Scheduled, InProgress or Closed.
+          example: Closed
+        clock:
+          type: [string, 'null']
+          description: This game's clock, as X writes it.
+          example: '00:00:00'
+        quarter:
+          type: [integer, 'null']
+          minimum: 0
+          description: This game's current or last quarter.
+          example: 4
+        home:
+          $ref: '#/components/schemas/FootballTeamScore'
+        away:
+          $ref: '#/components/schemas/FootballTeamScore'
+        teamIds:
+          type: array
+          description: The game's teams, keys of teams.
+          example: ['689566294702555136', '689566304366292992']
+          items:
+            type: string
+            example: '689566294702555136'
+        periods:
+          type: array
+          description: The periods played so far.
+          example:
+            - type: Quarter
+          items:
+            $ref: '#/components/schemas/FootballSchedulePeriod'
+        odds:
+          type: [object, 'null']
+          description: Betting odds for each team, or null when X has none.
+          required: [home, away]
+          example: null
+          properties:
+            home:
+              $ref: '#/components/schemas/FootballOdds'
+            away:
+              $ref: '#/components/schemas/FootballOdds'
+    FootballSchedule:
+      description: A league's games in a time window.
+      type: object
+      required: [league, games, teams]
+      example:
+        league: nfl
+        games:
+          - id: '2055084502741811200'
+            seasonType: RegularSeason
+            week: 6
+            startsAt: '2026-10-20T00:15:00.000Z'
+            status: Closed
+            clock: '00:00:00'
+            quarter: 4
+            home:
+              teamId: '689566294702555136'
+              points: 23
+            away:
+              teamId: '689566304366292992'
+              points: 17
+            teamIds: ['689566294702555136', '689566304366292992']
+            periods:
+              - type: Quarter
+            odds: null
+        teams: {}
+      properties:
+        league:
+          type: string
+          enum: [nfl, ncaafb]
+          description: The league whose games this list holds.
+          example: nfl
+        games:
+          type: array
+          description: The games, earliest first.
+          example: []
+          items:
+            $ref: '#/components/schemas/FootballScheduleGame'
+        teams:
+          type: object
+          description: The teams the games name, by team ID.
+          example: {}
+          additionalProperties:
+            $ref: '#/components/schemas/SportsTeam'
     Community:
       description: Public X Community, as every Community read returns it.
       type: object

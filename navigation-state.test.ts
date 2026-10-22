@@ -51,6 +51,7 @@ const X_API_GROUPS = [
   "Community Notes",
   "Lists",
   "Jobs",
+  "Sports",
 ] as const;
 
 const PRIORITY_API_ROUTES = [
