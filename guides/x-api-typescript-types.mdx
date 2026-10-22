@@ -103,18 +103,52 @@ For production projects, option 3 or an official SDK is the safest source for co
       nextBillingAt: string;
     }
 
+    interface PostMetricReading {
+      current: number | null;
+      gain: number | null;
+    }
+
+    type PostMetric = "views" | "likes" | "retweets" | "replies" | "quotes" | "bookmarks";
+
+    interface PostMonitor {
+      id: string;
+      name?: string;
+      postId: string;
+      postUrl: string;
+      authorId: string;
+      authorUsername: string;
+      authorName: string;
+      text: string;
+      postedAt: string;
+      eventTypes: PostEventType[];
+      isActive: boolean;
+      createdAt: string;
+      nextBillingAt: string;
+      pausedReason?:
+        | "insufficient_credits"
+        | "x_post_deleted"
+        | "x_post_protected"
+        | "x_post_unavailable";
+      pausedAt?: string;
+      metrics: Record<PostMetric, PostMetricReading>;
+    }
+
     // ─── Events ──────────────────────────────────────────────
 
     interface Event {
       id: string;
-      type: EventType;
+      type: EventType | PostEventType;
       monitorId: string;
-      monitorType: "account" | "keyword";
+      monitorType: "account" | "keyword" | "post";
       occurredAt: string;
       data: EventData;
       username?: string;
       query?: string;
       keywordMonitorId?: string;
+      postId?: string;
+      postUrl?: string;
+      authorId?: string;
+      authorUsername?: string;
       xEventId?: string;
     }
 
@@ -679,6 +713,18 @@ For production projects, option 3 or an official SDK is the safest source for co
       | "profile.followers.changed"
       | "profile.following.changed";
 
+    type PostEventType =
+      | "post.reply.new"
+      | "post.quote.new"
+      | "post.likes.changed"
+      | "post.retweets.changed"
+      | "post.replies.changed"
+      | "post.quotes.changed"
+      | "post.bookmarks.changed"
+      | "post.views.changed"
+      | "post.edited"
+      | "post.deleted";
+
     // The data field contains the tweet object stored with the monitor event.
     interface TweetEventData {
       id: string;
@@ -804,13 +850,14 @@ API keys have 2 shapes. Only `POST /api/v1/api-keys` returns `ApiKeyCreated`, wh
 
 ### Monitors
 
-Account monitor endpoints return `Monitor`. The `xUserId` is the X (Twitter) user ID resolved from the `username` at creation time. Keyword monitor endpoints return `KeywordMonitor` with the normalized X search `query`. Both monitor types include `eventTypes`, `isActive`, `createdAt`, and `nextBillingAt` for active monitor billing.
+Account monitor endpoints return `Monitor`. The `xUserId` is the X (Twitter) user ID resolved from the `username` at creation time. Keyword monitor endpoints return `KeywordMonitor` with the normalized X search `query`. Both monitor types include `eventTypes`, `isActive`, `createdAt`, and `nextBillingAt` for active monitor billing. Post monitor endpoints return `PostMonitor` with the tracked post & its 6 metrics.
 
 ### Events
 
-`Event` represents one tracked account or keyword action.
-`monitorType` is `account` or `keyword`. `monitorId` points to the source monitor.
+`Event` represents one tracked account, keyword or post action.
+`monitorType` is `account`, `keyword` or `post`. `monitorId` points to the source monitor.
 Account events include `username`. Keyword events include `query` and `keywordMonitorId`.
+Post events include `postId`, `postUrl`, `authorId` and `authorUsername`.
 `data` contains the documented Tweet event fields.
 `EventList` wraps paginated responses.
 Use `nextCursor` with the `cursor` query parameter for subsequent pages.

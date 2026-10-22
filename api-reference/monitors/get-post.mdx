@@ -1,0 +1,276 @@
+---
+title: "Twitter post monitor status & live engagement"
+sidebarTitle: Get post monitor
+description: "Get 1 post monitor with its post, author, event types, active state, pause reason & 6 metrics. Each metric shows its current value & gain since tracking began."
+api: "GET /monitors/posts/{id}"
+keywords: ["post monitor", "get", "status", "tweet metrics"]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+{/* GENERATED RESPONSE EXAMPLES START */}
+
+<Panel>
+
+<Tabs defaultTabIndex={0} sync={false}>
+
+  <Tab title="200" id="response-monitors-get-post-200">
+
+    ```json
+    {
+      "id": "31",
+      "postId": "2104984505677430978",
+      "postUrl": "https://x.com/xquik/status/2104984505677430978",
+      "authorId": "1661816432185823232",
+      "authorUsername": "xquik",
+      "authorName": "Xquik",
+      "text": "We shipped post monitors.",
+      "postedAt": "2026-09-29T17:19:49.000Z",
+      "eventTypes": [
+        "post.reply.new"
+      ],
+      "isActive": true
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="400" id="response-monitors-get-post-400">
+
+    ```json
+    {
+      "error": "invalid_input",
+      "message": "Invalid input. Check the request body."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="401" id="response-monitors-get-post-401">
+
+    ```json
+    {
+      "error": "unauthenticated",
+      "message": "Authentication required. Provide a valid API key or bearer token."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="403" id="response-monitors-get-post-403">
+
+    ```json
+    {
+      "error": "forbidden",
+      "message": "This API key calls paid X read routes only, such as GET /api/v1/x/tweets/search. Create a Full access key at dashboard.xquik.com/account?tab=api-keys to call this route."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="404" id="response-monitors-get-post-404">
+
+    ```json
+    {
+      "error": "not_found",
+      "message": "Resource not found."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="429" id="response-monitors-get-post-429">
+
+    ```json
+    {
+      "error": "rate_limit_exceeded",
+      "message": "Too many requests. Try again later.",
+      "retryAfter": 60
+    }
+    ```
+
+  </Tab>
+</Tabs>
+
+</Panel>
+{/* GENERATED RESPONSE EXAMPLES END */}
+<LlmsDirective />
+
+Read 1 post monitor by ID. Use it to check live metrics, the pause state, or
+the event types before you change alerts.
+
+<Callout icon="circle-check" color="#16a34a">
+
+**Free.** This endpoint does not consume credits.
+
+</Callout>
+
+<CodeGroup>
+
+```bash cURL
+curl https://xquik.com/api/v1/monitors/posts/31 \
+  -H "x-api-key: xq_YOUR_KEY_HERE" |
+  jq -c '{
+    post_monitor_id: .id,
+    post_url: .postUrl,
+    text: .text,
+    is_active: .isActive,
+    paused_reason: (.pausedReason // null),
+    views: .metrics.views.current,
+    likes: .metrics.likes.current,
+    like_gain: .metrics.likes.gain
+  }'
+```
+
+```javascript Node.js
+const monitorId = "31";
+const response = await fetch(`https://xquik.com/api/v1/monitors/posts/${monitorId}`, {
+  headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
+});
+const monitor = await response.json();
+const state = {
+  post_monitor_id: monitor.id,
+  post_url: monitor.postUrl,
+  text: monitor.text,
+  is_active: monitor.isActive,
+  paused_reason: monitor.pausedReason ?? null,
+  views: monitor.metrics.views.current,
+  likes: monitor.metrics.likes.current,
+  like_gain: monitor.metrics.likes.gain,
+};
+process.stdout.write(`${JSON.stringify(state)}\n`);
+```
+
+```python Python
+import json
+import requests
+
+monitor_id = "31"
+response = requests.get(
+    f"https://xquik.com/api/v1/monitors/posts/{monitor_id}",
+    headers={"x-api-key": "xq_YOUR_KEY_HERE"},
+)
+monitor = response.json()
+state = {
+    "post_monitor_id": monitor["id"],
+    "post_url": monitor["postUrl"],
+    "text": monitor["text"],
+    "is_active": monitor["isActive"],
+    "paused_reason": monitor.get("pausedReason"),
+    "views": monitor["metrics"]["views"]["current"],
+    "likes": monitor["metrics"]["likes"]["current"],
+    "like_gain": monitor["metrics"]["likes"]["gain"],
+}
+print(json.dumps(state))
+```
+
+</CodeGroup>
+
+## Check 1 monitor before you act
+
+| Question                   | Field                       | Next step                                      |
+| -------------------------- | --------------------------- | ---------------------------------------------- |
+| Is it the right post?      | `postUrl` & `text`          | `text` is the newest version Xquik read.       |
+| Can it send events?        | `isActive` & `pausedReason` | Resume with `isActive: true` once X shows it.  |
+| Which events does it send? | `eventTypes`                | Match your webhook subscriptions to this list. |
+| How did engagement move?   | `metrics.*.gain`            | Read hourly buckets for the trend.             |
+
+`pausedReason` is `insufficient_credits` when the balance could not pay an
+hour. Add credits, then resume. The other 3 reasons mean X stopped showing the
+post.
+
+Read stored events with `GET /events?postMonitorId={id}`. Read hourly values
+with [Post Monitor Metrics](/api-reference/monitors/post-metrics).
+
+## Path parameters
+
+<ParamField path="id" type="string" required>
+
+The post monitor ID. [Create Post Monitor](/api-reference/monitors/create-post) & [List Post Monitors](/api-reference/monitors/list-posts) return it.
+
+</ParamField>
+
+## Headers
+
+<ParamField header="x-api-key" type="string" required>
+
+Your API key. Session cookie authentication is also supported. Generate a key from the [dashboard](https://dashboard.xquik.com/en/account?tab=api-keys).
+
+</ParamField>
+
+## Response
+
+### 200 OK
+
+<ResponseField name="id" type="string">
+  Unique post monitor ID.
+</ResponseField>
+<ResponseField name="name" type="string">
+  Your label for the monitor, when set.
+</ResponseField>
+<ResponseField name="postId" type="string">
+  ID of the post you gave.
+</ResponseField>
+<ResponseField name="postUrl" type="string">
+  Link to the post.
+</ResponseField>
+<ResponseField name="authorId" type="string">
+  Permanent X user ID of the post's author.
+</ResponseField>
+<ResponseField name="authorUsername" type="string">
+  Username of the post's author.
+</ResponseField>
+<ResponseField name="authorName" type="string">
+  Display name of the post's author.
+</ResponseField>
+<ResponseField name="text" type="string">
+  Text of the newest version Xquik read.
+</ResponseField>
+<ResponseField name="postedAt" type="string">
+  ISO 8601 time X published the post.
+</ResponseField>
+<ResponseField name="eventTypes" type="string[]">
+  Post event types this monitor sends.
+</ResponseField>
+<ResponseField name="isActive" type="boolean">
+  Whether the monitor is active.
+</ResponseField>
+<ResponseField name="createdAt" type="string">
+  ISO 8601 creation timestamp.
+</ResponseField>
+<ResponseField name="nextBillingAt" type="string">
+  Next hourly credit charge time.
+</ResponseField>
+<ResponseField name="pausedReason" type="string">
+  `insufficient_credits`, `x_post_deleted`, `x_post_protected` or `x_post_unavailable`. Absent when
+  active or paused by you.
+</ResponseField>
+<ResponseField name="pausedAt" type="string">
+  When Xquik paused the monitor.
+</ResponseField>
+<ResponseField name="metrics" type="object">
+  `views`, `likes`, `retweets`, `replies`, `quotes` & `bookmarks`. Each holds `current` & `gain`
+  since tracking began. Both are `null` when X shows no count.
+</ResponseField>
+
+### 400 Invalid input
+
+The monitor ID is not valid.
+
+### 401 Unauthenticated
+
+Missing or invalid API key.
+
+### 404 Not found
+
+No post monitor has this ID on your account.
+
+### 429 Rate limited
+
+Too many requests. Wait for the `Retry-After` header before retrying.
+
+<Note>
+
+**Related.** [Update Post Monitor](/api-reference/monitors/update-post), [Delete Post Monitor](/api-reference/monitors/delete-post), [Post Monitor Metrics](/api-reference/monitors/post-metrics), or [List Events](/api-reference/events/list).
+
+</Note>

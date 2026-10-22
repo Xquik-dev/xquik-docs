@@ -39,6 +39,13 @@ returns a monitor ID, webhook ID, one-time signing secret, and signed JSON
 deliveries. Webhook operations are free. Active monitors cost 30 credits/hour
 and include stored events plus webhook delivery.
 
+[Post monitors](/api-reference/monitors/create-post) track 1 X post. Their 10
+types are `post.reply.new`, `post.quote.new`,
+`post.likes.changed`, `post.retweets.changed`, `post.replies.changed`,
+`post.quotes.changed`, `post.bookmarks.changed`, `post.views.changed`,
+`post.edited` & `post.deleted`. Each post event carries `postId`, `postUrl`,
+`authorId` & `authorUsername`.
+
 Have no public endpoint? [Stream events](/api-reference/events/stream) over 1
 open connection instead, and replay what you missed with `Last-Event-ID`.
 
@@ -82,6 +89,14 @@ open connection instead, and replay what you missed with `Last-Event-ID`.
 
     Create `POST /monitors/keywords` when a query should emit matching tweet
     events. Store `keywordMonitorId`, `query`, and `eventTypes`.
+
+  </Card>
+
+  <Card title="Post activity" icon="chart-line">
+
+    Create `POST /monitors/posts` when 1 post should emit replies, quotes,
+    edits, deletion & metric changes. Store `monitorId`, `postId` &
+    `eventTypes`.
 
   </Card>
 
@@ -507,6 +522,68 @@ A test payload that the [Test Webhook](/api-reference/webhooks/test) endpoint se
     "message": "Test delivery from Xquik"
   },
   "timestamp": "2026-02-27T12:00:00.000Z"
+}
+```
+
+## Post event shapes
+
+Post events carry `monitorType` `post` and the tracked post's fields.
+`post.reply.new` & `post.quote.new` carry the reply or quote as `data`, like
+`tweet.new`.
+
+### `post.likes.changed`
+
+Each metric's changed event fires at most once a minute. It covers the whole
+change since the last one. The other 5 metric events use the same `data`.
+
+```json
+{
+  "eventType": "post.likes.changed",
+  "monitorId": "31",
+  "monitorType": "post",
+  "postId": "2104984505677430978",
+  "postUrl": "https://x.com/xquik/status/2104984505677430978",
+  "authorId": "1661816432185823232",
+  "authorUsername": "xquik",
+  "data": {
+    "metric": "likes",
+    "previous": 17096,
+    "current": 17200,
+    "change": 104
+  }
+}
+```
+
+### `post.edited`
+
+The author edited the post. `versionId` is the newest version's ID.
+
+```json
+{
+  "eventType": "post.edited",
+  "monitorType": "post",
+  "postId": "2104984505677430978",
+  "data": {
+    "previousText": "We cut serving costs by 20%.",
+    "text": "We cut serving costs by 25%.",
+    "versionId": "2082577277246973001"
+  }
+}
+```
+
+### `post.deleted`
+
+3 reads in a row confirmed the deletion. `text` is the last text the monitor
+saw.
+
+```json
+{
+  "eventType": "post.deleted",
+  "monitorType": "post",
+  "postId": "2104984505677430978",
+  "data": {
+    "text": "We cut serving costs by 20%."
+  }
 }
 ```
 

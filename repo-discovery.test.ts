@@ -2689,12 +2689,13 @@ const REQUIRED_MONITOR_TYPES_GUIDE_SNIPPETS = [
 ] as const;
 
 const REQUIRED_EVENT_TYPES_GUIDE_SNIPPETS = [
-  'monitorType: "account" | "keyword";',
+  'monitorType: "account" | "keyword" | "post";',
   "username?: string;",
   "query?: string;",
   "keywordMonitorId?: string;",
   "xEventId?: string;",
-  "`monitorType` is `account` or `keyword`. `monitorId` points to the source monitor.",
+  "`monitorType` is `account`, `keyword` or `post`. `monitorId` points to the source monitor.",
+  "Post events include `postId`, `postUrl`, `authorId` and `authorUsername`.",
   "Account events include `username`. Keyword events include `query` and `keywordMonitorId`.",
   "Use `nextCursor` with the `cursor` query parameter for subsequent pages.",
 ] as const;
