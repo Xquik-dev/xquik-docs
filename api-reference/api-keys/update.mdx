@@ -1,0 +1,287 @@
+---
+title: "Update an Xquik API key's name or scope in place"
+sidebarTitle: "Update API key"
+description: "Rename an active Xquik API key or change its scope between full access and paid reads only. It keeps its secret & expiry, and its next request uses the change."
+api: "PATCH /api-keys/{id}"
+keywords: ["api key", "update", "rename", "scope", "paid reads", "read only"]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+{/* GENERATED RESPONSE EXAMPLES START */}
+
+<Panel>
+
+<Tabs defaultTabIndex={0} sync={false}>
+
+  <Tab title="200" id="response-api-keys-update-200">
+
+    ```json
+    {
+      "id": "42",
+      "name": "Analytics notebook",
+      "prefix": "xq_live_exam",
+      "scope": "paid_reads",
+      "isActive": true,
+      "createdAt": "2025-01-15T12:00:00Z"
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="400" id="response-api-keys-update-400">
+
+    ```json
+    {
+      "error": "invalid_input",
+      "message": "Invalid input. Check the request body."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="401" id="response-api-keys-update-401">
+
+    ```json
+    {
+      "error": "unauthenticated",
+      "message": "Authentication required. Provide a valid API key or bearer token."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="403" id="response-api-keys-update-403">
+
+    ```json
+    {
+      "error": "session_required",
+      "message": "API keys & OAuth tokens cannot use this route. Sign in at dashboard.xquik.com/account instead."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="404" id="response-api-keys-update-404">
+
+    ```json
+    {
+      "error": "not_found",
+      "message": "Resource not found."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="429" id="response-api-keys-update-429">
+
+    ```json
+    {
+      "error": "rate_limit_exceeded",
+      "message": "Too many requests. Try again later.",
+      "retryAfter": 60
+    }
+    ```
+
+  </Tab>
+</Tabs>
+
+</Panel>
+{/* GENERATED RESPONSE EXAMPLES END */}
+<LlmsDirective />
+
+Rename a key so its owner is clear, or narrow a key that only reads to `paid_reads`. Send `name`,
+`scope`, or both. The key keeps its secret, prefix and expiry.
+
+<Callout icon="circle-check" color="#16a34a">
+
+**Free.** This endpoint does not consume credits.
+
+</Callout>
+
+<CodeGroup>
+
+```bash cURL
+curl -X PATCH https://dashboard.xquik.com/api/v1/api-keys/42 \
+  -H "Cookie: __Host-xquik_session=YOUR_SESSION_COOKIE" \
+  -H "Origin: https://dashboard.xquik.com" \
+  -H "Sec-Fetch-Site: same-origin" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Analytics notebook", "scope": "paid_reads"}' | jq
+```
+
+```javascript Node.js
+const response = await fetch("https://dashboard.xquik.com/api/v1/api-keys/42", {
+  method: "PATCH",
+  headers: {
+    Cookie: "__Host-xquik_session=YOUR_SESSION_COOKIE",
+    Origin: "https://dashboard.xquik.com",
+    "Sec-Fetch-Site": "same-origin",
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({ name: "Analytics notebook", scope: "paid_reads" }),
+});
+const key = await response.json();
+console.log(key);
+```
+
+```python Python
+import requests
+
+response = requests.patch(
+    "https://dashboard.xquik.com/api/v1/api-keys/42",
+    cookies={"__Host-xquik_session": "YOUR_SESSION_COOKIE"},
+    headers={"Origin": "https://dashboard.xquik.com", "Sec-Fetch-Site": "same-origin"},
+    json={"name": "Analytics notebook", "scope": "paid_reads"},
+)
+key = response.json()
+print(key)
+```
+
+```go Go
+package main
+
+import (
+	"bytes"
+	"fmt"
+	"io"
+	"log"
+	"net/http"
+)
+
+func main() {
+	body := bytes.NewBufferString(`{"name": "Analytics notebook", "scope": "paid_reads"}`)
+	req, err := http.NewRequest("PATCH", "https://dashboard.xquik.com/api/v1/api-keys/42", body)
+	if err != nil {
+		log.Fatal(err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Origin", "https://dashboard.xquik.com")
+	req.Header.Set("Sec-Fetch-Site", "same-origin")
+	req.AddCookie(&http.Cookie{Name: "__Host-xquik_session", Value: "YOUR_SESSION_COOKIE"})
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	answer, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(string(answer))
+}
+```
+
+</CodeGroup>
+
+## Path parameters
+
+<ParamField path="id" type="string" required>
+
+The unique identifier of the API key to update.
+
+</ParamField>
+
+## Headers
+
+<ParamField header="Cookie" type="string" required>
+  Your signed-in dashboard session cookie, `__Host-xquik_session`. API keys and OAuth tokens get
+  `403 session_required`.
+</ParamField>
+
+<ParamField header="Origin" type="string" required>
+  Must be `https://dashboard.xquik.com`, sent with `Sec-Fetch-Site` set to `same-origin`. The
+  dashboard sends both.
+</ParamField>
+
+<ParamField header="Content-Type" type="string" required>
+
+Must be `application/json`.
+
+</ParamField>
+
+## Body
+
+Send at least 1 field.
+
+<ParamField body="name" type="string">
+
+New display name, up to 100 characters. An empty name saves `"Default"`.
+
+</ParamField>
+
+<ParamField body="scope" type="string">
+
+`full` calls every route an API key can use. `paid_reads` calls paid X read routes only. Other
+routes answer it with `403 forbidden`. The key's next request uses the new scope.
+
+</ParamField>
+
+## Response
+
+### 200 OK
+
+Returns the saved key with the same fields as [List API keys](/api-reference/api-keys/list).
+
+```json
+{
+  "id": "42",
+  "name": "Analytics notebook",
+  "prefix": "xq_a1b2",
+  "scope": "paid_reads",
+  "isActive": true,
+  "createdAt": "2026-02-24T10:30:00.000Z",
+  "lastUsedAt": "2026-02-24T18:45:12.000Z"
+}
+```
+
+### 400 Invalid input
+
+```json
+{
+  "error": "invalid_input",
+  "message": "Send name or scope to change."
+}
+```
+
+The body had neither field, `scope` was not `full` or `paid_reads`, or `name` was longer than 100
+characters. Xquik changes nothing.
+
+### 401 Unauthenticated
+
+```json
+{ "error": "unauthenticated" }
+```
+
+Missing, expired, or invalid dashboard session cookie.
+
+### 404 Not found
+
+```json
+{ "error": "not_found" }
+```
+
+No active API key with this ID exists on your account. A revoked key cannot change.
+
+### 429 Rate limited
+
+```json
+{
+  "error": "rate_limit_exceeded",
+  "message": "Too many requests. Try again later.",
+  "retryAfter": 60
+}
+```
+
+Too many requests. Wait for the `Retry-After` header before retrying.
+
+<Note>
+
+API key changes require a same-origin dashboard session. API keys and OAuth bearer tokens cannot
+change account keys.
+
+**Related.** [Create API Key](/api-reference/api-keys/create) &middot; [List API Keys](/api-reference/api-keys/list) &middot; [Revoke API Key](/api-reference/api-keys/revoke)
+
+</Note>

@@ -1,0 +1,253 @@
+---
+title: "Revoke many Xquik API keys at once in 1 request"
+sidebarTitle: "Revoke API keys"
+description: "Revoke up to 100 Xquik API keys in 1 request & get back the IDs it revoked. Unknown IDs are skipped, so a retry is safe. Revocation is immediate & free."
+api: "POST /api-keys/bulk-revoke"
+keywords: ["api key", "revoke", "bulk", "delete", "rotate"]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+{/* GENERATED RESPONSE EXAMPLES START */}
+
+<Panel>
+
+<Tabs defaultTabIndex={0} sync={false}>
+
+  <Tab title="200" id="response-api-keys-bulk-revoke-200">
+
+    ```json
+    {
+      "revoked": [
+        "42",
+        "43"
+      ]
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="400" id="response-api-keys-bulk-revoke-400">
+
+    ```json
+    {
+      "error": "invalid_input",
+      "message": "Invalid input. Check the request body."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="401" id="response-api-keys-bulk-revoke-401">
+
+    ```json
+    {
+      "error": "unauthenticated",
+      "message": "Authentication required. Provide a valid API key or bearer token."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="403" id="response-api-keys-bulk-revoke-403">
+
+    ```json
+    {
+      "error": "session_required",
+      "message": "API keys & OAuth tokens cannot use this route. Sign in at dashboard.xquik.com/account instead."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="429" id="response-api-keys-bulk-revoke-429">
+
+    ```json
+    {
+      "error": "rate_limit_exceeded",
+      "message": "Too many requests. Try again later.",
+      "retryAfter": 60
+    }
+    ```
+
+  </Tab>
+</Tabs>
+
+</Panel>
+{/* GENERATED RESPONSE EXAMPLES END */}
+<LlmsDirective />
+
+Clean up old or leaked keys in 1 request. Xquik revokes each listed key that belongs to your account
+and answers with the IDs it revoked. It skips IDs of unknown keys and of other accounts' keys, so a
+retry is safe.
+
+<Callout icon="circle-check" color="#16a34a">
+
+**Free.** This endpoint does not consume credits.
+
+</Callout>
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://dashboard.xquik.com/api/v1/api-keys/bulk-revoke \
+  -H "Cookie: __Host-xquik_session=YOUR_SESSION_COOKIE" \
+  -H "Origin: https://dashboard.xquik.com" \
+  -H "Sec-Fetch-Site: same-origin" \
+  -H "Content-Type: application/json" \
+  -d '{"ids": ["42", "43"]}' | jq
+```
+
+```javascript Node.js
+const response = await fetch("https://dashboard.xquik.com/api/v1/api-keys/bulk-revoke", {
+  method: "POST",
+  headers: {
+    Cookie: "__Host-xquik_session=YOUR_SESSION_COOKIE",
+    Origin: "https://dashboard.xquik.com",
+    "Sec-Fetch-Site": "same-origin",
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({ ids: ["42", "43"] }),
+});
+const { revoked } = await response.json();
+console.log(revoked);
+```
+
+```python Python
+import requests
+
+response = requests.post(
+    "https://dashboard.xquik.com/api/v1/api-keys/bulk-revoke",
+    cookies={"__Host-xquik_session": "YOUR_SESSION_COOKIE"},
+    headers={"Origin": "https://dashboard.xquik.com", "Sec-Fetch-Site": "same-origin"},
+    json={"ids": ["42", "43"]},
+)
+print(response.json()["revoked"])
+```
+
+```go Go
+package main
+
+import (
+	"bytes"
+	"fmt"
+	"io"
+	"log"
+	"net/http"
+)
+
+func main() {
+	body := bytes.NewBufferString(`{"ids": ["42", "43"]}`)
+	req, err := http.NewRequest("POST", "https://dashboard.xquik.com/api/v1/api-keys/bulk-revoke", body)
+	if err != nil {
+		log.Fatal(err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Origin", "https://dashboard.xquik.com")
+	req.Header.Set("Sec-Fetch-Site", "same-origin")
+	req.AddCookie(&http.Cookie{Name: "__Host-xquik_session", Value: "YOUR_SESSION_COOKIE"})
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	answer, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(string(answer))
+}
+```
+
+</CodeGroup>
+
+## Headers
+
+<ParamField header="Cookie" type="string" required>
+  Your signed-in dashboard session cookie, `__Host-xquik_session`. API keys and OAuth tokens get
+  `403 session_required`.
+</ParamField>
+
+<ParamField header="Origin" type="string" required>
+  Must be `https://dashboard.xquik.com`, sent with `Sec-Fetch-Site` set to `same-origin`. The
+  dashboard sends both.
+</ParamField>
+
+<ParamField header="Content-Type" type="string" required>
+
+Must be `application/json`.
+
+</ParamField>
+
+## Body
+
+<ParamField body="ids" type="string[]" required>
+
+IDs of the keys to revoke, from 1 to 100. Get them from [List API keys](/api-reference/api-keys/list).
+
+</ParamField>
+
+## Response
+
+### 200 OK
+
+<ResponseField name="revoked" type="string[]">
+
+IDs of your keys that are now revoked, newest first. A key you had already revoked still appears.
+Unknown IDs and other accounts' keys never do. A repeated ID appears once.
+
+</ResponseField>
+
+```json
+{ "revoked": ["42", "43"] }
+```
+
+### 400 Invalid input
+
+```json
+{
+  "error": "invalid_input",
+  "message": "Send ids as a list of 1 to 100 API key IDs."
+}
+```
+
+`ids` was missing, empty, longer than 100, or held a value that is not a numeric ID. Xquik revokes
+nothing.
+
+### 401 Unauthenticated
+
+```json
+{ "error": "unauthenticated" }
+```
+
+Missing, expired, or invalid dashboard session cookie.
+
+### 429 Rate limited
+
+```json
+{
+  "error": "rate_limit_exceeded",
+  "message": "Too many requests. Try again later.",
+  "retryAfter": 60
+}
+```
+
+Too many requests. Wait for the `Retry-After` header before retrying.
+
+<Warning>
+
+Revocation is **immediate and permanent**. Every request with a revoked key returns
+`401 Unauthenticated`. Create a new key if you need one.
+
+</Warning>
+
+<Note>
+
+API key revocation requires a same-origin dashboard session. API keys and OAuth bearer tokens cannot
+revoke account keys.
+
+**Related.** [Revoke API Key](/api-reference/api-keys/revoke) &middot; [List API Keys](/api-reference/api-keys/list) &middot; [Create API Key](/api-reference/api-keys/create)
+
+</Note>
