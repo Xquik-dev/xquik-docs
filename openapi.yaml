@@ -1922,6 +1922,284 @@ paths:
         '404': *not-found-response
         '429': *rate-limit-exceeded-response
 
+  /monitors/posts:
+    get:
+      operationId: listPostMonitors
+      description:
+        Returns post monitors with each post's 6 metrics, their current values &
+        gains since tracking began.
+      summary: List post monitors
+      tags: [Monitors]
+      security: *api-auth
+      parameters: *list-limit-after-parameters
+      responses:
+        '200':
+          description: Post monitor list
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [monitors, total, hasMore]
+                properties:
+                  monitors:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PostMonitor'
+                    example: []
+                  total:
+                    description: Post monitors on this page.
+                    type: integer
+                    minimum: 0
+                    example: 0
+                  hasMore: *boolean-example-false
+                  nextCursor: *short-id-example-schema
+              example:
+                monitors: []
+                total: 0
+                hasMore: false
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '401': *unauthenticated-response
+        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '429': *rate-limit-exceeded-response
+    post:
+      operationId: createPostMonitor
+      summary: Create post monitor
+      description:
+        Creates a monitor for 1 X post. It tracks replies, quotes, edits,
+        deletion & 6 metrics, for 30 credits an hour with events & webhook
+        deliveries included. That hourly price is a monitor's only charge.
+        Creation needs the credits of the first hour & reads the post once.
+      tags: [Monitors]
+      security: *api-auth-2
+      requestBody:
+        required: true
+        description: The post to monitor & the event types to send.
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [post]
+              properties:
+                post:
+                  type: string
+                  minLength: 1
+                  maxLength: 2048
+                  description:
+                    Post link or ID. x.com, twitter.com, mobile & /i/web/status/
+                    links work with any query string.
+                  example: 'https://x.com/xquik/status/2104984505677430978'
+                name:
+                  type: [string, 'null']
+                  minLength: 1
+                  maxLength: 80
+                  description:
+                    Your own label for the post monitor. Its events carry it as
+                    monitorName.
+                  example: Launch post
+                eventTypes:
+                  $ref: '#/components/schemas/PostEventTypeArray'
+            example:
+              post: 'https://x.com/xquik/status/2104984505677430978'
+              name: Launch post
+              eventTypes: [post.reply.new, post.likes.changed]
+      responses:
+        '201':
+          description: Post monitor created
+          content: &post-monitor-content
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostMonitor'
+              example:
+                id: '31'
+                postId: '2104984505677430978'
+                postUrl: 'https://x.com/xquik/status/2104984505677430978'
+                authorId: '1661816432185823232'
+                authorUsername: xquik
+                authorName: Xquik
+                text: 'We shipped post monitors.'
+                postedAt: '2026-09-29T17:19:49.000Z'
+                eventTypes: [post.reply.new, post.likes.changed]
+                isActive: true
+                createdAt: '2026-10-22T11:00:00Z'
+                nextBillingAt: '2026-10-22T12:00:00Z'
+                metrics:
+                  views: { current: 541100, gain: 0 }
+                  likes: { current: 1885, gain: 0 }
+                  retweets: { current: 112, gain: 0 }
+                  replies: { current: 85, gain: 0 }
+                  quotes: { current: 87, gain: 0 }
+                  bookmarks: { current: 470, gain: 0 }
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '404':
+          $ref: '#/components/responses/TweetNotFound'
+        '409':
+          description: Post monitor already exists
+          content:
+            application/json:
+              schema: *error-schema
+              example:
+                error: 'monitor_already_exists'
+                message: 'Monitor already exists.'
+        '422':
+          description:
+            The post's author limits who can see it. Choose a public post.
+          content:
+            application/json:
+              schema: *error-schema
+              example:
+                error: 'post_unavailable'
+                message:
+                  "This post's author limits who can see it. Try again once the
+                  post is public."
+                reason: protected
+        '429': *rate-limit-exceeded-response
+        '502':
+          $ref: '#/components/responses/XApiError'
+        '503':
+          $ref: '#/components/responses/ReadBusy'
+
+  /monitors/posts/{id}:
+    get:
+      operationId: getPostMonitor
+      description:
+        Returns 1 post monitor with its post & the 6 metrics, each with its
+        current value & gain since tracking began.
+      summary: Get post monitor
+      tags: [Monitors]
+      security: *api-auth-2
+      parameters: *resource-id-parameters
+      responses:
+        '200':
+          description: Post monitor details
+          content: *post-monitor-content
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '404': *not-found-response
+        '429': *rate-limit-exceeded-response
+    patch:
+      operationId: updatePostMonitor
+      description:
+        Updates a post monitor's label, event types or active state. Turning a
+        paused monitor on reads the post first, & answers 409 while X hides it.
+      summary: Update post monitor
+      tags: [Monitors]
+      security: *api-auth-2
+      parameters: *resource-id-parameters
+      requestBody:
+        required: true
+        description: Updated label, event types or active state.
+        content:
+          application/json:
+            schema:
+              type: object
+              minProperties: 1
+              properties:
+                eventTypes:
+                  $ref: '#/components/schemas/PostEventTypeArray'
+                isActive: *boolean-example-true
+                name:
+                  type: [string, 'null']
+                  minLength: 1
+                  maxLength: 80
+                  description:
+                    New label for the post monitor. Send null to remove it.
+                  example: Launch post
+            example:
+              eventTypes: [post.reply.new, post.likes.changed]
+              isActive: true
+              name: Launch post
+      responses:
+        '200':
+          description: Post monitor updated
+          content: *post-monitor-content
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '404': *not-found-response
+        '409':
+          description:
+            X still hides the post, so the monitor stays paused & costs nothing.
+            `reason` is deleted, protected or author_suspended when X names it.
+          content:
+            application/json:
+              schema: *error-schema
+              example:
+                error: 'post_unavailable'
+                message: 'The author deleted this post. Delete this monitor.'
+                reason: deleted
+        '429': *rate-limit-exceeded-response
+        '502':
+          $ref: '#/components/responses/XApiError'
+        '503':
+          $ref: '#/components/responses/ReadBusy'
+    delete:
+      operationId: deletePostMonitor
+      description:
+        Stops 1 post monitor, then removes its stored events & metric history in
+        bounded batches. Poll statusUrl until the monitor returns 404.
+      summary: Delete post monitor
+      tags: [Monitors]
+      security: *api-auth-2
+      parameters: *resource-id-parameters
+      responses: *monitor-deletion-responses
+
+  /monitors/posts/{id}/metrics:
+    get:
+      operationId: getPostMonitorMetrics
+      description:
+        Returns 1 bucket per hour with each metric's value at the hour's end &
+        its gain over that hour. The last bucket is the current hour. Hours
+        before tracking began carry the starting values with a gain of 0.
+      summary: Get post monitor metrics
+      tags: [Monitors]
+      security: *api-auth-2
+      parameters:
+        - $ref: '#/components/parameters/ResourceId'
+        - name: hours
+          in: query
+          description: Hours to return, from 1 to 720.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 720
+            default: 12
+      responses:
+        '200':
+          description: Hourly metric buckets
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostMonitorMetrics'
+              example:
+                hours: 1
+                buckets:
+                  - at: '2026-10-22T11:00:00.000Z'
+                    metrics:
+                      views: { value: 541600, gain: 500 }
+                      likes: { value: 1890, gain: 5 }
+                      retweets: { value: 112, gain: 0 }
+                      replies: { value: 86, gain: 1 }
+                      quotes: { value: 87, gain: 0 }
+                      bookmarks: { value: 471, gain: 1 }
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '404': *not-found-response
+        '429': *rate-limit-exceeded-response
+
   /monitors/{id}:
     get:
       operationId: getMonitor
@@ -2051,11 +2329,19 @@ paths:
           schema:
             type: string
             maxLength: 32
+        - name: postMonitorId
+          in: query
+          description: Post monitor ID. The post_monitor_id alias also works.
+          schema:
+            type: string
+            maxLength: 32
         - name: eventType
           in: query
           description: Filter events by type
           schema:
-            $ref: '#/components/schemas/EventType'
+            anyOf:
+              - $ref: '#/components/schemas/EventType'
+              - $ref: '#/components/schemas/PostEventType'
       responses:
         '200':
           description: Event list
@@ -3298,7 +3584,10 @@ paths:
                     channel gets 5 quick messages, then 1 every 30 s. To deliver
                     to Telegram, use POST /webhooks/telegram instead.
                   example: 'https://example.com/webhook'
-                eventTypes: *event-types
+                eventTypes: &webhook-event-types
+                  type: array
+                  $ref: '#/components/schemas/WebhookEventTypeArray'
+                  example: [tweet.new, post.reply.new]
             example:
               url: 'https://example.com/webhook'
               eventTypes: [tweet.new, tweet.reply]
@@ -3323,7 +3612,7 @@ paths:
                     description:
                       Plaintext HMAC signing secret returned only at creation.
                     example: 'abababababababababababababababababababababababababababababababab'
-                  eventTypes: *event-types
+                  eventTypes: *webhook-event-types
                   createdAt: *created-at-schema
               example:
                 id: '42'
@@ -3425,7 +3714,7 @@ paths:
                   format: uri
                   maxLength: 2048
                   example: 'https://example.com/webhook'
-                eventTypes: *single-event-type
+                eventTypes: *webhook-event-types
                 isActive: *boolean-example-true
             example:
               url: 'https://example.com/webhook'
@@ -18059,6 +18348,7 @@ components:
                 - no_subscription
                 - not_found
                 - payment_failed
+                - post_unavailable
                 - rate_limit_exceeded
                 - service_unavailable
                 - session_required
@@ -18332,6 +18622,18 @@ components:
       minItems: 1
       maxItems: 30
       example: ['tweet.new', 'tweet.reply']
+
+    WebhookEventTypeArray:
+      description:
+        Event types to deliver, from account, keyword & post monitors.
+      type: array
+      items:
+        anyOf:
+          - $ref: '#/components/schemas/EventType'
+          - $ref: '#/components/schemas/PostEventType'
+      minItems: 1
+      maxItems: 40
+      example: ['tweet.new', 'post.reply.new']
 
     ExtractionToolType:
       description: Identifier for the extraction tool used to run a job.
@@ -19074,6 +19376,211 @@ components:
           description: When Xquik paused this keyword monitor.
           example: '2025-01-15T12:00:00Z'
 
+    PostEventType:
+      description: >
+        Type of post monitor event. post.reply.new & post.quote.new fire for
+        each new direct reply & quote. A metric's changed event fires at most
+        once a minute & covers the whole change since the last one. post.edited
+        carries the text before the edit. post.deleted fires once 3 reads in a
+        row confirm the author deleted the post.
+      type: string
+      enum:
+        - post.reply.new
+        - post.quote.new
+        - post.likes.changed
+        - post.retweets.changed
+        - post.replies.changed
+        - post.quotes.changed
+        - post.bookmarks.changed
+        - post.views.changed
+        - post.edited
+        - post.deleted
+
+    PostEventTypeArray:
+      description:
+        Post event types to send. Without it, a monitor sends new replies, new
+        quotes, like & retweet changes, edits & deletion.
+      type: array
+      items:
+        $ref: '#/components/schemas/PostEventType'
+      minItems: 1
+      maxItems: 10
+      example: [post.reply.new, post.quote.new, post.likes.changed]
+
+    PostMetricReading:
+      description:
+        A metric's current value & its gain since tracking began. Both are null
+        when X shows no count, as for views on old posts.
+      type: object
+      required: [current, gain]
+      properties:
+        current:
+          type: [integer, 'null']
+          minimum: 0
+          maximum: 9007199254740991
+          example: 1885
+        gain:
+          type: [integer, 'null']
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+          example: 12
+
+    PostMetricPoint:
+      description:
+        A metric's value at the hour's end & its gain over that hour. Both are
+        null when X shows no count.
+      type: object
+      required: [value, gain]
+      properties:
+        value:
+          type: [integer, 'null']
+          minimum: 0
+          maximum: 9007199254740991
+          example: 1885
+        gain:
+          type: [integer, 'null']
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+          example: 5
+
+    PostMetrics:
+      description: The 6 metrics of a post.
+      type: object
+      required: [views, likes, retweets, replies, quotes, bookmarks]
+      properties:
+        views: &post-metric-reading
+          $ref: '#/components/schemas/PostMetricReading'
+        likes: *post-metric-reading
+        retweets: *post-metric-reading
+        replies: *post-metric-reading
+        quotes: *post-metric-reading
+        bookmarks: *post-metric-reading
+
+    PostMonitor:
+      description:
+        Post monitor that tracks 1 X post's replies, quotes, edits & metrics.
+      type: object
+      required:
+        - id
+        - postId
+        - postUrl
+        - authorId
+        - authorUsername
+        - authorName
+        - text
+        - postedAt
+        - eventTypes
+        - isActive
+        - createdAt
+        - nextBillingAt
+        - metrics
+      properties:
+        id:
+          type: string
+          example: '31'
+        name:
+          type: string
+          description: Customer-set label of the post monitor, when set.
+          example: Launch post
+        postId:
+          type: string
+          description: ID of the post you gave.
+          example: '2104984505677430978'
+        postUrl:
+          type: string
+          format: uri
+          example: 'https://x.com/xquik/status/2104984505677430978'
+        authorId:
+          type: string
+          description: Permanent X user ID of the post's author.
+          example: '1661816432185823232'
+        authorUsername:
+          type: string
+          example: xquik
+        authorName:
+          type: string
+          example: Xquik
+        text:
+          type: string
+          description: Text of the newest version Xquik read.
+          example: 'We shipped post monitors.'
+        postedAt:
+          type: string
+          format: date-time
+          example: '2026-09-29T17:19:49.000Z'
+        eventTypes:
+          $ref: '#/components/schemas/PostEventTypeArray'
+        isActive: *boolean-example-true
+        createdAt: *created-at-schema
+        nextBillingAt:
+          type: string
+          format: date-time
+          description: Next hourly credit charge time for this post monitor.
+          example: '2026-10-22T12:00:00Z'
+        pausedReason:
+          type: string
+          enum:
+            - insufficient_credits
+            - x_post_deleted
+            - x_post_protected
+            - x_post_unavailable
+          description:
+            Why Xquik paused this post monitor. insufficient_credits means the
+            balance could not pay an hour, so add credits & resume. The other 3
+            mean X stopped showing the post. Absent when the monitor is active
+            or you paused it yourself.
+          example: x_post_deleted
+        pausedAt:
+          type: string
+          format: date-time
+          description: When Xquik paused this post monitor.
+          example: '2026-10-22T12:00:00Z'
+        metrics:
+          $ref: '#/components/schemas/PostMetrics'
+
+    PostMonitorMetrics:
+      description: Hourly metric buckets of 1 post monitor, oldest first.
+      type: object
+      required: [hours, buckets]
+      properties:
+        hours:
+          type: integer
+          minimum: 1
+          maximum: 720
+          example: 12
+        buckets:
+          type: array
+          maxItems: 720
+          example:
+            - at: '2026-10-22T11:00:00.000Z'
+              metrics:
+                views: { value: 541600, gain: 500 }
+                likes: { value: 1890, gain: 5 }
+                retweets: { value: 112, gain: 0 }
+                replies: { value: 86, gain: 1 }
+                quotes: { value: 87, gain: 0 }
+                bookmarks: { value: 471, gain: 1 }
+          items:
+            type: object
+            required: [at, metrics]
+            properties:
+              at:
+                type: string
+                format: date-time
+                description: Start of the hour.
+                example: '2026-10-22T11:00:00.000Z'
+              metrics:
+                type: object
+                required: [views, likes, retweets, replies, quotes, bookmarks]
+                properties:
+                  views: &post-metric-point
+                    $ref: '#/components/schemas/PostMetricPoint'
+                  likes: *post-metric-point
+                  retweets: *post-metric-point
+                  replies: *post-metric-point
+                  quotes: *post-metric-point
+                  bookmarks: *post-metric-point
+
     Event:
       description:
         Monitor event summary with source metadata and occurrence time.
@@ -19082,8 +19589,11 @@ components:
       properties:
         id:
           type: string
-        type:
-          $ref: '#/components/schemas/EventType'
+        type: &event-or-post-event-type
+          example: tweet.new
+          anyOf:
+            - $ref: '#/components/schemas/EventType'
+            - $ref: '#/components/schemas/PostEventType'
         username:
           type: string
           description:
@@ -19099,8 +19609,8 @@ components:
         monitorId:
           type: string
           description:
-            Account monitor ID for account events, or keyword monitor ID for
-            keyword events.
+            Account monitor ID for account events, keyword monitor ID for
+            keyword events, or post monitor ID for post events.
         monitorName:
           type: string
           description:
@@ -19108,8 +19618,24 @@ components:
             rename leaves the event's label unchanged.
         monitorType:
           type: string
-          enum: [account, keyword]
+          enum: [account, keyword, post]
           description: Source monitor type.
+        postId:
+          type: string
+          description: ID of the monitored post, present for post events.
+        postUrl:
+          type: string
+          format: uri
+          description: Link to the monitored post, present for post events.
+        authorId:
+          type: string
+          description:
+            Permanent X user ID of the monitored post's author, present for post
+            events.
+        authorUsername:
+          type: string
+          description:
+            Username of the monitored post's author, present for post events.
         keywordMonitorId:
           type: string
           description: Keyword monitor ID, present for keyword monitor events.
@@ -19130,10 +19656,7 @@ components:
       required: [id, type, monitorId, monitorType, occurredAt, data]
       properties:
         id: *resource-id-example-schema
-        type:
-          type: string
-          $ref: '#/components/schemas/EventType'
-          example: 'tweet.new'
+        type: *event-or-post-event-type
         username:
           type: string
           description: Current account username for this detailed event.
@@ -19160,7 +19683,7 @@ components:
           example: Launch watch
         monitorType:
           type: string
-          enum: [account, keyword]
+          enum: [account, keyword, post]
           description: Source monitor type for this detailed event.
           example: account
         keywordMonitorId:
@@ -19196,7 +19719,73 @@ components:
         - $ref: '#/components/schemas/MonitorPost'
         - $ref: '#/components/schemas/MonitorProfileChange'
         - $ref: '#/components/schemas/MonitorFollow'
+        - $ref: '#/components/schemas/MonitorPostMetricChange'
+        - $ref: '#/components/schemas/MonitorPostEdit'
+        - $ref: '#/components/schemas/MonitorPostDeleted'
         - $ref: '#/components/schemas/MonitorLegacyPost'
+
+    MonitorPostMetricChange:
+      description:
+        A post metric's change since its last event, on post.likes.changed,
+        post.retweets.changed, post.replies.changed, post.quotes.changed,
+        post.bookmarks.changed & post.views.changed.
+      type: object
+      required: [change, current, metric, previous]
+      properties:
+        metric:
+          type: string
+          enum: [bookmarks, likes, quotes, replies, retweets, views]
+          description: The metric that changed.
+          example: likes
+        previous:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+          description: The count the last event of this metric reported.
+          example: 17096
+        current:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+          description: The count X shows now.
+          example: 17200
+        change:
+          type: integer
+          format: int64
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+          description: Current count minus previous count.
+          example: 104
+
+    MonitorPostEdit:
+      description: The post's text before & after an edit, on post.edited.
+      type: object
+      required: [previousText, text, versionId]
+      properties:
+        previousText:
+          type: string
+          description: The text before the edit.
+          example: We cut serving costs by 20%.
+        text:
+          type: string
+          description: The text of the newest version.
+          example: We cut serving costs by 25%.
+        versionId:
+          type: string
+          description: X's ID of the newest version of the post.
+          example: '2082577277246973001'
+
+    MonitorPostDeleted:
+      description: The last text the monitor saw, on post.deleted.
+      type: object
+      required: [text]
+      properties:
+        text:
+          type: string
+          description: The post's text before its author deleted it.
+          example: We cut serving costs by 20%.
 
     MonitorFollow:
       description:
@@ -19538,7 +20127,7 @@ components:
           type: string
           format: uri
           example: 'https://example.com/webhooks/xquik'
-        eventTypes: *event-types
+        eventTypes: *webhook-event-types
         isActive: *boolean-example-true
         consecutiveFailures:
           type: integer
