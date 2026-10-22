@@ -22,7 +22,21 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
       "fullKey": "xq_live_example_key",
       "name": "My API Key",
       "prefix": "xq_live_exam",
-      "createdAt": "2025-01-15T12:00:00Z"
+      "scope": "paid_reads",
+      "isActive": true,
+      "createdAt": "2025-01-15T12:00:00Z",
+      "expiresAt": "2025-02-14T12:00:00Z"
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="400" id="response-api-keys-create-400">
+
+    ```json
+    {
+      "error": "invalid_input",
+      "message": "Invalid input. Check the request body."
     }
     ```
 
@@ -70,6 +84,8 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 ## When to create a key
 
 Use this route only when creating a new credential. `fullKey` appears at creation, so store it immediately in a secret manager. List operations return inventory data and never replace this storage step.
+
+Give a workload that only reads X data a `paid_reads` key. Set `expiresInDays` so a forgotten key stops working on its own.
 
 <Callout icon="circle-check" color="#16a34a">
 
@@ -179,7 +195,9 @@ func main() {
 | Full API key           | `fullKey`                   | Store it once in an approved secret manager. |
 | Safe prefix            | `prefix`                    | Use this value in logs and key inventories.  |
 | Key label              | `name`                      | Identify the workload or environment.        |
+| Access scope           | `scope`                     | Confirm the key can call only what it needs. |
 | Creation time          | `createdAt`                 | Record when credential access began.         |
+| Expiry time            | `expiresAt`                 | Plan the replacement before this time.       |
 | Active-key limit       | `403 api_key_limit_reached` | Revoke an unused key before retrying.        |
 
 ## Headers
@@ -208,6 +226,22 @@ Display name for the key. Defaults to `"Default"` if omitted.
 
 </ParamField>
 
+<ParamField body="scope" type="string" default="full">
+
+What the key can call. `full` calls every route an API key can use. `paid_reads` calls paid X read
+routes only, such as tweet search, profiles and tweets. Other routes answer it with
+`403 forbidden`. Missing or `null` saves `full`. Change it later with
+[Update API key](/api-reference/api-keys/update).
+
+</ParamField>
+
+<ParamField body="expiresInDays" type="integer">
+
+Days until the key stops working, from 1 to 365. Missing or `null` keeps it working until you revoke
+it. You cannot change the expiry later. Create a new key instead.
+
+</ParamField>
+
 ## Response
 
 ### 201 Created
@@ -232,9 +266,24 @@ First 8 characters of the key including the `xq_` prefix (for example `"xq_a1b2"
 Display name of the key.
 
 </ResponseField>
+<ResponseField name="scope" type="string">
+
+`full` or `paid_reads`.
+
+</ResponseField>
+<ResponseField name="isActive" type="boolean">
+
+Always `true` for a new key.
+
+</ResponseField>
 <ResponseField name="createdAt" type="string">
 
 ISO 8601 creation timestamp.
+
+</ResponseField>
+<ResponseField name="expiresAt" type="string">
+
+ISO 8601 time the key stops working. Omitted when the key never expires.
 
 </ResponseField>
 
@@ -244,6 +293,8 @@ ISO 8601 creation timestamp.
   "fullKey": "xq_YOUR_KEY_HERE",
   "prefix": "xq_a1b2",
   "name": "Production",
+  "scope": "full",
+  "isActive": true,
   "createdAt": "2026-02-24T10:30:00.000Z"
 }
 ```
@@ -253,6 +304,18 @@ ISO 8601 creation timestamp.
 Xquik returns `fullKey` once. Store it in a secret manager. You cannot retrieve it again.
 
 </Warning>
+
+### 400 Invalid input
+
+```json
+{
+  "error": "invalid_input",
+  "message": "Set expiresInDays to a whole number from 1 to 365."
+}
+```
+
+`scope` is not `full` or `paid_reads`, `expiresInDays` is outside 1 to 365, or `name` is longer than
+100 characters. The message names the field to fix. Xquik creates no key.
 
 ### 401 Unauthenticated
 
@@ -291,6 +354,6 @@ Too many requests. Wait for the `Retry-After` header before retrying.
 API key creation requires a same-origin dashboard session. API keys and OAuth
 bearer tokens cannot create more keys.
 
-**Related.** [List API Keys](/api-reference/api-keys/list) &middot; [Revoke API Key](/api-reference/api-keys/revoke)
+**Related.** [List API Keys](/api-reference/api-keys/list) &middot; [Update API Key](/api-reference/api-keys/update) &middot; [Revoke API Key](/api-reference/api-keys/revoke) &middot; [Revoke API Keys](/api-reference/api-keys/bulk-revoke)
 
 </Note>
