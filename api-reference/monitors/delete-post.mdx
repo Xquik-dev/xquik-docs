@@ -1,0 +1,139 @@
+---
+title: "Delete Twitter post monitor & metric history"
+sidebarTitle: Delete post monitor
+description: "Stop a post monitor. Xquik removes its stored events & hourly metric history in batches. Poll the status URL until it answers 404, then deletion is done."
+api: "DELETE /monitors/posts/{id}"
+keywords: ["post monitor", "delete", "remove", "stop tracking"]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+<LlmsDirective />
+
+Delete a post monitor only when you no longer need the post's events or
+metrics. Pause it instead when you might resume.
+
+<Callout icon="circle-check" color="#16a34a">
+
+**Free.** This endpoint does not consume credits.
+
+</Callout>
+
+<CodeGroup>
+
+```bash cURL
+curl -X DELETE https://xquik.com/api/v1/monitors/posts/31 \
+  -H "x-api-key: xq_YOUR_KEY_HERE" | jq
+```
+
+```javascript Node.js
+const monitorId = "31";
+const response = await fetch(`https://xquik.com/api/v1/monitors/posts/${monitorId}`, {
+  method: "DELETE",
+  headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
+});
+const result = await response.json();
+const receipt = {
+  post_monitor_id: monitorId,
+  success: result.success === true,
+  verify_endpoint: result.statusUrl,
+};
+process.stdout.write(`${JSON.stringify(receipt)}\n`);
+```
+
+```python Python
+import json
+import requests
+
+monitor_id = "31"
+response = requests.delete(
+    f"https://xquik.com/api/v1/monitors/posts/{monitor_id}",
+    headers={"x-api-key": "xq_YOUR_KEY_HERE"},
+)
+result = response.json()
+receipt = {
+    "post_monitor_id": monitor_id,
+    "success": result["success"] is True,
+    "verify_endpoint": result["statusUrl"],
+}
+print(json.dumps(receipt))
+```
+
+</CodeGroup>
+
+Poll `verify_endpoint` while it answers `200`. Deletion is done when it
+answers `404`. Wait for `Retry-After` between requests.
+
+## Before you delete
+
+Export the events & metrics you need first. Deletion removes the monitor's
+stored events & hourly metric history.
+
+A monitor that Xquik paused for a deleted post costs nothing. Delete it to
+tidy your list.
+
+## Path parameters
+
+<ParamField path="id" type="string" required>
+
+The post monitor ID.
+
+</ParamField>
+
+## Headers
+
+<ParamField header="x-api-key" type="string" required>
+
+Your API key. Session cookie authentication is also supported. Generate a key from the [dashboard](https://dashboard.xquik.com/en/account?tab=api-keys).
+
+</ParamField>
+
+## Response
+
+### 202 Accepted
+
+<ResponseField name="deletionStatus" type="string">
+  Returns `deleting` while cleanup runs.
+</ResponseField>
+<ResponseField name="statusUrl" type="string">
+  Poll this URL until it answers `404`.
+</ResponseField>
+<ResponseField name="success" type="boolean">
+  Returns `true` when deletion starts.
+</ResponseField>
+
+```json
+{
+  "deletionStatus": "deleting",
+  "statusUrl": "/api/v1/monitors/posts/31",
+  "success": true
+}
+```
+
+The response also has `Location` & `Retry-After` headers.
+
+### 400 Invalid input
+
+The monitor ID is not valid.
+
+### 401 Unauthenticated
+
+Missing or invalid API key.
+
+### 403 Forbidden
+
+This API key can't change monitors. Use a Full access key.
+
+### 404 Not found
+
+No post monitor has this ID on your account.
+
+### 429 Rate limited
+
+Too many requests. Wait for the `Retry-After` header before retrying.
+
+<Note>
+
+**Related.** [List Post Monitors](/api-reference/monitors/list-posts) to check removal, or [Create Post Monitor](/api-reference/monitors/create-post) to track a new post.
+
+</Note>

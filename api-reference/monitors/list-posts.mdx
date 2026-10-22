@@ -1,0 +1,154 @@
+---
+title: "Twitter post monitor list & tracked post metrics"
+sidebarTitle: List post monitors
+description: "List up to 200 post monitors per page with each post, author, event types, active state & 6 metrics with gains since tracking began. Listing monitors is free."
+api: "GET /monitors/posts"
+keywords: ["post monitor", "list", "tweet metrics", "engagement tracking"]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+<LlmsDirective />
+
+List every post monitor on your account. Each row holds the post, its author,
+its event types & its 6 metrics. Each metric shows its current value & its gain
+since tracking began.
+
+<Callout icon="circle-check" color="#16a34a">
+
+**Free.** This endpoint does not consume credits.
+
+</Callout>
+
+<CodeGroup>
+
+```bash cURL
+curl "https://xquik.com/api/v1/monitors/posts?limit=50" \
+  -H "x-api-key: xq_YOUR_KEY_HERE" |
+  jq -c '.monitors[] | {
+    post_monitor_id: .id,
+    post_url: .postUrl,
+    author_username: .authorUsername,
+    is_active: .isActive,
+    paused_reason: (.pausedReason // null),
+    likes: .metrics.likes.current,
+    like_gain: .metrics.likes.gain
+  }'
+```
+
+```javascript Node.js
+const response = await fetch("https://xquik.com/api/v1/monitors/posts?limit=50", {
+  headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
+});
+const page = await response.json();
+for (const monitor of page.monitors) {
+  const row = {
+    post_monitor_id: monitor.id,
+    post_url: monitor.postUrl,
+    author_username: monitor.authorUsername,
+    is_active: monitor.isActive,
+    paused_reason: monitor.pausedReason ?? null,
+    likes: monitor.metrics.likes.current,
+    like_gain: monitor.metrics.likes.gain,
+  };
+  process.stdout.write(`${JSON.stringify(row)}\n`);
+}
+```
+
+```python Python
+import json
+import requests
+
+response = requests.get(
+    "https://xquik.com/api/v1/monitors/posts",
+    headers={"x-api-key": "xq_YOUR_KEY_HERE"},
+    params={"limit": 50},
+)
+page = response.json()
+for monitor in page["monitors"]:
+    row = {
+        "post_monitor_id": monitor["id"],
+        "post_url": monitor["postUrl"],
+        "author_username": monitor["authorUsername"],
+        "is_active": monitor["isActive"],
+        "paused_reason": monitor.get("pausedReason"),
+        "likes": monitor["metrics"]["likes"]["current"],
+        "like_gain": monitor["metrics"]["likes"]["gain"],
+    }
+    print(json.dumps(row))
+```
+
+</CodeGroup>
+
+Each example prints 1 row per monitor. Pass `nextCursor` as `cursor` until
+`hasMore` is `false`.
+
+## Review every tracked post
+
+| Question                      | Field                        | Next step                                         |
+| ----------------------------- | ---------------------------- | ------------------------------------------------- |
+| Which post is this?           | `postUrl` & `authorUsername` | Open the post before you change the monitor.      |
+| Is it still billing?          | `isActive` & `nextBillingAt` | Pause monitors nobody reads.                      |
+| Did Xquik pause it?           | `pausedReason`               | Add credits, or delete monitors of deleted posts. |
+| How far has engagement moved? | `metrics.*.gain`             | Read hourly gains for the trend.                  |
+
+A monitor paused with `insufficient_credits` resumes once you add credits &
+turn it on. `x_post_deleted`, `x_post_protected` & `x_post_unavailable` mean
+X stopped showing the post.
+
+## Headers
+
+<ParamField header="x-api-key" type="string" required>
+
+Your API key. Session cookie authentication is also supported. Generate a key from the [dashboard](https://dashboard.xquik.com/en/account?tab=api-keys).
+
+</ParamField>
+
+## Query parameters
+
+<ParamField query="limit" type="integer">
+
+Monitors per page, from 1 to 200. Default `200`.
+
+</ParamField>
+
+<ParamField query="cursor" type="string">
+
+The previous page's `nextCursor`. The `after` alias also works.
+
+</ParamField>
+
+## Response
+
+### 200 OK
+
+<ResponseField name="monitors" type="object[]">
+  Post monitors, each shaped like the [Get Post Monitor](/api-reference/monitors/get-post) response.
+</ResponseField>
+<ResponseField name="total" type="number">
+  Post monitors on this page.
+</ResponseField>
+<ResponseField name="hasMore" type="boolean">
+  `true` when another page exists.
+</ResponseField>
+<ResponseField name="nextCursor" type="string">
+  Cursor for the next page. Present when `hasMore` is `true`.
+</ResponseField>
+
+### 400 Invalid input
+
+`limit` or `cursor` is invalid. Send a `nextCursor` value unchanged.
+
+### 401 Unauthenticated
+
+Missing or invalid API key.
+
+### 429 Rate limited
+
+Too many requests. Wait for the `Retry-After` header before retrying.
+
+<Note>
+
+**Related.** [Create Post Monitor](/api-reference/monitors/create-post), [Get Post Monitor](/api-reference/monitors/get-post), [Post Monitor Metrics](/api-reference/monitors/post-metrics), or [List Events](/api-reference/events/list).
+
+</Note>

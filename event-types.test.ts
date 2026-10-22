@@ -8,7 +8,7 @@ const DOC_EXTENSIONS = new Set([".md", ".mdx", ".txt"]);
 const EXCLUDED_DIRS = new Set([".git", "node_modules"]);
 const EXCLUDED_FILES = new Set(["DOCS_QUALITY_POLL.md"]);
 const EVENT_TYPE_TOKEN_PATTERN =
-  /\b(?:follower\.(?:added|gained|lost|removed)|tweet\.(?:created|deleted|hashtag|link|longform|media|mention|new|poll|quote|reply|retweet)|(?:broadcast|space)\.started|following\.(?:added|removed)|profile\.(?:avatar|banner|bio|followers|following|location|name|pinned_tweet|protected|unavailable|url|username|verified)\.changed|webhook\.test)\b/gu;
+  /\b(?:follower\.(?:added|gained|lost|removed)|tweet\.(?:created|deleted|hashtag|link|longform|media|mention|new|poll|quote|reply|retweet)|(?:broadcast|space)\.started|following\.(?:added|removed)|profile\.(?:avatar|banner|bio|followers|following|location|name|pinned_tweet|protected|unavailable|url|username|verified)\.changed|post\.(?:(?:reply|quote)\.new|(?:likes|retweets|replies|quotes|bookmarks|views)\.changed|edited|deleted)|webhook\.test)\b/gu;
 const EXPECTED_SUBSCRIBABLE_EVENT_TYPES = [
   "tweet.new",
   "tweet.quote",
@@ -53,6 +53,19 @@ const EXPECTED_KEYWORD_EVENT_TYPES = [
   "tweet.hashtag",
   "tweet.longform",
 ] as const;
+const EXPECTED_POST_EVENT_TYPES = [
+  "post.reply.new",
+  "post.quote.new",
+  "post.likes.changed",
+  "post.retweets.changed",
+  "post.replies.changed",
+  "post.quotes.changed",
+  "post.bookmarks.changed",
+  "post.views.changed",
+  "post.edited",
+  "post.deleted",
+] as const;
+
 const NON_SUBSCRIBABLE_EVENT_TYPES = new Set(["webhook.test"]);
 const REQUIRED_SUBSCRIBABLE_EVENT_DOCS = [
   "api-reference/events/list.mdx",
@@ -68,6 +81,17 @@ const REQUIRED_KEYWORD_EVENT_DOCS = [
   "api-reference/monitors/create-keyword.mdx",
   "api-reference/monitors/update-keyword.mdx",
 ] as const;
+const REQUIRED_POST_EVENT_DOCS = [
+  "api-reference/events/list.mdx",
+  "api-reference/monitors/create-post.mdx",
+  "api-reference/monitors/update-post.mdx",
+  "api-reference/webhooks/create.mdx",
+  "api-reference/webhooks/update.mdx",
+  "guides/x-api-integration-checklist.mdx",
+  "guides/x-api-typescript-types.mdx",
+  "webhooks/overview.mdx",
+] as const;
+
 const REQUIRED_TEST_EVENT_DOCS = [
   "api-reference/webhooks/test.mdx",
   "webhooks/overview.mdx",
@@ -108,13 +132,13 @@ function lineNumberForIndex(source: string, index: number): number {
   return source.slice(0, index).split(/\r?\n/u).length;
 }
 
-function extractOpenApiEventTypes(source: string): readonly string[] {
+function extractOpenApiEventTypes(source: string, schema = "EventType"): readonly string[] {
   const eventTypes: string[] = [];
   let inEventTypeSchema = false;
   let inEnum = false;
 
   for (const line of source.split(/\r?\n/u)) {
-    if (line === "    EventType:") {
+    if (line === `    ${schema}:`) {
       inEventTypeSchema = true;
       continue;
     }
@@ -245,7 +269,15 @@ describe("documented event types", (): void => {
     const subscribableEventTypes = extractOpenApiEventTypes(
       readFileSync(join(PROJECT_ROOT, "openapi.yaml"), "utf8"),
     );
-    const allowedEventTypes = new Set([...subscribableEventTypes, ...NON_SUBSCRIBABLE_EVENT_TYPES]);
+    const postEventTypes = extractOpenApiEventTypes(
+      readFileSync(join(PROJECT_ROOT, "openapi.yaml"), "utf8"),
+      "PostEventType",
+    );
+    const allowedEventTypes = new Set([
+      ...subscribableEventTypes,
+      ...postEventTypes,
+      ...NON_SUBSCRIBABLE_EVENT_TYPES,
+    ]);
     expect(collectUnsupportedEventTypeFindings(allowedEventTypes)).toStrictEqual([]);
   });
 
@@ -266,6 +298,28 @@ describe("documented event types", (): void => {
     const missingByFile = REQUIRED_KEYWORD_EVENT_DOCS.map((file) => ({
       file,
       missing: missingEventTypeMentions(file, EXPECTED_KEYWORD_EVENT_TYPES),
+    })).filter((entry): boolean => entry.missing.length > 0);
+
+    expect(missingByFile).toStrictEqual([]);
+  });
+
+  it("keeps the OpenAPI post event enum explicit", (): void => {
+    expect.assertions(1);
+
+    const eventTypes = extractOpenApiEventTypes(
+      readFileSync(join(PROJECT_ROOT, "openapi.yaml"), "utf8"),
+      "PostEventType",
+    );
+
+    expect([...eventTypes].sort()).toStrictEqual([...EXPECTED_POST_EVENT_TYPES].sort());
+  });
+
+  it("lists every post event type in post monitor and webhook docs", (): void => {
+    expect.assertions(1);
+
+    const missingByFile = REQUIRED_POST_EVENT_DOCS.map((file) => ({
+      file,
+      missing: missingEventTypeMentions(file, EXPECTED_POST_EVENT_TYPES),
     })).filter((entry): boolean => entry.missing.length > 0);
 
     expect(missingByFile).toStrictEqual([]);

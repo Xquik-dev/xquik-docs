@@ -1,0 +1,345 @@
+---
+title: "Twitter post monitor API & engagement alerts"
+sidebarTitle: Create post monitor
+description: "Track 1 X post's replies, quotes, edits, deletion & 6 metrics. Send each change to signed webhooks. Costs 30 credits an hour, events & deliveries included."
+api: "POST /monitors/posts"
+keywords:
+  [
+    "Twitter post monitor",
+    "track tweet engagement",
+    "tweet likes tracker",
+    "tweet reply alerts",
+    "tweet edit alerts",
+    "signed webhooks",
+  ]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+<LlmsDirective />
+
+Create a post monitor when 1 X post needs live tracking. It reports new
+replies, new quotes, edits & deletion. It also tracks views, likes, retweets,
+replies, quotes & bookmarks.
+
+<Callout icon="coins" color="#5c3327">
+
+**Requires 30 available credits.** Active post monitors bill 30 credits per hour.
+
+</Callout>
+
+<Note>
+
+The hourly price covers stored events & webhook deliveries. Xquik charges an
+hour only after a read that finds the post.
+
+</Note>
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://xquik.com/api/v1/monitors/posts \
+  -H "x-api-key: xq_YOUR_KEY_HERE" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "post": "https://x.com/xquik/status/2104984505677430978",
+    "name": "Launch post"
+  }' |
+  jq -c '{
+    post_monitor_id: .id,
+    post_id: .postId,
+    post_url: .postUrl,
+    event_types: .eventTypes,
+    is_active: .isActive,
+    next_billing_at: .nextBillingAt,
+    likes: .metrics.likes.current,
+    verify_endpoint: "/api/v1/monitors/posts/\(.id)",
+    metrics_endpoint: "/api/v1/monitors/posts/\(.id)/metrics",
+    events_endpoint: "/api/v1/events?postMonitorId=\(.id)"
+  }'
+```
+
+```javascript Node.js
+const response = await fetch("https://xquik.com/api/v1/monitors/posts", {
+  method: "POST",
+  headers: {
+    "x-api-key": "xq_YOUR_KEY_HERE",
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    post: "https://x.com/xquik/status/2104984505677430978",
+    name: "Launch post",
+  }),
+});
+const monitor = await response.json();
+const monitorState = {
+  post_monitor_id: monitor.id,
+  post_id: monitor.postId,
+  post_url: monitor.postUrl,
+  event_types: monitor.eventTypes,
+  is_active: monitor.isActive,
+  next_billing_at: monitor.nextBillingAt,
+  likes: monitor.metrics.likes.current,
+  verify_endpoint: `/api/v1/monitors/posts/${monitor.id}`,
+  metrics_endpoint: `/api/v1/monitors/posts/${monitor.id}/metrics`,
+  events_endpoint: `/api/v1/events?postMonitorId=${monitor.id}`,
+};
+process.stdout.write(`${JSON.stringify(monitorState)}\n`);
+```
+
+```python Python
+import json
+import requests
+
+response = requests.post(
+    "https://xquik.com/api/v1/monitors/posts",
+    headers={"x-api-key": "xq_YOUR_KEY_HERE"},
+    json={
+        "post": "https://x.com/xquik/status/2104984505677430978",
+        "name": "Launch post",
+    },
+)
+monitor = response.json()
+monitor_state = {
+    "post_monitor_id": monitor["id"],
+    "post_id": monitor["postId"],
+    "post_url": monitor["postUrl"],
+    "event_types": monitor["eventTypes"],
+    "is_active": monitor["isActive"],
+    "next_billing_at": monitor["nextBillingAt"],
+    "likes": monitor["metrics"]["likes"]["current"],
+    "verify_endpoint": f"/api/v1/monitors/posts/{monitor['id']}",
+    "metrics_endpoint": f"/api/v1/monitors/posts/{monitor['id']}/metrics",
+    "events_endpoint": f"/api/v1/events?postMonitorId={monitor['id']}",
+}
+print(json.dumps(monitor_state))
+```
+
+</CodeGroup>
+
+Each example turns the new monitor into 1 state row. Store
+`post_monitor_id`, `post_id`, `event_types` & `next_billing_at` before you
+route alerts.
+
+## Post monitor handoff
+
+Create the monitor first. Then create a signed webhook with
+[`POST /webhooks`](/api-reference/webhooks/create) for the same event types.
+Test it with [`POST /webhooks/{id}/test`](/api-reference/webhooks/test).
+
+<CardGroup cols={2}>
+
+  <Card title="Monitor ID" icon="fingerprint">
+
+    Store `id` as `post_monitor_id`. Use it with
+    [Get Post Monitor](/api-reference/monitors/get-post),
+    [Update Post Monitor](/api-reference/monitors/update-post) &
+    [Delete Post Monitor](/api-reference/monitors/delete-post).
+
+  </Card>
+  <Card title="Tracked post" icon="link">
+
+    Store `postId`, `postUrl` & `authorUsername`. Every post event carries
+    them, so receivers can route without a lookup.
+
+  </Card>
+  <Card title="Metric history" icon="chart-line">
+
+    Read hourly values & gains with
+    [Post Monitor Metrics](/api-reference/monitors/post-metrics). Xquik keeps
+    30 days of history.
+
+  </Card>
+  <Card title="Stored event join" icon="database">
+
+    Pass `id` as `postMonitorId` to
+    [List Events](/api-reference/events/list). Post events carry
+    `monitorType: "post"` & the same `monitorId`.
+
+  </Card>
+</CardGroup>
+
+## How do I track a tweet's engagement with an API?
+
+Send the post link or ID as `post`. Xquik reads the post once & returns its
+current metrics. Each metric starts with a gain of `0`.
+
+Xquik then reads the post every 2 to 4 seconds. A metric event fires when a count
+holds a new value. Each metric fires at most once a minute. The event covers
+the whole change since the last one.
+
+New replies & quotes come as their own events. Each one carries the reply or
+quote as `data`, like `tweet.new`. Xquik sends them oldest first.
+
+## What happens when the author edits or deletes the post?
+
+X moves engagement to the newest version of an edited post. The monitor
+follows that version, so metrics keep counting after an edit.
+
+`post.edited` carries `previousText`, `text` & `versionId`. `post.deleted`
+fires once 3 reads in a row confirm the deletion. It carries the last text
+the monitor saw.
+
+After 3 missed reads, Xquik pauses the monitor. `pausedReason` says why.
+A paused monitor costs nothing.
+
+## Headers
+
+<ParamField header="x-api-key" type="string" required>
+
+Your API key. Session cookie authentication is also supported. Generate a key from the [dashboard](https://dashboard.xquik.com/en/account?tab=api-keys).
+
+</ParamField>
+
+<ParamField header="Content-Type" type="string" required>
+
+Must be `application/json`.
+
+</ParamField>
+
+## Body
+
+<ParamField body="post" type="string" required>
+
+Post link or ID, up to 2,048 characters. x.com, twitter.com, mobile &
+`/i/web/status/` links work with any query string.
+
+</ParamField>
+
+<ParamField body="name" type="string | null">
+
+Your own label for the monitor, 1 to 80 characters. Every event the monitor
+produces carries it as `monitorName`. Xquik normalizes whitespace.
+
+</ParamField>
+
+<ParamField body="eventTypes" type="string[]">
+
+Post event types to send, 1 to 10. Without it, the monitor sends
+`post.reply.new`, `post.quote.new`, `post.likes.changed`,
+`post.retweets.changed`, `post.edited` & `post.deleted`.
+
+</ParamField>
+
+## Valid event types
+
+| Event type               | Fires when                             | `data`                                     |
+| ------------------------ | -------------------------------------- | ------------------------------------------ |
+| `post.reply.new`         | A new direct reply appears.            | The reply.                                 |
+| `post.quote.new`         | A new quote of the post appears.       | The quote.                                 |
+| `post.likes.changed`     | The like count holds a new value.      | `metric`, `previous`, `current`, `change`. |
+| `post.retweets.changed`  | The retweet count holds a new value.   | `metric`, `previous`, `current`, `change`. |
+| `post.replies.changed`   | The reply count holds a new value.     | `metric`, `previous`, `current`, `change`. |
+| `post.quotes.changed`    | The quote count holds a new value.     | `metric`, `previous`, `current`, `change`. |
+| `post.bookmarks.changed` | The bookmark count holds a new value.  | `metric`, `previous`, `current`, `change`. |
+| `post.views.changed`     | The view count holds a new value.      | `metric`, `previous`, `current`, `change`. |
+| `post.edited`            | The author edits the post.             | `previousText`, `text`, `versionId`.       |
+| `post.deleted`           | 3 reads in a row confirm the deletion. | `text`, the last text the monitor saw.     |
+
+The reply count can include replies X does not list. `post.reply.new`
+reports the replies X lists.
+
+## Response
+
+### 201 Created
+
+<ResponseField name="id" type="string">
+  Unique post monitor ID.
+</ResponseField>
+<ResponseField name="name" type="string">
+  Your label for the monitor, when set.
+</ResponseField>
+<ResponseField name="postId" type="string">
+  ID of the post you gave.
+</ResponseField>
+<ResponseField name="postUrl" type="string">
+  Link to the post.
+</ResponseField>
+<ResponseField name="authorId" type="string">
+  Permanent X user ID of the post's author.
+</ResponseField>
+<ResponseField name="authorUsername" type="string">
+  Username of the post's author.
+</ResponseField>
+<ResponseField name="authorName" type="string">
+  Display name of the post's author.
+</ResponseField>
+<ResponseField name="text" type="string">
+  Text of the newest version Xquik read.
+</ResponseField>
+<ResponseField name="postedAt" type="string">
+  ISO 8601 time X published the post.
+</ResponseField>
+<ResponseField name="eventTypes" type="string[]">
+  Post event types this monitor sends.
+</ResponseField>
+<ResponseField name="isActive" type="boolean">
+  Whether the monitor is active.
+</ResponseField>
+<ResponseField name="createdAt" type="string">
+  ISO 8601 creation timestamp.
+</ResponseField>
+<ResponseField name="nextBillingAt" type="string">
+  Next hourly credit charge time.
+</ResponseField>
+<ResponseField name="pausedReason" type="string">
+  Why Xquik paused the monitor. Absent while active.
+</ResponseField>
+<ResponseField name="pausedAt" type="string">
+  When Xquik paused the monitor.
+</ResponseField>
+<ResponseField name="metrics" type="object">
+  `views`, `likes`, `retweets`, `replies`, `quotes` & `bookmarks`. Each holds `current` & `gain`
+  since tracking began. Both are `null` when X shows no count, as for views on old posts.
+</ResponseField>
+
+### 400 Invalid input
+
+`post` is missing or is not a post link or ID. The message says what to fix.
+
+### 401 Unauthenticated
+
+Missing or invalid API key.
+
+### 402 Payment required
+
+You need at least 30 available credits to create a post monitor.
+
+### 404 Tweet not found
+
+X shows no such post, so Xquik creates nothing. `reason` is `deleted`,
+`author_suspended` or `protected` when X names it.
+
+### 409 Duplicate
+
+An active monitor already tracks this post. Use
+[Update Post Monitor](/api-reference/monitors/update-post) to change it.
+
+### 422 Post unavailable
+
+The author limits who can see the post. Choose a public post.
+
+### 429 Rate limited
+
+Too many requests. Wait for the `Retry-After` header before retrying.
+
+### 502 X unavailable
+
+X failed the read. Retry after a short wait.
+
+### 503 Busy
+
+Xquik is busy right now. Wait for `Retry-After`, then retry.
+
+<Info>
+
+Creating a monitor for a paused post again turns it back on. It keeps its
+start values & history, and takes the new name & event types.
+
+</Info>
+
+<Note>
+
+**Next steps.** [List Post Monitors](/api-reference/monitors/list-posts), [Post Monitor Metrics](/api-reference/monitors/post-metrics), [Create Webhook](/api-reference/webhooks/create), [List Events](/api-reference/events/list), or [Get Event](/api-reference/events/get).
+
+</Note>

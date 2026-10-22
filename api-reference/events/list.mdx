@@ -316,6 +316,9 @@ Use `monitorId` for account monitor events and `keywordMonitorId` for keyword
 monitor events. Do not pass a keyword monitor ID as `monitorId`. That filter
 matches account monitor events only.
 
+Use `postMonitorId` for post monitor events. Post events carry `postId`,
+`postUrl` & `authorUsername`.
+
 <CodeGroup>
 
 ```bash Account monitor events
@@ -328,6 +331,12 @@ curl "https://xquik.com/api/v1/events?limit=50&monitorId=7" \
 curl "https://xquik.com/api/v1/events?limit=50&keywordMonitorId=21" \
   -H "x-api-key: xq_YOUR_KEY_HERE" \
   | jq '{events: [.events[] | {id, type, keywordMonitorId, query}], hasMore, nextCursor}'
+```
+
+```bash Post monitor events
+curl "https://xquik.com/api/v1/events?limit=50&postMonitorId=31" \
+  -H "x-api-key: xq_YOUR_KEY_HERE" \
+  | jq '{events: [.events[] | {id, type, monitorId, postId, data}], hasMore, nextCursor}'
 ```
 
 </CodeGroup>
@@ -355,6 +364,14 @@ keyword monitor endpoints.
 
 </ParamField>
 
+<ParamField query="postMonitorId" type="string">
+
+Filter post-monitor events by post monitor ID. Use the `id` returned by
+[post monitor endpoints](/api-reference/monitors/list-posts). The
+`post_monitor_id` alias also works.
+
+</ParamField>
+
 <ParamField query="eventType" type="string">
 
 Filter by event type. Valid types are `tweet.new`, `tweet.quote`,
@@ -369,6 +386,11 @@ Filter by event type. Valid types are `tweet.new`, `tweet.quote`,
 `following.removed`, `follower.added`, `follower.removed`,
 `profile.followers.changed`, `profile.following.changed`. Omit to return all
 types.
+
+Post monitor types are `post.reply.new`, `post.quote.new`,
+`post.likes.changed`, `post.retweets.changed`, `post.replies.changed`,
+`post.quotes.changed`, `post.bookmarks.changed`, `post.views.changed`,
+`post.edited` & `post.deleted`.
 
 </ParamField>
 
@@ -407,12 +429,12 @@ List of event objects matching the query.
     </ResponseField>
     <ResponseField name="monitorId" type="string">
 
-      Account monitor ID for account events, or keyword monitor ID for keyword events.
+      Account monitor ID for account events, keyword monitor ID for keyword events, or post monitor ID for post events.
 
     </ResponseField>
     <ResponseField name="monitorType" type="string">
 
-      The source type is `account` or `keyword`.
+      The source type is `account`, `keyword` or `post`.
 
     </ResponseField>
     <ResponseField name="keywordMonitorId" type="string">
@@ -428,6 +450,26 @@ List of event objects matching the query.
     <ResponseField name="query" type="string">
 
       Keyword query that matched the event. Present only for keyword monitor events.
+
+    </ResponseField>
+    <ResponseField name="postId" type="string">
+
+      ID of the monitored post. Present only for post monitor events.
+
+    </ResponseField>
+    <ResponseField name="postUrl" type="string">
+
+      Link to the monitored post. Present only for post monitor events.
+
+    </ResponseField>
+    <ResponseField name="authorId" type="string">
+
+      Permanent X user ID of the post's author. Present only for post monitor events.
+
+    </ResponseField>
+    <ResponseField name="authorUsername" type="string">
+
+      Username of the post's author. Present only for post monitor events.
 
     </ResponseField>
     <ResponseField name="occurredAt" type="string">
@@ -555,6 +597,7 @@ delivery status.
 | Monitor source         | `events[].monitorType`                  | Separate account and keyword monitor rows.      |
 | Account source         | `events[].monitorId` and `username`     | Filter one tracked X account.                   |
 | Keyword source         | `events[].keywordMonitorId` and `query` | Filter one tracked X search.                    |
+| Post source            | `events[].monitorId` and `postId`       | Filter one tracked X post.                      |
 | Tweet fields           | `events[].data`                         | Export tweet text, author, and timestamps.      |
 | More pages             | `hasMore`                               | Continue only while this value is `true`.       |
 | Next page              | `nextCursor`                            | Pass this value as the next `cursor` parameter. |
