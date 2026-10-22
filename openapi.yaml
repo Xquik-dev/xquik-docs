@@ -14514,9 +14514,9 @@ components:
             retryAfterMs: 300000
     ConnectLoginCooldown:
       description: >
-        A prior login attempt triggered a cooldown. The response has `reason`,
-        `retryAfterMs` & a `Retry-After` header in seconds. The error code is
-        `login_cooldown`.
+        A login attempt triggered a cooldown. The response has `retryAfterMs` &
+        a `Retry-After` header in seconds. The error code is `login_cooldown`,
+        with `reason`, or `login_rate_limited` when X limited the login.
       headers:
         Retry-After:
           description: Cooldown duration in seconds.
@@ -14527,13 +14527,15 @@ components:
           schema: *error-schema
           example:
             error: 'login_cooldown'
-            message: 'Login is temporarily paused'
+            message:
+              'Login is temporarily paused. Try again when the countdown ends.'
             reason: 'temporary_issue'
             retryAfterMs: 60000
     ConnectRateLimitExceeded:
       description: >
         Too many requests. `rate_limit_exceeded` includes `retryAfter` and
         `Retry-After`. `login_cooldown` also includes `reason` and
+        `retryAfterMs`. `login_rate_limited`, when X limited the login, includes
         `retryAfterMs`.
       headers:
         Retry-After:
@@ -14602,7 +14604,8 @@ components:
     ConnectServiceUnavailable:
       description: >
         The X connection service is temporarily unavailable. Retry shortly. The
-        error code is `service_unavailable`.
+        error code is `service_unavailable`. It is `login_service_unavailable`
+        when the login service failed first.
       content:
         application/json:
           schema: *error-schema
