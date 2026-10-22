@@ -626,7 +626,7 @@ paths:
       security: [{ cookieSession: [] }]
       requestBody:
         required: true
-        description: Optional display name for the new API key.
+        description: Optional display name, scope & expiry for the new API key.
         content:
           application/json:
             schema:
@@ -639,8 +639,26 @@ paths:
                     Up to 100 characters. An empty or missing name saves the key
                     as Default.
                   example: My API Key
+                scope:
+                  type: [string, 'null']
+                  enum: [full, paid_reads, null]
+                  description:
+                    full calls every route an API key can use. paid_reads calls
+                    paid X read routes only, & other routes answer it with 403.
+                    Missing or null saves full.
+                  example: paid_reads
+                expiresInDays:
+                  type: [integer, 'null']
+                  minimum: 1
+                  maximum: 365
+                  description:
+                    Days until the key stops working. Missing or null keeps it
+                    working until you revoke it.
+                  example: 30
             example:
               name: My API Key
+              scope: paid_reads
+              expiresInDays: 30
       responses:
         '201':
           description: API key created
@@ -648,7 +666,8 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [id, fullKey, name, prefix, createdAt]
+                required:
+                  [id, fullKey, name, prefix, scope, isActive, createdAt]
                 properties:
                   id: &resource-id-example-schema
                     type: string
@@ -662,16 +681,32 @@ paths:
                   prefix:
                     type: string
                     example: xq_live_exam
+                  scope:
+                    type: string
+                    enum: [full, paid_reads]
+                    example: paid_reads
+                  isActive:
+                    type: boolean
+                    example: true
                   createdAt: &created-at-schema
                     type: string
                     format: date-time
                     example: '2025-01-15T12:00:00Z'
+                  expiresAt:
+                    type: string
+                    format: date-time
+                    example: '2025-02-14T12:00:00Z'
               example:
                 id: '42'
                 fullKey: xq_live_example_key
                 name: My API Key
                 prefix: xq_live_exam
+                scope: paid_reads
+                isActive: true
                 createdAt: '2025-01-15T12:00:00Z'
+                expiresAt: '2025-02-14T12:00:00Z'
+        '400':
+          $ref: '#/components/responses/InvalidInput'
         '401': *unauthenticated-response
         '403':
           description:
@@ -714,7 +749,118 @@ paths:
                       API keys & OAuth tokens cannot use this route. Sign in at
                       dashboard.xquik.com/account instead.
         '429': *rate-limit-exceeded-response
+  /api-keys/bulk-revoke:
+    post:
+      operationId: bulkRevokeApiKeys
+      x-mcp-exclusion-reason: *browser-auth
+      description:
+        Revokes up to 100 of your API keys at once & lists the IDs it revoked,
+        newest first. IDs of other accounts' keys or unknown keys are skipped.
+      summary: Revoke API keys
+      tags: [API Keys]
+      security: [{ cookieSession: [] }]
+      requestBody:
+        required: true
+        description: IDs of the API keys to revoke.
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ids]
+              properties:
+                ids:
+                  type: array
+                  minItems: 1
+                  maxItems: 100
+                  items:
+                    type: string
+                    maxLength: 19
+                    pattern: '^[1-9][0-9]{0,18}$'
+                    example: '42'
+                  example: ['42', '43']
+            example:
+              ids: ['42', '43']
+      responses:
+        '200':
+          description: API keys revoked
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [revoked]
+                properties:
+                  revoked:
+                    type: array
+                    description: IDs of the revoked keys, newest first.
+                    items: *resource-id-example-schema
+                    example: ['43', '42']
+              example:
+                revoked: ['43', '42']
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '401': *unauthenticated-response
+        '403':
+          $ref: '#/components/responses/SessionRequired'
+        '429': *rate-limit-exceeded-response
   /api-keys/{id}:
+    patch:
+      operationId: updateApiKey
+      x-mcp-exclusion-reason: *browser-auth
+      description:
+        Renames an active API key or changes its scope. Send name, scope or
+        both.
+      summary: Update API key
+      tags: [API Keys]
+      security: [{ cookieSession: [] }]
+      parameters:
+        - $ref: '#/components/parameters/ResourceId'
+      requestBody:
+        required: true
+        description: The name, scope or both to save on the key.
+        content:
+          application/json:
+            schema:
+              type: object
+              minProperties: 1
+              properties:
+                name:
+                  type: string
+                  maxLength: 100
+                  description:
+                    Up to 100 characters. An empty name saves the key as
+                    Default.
+                  example: Analytics notebook
+                scope:
+                  type: string
+                  enum: [full, paid_reads]
+                  description:
+                    The scope to save. The key's next request uses it.
+                  example: paid_reads
+            example:
+              name: Analytics notebook
+              scope: paid_reads
+      responses:
+        '200':
+          description: API key updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiKey'
+              example:
+                id: '42'
+                name: Analytics notebook
+                prefix: xq_live_exam
+                scope: paid_reads
+                isActive: true
+                createdAt: '2025-01-15T12:00:00Z'
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '401': *unauthenticated-response
+        '403':
+          $ref: '#/components/responses/SessionRequired'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429': *rate-limit-exceeded-response
     delete:
       operationId: revokeApiKey
       x-mcp-exclusion-reason: *browser-auth
@@ -13817,13 +13963,16 @@ components:
               Ask the user to confirm a USD amount before creating checkout.
             payment_options: *guest-checkout-payment-options
     GuestForbidden:
-      description: Not open to guest keys.
+      description: A paid_reads key called a route it cannot use.
       content:
         application/json:
           schema: *error-schema
           example:
             error: forbidden
-            message: This API key can access paid read endpoints only.
+            message:
+              This API key calls paid X read routes only, such as GET
+              /api/v1/x/tweets/search. Create a Full access key at
+              dashboard.xquik.com/account?tab=api-keys to call this route.
     ProtectedTimeline:
       description: >-
         The account is protected. Choose a public one. This applies to every
@@ -18733,18 +18882,37 @@ components:
     ApiKey:
       description: API key metadata returned when listing keys.
       type: object
-      required: [id, name, prefix, isActive, createdAt]
+      required: [id, name, prefix, scope, isActive, createdAt]
       properties:
-        id:
-          type: string
+        id: *resource-id-example-schema
         name:
           type: string
+          example: My API Key
         prefix:
           type: string
+          example: xq_live_exam
+        scope:
+          type: string
+          enum: [full, paid_reads]
+          description:
+            full calls every route an API key can use. paid_reads calls paid X
+            read routes only, & other routes answer it with 403.
+          example: paid_reads
         isActive:
           type: boolean
-        createdAt: *date-time-string
-        lastUsedAt: *date-time-string
+          example: true
+        createdAt: *created-at-schema
+        expiresAt:
+          type: string
+          format: date-time
+          description:
+            When the key stops working. Missing when it never expires.
+          example: '2025-02-14T12:00:00Z'
+        lastUsedAt:
+          type: string
+          format: date-time
+          description: When the key last made a request. Missing until it does.
+          example: '2025-01-16T09:30:00Z'
 
     Monitor:
       description: Account monitor that tracks activity for a given X user.
