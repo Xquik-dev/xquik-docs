@@ -11132,6 +11132,47 @@ paths:
         '503':
           $ref: '#/components/responses/ReadBusy'
 
+  /x/sports/{league}/games/{id}/audience:
+    get:
+      operationId: getSportsGameAudience
+      summary: Get a game's audience
+      description:
+        Returns who follows 1 game on X. It has live viewers, fan picks per team
+        & the game chat's state. Each request costs 1 credit.
+      tags:
+        - Sports
+      security: *read-auth
+      x-payment-info:
+        offers:
+          - amount: '150'
+            currency: *tempo-usd
+            intent: charge
+            method: tempo
+      parameters:
+        - $ref: '#/components/parameters/SportsLeague'
+        - $ref: '#/components/parameters/SportsGameId'
+        - $ref: '#/components/parameters/Fields'
+        - $ref: '#/components/parameters/Omit'
+      responses:
+        '200':
+          description: The game's audience
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SportsGameAudience'
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '401': *unauthenticated-response
+        '402': *payment-required-response
+        '404': *not-found-response
+        '424':
+          $ref: '#/components/responses/XApiError'
+        '429': *rate-limit-exceeded-response-2
+        '502':
+          $ref: '#/components/responses/XApiError'
+        '503':
+          $ref: '#/components/responses/ReadBusy'
+
   /x/sports/{league}/games/{id}/box-score:
     get:
       operationId: getFootballBoxScore
@@ -23596,8 +23637,8 @@ components:
         location:
           type: [string, 'null']
           description:
-            The school or place a college team plays for. X sends it only in
-            college football schedules.
+            The school or place the team plays for. X sends it in college
+            football schedules & in a game's audience.
           example: Virginia Tech
         colors:
           type: array
@@ -24503,6 +24544,150 @@ components:
           example: {}
           additionalProperties:
             $ref: '#/components/schemas/FootballPlayer'
+    SportsGameAudience:
+      description: Who watches & roots for 1 game on X.
+      type: object
+      required: [id, league, viewers, teamPicks, chat, teams]
+      example:
+        id: '2055084502741811200'
+        league: nfl
+        viewers:
+          count: 155
+          asOf: '2026-10-20T06:19:50.000Z'
+        teamPicks:
+          total: 7976
+          teams:
+            - teamId: '689566294702555136'
+              count: 4998
+            - teamId: '689566304366292992'
+              count: 2978
+        chat:
+          available: false
+          broadcastId: nfl-2055084502741811200
+          opensIn: null
+        teams: {}
+      properties:
+        id:
+          type: string
+          description: The ID of the game, from your request.
+          example: '2055084502741811200'
+        league:
+          type: string
+          enum: [nfl, ncaafb]
+          description: The game's league, from your request.
+          example: nfl
+        viewers:
+          type: [object, 'null']
+          description:
+            People watching the game on X at X's last count. Null before X
+            counts any, as before kickoff.
+          required: [count, asOf]
+          example:
+            count: 155
+            asOf: '2026-10-20T06:19:50.000Z'
+          properties:
+            count:
+              type: integer
+              minimum: 0
+              description: How many people watched the game on X.
+              example: 155
+            asOf:
+              type: string
+              format: date-time
+              description: When X counted them.
+              example: '2026-10-20T06:19:50.000Z'
+        teamPicks:
+          type: object
+          description: How many people on X picked a team to root for.
+          required: [total, teams]
+          example:
+            total: 7976
+            teams:
+              - teamId: '689566294702555136'
+                count: 4998
+              - teamId: '689566304366292992'
+                count: 2978
+          properties:
+            total:
+              type: [integer, 'null']
+              minimum: 0
+              description: Picks for every team in the game.
+              example: 7976
+            teams:
+              type: array
+              description: Picks per team.
+              example:
+                - teamId: '689566294702555136'
+                  count: 4998
+                - teamId: '689566304366292992'
+                  count: 2978
+              items:
+                type: object
+                required: [teamId, count]
+                properties:
+                  teamId:
+                    type: string
+                    description: The team ID, a key in teams.
+                    example: '689566294702555136'
+                  count:
+                    type: [integer, 'null']
+                    minimum: 0
+                    description: How many people picked this team.
+                    example: 4998
+        chat:
+          type: object
+          description: The game's live chat on X.
+          required: [available, broadcastId, opensIn]
+          example:
+            available: false
+            broadcastId: nfl-2055084502741929984
+            opensIn:
+              days: 0
+              hours: 12
+              minutes: 2
+          properties:
+            available:
+              type: [boolean, 'null']
+              description: Whether the chat is open now.
+              example: false
+            broadcastId:
+              type: [string, 'null']
+              description: X's ID for the game's chat room.
+              example: nfl-2055084502741811200
+            opensIn:
+              type: [object, 'null']
+              description:
+                Time left until the chat opens. Null while it is open & after
+                the game.
+              required: [days, hours, minutes]
+              example:
+                days: 0
+                hours: 12
+                minutes: 2
+              properties:
+                days:
+                  type: [integer, 'null']
+                  minimum: 0
+                  description: Whole days left.
+                  example: 0
+                hours:
+                  type: [integer, 'null']
+                  minimum: 0
+                  description: Hours left after the days.
+                  example: 12
+                minutes:
+                  type: [integer, 'null']
+                  minimum: 0
+                  description: Minutes left after the hours.
+                  example: 2
+        teams:
+          type: object
+          description:
+            The game's teams, by team ID. X's team picker sends no short name,
+            alternate ID, X account or record, so those are null.
+          example: {}
+          additionalProperties:
+            $ref: '#/components/schemas/SportsTeam'
     FootballPlays:
       description: 1 game's drives & plays, by quarter.
       type: object
