@@ -11257,6 +11257,51 @@ paths:
         '503':
           $ref: '#/components/responses/ReadBusy'
 
+  /x/sports/{league}/games/{id}/posts:
+    get:
+      operationId: getSportsGamePosts
+      summary: List a game's top or latest posts
+      description:
+        Returns the posts X shows on a game's page, with the X search that finds
+        them. Works before, during & after the game. Pages hold up to 20 posts,
+        & each post costs 1 credit.
+      tags:
+        - Sports
+      security: *read-auth
+      parameters:
+        - $ref: '#/components/parameters/SportsLeague'
+        - $ref: '#/components/parameters/SportsGameId'
+        - name: queryType
+          in: query
+          schema: { type: string, enum: [Top, Latest], default: Top }
+          description: >
+            Top for the posts X ranks highest, or Latest for the newest. Any
+            case works, & so do Relevance & Recency. Alias order or sort. Send
+            the same value with each cursor.
+        - $ref: '#/components/parameters/CollectionCursor'
+        - $ref: '#/components/parameters/ResultPageSize'
+        - $ref: '#/components/parameters/Fields'
+        - $ref: '#/components/parameters/Omit'
+      responses:
+        '200':
+          description: The game's posts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SportsGamePosts'
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '401': *anonymous-guest-authentication-response
+        '402': *payment-required-response
+        '404': *not-found-response
+        '424':
+          $ref: '#/components/responses/XApiError'
+        '429': *rate-limit-exceeded-response-2
+        '502':
+          $ref: '#/components/responses/XApiError'
+        '503':
+          $ref: '#/components/responses/ReadBusy'
+
   /x/tweets/{id}/quotes:
     get:
       operationId: getTweetQuotes
@@ -24543,6 +24588,40 @@ components:
           example: {}
           additionalProperties:
             $ref: '#/components/schemas/FootballPlayer'
+    SportsGamePosts:
+      description: >
+        A page of 1 game's posts, in Xquik's post shape. Pass next_cursor as
+        cursor for the next page.
+      example:
+        tweets:
+          - *user-tweet-example
+        has_next_page: true
+        next_cursor: 'DAACCgACHVOxUHMAJxAKAAMdU7FQcv_Y8AgABAAAAAILAAUAAADwRW1QQzZ3QUFBZlEvZ0dKTjB2R3AvQUFBQUJRZFVMTzZONXZBcWgxUTBKTlBXeERDSFZDN3g5QVd3SThkVVhQNHN0ZXdKaDFRcGJ5Zm1uQnpIVkNuT040YnNIVWRVTUcxMUZaaGVSMVJTek56VnVBbEhWQzR5NEFhNGVZZFVMTDVZOXNCckIxUXJmN0NtMUZCSFZDeCt2ZWFNTEFkVUtSRkF4b2dsaDFRbVJETUY3QmNIVkNJNGpjV0lLa2RVVW15QTFkUlh4MVJHclhDVjJIdEhWQ3lGeWthUU1FZFVMSmlFOW9BVEIxUmxiS1gxdEZCCAAGAAAAAAgABwAAAAAMAAgKAAEdUIjiNxYgqQAAAA'
+        query:
+          '(#WASvsSF OR #WASatSF OR "San Francisco 49ers" OR "Washington
+          Commanders" OR @49ers OR @Commanders) since_time:1792455300
+          until_time:1792541700 -filter:nativeretweets'
+      allOf:
+        - $ref: '#/components/schemas/PaginatedTweets'
+        - type: object
+          required: [query]
+          properties:
+            query:
+              type: [string, 'null']
+              description: >
+                The X search that finds this game's posts for the order asked. X
+                builds it from the teams, hashtags, accounts & star players,
+                with the game's time window. Send it to GET /x/tweets/search for
+                more filters. Null when X sends a timeline ID Xquik cannot read.
+              example:
+                '(#WASvsSF OR #WASatSF OR #SFvsWAS OR WASvsSF OR WASatSF OR
+                SFvsWAS OR "San Francisco 49ers" OR "Washington Commanders" OR
+                49ers OR Commanders OR #FTTB OR #RaiseHail OR @49ers OR
+                @Commanders OR from:49ers OR from:Commanders OR "Brock Purdy" OR
+                "Jayden Daniels" OR "Christian McCaffrey" OR "Terry McLaurin" OR
+                "George Kittle" OR "Stefon Diggs" OR "Fred Warner" OR "Nick
+                Bosa") since_time:1792455300 until_time:1792541700
+                -filter:nativeretweets'
     SportsGameAudience:
       description: Who watches & roots for 1 game on X.
       type: object
