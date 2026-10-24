@@ -2,6 +2,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
+import { format } from "oxfmt";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { GENERATED_RESPONSE_EXAMPLES_START } from "./scripts/lib/generated-response-examples.ts";
@@ -146,6 +147,32 @@ describe("response example sync", (): void => {
     expect(page).toContain(
       `<Tab title="${status}" id="response-a-${status}">\n\n    \`\`\`${example === "No response body." ? "text" : "json"}\n    ${example.replaceAll("\n", "\n    ")}\n    \`\`\``,
     );
+  });
+
+  it.each([
+    [
+      "event: a\ndata: 1\n\nevent: b\ndata: 2",
+      "event: a\n    data: 1\n\n    event: b\n    data: 2",
+    ],
+    ["event: a\n  \nevent: b", "event: a\n\n    event: b"],
+    ["event: a  \nevent: b", "event: a\n    event: b"],
+  ])("writes the text example %j as formatted MDX", async (text, body): Promise<void> => {
+    expect.assertions(2);
+    const root = docsRoot({
+      "api-reference/a.mdx": PAGE,
+      "openapi.yaml": JSON.stringify({
+        paths: {
+          "/fixture": {
+            get: { responses: { "200": { content: { "text/event-stream": { example: text } } } } },
+          },
+        },
+      }),
+    });
+    run(root, false);
+    const page = readFileSync(join(root, "api-reference/a.mdx"), "utf8");
+
+    expect(page).toContain(`\`\`\`text\n    ${body}\n    \`\`\``);
+    await expect(format("a.mdx", page)).resolves.toStrictEqual({ code: page, errors: [] });
   });
 
   it.each([
