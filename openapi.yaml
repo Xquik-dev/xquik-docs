@@ -8081,6 +8081,18 @@ paths:
               type: object
               required: [dollars]
               properties:
+                currency:
+                  $ref: '#/components/schemas/Currency'
+                  type: string
+                  default: USD
+                  description: >
+                    Currency to pay in. Xquik converts the dollar amount at the
+                    latest daily ECB rate. If the newest rates are more than 3
+                    ECB working days old, it charges USD instead, and Checkout
+                    shows that before payment. `chargedCurrency` shows the
+                    currency charged. Credits always match the dollar amount.
+                    Lowercase codes work too.
+                  example: EUR
                 dollars:
                   type: integer
                   description: Amount to top up in US dollars. Minimum 10.
@@ -8094,6 +8106,7 @@ paths:
                     unsupported language uses en, the default.
                   example: en
             example:
+              currency: EUR
               dollars: 10
               locale: 'en'
       responses:
@@ -8103,8 +8116,22 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [url, redirect_url]
+                required:
+                  [url, redirect_url, chargedCurrency, chargedMinorUnits]
                 properties:
+                  chargedCurrency:
+                    $ref: '#/components/schemas/Currency'
+                    type: string
+                    description: Currency the checkout charges.
+                    example: EUR
+                  chargedMinorUnits:
+                    type: integer
+                    minimum: 1
+                    description: >
+                      Amount the checkout charges before tax, in the currency's
+                      smallest unit. JPY and KRW have no decimals, so 1580 JPY
+                      is ¥1,580.
+                    example: 892
                   redirect_url:
                     type: string
                     format: uri
@@ -8119,6 +8146,8 @@ paths:
                       response never exposes the hosted checkout URL.
                     example: 'https://xquik.com/api/v1/credits/topup/redirect?session_id=checkout_example'
               example:
+                chargedCurrency: EUR
+                chargedMinorUnits: 892
                 redirect_url: 'https://xquik.com/api/v1/credits/topup/redirect?session_id=checkout_example'
                 url: 'https://xquik.com/api/v1/credits/topup/redirect?session_id=checkout_example'
         '400': *invalid-input-response
@@ -8219,6 +8248,19 @@ paths:
                       - type: 'null'
                     description: Dollar amount requested for the top-up.
                     example: 25
+                  chargedCurrency:
+                    $ref: '#/components/schemas/Currency'
+                    type: string
+                    description: Currency the checkout charged.
+                    example: EUR
+                  chargedMinorUnits:
+                    type: integer
+                    minimum: 1
+                    description: >
+                      Amount the checkout charged before tax, in the currency's
+                      smallest unit. JPY and KRW have no decimals, so 1580 JPY
+                      is ¥1,580.
+                    example: 2231
                   credits:
                     type: string
                     description: Bigint string credit amount granted or pending.
@@ -8229,6 +8271,8 @@ paths:
                     example: paid
               example:
                 amount_dollars: 25
+                chargedCurrency: EUR
+                chargedMinorUnits: 2231
                 credits: '166666'
                 status: paid
         '400': *invalid-input-response
@@ -8261,6 +8305,25 @@ paths:
               type: object
               required: [dollars]
               properties:
+                currency:
+                  $ref: '#/components/schemas/Currency'
+                  type: string
+                  default: USD
+                  description: >
+                    Currency the saved card pays in. Xquik converts the dollar
+                    amount at the latest daily ECB rate. If the newest rates are
+                    more than 3 ECB working days old, Xquik charges nothing and
+                    answers 409 `price_changed` with the USD charge. The credits
+                    match the dollar amount in every currency.
+                  example: EUR
+                chargedMinorUnits:
+                  type: integer
+                  minimum: 1
+                  description: >
+                    The charge you showed the payer, in the currency's smallest
+                    unit. If the charge differs, Xquik charges nothing and
+                    answers 409 `price_changed` with the new charge.
+                  example: 2231
                 dollars:
                   type: number
                   description: Dollar amount for the top-up
@@ -8268,6 +8331,8 @@ paths:
                   maximum: 500
                   example: 25
             example:
+              chargedMinorUnits: 2231
+              currency: EUR
               dollars: 25
       responses:
         '200':
@@ -8277,11 +8342,30 @@ paths:
               schema:
                 oneOf:
                   - type: object
-                    required: [outcome, balance, credits]
+                    required:
+                      [
+                        outcome,
+                        balance,
+                        chargedCurrency,
+                        chargedMinorUnits,
+                        credits,
+                      ]
                     properties:
                       outcome:
                         type: string
                         const: charged
+                      chargedCurrency:
+                        $ref: '#/components/schemas/Currency'
+                        type: string
+                        description: Currency the saved card paid in.
+                        example: USD
+                      chargedMinorUnits:
+                        type: integer
+                        minimum: 1
+                        description: >
+                          Amount charged in the currency's smallest unit. JPY
+                          and KRW have no decimals.
+                        example: 2500
                       balance:
                         type: string
                         description: Updated credit balance as a bigint string.
@@ -8320,6 +8404,8 @@ paths:
                   value:
                     outcome: charged
                     balance: '1450'
+                    chargedCurrency: USD
+                    chargedMinorUnits: 2500
                     credits: '1000'
                 requiresAction:
                   summary: Additional authentication required
@@ -8340,16 +8426,61 @@ paths:
           $ref: '#/components/responses/SessionRequired'
         '409':
           description:
-            Another top-up for this account is still running. Check the balance
-            before you try again.
+            Another top-up for this account is still running, a paid
+            Idempotency-Key came back with another amount or currency, or the
+            price changed. Nothing is charged twice, and a changed price charges
+            nothing.
           content:
             application/json:
-              schema: *error-schema
-              example:
-                error: topup_in_progress
-                message:
-                  A top-up is already running. Check your balance before you try
-                  again.
+              schema:
+                anyOf:
+                  - *error-schema
+                  - type: object
+                    required:
+                      [error, message, chargedCurrency, chargedMinorUnits]
+                    properties:
+                      error:
+                        type: string
+                        const: price_changed
+                      message:
+                        type: string
+                        description: What to do next.
+                      chargedCurrency:
+                        $ref: '#/components/schemas/Currency'
+                        type: string
+                        description: Currency Xquik would charge now.
+                        example: USD
+                      chargedMinorUnits:
+                        type: integer
+                        minimum: 1
+                        description: >
+                          Amount Xquik would charge now, in the currency's
+                          smallest unit. Resend it with `chargedCurrency` to
+                          pay.
+                        example: 2500
+              examples:
+                priceChanged:
+                  summary: The charge differs from the shown amount
+                  value:
+                    error: price_changed
+                    message:
+                      The price changed. Resend with this chargedCurrency &
+                      chargedMinorUnits to pay.
+                    chargedCurrency: USD
+                    chargedMinorUnits: 2500
+                inProgress:
+                  summary: Another top-up still running
+                  value:
+                    error: topup_in_progress
+                    message:
+                      A top-up is already running. Check your balance before you
+                      try again.
+                conflict:
+                  summary: Paid key with another body
+                  value:
+                    error: idempotency_conflict
+                    message:
+                      Idempotency-Key belongs to another request. Use a new key.
         '429': *rate-limit-exceeded-response-2
   /x/tweets/{id}/favoriters:
     parameters:
@@ -15346,6 +15477,12 @@ components:
             message: 'X account not found.'
 
   schemas:
+    Currency:
+      description: >
+        ISO 4217 code of 1 of the 10 currencies Xquik charges in.
+      type: string
+      enum: [USD, EUR, GBP, TRY, JPY, CNY, KRW, CAD, AUD, MXN]
+      example: EUR
     NextCursor:
       description: Cursor for the next page. Send it unchanged.
       type: string
@@ -18781,6 +18918,7 @@ components:
                 - not_found
                 - payment_failed
                 - post_unavailable
+                - price_changed
                 - rate_limit_exceeded
                 - service_unavailable
                 - session_required
