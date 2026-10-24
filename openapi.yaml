@@ -23996,6 +23996,7 @@ components:
           logos,
           xUserId,
           record,
+          recentGames,
         ]
       example:
         id: '689566294702555136'
@@ -24017,6 +24018,7 @@ components:
           dark: 'https://pbs.twimg.com/semantic_core_img/2094848191451598848/82O7RY0H?format=png&name=orig'
         xUserId: '43403778'
         record: null
+        recentGames: []
       properties:
         id:
           type: string
@@ -24127,6 +24129,64 @@ components:
               minimum: 0
               description: Games the team tied this season.
               example: 0
+        recentGames:
+          type: array
+          description:
+            The team's recent games, newest first. Games without a kickoff time
+            come last. X sends them only with the teams of a college football
+            game. The list is empty elsewhere.
+          items:
+            $ref: '#/components/schemas/SportsTeamGame'
+    SportsTeamGame:
+      description: A recent game of a team, as X lists it with the team.
+      type: object
+      required: [id, startsAt, venue, status, clock, quarter, home, away]
+      example:
+        id: '2083346094763671552'
+        startsAt: '2026-10-17T23:30:00.000Z'
+        venue: null
+        status: Closed
+        clock: null
+        quarter: null
+        home:
+          teamId: '895666234712244224'
+          points: 26
+        away:
+          teamId: '898300623782727680'
+          points: 34
+      properties:
+        id:
+          type: string
+          description: The game ID, which the game routes take.
+          example: '2083346094763671552'
+        startsAt:
+          type: [string, 'null']
+          format: date-time
+          description:
+            When this game kicked off, in UTC. Null when Xquik can't read X's
+            time.
+          example: '2026-10-17T23:30:00.000Z'
+        venue:
+          type: [string, 'null']
+          description: The stadium. X has sent none in recent games so far.
+          example: Autzen Stadium
+        status:
+          type: [string, 'null']
+          description: This game's status as X names it, such as Closed.
+          example: Closed
+        clock:
+          type: [string, 'null']
+          description: The game clock, as X writes it. X has sent none so far.
+          example: '00:00'
+        quarter:
+          type: [integer, 'null']
+          minimum: 0
+          description: The current or last quarter. X has sent none so far.
+          example: 4
+        home:
+          $ref: '#/components/schemas/FootballTeamScore'
+        away:
+          $ref: '#/components/schemas/FootballTeamScore'
     FootballPlayer:
       description: A football player, as X's sports pages show them.
       type: object
@@ -24194,7 +24254,8 @@ components:
           example: Iowa State
         birthPlace:
           type: [string, 'null']
-          description: Where the player was born.
+          description:
+            Where the player was born. X sends it only for NFL players.
           example: Gilbert, AZ, USA
         birthDate:
           type: [string, 'null']
@@ -24677,12 +24738,12 @@ components:
         defense: null
         startClock: '00:14:55'
         endClock: null
-        startReason: Kickoff
+        startReason: null
         endReason: Touchdown
         playCount: 10
-        firstDowns: 0
+        firstDowns: null
         netYards: 64
-        scoring: true
+        scoring: null
         plays: []
       properties:
         id:
@@ -24703,9 +24764,9 @@ components:
         defense:
           type: [string, 'null']
           description:
-            The team on defense. Home or Away in NFL games, the team's
-            alternateId in college games.
-          example: Away
+            The team on defense. X stopped sending it on 2026-10-24, so it is
+            null.
+          example: null
         startClock:
           type: [string, 'null']
           description: The game clock when the drive started, as HH:MM:SS.
@@ -24716,8 +24777,10 @@ components:
           example: '00:10:53'
         startReason:
           type: [string, 'null']
-          description: How the drive started, such as Kickoff or Punt.
-          example: Kickoff
+          description:
+            How the drive started, such as Kickoff or Punt. X stopped sending it
+            on 2026-10-24, so it is null.
+          example: null
         endReason:
           type: [string, 'null']
           description: How the drive ended, such as Touchdown or Punt.
@@ -24730,8 +24793,10 @@ components:
         firstDowns:
           type: [integer, 'null']
           minimum: 0
-          description: The first downs the drive gained.
-          example: 0
+          description:
+            The first downs the drive gained. X stopped sending it on
+            2026-10-24, so it is null.
+          example: null
         netYards:
           type: [integer, 'null']
           minimum: -9007199254740991
@@ -24739,8 +24804,10 @@ components:
           example: 64
         scoring:
           type: [boolean, 'null']
-          description: Whether the drive scored.
-          example: true
+          description:
+            Whether the drive scored. X stopped sending it on 2026-10-24, so it
+            is null. Each play still says whether it scored.
+          example: null
         plays:
           type: array
           description: The drive's plays, in order.
@@ -24804,8 +24871,8 @@ components:
         id: '2055084502741811200'
         league: nfl
         seasonId: '2039131233582546945'
-        seasonType: RegularSeason
-        week: 6
+        seasonType: null
+        week: null
         startsAt: '2026-10-20T00:15:00.000Z'
         venue: Levi's Stadium
         status: Closed
@@ -24850,13 +24917,17 @@ components:
           example: '2039131233582546945'
         seasonType:
           type: [string, 'null']
-          description: The part of the season, such as RegularSeason.
-          example: RegularSeason
+          description:
+            The part of the season, such as RegularSeason. X stopped sending it
+            with a game on 2026-10-24, so it is null.
+          example: null
         week:
           type: [integer, 'null']
           minimum: 0
-          description: The week of the season.
-          example: 6
+          description:
+            The week of the season. X stopped sending it with a game on
+            2026-10-24, so it is null. The games list still has each week.
+          example: null
         startsAt:
           type: [string, 'null']
           format: date-time
@@ -24934,7 +25005,10 @@ components:
           anyOf:
             - $ref: '#/components/schemas/FootballPlay'
             - type: 'null'
-          description: The latest play, or null before kickoff.
+          description:
+            The latest play, or null before kickoff. Its steps take their
+            players from the game's plays. They are empty while the plays lack
+            it.
           example: null
         teams:
           type: object
