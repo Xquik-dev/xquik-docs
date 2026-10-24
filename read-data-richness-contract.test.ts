@@ -210,6 +210,7 @@ const MEDIA_FIELDS = [
   "description",
   "displayUrl",
   "durationMillis",
+  "editedWithNativeEditor",
   "expandedUrl",
   "embeddable",
   "faceRects",
