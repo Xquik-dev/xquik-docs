@@ -2374,9 +2374,10 @@ paths:
         Streams the account's monitor events as server-sent events, each named
         by its event type and numbered by its event ID. A reconnect that sends
         Last-Event-ID first gets every event after that one from the last 30
-        days, then each new event. A connection lasts up to 30 minutes and sends
-        a comment every 15 seconds while idle. Keep up to 5 streams open per
-        account. Events and streams cost no credits.
+        days, then each new event. Set lookBack to also get events saved late. A
+        connection lasts up to 30 minutes and sends a comment every 15 seconds
+        while idle. Keep up to 5 streams open per account. Events and streams
+        cost no credits.
       summary: Stream events
       tags: [Events]
       security: *api-auth-2
@@ -2390,6 +2391,15 @@ paths:
             type: string
             maxLength: 32
           example: '42'
+        - name: lookBack
+          in: query
+          description: >
+            Set to true to resume 30 seconds before Last-Event-ID. Events saved
+            late then still arrive. Events you have can arrive again, so skip
+            IDs you've seen. An ID the stream can't find starts 5 minutes back,
+            not 30 days.
+          schema: { type: boolean, default: false }
+          example: true
       responses:
         '200':
           description:
@@ -21087,6 +21097,11 @@ components:
           type: integer
           minimum: 0
           description: Video duration in milliseconds.
+        editedWithNativeEditor:
+          type: boolean
+          description: >
+            True when the author edited this media in X's own editor before
+            posting. Absent when X sends no editor info.
         expandedUrl: { type: string, description: Expanded media URL. }
         embeddable: { type: boolean, description: Embeddable status. }
         faceRects:
