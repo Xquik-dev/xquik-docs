@@ -2022,12 +2022,21 @@ paths:
                 authorId: '1661816432185823232'
                 authorUsername: xquik
                 authorName: Xquik
+                media: []
                 text: 'We shipped post monitors.'
                 postedAt: '2026-09-29T17:19:49.000Z'
                 eventTypes: [post.reply.new, post.likes.changed]
                 isActive: true
                 createdAt: '2026-10-22T11:00:00Z'
                 nextBillingAt: '2026-10-22T12:00:00Z'
+                baseline:
+                  at: '2026-10-22T11:00:00Z'
+                  views: 541100
+                  likes: 1885
+                  retweets: 112
+                  replies: 85
+                  quotes: 87
+                  bookmarks: 470
                 metrics:
                   views: { current: 541100, gain: 0 }
                   likes: { current: 1885, gain: 0 }
@@ -2380,7 +2389,10 @@ paths:
         days, then each new event. Set lookBack to also get events saved late. A
         connection lasts up to 30 minutes and sends a comment every 15 seconds
         while idle. Keep up to 5 streams open per account. Events and streams
-        cost no credits.
+        cost no credits. Add include=post_metrics to also get post.metrics
+        frames. The first poll sends 1 for each post monitor with a check or a
+        pause. After that, a frame comes when a monitor's saved numbers or
+        status change. These frames carry no ID, so Last-Event-ID never moves.
       summary: Stream events
       tags: [Events]
       security: *api-auth-2
@@ -2394,6 +2406,15 @@ paths:
             type: string
             maxLength: 32
           example: '42'
+        - name: include
+          in: query
+          description:
+            Set to post_metrics to also get each post monitor's saved numbers.
+            Any other value is refused.
+          schema:
+            type: string
+            enum: [post_metrics]
+          example: post_metrics
         - name: lookBack
           in: query
           description: >
@@ -2405,8 +2426,12 @@ paths:
           example: true
       responses:
         '200':
-          description:
-            Server-sent events. Each event's data line holds 1 Event as JSON.
+          description: >
+            Server-sent events. Each event's data line holds 1 Event as JSON. A
+            post.metrics data line holds a post monitor's ID, its check time,
+            isActive, pausedReason, and each metric's current count & gain since
+            tracking began, as the monitor's fields do. checkedAt is null before
+            the first check, and views is null while X hides them.
           content:
             text/event-stream:
               schema:
@@ -2415,6 +2440,9 @@ paths:
                 id: 42
                 event: tweet.new
                 data: {"id":"42","type":"tweet.new","monitorId":"7","monitorType":"account","occurredAt":"2025-01-15T12:00:00.000Z","data":{}}
+
+                event: post.metrics
+                data: {"monitorId":"9","checkedAt":"2025-01-15T12:00:30.000Z","isActive":true,"pausedReason":null,"metrics":{"bookmarks":{"current":1962,"gain":40},"likes":{"current":17096,"gain":310},"quotes":{"current":416,"gain":6},"replies":{"current":584,"gain":12},"retweets":{"current":901,"gain":25},"views":{"current":5135396,"gain":96400}}}
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401': *unauthenticated-response
@@ -19871,12 +19899,14 @@ components:
         - authorId
         - authorUsername
         - authorName
+        - media
         - text
         - postedAt
         - eventTypes
         - isActive
         - createdAt
         - nextBillingAt
+        - baseline
         - metrics
       properties:
         id:
@@ -19904,6 +19934,35 @@ components:
         authorName:
           type: string
           example: Xquik
+        authorAvatarUrl:
+          type: string
+          format: uri
+          description: The author's profile picture. Omitted when X shows none.
+          example: 'https://pbs.twimg.com/profile_images/1/xquik_normal.jpg'
+        authorVerified:
+          type: string
+          enum: [blue, business, government]
+          description:
+            The author's verified badge on X. Omitted when the author has none.
+          example: blue
+        media:
+          type: array
+          description: Photos, videos & GIFs on the post, in X's order.
+          items:
+            type: object
+            required: [kind, url]
+            properties:
+              kind:
+                type: string
+                enum: [gif, photo, video]
+              url:
+                type: string
+                format: uri
+                description:
+                  The image URL. For a video or GIF, its preview image.
+          example:
+            - kind: photo
+              url: 'https://pbs.twimg.com/media/GxPhoto.jpg'
         text:
           type: string
           description: Text of the newest version Xquik read.
@@ -19921,6 +19980,48 @@ components:
           format: date-time
           description: Next hourly credit charge time for this post monitor.
           example: '2026-10-22T12:00:00Z'
+        baseline:
+          type: object
+          description:
+            Counts Xquik read when tracking began. Each metric's gain counts
+            from here. views is null when X showed no view count.
+          required: [at, views, likes, retweets, replies, quotes, bookmarks]
+          properties:
+            at:
+              type: string
+              format: date-time
+              description: When Xquik read these counts from X.
+              example: '2026-10-22T11:00:00Z'
+            views:
+              type: [integer, 'null']
+              minimum: 0
+              maximum: 9007199254740991
+              example: 541100
+            likes:
+              type: integer
+              minimum: 0
+              maximum: 9007199254740991
+              example: 1885
+            retweets:
+              type: integer
+              minimum: 0
+              maximum: 9007199254740991
+              example: 112
+            replies:
+              type: integer
+              minimum: 0
+              maximum: 9007199254740991
+              example: 85
+            quotes:
+              type: integer
+              minimum: 0
+              maximum: 9007199254740991
+              example: 87
+            bookmarks:
+              type: integer
+              minimum: 0
+              maximum: 9007199254740991
+              example: 470
         pausedReason:
           type: string
           enum:
