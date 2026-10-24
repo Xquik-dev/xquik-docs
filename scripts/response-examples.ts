@@ -190,7 +190,10 @@ function responseBlock(document: unknown, operation: unknown, scope: string): st
       language === "json" || typeof value !== "string"
         ? JSON.stringify(value, undefined, 2)
         : value;
-    const body = `    ${text.replaceAll("\n", "\n    ")}`;
+    const body = text
+      .split("\n")
+      .map((line) => `    ${line}`.trimEnd())
+      .join("\n");
     const id = `response-${scope.replaceAll("/", "-")}-${status}`;
     return `  <Tab title="${status}" id="${id}">\n\n    \`\`\`${language}\n${body}\n    \`\`\`\n\n  </Tab>`;
   });
