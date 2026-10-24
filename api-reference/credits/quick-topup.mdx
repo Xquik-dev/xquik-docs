@@ -28,6 +28,8 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
     {
       "outcome": "charged",
       "balance": "1450",
+      "chargedCurrency": "USD",
+      "chargedMinorUnits": 2500,
       "credits": "1000"
     }
     ```
@@ -71,8 +73,8 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
     ```json
     {
-      "error": "topup_in_progress",
-      "message": "A top-up is already running. Check your balance before you try again."
+      "error": "price_changed",
+      "message": "The price changed. Resend with this chargedCurrency & chargedMinorUnits to pay."
     }
     ```
 
@@ -164,7 +166,21 @@ Must be `application/json`.
 
 <ParamField body="dollars" type="number" required>
 
-Amount in US dollars to charge. Minimum USD 10, maximum USD 500.
+Top-up amount in US dollars, which sets the credits. Minimum USD 10, maximum USD 500.
+
+</ParamField>
+
+<ParamField body="currency" type="string" default="USD">
+
+Currency the saved card pays in. Xquik converts the dollar amount at the latest daily ECB rate. The credits always match the dollar amount. Use 1 of `USD`, `EUR`, `GBP`, `TRY`, `JPY`, `CNY`, `KRW`, `CAD`, `AUD` or `MXN`. Lowercase codes work too.
+
+With rates over 3 ECB working days old, Xquik charges nothing in other currencies. It answers 409 `price_changed` with the USD charge instead.
+
+</ParamField>
+
+<ParamField body="chargedMinorUnits" type="integer">
+
+The charge you showed the payer, in the currency's smallest unit. Send `2231` for EUR 22.31 or `1580` for JPY 1,580. If the charge differs, Xquik charges nothing. It answers 409 `price_changed` with the new charge. Leave it out to pay the current charge.
 
 </ParamField>
 
@@ -188,12 +204,20 @@ The payment succeeded. Xquik added the credits to your balance.
 <ResponseField name="credits" type="string">
   Number of credits added (Bigint string).
 </ResponseField>
+<ResponseField name="chargedCurrency" type="string">
+  Currency the saved card paid in, such as `EUR`.
+</ResponseField>
+<ResponseField name="chargedMinorUnits" type="integer">
+  Amount charged in the currency's smallest unit. JPY and KRW have no decimals.
+</ResponseField>
 
 ```json
 {
   "outcome": "charged",
   "balance": "466666",
-  "credits": "166666"
+  "credits": "166666",
+  "chargedCurrency": "EUR",
+  "chargedMinorUnits": 2231
 }
 ```
 
@@ -246,10 +270,14 @@ The saved method failed. Open hosted checkout so the user can choose another.
 ### 400 Invalid input
 
 ```json
-{ "error": "Invalid input" }
+{ "error": "invalid_input", "message": "Maximum quick top-up is $500" }
 ```
 
-The request body is missing a numeric `dollars` value or includes too many decimal places.
+Xquik charges nothing. The `message` names the field to fix.
+
+- `dollars` is missing, below USD 10, above USD 500 or has over 2 decimals.
+- `currency` is not 1 of the 10 codes.
+- `chargedMinorUnits` is not a positive whole number.
 
 ### 401 Unauthenticated
 
@@ -258,6 +286,32 @@ The request body is missing a numeric `dollars` value or includes too many decim
 ```
 
 Missing or expired dashboard session. This route does not accept API keys.
+
+### 409 Conflict
+
+Xquik charged nothing for this request.
+
+```json
+{
+  "error": "price_changed",
+  "message": "The price changed. Resend with this chargedCurrency & chargedMinorUnits to pay.",
+  "chargedCurrency": "USD",
+  "chargedMinorUnits": 2500
+}
+```
+
+`price_changed` means the charge differs from the one you sent. Show the payer the new charge. To pay it, resend with `currency` set to `chargedCurrency` and the new `chargedMinorUnits`.
+
+<ResponseField name="chargedCurrency" type="string">
+  Currency Xquik would charge now, such as `USD`.
+</ResponseField>
+<ResponseField name="chargedMinorUnits" type="integer">
+  Amount Xquik would charge now, in the currency's smallest unit.
+</ResponseField>
+
+`idempotency_conflict` means an `Idempotency-Key` came back with another amount or currency. Send a new key to buy again.
+
+`topup_in_progress` means another top-up for this account is still running. Check your balance before you try again.
 
 ### 429 Rate limited
 

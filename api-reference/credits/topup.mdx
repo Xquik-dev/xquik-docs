@@ -18,6 +18,8 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
     ```json
     {
+      "chargedCurrency": "EUR",
+      "chargedMinorUnits": 892,
       "redirect_url": "https://xquik.com/api/v1/credits/topup/redirect?session_id=checkout_example",
       "url": "https://xquik.com/api/v1/credits/topup/redirect?session_id=checkout_example"
     }
@@ -181,6 +183,14 @@ Amount in US dollars to top up. Minimum $10.
 
 </ParamField>
 
+<ParamField body="currency" type="string" default="USD">
+
+Currency to pay in. Xquik converts the dollar amount at the latest daily ECB rate. The credits always match the dollar amount. Use 1 of `USD`, `EUR`, `GBP`, `TRY`, `JPY`, `CNY`, `KRW`, `CAD`, `AUD` or `MXN`. Lowercase codes work too.
+
+With rates over 3 ECB working days old, Checkout charges USD instead. It shows the USD charge before payment, and `chargedCurrency` says `USD`.
+
+</ParamField>
+
 <ParamField body="locale" type="string">
 
 Optional checkout locale. Defaults to `en`.
@@ -197,21 +207,33 @@ Optional checkout locale. Defaults to `en`.
 <ResponseField name="redirect_url" type="string">
   Same stable redirect URL in snake_case.
 </ResponseField>
+<ResponseField name="chargedCurrency" type="string">
+  Currency the checkout charges, such as `EUR`.
+</ResponseField>
+<ResponseField name="chargedMinorUnits" type="integer">
+  Amount the checkout charges before tax, in the currency's smallest unit. JPY and KRW have no
+  decimals, so 1580 JPY is ¥1,580.
+</ResponseField>
 
 ```json
 {
   "url": "https://xquik.com/api/v1/credits/topup/redirect?session_id=checkout_session_id",
-  "redirect_url": "https://xquik.com/api/v1/credits/topup/redirect?session_id=checkout_session_id"
+  "redirect_url": "https://xquik.com/api/v1/credits/topup/redirect?session_id=checkout_session_id",
+  "chargedCurrency": "EUR",
+  "chargedMinorUnits": 892
 }
 ```
 
 ### 400 Invalid input
 
 ```json
-{ "error": "Minimum top-up is $10" }
+{ "error": "invalid_input", "message": "Minimum top-up is $10" }
 ```
 
-The top-up amount is below the $10 minimum.
+Xquik opens no checkout. The `message` names the field to fix.
+
+- `dollars` is missing, below USD 10 or not a whole number.
+- `currency` is not 1 of the 10 codes.
 
 ### 401 Unauthenticated
 
