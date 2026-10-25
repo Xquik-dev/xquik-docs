@@ -180,6 +180,19 @@ Send `tier` only when the user selected a specific Xquik plan.
 The field pre-selects a tier. It does not activate that tier by itself.
 Send only the documented enum values.
 
+## Pay in the user's currency
+
+Send `currency` to charge in the user's currency. The default is `USD`.
+
+Xquik accepts `USD`, `EUR`, `GBP`, `TRY`, `JPY`, `CNY`, `KRW`, `CAD`, `AUD`, and `MXN`.
+Lowercase codes work too. An unknown code returns `400`.
+
+Xquik converts the USD plan price at the latest daily ECB rate.
+Each renewal charges the same amount before tax.
+An account that already pays in USD gets a USD checkout.
+With rates over 3 ECB working days old, the checkout charges USD.
+Read `chargedCurrency` to see the currency the checkout charges.
+
 ## Complete a safe billing handoff
 
 1. Show the current plan and credit terms before confirmation.
@@ -198,7 +211,7 @@ continue eligible work while `plan` is `inactive`.
 ## Handle checkout retries
 
 The service can reuse a matching open checkout. Use the latest returned
-URL. A different tier request can replace an older open checkout.
+URL. A different tier or currency can replace an older open checkout.
 
 Do not call this endpoint from a timer or an automatic retry loop.
 For `429`, wait for `Retry-After`. For `401`, replace the credential first.
@@ -220,6 +233,12 @@ choose on the hosted checkout.
 
 </ParamField>
 
+<ParamField body="currency" type="string" default="USD">
+
+Currency to pay in, such as `EUR`. Lowercase codes work too.
+
+</ParamField>
+
 ## Response
 
 ### 200 OK
@@ -234,14 +253,29 @@ choose on the hosted checkout.
 <ResponseField name="status" type="string">
   The status is `already_subscribed`, `checkout_created`, or `payment_issue`.
 </ResponseField>
+<ResponseField name="chargedCurrency" type="string">
+  Currency the checkout charges. Only a `checkout_created` answer has it.
+</ResponseField>
 
 ```json
 {
+  "chargedCurrency": "EUR",
   "url": "https://xquik.com/billing/checkout/session",
   "message": "Complete checkout at the URL below to start your subscription.",
   "status": "checkout_created"
 }
 ```
+
+### 400 Invalid input
+
+```json
+{
+  "error": "invalid_input",
+  "message": "currency must be 1 of USD, EUR, GBP, TRY, JPY, CNY, KRW, CAD, AUD, MXN"
+}
+```
+
+Send a listed currency code, or omit `currency` to pay in USD.
 
 ### 401 Unauthenticated
 
