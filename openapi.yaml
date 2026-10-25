@@ -11539,6 +11539,91 @@ paths:
         '503':
           $ref: '#/components/responses/ReadBusy'
 
+  /x/sports/{league}/games/{id}/roster:
+    get:
+      operationId: getFootballRoster
+      summary: Get the rosters of an NFL game
+      description:
+        Returns both teams' players for 1 NFL game. Each player has a jersey,
+        position, headshot & X account. Each request costs 1 credit.
+      tags:
+        - Sports
+      security: *read-auth
+      x-payment-info:
+        offers:
+          - amount: '150'
+            currency: *tempo-usd
+            intent: charge
+            method: tempo
+      parameters:
+        - $ref: '#/components/parameters/NflLeague'
+        - $ref: '#/components/parameters/SportsGameId'
+        - $ref: '#/components/parameters/Fields'
+        - $ref: '#/components/parameters/Omit'
+      responses:
+        '200':
+          description: Both teams' rosters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FootballRoster'
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '401': *unauthenticated-response
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
+        '404': *not-found-response
+        '424':
+          $ref: '#/components/responses/XApiError'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+        '502':
+          $ref: '#/components/responses/XApiError'
+        '503':
+          $ref: '#/components/responses/ReadBusy'
+
+  /x/sports/{league}/games/{id}/player-props:
+    get:
+      operationId: getFootballPlayerProps
+      summary: Get the player props of an NFL game
+      description:
+        Returns the player prop lines & American odds X shows for 1 NFL game. X
+        lists props before & during a game. Other games return no categories.
+        Each request costs 1 credit.
+      tags:
+        - Sports
+      security: *read-auth
+      x-payment-info:
+        offers:
+          - amount: '150'
+            currency: *tempo-usd
+            intent: charge
+            method: tempo
+      parameters:
+        - $ref: '#/components/parameters/NflLeague'
+        - $ref: '#/components/parameters/SportsGameId'
+        - $ref: '#/components/parameters/Fields'
+        - $ref: '#/components/parameters/Omit'
+      responses:
+        '200':
+          description: The game's player props
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FootballProps'
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '401': *unauthenticated-response
+        '402': *payment-required-response
+        '424':
+          $ref: '#/components/responses/XApiError'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+        '502':
+          $ref: '#/components/responses/XApiError'
+        '503':
+          $ref: '#/components/responses/ReadBusy'
+
   /x/sports/{league}/games/{id}/posts:
     get:
       operationId: getSportsGamePosts
@@ -13362,6 +13447,18 @@ components:
       description:
         nfl for the NFL or ncaafb for college football, in any case. Another
         value gets a free 400 `invalid_league` before X is read.
+    NflLeague:
+      name: league
+      in: path
+      required: true
+      schema:
+        type: string
+        enum: [nfl]
+        example: nfl
+      description:
+        nfl, in any case. X has no college rosters or props, so ncaafb gets a
+        free 400 `unsupported_league`. Another value gets a free 400
+        `invalid_league`. Both come before X is read.
     SportsGameId:
       name: id
       in: path
@@ -24248,6 +24345,9 @@ components:
           id: '723177170382647296'
           username: brockpurdy13
           blueVerified: true
+          protected: false
+          superFollowEligible: false
+          labelType: null
       properties:
         id:
           type: string
@@ -24319,11 +24419,22 @@ components:
         xUser:
           type: [object, 'null']
           description: The player's X account, or null without one.
-          required: [id, username, blueVerified]
+          required:
+            [
+              id,
+              username,
+              blueVerified,
+              protected,
+              superFollowEligible,
+              labelType,
+            ]
           example:
             id: '723177170382647296'
             username: brockpurdy13
             blueVerified: true
+            protected: false
+            superFollowEligible: false
+            labelType: null
           properties:
             id:
               type: string
@@ -24337,6 +24448,23 @@ components:
               type: [boolean, 'null']
               description: Whether the account has a blue check.
               example: true
+            protected:
+              type: [boolean, 'null']
+              description:
+                Whether the account protects its posts. Only rosters carry it.
+              example: false
+            superFollowEligible:
+              type: [boolean, 'null']
+              description:
+                Whether the account can offer subscriptions. Only rosters carry
+                it.
+              example: false
+            labelType:
+              type: [string, 'null']
+              description:
+                The label X highlights on the account, such as BusinessLabel.
+                Only rosters carry it.
+              example: null
     FootballTeamScore:
       description: A team's side of a game & its points.
       type: object
@@ -25878,6 +26006,171 @@ components:
           example: {}
           additionalProperties:
             $ref: '#/components/schemas/FootballPlayer'
+    FootballRoster:
+      description: Both teams' rosters for 1 NFL game.
+      type: object
+      required: [id, league, rosters, teams, players]
+      example:
+        id: '2055084502741811200'
+        league: nfl
+        rosters:
+          - teamId: '689566294702555136'
+            playerIds: ['1520565710329499648']
+        teams: {}
+        players: {}
+      properties:
+        id:
+          type: string
+          description: The ID of the game these rosters cover.
+          example: '2055084502741811200'
+        league:
+          type: string
+          enum: [nfl]
+          description: The league of the game these rosters cover.
+          example: nfl
+        rosters:
+          type: array
+          description: Each team's roster, in X's order.
+          items:
+            $ref: '#/components/schemas/FootballRosterTeam'
+        teams:
+          type: object
+          description: The 2 teams, by team ID.
+          example: {}
+          additionalProperties:
+            $ref: '#/components/schemas/SportsTeam'
+        players:
+          type: object
+          description:
+            Every rostered player, by player ID. Rosters carry no college or
+            birth details & only a medium headshot, so the rest are null.
+          example: {}
+          additionalProperties:
+            $ref: '#/components/schemas/FootballPlayer'
+    FootballRosterTeam:
+      description: 1 team's roster.
+      type: object
+      required: [teamId, playerIds]
+      example:
+        teamId: '689566294702555136'
+        playerIds: ['1520565710329499648']
+      properties:
+        teamId:
+          type: string
+          description: The team this roster belongs to, a key of teams.
+          example: '689566294702555136'
+        playerIds:
+          type: array
+          description: The team's players in X's order, keys of players.
+          items:
+            type: string
+            example: '1520565710329499648'
+    FootballProps:
+      description: The player props X shows for 1 NFL game.
+      type: object
+      required: [id, league, sportsbookUrl, categories, players]
+      example:
+        id: '2055084502741929984'
+        league: nfl
+        sportsbookUrl: null
+        categories: []
+        players: {}
+      properties:
+        id:
+          type: string
+          description: The ID of the game these props cover.
+          example: '2055084502741929984'
+        league:
+          type: string
+          enum: [nfl]
+          description: The league of the game these props cover.
+          example: nfl
+        sportsbookUrl:
+          type: [string, 'null']
+          format: uri
+          description: The sportsbook page X links for these props.
+          example: null
+        categories:
+          type: array
+          description:
+            Each kind of prop, such as passing yards, in X's order. A game
+            without props has none.
+          items:
+            $ref: '#/components/schemas/FootballPropCategory'
+        players:
+          type: object
+          description:
+            The players these props name, by player ID. X sends only each
+            player's name, jersey & team, so other fields are null.
+          example: {}
+          additionalProperties:
+            $ref: '#/components/schemas/FootballPlayer'
+    FootballPropCategory:
+      description: 1 kind of player prop & its lines.
+      type: object
+      required: [key, name, rank, props]
+      example:
+        key: passing_yards
+        name: Passing Yards
+        rank: 1
+        props: []
+      properties:
+        key:
+          type: [string, 'null']
+          description: X's key for the prop, such as passing_yards.
+          example: passing_yards
+        name:
+          type: [string, 'null']
+          description: The name X shows for the prop.
+          example: Passing Yards
+        rank:
+          type: [number, 'null']
+          description: The category's place in X's order, from 1.
+          example: 1
+        props:
+          type: array
+          description: Each player's line, in X's order.
+          items:
+            $ref: '#/components/schemas/FootballPlayerProp'
+    FootballPlayerProp:
+      description: 1 player's line & odds in a prop category.
+      type: object
+      required: [playerId, rank, line, odds, alternateOdds, openForBetting]
+      example:
+        playerId: '1783744053755990016'
+        rank: 1
+        line: 248.5
+        odds: -115
+        alternateOdds: -115
+        openForBetting: true
+      properties:
+        playerId:
+          type: [string, 'null']
+          description: The player the line is for, a key of players.
+          example: '1783744053755990016'
+        rank:
+          type: [number, 'null']
+          description: The line's place in its category, from 1.
+          example: 1
+        line:
+          type: [number, 'null']
+          description:
+            The line the odds price, such as 248.5 yards. Null when the prop has
+            no line, such as the first touchdown scorer.
+          example: 248.5
+        odds:
+          type: [number, 'null']
+          description: The American odds X shows first, such as -115 or 240.
+          example: -115
+        alternateOdds:
+          type: [number, 'null']
+          description:
+            The American odds X shows second. Null for a prop with 1 price.
+          example: -115
+        openForBetting:
+          type: [boolean, 'null']
+          description: Whether the sportsbook takes bets on the line.
+          example: true
     FootballOdds:
       description: Betting odds titles for 1 team, as X shows them.
       type: object
