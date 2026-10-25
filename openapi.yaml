@@ -903,18 +903,33 @@ paths:
       security: *api-auth
       requestBody:
         required: false
-        description: Optional subscription tier to pre-select at checkout.
+        description:
+          Optional subscription tier to pre-select & currency to pay in at
+          checkout.
         content:
           application/json:
             schema:
               type: object
               properties:
+                currency:
+                  $ref: '#/components/schemas/Currency'
+                  type: string
+                  default: USD
+                  description: >
+                    Currency to pay in. Lowercase codes work too. Xquik converts
+                    the USD plan price at the latest daily ECB rate. Each
+                    renewal charges the same amount before tax. An account that
+                    already pays in USD gets a USD checkout. With rates over 3
+                    ECB working days old, the checkout charges USD.
+                    `chargedCurrency` shows the currency charged.
+                  example: EUR
                 tier:
                   type: string
                   enum: [starter, pro, business]
                   description: Subscription tier to pre-select.
                   example: pro
             example:
+              currency: EUR
               tier: pro
       responses:
         '200':
@@ -925,6 +940,13 @@ paths:
                 type: object
                 required: [url, status, message]
                 properties:
+                  chargedCurrency:
+                    $ref: '#/components/schemas/Currency'
+                    type: string
+                    description:
+                      Currency the checkout charges. Only a checkout_created
+                      answer has it.
+                    example: EUR
                   url:
                     type: string
                     format: uri
@@ -940,9 +962,11 @@ paths:
                     type: string
                     example: Billing session created
               example:
+                chargedCurrency: EUR
                 url: 'https://xquik.com/billing/session'
                 status: checkout_created
                 message: Billing session created
+        '400': { $ref: '#/components/responses/InvalidInput' }
         '401': *unauthenticated-response
         '403': { $ref: '#/components/responses/ReadKeyForbidden' }
         '429': *rate-limit-exceeded-response
