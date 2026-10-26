@@ -67,7 +67,8 @@ export default defineConfig(
           message: "Call Object.assign and Object.create directly and type their results.",
         },
         {
-          selector: "Identifier[name='runInNewContext']:not(CallExpression > .callee, ImportSpecifier > Identifier)",
+          selector:
+            "Identifier[name='runInNewContext']:not(CallExpression > .callee, ImportSpecifier > Identifier)",
           message: "Call runInNewContext directly and type its result as unknown.",
         },
         {
