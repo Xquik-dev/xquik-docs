@@ -1,5 +1,6 @@
 import { defineConfig } from "eslint/config";
 import tseslint from "typescript-eslint";
+import { typedBans } from "./scripts/lint/typed-bans.ts";
 
 export default defineConfig(
   { linterOptions: { noInlineConfig: true } },
@@ -18,7 +19,7 @@ export default defineConfig(
       parser: tseslint.parser,
       parserOptions: { projectService: true, tsconfigRootDir: import.meta.dirname },
     },
-    plugins: { "@typescript-eslint": tseslint.plugin },
+    plugins: { "@typescript-eslint": tseslint.plugin, xquik: typedBans },
     rules: {
       "@typescript-eslint/ban-ts-comment": [
         "error",
@@ -34,6 +35,7 @@ export default defineConfig(
       "@typescript-eslint/no-unsafe-member-access": "error",
       "@typescript-eslint/no-unsafe-return": "error",
       "@typescript-eslint/use-unknown-in-catch-callback-variable": "error",
+      "no-eval": "error",
       "no-restricted-syntax": [
         "error",
         {
@@ -52,35 +54,9 @@ export default defineConfig(
           selector: "[declare=true]",
           message: "Give this value a checked source instead of declaring its type.",
         },
-        {
-          selector:
-            ":matches(Identifier[name=/^(JSON|Reflect)$/], MemberExpression > Literal.property[value=/^(JSON|Reflect)$/]):not(CallExpression > MemberExpression.callee > .object)",
-          message: "Call JSON and Reflect functions directly and type their results as unknown.",
-        },
-        {
-          selector: "Identifier[name=/^(eval|createRequire)$/]",
-          message: "Import the module or parse the value instead of evaluating code.",
-        },
-        {
-          selector:
-            "MemberExpression[object.name='Object'][property.name=/^(assign|create)$/]:not(CallExpression > .callee)",
-          message: "Call Object.assign and Object.create directly and type their results.",
-        },
-        {
-          selector:
-            "Identifier[name='runInNewContext']:not(CallExpression > .callee, ImportSpecifier > Identifier)",
-          message: "Call runInNewContext directly and type its result as unknown.",
-        },
-        {
-          selector: "TSTypeReference[typeName.left.name='z'][typeName.right.name='ZodType']",
-          message:
-            "Infer the type from the zod schema instead of annotating the schema with a separate type.",
-        },
-        {
-          selector: "Identifier[name='require']:not(CallExpression > .callee)",
-          message: "Import the module instead of passing require as a value.",
-        },
       ],
+      "xquik/no-any-returning-value": "error",
+      "xquik/no-zod-type-annotation": "error",
       "no-warning-comments": [
         "error",
         {
