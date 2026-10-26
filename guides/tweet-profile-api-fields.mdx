@@ -206,10 +206,10 @@ Join quotes and reposts to each nested tweet ID.
 Keep original tweets separate from outer repost records.
 
 `reactionContext` identifies the public post and user tied to a reaction.
-Xquik removes viewer-specific state from its nested user.
-`reactionContext.reactedToPost` serves that post when X sends it.
-X often sends only its ID, author & edit history.
-Then `unknownFields` lists `text`, and the flags X left out are missing.
+Its nested user holds public data only, with no viewer-specific fields.
+`reactionContext.reactedToPost` holds that post when available.
+It can arrive with only its ID, author & edit history.
+Then `unknownFields` lists `text`, and the other flags are missing.
 
 <CardGroup cols={2}>
 
@@ -248,9 +248,8 @@ It is `null` when unavailable and omitted for original posts.
 `retweeted_tweet.createdAt` remains the original post's creation date.
 
 [Get retweeters](/api-reference/x/retweeters#retweet-timestamps) supports `includeRetweetTimestamp=true`.
-It checks each account's newest available profile page for the matching repost.
+It adds each repost's time and makes the call take longer.
 Profile rows remain present when timestamps are unavailable, with `retweetedAt: null`.
-This optional lookup adds latency and does not search complete account histories.
 Profile `createdAt` remains the account creation date.
 
 ### Interpret tweet engagement fields
@@ -265,8 +264,8 @@ left out when X sent every count.
 The names match the response's key style. With
 `xquik-api-contract: 2026-04-29`, the list reads `["bookmark_count"]`.
 
-Posts from before X counted views list `viewCount`. So do new posts X has not
-counted views for yet, since X sends no view count until a post has views.
+Posts from before X counted views list `viewCount`. So do new posts until
+they have views.
 
 Store `tweet_id`, every count, and `collected_at` in one snapshot row. Compare
 snapshots with the same tweet ID. Do not overwrite history when measuring
@@ -358,8 +357,8 @@ Keep pinned tweet IDs as strings.
 | `superFollowsUserProfileActive`   | Active subscription profile state                   |
 | `tipJar`                          | Public creator support handles                      |
 
-Xquik removes account-specific actions, permissions, and relationships from
-public reads. Use dedicated write routes or X for account state.
+Rows hold public data only, with no viewer-specific fields. Use dedicated
+write routes or X for account state.
 
 ### Twitter profile API example
 
@@ -419,9 +418,9 @@ describe public response state. They do not grant access to hidden content.
 ### Handle a withheld account location
 
 `accountBasedIn` holds the country or region X shows for the account.
-It is `null` when X shows no label. X sometimes withholds the label from a read.
+It is `null` when X shows no label. Sometimes the label is not available yet.
 The profile then has `accountBasedInUnavailable: true` & no `accountBasedIn`.
-Treat that as unknown, not as no label. Retry later to get it.
+Treat that as unknown, not as no label. It can appear on a later request.
 
 ## Media fields
 
@@ -517,10 +516,10 @@ Complete mode adds nested replies and detailed diagnostics.
 
 Direct replies match `inReplyToId` to the requested tweet. Keep
 `nested_replies` separate. Trust `diagnostic.complete` instead of row count.
-Complete mode requires 80% of X's current reported direct replies, or a
-`sinceTime` or `untilTime` window read to its end. HTTP 424
+Complete mode answers `200` once it holds the replies X shows. A `sinceTime`
+or `untilTime` window covered to its end also answers `200`. Otherwise HTTP 424
 `replies_incomplete` returns the collected rows and coverage diagnostic.
-Inspect `coveragePercentage`, strategy results, cursor failures, and fallback.
+Inspect `coveragePercentage` and `recommendedFallback`.
 Disclose that reply coverage depends on X.
 
 ### Store reply relationships

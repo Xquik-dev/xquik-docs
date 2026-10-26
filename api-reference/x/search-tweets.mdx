@@ -196,9 +196,8 @@ operators, dates, authors, media, and engagement filters. For exact lookup,
 send a Tweet ID or X status URL in `q` with no time params. To search one
 user's tweets as a plain timeline, call
 [Search user tweets](/api-reference/x/user-tweets)
-(`GET /x/users/{id}/tweets`). Date params append `since:` and `until:`
-search operators to `q`, so
-`q=from:username&sinceTime=2026-05-01&untilTime=2026-05-02` stays on search.
+(`GET /x/users/{id}/tweets`). Date params limit results to that window, as in
+`q=from:username&sinceTime=2026-05-01&untilTime=2026-05-02`.
 Cursor requests return an empty final page for exact IDs.
 
 <Callout icon="coins" color="#5c3327">
@@ -209,7 +208,7 @@ Cursor requests return an empty final page for exact IDs.
 
 <AutomaticCoveragePagination />
 
-Conversation searches use automatic recovery even when `limit` is 1.
+Conversation searches return every post they find, even with `limit` 1.
 A search with no results ends with `has_next_page=false`.
 
 <CodeGroup>
@@ -303,9 +302,8 @@ Continue while `has_next_page` is true. Deduplicate IDs and reject repeated curs
 Explicit `mode=coverage` returns retained rows when its request window expires.
 Check `diagnostic.deadlineReached` and `diagnostic.complete`. Partial coverage does not mean the source ran out of tweets.
 
-For account date windows, `sinceTime` and `untilTime` append `since:` and
-`until:` to `q`. Inline `since_time:` and `until_time:`
-intersect. The start is inclusive. The end is exclusive. Days are UTC.
+For account date windows, `sinceTime` and `untilTime` limit results to that
+window. Inline `since_time:` and `until_time:` intersect. The start is inclusive. The end is exclusive. Days are UTC.
 `q=from:username&sinceTime=2026-05-01&untilTime=2026-05-02` behaves like
 `from:username since:2026-05-01 until:2026-05-02`. Use `queryType=Latest` for
 backfills or keywords for ranked search. Bounds apply to every returned page.
@@ -314,12 +312,12 @@ Coverage continues past rejected rows.
 `-filter:nativeretweets` drops button reposts but keeps quotes & manual RT
 text. `include:nativeretweets` adds button reposts to author searches.
 `-filter:retweets` also drops manual RT text. Xquik keeps the operator you send.
-Dated author searches keep either filter through pagination & recovery, and
-read the account timeline too.
+Dated author searches keep either filter on every page.
 
-Bare `q=from:username` uses automatic timeline and search coverage. Continue
-when the response includes `next_cursor`. Use `mode=standard` only when an old
-integration requires the legacy single-page timeline behavior.
+Account searches return all of the account's posts & reposts in the window.
+A bare `q=from:username` search returns them too. Continue when the response
+includes `next_cursor`. `mode=standard` keeps the legacy behavior for old
+integrations.
 
 A search that needs a protected author returns `403` with
 `x_account_protected` and no charge. Choose a public account. Searches across
@@ -411,29 +409,28 @@ const matches = tweet.textHighlights.map(({ startIndex, endIndex }) =>
 
 Send the caller's query, Tweet ID, or status URL. `query` is an alias.
 Quotes match phrases. Hyphens negate terms. Use `exactPhrase` for literals.
-X searches up to 512 characters. A longer query answers 424 before any read,
-unless a term of its first OR group fits alone.
+X searches up to 512 characters. A longer query answers 424. Some long OR
+queries still return results.
 
 </ParamField>
 
 <ParamField query="queryType" type="string">
 
-`Latest` lists posts newest first. `Top` keeps X's engagement ranking within each read.
-Xquik reads several of X's views, so a later page can hold a post X ranks higher.
+`Latest` lists posts newest first. `Top` ranks posts by engagement within each page.
+A later page can hold a higher ranked post.
 Use `Latest` for posts in time order. Any case works. `result_type` and `sort_order`
 are accepted aliases, as are `type`, `search_type`, `product`, `category` & `section`.
 `recency` maps to `Latest`. `relevancy` maps to `Top`. `Photos`, `Videos` & `Media`
-read `Latest` with `mediaType` `images`, `videos` or `media`, unless you set
-`mediaType`. `People` & `Lists` answer 400 & point to `/x/users/search` &
+return posts with that media type, unless you set `mediaType`. `People` & `Lists` answer 400 & point to `/x/users/search` &
 `/x/lists/search`.
 
 </ParamField>
 
 <ParamField query="mode" type="string">
 
-Optional compatibility override. Omit it for automatic maximum coverage.
-Use `standard` for legacy single-view pagination. Use `coverage` for a
-one-shot diagnostic response without cursor pagination.
+Optional compatibility override. Omit it to get the fullest results.
+`standard` keeps the legacy pagination. Use `coverage` for a one-shot
+diagnostic response without cursor pagination.
 
 </ParamField>
 
@@ -580,7 +577,7 @@ Opaque cursor for the next page. Empty string when no more results.
 </ResponseField>
 <ResponseField name="searchedQuery" type="string">
 
-Your `q` as X searched it. Present only when Xquik fixed it, such as by removing an unmatched quote X refuses.
+The query behind the returned rows. Present only when it differs from your `q`.
 
 </ResponseField>
 
