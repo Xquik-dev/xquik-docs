@@ -377,7 +377,7 @@ describe("read data richness documentation", (): void => {
   it("distinguishes direct coverage from nested reply exhaustion", (): void => {
     expect.assertions(3);
     expect(TWEET_REPLIES).toContain("It does not prove that Xquik returned every nested reply.");
-    expect(TWEET_REPLIES).toContain("the fullest reply list.");
+    expect(TWEET_REPLIES).toContain("`mode=complete` adds nested replies & a coverage diagnostic.");
     expect(TWEET_REPLIES).toContain("Requested limits & deadlines still apply.");
   });
 });

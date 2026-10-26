@@ -35,7 +35,7 @@ const REQUIRED_RADAR_PAGE_COPY = [
   '<ParamField header="x-api-key" type="string">',
   "include available post content, media, and engagement metrics.",
   "`html`, `json` or `rss`",
-  "hold fewer fields.",
+  "Older items can hold fewer fields.",
   "`und` means the source did not identify a language.",
   "`estimatedUpvotes` and `estimatedDownvotes` as estimates",
   "Radar returns no comment bodies.",
