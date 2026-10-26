@@ -3,6 +3,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
+import { z } from "zod";
 
 const CASES: readonly { readonly name: string; readonly code: string; readonly flagged: number }[] =
   [
@@ -53,9 +54,11 @@ function flaggedLines(): Map<string, number> {
     ["--config", join(import.meta.dirname, ".oxlintrc.json"), "--format", "json", folder],
     { encoding: "utf8" },
   );
-  const { diagnostics } = JSON.parse(stdout) as {
-    diagnostics: { code: string; filename: string }[];
-  };
+  const { diagnostics } = z
+    .looseObject({
+      diagnostics: z.array(z.looseObject({ code: z.string(), filename: z.string() })),
+    })
+    .parse(JSON.parse(stdout));
   const counts = new Map<string, number>();
   for (const { code, filename } of diagnostics) {
     if (code !== "xquik(no-code-comments)") continue;

@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
+import { z } from "zod";
 
 const AUTOMATIC_COVERAGE_PAGES = [
   "api-reference/x/search-tweets.mdx",
@@ -67,11 +68,13 @@ describe("automatic maximum coverage contract", (): void => {
     expect.assertions(6);
 
     const openApi = readFileSync("openapi.yaml", "utf8");
-    const { components } = Bun.YAML.parse(openApi) as {
-      readonly components: {
-        readonly parameters: Record<string, { readonly description: string }>;
-      };
-    };
+    const { components } = z
+      .looseObject({
+        components: z.looseObject({
+          parameters: z.record(z.string(), z.looseObject({ description: z.string() })),
+        }),
+      })
+      .parse(Bun.YAML.parse(openApi));
     const mcp = readFileSync("mcp/tools.mdx", "utf8");
 
     expect(openApi).not.toContain("x-guidance");

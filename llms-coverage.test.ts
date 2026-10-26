@@ -1,22 +1,13 @@
 import { readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
+import { z } from "zod";
+import { navigationNode, type NavigationItem } from "./scripts/lib/docs-config-schema.ts";
 
 const DOCS_ORIGIN = "https://docs.xquik.com";
 const MARKDOWN_LINK_PATTERN = /\[[^\]]+\]\((?:https:\/\/docs\.xquik\.com)?\/([^\s)]*)\)/gu;
 
-interface NavigationGroup {
-  readonly anchors?: readonly NavigationItem[];
-  readonly groups?: readonly NavigationItem[];
-  readonly pages?: readonly NavigationItem[];
-  readonly tabs?: readonly NavigationItem[];
-}
-
-type NavigationItem = string | NavigationGroup;
-
-interface DocsConfig {
-  readonly navigation: NavigationGroup;
-}
+const docsConfigSchema = z.looseObject({ navigation: navigationNode });
 
 function flattenNavigationPages(item: NavigationItem): readonly string[] {
   if (typeof item === "string") {
@@ -52,7 +43,7 @@ describe("llms.txt coverage", (): void => {
   it("lists every docs.json navigation page as a markdown link", (): void => {
     expect.assertions(2);
 
-    const docsConfig = JSON.parse(readFileSync("docs.json", "utf8")) as DocsConfig;
+    const docsConfig = docsConfigSchema.parse(JSON.parse(readFileSync("docs.json", "utf8")));
     const expectedPages = flattenNavigationPages(docsConfig.navigation);
     const llms = readFileSync("llms.txt", "utf8");
     const actualPages = documentedLlmsPages(llms);

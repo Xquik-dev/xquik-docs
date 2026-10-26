@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { z } from "zod";
 
 const REQUIRED_OPERATIONAL_CONTENT = [
   {
@@ -862,18 +863,22 @@ describe("extraction export format copy", (): void => {
 
     const guide = readFileSync("guides/request-efficient-api-usage.mdx", "utf8");
     const cli = readFileSync("sdks/cli.mdx", "utf8");
-    const openApi = Bun.YAML.parse(readFileSync("openapi.yaml", "utf8")) as {
-      readonly paths: {
-        readonly "/extractions/{id}/export": {
-          readonly get: {
-            readonly parameters: readonly {
-              readonly name?: string;
-              readonly schema?: { readonly enum?: readonly string[] };
-            }[];
-          };
-        };
-      };
-    };
+    const openApi = z
+      .looseObject({
+        paths: z.looseObject({
+          "/extractions/{id}/export": z.looseObject({
+            get: z.looseObject({
+              parameters: z.array(
+                z.looseObject({
+                  name: z.string().optional(),
+                  schema: z.looseObject({ enum: z.array(z.string()).optional() }).optional(),
+                }),
+              ),
+            }),
+          }),
+        }),
+      })
+      .parse(Bun.YAML.parse(readFileSync("openapi.yaml", "utf8")));
     const format = openApi.paths["/extractions/{id}/export"].get.parameters.find(
       (parameter): boolean => parameter.name === "format",
     );

@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { z } from "zod";
 
 import { stripGeneratedResponseExamples } from "./scripts/lib/generated-response-examples";
 
@@ -10,14 +11,9 @@ interface DiscoveryFinding {
   readonly issue: string;
 }
 
-interface DocsRedirect {
-  readonly destination: string;
-  readonly source: string;
-}
-
-interface DocsConfig {
-  readonly redirects: readonly DocsRedirect[];
-}
+const docsConfigSchema = z.looseObject({
+  redirects: z.array(z.looseObject({ destination: z.string(), source: z.string() })),
+});
 
 const EVENT_DETAIL_PIN = 'event_detail_endpoint_pattern: "/api/v1/events/{event_id}"';
 const DELIVERIES_PIN = 'deliveries_endpoint_pattern: "/api/v1/webhooks/{webhook_id}/deliveries"';
@@ -12578,7 +12574,7 @@ function collectNonDescriptiveInternalAnchorFindings(): readonly DiscoveryFindin
 function collectFocusedApiRouteFindings(): readonly DiscoveryFinding[] {
   const findings: DiscoveryFinding[] = [];
   const docsConfigSource = readFileSync("docs.json", "utf8");
-  const docsConfig = JSON.parse(docsConfigSource) as DocsConfig;
+  const docsConfig = docsConfigSchema.parse(JSON.parse(docsConfigSource));
   const navigationSource = docsConfigSource.slice(docsConfigSource.indexOf('"navigation"'));
 
   for (const route of FOCUSED_API_ROUTE_MIGRATIONS) {

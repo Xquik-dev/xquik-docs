@@ -1,6 +1,14 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { z } from "zod";
+import {
+  operationAt,
+  operations,
+  parseOpenApi,
+  type OpenApiDocument,
+  type OpenApiOperation,
+} from "./scripts/lib/openapi-schema.ts";
 
 import {
   GENERATED_RESPONSE_EXAMPLES_END,
@@ -8,25 +16,17 @@ import {
   stripGeneratedResponseExamples,
 } from "./scripts/lib/generated-response-examples";
 
-interface OpenApiOperation {
-  readonly responses?: Readonly<Record<string, unknown>>;
-  readonly "x-write-action"?: string;
-}
-
-interface OpenApiSpec {
-  readonly paths?: Readonly<Record<string, Readonly<Record<string, OpenApiOperation>>>>;
-}
-
 const PROJECT_ROOT = process.cwd();
-const spec = Bun.YAML.parse(
-  readFileSync(join(PROJECT_ROOT, "openapi.yaml"), "utf8"),
-) as OpenApiSpec;
-const WRITE_OPERATION_COUNT = Object.values(spec.paths ?? {})
-  .flatMap((methods) => Object.values(methods))
-  .filter((operation) => operation["x-write-action"] !== undefined).length;
-const NO_CONTENT_OPERATION_COUNT = Object.values(spec.paths ?? {})
-  .flatMap((methods) => Object.values(methods))
-  .filter((operation) => operation.responses?.["204"] !== undefined).length;
+const spec = parseOpenApi(readFileSync(join(PROJECT_ROOT, "openapi.yaml"), "utf8"));
+const OPERATIONS = Object.values(spec.paths ?? {}).flatMap((pathItem) =>
+  operations(pathItem).map(([, operation]) => operation),
+);
+const WRITE_OPERATION_COUNT = OPERATIONS.filter(
+  (operation) => operation["x-write-action"] !== undefined,
+).length;
+const NO_CONTENT_OPERATION_COUNT = OPERATIONS.filter(
+  (operation) => operation.responses?.["204"] !== undefined,
+).length;
 const WRITE_ACTION_LIFECYCLE_SNIPPET_PATH = join(
   PROJECT_ROOT,
   "snippets/write-action-lifecycle-response.mdx",
@@ -145,7 +145,7 @@ function generatedJsonResponse(
   ];
   return json === undefined
     ? undefined
-    : (JSON.parse(json.replace(/^    /gmu, "")) as Readonly<Record<string, unknown>>);
+    : z.record(z.string(), z.unknown()).parse(JSON.parse(json.replace(/^    /gmu, "")));
 }
 
 function responseStatuses(operation: OpenApiOperation): readonly string[] {
@@ -162,14 +162,14 @@ function collectStatusFindings({
 }: {
   readonly docsStatusProvider: (source: string) => readonly string[];
   readonly issuePrefix: string;
-  readonly spec: OpenApiSpec;
+  readonly spec: OpenApiDocument;
   readonly statusProvider: (operation: OpenApiOperation) => readonly string[];
 }): readonly ResponseStatusFinding[] {
   const findings: ResponseStatusFinding[] = [];
 
   for (const apiDoc of readApiDocs()) {
     const operationLabel = `${apiDoc.method.toUpperCase()} ${apiDoc.path}`;
-    const operation = spec.paths?.[apiDoc.path]?.[apiDoc.method];
+    const operation = operationAt(spec, apiDoc.path, apiDoc.method);
     if (operation === undefined) {
       findings.push({
         file: apiDoc.file,
@@ -312,7 +312,7 @@ describe("API success response status documentation", (): void => {
     expect.assertions(2);
 
     const writeDocs = readApiDocs().flatMap((apiDoc) => {
-      const action = spec.paths?.[apiDoc.path]?.[apiDoc.method]?.["x-write-action"];
+      const action = operationAt(spec, apiDoc.path, apiDoc.method)?.["x-write-action"];
       return action === undefined ? [] : [{ action, apiDoc }];
     });
     const findings = writeDocs.flatMap(({ action, apiDoc }) =>

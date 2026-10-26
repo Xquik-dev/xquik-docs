@@ -1,27 +1,14 @@
 import { readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
+import { parseOpenApi, type OpenApiDocument } from "./scripts/lib/openapi-schema.ts";
 
-interface SchemaNode {
-  readonly $ref?: string;
-  readonly enum?: readonly string[];
-  readonly oneOf?: readonly SchemaNode[];
-  readonly properties?: Readonly<Record<string, SchemaNode>>;
-  readonly title?: string;
-}
-
-interface OpenApiDocument {
-  readonly components?: Readonly<{
-    readonly schemas?: Readonly<Record<string, SchemaNode>>;
-  }>;
-}
-
-function parseOpenApi(): OpenApiDocument {
-  return Bun.YAML.parse(readFileSync("openapi.yaml", "utf8")) as OpenApiDocument;
+function readOpenApi(): OpenApiDocument {
+  return parseOpenApi(readFileSync("openapi.yaml", "utf8"));
 }
 
 function requireErrorEnum(title: string, property?: string): readonly string[] {
-  const schemas = parseOpenApi().components?.schemas;
+  const schemas = readOpenApi().components?.schemas;
   const variants = schemas?.["Error"]?.properties?.["error"]?.oneOf;
   const variant = variants?.find((candidate) => candidate.title === title);
   if (variant === undefined) {
@@ -34,7 +21,13 @@ function requireErrorEnum(title: string, property?: string): readonly string[] {
     const label = property === undefined ? title : `${title}.${property}`;
     throw new Error(`${label} is missing its enum.`);
   }
-  return values;
+  const codes = values.flatMap((value): string[] => (typeof value === "string" ? [value] : []));
+  if (codes.length !== values.length) {
+    throw new Error(
+      `${property === undefined ? title : `${title}.${property}`} has an enum value that is not a string.`,
+    );
+  }
+  return codes;
 }
 
 describe("public error contract", (): void => {

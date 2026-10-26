@@ -2,6 +2,7 @@ import { getChecksSorted, runChecks } from "afdocs";
 import { loadConfig } from "afdocs/helpers";
 import type { AgentDocsConfig, CheckResult, RunnerOptions } from "afdocs";
 import { beforeAll, describe, expect, it } from "vitest";
+import { isList, isRecord } from "./scripts/lib/json-shape.ts";
 
 const LIVE_CRAWL_HANG_GUARD_MS = 300_000;
 
@@ -20,14 +21,12 @@ function runnerOptions(config: AgentDocsConfig): Partial<RunnerOptions> {
   };
 }
 
-function asRecord(value: unknown): Record<string, unknown> | undefined {
-  return value && typeof value === "object" && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : undefined;
+function asRecord(value: unknown): Readonly<Record<string, unknown>> | undefined {
+  return isRecord(value) ? value : undefined;
 }
 
-function asRecordArray(value: unknown): Record<string, unknown>[] {
-  return Array.isArray(value)
+function asRecordArray(value: unknown): Readonly<Record<string, unknown>>[] {
+  return isList(value)
     ? value.flatMap((item) => {
         const record = asRecord(item);
         return record ? [record] : [];
@@ -139,7 +138,7 @@ async function parityWarningIsMdxOnly(result: CheckResult): Promise<boolean> {
   const checks = await Promise.all(
     pages.map(async (page): Promise<boolean> => {
       const url = asString(page.url);
-      const samples = Array.isArray(page.sampleDiffs) ? page.sampleDiffs : [];
+      const samples = isList(page.sampleDiffs) ? page.sampleDiffs : [];
       if (url === undefined || samples.length === 0) return false;
       const mdUrl = new URL(url);
       mdUrl.pathname =

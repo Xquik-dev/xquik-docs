@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
+import { z } from "zod";
 
 const PROJECT_ROOT = process.cwd();
 const TWEETCLAW_ROOT = process.env["TWEETCLAW_ROOT"] ?? join(PROJECT_ROOT, "..", "tweetclaw");
@@ -15,24 +16,21 @@ const TWEETCLAW_API_SPEC = join(TWEETCLAW_ROOT, "src/api-spec.ts");
 const HERMES_TWEET_PYPROJECT = join(HERMES_TWEET_ROOT, "pyproject.toml");
 const HERMES_TWEET_CATALOG = join(HERMES_TWEET_ROOT, "hermes_tweet/catalog_data.json");
 
-interface PackageJson {
-  readonly engines?: { readonly node?: string };
-  readonly name?: string;
-  readonly openclaw?: {
-    readonly compat?: {
-      readonly minGatewayVersion?: string;
-      readonly pluginApi?: string;
-    };
-    readonly install?: {
-      readonly npmSpec?: string;
-    };
-  };
-  readonly version?: string;
-}
+const packageJsonSchema = z.looseObject({
+  engines: z.looseObject({ node: z.string().optional() }).optional(),
+  name: z.string().optional(),
+  openclaw: z
+    .looseObject({
+      compat: z
+        .looseObject({ minGatewayVersion: z.string().optional(), pluginApi: z.string().optional() })
+        .optional(),
+      install: z.looseObject({ npmSpec: z.string().optional() }).optional(),
+    })
+    .optional(),
+  version: z.string().optional(),
+});
 
-interface CatalogEndpoint {
-  readonly mpp?: unknown;
-}
+const catalogSchema = z.array(z.looseObject({ mpp: z.unknown().optional() }));
 
 function fileIncludes(source: string, expected: readonly string[]): readonly string[] {
   return expected.filter((value): boolean => !source.includes(value));
@@ -101,7 +99,9 @@ describe("Plugin docs", (): void => {
     }
 
     const guide = readFileSync(TWEETCLAW_GUIDE, "utf8");
-    const packageJson = JSON.parse(readFileSync(TWEETCLAW_PACKAGE, "utf8")) as PackageJson;
+    const packageJson = packageJsonSchema.parse(
+      JSON.parse(readFileSync(TWEETCLAW_PACKAGE, "utf8")),
+    );
     const apiSpec = readFileSync(TWEETCLAW_API_SPEC, "utf8");
     const endpointCount =
       [...apiSpec.matchAll(/^\s+path: '/gmu)].length -
@@ -233,9 +233,7 @@ describe("Plugin docs", (): void => {
 
     const guide = readFileSync(HERMES_TWEET_GUIDE, "utf8");
     const pyproject = readFileSync(HERMES_TWEET_PYPROJECT, "utf8");
-    const catalog = JSON.parse(
-      readFileSync(HERMES_TWEET_CATALOG, "utf8"),
-    ) as readonly CatalogEndpoint[];
+    const catalog = catalogSchema.parse(JSON.parse(readFileSync(HERMES_TWEET_CATALOG, "utf8")));
     const version = regexValue(pyproject, /^version = "([^"]+)"/mu, "version");
     const python = regexValue(pyproject, /^requires-python = ">=([^"]+)"/mu, "requires-python");
     const mppEndpointCount = catalog.filter(

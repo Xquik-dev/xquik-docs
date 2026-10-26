@@ -2,24 +2,16 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
+import {
+  operations,
+  parseOpenApi,
+  type OpenApiDocument,
+  type OpenApiOperation,
+} from "./scripts/lib/openapi-schema.ts";
 
 const PROJECT_ROOT = process.cwd();
 const DOCS_OPENAPI_PATH = join(PROJECT_ROOT, "openapi.yaml");
 const HTTP_METHODS = new Set(["delete", "get", "patch", "post", "put"]);
-
-interface OpenApiOperation {
-  readonly responses?: Readonly<Record<string, { readonly ["$ref"]?: string }>>;
-  readonly security?: readonly Record<string, readonly string[]>[];
-  readonly ["x-payment-info"]?: {
-    readonly offers?: readonly {
-      readonly intent?: string;
-    }[];
-  };
-}
-
-interface OpenApiSpec {
-  readonly paths?: Record<string, Record<string, OpenApiOperation>>;
-}
 
 interface OperationMetadata {
   readonly optionalCredential: boolean;
@@ -35,12 +27,8 @@ interface MppFinding {
   readonly operation: string;
 }
 
-function parseYaml(source: string): OpenApiSpec {
-  return Bun.YAML.parse(source) as OpenApiSpec;
-}
-
-function readOpenApi(path: string): OpenApiSpec {
-  return parseYaml(readFileSync(path, "utf8"));
+function readOpenApi(path: string): OpenApiDocument {
+  return parseOpenApi(readFileSync(path, "utf8"));
 }
 
 function normalizeOperationKey(method: string, path: string): string {
@@ -56,14 +44,14 @@ function hasOptionalCredential(operation: OpenApiOperation): boolean {
   );
 }
 
-function collectOperations(spec: OpenApiSpec): readonly OperationMetadata[] {
-  const operations: OperationMetadata[] = [];
+function collectOperations(spec: OpenApiDocument): readonly OperationMetadata[] {
+  const collected: OperationMetadata[] = [];
   for (const [path, pathItem] of Object.entries(spec.paths ?? {})) {
-    for (const [method, operation] of Object.entries(pathItem)) {
+    for (const [method, operation] of operations(pathItem)) {
       if (!HTTP_METHODS.has(method)) {
         continue;
       }
-      operations.push({
+      collected.push({
         optionalCredential: hasOptionalCredential(operation),
         key: normalizeOperationKey(method, path),
         paymentIntents:
@@ -76,7 +64,7 @@ function collectOperations(spec: OpenApiSpec): readonly OperationMetadata[] {
       });
     }
   }
-  return operations.sort((left, right): number => left.key.localeCompare(right.key));
+  return collected.sort((left, right): number => left.key.localeCompare(right.key));
 }
 
 describe("MPP payment metadata", (): void => {

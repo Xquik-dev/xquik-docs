@@ -2,6 +2,14 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
 
 import { describe, expect, it } from "vitest";
+import {
+  operationAt,
+  parseOpenApi,
+  type OpenApiDocument,
+  type OpenApiOperation,
+  type OpenApiParameter,
+  type OpenApiSchema,
+} from "./scripts/lib/openapi-schema.ts";
 
 const PROJECT_ROOT = process.cwd();
 const API_REFERENCE_DIR = join(PROJECT_ROOT, "api-reference");
@@ -34,50 +42,9 @@ interface DocumentedOperationField {
   readonly path: string;
 }
 
-interface OpenApiParameter {
-  readonly $ref?: string;
-  readonly in?: string;
-  readonly name?: string;
-  readonly required?: boolean;
-  readonly schema?: OpenApiSchema;
-}
-
-interface OpenApiRequestBody {
-  readonly content?: Record<string, { readonly schema?: OpenApiSchema }>;
-}
-
-interface OpenApiOperation {
-  readonly parameters?: readonly OpenApiParameter[];
-  readonly requestBody?: OpenApiRequestBody;
-}
-
-interface OpenApiSchema {
-  readonly $ref?: string;
-  readonly allOf?: readonly OpenApiSchema[];
-  readonly anyOf?: readonly OpenApiSchema[];
-  readonly oneOf?: readonly OpenApiSchema[];
-  readonly properties?: Record<string, OpenApiSchema>;
-  readonly required?: readonly string[];
-  readonly type?: string;
-  readonly minimum?: number;
-  readonly maximum?: number;
-}
-
-interface OpenApiSpec {
-  readonly components?: {
-    readonly parameters?: Record<string, OpenApiParameter>;
-    readonly schemas?: Record<string, OpenApiSchema>;
-  };
-  readonly paths?: Record<string, Record<string, OpenApiOperation>>;
-}
-
 interface SchemaFields {
   readonly properties: readonly string[];
   readonly required: readonly string[];
-}
-
-function parseYaml(source: string): OpenApiSpec {
-  return Bun.YAML.parse(source) as OpenApiSpec;
 }
 
 function listApiReferenceFiles(dir: string): readonly string[] {
@@ -141,25 +108,29 @@ function operationKey(apiDoc: ApiDoc): string {
   return `${apiDoc.method.toUpperCase()} ${apiDoc.path}`;
 }
 
-function resolveReference<T>(spec: OpenApiSpec, value: T & { readonly $ref?: string }): T {
-  if (value.$ref === undefined) {
-    return value;
+function referenceName(ref: string, expectedKind: "parameters" | "schemas"): string {
+  const [, section, kind, name] = ref.split("/");
+  if (section !== "components" || kind !== expectedKind || name === undefined) {
+    throw new Error(`Unsupported OpenAPI reference: ${ref}`);
   }
-  const [, section, kind, name] = value.$ref.split("/");
-  if (section !== "components" || name === undefined) {
-    throw new Error(`Unsupported OpenAPI reference: ${value.$ref}`);
-  }
-  if (kind === "parameters") {
-    return spec.components?.parameters?.[name] as T;
-  }
-  if (kind === "schemas") {
-    return spec.components?.schemas?.[name] as T;
-  }
-  throw new Error(`Unsupported OpenAPI reference: ${value.$ref}`);
+  return name;
+}
+
+function resolveParameter(spec: OpenApiDocument, parameter: OpenApiParameter): OpenApiParameter {
+  if (parameter.$ref === undefined) return parameter;
+  const resolved = spec.components?.parameters?.[referenceName(parameter.$ref, "parameters")];
+  if (resolved === undefined) throw new Error(`Unresolved OpenAPI reference: ${parameter.$ref}`);
+  return resolved;
+}
+
+function resolveSchema(spec: OpenApiDocument, schema: OpenApiSchema): OpenApiSchema | undefined {
+  return schema.$ref === undefined
+    ? schema
+    : spec.components?.schemas?.[referenceName(schema.$ref, "schemas")];
 }
 
 function schemaFields(
-  spec: OpenApiSpec,
+  spec: OpenApiDocument,
   schema: OpenApiSchema | undefined,
   seenRefs = new Set<string>(),
 ): SchemaFields {
@@ -171,7 +142,7 @@ function schemaFields(
       return { properties: [], required: [] };
     }
     seenRefs.add(schema.$ref);
-    return schemaFields(spec, resolveReference(spec, schema), seenRefs);
+    return schemaFields(spec, resolveSchema(spec, schema), seenRefs);
   }
   const composedFields = (schema.allOf ?? []).map((item): SchemaFields =>
     schemaFields(spec, item, seenRefs),
@@ -205,7 +176,7 @@ function intersect(groups: readonly (readonly string[])[]): readonly string[] {
   return first.filter((item): boolean => rest.every((group): boolean => group.includes(item)));
 }
 
-function requestBodyFields(spec: OpenApiSpec, operation: OpenApiOperation): SchemaFields {
+function requestBodyFields(spec: OpenApiDocument, operation: OpenApiOperation): SchemaFields {
   const content = Object.values(operation.requestBody?.content ?? {});
   const contentFields = content.map((entry): SchemaFields => schemaFields(spec, entry.schema));
   return {
@@ -215,25 +186,21 @@ function requestBodyFields(spec: OpenApiSpec, operation: OpenApiOperation): Sche
 }
 
 function openApiParameters(
-  spec: OpenApiSpec,
+  spec: OpenApiDocument,
   path: string,
   operation: OpenApiOperation,
   kind: "path" | "query",
 ): readonly OpenApiParameter[] {
-  const shared: unknown = spec.paths?.[path]?.["parameters"];
-  return [
-    ...(Array.isArray(shared) ? (shared as OpenApiParameter[]) : []),
-    ...(operation.parameters ?? []),
-  ]
-    .map((parameter): OpenApiParameter => resolveReference(spec, parameter))
+  return [...(spec.paths?.[path]?.parameters ?? []), ...(operation.parameters ?? [])]
+    .map((parameter) => resolveParameter(spec, parameter))
     .filter((parameter): boolean => parameter.in === kind && parameter.name !== undefined)
     .sort((left, right): number => (left.name ?? "").localeCompare(right.name ?? ""));
 }
 
-function collectFieldFindings(spec: OpenApiSpec): readonly FieldFinding[] {
+function collectFieldFindings(spec: OpenApiDocument): readonly FieldFinding[] {
   const findings: FieldFinding[] = [];
   for (const apiDoc of readApiDocs()) {
-    const operation = spec.paths?.[apiDoc.path]?.[apiDoc.method];
+    const operation = operationAt(spec, apiDoc.path, apiDoc.method);
     if (operation === undefined) {
       findings.push({
         field: apiDoc.path,
@@ -299,7 +266,7 @@ function collectFieldFindings(spec: OpenApiSpec): readonly FieldFinding[] {
 }
 
 function collectDocumentedRequestBodyFieldFindings(
-  spec: OpenApiSpec,
+  spec: OpenApiDocument,
   expectedFields: readonly DocumentedOperationField[],
 ): readonly FieldFinding[] {
   const apiDocs = readApiDocs();
@@ -309,7 +276,7 @@ function collectDocumentedRequestBodyFieldFindings(
     const apiDoc = apiDocs.find(
       (doc): boolean => doc.method === expected.method && doc.path === expected.path,
     );
-    const operation = spec.paths?.[expected.path]?.[expected.method];
+    const operation = operationAt(spec, expected.path, expected.method);
     const operationLabel = `${expected.method.toUpperCase()} ${expected.path}`;
 
     if (apiDoc === undefined || operation === undefined) {
@@ -352,7 +319,7 @@ describe("API reference request fields", (): void => {
   it("documents every OpenAPI path, query, and body field", (): void => {
     expect.assertions(1);
 
-    const spec = parseYaml(readFileSync(join(PROJECT_ROOT, "openapi.yaml"), "utf8"));
+    const spec = parseOpenApi(readFileSync(join(PROJECT_ROOT, "openapi.yaml"), "utf8"));
     expect(collectFieldFindings(spec)).toStrictEqual([]);
   });
 });
@@ -360,8 +327,8 @@ describe("API reference request fields", (): void => {
 describe("API reference cost-control fields", (): void => {
   it("keeps complete reply limits editable above and below the default", (): void => {
     expect.assertions(3);
-    const spec = parseYaml(readFileSync(join(PROJECT_ROOT, "openapi.yaml"), "utf8"));
-    const limit = spec.paths?.["/x/tweets/{id}/replies"]?.get?.parameters?.find(
+    const spec = parseOpenApi(readFileSync(join(PROJECT_ROOT, "openapi.yaml"), "utf8"));
+    const limit = operationAt(spec, "/x/tweets/{id}/replies", "get")?.parameters?.find(
       (parameter) => parameter.in === "query" && parameter.name === "limit",
     );
     expect(limit?.schema).toStrictEqual({ type: "integer", minimum: 1 });
@@ -375,7 +342,7 @@ describe("API reference cost-control fields", (): void => {
   it("keeps extraction resultsLimit documented and present in OpenAPI", (): void => {
     expect.assertions(1);
 
-    const spec = parseYaml(readFileSync(join(PROJECT_ROOT, "openapi.yaml"), "utf8"));
+    const spec = parseOpenApi(readFileSync(join(PROJECT_ROOT, "openapi.yaml"), "utf8"));
     expect(
       collectDocumentedRequestBodyFieldFindings(spec, [
         {

@@ -1,53 +1,35 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { z } from "zod";
+import {
+  openApiResponse,
+  openApiSchema,
+  type OpenApiSchema,
+} from "./scripts/lib/openapi-schema.ts";
 
-interface OpenApiSchema {
-  readonly $ref?: string;
-  readonly allOf?: readonly OpenApiSchema[];
-  readonly discriminator?: {
-    readonly mapping: Readonly<Record<string, string>>;
-    readonly propertyName: string;
-  };
-  readonly oneOf?: readonly OpenApiSchema[];
-  readonly properties?: Readonly<Record<string, OpenApiSchema>>;
-  readonly required?: readonly string[];
-  readonly type?: string;
-  readonly "x-stainless-naming"?: {
-    readonly csharp: { readonly type_name: string };
-  };
-}
+const jsonResponse = openApiResponse.extend({
+  content: z.looseObject({ "application/json": z.looseObject({ schema: openApiSchema }) }),
+});
 
-interface OpenApiResponse {
-  readonly content: {
-    readonly "application/json": { readonly schema: OpenApiSchema };
-  };
-  readonly headers?: Readonly<Record<string, unknown>>;
-}
+const connectionSpec = z.looseObject({
+  components: z.looseObject({ schemas: z.record(z.string(), openApiSchema) }),
+  paths: z.looseObject({
+    "/x/account-connection-attempts/{id}": z.looseObject({
+      get: z.looseObject({ responses: z.looseObject({ "200": jsonResponse }) }),
+    }),
+    "/x/accounts": z.looseObject({
+      post: z.looseObject({
+        requestBody: z.looseObject({
+          content: z.looseObject({ "application/json": z.looseObject({ schema: openApiSchema }) }),
+        }),
+        responses: z.looseObject({ "201": jsonResponse, "202": jsonResponse }),
+      }),
+    }),
+  }),
+});
 
-interface OpenApiDocument {
-  readonly components: {
-    readonly schemas: Readonly<Record<string, OpenApiSchema>>;
-  };
-  readonly paths: {
-    readonly "/x/account-connection-attempts/{id}": {
-      readonly get: { readonly responses: { readonly "200": OpenApiResponse } };
-    };
-    readonly "/x/accounts": {
-      readonly post: {
-        readonly requestBody: {
-          readonly content: {
-            readonly "application/json": { readonly schema: OpenApiSchema };
-          };
-        };
-        readonly responses: {
-          readonly "201": OpenApiResponse;
-          readonly "202": OpenApiResponse;
-        };
-      };
-    };
-  };
-}
+type ConnectionSpec = z.infer<typeof connectionSpec>;
 
 const PROJECT_ROOT = process.cwd();
 const CONNECT_PAGE = readFileSync(
@@ -76,8 +58,8 @@ const LLMS_INDEX = readFileSync(join(PROJECT_ROOT, "llms.txt"), "utf8");
 const PRIVATE_CONNECTION_COPY =
   /automatic retr(?:y|ies)|browser session|network tunnel|retry automatically/iu;
 
-function parseOpenApi(source: string): OpenApiDocument {
-  return Bun.YAML.parse(source) as OpenApiDocument;
+function parseConnectionSpec(source: string): ConnectionSpec {
+  return connectionSpec.parse(Bun.YAML.parse(source));
 }
 
 function refs(schema: Readonly<OpenApiSchema>): readonly string[] {
@@ -104,7 +86,7 @@ function schemaFields(name: string): readonly string[] {
   );
 }
 
-const openapi = parseOpenApi(OPENAPI_SOURCE);
+const openapi = parseConnectionSpec(OPENAPI_SOURCE);
 
 describe("X account connection documentation contract", (): void => {
   it("publishes every durable connection result", (): void => {
@@ -134,7 +116,7 @@ describe("X account connection documentation contract", (): void => {
       "#/components/schemas/XAccountConnectionAttemptFailed",
       "#/components/schemas/XAccountConnectionChallenge",
     ]);
-    expect(status.content["application/json"].schema["x-stainless-naming"]?.csharp.type_name).toBe(
+    expect(status.content["application/json"].schema["x-stainless-naming"]?.csharp?.type_name).toBe(
       "AccountConnectionAttemptRetrieveResponse",
     );
     expect(refs(openapi.components.schemas["XAccountConnectionContinuation"] ?? {})).toStrictEqual([

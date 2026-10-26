@@ -1,39 +1,12 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-
-interface OpenApiSchema {
-  readonly $ref?: string;
-  readonly additionalProperties?: boolean | OpenApiSchema;
-  readonly allOf?: readonly OpenApiSchema[];
-  readonly maximum?: number;
-  readonly properties?: Readonly<Record<string, unknown>>;
-  readonly required?: readonly string[];
-}
-
-interface OpenApiParameter {
-  readonly $ref?: string;
-  readonly name?: string;
-  readonly schema?: OpenApiSchema;
-}
-
-interface OpenApiDocument {
-  readonly components?: Readonly<{
-    readonly parameters?: Readonly<Record<string, OpenApiParameter>>;
-    readonly schemas?: Readonly<Record<string, OpenApiSchema>>;
-  }>;
-  readonly paths?: Readonly<
-    Record<
-      string,
-      Readonly<{
-        readonly get?: Readonly<{
-          readonly description?: string;
-          readonly parameters?: readonly OpenApiParameter[];
-        }>;
-      }>
-    >
-  >;
-}
+import {
+  openApiDocument,
+  type OpenApiDocument,
+  type OpenApiParameter,
+  type OpenApiSchema,
+} from "./scripts/lib/openapi-schema.ts";
 
 const PROJECT_ROOT = process.cwd();
 const GUIDE = readFileSync(join(PROJECT_ROOT, "guides/tweet-profile-api-fields.mdx"), "utf8");
@@ -247,7 +220,7 @@ const NESTED_TWEET_REQUIRED_FIELDS = [
   "bookmarkCount",
 ] as const;
 
-const PARSED_OPENAPI = Bun.YAML.parse(OPENAPI) as OpenApiDocument;
+const PARSED_OPENAPI = openApiDocument.parse(Bun.YAML.parse(OPENAPI));
 
 interface SchemaFieldSets {
   readonly closed: boolean;

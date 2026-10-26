@@ -6,6 +6,7 @@ import {
   GENERATED_RESPONSE_EXAMPLES_END as END,
   GENERATED_RESPONSE_EXAMPLES_START as START,
 } from "./lib/generated-response-examples.ts";
+import { isList, isRecord } from "./lib/json-shape.ts";
 
 type Node = Record<string, unknown>;
 
@@ -32,17 +33,13 @@ const FRONTMATTER = /^---\r?\n.*?\r?\n---\r?\n/su;
 const IMPORTS = /^(?:\r?\n)*(?:import [^\r\n]+;\r?\n)+/u;
 const API_LINE = /^api: "([A-Z]+) ([^"]+)"$/mu;
 
-function isNode(value: unknown): value is Node {
-  return value !== null && typeof value === "object" && !Array.isArray(value);
-}
-
 function list(value: unknown): readonly unknown[] {
-  return Array.isArray(value) ? value : [];
+  return isList(value) ? value : [];
 }
 
 function field(value: unknown, key: string): unknown {
-  if (Array.isArray(value)) return value[Number(key)];
-  return isNode(value) ? value[key] : undefined;
+  if (isList(value)) return value[Number(key)];
+  return isRecord(value) ? value[key] : undefined;
 }
 
 function reference(document: unknown, ref: string): unknown {
@@ -65,7 +62,7 @@ function schemaExample(
   visited: readonly string[],
 ): unknown {
   if (schema === undefined || schema === null || depth > MAX_DEPTH) return {};
-  const node = isNode(schema) ? schema : {};
+  const node = isRecord(schema) ? schema : {};
   for (const key of ["example", "const", "default"]) {
     if (key in node) return node[key];
   }
@@ -83,15 +80,15 @@ function schemaExample(
       .map(next)
       .reduce<unknown>(
         (merged, part) =>
-          isNode(merged) && isNode(part) ? { ...merged, ...part } : (part ?? merged),
+          isRecord(merged) && isRecord(part) ? { ...merged, ...part } : (part ?? merged),
         {},
       );
   }
   const variant = field(node["oneOf"], "0") ?? field(node["anyOf"], "0");
   if (variant !== undefined && variant !== null) return next(variant);
   if (node["type"] === "array") return [next(node["items"])];
-  if (node["type"] === "object" || isNode(node["properties"])) {
-    const properties = Object.entries(isNode(node["properties"]) ? node["properties"] : {});
+  if (node["type"] === "object" || isRecord(node["properties"])) {
+    const properties = Object.entries(isRecord(node["properties"]) ? node["properties"] : {});
     const required = properties.filter(([name]) => list(node["required"]).includes(name));
     return Object.fromEntries(
       (required.length > 0 ? required : properties)
@@ -107,8 +104,8 @@ function schemaExample(
 }
 
 function compact(value: unknown, limit: number, depth: number): unknown {
-  if (Array.isArray(value)) return value.slice(0, 1).map((item) => compact(item, limit, depth + 1));
-  if (!isNode(value)) return value;
+  if (isList(value)) return value.slice(0, 1).map((item) => compact(item, limit, depth + 1));
+  if (!isRecord(value)) return value;
   const fields = depth > 0 ? Math.min(limit, MAX_NESTED_FIELDS) : limit;
   return Object.fromEntries(
     Object.entries(value)
@@ -118,7 +115,7 @@ function compact(value: unknown, limit: number, depth: number): unknown {
 }
 
 function shownContent(content: unknown): readonly [string, unknown] | undefined {
-  const entries = Object.entries(isNode(content) ? content : {});
+  const entries = Object.entries(isRecord(content) ? content : {});
   return (
     entries.find(([type]) => type === "application/json") ??
     entries.find(([type]) => type.includes("json")) ??
@@ -139,7 +136,7 @@ function errorExample(value: Node): Node {
 
 function mediaExample(document: unknown, media: unknown): unknown {
   const examples = field(media, "examples");
-  const [firstExample] = Object.values(isNode(examples) ? examples : {});
+  const [firstExample] = Object.values(isRecord(examples) ? examples : {});
   return (
     field(media, "example") ??
     field(firstExample, "value") ??
@@ -167,11 +164,11 @@ function responseExample(
   const language = type.includes("json") ? "json" : "text";
   const example = mediaExample(document, media);
   if (status.startsWith("4") || status.startsWith("5")) {
-    return { language, value: isNode(example) ? errorExample(example) : example };
+    return { language, value: isRecord(example) ? errorExample(example) : example };
   }
   const succeeded = status === "200" || status === "202";
   const named =
-    succeeded && isNode(example) && "action" in example && typeof action === "string"
+    succeeded && isRecord(example) && "action" in example && typeof action === "string"
       ? { ...example, action }
       : example;
   return { language, value: compact(named, MAX_SUCCESS_FIELDS, 0) };
@@ -179,7 +176,7 @@ function responseExample(
 
 function responseBlock(document: unknown, operation: unknown, scope: string): string {
   const responses = field(operation, "responses");
-  const tabs = Object.entries(isNode(responses) ? responses : {}).map(([status, response]) => {
+  const tabs = Object.entries(isRecord(responses) ? responses : {}).map(([status, response]) => {
     const { language, value } = responseExample(
       document,
       response,
@@ -244,7 +241,7 @@ function run(root: string, check: boolean): string {
     const next = replaceBlock(source, responseBlock(document, operation, scope));
     const responses = field(operation, "responses");
     pageCount += 1;
-    statusCount += Object.keys(isNode(responses) ? responses : {}).length;
+    statusCount += Object.keys(isRecord(responses) ? responses : {}).length;
     if (next === source) continue;
     if (check) findings.push(`${file}: response examples are stale.`);
     changes.push({ path, source: next });
