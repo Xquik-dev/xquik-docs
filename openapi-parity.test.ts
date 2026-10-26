@@ -1,12 +1,8 @@
 import { execFileSync } from "node:child_process";
 
-import { describe, expect, it } from "vitest";
+import { describe, expect } from "vitest";
 
-import { PRODUCT_ROOT } from "./product-contract.test.helpers.ts";
-
-const NAME = "holds an exact copy of a spec version the product holds";
-const HINT =
-  "needs the product checkout: set XQUIK_PRODUCT_ROOT or clone xquik beside this repository";
+import { productRootTest } from "./product-contract.test.helpers.ts";
 
 function objectType(cwd: string, id: string): string {
   try {
@@ -21,9 +17,10 @@ function objectType(cwd: string, id: string): string {
 }
 
 describe("OpenAPI parity", (): void => {
-  it.skipIf(PRODUCT_ROOT === undefined)(
-    PRODUCT_ROOT === undefined ? `${NAME} (${HINT})` : NAME,
-    (): void => {
+  productRootTest(
+    "holds an exact copy of a spec version the product holds",
+    "openapi.yaml",
+    (root): void => {
       expect.assertions(1);
 
       const copy = execFileSync("git", ["hash-object", "openapi.yaml"], {
@@ -31,7 +28,7 @@ describe("OpenAPI parity", (): void => {
         encoding: "utf8",
       }).trim();
 
-      expect(objectType(PRODUCT_ROOT ?? "", copy)).toBe("blob");
+      expect(objectType(root, copy)).toBe("blob");
     },
   );
 });
