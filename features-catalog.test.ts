@@ -7,6 +7,7 @@ import { z } from "zod";
 import { productRootTest } from "./product-contract.test.helpers.ts";
 
 const CATALOG = "lib/seo/output-features.ts";
+const BULLET = /^\s*[*+-] /u;
 
 const catalogSchema = z.object({
   OUTPUT_FEATURE_THEMES: z.array(
@@ -30,14 +31,13 @@ function drift(themes: Themes, page: string): Drift {
     .split(/\n## /u)
     .map((section): [string, string[]] => {
       const [heading = "", ...body] = section.split("\n");
-      const bullets = body.filter((row) => row.startsWith("- ")).map((row) => row.slice(2));
+      const bullets = body.filter((row) => BULLET.test(row)).map((row) => row.replace(BULLET, ""));
       return [heading, bullets];
     })
     .filter(([, bullets]) => bullets.length > 0);
   const catalog = new Map(
     themes.map((theme) => [theme.heading, theme.features.map((feature) => feature.line)]),
   );
-  const pageBullets = new Map(sections);
   return {
     extraLines: sections.flatMap(([heading, bullets]) =>
       bullets.filter(
@@ -48,7 +48,12 @@ function drift(themes: Themes, page: string): Drift {
     headings: sections.map(([heading]) => heading),
     missingIds: themes.flatMap((theme) =>
       theme.features
-        .filter((feature) => !(pageBullets.get(theme.heading) ?? []).includes(feature.line))
+        .filter(
+          (feature) =>
+            !sections.some(
+              ([heading, bullets]) => heading === theme.heading && bullets.includes(feature.line),
+            ),
+        )
         .map((feature) => feature.id),
     ),
   };
@@ -108,6 +113,25 @@ describe("Features page", (): void => {
         headings: ["Speed", "Speed", "Billing"],
         missingIds: [],
       },
+    },
+    {
+      case: "a repeated heading after its lines",
+      page: `## Speed\n\n- Reads are fast.\n\n## Speed\n\n- Stray line.\n\n${BILLING}`,
+      want: {
+        extraLines: ["Stray line."],
+        headings: ["Speed", "Speed", "Billing"],
+        missingIds: [],
+      },
+    },
+    {
+      case: "a nested line",
+      page: `## Speed\n\n- Reads are fast.\n  - Stray line.\n\n${BILLING}`,
+      want: { extraLines: ["Stray line."], headings: ["Speed", "Billing"], missingIds: [] },
+    },
+    {
+      case: "a line in a star list",
+      page: `## Speed\n\n- Reads are fast.\n\n* Stray line.\n\n${BILLING}`,
+      want: { extraLines: ["Stray line."], headings: ["Speed", "Billing"], missingIds: [] },
     },
   ])("reports $case", ({ page, want }): void => {
     expect.assertions(1);
