@@ -6,7 +6,125 @@ info:
     Xquik is an independent third-party service. Not affiliated with X Corp.
     "Twitter" and "X" are trademarks of X Corp. Read and automate X. Paid reads
     accept credits. Some lookups accept MPP. Writes require an API key or OAuth
-    2.1. Shared-account reads return public posts only.
+    2.1. Reads without your own X account return public data only.
+
+
+    ## What you get
+
+
+    ### Complete results
+
+
+    - Searches return posts that X's own search tab leaves out.
+
+    - Each answer holds the fullest data X has for it.
+
+
+    ### Accurate rows
+
+
+    - Reposts carry the full original text.
+
+    - Every ID in a row stays exact.
+
+    - Mentions, links, hashtags & highlights line up with the text.
+
+    - Verified badges match what x.com shows.
+
+    - Rows hold public data only.
+
+    - Ads & promoted entries never reach your rows.
+
+
+    ### Fresh data
+
+
+    - Reads keep working when X ships changes.
+
+
+    ### Speed
+
+
+    - A slow X answer doesn't hold up your request.
+
+    - Repeated lookups answer at once.
+
+    - Reads finish the moment their rows arrive.
+
+
+    ### Fair billing
+
+
+    - You pay only for the rows you get, after filters & duplicate removal.
+
+    - A retried page is free.
+
+    - A low balance trims results instead of failing.
+
+
+    ### Reliability
+
+
+    - A one-off X failure doesn't fail your request.
+
+    - Paging stays consistent from one page to the next.
+
+    - Paging never loops forever.
+
+    - A deadline returns the rows already found, with diagnostics.
+
+    - Problems on X's side are fixed before they reach your reads.
+
+
+    ### Built for agents
+
+
+    - Agents reach the whole API through a few MCP tools.
+
+    - Paid results are saved under a `result_id`, so failed scripts never pay
+    twice.
+
+    - Large answers fit the agent's context, capped at 24,000 characters.
+
+    - Clients can run reads without prompts & confirm writes.
+
+    - 1 stable shape with snake_case, Unix seconds, `has_more` & `next_cursor`.
+    REST calls get it with `xquik-api-contract: 2026-04-29`.
+
+    - Sign-in works in modern MCP clients with OAuth 2.1 & PKCE.
+
+    - `whoami` returns an account ID that never changes.
+
+    - Agents can pay per call without an account.
+
+    - Tool input errors say what to change.
+
+    - MCP shows why a post or search failed.
+
+    - Rate limits & deprecations come as machine-readable headers.
+
+    - Common names for cursor, limit, sort & type just work.
+
+
+    ### Rich data
+
+
+    - Rows carry source apps, media counts & professional account data.
+
+    - Short links resolve, & list rows can carry full profiles.
+
+    - Community Notes contributors & notes, Space replays & job listings as
+    Markdown.
+
+
+    ### Quality checks
+
+
+    - Every field X shows is served, left out on purpose or proven absent.
+
+    - Every read is checked live each hour.
+
+    - Docs match the API spec, & every Actor input has a proof run.
 
 
     ## Rate limits
@@ -73,9 +191,14 @@ tags:
   - name: Account
     description: Account info and settings
   - name: Agent Discovery
-    description: Public agent discovery and documentation search
+    description: >-
+      Public agent discovery and documentation search. Agents can find Xquik on
+      their own through llms.txt & an agent card.
   - name: Analysis
-    description: AI analysis of posts, at 2 credits per analyzed post
+    description: >-
+      AI analysis of posts, at 2 credits per analyzed post. AI analysis bills
+      only the posts it analyzed. AI answers carry probabilities, confidence & a
+      question version. Changes across analysis runs don't flip on noise.
   - name: Articles
     description: Long-form X Article extraction
   - name: Broadcasts
@@ -106,11 +229,17 @@ tags:
   - name: Spaces
     description: X Space details, host, and speakers
   - name: Sports
-    description: NFL & college football games, scoreboards, plays & box scores
+    description: >-
+      NFL & college football games, scoreboards, plays & box scores. Football
+      games, plays, box scores, rosters, player props & game posts.
   - name: Subscribe
-    description: Subscription, billing, and credits
+    description: >-
+      Subscription, billing, and credits. Each refund points at the exact charge
+      it reverses.
   - name: Support
-    description: Support ticket management
+    description: >-
+      Support ticket management. Support can see exactly what a request or run
+      returned.
   - name: Trends
     description: Trending topics and hashtags by region
   - name: Tweets
@@ -123,7 +252,9 @@ tags:
     description:
       Connected X accounts. Sign-in & removal need a dashboard session.
   - name: X Write
-    description: X write actions (tweets, likes, follows, DMs)
+    description: >-
+      X write actions (tweets, likes, follows, DMs). Writes cost nothing until
+      they land. A write reports success only once it's live on X.
 paths:
   /ask:
     servers:
@@ -2971,7 +3102,11 @@ paths:
     post:
       operationId: estimateExtraction
       x-mcp-annotations: { readOnlyHint: true }
-      description: Estimates extraction cost without creating a job.
+      description: >-
+        Estimates extraction cost without creating a job.
+
+
+        You can price a bulk job before you run it.
       summary: Estimate extraction cost
       tags: [Extractions]
       security: *api-auth-2
@@ -3322,9 +3457,12 @@ paths:
     post:
       operationId: createDraw
       summary: Run giveaway draw
-      description:
+      description: >-
         Checks credits, then draws winners from inspected replies & reposters.
         Remaining credits cap the candidates.
+
+
+        Giveaway draws pick winners with cryptographic randomness.
       tags: [Draws]
       security: *api-auth-2
       parameters:
@@ -3978,7 +4116,12 @@ paths:
   /x/tweets:
     get:
       operationId: getBatchTweets
-      description: Returns public tweet records for the requested IDs.
+      description: >-
+        Returns public tweet records for the requested IDs.
+
+
+        Batch post lookups miss fewer posts. A post ID listed twice in a batch
+        is billed once.
       summary: Get multiple tweets by IDs
       tags:
         - Tweets
@@ -4001,8 +4144,7 @@ paths:
       responses:
         '200':
           description: >-
-            Requested tweets in request order. After a partial read, Xquik reads
-            the unresolved IDs once more.
+            Requested tweets in request order.
           content:
             application/json:
               schema:
@@ -4058,7 +4200,12 @@ paths:
         '424': *x-api-error-response
     post:
       operationId: createTweet
-      description: Publishes a post through a connected X account.
+      description: >-
+        Publishes a post through a connected X account.
+
+
+        Writes don't post twice. Posting paces itself to protect your linked X
+        accounts. Replies land on the right post.
       x-write-action: create_tweet
       summary: Create tweet
       tags: [X Write]
@@ -4096,13 +4243,11 @@ paths:
                   type: string
                   maxLength: 19
                   pattern: '^[1-9][0-9]{0,18}$'
-                  description:
+                  description: >-
                     The Community to post into, from 1 to 19 digits. The account
-                    must be a member. Xquik picks the Community in X's composer,
-                    checks the post request names it & reads the post after. If
-                    X puts the post outside the Community, Xquik deletes it &
-                    charges nothing. It does not work with `reply_to_tweet_id`,
-                    since X keeps replies public.
+                    must be a member. If the post doesn't stay in the Community,
+                    Xquik deletes it & charges nothing. It does not work with
+                    `reply_to_tweet_id`, since X keeps replies public.
                   example: '1500000000000000000'
                 is_note_tweet: *boolean-example-false
                 media:
@@ -4205,13 +4350,16 @@ paths:
   /x/trends:
     get:
       operationId: getXTrends
-      description:
+      description: >-
         Returns X's current trends for a place you choose. Pick it by woeid,
         country or location name. Without one, trends are worldwide. Add at to
         read what was trending on Twitter at a past time, such as yesterday.
         Xquik keeps a Twitter trends archive from 2026-10-13 02:20 UTC on, with
         1 list per place every 5 minutes. Each request costs 1 credit, however
         many trends it returns.
+
+
+        Trends by place name, country or region ID, promoted trends marked.
       summary: Get trending hashtags and topics from X by region, now or earlier
       tags:
         - Trends
@@ -4404,7 +4552,7 @@ paths:
   /x/trends/history:
     get:
       operationId: getXTrendsHistory
-      description:
+      description: >-
         Returns the Twitter trends archive of a place, as the lists X showed
         there over a range of time. Use it for trending on Twitter yesterday,
         last week or any day since 2026-10-13 02:20 UTC. Xquik stores 1 list per
@@ -4414,8 +4562,11 @@ paths:
         so a schedule can read the last day on every run. Each step returns the
         first list stored in it, with its own time. Each returned list costs 1
         credit, so 24 lists cost 24 credits. A step with no stored list returns
-        none and costs nothing. 1 request returns 24 lists, or up to 100 with
-        limit.
+        none. Empty trend history steps are free. 1 request returns 24 lists, or
+        up to 100 with limit.
+
+
+        Trends can be read for any past moment since the archive began.
       summary: Get the X (Twitter) trends archive of a place by date
       tags:
         - Trends
@@ -4771,11 +4922,10 @@ paths:
     get:
       operationId: getXNewsStoryVersions
       summary: Get every version of an X news story, oldest first
-      description:
-        Returns each version X wrote of 1 news story, the AI trends x.com shows
-        under Explore & News. Each version has its time, headline & text, oldest
-        first, so you can see how the story changed. X lists every version at
-        once. Each request costs 1 credit.
+      description: >-
+        Returns each version X wrote of 1 AI news story. Each version has its
+        time, headline & text, oldest first, so you can see how the story
+        changed. Each request costs 1 credit.
       tags:
         - Trends
       security: *read-auth
@@ -4971,11 +5121,14 @@ paths:
   /x/places/search:
     get:
       operationId: searchXPlaces
-      description:
+      description: >-
         Finds places on X by name. Pass a place's id as place to
         /x/tweets/search to read posts tagged there. X ranks the places, so
         their order can differ between requests. Each returned place costs 1
         credit.
+
+
+        Place searches work with names in 6 languages.
       summary: Search X places by name
       tags:
         - Tweets
@@ -5072,9 +5225,19 @@ paths:
         Search tweets with minLikes, normalized likeCount, media & cursors
       x-mcp-summary:
         Search tweets with minLikes, normalized like_count, media & cursors
-      description:
+      description: >-
         Tweets include authors, like counts, media, URLs & cursors. Omit mode
         for maximum coverage. Reuse next_cursor with unchanged filters.
+
+
+        Searches return posts that X's own search tab leaves out. Large date
+        ranges come back whole & fast. Searches return every match, whatever
+        operators you combine. Search results hold every post that matches your
+        query & nothing else. Word & phrase matching works in every language &
+        script. Language, date & engagement filters hold on every row you get.
+        Messy queries still run instead of failing. Newest-first results stay in
+        true date order across pages. Filtered pages come back full until the
+        results run out. Searches stay fast on busy topics.
       tags:
         - Tweets
       security: *read-auth
@@ -5085,21 +5248,16 @@ paths:
           schema:
             type: string
             maxLength: 4096
-          description:
+          description: >-
             Query, Tweet ID, or URL. Alias query. Hyphens negate terms. Use
             exactPhrase for literals. `from:` & `-from:` take a handle or a user
             ID, also in an OR group. Valid bounds apply per page. `since:` &
             `until:` dates are UTC days, written YYYY-MM-DD. 25/12/2026 &
-            12/25/2026 also work, since each has 1 reading. 04/01/2026 has 2 &
-            answers 424 with the form to write. `since_time:` & `until_time:`
-            take Unix seconds or an ISO 8601 time. `list:` takes a public List's
-            ID. A private List answers 404 list_not_found. X searches up to 512
-            characters. A longer query answers 424 before any read, unless a
-            term of its first OR group fits alone. When each OR alternative has
-            `-filter:replies`, Xquik drops every reply X sends. When each OR
-            alternative has a word, Xquik drops posts that contain none of the
-            query's words, such as near matches from X's Top tab. Dropped posts
-            cost nothing.
+            12/25/2026 also work. 04/01/2026 fits both orders & answers 424 with
+            the form to write. `since_time:` & `until_time:` take Unix seconds
+            or an ISO 8601 time. `list:` takes a public List's ID. A private
+            List answers 404 list_not_found. Keep q to 512 characters. A longer
+            one can answer 424 before any read, at no charge.
         - name: queryType
           in: query
           required: false
@@ -5107,16 +5265,13 @@ paths:
             type: string
             maxLength: 32
             default: Latest
-          description:
-            Latest lists posts newest first. Top keeps X's engagement ranking
-            within each read. Xquik reads several of X's views, so a later page
-            can hold a post X ranks higher. Top skips posts X shows above a
-            ranked reply that cannot match the query. They cost nothing. Any
-            case works. Photos, Videos & Media read Latest with mediaType
-            images, videos or media, unless mediaType is set. People & Lists
-            answer 400 & point to /x/users/search & /x/lists/search. Aliases
-            result_type, sort_order, type, search_type, product, category &
-            section.
+          description: >-
+            Latest lists posts newest first. Top lists high-engagement posts
+            first, & a later page can hold a higher-ranked post. Any case works.
+            Photos, Videos & Media list the newest posts with that media, unless
+            mediaType is set. People & Lists answer 400 & point to
+            /x/users/search & /x/lists/search. Aliases result_type, sort_order,
+            type, search_type, product, category & section.
         - $ref: '#/components/parameters/AutomaticCoverageMode'
         - $ref: '#/components/parameters/AutomaticCoverageCursor'
         - $ref: '#/components/parameters/TweetSinceTime'
@@ -5145,10 +5300,10 @@ paths:
             type: string
             format: date
             maxLength: *time-max-length
-          description:
+          description: >-
             Start date as a UTC day, written YYYY-MM-DD. 25/12/2026 & 12/25/2026
-            also work, since each has 1 reading. A date that fits both orders
-            reads month first, so 04/01/2026 is 1 April.
+            also work. A date that fits both orders reads month first, so
+            04/01/2026 is 1 April.
         - name: untilDate
           in: query
           schema:
@@ -5252,9 +5407,12 @@ paths:
       summary: List the top tweets on X by likes, replies or views
       description: >
         Returns the tweets X ranks highest by 1 metric over the last day, week
-        or month, as x.com's Inspiration page shows them. Covers all of X unless
-        you pick a country or a language. Pages hold up to 20 tweets, and the
-        list ends at 100. Each tweet costs 1 credit.
+        or month. Covers all of X unless you pick a country or a language. Pages
+        hold up to 20 tweets, and the list ends at 100. Each tweet costs 1
+        credit.
+
+
+        Top tweet lists come back reliably.
       tags:
         - Tweets
       security: *read-auth
@@ -5603,7 +5761,12 @@ paths:
   /x/tweets/{id}:
     get:
       operationId: lookupTweet
-      description: Returns 1 public tweet with author, metrics, and media.
+      description: >-
+        Returns 1 public tweet with author, metrics, and media.
+
+
+        Post rows carry note text, edits, Community Notes, reach labels & reply
+        controls.
       summary: Get tweet with full text, author, metrics and media
       tags:
         - Tweets
@@ -5995,9 +6158,9 @@ paths:
             example: users,topics
           description: >
             Comma-separated suggestion types from users, topics, hashtags &
-            cashtags. Omit for all. With only hashtags or only cashtags, the
-            query gets its # or $ when it lacks one. Any case works. It allows
-            66 characters for every choice once with spaces around commas.
+            cashtags. Omit for all. With only hashtags or only cashtags, a query
+            without # or $ still works. Any case works. It allows 66 characters
+            for every choice once with spaces around commas.
         - name: limit
           in: query
           schema:
@@ -6049,8 +6212,12 @@ paths:
   /x/users/{id}:
     get:
       operationId: getUser
-      description:
+      description: >-
         Returns 1 public profile with counts and verification details.
+
+
+        Profiles yield emails, phones & links tagged by network. Account
+        location comes with country code, accuracy note & username history.
       summary: Get user profile with follower counts and verification
       tags:
         - Users
@@ -6299,7 +6466,7 @@ paths:
       operationId: deleteDm
       description: >
         Deletes 1 DM from the account's side. The other person keeps it. Success
-        means the account's conversation no longer shows it. A DM still shown
+        means the DM is gone from the account's conversation. A DM that stays
         gets 422 `x_dm_not_deleted`, and Xquik charges nothing.
       x-write-action: delete_dm
       summary: Delete direct message
@@ -6387,7 +6554,12 @@ paths:
   /x/media/download:
     post:
       operationId: downloadMedia
-      description: Downloads images and videos attached to selected tweets.
+      description: >-
+        Downloads images and videos attached to selected tweets.
+
+
+        Saving the same media again is free. Removed media isn't billed, &
+        `media_unavailable` gives the reason.
       summary: Download images and videos from tweets
       tags:
         - Media
@@ -6938,9 +7110,8 @@ paths:
       security: [{ cookieSession: [] }]
       requestBody:
         required: true
-        description:
-          X credentials (username, email, password) and the Authenticator App
-          2FA secret required for a durable connection.
+        description: >-
+          Your X username, email, password & Authenticator App 2FA secret.
         content:
           application/json:
             schema:
@@ -6967,8 +7138,8 @@ paths:
                 totp_secret:
                   type: string
                   maxLength: 512
-                  description:
-                    Authenticator App TOTP secret required for durable login
+                  description: >-
+                    Your Authenticator App TOTP secret.
                   example: '<TOTP_SECRET>'
             example:
               username: 'your_x_username'
@@ -7267,10 +7438,9 @@ paths:
       x-mcp-exclusion-reason: *x-login-browser-auth
       summary: Bulk retry temporarily failed X accounts
       description: >
-        Clears loginFailedAt and loginFailureReason for every account with a
-        transient or automated failure reason. Each can then retry on its next
-        use. Name accounts in accountIds to retry only those. Needs a dashboard
-        session, since each retry signs in to X again.
+        Marks each connected account that failed for a passing reason as ready
+        to use again. Name accounts in accountIds to retry only those. Needs a
+        dashboard session.
       tags: [X Accounts]
       security: [{ cookieSession: [] }]
       requestBody:
@@ -8578,11 +8748,16 @@ paths:
       description: >
         For the newest posts of 2 to 20 users, use getBatchUserTweets. For more,
         use createExtraction with tweet_search_extractor & targetUsernames. Omit
-        mode for automatic maximum coverage. Pass next_cursor unchanged.
-        Unprefixed cursors are legacy. The first page opens with the pinned
-        tweet, flagged isPinned, unless replies are included. Rows stay newest
-        first. x.com's Posts tab groups self-threads & hides reposts. Send
-        retweets=exclude to drop reposts.
+        mode for automatic maximum coverage. Pass next_cursor unchanged. Cursors
+        from before automatic mode keep their old behavior. The first page opens
+        with the pinned tweet, flagged isPinned, unless replies are included.
+        Rows stay newest first. Send retweets=exclude to drop reposts.
+
+
+        Account history comes back complete, old posts included. Profile posts
+        without replies still keep the author's own threads. Profile reads
+        include the pinned post, flagged as pinned. Timelines page all the way
+        to the last post.
       tags:
         - Users
       security: *read-auth
@@ -8678,7 +8853,8 @@ paths:
       description: >-
         Returns target-authored posts & replies, without other authors' context.
         Omit mode for automatic maximum coverage. Pass next_cursor unchanged.
-        Unprefixed cursors are legacy. It never opens with the pinned tweet.
+        Cursors from before automatic mode keep their old behavior. It never
+        opens with the pinned tweet.
       tags:
         - Users
       security: *read-auth
@@ -9085,10 +9261,12 @@ paths:
       - $ref: '#/components/parameters/UserPathId'
     get:
       operationId: getSimilarUsers
-      description:
+      description: >-
         Returns the public accounts X lists as similar to the selected user, in
-        X's order. X can list slightly different accounts on each call. Each
-        account costs 1 credit.
+        X's order. Each account costs 1 credit.
+
+
+        Similar-account lists come back fuller.
       summary: List accounts similar to a user
       tags:
         - Users
@@ -9290,10 +9468,10 @@ paths:
   /x/timeline:
     get:
       operationId: getTimeline
-      description:
+      description: >-
         Returns the home timeline of 1 of your connected X accounts. Without
-        one, it answers 424 `account_required`. A cursor reads the next page
-        from the same account. Results exclude X ads.
+        one, it answers 424 `account_required`. Each cursor continues the same
+        account's timeline. Results exclude X ads.
       summary: Get home timeline
       tags:
         - Tweets
@@ -9653,11 +9831,10 @@ paths:
     get:
       operationId: searchCommunityMembers
       summary: Search members of a community by name
-      description:
-        Finds a community's members by name or username, as the search box on
-        X's members page does. X checks up to 10 accounts that match, & the
-        answer holds the members among them, each with its role. Each member
-        costs 1 credit. An answer without members is free.
+      description: >-
+        Finds a community's members by name or username, each with its role. An
+        answer holds up to 10 members. Each member costs 1 credit. An answer
+        without members is free.
       tags:
         - Communities
       security: *read-auth
@@ -10015,11 +10192,10 @@ paths:
     get:
       operationId: getSuggestedCommunities
       summary: List the X Communities X suggests to join
-      description:
+      description: >-
         Returns the communities X suggests, with their full public fields. X
-        picks them per request, so 2 calls can differ. If X suggests none, Xquik
-        asks up to 2 more times. An empty list is free. Each community costs 1
-        credit.
+        picks them per request, so 2 calls can differ. An empty list is free.
+        Each community costs 1 credit.
       tags:
         - Communities
       security: *read-auth
@@ -10645,6 +10821,9 @@ paths:
         Omit mode for resumable maximum coverage. Pass next_cursor unchanged.
         Standard keeps legacy pagination. A private List answers 404
         list_not_found.
+
+
+        List timelines include posts that X's List page leaves out.
       tags:
         - Lists
       security: *read-auth
@@ -10888,8 +11067,8 @@ paths:
       summary: List the Community Notes a contributor wrote, with their posts
       description: >
         Returns a contributor's notes, newest first, each with the post it is
-        on. Includes notes X has not rated helpful, which x.com shows under no
-        post. Each note costs 1 credit. Follow next_cursor for more.
+        on. Includes notes X has not rated helpful. Each note costs 1 credit.
+        Follow next_cursor for more.
       tags:
         - Community Notes
       security: *read-auth
@@ -11039,12 +11218,11 @@ paths:
     get:
       operationId: searchSpaces
       summary: Search X Spaces by keyword, host or topic
-      description:
-        Returns public Spaces each once, as GET /x/spaces/{id} serves them.
-        Latest & Top find the Spaces that matching posts share, live, scheduled
-        or ended. Live & Upcoming read X's own Spaces search, in X's order. They
-        find live or scheduled Spaces by the words in their titles. Costs 1
-        credit per Space.
+      description: >-
+        Returns public Spaces, each once, with the fields of GET /x/spaces/{id}.
+        Latest & Top find live, scheduled or ended Spaces & accept X search
+        operators. Live & Upcoming find live or scheduled Spaces by title words.
+        Costs 1 credit per Space.
       tags:
         - Spaces
       security: *read-auth
@@ -11058,10 +11236,8 @@ paths:
             maxLength: 498
             example: 'from:solana'
           description: >
-            Words, hashtags or X search operators, such as from:solana. Latest &
-            Top add filter:spaces. Live & Upcoming match title words only,
-            without operators. Alias query. X searches up to 512 characters, and
-            the Spaces filter takes 14 of them.
+            Words, hashtags or X search operators, such as from:solana. Live &
+            Upcoming match title words only, without operators. Alias query.
         - name: queryType
           in: query
           schema:
@@ -11078,9 +11254,8 @@ paths:
         - name: pageSize
           in: query
           description: >
-            For Latest & Top, the posts a page reads, 20 at a time (1-100,
-            default 20). Posts often share the same Space, so a page returns
-            fewer Spaces. Send 100 to read a search fastest. For Live &
+            For Latest & Top, the page size (1-100, default 20). A page can
+            return fewer Spaces. Send 100 to read a search fastest. For Live &
             Upcoming, the most Spaces a page returns. Its aliases are limit,
             count, max_results, maxItems, max_items & per_page.
           schema:
@@ -11642,9 +11817,9 @@ paths:
     get:
       operationId: getSportsGamePosts
       summary: List a game's top or latest posts
-      description:
-        Returns the posts X shows on a game's page, with the X search that finds
-        them. Works before, during & after the game. Pages hold up to 20 posts,
+      description: >-
+        Returns a game's top or latest posts, plus an X search you can run for
+        more. Works before, during & after the game. Pages hold up to 20 posts,
         & each post costs 1 credit.
       tags:
         - Sports
@@ -11690,6 +11865,9 @@ paths:
         Returns public posts quoting the tweet, newest first, replies included.
         Drop them with replies=exclude. Send queryType=Top for the quotes X
         ranks highest.
+
+
+        Quote searches return every real quote & nothing else.
       summary: List quote tweets of a tweet
       tags:
         - Tweets
@@ -11795,12 +11973,17 @@ paths:
       summary: List replies to a tweet
       description: >
         Returns direct replies with automatic maximum coverage and pagination. A
-        retweet ID returns replies to the original post. Complete mode adds
-        nested replies, diagnostics, and a 424 below 80% coverage. A fully read
-        time window returns 200. So does a post that shows none of the replies
-        it counts, with hiddenReplies. It reads replies without a search, so q
-        or query answers 400 before any read or charge. To search a post's
-        replies, call GET /x/tweets/search with q=conversation_id:{id}.
+        repost's ID returns the original post's replies. Complete mode adds
+        nested replies, diagnostics, and a 424 below 80% coverage. A sinceDate
+        or untilDate window read in full returns 200. So does a post that shows
+        none of the replies it counts, with hiddenReplies. q or query answers
+        400 before any read or charge. To search a post's replies, call GET
+        /x/tweets/search with q=conversation_id:{id}.
+
+
+        Reply exports include replies that X's post page leaves out. Complete
+        mode adds replies the author hid & explains empty threads. Reply exports
+        hold only direct replies, in a proven order.
       tags:
         - Tweets
       security: *read-auth
@@ -11849,8 +12032,8 @@ paths:
             you set sort. Standard pages ignore it. With likes, each page is
             sorted by likes. A later page can hold a reply with more likes. The
             order is final on the last page. Latest & oldest sort every row by
-            date. They read the whole thread first, for up to 20 s. An answer
-            that stopped before every reply X shows sets orderPartial.
+            date, which can take up to 20 s. An answer that stopped before every
+            reply sets orderPartial.
         - name: excludeOriginalAuthor
           in: query
           schema: { type: boolean, default: false }
@@ -11939,10 +12122,10 @@ paths:
       - $ref: '#/components/parameters/TweetPathId'
     get:
       operationId: getTweetRepostCheck
-      description:
-        Returns whether 1 account reposted the post, read from its newest posts.
-        A repost older than the posts read returns false with complete false.
-        Each check costs 1 credit.
+      description: >-
+        Returns whether 1 account reposted the post. It finds recent reposts. An
+        older repost can return false, with complete false. Each check costs 1
+        credit.
       summary: Check whether a user retweeted a tweet
       tags:
         - Tweets
@@ -12036,11 +12219,14 @@ paths:
   /x/tweets/{id}/retweeters:
     get:
       operationId: getTweetRetweeters
-      description:
+      description: >-
         Returns a post's reposters. includeRetweetTimestamp adds retweeted_at in
-        Unix seconds. Null means the lookup failed or the newest profile page
-        has no matching repost. The created field is the account's creation
-        time. Timestamp lookups make the request slower.
+        Unix seconds. Null means Xquik found no repost time. The created field
+        is the account's creation time. Timestamp lookups make the request
+        slower.
+
+
+        You see when each account reposted a post.
       summary: List users who retweeted a tweet
       tags:
         - Tweets
@@ -12191,9 +12377,12 @@ paths:
       - $ref: '#/components/parameters/TweetPathId'
     get:
       operationId: getTweetThread
-      description:
+      description: >-
         Returns visible posts from the selected conversation thread. Results
         exclude X ads.
+
+
+        Threads include every post & the author's own replies.
       summary: Get full conversation thread for a tweet
       tags:
         - Tweets
@@ -12216,10 +12405,13 @@ paths:
   /x/tweets/{id}/translation:
     get:
       operationId: translateTweet
-      description:
+      description: >-
         Returns X's own translation of 1 public tweet into the language you
         pick, with the links, mentions, and tags X places in the translated
         text.
+
+
+        Posts & bios can be translated into your language.
       summary: Translate a tweet into a chosen language
       tags:
         - Tweets
@@ -12282,11 +12474,14 @@ paths:
   /x/users/{id}/translation:
     get:
       operationId: translateUserBio
-      description:
+      description: >-
         Returns X's own translation of 1 profile's bio into the language you
         pick, with the links, mentions, and tags X places in the translated
         text. A profile without a bio returns translation null & a message, free
         of charge.
+
+
+        Posts & bios can be translated into your language.
       summary: Translate a user's bio into a chosen language
       tags:
         - Users
@@ -12574,7 +12769,7 @@ paths:
   /x/links/resolve:
     get:
       operationId: resolveLinks
-      description:
+      description: >-
         Returns where each t.co link leads, as X's own redirect says. Xquik
         reads the redirect and never visits the target site. A link t.co does
         not have comes back without `resolvedUrl` and costs nothing. A link X
@@ -12644,11 +12839,13 @@ paths:
   /x/tweets/{id}/subtitles:
     get:
       operationId: getTweetSubtitles
-      description:
-        Returns the caption tracks of 1 public tweet's videos, as X's player
-        reads them. Each track has its language, name, timed cues, and full
-        text. A tweet without video, or a video without captions, returns no
-        track and costs nothing.
+      description: >-
+        Returns the caption tracks of 1 public tweet's videos. Each track has
+        its language, name, timed cues, and full text. A tweet without video, or
+        a video without captions, returns no track and costs nothing.
+
+
+        Video subtitles come with timed cues.
       summary: Get video subtitles and captions for a tweet
       tags:
         - Tweets
@@ -12767,9 +12964,12 @@ paths:
   /x/users/{id}/followers:
     get:
       operationId: getUserFollowers
-      description:
+      description: >-
         Returns public follower profiles for the selected user, newest first.
-        x.com puts some promoted followers first. Xquik doesn't.
+
+
+        Follower & following exports return full lists. Ads & promoted entries
+        never reach your rows.
       summary: List followers of a user
       tags:
         - Users
@@ -12833,7 +13033,11 @@ paths:
   /x/users/{id}/following:
     get:
       operationId: getUserFollowing
-      description: Returns public profiles followed by the selected user.
+      description: >-
+        Returns public profiles followed by the selected user.
+
+
+        Follower & following exports return full lists.
       summary: List accounts a user follows
       tags:
         - Users
@@ -12929,7 +13133,11 @@ paths:
   /x/users/{id}/verified-followers:
     get:
       operationId: getUserVerifiedFollowers
-      description: Returns verified public profiles following the selected user.
+      description: >-
+        Returns verified public profiles following the selected user.
+
+
+        Verified follower exports return full lists too.
       summary: List verified followers of a user
       tags:
         - Users
@@ -13245,11 +13453,15 @@ paths:
       operationId: analyzeTweetViralScore
       x-mcp-annotations: { readOnlyHint: true }
       summary: Score how viral posts or drafts read with AI
-      description:
+      description: >-
         Answers each post's hook, clarity, payoff, humor, spam risk & likely
         reaction, & adds a Viral Score from 0 to 100 with a verdict. The score
         rates the wording. It does not predict likes or views. Send drafts in
         texts to score them before posting. Each analyzed post costs 2 credits.
+
+
+        `viralAlgorithmScore` turns a post's public counts into 1 comparable
+        number.
       tags: [Analysis]
       security: [{ apiKey: [] }, { oauthBearer: [] }]
       requestBody:
@@ -13620,7 +13832,8 @@ components:
         `idempotent: true` added. It keeps the first status, body & Retry-After.
         It sends nothing to X & charges nothing. While the first request runs, a
         retry returns 202 & the action. Different input returns 409. Protection
-        lasts at least 90 days.
+        lasts at least 90 days. Retrying a write is safe with an idempotency
+        key.
       schema:
         type: string
         minLength: 1
@@ -13787,7 +14000,8 @@ components:
       description: >
         Automatic pages accept 1-300 Tweets, standard pages 1-100. Default 20.
         Follow next_cursor for more pages. Its aliases are limit, count,
-        max_results, maxItems, max_items & per_page.
+        max_results, maxItems, max_items & per_page. A small page size never
+        loses rows between pages.
       schema:
         type: integer
         minimum: 1
@@ -13823,16 +14037,16 @@ components:
         type: string
         enum: [standard]
       description: >
-        Optional legacy pagination override. Search-only filters such as
-        keywords apply only without it.
+        Optional legacy pagination override. Filters such as keywords don't
+        apply with it.
     TweetIncludeParentTweet:
       name: includeParentTweet
       in: query
       schema: { type: boolean, default: false }
       description: >
         Include each reply's parent tweet as parentTweet on the reply. A reply
-        whose parent X does not return comes without it. Search-only filters
-        such as keywords do not apply with it.
+        whose parent X does not return comes without it. Filters such as
+        keywords do not apply with it.
     TweetIncludeReplies:
       name: includeReplies
       in: query
@@ -14033,7 +14247,9 @@ components:
       schema:
         type: string
         maxLength: 19
-      description: Filter by author username.
+      description: >-
+        Filter by author username. Account searches include all of the account's
+        posts & reposts.
     ToUser:
       name: toUser
       in: query
@@ -14054,7 +14270,9 @@ components:
       schema:
         type: string
         maxLength: 35
-      description: Filter by language. Its alias is `lang`.
+      description: >-
+        Filter by language. Its alias is `lang`. Language filters work for every
+        language X tags.
     SinceDate:
       name: sinceDate
       in: query
@@ -14062,7 +14280,9 @@ components:
         type: string
         format: date
         maxLength: *time-max-length
-      description: Start date in YYYY-MM-DD format, as a UTC day.
+      description: >-
+        Start date in YYYY-MM-DD format, as a UTC day. A date means one thing in
+        any common form.
     UntilDate:
       name: untilDate
       in: query
@@ -14144,33 +14364,35 @@ components:
       schema: { type: string, maxLength: 512 }
       description: >
         Keep only Tweets with this card type, such as poll2choice_text_only.
-        Tweet search checks each Tweet's card.
+        Every returned Tweet has it.
     Source:
       name: source
       in: query
       schema: { type: string, maxLength: 512 }
       description: >
-        X search no longer supports source. A Tweet search with it answers 424 &
-        charges nothing.
+        `source` isn't supported. A Tweet search with it answers 424 & charges
+        nothing.
     ExcludeSource:
       name: excludeSource
       in: query
       schema: { type: string, maxLength: 512 }
       description: >
-        X search no longer supports excludeSource. A Tweet search with it
-        answers 424 & charges nothing.
+        `excludeSource` isn't supported. A Tweet search with it answers 424 &
+        charges nothing.
     Geocode:
       name: geocode
       in: query
       schema: { type: string, maxLength: 512 }
       description: >
-        X search no longer supports geocode. A Tweet search with it answers 424
-        & charges nothing.
+        `geocode` isn't supported. A Tweet search with it answers 424 & charges
+        nothing.
     SinceId:
       name: sinceId
       in: query
       schema: { type: string, maxLength: 19 }
-      description: Return Tweets whose IDs exceed this ID.
+      description: >-
+        Return Tweets whose IDs exceed this ID. Searches accept `since_id` &
+        `max_id` bounds.
     MaxId:
       name: maxId
       in: query
@@ -14181,15 +14403,15 @@ components:
       in: query
       schema: { type: string, maxLength: 512 }
       description: >
-        A place name. A country, such as United States, works like placeCountry
-        & keeps Tweets tagged there. A city keeps Tweets about it.
+        A place name, such as a city or a country. Matching Tweets are tagged in
+        or about that place.
     Within:
       name: within
       in: query
       schema: { type: string, maxLength: 512 }
       description: >
-        X search no longer supports within. A Tweet search with it answers 424 &
-        charges nothing. Use near alone.
+        `within` isn't supported. A Tweet search with it answers 424 & charges
+        nothing. Use near alone.
     WithinTime:
       name: withinTime
       in: query
@@ -14214,7 +14436,9 @@ components:
       name: news
       in: query
       schema: { type: boolean }
-      description: X no longer searches filter:news.
+      description: >-
+        `news` isn't supported. A Tweet search with it answers 424 & charges
+        nothing.
     VerifiedOnly:
       name: verifiedOnly
       in: query
@@ -14256,7 +14480,8 @@ components:
       schema:
         type: string
         maxLength: 4096
-      description: Match this literal phrase, including any hyphens.
+      description: >-
+        Match this exact phrase, word for word.
     ExcludeWords:
       name: excludeWords
       in: query
@@ -14387,7 +14612,8 @@ components:
         Cursors, counts & diagnostics always stay. An unknown name answers 400
         unknown_field with the valid names, before any read. The price stays the
         same. SDK row types then hold only the named fields. A longer URL fails
-        at the edge before Xquik reads it.
+        at the edge before Xquik reads it. Pick only the fields you need with
+        `fields` & `omit`.
     Omit:
       name: omit
       in: query
@@ -14412,7 +14638,8 @@ components:
     CreditsCharged:
       description: >
         Credits this request charged. 0 when it charged none, as for a page a
-        filter empties or a page sent again.
+        filter empties or a page sent again. Every answer states its charge in
+        `X-Xquik-Credits-Charged`.
       schema:
         type: string
         pattern: '^\d+$'
@@ -14442,6 +14669,7 @@ components:
       description: >
         Sent when X's servers failed the request. The value x names X as the
         cause. Xquik's own failures & other answers omit this header.
+        `X-Xquik-Cause` tells X's outages apart from Xquik's.
       schema:
         type: string
         enum: ['x']
@@ -14843,7 +15071,8 @@ components:
     InvalidInput:
       description: >
         Invalid input. A value past its maxLength gets this answer, & the
-        message names the field & its limit.
+        message names the field & its limit. Bad input costs nothing, since it's
+        refused before any read.
       content:
         application/json:
           schema: *error-schema
@@ -14888,7 +15117,7 @@ components:
         `author_suspended` with "X suspended this post's author.", or
         `protected` with "This post's author limits who can see it." Without
         `reason`, X named no cause, and the message is "Tweet not found. Check
-        the tweet ID."
+        the tweet ID." A post is called missing only when it's gone.
       content:
         application/json:
           schema: *error-schema
@@ -15032,6 +15261,8 @@ components:
       description: >-
         The account is protected. Choose a public one. This applies to every
         timeline page & mode. Xquik charges nothing. Profile lookup still works.
+        Protected accounts & private Lists get a clear answer, not an empty
+        page.
       content:
         application/json:
           schema: *error-schema
@@ -15158,10 +15389,10 @@ components:
         size, origin or timeout. A video too big for X to take in time gets
         `x_video_too_large`, & its message names a size that works. A post into
         a Community gets `x_community_not_joined` when the account isn't a
-        member. It gets `x_community_not_selectable` when X's composer can't
-        pick it. It gets `x_community_post_removed` or `x_community_post_public`
-        when X put it outside the Community. Xquik charges nothing for any of
-        them.
+        member. It gets `x_community_not_selectable` when X won't post into that
+        Community. It gets `x_community_post_removed` or
+        `x_community_post_public` when the post didn't stay in the Community.
+        Xquik charges nothing for any of them.
       headers:
         Retry-After:
           description: Seconds until X may take the reply again, when known.
@@ -15225,8 +15456,9 @@ components:
         Dependency unavailable, unauthorized, or limited. Default v1 uses 502.
         Best-practice responses use 424 for transparent dependency failures.
         Search answers 424 `search_unavailable` when X fails the query itself,
-        or when its filters matched none of the last 3,000 posts read. The
-        message says how far back the search read.
+        or when a filtered search goes far back without a match. The message
+        says how far back the search looked. "X can't run this search" appears
+        only when it's true. Searches X can't run fail at once, with the fix.
       headers:
         X-Xquik-Cause:
           $ref: '#/components/headers/XquikCause'
@@ -15250,10 +15482,9 @@ components:
               'Users who liked this post are unavailable. X shows likers only to
               the post author. Use retweeters or replies instead.'
     CoverageCursorUnavailable:
-      description:
-        Xquik is still reading the cursor's page. Your key or session repeating
-        the same request waits for that page instead. Wait `Retry-After`
-        seconds, then send the same cursor again.
+      description: >-
+        Asking again for a page in progress answers 409 with `Retry-After`. Wait
+        `Retry-After` seconds, then send the same cursor again.
       headers:
         Retry-After:
           required: true
@@ -15298,9 +15529,10 @@ components:
             error: 'x_api_unavailable'
             message: 'Maximum coverage is busy. Retry shortly.'
     ReadBusy:
-      description:
+      description: >-
         Retry x_api_unavailable after Retry-After. With X-Xquik-Busy, retry
-        until your deadline.
+        until your deadline. Overload is announced with 503, `Retry-After` & a
+        reason.
       headers: *busy-headers
       content:
         application/json:
@@ -15620,7 +15852,9 @@ components:
       enum: [USD, EUR, GBP, TRY, JPY, CNY, KRW, CAD, AUD, MXN]
       example: EUR
     NextCursor:
-      description: Cursor for the next page. Send it unchanged.
+      description: >-
+        Cursor for the next page. Send it unchanged. Each next page arrives
+        fast. Cursors fit in a URL & last 90 days.
       type: string
       example: 'DAACCgACGRElMJcAAA'
     WholeNumber:
@@ -16624,7 +16858,8 @@ components:
         hold fewer rows than its limit & still report more. That report decides,
         not the row count. A page can be empty & still report more, filtered or
         not. Automatic search, user Tweet & reply coverage keeps shape, filters,
-        aliases & billing. Unprefixed cursors are legacy.
+        aliases & billing. Cursors from before automatic mode keep their old
+        behavior.
       type: object
       example:
         tweets:
@@ -16933,9 +17168,7 @@ components:
           type: string
           format: date-time
           description: >
-            How far back a filtered Latest search has read, in UTC. Xquik
-            checked every newer post, so an empty page still moves this time
-            back.
+            The UTC time this filtered search has reached.
           example: '2026-10-04T10:07:00.000Z'
         windowComplete:
           type: boolean
@@ -16945,14 +17178,15 @@ components:
           example: true
         searchedQuery:
           type: string
-          description: Search q as X ran it, when Xquik fixed it.
+          description: >-
+            The query that ran, when it differs from your q.
           example: 'openai gpt'
         searchContext:
           type: object
           description: >
-            What X shows beside a search's posts that is the same for every
-            reader. Present on a search for a cashtag X has a card for, such as
-            $BTC.
+            What X shows beside a search's posts, the same for everyone. Present
+            on a search for a cashtag X has a card for, such as $BTC. Cashtag
+            searches add X's ticker card in `searchContext`.
           required: [smartTag]
           properties:
             smartTag:
@@ -16975,7 +17209,8 @@ components:
                     prices.
                   example: false
     CoverageStopReason:
-      description: Reason a coverage strategy stopped.
+      description: >-
+        Why the read stopped.
       type: string
       enum:
         - cursor_failure
@@ -16986,7 +17221,8 @@ components:
         - result_limit
         - stalled
     TweetSearchCoverageWindow:
-      description: Non-overlapping time partition used by 1 strategy.
+      description: >-
+        Start & end time.
       type: object
       required: [sinceTime, untilTime]
       properties:
@@ -16995,7 +17231,8 @@ components:
           format: date-time
         untilTime: *date-time-string
     TweetSearchCoverageStrategy:
-      description: Result counts and stop reason for 1 Tweet search strategy.
+      description: >-
+        Tweet result counts & stop reason.
       type: object
       required:
         - duplicateCount
@@ -17038,8 +17275,7 @@ components:
         complete:
           type: boolean
           description: >
-            True after all active strategies exhaust their sources. An empty
-            read of the whole search window also ends its time slices.
+            True when the result covers the whole query & range.
         cursorFailureCount: *nonnegative-integer
         deadlineReached:
           type: boolean
@@ -17055,7 +17291,8 @@ components:
         stalledStrategyCount: *nonnegative-integer
         strategyCount: *bounded-strategy-number
     TweetSearchCoverageDiagnostic:
-      description: Coverage evidence across parallel search strategies.
+      description: >-
+        How completely the search covered your query & range.
       allOf:
         - $ref: '#/components/schemas/CoverageDiagnosticBase'
         - type: object
@@ -17063,7 +17300,9 @@ components:
           properties:
             partitioned:
               type: boolean
-              description: Whether bounded time windows ran in parallel.
+              description: >-
+                Describes how the search ran. Read `complete` to see whether
+                coverage is full.
             returnedTweets: &bounded-result-count
               type: integer
               minimum: 0
@@ -17335,10 +17574,9 @@ components:
             partialBefore:
               type: string
               format: date-time
-              description:
-                Present on an answer that lacks replies of a large thread posted
-                before this time. X shows only part of the replies older than 7
-                days. A retry returns about the same replies.
+              description: >-
+                Present on an answer that lacks some replies posted before this
+                time. A retry returns about the same replies.
               example: '2026-10-07T00:00:00.000Z'
             message:
               type: string
@@ -17363,7 +17601,8 @@ components:
               type: string
               const: ''
     ReplyCoverageStrategy:
-      description: Reply counts & stop reason per strategy.
+      description: >-
+        Reply counts & stop reason.
       type: object
       required:
         - name
@@ -17379,8 +17618,7 @@ components:
         newDirectReplyPages:
           type: array
           description: >
-            For a search of the post's conversation, the page that listed each
-            new direct reply, from 1.
+            The page, from 1, where each new direct reply appeared.
           items:
             type: integer
             minimum: 1
@@ -17531,17 +17769,19 @@ components:
         pagesAttempted:
           type: integer
           minimum: 0
-          description:
-            Pages attempted across strategies & extra reads of the post's views.
+          description: >-
+            Pages read for this answer.
         strategiesAttempted:
           type: array
-          description: Pagination & contribution evidence per strategy.
+          description: >-
+            Diagnostics for this answer.
           items:
             $ref: '#/components/schemas/ReplyCoverageStrategy'
         duplicateCount:
           type: integer
           minimum: 0
-          description: Duplicate IDs removed across pages & strategies.
+          description: >-
+            Duplicate replies removed.
         cursorFailures:
           type: integer
           minimum: 0
@@ -17549,11 +17789,13 @@ components:
         repeatedCursorCount:
           type: integer
           minimum: 0
-          description: Looping cursors rejected.
+          description: >-
+            Repeated pages left out.
         emptyFalseProgressPages:
           type: integer
           minimum: 0
-          description: Empty pages rejected for no progress.
+          description: >-
+            Empty pages left out.
         malformedCount:
           type: integer
           minimum: 0
@@ -17561,10 +17803,12 @@ components:
         unrelatedCount:
           type: integer
           minimum: 0
-          description: Tweets rejected from other conversations.
+          description: >-
+            Unrelated posts left out.
         missingResponseModulesOrFields:
           type: array
-          description: Expected X modules or fields missing.
+          description: >-
+            Expected fields that X's answer lacked.
           items:
             type: string
         recommendedFallback:
@@ -17577,9 +17821,9 @@ components:
           description: Requested row limit truncated safe results.
         sourcesEnded:
           type: boolean
-          description:
-            Every source ended, or no reply view shows a reply. A retry returns
-            the same rows.
+          description: >-
+            True when no more replies can be found. A retry returns the same
+            rows.
     PaginatedUserIds:
       description: >
         A page of user IDs without profiles. Follow next_cursor while the
@@ -17603,8 +17847,8 @@ components:
     PaginatedUsers:
       description: >
         Profile coverage preserves shape, billing, aliases, and filters. Follow
-        next_cursor while the response reports more pages. Unprefixed cursors
-        remain legacy.
+        next_cursor while the response reports more pages. Cursors from before
+        automatic mode keep their old behavior.
       type: object
       example:
         users:
@@ -18047,8 +18291,8 @@ components:
                   blue: { type: integer, minimum: 0, maximum: 255 }
     XList:
       description: >
-        Public X List with its owner's public profile. Leaves out what X tells
-        the reading account, such as whether it follows the List.
+        Public X List with its owner's public profile. It holds public fields
+        only.
       type: object
       required: [id, name]
       example:
@@ -18143,8 +18387,8 @@ components:
           type: object
           $ref: '#/components/schemas/XListBanner'
           description: >
-            Banner X shows when the owner uploaded none. X picks it per reading
-            account, so 2 calls can return different ones.
+            Banner X shows when the owner uploaded none. It can differ between
+            calls.
         facepileUrls:
           type: array
           description:
@@ -18169,7 +18413,8 @@ components:
         next_cursor:
           $ref: '#/components/schemas/NextCursor'
     UserListCoverageStrategy:
-      description: Result counts and stop reason for 1 relationship strategy.
+      description: >-
+        User result counts & stop reason.
       type: object
       required:
         - duplicateCount
@@ -18185,7 +18430,8 @@ components:
         strategy: *bounded-strategy-number
         uniqueAdded: *nonnegative-integer
     UserListCoverageDiagnostic:
-      description: Coverage evidence across parallel relationship strategies.
+      description: >-
+        How completely the list came back, with its counts.
       allOf:
         - $ref: '#/components/schemas/CoverageDiagnosticBase'
         - type: object
@@ -19275,18 +19521,16 @@ components:
         Type of monitor event fired when account activity occurs. tweet.deleted
         fires once X confirms the account deleted a post the monitor saw. Its
         data is the post as last seen. broadcast.started & space.started fire
-        when the account posts its running live video or Space. Their data is
-        that post. Xquik misses a live video the account does not post.
-        following.added & following.removed fire when the account follows or
-        unfollows someone, with that account's profile. follower.added &
-        follower.removed fire when someone follows the account or leaves its
-        followers, with that account's profile. Xquik names lost followers for
-        accounts with up to 100,000 followers. profile.followers.changed &
-        profile.following.changed fire when the account's follower or following
-        count moves, at most once a minute each. X shows counts that differ by a
-        few between reads, so a monitor holds the lowest. A fall counts once 2
-        reads show it, & a rise once no read for a minute showed less. Keyword
-        monitors take the 10 post types only.
+        when the account starts a live video or Space & posts it. Their data is
+        that post. following.added & following.removed fire when the account
+        follows or unfollows someone, with that account's profile.
+        follower.added & follower.removed fire when someone follows the account
+        or leaves its followers, with that account's profile. Xquik names lost
+        followers for accounts with up to 100,000 followers.
+        profile.followers.changed & profile.following.changed fire when the
+        account's follower or following count moves, at most once a minute each.
+        Profile change alerts don't flap. Keyword monitors take the 10 post
+        types only.
       type: string
       enum:
         - tweet.new
@@ -19399,10 +19643,9 @@ components:
         targetSpaceId:
           type: string
           maxLength: 13
-          description:
-            Required for space_explorer. X names a Space's hosts & speakers
-            without counts or bio, so Xquik reads each one's profile. Rows carry
-            it, & profile filters such as minFollowers check it.
+          description: >-
+            Required for space_explorer. Rows carry each host's & speaker's full
+            profile, & profile filters such as minFollowers check it.
         targetTweetIds:
           type: array
           minItems: 1
@@ -19600,25 +19843,25 @@ components:
           type: string
           maxLength: 512
           deprecated: true
-          description:
-            X search no longer supports source. An extraction with it answers
-            424 `search_unavailable` & charges nothing.
+          description: >-
+            `source` isn't supported. An extraction with it answers 424
+            `search_unavailable` & charges nothing.
         excludeSource:
           type: string
           maxLength: 512
           deprecated: true
-          description:
-            X search ignores excludeSource, so an extraction with it returns
-            unfiltered rows. Its answers carry `Deprecation` & `Sunset` headers.
-            From 2027-01-15 an extraction with it answers 424
-            `search_unavailable` & charges nothing.
+          description: >-
+            It has no effect, so an extraction with it returns unfiltered rows.
+            Its answers carry `Deprecation` & `Sunset` headers. From 2027-01-15
+            an extraction with it answers 424 `search_unavailable` & charges
+            nothing.
         geocode:
           type: string
           maxLength: 512
           deprecated: true
-          description:
-            X search no longer supports geocode. An extraction with it answers
-            424 `search_unavailable` & charges nothing.
+          description: >-
+            `geocode` isn't supported. An extraction with it answers 424
+            `search_unavailable` & charges nothing.
         sinceId:
           type: string
           maxLength: 19
@@ -19631,15 +19874,15 @@ components:
           type: string
           maxLength: 512
           description: >
-            Restrict Tweet search to this place name. A country, such as Brazil,
-            works like placeCountry. A city keeps Tweets about it.
+            Restrict Tweet search to this place name, such as a city or a
+            country. Matching Tweets are tagged in or about that place.
         within:
           type: string
           maxLength: 512
           deprecated: true
-          description:
-            X search no longer supports within. An extraction with it answers
-            424 `search_unavailable` & charges nothing. Use near alone.
+          description: >-
+            Not supported. An extraction with it answers 424
+            `search_unavailable` & charges nothing. Use near alone.
         withinTime:
           type: string
           maxLength: *time-max-length
@@ -19656,9 +19899,9 @@ components:
           type: boolean
           default: false
           deprecated: true
-          description:
-            X search no longer supports filter:news. An extraction with news
-            true answers 424 `search_unavailable` & charges nothing.
+          description: >-
+            `news` isn't supported. An extraction with news true answers 424
+            `search_unavailable` & charges nothing.
         minFollowers:
           type: integer
           minimum: 0
@@ -20088,8 +20331,8 @@ components:
         Type of post monitor event. post.reply.new & post.quote.new fire for
         each new direct reply & quote. A metric's changed event fires at most
         once a minute & covers the whole change since the last one. post.edited
-        carries the text before the edit. post.deleted fires once 3 reads in a
-        row confirm the author deleted the post.
+        carries the text before the edit. post.deleted fires once Xquik confirms
+        the author deleted the post.
       type: string
       enum:
         - post.reply.new
@@ -20568,10 +20811,10 @@ components:
           example: We cut serving costs by 20%.
 
     MonitorFollow:
-      description:
+      description: >-
         The other account of a following or follower event, with the profile
-        fields a user lookup returns. It holds the ID alone when X fails the
-        profile lookup.
+        fields a user lookup returns. It holds the ID alone when the profile
+        isn't available.
       type: object
       required: [id]
       properties:
@@ -20582,27 +20825,24 @@ components:
         followedAt:
           type: string
           format: date-time
-          description:
+          description: >-
             X's time of the follow, on following.added & follower.added. It is
-            missing when X gives none, as for an account that returns to a list.
+            missing when X gives no time.
           example: '2026-10-13T02:36:54.961Z'
         followedAtExact:
           type: boolean
-          description:
-            Whether followedAt is X's exact time of this follow. When several
-            accounts join between 2 checks, X times the first, the second & the
-            last. Each other one holds the earliest time its follow can have,
-            with false here.
+          description: >-
+            Whether followedAt is X's exact time of this follow. False means
+            followedAt is the earliest time the follow can have.
           example: true
         reason:
           type: string
           enum: [unavailable, unfollowed]
-          description:
+          description: >-
             Why the account left the list, on following.removed &
             follower.removed. unavailable means X no longer serves the account.
-            unfollowed means X's follow check says the follow ended. It is
-            missing when X fails the check. Xquik sends no removal while X still
-            confirms the follow.
+            unfollowed means the follow ended. It is missing when the cause
+            isn't known.
           example: unfollowed
       additionalProperties: true
 
@@ -21531,7 +21771,9 @@ components:
           $ref: '#/components/schemas/NextCursor'
 
     TweetMedia:
-      description: Tweet media.
+      description: >-
+        Tweet media. Media comes with variants, alt text, sizes & availability
+        reasons.
       type: object
       required: [mediaUrl, type, url]
       properties:
@@ -21872,9 +22114,8 @@ components:
           description: Every cue's text in order, as 1 line.
         truncated:
           type: boolean
-          description:
-            True when the track holds more than 50 caption files. The cues then
-            cover the first 50.
+          description: >-
+            True when the cues cover only the start of a very long track.
         cues:
           type: array
           description: Timed captions in order.
@@ -21990,9 +22231,8 @@ components:
         tag: { $ref: '#/components/schemas/TweetSmartTag' }
 
     TweetSmartTag:
-      description:
-        X's SmartTag for a cashtag, smarttag or hashtag. Xquik leaves out X's
-        trading platforms, which differ by reader.
+      description: >-
+        X's SmartTag for a cashtag, smarttag or hashtag.
       type: object
       properties:
         id:
@@ -22498,9 +22738,8 @@ components:
             Hurdles"
         text:
           type: string
-          description:
-            The story's text in this version, without the time line X writes
-            above it in the reader's time zone.
+          description: >-
+            The story's text in this version, without its time line.
           example:
             "Musk has accused Reliance Industries' Mukesh Ambani of blocking
             Starlink's entry to protect local telecom giants like Jio, while
@@ -22805,8 +23044,9 @@ components:
 
     TweetInterstitial:
       description: >-
-        The notice x.com covers the post with until the reader views it, such as
-        X's public interest notice on a post that broke its rules but stays up.
+        The notice x.com covers the post with until someone chooses to view it,
+        such as X's public interest notice on a post that broke its rules but
+        stays up.
       type: object
       properties:
         displayType:
@@ -22958,11 +23198,11 @@ components:
           example: [0, 31]
         textHighlights:
           type: array
-          description:
+          description: >-
             Where `text` matches the search, on each row a search read. Offsets
             count code points of `text`, as `displayTextRange` does. Empty when
-            X marks nothing in the post. X marks matches only in a post's first
-            280 characters.
+            the post holds no marked match. Highlights cover a post's first 280
+            characters.
           items:
             type: object
             required: [startIndex, endIndex]
@@ -23130,8 +23370,8 @@ components:
               example: Fosnr
             engagementNudge:
               type: boolean
-              description:
-                Whether X prompts readers before they engage with the post.
+              description: >-
+                Whether X prompts people before they engage with the post.
             text:
               type: object
               properties:
@@ -23207,6 +23447,8 @@ components:
             style, so `xquik-api-contract: 2026-04-29` lists bookmark_count.
             Posts from before X counted views, & new posts X has not counted
             views for yet, list viewCount. Left out when X sent every count.
+            Counts X didn't send are listed in `unknownCounts`, never shown as
+            0.
           items:
             type: string
             enum:
@@ -25173,10 +25415,9 @@ components:
           anyOf:
             - $ref: '#/components/schemas/FootballPlay'
             - type: 'null'
-          description:
-            The latest play, or null before kickoff. Its steps take their
-            players from the game's plays. They are empty while the plays lack
-            it.
+          description: >-
+            The latest play, or null before kickoff. Its steps can list no
+            players for a short while.
           example: null
         teams:
           type: object
@@ -25211,10 +25452,9 @@ components:
             query:
               type: [string, 'null']
               description: >
-                The X search that finds this game's posts for the order asked. X
-                builds it from the teams, hashtags, accounts & star players,
-                with the game's time window. Send it to GET /x/tweets/search for
-                more filters. Null when X sends a timeline ID Xquik cannot read.
+                An X search for this game's posts, in the order asked. Send it
+                to GET /x/tweets/search for more filters. Null when no search is
+                available.
               example:
                 '(#WASvsSF OR #WASatSF OR #SFvsWAS OR WASvsSF OR WASatSF OR
                 SFvsWAS OR "San Francisco 49ers" OR "Washington Commanders" OR
@@ -25362,9 +25602,9 @@ components:
                   example: 2
         teams:
           type: object
-          description:
-            The game's teams, by team ID. X's team picker sends no short name,
-            alternate ID, X account or record, so those are null.
+          description: >-
+            The game's teams, by team ID. Short name, alternate ID, X account &
+            record are null here.
           example: {}
           additionalProperties:
             $ref: '#/components/schemas/SportsTeam'
@@ -26939,9 +27179,9 @@ components:
         retweetedAt:
           type: [string, 'null']
           format: date-time
-          description:
-            UTC repost time with includeRetweetTimestamp. Null if the newest
-            profile page has no match or lookup failed. Otherwise omitted.
+          description: >-
+            UTC repost time with includeRetweetTimestamp. Null when Xquik found
+            no repost time. Otherwise omitted.
           example: '2026-09-11T20:24:45.000Z'
         createdAt:
           type: string
