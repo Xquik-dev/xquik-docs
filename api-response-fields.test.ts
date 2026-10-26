@@ -11,8 +11,6 @@ import {
 
 const PROJECT_ROOT = process.cwd();
 const DOCS_OPENAPI_PATH = join(PROJECT_ROOT, "openapi.yaml");
-type OpenApiSpec = OpenApiDocument;
-
 interface PageContract {
   readonly allowedFields: readonly string[];
   readonly page: string;
@@ -118,15 +116,11 @@ const X_ACCOUNT_REAUTH_PAGE = "api-reference/x-accounts/reauth.mdx";
 const X_ACCOUNT_BULK_RETRY_PAGE = "api-reference/x-accounts/bulk-retry.mdx";
 const X_ACCOUNT_DISCONNECT_PAGE = "api-reference/x-accounts/disconnect.mdx";
 
-function parseYaml(source: string): OpenApiSpec {
-  return parseOpenApi(source);
+function readOpenApi(): OpenApiDocument {
+  return parseOpenApi(readFileSync(DOCS_OPENAPI_PATH, "utf8"));
 }
 
-function readOpenApi(): OpenApiSpec {
-  return parseYaml(readFileSync(DOCS_OPENAPI_PATH, "utf8"));
-}
-
-function schemaByName(spec: OpenApiSpec, name: string): OpenApiSchema {
+function schemaByName(spec: OpenApiDocument, name: string): OpenApiSchema {
   const schema = spec.components?.schemas?.[name];
   if (schema === undefined) {
     throw new Error(`Missing OpenAPI schema: ${name}`);
@@ -134,7 +128,7 @@ function schemaByName(spec: OpenApiSpec, name: string): OpenApiSchema {
   return schema;
 }
 
-function resolveSchema(spec: OpenApiSpec, schema: OpenApiSchema): OpenApiSchema {
+function resolveSchema(spec: OpenApiDocument, schema: OpenApiSchema): OpenApiSchema {
   const resolved =
     schema.$ref === undefined
       ? schema
@@ -161,7 +155,7 @@ function resolveSchema(spec: OpenApiSpec, schema: OpenApiSchema): OpenApiSchema 
   };
 }
 
-function responseByName(spec: OpenApiSpec, name: string): OpenApiResponse {
+function responseByName(spec: OpenApiDocument, name: string): OpenApiResponse {
   const response = spec.components?.responses?.[name];
   if (response === undefined) {
     throw new Error(`Missing OpenAPI response: ${name}`);
@@ -169,7 +163,7 @@ function responseByName(spec: OpenApiSpec, name: string): OpenApiResponse {
   return response;
 }
 
-function resolveResponse(spec: OpenApiSpec, response: OpenApiResponse): OpenApiResponse {
+function resolveResponse(spec: OpenApiDocument, response: OpenApiResponse): OpenApiResponse {
   if (response.$ref === undefined) {
     return response;
   }
@@ -177,14 +171,14 @@ function resolveResponse(spec: OpenApiSpec, response: OpenApiResponse): OpenApiR
   return responseByName(spec, name);
 }
 
-function schemaPropertyNames(spec: OpenApiSpec, name: string): readonly string[] {
+function schemaPropertyNames(spec: OpenApiDocument, name: string): readonly string[] {
   const schema = resolveSchema(spec, schemaByName(spec, name));
   return Object.keys(schema.properties ?? {}).sort((left, right): number =>
     left.localeCompare(right),
   );
 }
 
-function requiredSchemaPropertyNames(spec: OpenApiSpec, name: string): readonly string[] {
+function requiredSchemaPropertyNames(spec: OpenApiDocument, name: string): readonly string[] {
   return uniqueSorted(resolveSchema(spec, schemaByName(spec, name)).required ?? []);
 }
 
@@ -194,7 +188,10 @@ function propertyNames(schema: OpenApiSchema | undefined): readonly string[] {
   );
 }
 
-function responseFieldNamesFromSchema(spec: OpenApiSpec, schema: OpenApiSchema): readonly string[] {
+function responseFieldNamesFromSchema(
+  spec: OpenApiDocument,
+  schema: OpenApiSchema,
+): readonly string[] {
   const resolved = resolveSchema(spec, schema);
   return uniqueSorted([
     ...propertyNames(resolved),
@@ -211,7 +208,7 @@ function responseFieldNamesFromSchema(spec: OpenApiSpec, schema: OpenApiSchema):
 }
 
 function schemaProperty(
-  spec: OpenApiSpec,
+  spec: OpenApiDocument,
   schemaName: string,
   property: string,
 ): OpenApiSchema | undefined {
@@ -219,7 +216,7 @@ function schemaProperty(
 }
 
 function itemPropertyNames(
-  spec: OpenApiSpec,
+  spec: OpenApiDocument,
   schemaName: string,
   property: string,
 ): readonly string[] {
@@ -228,7 +225,7 @@ function itemPropertyNames(
 }
 
 function responseSchema(
-  spec: OpenApiSpec,
+  spec: OpenApiDocument,
   path: string,
   method: string,
   status = "200",
@@ -244,7 +241,7 @@ function responseSchema(
 }
 
 function itemPropertyNamesFromProperty(
-  spec: OpenApiSpec,
+  spec: OpenApiDocument,
   schema: OpenApiSchema,
   property: string,
 ): readonly string[] {
@@ -288,7 +285,7 @@ function prefixedFields(prefix: string, fields: readonly string[]): readonly str
   return fields.map((field): string => `${prefix}${field}`);
 }
 
-function pageContracts(spec: OpenApiSpec): readonly PageContract[] {
+function pageContracts(spec: OpenApiDocument): readonly PageContract[] {
   const paginatedTweets = schemaPropertyNames(spec, "PaginatedTweets");
   const paginatedUsers = schemaPropertyNames(spec, "PaginatedUsers");
   const searchTweet = schemaPropertyNames(spec, "SearchTweet");

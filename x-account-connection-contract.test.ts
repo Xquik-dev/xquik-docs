@@ -12,7 +12,7 @@ const jsonResponse = openApiResponse.extend({
   content: z.looseObject({ "application/json": z.looseObject({ schema: openApiSchema }) }),
 });
 
-const openApiDocument = z.looseObject({
+const connectionSpec = z.looseObject({
   components: z.looseObject({ schemas: z.record(z.string(), openApiSchema) }),
   paths: z.looseObject({
     "/x/account-connection-attempts/{id}": z.looseObject({
@@ -29,7 +29,7 @@ const openApiDocument = z.looseObject({
   }),
 });
 
-type OpenApiDocument = z.infer<typeof openApiDocument>;
+type ConnectionSpec = z.infer<typeof connectionSpec>;
 
 const PROJECT_ROOT = process.cwd();
 const CONNECT_PAGE = readFileSync(
@@ -58,8 +58,8 @@ const LLMS_INDEX = readFileSync(join(PROJECT_ROOT, "llms.txt"), "utf8");
 const PRIVATE_CONNECTION_COPY =
   /automatic retr(?:y|ies)|browser session|network tunnel|retry automatically/iu;
 
-function parseOpenApi(source: string): OpenApiDocument {
-  return openApiDocument.parse(Bun.YAML.parse(source));
+function parseConnectionSpec(source: string): ConnectionSpec {
+  return connectionSpec.parse(Bun.YAML.parse(source));
 }
 
 function refs(schema: Readonly<OpenApiSchema>): readonly string[] {
@@ -86,7 +86,7 @@ function schemaFields(name: string): readonly string[] {
   );
 }
 
-const openapi = parseOpenApi(OPENAPI_SOURCE);
+const openapi = parseConnectionSpec(OPENAPI_SOURCE);
 
 describe("X account connection documentation contract", (): void => {
   it("publishes every durable connection result", (): void => {

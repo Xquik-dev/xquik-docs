@@ -16,8 +16,6 @@ import {
   stripGeneratedResponseExamples,
 } from "./scripts/lib/generated-response-examples";
 
-type OpenApiSpec = OpenApiDocument;
-
 const PROJECT_ROOT = process.cwd();
 const spec = parseOpenApi(readFileSync(join(PROJECT_ROOT, "openapi.yaml"), "utf8"));
 const OPERATIONS = Object.values(spec.paths ?? {}).flatMap((pathItem) =>
@@ -160,7 +158,7 @@ function collectStatusFindings({
 }: {
   readonly docsStatusProvider: (source: string) => readonly string[];
   readonly issuePrefix: string;
-  readonly spec: OpenApiSpec;
+  readonly spec: OpenApiDocument;
   readonly statusProvider: (operation: OpenApiOperation) => readonly string[];
 }): readonly ResponseStatusFinding[] {
   const findings: ResponseStatusFinding[] = [];

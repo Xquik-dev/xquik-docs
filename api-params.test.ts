@@ -42,15 +42,9 @@ interface DocumentedOperationField {
   readonly path: string;
 }
 
-type OpenApiSpec = OpenApiDocument;
-
 interface SchemaFields {
   readonly properties: readonly string[];
   readonly required: readonly string[];
-}
-
-function parseYaml(source: string): OpenApiSpec {
-  return parseOpenApi(source);
 }
 
 function listApiReferenceFiles(dir: string): readonly string[] {
@@ -122,21 +116,21 @@ function referenceName(ref: string, expectedKind: "parameters" | "schemas"): str
   return name;
 }
 
-function resolveParameter(spec: OpenApiSpec, parameter: OpenApiParameter): OpenApiParameter {
+function resolveParameter(spec: OpenApiDocument, parameter: OpenApiParameter): OpenApiParameter {
   if (parameter.$ref === undefined) return parameter;
   const resolved = spec.components?.parameters?.[referenceName(parameter.$ref, "parameters")];
   if (resolved === undefined) throw new Error(`Unresolved OpenAPI reference: ${parameter.$ref}`);
   return resolved;
 }
 
-function resolveSchema(spec: OpenApiSpec, schema: OpenApiSchema): OpenApiSchema | undefined {
+function resolveSchema(spec: OpenApiDocument, schema: OpenApiSchema): OpenApiSchema | undefined {
   return schema.$ref === undefined
     ? schema
     : spec.components?.schemas?.[referenceName(schema.$ref, "schemas")];
 }
 
 function schemaFields(
-  spec: OpenApiSpec,
+  spec: OpenApiDocument,
   schema: OpenApiSchema | undefined,
   seenRefs = new Set<string>(),
 ): SchemaFields {
@@ -182,7 +176,7 @@ function intersect(groups: readonly (readonly string[])[]): readonly string[] {
   return first.filter((item): boolean => rest.every((group): boolean => group.includes(item)));
 }
 
-function requestBodyFields(spec: OpenApiSpec, operation: OpenApiOperation): SchemaFields {
+function requestBodyFields(spec: OpenApiDocument, operation: OpenApiOperation): SchemaFields {
   const content = Object.values(operation.requestBody?.content ?? {});
   const contentFields = content.map((entry): SchemaFields => schemaFields(spec, entry.schema));
   return {
@@ -192,7 +186,7 @@ function requestBodyFields(spec: OpenApiSpec, operation: OpenApiOperation): Sche
 }
 
 function openApiParameters(
-  spec: OpenApiSpec,
+  spec: OpenApiDocument,
   path: string,
   operation: OpenApiOperation,
   kind: "path" | "query",
@@ -203,7 +197,7 @@ function openApiParameters(
     .sort((left, right): number => (left.name ?? "").localeCompare(right.name ?? ""));
 }
 
-function collectFieldFindings(spec: OpenApiSpec): readonly FieldFinding[] {
+function collectFieldFindings(spec: OpenApiDocument): readonly FieldFinding[] {
   const findings: FieldFinding[] = [];
   for (const apiDoc of readApiDocs()) {
     const operation = operationAt(spec, apiDoc.path, apiDoc.method);
@@ -272,7 +266,7 @@ function collectFieldFindings(spec: OpenApiSpec): readonly FieldFinding[] {
 }
 
 function collectDocumentedRequestBodyFieldFindings(
-  spec: OpenApiSpec,
+  spec: OpenApiDocument,
   expectedFields: readonly DocumentedOperationField[],
 ): readonly FieldFinding[] {
   const apiDocs = readApiDocs();
@@ -325,7 +319,7 @@ describe("API reference request fields", (): void => {
   it("documents every OpenAPI path, query, and body field", (): void => {
     expect.assertions(1);
 
-    const spec = parseYaml(readFileSync(join(PROJECT_ROOT, "openapi.yaml"), "utf8"));
+    const spec = parseOpenApi(readFileSync(join(PROJECT_ROOT, "openapi.yaml"), "utf8"));
     expect(collectFieldFindings(spec)).toStrictEqual([]);
   });
 });
@@ -333,7 +327,7 @@ describe("API reference request fields", (): void => {
 describe("API reference cost-control fields", (): void => {
   it("keeps complete reply limits editable above and below the default", (): void => {
     expect.assertions(3);
-    const spec = parseYaml(readFileSync(join(PROJECT_ROOT, "openapi.yaml"), "utf8"));
+    const spec = parseOpenApi(readFileSync(join(PROJECT_ROOT, "openapi.yaml"), "utf8"));
     const limit = operationAt(spec, "/x/tweets/{id}/replies", "get")?.parameters?.find(
       (parameter) => parameter.in === "query" && parameter.name === "limit",
     );
@@ -348,7 +342,7 @@ describe("API reference cost-control fields", (): void => {
   it("keeps extraction resultsLimit documented and present in OpenAPI", (): void => {
     expect.assertions(1);
 
-    const spec = parseYaml(readFileSync(join(PROJECT_ROOT, "openapi.yaml"), "utf8"));
+    const spec = parseOpenApi(readFileSync(join(PROJECT_ROOT, "openapi.yaml"), "utf8"));
     expect(
       collectDocumentedRequestBodyFieldFindings(spec, [
         {

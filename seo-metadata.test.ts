@@ -2,10 +2,7 @@ import { readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
-import {
-  navigationNode as navigationGroup,
-  type NavigationItem,
-} from "./scripts/lib/docs-config-schema.ts";
+import { navigationNode, type NavigationItem } from "./scripts/lib/docs-config-schema.ts";
 
 const MIN_DESCRIPTION_LENGTH = 150;
 const MAX_DESCRIPTION_LENGTH = 160;
@@ -18,7 +15,7 @@ const SITE_DESCRIPTION =
 const docsConfigSchema = z.looseObject({
   description: z.string(),
   metadata: z.looseObject({ "og:description": z.string(), timestamp: z.boolean() }),
-  navigation: navigationGroup,
+  navigation: navigationNode,
   search: z.looseObject({ prompt: z.string() }),
   seo: z.looseObject({ indexing: z.string() }),
   styling: z.looseObject({ latex: z.boolean() }),

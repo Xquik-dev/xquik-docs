@@ -2,15 +2,12 @@ import { readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
-import {
-  navigationNode as navigationGroup,
-  type NavigationItem,
-} from "./scripts/lib/docs-config-schema.ts";
+import { navigationNode, type NavigationItem } from "./scripts/lib/docs-config-schema.ts";
 
 const DOCS_ORIGIN = "https://docs.xquik.com";
 const MARKDOWN_LINK_PATTERN = /\[[^\]]+\]\((?:https:\/\/docs\.xquik\.com)?\/([^\s)]*)\)/gu;
 
-const docsConfigSchema = z.looseObject({ navigation: navigationGroup });
+const docsConfigSchema = z.looseObject({ navigation: navigationNode });
 
 function flattenNavigationPages(item: NavigationItem): readonly string[] {
   if (typeof item === "string") {

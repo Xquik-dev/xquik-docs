@@ -13,8 +13,6 @@ const PROJECT_ROOT = process.cwd();
 const DOCS_OPENAPI_PATH = join(PROJECT_ROOT, "openapi.yaml");
 const HTTP_METHODS = new Set(["delete", "get", "patch", "post", "put"]);
 
-type OpenApiSpec = OpenApiDocument;
-
 interface OperationMetadata {
   readonly optionalCredential: boolean;
   readonly key: string;
@@ -29,12 +27,8 @@ interface MppFinding {
   readonly operation: string;
 }
 
-function parseYaml(source: string): OpenApiSpec {
-  return parseOpenApi(source);
-}
-
-function readOpenApi(path: string): OpenApiSpec {
-  return parseYaml(readFileSync(path, "utf8"));
+function readOpenApi(path: string): OpenApiDocument {
+  return parseOpenApi(readFileSync(path, "utf8"));
 }
 
 function normalizeOperationKey(method: string, path: string): string {
@@ -50,7 +44,7 @@ function hasOptionalCredential(operation: OpenApiOperation): boolean {
   );
 }
 
-function collectOperations(spec: OpenApiSpec): readonly OperationMetadata[] {
+function collectOperations(spec: OpenApiDocument): readonly OperationMetadata[] {
   const operations: OperationMetadata[] = [];
   for (const [path, pathItem] of Object.entries(spec.paths ?? {})) {
     for (const [method, operation] of pathOperations(pathItem)) {
