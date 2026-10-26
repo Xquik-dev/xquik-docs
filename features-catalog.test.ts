@@ -1,14 +1,12 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { describe, expect, it } from "vitest";
+import { describe, expect } from "vitest";
 import { z } from "zod";
 
-import { PRODUCT_ROOT } from "./product-contract.test.helpers.ts";
+import { productRootTest } from "./product-contract.test.helpers.ts";
 
-const NAME = "lists every catalog line under its theme heading and nothing else";
-const HINT =
-  "needs the product checkout: set XQUIK_PRODUCT_ROOT or clone xquik beside this repository";
+const CATALOG = "lib/seo/output-features.ts";
 
 const catalogSchema = z.object({
   OUTPUT_FEATURE_THEMES: z.array(
@@ -24,7 +22,6 @@ function pageSections(): Map<string, string[]> {
   return new Map(
     page
       .split(/^## /mu)
-      .slice(1)
       .map((section): [string, string[]] => {
         const [heading = "", ...body] = section.split("\n");
         const bullets = body.filter((row) => row.startsWith("- ")).map((row) => row.slice(2));
@@ -35,24 +32,24 @@ function pageSections(): Map<string, string[]> {
 }
 
 describe("Features page", (): void => {
-  it.skipIf(PRODUCT_ROOT === undefined)(
-    PRODUCT_ROOT === undefined ? `${NAME} (${HINT})` : NAME,
-    async (): Promise<void> => {
+  productRootTest(
+    "lists every catalog line under its theme heading and nothing else",
+    CATALOG,
+    async (root): Promise<void> => {
       expect.assertions(1);
 
-      const module: unknown = await import(join(PRODUCT_ROOT ?? "", "lib/seo/output-features.ts"));
+      const module: unknown = await import(join(root, CATALOG));
       const themes = catalogSchema.parse(module).OUTPUT_FEATURE_THEMES;
+      const catalog = new Map(
+        themes.map((theme) => [theme.heading, theme.features.map((feature) => feature.line)]),
+      );
       const sections = pageSections();
 
       expect({
         extraLines: [...sections].flatMap(([heading, bullets]) =>
           bullets.filter(
-            (bullet) =>
-              !themes.some(
-                (theme) =>
-                  theme.heading === heading &&
-                  theme.features.some((feature) => feature.line === bullet),
-              ),
+            (bullet, index) =>
+              !(catalog.get(heading) ?? []).includes(bullet) || bullets.indexOf(bullet) !== index,
           ),
         ),
         headings: [...sections.keys()],

@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { it } from "vitest";
@@ -101,4 +101,24 @@ function productCheck(name: string, run: (spec: Spec) => void): void {
   });
 }
 
-export { docsContract, docsSecurity, PRODUCT_ROOT, productCheck, productOperation };
+const PRODUCT_HINT =
+  "needs the product checkout, so set XQUIK_PRODUCT_ROOT or clone xquik beside this repository";
+
+function productRootTest(
+  name: string,
+  file: string,
+  run: (root: string) => Promise<void> | void,
+): void {
+  if (PRODUCT_ROOT === undefined) {
+    it.skip(`${name} (${PRODUCT_HINT})`);
+    return;
+  }
+  it(name, (): Promise<void> | void => {
+    if (!existsSync(join(PRODUCT_ROOT, file))) {
+      throw new Error(`${PRODUCT_ROOT} predates ${file}, so update it to xquik master`);
+    }
+    return run(PRODUCT_ROOT);
+  });
+}
+
+export { docsContract, docsSecurity, productCheck, productOperation, productRootTest };

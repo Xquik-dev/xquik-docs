@@ -131,7 +131,8 @@ bun run check:all
 `openapi.yaml` is an exact copy of the application's spec. Never edit it here.
 Clone the application beside this repository, or set `XQUIK_PRODUCT_ROOT` to it.
 `bun run sync` then copies the spec & rewrites each page's response examples.
-The parity test needs that checkout too. Without it, the test skips & says so.
+The parity & features catalog tests need that checkout too. Without it, they skip & say so.
+If the checkout lacks a file a test reads, that test fails & says to update the checkout.
 
 Run `bunx --bun mint@4.2.1035 dev` when visual previewing is necessary.
 
