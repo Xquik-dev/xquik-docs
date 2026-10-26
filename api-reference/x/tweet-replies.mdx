@@ -186,9 +186,10 @@ Get replies by tweet ID for analysis, support, moderation, giveaways, and agents
 
 <Warning>
 
-Reply visibility depends on X. Complete mode returns `424
-  replies_incomplete` below 80% direct-reply coverage. A `sinceTime` or
-`untilTime` window read to its end returns 200. A post that shows none of
+Reply visibility depends on X. Complete mode answers 200 when
+`diagnostic.complete` is `true` or rows reach `limit`. Otherwise it answers
+`424 replies_incomplete`. A `sinceTime` or
+`untilTime` window covered to its end returns 200. A post that shows none of
 its counted replies returns 200 with `hiddenReplies`. Retry only while
 `diagnostic.sourcesEnded` is `false`.
 Never treat missing rows as proof that a user did not reply.
@@ -210,17 +211,14 @@ A post X does not have returns `404 tweet_not_found` & costs no credits.
 ### How complete is a tweet reply collection?
 
 Protected accounts' replies count toward coverage but aren't returned.
-X may omit deleted, hidden, or unavailable replies. `mode=complete` combines
-timelines, rankings, cursors, hidden branches, parent windows & search.
+X may omit deleted, hidden, or unavailable replies.
+`mode=complete` adds nested replies & a coverage diagnostic.
 Direct replies match `inReplyToId` to the source tweet.
 Trust `diagnostic.complete` for direct coverage only. On a `sinceTime` or
-`untilTime` request it means the whole window was read.
+`untilTime` request it means the whole window was covered.
 It does not prove that Xquik returned every nested reply.
 
-Complete mode follows queued live cursors even after meeting direct coverage.
-Child timelines find missing replies.
-Verified reply counts & drained cursors let collection skip broader searches.
-Requested limits, deadlines, and bounded collection budgets still apply.
+Requested limits & deadlines still apply.
 Check `strategiesAttempted` for early stops.
 
 ### How can a team analyze or moderate replies?
@@ -482,8 +480,8 @@ Sort by `relevance`, `latest`, `oldest`, or `likes`. Complete mode defaults to
 relevance. Automatic pages list the newest first unless you set `sort`. With
 `likes`, each page is sorted by likes. A later page can hold a reply with more
 likes. The order is final on the last page, where `has_next_page` is `false`.
-`latest` & `oldest` sort every row by date. If some rows come from X views
-without date order, the answer sets `orderPartial: true`.
+`latest` & `oldest` sort every row by date. `orderPartial: true` means replies
+may be missing between sorted rows. Retry later for a gap-free order.
 
 </ParamField>
 
@@ -501,7 +499,7 @@ In complete mode, include the source post and count it toward `limit`.
 
 <ParamField query="includeHidden" type="boolean">
 
-In complete mode, add the replies the post's author hid. Each has `hiddenByAuthor: true` and counts toward `limit` like any reply. They're read only when the post counts more replies than X shows, so a post without hidden replies costs nothing extra. A paged read answers 400. Get its hidden replies from [Get hidden replies](/api-reference/x/tweet-hidden-replies).
+In complete mode, add the replies the post's author hid. Each has `hiddenByAuthor: true` and counts toward `limit` like any reply. Xquik adds hidden replies only when the post has any. A post without them costs nothing extra. A paged request answers 400. Get its hidden replies from [Get hidden replies](/api-reference/x/tweet-hidden-replies).
 
 </ParamField>
 
@@ -608,7 +606,7 @@ Array of reply tweets.
 <ResponseField name="has_next_page" type="boolean">Whether more results are available.</ResponseField>
 <ResponseField name="next_cursor" type="string">Cursor for the next page.</ResponseField>
 <ResponseField name="nested_replies" type="object[]">Complete mode's nested replies. Exclude them from direct coverage.</ResponseField>
-<ResponseField name="orderPartial" type="boolean">Present with `latest` or `oldest` sort when some rows came from X views without date order. Rows stay sorted by date, but replies may be missing between them. Retry later for a gap-free order.</ResponseField>
+<ResponseField name="orderPartial" type="boolean">Present with `latest` or `oldest` sort when replies may be missing between sorted rows. Retry later for a gap-free order.</ResponseField>
 <ResponseField name="hiddenByAuthor" type="boolean">Present on a reply row when the post's author hid this reply. Complete mode adds such replies when `includeHidden=true`.</ResponseField>
 <ResponseField name="hiddenReplies" type="integer">Present on the last automatic page & on a complete-mode answer without rows. X counts this many more replies but shows them to nobody. They may be hidden, protected or deleted. A retry returns the same replies.</ResponseField>
 <ResponseField name="diagnostic" type="object">
@@ -652,7 +650,7 @@ Complete-mode coverage evidence. Omitted from standard responses.
 
     </ResponseField>
     <ResponseField name="responseTruncated" type="boolean">Whether the requested limit truncated safe results.</ResponseField>
-    <ResponseField name="sourcesEnded" type="boolean">Every source ended. A retry returns the same rows.</ResponseField>
+    <ResponseField name="sourcesEnded" type="boolean">`true` when the list is final. A retry returns the same rows.</ResponseField>
 
   </Expandable>
 </ResponseField>

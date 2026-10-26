@@ -194,50 +194,44 @@ Use `profile.unavailable.changed` when account availability affects a workflow.
 Keep previous and current profile values with the stored event.
 
 Account activity events cover deleted posts and lives the account posts.
-`tweet.deleted` fires once X confirms the account deleted a post the monitor saw.
+`tweet.deleted` fires when the account deletes a post the monitor saw.
 It usually arrives within a minute and holds the post as last seen.
 `broadcast.started` fires when the account posts its running live video.
-`space.started` fires when the account posts a Space it hosts and X reads it live.
+`space.started` fires when the account posts a live Space it hosts.
 A scheduled Space fires once it starts.
-A live the account does not post is not seen.
 
 Following events show whom the account follows and unfollows.
-Xquik reads the account's following list once a minute.
-With a profile event too, a change in the following count reads it at once.
+Follow events usually arrive within a minute.
 `following.added` holds the followed account's profile.
-`following.removed` fires once 2 reads in a row lack the account.
+`following.removed` fires when the account unfollows someone.
 For an account that follows more than 5,000, older unfollows take up to 2 hours.
 
 Follower events show who follows the account and who leaves its followers.
-Xquik reads the account's follower list once a minute.
+Follower events usually arrive within a minute.
 `follower.added` holds the new follower's profile.
-`follower.removed` fires once 2 reads in a row lack the account.
+`follower.removed` fires when a follower leaves.
 It also fires when X suspends or removes the follower's account.
 Lost followers are named for accounts with up to 100,000 followers.
 Above 5,000 followers, older losses take up to 2 hours.
 Above 100,000, losses are named among the newest 5,000 followers only.
 
-`following.added` and `follower.added` also hold `followedAt`, X's time of the follow.
-`followedAtExact` is true when X timed that follow itself.
-When several accounts join between 2 checks, X times the first, the second and the last.
-Each other one holds the earliest time its follow can have, with `followedAtExact` false.
-`followedAt` is missing when X gives no time.
+`following.added` and `follower.added` also hold `followedAt`, the time of the follow.
+Some follow times are exact. Others are the earliest time the follow can have.
+`followedAtExact` is true for an exact time and false for an earliest time.
+`followedAt` is missing when no follow time is known.
 The event's `occurredAt` stays the time Xquik saw the change.
 
 `following.removed` and `follower.removed` also hold `reason`, why the account left.
 `unavailable` means X no longer serves that account, as after a suspension or deletion.
 `unfollowed` means X confirms the follow ended.
-Before it sends a removal, Xquik asks X whether the follow still stands.
-If it does, Xquik sends nothing, so an account X leaves out for a while sends no event.
-`reason` is missing when X does not answer that check.
+A removal event never fires for a follow that still stands.
+`reason` is missing when the cause is unknown.
 
 Count events show when the account's follower or following count moves.
 `profile.followers.changed` and `profile.following.changed` hold `previous`, `current` and `change`.
-X shows counts that differ by a few between reads, so Xquik holds the lowest.
-A fall counts once 2 reads show it.
-A rise counts once no read for a minute showed less.
+Count events report only real changes.
 Each count sends at most 1 event a minute.
-They work on a protected account, since X still shows its counts.
+They work on protected accounts too.
 
 Choose only events that trigger an action.
 Extra event types create alerts that workers must still review.

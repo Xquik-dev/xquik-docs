@@ -413,17 +413,15 @@ cost.
 | Note tweet     | `account`, `text`, and `is_note_tweet: true`                 | Keep note tweet text at 25,000 characters or fewer.                    |
 | Community post | `account`, `text`, and `community_id`                        | Join the Community from that account first. Don't add a reply ID.      |
 
-Xquik checks a Community post 3 times so it doesn't go out to everyone. It
-picks the Community in X's composer and checks it again before Post. It lets
-only a post request that names the Community reach X, then reads the post. A
-post X puts outside the Community is deleted, and the write fails uncharged.
+A Community post lands in its Community, or the write fails and costs nothing.
+The error code says whether the post is still public.
 
-| Error                        | What happened                                                |
-| ---------------------------- | ------------------------------------------------------------ |
-| `x_community_not_joined`     | The account isn't in the Community. Join it on x.com.        |
-| `x_community_not_selectable` | X's composer couldn't pick the Community. Check it on x.com. |
-| `x_community_post_removed`   | X put the post outside the Community, and Xquik deleted it.  |
-| `x_community_post_public`    | X put the post outside the Community. Delete it on x.com.    |
+| Error                        | What happened                                               |
+| ---------------------------- | ----------------------------------------------------------- |
+| `x_community_not_joined`     | The account isn't in the Community. Join it on x.com.       |
+| `x_community_not_selectable` | X couldn't post to the Community. Check it on x.com.        |
+| `x_community_post_removed`   | X put the post outside the Community, and Xquik deleted it. |
+| `x_community_post_public`    | X put the post outside the Community. Delete it on x.com.   |
 
 Create one `Idempotency-Key` for each posting request.
 Reuse that key only when replaying the same network request. A new
@@ -439,10 +437,8 @@ For `x_reply_not_allowed`, choose a post that account can reply to.
 For `x_reply_target_unavailable`, X says the post is deleted or hidden from your
 account. Check the post on x.com or reply to another post.
 Xquik returns `x_reply_not_allowed` or `x_reply_target_unavailable` when X
-refuses a reply. Xquik then answers that account's replies to the post with the
-same error, without asking X. The hold lasts 1 hour, 4 hours after X refuses the
-reply again & 24 hours after each later refusal. `Retry-After` says when to try
-again.
+refuses a reply. That account's later replies to the post get the same error for a while.
+`Retry-After` says when to try again.
 All 3 return HTTP 422 & charge nothing. Do not retry the unchanged request.
 See [write error recovery](/guides/error-handling).
 

@@ -31,8 +31,8 @@ Search tweets, API keys, signed webhooks, user profiles, REST, MCP, authenticati
 - Profiles carry `redirectsToUsername`, the handle x.com redirects the profile to, such as a renamed account's new one
 - `GET /x/news/{id}/versions` returns every version X wrote of a news story from Explore, oldest first
 - Each version has its time, headline & text. It costs 1 credit per request, & a story X does not know is free. MCP adds it as `getXNewsStoryVersions`, and guest keys can call it
-- `GET /x/spaces/search` takes `queryType=Live` & `queryType=Upcoming`, which list Spaces on air now or scheduled from X's own Spaces search
-- Each row is the full Space `GET /x/spaces/{id}` returns, for 1 credit. They find live Spaces that no post shares yet
+- `GET /x/spaces/search` takes `queryType=Live` & `queryType=Upcoming`, which list Spaces on air now or scheduled. Both match words in Space titles
+- Each row is the full Space `GET /x/spaces/{id}` returns, for 1 credit
 - `GET /x/community-notes/contributors/{alias}` answers a Community Notes contributor's note counts by rating & rating counts
 - Its `/notes` route lists every note they wrote with its post, also the ones x.com hides. Its `/deleted-notes` route lists the notes they deleted
 - The lookup costs 1 credit & each note costs 1 credit. An unknown alias is free. MCP adds them as `getCommunityNotesContributor`, `listCommunityNotesContributorNotes` & `listCommunityNotesContributorDeletedNotes`, and guest keys can call them
@@ -123,7 +123,7 @@ Search tweets, API keys, signed webhooks, user profiles, REST, MCP, authenticati
 - MCP adds it as `getTweetSubtitles`, and guest keys can call it
 - `GET /x/users/{id}/similar` lists the accounts X shows as similar to a profile, in X's order
 - It costs 1 credit per account. MCP adds it as `getSimilarUsers`, and guest keys can call it
-- X can list slightly different accounts on each call. Xquik now returns a fuller, steadier list
+- Results can differ between calls. Xquik now returns a fuller, steadier list
 - `GET /x/users/{id}/articles` lists the X Articles a profile published, newest first
 - Each row is the Article's post with its title, preview & cover. It costs 1 credit per post
 - MCP adds it as `getUserArticles`, and guest keys can call it
@@ -147,7 +147,7 @@ Search tweets, API keys, signed webhooks, user profiles, REST, MCP, authenticati
 - Each List costs 1 credit. MCP adds them as `getUserLists` & `getUserListMemberships`
 - `GET /x/spaces/search` finds public Spaces by keyword, host or topic, at 1 credit per Space
 - It returns live, scheduled & ended Spaces, each once per page. MCP adds it as `searchSpaces`
-- Space search takes `pageSize`, the posts a page reads. It runs from 1 to 100 and defaults to 20
+- Space search takes `pageSize`, the most Spaces a page returns. It runs from 1 to 100 and defaults to 20
 - `GET /x/spaces/{id}` returns 1 Space with its state, times, listener counts, hosts & speakers
 - It takes a Space ID or URL & costs 1 credit per call. MCP adds it as `getSpace`
 - `GET /x/spaces/{id}/replay` returns an ended Space's recording as an HLS playback URL
@@ -179,8 +179,7 @@ Search tweets, API keys, signed webhooks, user profiles, REST, MCP, authenticati
 **Changed**
 
 - A reply X refuses because the post is deleted or hidden from your account returns `422 x_reply_target_unavailable` instead of `x_target_not_found`
-- Xquik charges nothing & answers that account's replies to the post with the same error, with `Retry-After`. The hold lasts 1 hour, 4 hours after X refuses the reply again & 24 hours after each later refusal
-- A country in `near`, such as `United States`, now searches like `placeCountry` & returns Tweets tagged there. X matches a city by what Tweets say about it
+- Xquik charges nothing. That account's later replies to the post get the same error. `Retry-After` says when to try again
 - An MCP answer over 24,000 characters returns its first page instead of a `response_too_large` error. It carries `characters`, `next_offset`, `next` & `text`, plus `result_id` when the answer is saved
 - An MCP answer too large to keep returns its size, its saved reads & the next step, also without an error
 - Connecting, re-authenticating, retrying & disconnecting X accounts now needs a signed-in dashboard session. API keys & OAuth tokens get `403 session_required`, so a leaked key never reaches X passwords
@@ -198,9 +197,9 @@ Search tweets, API keys, signed webhooks, user profiles, REST, MCP, authenticati
 - `mode=complete` on `GET /x/tweets/{id}/replies` answers 200 when X shows none of a post's counted replies
 - The answer names them in `hiddenReplies` instead of `424 replies_incomplete`, & it costs nothing
 - Active monitors cost 30 credits per hour, up from 21. Creating one needs 30 available credits & charges no lookup credit
-- Top tweet search skips posts X shows above a ranked reply when they can't match your query
-- Those posts count in `filtered_count` & cost nothing. Top pages return about 4% to 7% fewer rows
-- `GET /x/tweets/{id}/replies` keeps a list open when a page runs out of time. That page can be empty & still report more
+- Top tweet search skips posts that can't match your query
+- Skipped posts count in `filtered_count` & cost nothing
+- `GET /x/tweets/{id}/replies` pages can be empty & still report more
 - Such a list used to end there, without the replies its next pages hold. Follow `next_cursor` while `has_next_page` is `true`
 - Tweet search extractions answer 424 `search_unavailable` for a filter X search dropped. They charge nothing
 - The filters are `source`, `geocode`, `within` & `news: true`
@@ -213,7 +212,7 @@ Search tweets, API keys, signed webhooks, user profiles, REST, MCP, authenticati
 - `descriptionMarkdown` on `GET /x/jobs/{id}` numbers ordered lists 1, 2, 3 and keeps line breaks
 - It escapes characters that would read as Markdown or HTML, such as `[`, `*` & `<`
 - `GET /x/communities/{id}/tweets` opens its first page with the pinned post, flagged `isPinned`
-- `GET /x/communities/suggested` asks up to 2 more times when X suggests none. An empty list stays free
+- An empty `GET /x/communities/suggested` answer means X suggests none right now. It stays free
 - `GET /x/trends` takes a `country` or a `location` name, such as `location=Istanbul`
 - The response returns the place it read as `location`. `woeid` still wins
 
@@ -248,23 +247,16 @@ Search tweets, API keys, signed webhooks, user profiles, REST, MCP, authenticati
 - X's `&amp;`, `&lt;` & `&gt;` arrive as `&`, `<` & `>`
 - `displayTextRange` & entity `indices` count the decoded text
 
-- A repost row now shows its original post's counts, as x.com does
+- A repost row now shows its original post's counts
 - That covers likes, replies, reposts, quotes, bookmarks & views
-- X's own repost counts were 0, apart from reposts & a smaller view count
 
 - Tweet search reads `since:`, `until:`, `sinceDate` & `untilDate` as UTC days
 - x.com uses your time zone, so its day edges can differ
 - `untilDate` is inclusive, so `untilDate=2026-03-01` returns that day's posts too
-- Followers come newest first. x.com puts some promoted followers first
+- Followers come newest first
 
-- A reply read with `sinceTime` & `scope=direct` stops X's newest-first view once it is past your window
-- `diagnostic.strategiesAttempted[].stopReason` says `window_passed` for that view
-- Once that view & both window searches end, other views stop with `window_covered`
-- Such a read ends sooner, with `sourcesEnded: true`
-
-- Tweet search drops `include:replies`, which X refuses. Search shows replies anyway
-- It reads `include:retweets` as `include:nativeretweets`
-- `searchedQuery` then shows the query X searched
+- A reply request with `sinceTime` & `scope=direct` ends once it covers your window
+- Such a request ends sooner
 
 - A write retried with the same `Idempotency-Key` returns the first answer again
 - It keeps the first status, body & `Retry-After`, with `idempotent: true` added
@@ -280,7 +272,7 @@ Search tweets, API keys, signed webhooks, user profiles, REST, MCP, authenticati
 - The other person keeps it. It costs 10 credits, only when X deletes it
 - MCP adds it as `deleteDm`, and the SDKs as `dm.delete_message`
 
-- Profiles add `accountBasedInUnavailable: true` when X withholds `accountBasedIn` from a read
+- Profiles add `accountBasedInUnavailable: true` when `accountBasedIn` is not available yet
 - Those profiles omit `accountBasedIn`. Treat the label as unknown & retry later
 - `accountBasedIn: null` still means X shows no label
 
@@ -290,8 +282,6 @@ Search tweets, API keys, signed webhooks, user profiles, REST, MCP, authenticati
 - Oversized answers up to the 2 MiB MCP response limit now save, up from 256 KB
 - An oversized answer's `retry` names only tools your MCP catalog lists
 
-- Tweet search drops an unmatched quote, which X refuses, & returns rows
-- `searchedQuery` then shows the query X searched
 - A search X refuses returns `424 search_unavailable`, never an empty page
 
 - User Tweets, user replies, quotes & List Tweets list `keywords`, `place`, `placeCountry`, `pointRadius`, `boundingBox` & `advancedQuery`
@@ -300,7 +290,7 @@ Search tweets, API keys, signed webhooks, user profiles, REST, MCP, authenticati
 - `max_results` sets the page size wherever `limit` & `count` do
 - `maxItems`, `max_items` & `per_page` set it too
 - Tweet search `queryType` takes any case & the aliases `type`, `search_type`, `product`, `category` & `section`
-- `Photos`, `Videos` & `Media` search `Latest` with that media type. `People` & `Lists` answer 400 with the route to use
+- `Photos`, `Videos` & `Media` return posts with that media type. `People` & `Lists` answer 400 with the route to use
 
 - Direct replies stop listing 8 search filters they never applied
 - Those are `cardName`, `source`, `excludeSource`, `geocode`, `near`, `within`, `safe` & `news`
@@ -357,7 +347,7 @@ Search tweets, API keys, signed webhooks, user profiles, REST, MCP, authenticati
 
 - Replies, quotes, retweeters & thread of a post X does not have return `404 tweet_not_found`
 - They used to return 200 with an empty page. `GET /x/tweets/{id}` already returned this 404
-- Only an empty first page checks the post. A post without engagement still returns 200
+- An empty first page tells you whether the post exists. A post without engagement still returns 200
 - A 404 costs no credits
 
 - Each account now gets 500 reads a second, up from 300
@@ -373,26 +363,24 @@ Search tweets, API keys, signed webhooks, user profiles, REST, MCP, authenticati
 - These refusals cost nothing
 - `429 x_rate_limited` now covers only X's rate limits. Wait for `Retry-After` when present
 
-- `GET /x/tweets/{id}/replies` with `sort=latest` or `sort=oldest` sets `orderPartial: true` when some rows come from X views without date order
+- `GET /x/tweets/{id}/replies` with `sort=latest` or `sort=oldest` can set `orderPartial: true`
 - Rows stay sorted by date & keep the same status. Replies may be missing between them
 - Nothing marked such answers before. Retry later for a gap-free order
-- When X's Recent view ends early or comes back signed out, Xquik reads the rest from X search's Latest results
 
 - `GET /x/tweets/{id}/replies` applies `sort` on automatic pages too
 - Those pages used to list the newest replies first, whatever the `sort`
 - Without `sort`, automatic pages still list the newest first. Standard pages ignore `sort`
 
-- `POST /draws` reads every direct reply & retweeter X shows
-- It used to read X's first page of replies & at most 2,000 retweeters
+- `POST /draws` enters every direct reply & retweeter X shows
+- Draws used to include fewer entries
 - Entries are direct replies to the post. Replies to other replies no longer enter
 - A draw on a busy post takes about 1 minute. Keep the request open for 100 seconds
-- `GET /x/tweets/{id}/retweeters` no longer ends the list early when X refuses a page
-- Xquik reads that page again
+- `GET /x/tweets/{id}/retweeters` returns more complete lists
 
-- `POST /draws` returns `424` when X stops the reply or repost read early
-- It used to draw from the entries read so far
+- `POST /draws` returns `424` when it can't collect every entry
+- It used to draw from the entries collected so far
 - Retry after `replies_incomplete` or `retweeters_incomplete`
-- `draw_too_large` means the post has more entries than 1 draw reads. Contact support
+- `draw_too_large` means the post has more entries than 1 draw can hold. Contact support
 - Xquik saves & charges nothing for these draws
 
 - Bookmark folder reads on accounts without X Premium return `424 bookmark_folders_unavailable`
@@ -412,15 +400,12 @@ Search tweets, API keys, signed webhooks, user profiles, REST, MCP, authenticati
 - Extractions of these rows take `enrichProfiles` & add the profile at `enrichmentData.profile`
 - The price per row stays the same
 
-- Complete-mode replies return 200 after reading a whole `sinceTime` or `untilTime` window
+- Complete-mode replies return 200 after covering a whole `sinceTime` or `untilTime` window
 - Replies outside the window no longer turn that answer into `424 replies_incomplete`
 - Complete-mode replies add `diagnostic.sourcesEnded`
-- `true` means every source ended. X hides the other replies
+- `true` means the list is final. X hides the other replies
 - A `424 replies_incomplete` with `sourcesEnded: true` returns the same rows on retry
 - Its message says X hides the other replies instead of asking for a retry
-- Complete-mode replies find replies from new & small accounts more reliably
-- `diagnostic.strategiesAttempted[].stopReason` adds `partial_view` for a view that showed only part of a thread
-- Such a view keeps `sourcesEnded` false until the read holds every reply the post counts
 - `withinTime` now filters user Tweets, replies, media, likes & mentions
 - It also filters Tweet replies & quotes
 - Posts outside the window no longer come back or cost credits
@@ -466,7 +451,7 @@ Search tweets, API keys, signed webhooks, user profiles, REST, MCP, authenticati
 - Reply reads return more replies within your requested limit
 - Reply Scraper 1.2.64 recovers replies after a stall & keeps collected rows
 
-- Dated author searches with `include:nativeretweets` or `-filter:nativeretweets` return more complete results
+- Dated author searches return more complete results
 
 - Searches requiring protected authors return an access error before collecting results
 
