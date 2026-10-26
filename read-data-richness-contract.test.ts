@@ -347,9 +347,7 @@ describe("read data richness documentation", (): void => {
     expect(MCP_TOOLS).toContain("/guides/tweet-profile-api-fields");
     expect(GUIDE).toContain("Xquik omits unavailable optional fields");
     expect(GUIDE).toContain("coverage depends on X");
-    expect(GUIDE).toContain(
-      "Xquik removes account-specific actions, permissions, and relationships",
-    );
+    expect(GUIDE).toContain("Rows hold public data only.");
     expect(DOCS_CONFIG).toContain('"guides/tweet-profile-api-fields"');
     expect(LLMS_INDEX).toContain("https://docs.xquik.com/guides/tweet-profile-api-fields");
   });
@@ -379,11 +377,7 @@ describe("read data richness documentation", (): void => {
   it("distinguishes direct coverage from nested reply exhaustion", (): void => {
     expect.assertions(3);
     expect(TWEET_REPLIES).toContain("It does not prove that Xquik returned every nested reply.");
-    expect(TWEET_REPLIES).toContain(
-      "follows queued live cursors even after meeting direct coverage",
-    );
-    expect(TWEET_REPLIES).toContain(
-      "Requested limits, deadlines, and bounded collection budgets still apply.",
-    );
+    expect(TWEET_REPLIES).toContain("the fullest reply list.");
+    expect(TWEET_REPLIES).toContain("Requested limits & deadlines still apply.");
   });
 });

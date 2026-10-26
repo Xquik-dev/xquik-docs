@@ -33,7 +33,7 @@ describe("automatic maximum coverage contract", (): void => {
     const replies = readFileSync("api-reference/x/tweet-replies.mdx", "utf8");
     const followers = readFileSync("api-reference/x/followers.mdx", "utf8");
 
-    expect(source).toContain("Omit `mode` for automatic maximum coverage.");
+    expect(source).toContain("Omit `mode` to get the fullest results.");
     expect(source).toContain("Pass `next_cursor` back unchanged as `cursor`.");
     expect(source).toContain("Billing still counts only returned rows.");
     expect(source).toContain("Use `mode=standard` only");

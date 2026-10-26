@@ -50,7 +50,11 @@ const PAGELESS_OPERATIONS = [
   "GET /credits/topup/redirect",
   "POST /ask",
 ];
-const PAGES_WITHOUT_OPERATION = ["api-reference/authentication.mdx", "api-reference/overview.mdx"];
+const PAGES_WITHOUT_OPERATION = [
+  "api-reference/authentication.mdx",
+  "api-reference/features.mdx",
+  "api-reference/overview.mdx",
+];
 interface ApiDoc {
   readonly file: string;
   readonly method: string;
