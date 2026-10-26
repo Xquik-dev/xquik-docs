@@ -3,7 +3,7 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 import {
-  operations as pathOperations,
+  operations,
   parseOpenApi,
   type OpenApiDocument,
   type OpenApiOperation,
@@ -45,13 +45,13 @@ function hasOptionalCredential(operation: OpenApiOperation): boolean {
 }
 
 function collectOperations(spec: OpenApiDocument): readonly OperationMetadata[] {
-  const operations: OperationMetadata[] = [];
+  const collected: OperationMetadata[] = [];
   for (const [path, pathItem] of Object.entries(spec.paths ?? {})) {
-    for (const [method, operation] of pathOperations(pathItem)) {
+    for (const [method, operation] of operations(pathItem)) {
       if (!HTTP_METHODS.has(method)) {
         continue;
       }
-      operations.push({
+      collected.push({
         optionalCredential: hasOptionalCredential(operation),
         key: normalizeOperationKey(method, path),
         paymentIntents:
@@ -64,7 +64,7 @@ function collectOperations(spec: OpenApiDocument): readonly OperationMetadata[] 
       });
     }
   }
-  return operations.sort((left, right): number => left.key.localeCompare(right.key));
+  return collected.sort((left, right): number => left.key.localeCompare(right.key));
 }
 
 describe("MPP payment metadata", (): void => {

@@ -6,7 +6,7 @@ import { afterAll, describe, expect, it } from "vitest";
 import { z } from "zod";
 
 const ANY_VALUE = "xquik/no-any-returning-value";
-const ZOD_TYPE = "xquik/no-zod-type-annotation";
+const SCHEMA_TYPE = "xquik/no-schema-type-annotation";
 const BOX = 'import { z } from "zod";\ntype Box = { n: number };\n';
 const BOX_SCHEMA = "z.looseObject({ n: z.number() });\n";
 
@@ -163,17 +163,22 @@ const CASES: readonly { readonly file: string; readonly code: string; readonly r
   {
     file: "imported-zod-type.ts",
     code: `import { type ZodType } from "zod";\n${BOX}export const s: ZodType<Box> = ${BOX_SCHEMA}`,
-    rule: ZOD_TYPE,
+    rule: SCHEMA_TYPE,
   },
   {
     file: "namespace-zod-type.ts",
     code: `import * as zod from "zod";\n${BOX}export const s: zod.ZodType<Box> = ${BOX_SCHEMA}`,
-    rule: ZOD_TYPE,
+    rule: SCHEMA_TYPE,
   },
   {
     file: "zod-schema.ts",
     code: `${BOX}export const s: z.ZodSchema<Box> = ${BOX_SCHEMA}`,
-    rule: ZOD_TYPE,
+    rule: SCHEMA_TYPE,
+  },
+  {
+    file: "zod-v3-type.ts",
+    code: 'import { z as v3 } from "zod/v3";\ntype Box = { n: number };\nexport const s: v3.ZodType<Box> = v3.object({ n: v3.number() });\n',
+    rule: SCHEMA_TYPE,
   },
 ];
 
@@ -186,6 +191,10 @@ export const keys = Object.keys({ a: 1 });
 export const value: unknown = JSON.parse("1");
 export const result: unknown = runInNewContext("1");
 export const pair = [1, "a"] as const;
+export const abs = Math.abs;
+const { keys: names } = Object;
+export const named = names({ a: 1 });
+export const isObject = (v: unknown): boolean => v instanceof Object || typeof Array === "function";
 `;
 
 const folder = mkdtempSync(join(tmpdir(), "eslint-bans-"));

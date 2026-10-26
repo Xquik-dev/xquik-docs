@@ -4,6 +4,28 @@ import type ts from "typescript";
 
 const rule = ESLintUtils.RuleCreator.withoutDocs;
 
+const readInPlace = (node: TSESTree.Node, parent: TSESTree.Node): boolean => {
+  switch (parent.type) {
+    case AST_NODE_TYPES.CallExpression:
+    case AST_NODE_TYPES.NewExpression:
+      return parent.callee === node;
+    case AST_NODE_TYPES.TaggedTemplateExpression:
+      return parent.tag === node;
+    case AST_NODE_TYPES.MemberExpression:
+      return parent.object === node;
+    case AST_NODE_TYPES.BinaryExpression:
+      return parent.operator === "instanceof" && parent.right === node;
+    case AST_NODE_TYPES.UnaryExpression:
+      return parent.operator === "typeof";
+    case AST_NODE_TYPES.VariableDeclarator:
+      return parent.init === node && parent.id.type === AST_NODE_TYPES.ObjectPattern;
+    case AST_NODE_TYPES.AssignmentExpression:
+      return parent.right === node && parent.left.type === AST_NODE_TYPES.ObjectPattern;
+    default:
+      return false;
+  }
+};
+
 const noAnyReturningValue = rule({
   meta: {
     type: "problem",
@@ -28,16 +50,7 @@ const noAnyReturningValue = rule({
           ),
       );
     const check = (node: TSESTree.Node): void => {
-      const { parent } = node;
-      if (parent === undefined) return;
-      if (
-        (parent.type === AST_NODE_TYPES.CallExpression ||
-          parent.type === AST_NODE_TYPES.NewExpression) &&
-        parent.callee === node
-      )
-        return;
-      if (parent.type === AST_NODE_TYPES.TaggedTemplateExpression && parent.tag === node) return;
-      if (parent.type === AST_NODE_TYPES.MemberExpression && parent.object === node) return;
+      if (node.parent === undefined || readInPlace(node, node.parent)) return;
       const tsNode = services.esTreeNodeToTSNodeMap.get(node);
       if (returnsAny(checker.getTypeAtLocation(tsNode), tsNode))
         context.report({ node, messageId: "value" });
@@ -54,7 +67,7 @@ const noAnyReturningValue = rule({
   },
 });
 
-const noZodTypeAnnotation = rule({
+const noSchemaTypeAnnotation = rule({
   meta: {
     type: "problem",
     messages: {
@@ -68,7 +81,7 @@ const noZodTypeAnnotation = rule({
     const services = ESLintUtils.getParserServices(context);
     return {
       TSTypeReference(node): void {
-        if (services.getTypeAtLocation(node).getProperty("_zod") !== undefined)
+        if (services.getTypeAtLocation(node).getProperty("~standard") !== undefined)
           context.report({ node, messageId: "annotation" });
       },
     };
@@ -79,7 +92,7 @@ const plugin = {
   meta: { name: "xquik" },
   rules: {
     "no-any-returning-value": noAnyReturningValue,
-    "no-zod-type-annotation": noZodTypeAnnotation,
+    "no-schema-type-annotation": noSchemaTypeAnnotation,
   },
 };
 

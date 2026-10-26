@@ -56,7 +56,7 @@ export default defineConfig(
         },
       ],
       "xquik/no-any-returning-value": "error",
-      "xquik/no-zod-type-annotation": "error",
+      "xquik/no-schema-type-annotation": "error",
       "no-warning-comments": [
         "error",
         {
