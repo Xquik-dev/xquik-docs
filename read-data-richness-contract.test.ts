@@ -1,39 +1,59 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { z } from "zod";
 
 interface OpenApiSchema {
-  readonly $ref?: string;
-  readonly additionalProperties?: boolean | OpenApiSchema;
-  readonly allOf?: readonly OpenApiSchema[];
-  readonly maximum?: number;
-  readonly properties?: Readonly<Record<string, unknown>>;
-  readonly required?: readonly string[];
+  readonly $ref?: string | undefined;
+  readonly additionalProperties?: boolean | OpenApiSchema | undefined;
+  readonly allOf?: readonly OpenApiSchema[] | undefined;
+  readonly maximum?: number | undefined;
+  readonly properties?: Readonly<Record<string, unknown>> | undefined;
+  readonly required?: readonly string[] | undefined;
 }
 
-interface OpenApiParameter {
-  readonly $ref?: string;
-  readonly name?: string;
-  readonly schema?: OpenApiSchema;
-}
+const openApiSchema: z.ZodType<OpenApiSchema> = z.lazy(() =>
+  z.looseObject({
+    $ref: z.string().optional(),
+    additionalProperties: z.union([z.boolean(), openApiSchema]).optional(),
+    allOf: z.array(openApiSchema).optional(),
+    maximum: z.number().optional(),
+    properties: z.record(z.string(), z.unknown()).optional(),
+    required: z.array(z.string()).optional(),
+  }),
+);
 
-interface OpenApiDocument {
-  readonly components?: Readonly<{
-    readonly parameters?: Readonly<Record<string, OpenApiParameter>>;
-    readonly schemas?: Readonly<Record<string, OpenApiSchema>>;
-  }>;
-  readonly paths?: Readonly<
-    Record<
-      string,
-      Readonly<{
-        readonly get?: Readonly<{
-          readonly description?: string;
-          readonly parameters?: readonly OpenApiParameter[];
-        }>;
-      }>
-    >
-  >;
-}
+const openApiParameter = z.looseObject({
+  $ref: z.string().optional(),
+  name: z.string().optional(),
+  schema: openApiSchema.optional(),
+});
+
+type OpenApiParameter = z.infer<typeof openApiParameter>;
+
+const openApiDocument = z.looseObject({
+  components: z
+    .looseObject({
+      parameters: z.record(z.string(), openApiParameter).optional(),
+      schemas: z.record(z.string(), openApiSchema).optional(),
+    })
+    .optional(),
+  paths: z
+    .record(
+      z.string(),
+      z.looseObject({
+        get: z
+          .looseObject({
+            description: z.string().optional(),
+            parameters: z.array(openApiParameter).optional(),
+          })
+          .optional(),
+      }),
+    )
+    .optional(),
+});
+
+type OpenApiDocument = z.infer<typeof openApiDocument>;
 
 const PROJECT_ROOT = process.cwd();
 const GUIDE = readFileSync(join(PROJECT_ROOT, "guides/tweet-profile-api-fields.mdx"), "utf8");
@@ -247,7 +267,7 @@ const NESTED_TWEET_REQUIRED_FIELDS = [
   "bookmarkCount",
 ] as const;
 
-const PARSED_OPENAPI = Bun.YAML.parse(OPENAPI) as OpenApiDocument;
+const PARSED_OPENAPI = openApiDocument.parse(Bun.YAML.parse(OPENAPI));
 
 interface SchemaFieldSets {
   readonly closed: boolean;

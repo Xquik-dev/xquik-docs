@@ -1,14 +1,15 @@
 import { readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
+import { z } from "zod";
 
-interface OpenApiCursorContract {
-  readonly components: {
-    readonly parameters: {
-      readonly After: { readonly name: string };
-    };
-  };
-}
+const openApiCursorContract = z.looseObject({
+  components: z.looseObject({
+    parameters: z.looseObject({
+      After: z.looseObject({ name: z.string() }),
+    }),
+  }),
+});
 
 const PLATFORM_AFTER_URL =
   /\/api\/v1\/(?:draws|events|extractions)(?:\/[^?\s"'`]*)?\?[^\s"'`]*\bafter=/u;
@@ -31,7 +32,7 @@ describe("platform cursor contract", (): void => {
     const staleSdkParameters = files
       .filter((file) => file.startsWith("sdks/"))
       .filter((file) => SDK_AFTER_PARAMETER.test(readFileSync(file, "utf8")));
-    const openApi = Bun.YAML.parse(readFileSync("openapi.yaml", "utf8")) as OpenApiCursorContract;
+    const openApi = openApiCursorContract.parse(Bun.YAML.parse(readFileSync("openapi.yaml", "utf8")));
 
     expect(stalePlatformUrls).toStrictEqual([]);
     expect(staleSdkParameters).toStrictEqual([]);

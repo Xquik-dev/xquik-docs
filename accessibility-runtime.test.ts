@@ -1,16 +1,19 @@
 import { readdirSync, readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
+import { z } from "zod";
 
 describe("Mintlify accessibility overrides", (): void => {
   it("uses copyable API examples without the interactive playground", (): void => {
     expect.assertions(1);
 
-    const docsConfig = JSON.parse(readFileSync("docs.json", "utf8")) as {
-      readonly api?: {
-        readonly playground?: { readonly display?: string };
-      };
-    };
+    const docsConfig = z
+      .looseObject({
+        api: z
+          .looseObject({ playground: z.looseObject({ display: z.string().optional() }).optional() })
+          .optional(),
+      })
+      .parse(JSON.parse(readFileSync("docs.json", "utf8")));
 
     expect(docsConfig.api?.playground?.display).toBe("simple");
   });

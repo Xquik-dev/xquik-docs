@@ -1,29 +1,31 @@
 import { readFileSync, readdirSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
+import { z } from "zod";
 
-interface FooterLink {
-  readonly href: string;
-  readonly label: string;
-}
 
-interface DocsConfig {
-  readonly footer?: {
-    readonly links?: readonly {
-      readonly header: string;
-      readonly items: readonly FooterLink[];
-    }[];
-  };
-  readonly redirects?: readonly {
-    readonly destination: string;
-    readonly source: string;
-  }[];
-}
+const docsConfigSchema = z.looseObject({
+  footer: z
+    .looseObject({
+      links: z
+        .array(
+          z.looseObject({
+            header: z.string(),
+            items: z.array(z.looseObject({ href: z.string(), label: z.string() })),
+          }),
+        )
+        .optional(),
+    })
+    .optional(),
+  redirects: z.array(z.looseObject({ destination: z.string(), source: z.string() })).optional(),
+});
+
+type DocsConfig = z.infer<typeof docsConfigSchema>;
 
 const OWNERSHIP_TOKEN = "uda1iefj0dc1wig4yb4c3afl2m35st1ox7rufm0q4ljla00rmzazwhuyjvlgnzp2";
 
 function docsConfig(): DocsConfig {
-  return JSON.parse(readFileSync("docs.json", "utf8")) as DocsConfig;
+  return docsConfigSchema.parse(JSON.parse(readFileSync("docs.json", "utf8")));
 }
 
 describe("public security guidance", (): void => {

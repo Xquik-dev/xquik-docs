@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { z } from "zod";
 
 import {
   GENERATED_RESPONSE_EXAMPLES_END,
@@ -8,25 +9,36 @@ import {
   stripGeneratedResponseExamples,
 } from "./scripts/lib/generated-response-examples";
 
-interface OpenApiOperation {
-  readonly responses?: Readonly<Record<string, unknown>>;
-  readonly "x-write-action"?: string;
-}
+const openApiOperation = z.looseObject({
+  responses: z.record(z.string(), z.unknown()).optional(),
+  "x-write-action": z.string().optional(),
+});
 
-interface OpenApiSpec {
-  readonly paths?: Readonly<Record<string, Readonly<Record<string, OpenApiOperation>>>>;
+type OpenApiOperation = z.infer<typeof openApiOperation>;
+
+const openApiSpec = z.looseObject({
+  paths: z.record(z.string(), z.record(z.string(), z.unknown())).optional(),
+});
+
+type OpenApiSpec = z.infer<typeof openApiSpec>;
+
+function operationAt(spec: OpenApiSpec, path: string, method: string): OpenApiOperation | undefined {
+  const operation = spec.paths?.[path]?.[method];
+  return operation === undefined ? undefined : openApiOperation.parse(operation);
 }
 
 const PROJECT_ROOT = process.cwd();
-const spec = Bun.YAML.parse(
-  readFileSync(join(PROJECT_ROOT, "openapi.yaml"), "utf8"),
-) as OpenApiSpec;
-const WRITE_OPERATION_COUNT = Object.values(spec.paths ?? {})
+const spec = openApiSpec.parse(
+  Bun.YAML.parse(readFileSync(join(PROJECT_ROOT, "openapi.yaml"), "utf8")),
+);
+const OPERATIONS = Object.values(spec.paths ?? {})
   .flatMap((methods) => Object.values(methods))
-  .filter((operation) => operation["x-write-action"] !== undefined).length;
-const NO_CONTENT_OPERATION_COUNT = Object.values(spec.paths ?? {})
-  .flatMap((methods) => Object.values(methods))
-  .filter((operation) => operation.responses?.["204"] !== undefined).length;
+  .flatMap((value) => {
+    const parsed = openApiOperation.safeParse(value);
+    return parsed.success ? [parsed.data] : [];
+  });
+const WRITE_OPERATION_COUNT = OPERATIONS.filter((operation) => operation["x-write-action"] !== undefined).length;
+const NO_CONTENT_OPERATION_COUNT = OPERATIONS.filter((operation) => operation.responses?.["204"] !== undefined).length;
 const WRITE_ACTION_LIFECYCLE_SNIPPET_PATH = join(
   PROJECT_ROOT,
   "snippets/write-action-lifecycle-response.mdx",
@@ -141,7 +153,7 @@ function generatedJsonResponse(
   ];
   return json === undefined
     ? undefined
-    : (JSON.parse(json.replace(/^    /gmu, "")) as Readonly<Record<string, unknown>>);
+    : z.record(z.string(), z.unknown()).parse(JSON.parse(json.replace(/^    /gmu, "")));
 }
 
 function responseStatuses(operation: OpenApiOperation): readonly string[] {
@@ -165,7 +177,7 @@ function collectStatusFindings({
 
   for (const apiDoc of readApiDocs()) {
     const operationLabel = `${apiDoc.method.toUpperCase()} ${apiDoc.path}`;
-    const operation = spec.paths?.[apiDoc.path]?.[apiDoc.method];
+    const operation = operationAt(spec, apiDoc.path, apiDoc.method);
     if (operation === undefined) {
       findings.push({
         file: apiDoc.file,
@@ -308,7 +320,7 @@ describe("API success response status documentation", (): void => {
     expect.assertions(2);
 
     const writeDocs = readApiDocs().flatMap((apiDoc) => {
-      const action = spec.paths?.[apiDoc.path]?.[apiDoc.method]?.["x-write-action"];
+      const action = operationAt(spec, apiDoc.path, apiDoc.method)?.["x-write-action"];
       return action === undefined ? [] : [{ action, apiDoc }];
     });
     const findings = writeDocs.flatMap(({ action, apiDoc }) =>

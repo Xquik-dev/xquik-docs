@@ -23,7 +23,10 @@ describe("MCP 2026-07-28 documentation contract", (): void => {
     const responseExample = [...TOOLS.matchAll(/```javascript\n([\s\S]*?)\n```/gu)][1]?.[1];
     const properties = { tweets: { type: "array" } };
     const spec = { components: { schemas: { PaginatedTweets: { properties } } } };
-    expect(await runInNewContext(responseExample ?? "", { spec })()).toEqual(properties);
+    const responseRun: unknown = runInNewContext(responseExample ?? "", { spec });
+    const responseResult: unknown =
+      typeof responseRun === "function" ? await Reflect.apply(responseRun, undefined, []) : undefined;
+    expect(responseResult).toEqual(properties);
     const path = "/api/v1/x/tweets/search";
     const operation = {
       operationId: "searchTweets",
@@ -31,9 +34,11 @@ describe("MCP 2026-07-28 documentation contract", (): void => {
       parameters: [{ name: "q", in: "query", required: true }],
       responses: { description: "x".repeat(24_001) },
     };
-    const result: unknown = await runInNewContext(example ?? "", {
+    const run: unknown = runInNewContext(example ?? "", {
       spec: { paths: { [path]: { get: operation } } },
-    })();
+    });
+    const result: unknown =
+      typeof run === "function" ? await Reflect.apply(run, undefined, []) : undefined;
     expect(result).toEqual({
       path,
       method: "GET",

@@ -2,24 +2,27 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
+import { z } from "zod";
 
 const PROJECT_ROOT = process.cwd();
 const DOCS_OPENAPI_PATH = join(PROJECT_ROOT, "openapi.yaml");
 const HTTP_METHODS = new Set(["delete", "get", "patch", "post", "put"]);
 
-interface OpenApiOperation {
-  readonly responses?: Readonly<Record<string, { readonly ["$ref"]?: string }>>;
-  readonly security?: readonly Record<string, readonly string[]>[];
-  readonly ["x-payment-info"]?: {
-    readonly offers?: readonly {
-      readonly intent?: string;
-    }[];
-  };
-}
+const openApiOperation = z.looseObject({
+  responses: z.record(z.string(), z.looseObject({ $ref: z.string().optional() })).optional(),
+  security: z.array(z.record(z.string(), z.array(z.string()))).optional(),
+  "x-payment-info": z
+    .looseObject({ offers: z.array(z.looseObject({ intent: z.string().optional() })).optional() })
+    .optional(),
+});
 
-interface OpenApiSpec {
-  readonly paths?: Record<string, Record<string, OpenApiOperation>>;
-}
+type OpenApiOperation = z.infer<typeof openApiOperation>;
+
+const openApiSpec = z.looseObject({
+  paths: z.record(z.string(), z.record(z.string(), z.unknown())).optional(),
+});
+
+type OpenApiSpec = z.infer<typeof openApiSpec>;
 
 interface OperationMetadata {
   readonly optionalCredential: boolean;
@@ -36,7 +39,7 @@ interface MppFinding {
 }
 
 function parseYaml(source: string): OpenApiSpec {
-  return Bun.YAML.parse(source) as OpenApiSpec;
+  return openApiSpec.parse(Bun.YAML.parse(source));
 }
 
 function readOpenApi(path: string): OpenApiSpec {
@@ -59,10 +62,11 @@ function hasOptionalCredential(operation: OpenApiOperation): boolean {
 function collectOperations(spec: OpenApiSpec): readonly OperationMetadata[] {
   const operations: OperationMetadata[] = [];
   for (const [path, pathItem] of Object.entries(spec.paths ?? {})) {
-    for (const [method, operation] of Object.entries(pathItem)) {
+    for (const [method, rawOperation] of Object.entries(pathItem)) {
       if (!HTTP_METHODS.has(method)) {
         continue;
       }
+      const operation = openApiOperation.parse(rawOperation);
       operations.push({
         optionalCredential: hasOptionalCredential(operation),
         key: normalizeOperationKey(method, path),

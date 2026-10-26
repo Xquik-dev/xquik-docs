@@ -1,23 +1,34 @@
 import { readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
+import { z } from "zod";
 
 interface SchemaNode {
-  readonly $ref?: string;
-  readonly enum?: readonly string[];
-  readonly oneOf?: readonly SchemaNode[];
-  readonly properties?: Readonly<Record<string, SchemaNode>>;
-  readonly title?: string;
+  readonly $ref?: string | undefined;
+  readonly enum?: readonly string[] | undefined;
+  readonly oneOf?: readonly SchemaNode[] | undefined;
+  readonly properties?: Readonly<Record<string, SchemaNode>> | undefined;
+  readonly title?: string | undefined;
 }
 
-interface OpenApiDocument {
-  readonly components?: Readonly<{
-    readonly schemas?: Readonly<Record<string, SchemaNode>>;
-  }>;
-}
+const schemaNode: z.ZodType<SchemaNode> = z.lazy(() =>
+  z.looseObject({
+    $ref: z.string().optional(),
+    enum: z.array(z.string()).optional(),
+    oneOf: z.array(schemaNode).optional(),
+    properties: z.record(z.string(), schemaNode).optional(),
+    title: z.string().optional(),
+  }),
+);
+
+const openApiDocument = z.looseObject({
+  components: z.looseObject({ schemas: z.record(z.string(), schemaNode).optional() }).optional(),
+});
+
+type OpenApiDocument = z.infer<typeof openApiDocument>;
 
 function parseOpenApi(): OpenApiDocument {
-  return Bun.YAML.parse(readFileSync("openapi.yaml", "utf8")) as OpenApiDocument;
+  return openApiDocument.parse(Bun.YAML.parse(readFileSync("openapi.yaml", "utf8")));
 }
 
 function requireErrorEnum(title: string, property?: string): readonly string[] {

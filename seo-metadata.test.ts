@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
+import { z } from "zod";
 
 const MIN_DESCRIPTION_LENGTH = 150;
 const MAX_DESCRIPTION_LENGTH = 160;
@@ -10,32 +11,44 @@ const TITLE_SUFFIX = " - Xquik";
 const SITE_DESCRIPTION =
   "Search tweets, export followers and replies, retrieve profiles and timelines, monitor accounts, post tweets, and use webhooks, SDKs & MCP. Not affiliated with X Corp.";
 
-interface NavigationGroup {
-  readonly anchors?: readonly NavigationItem[];
-  readonly groups?: readonly NavigationItem[];
-  readonly pages?: readonly NavigationItem[];
-  readonly tabs?: readonly NavigationItem[];
-}
 
+interface NavigationGroup {
+  readonly anchors?: readonly NavigationItem[] | undefined;
+  readonly groups?: readonly NavigationItem[] | undefined;
+  readonly pages?: readonly NavigationItem[] | undefined;
+  readonly tabs?: readonly NavigationItem[] | undefined;
+}
 type NavigationItem = string | NavigationGroup;
 
-interface DocsConfig {
-  readonly description: string;
-  readonly metadata: {
-    readonly "og:description": string;
-    readonly timestamp: boolean;
-  };
-  readonly navigation: NavigationGroup;
-  readonly search: {
-    readonly prompt: string;
-  };
-  readonly seo: {
-    readonly indexing: string;
-  };
-  readonly styling: {
-    readonly latex: boolean;
-  };
-}
+const navigationItem: z.ZodType<NavigationItem> = z.lazy(() =>
+  z.union([
+    z.string(),
+    z.looseObject({
+      anchors: z.array(navigationItem).optional(),
+      groups: z.array(navigationItem).optional(),
+      pages: z.array(navigationItem).optional(),
+      tabs: z.array(navigationItem).optional(),
+    }),
+  ]),
+);
+
+const navigationGroup = z.looseObject({
+  anchors: z.array(navigationItem).optional(),
+  groups: z.array(navigationItem).optional(),
+  pages: z.array(navigationItem).optional(),
+  tabs: z.array(navigationItem).optional(),
+});
+
+const docsConfigSchema = z.looseObject({
+  description: z.string(),
+  metadata: z.looseObject({ "og:description": z.string(), timestamp: z.boolean() }),
+  navigation: navigationGroup,
+  search: z.looseObject({ prompt: z.string() }),
+  seo: z.looseObject({ indexing: z.string() }),
+  styling: z.looseObject({ latex: z.boolean() }),
+});
+
+type DocsConfig = z.infer<typeof docsConfigSchema>;
 
 interface MetadataFinding {
   readonly file: string;
@@ -72,7 +85,7 @@ function frontmatterValue(metadata: string, key: string): string | undefined {
 }
 
 function loadDocsConfig(): DocsConfig {
-  return JSON.parse(readFileSync("docs.json", "utf8")) as DocsConfig;
+  return docsConfigSchema.parse(JSON.parse(readFileSync("docs.json", "utf8")));
 }
 
 function navigationPages(): readonly string[] {

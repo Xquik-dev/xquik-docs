@@ -1,22 +1,40 @@
 import { readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
+import { z } from "zod";
 
 const DOCS_ORIGIN = "https://docs.xquik.com";
 const MARKDOWN_LINK_PATTERN = /\[[^\]]+\]\((?:https:\/\/docs\.xquik\.com)?\/([^\s)]*)\)/gu;
 
-interface NavigationGroup {
-  readonly anchors?: readonly NavigationItem[];
-  readonly groups?: readonly NavigationItem[];
-  readonly pages?: readonly NavigationItem[];
-  readonly tabs?: readonly NavigationItem[];
-}
 
+interface NavigationGroup {
+  readonly anchors?: readonly NavigationItem[] | undefined;
+  readonly groups?: readonly NavigationItem[] | undefined;
+  readonly pages?: readonly NavigationItem[] | undefined;
+  readonly tabs?: readonly NavigationItem[] | undefined;
+}
 type NavigationItem = string | NavigationGroup;
 
-interface DocsConfig {
-  readonly navigation: NavigationGroup;
-}
+const navigationItem: z.ZodType<NavigationItem> = z.lazy(() =>
+  z.union([
+    z.string(),
+    z.looseObject({
+      anchors: z.array(navigationItem).optional(),
+      groups: z.array(navigationItem).optional(),
+      pages: z.array(navigationItem).optional(),
+      tabs: z.array(navigationItem).optional(),
+    }),
+  ]),
+);
+
+const navigationGroup = z.looseObject({
+  anchors: z.array(navigationItem).optional(),
+  groups: z.array(navigationItem).optional(),
+  pages: z.array(navigationItem).optional(),
+  tabs: z.array(navigationItem).optional(),
+});
+
+const docsConfigSchema = z.looseObject({ navigation: navigationGroup });
 
 function flattenNavigationPages(item: NavigationItem): readonly string[] {
   if (typeof item === "string") {
@@ -52,7 +70,7 @@ describe("llms.txt coverage", (): void => {
   it("lists every docs.json navigation page as a markdown link", (): void => {
     expect.assertions(2);
 
-    const docsConfig = JSON.parse(readFileSync("docs.json", "utf8")) as DocsConfig;
+    const docsConfig = docsConfigSchema.parse(JSON.parse(readFileSync("docs.json", "utf8")));
     const expectedPages = flattenNavigationPages(docsConfig.navigation);
     const llms = readFileSync("llms.txt", "utf8");
     const actualPages = documentedLlmsPages(llms);

@@ -2,19 +2,17 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
+import { z } from "zod";
 
 interface IconFinding {
   readonly file: string;
   readonly issue: string;
 }
 
-interface DocsIconConfig {
-  readonly favicon: string;
-  readonly logo: {
-    readonly dark: string;
-    readonly light: string;
-  };
-}
+const docsIconConfig = z.looseObject({
+  favicon: z.string(),
+  logo: z.looseObject({ dark: z.string(), light: z.string() }),
+});
 
 const INVALID_ICON_REPLACEMENTS: ReadonlyMap<string, string> = new Map([
   ["bell-slash", "bell-off"],
@@ -89,7 +87,7 @@ function collectIconFindings(): readonly IconFinding[] {
     inspectIcon("docs.json", match[1], findings);
   }
 
-  const docsConfig = JSON.parse(docsSource) as DocsIconConfig;
+  const docsConfig = docsIconConfig.parse(JSON.parse(docsSource));
   for (const asset of [docsConfig.favicon, docsConfig.logo.dark, docsConfig.logo.light]) {
     inspectIcon("docs.json", asset, findings);
   }

@@ -4,13 +4,12 @@ import { join } from "node:path";
 import { it } from "vitest";
 
 import { findProductRoot } from "./scripts/lib/product-root.ts";
+import { isList, isRecord } from "./scripts/lib/json-shape.ts";
 
 type Spec = Record<string, unknown>;
 
 function asRecord(value: unknown): Spec | undefined {
-  return value !== null && typeof value === "object" && !Array.isArray(value)
-    ? (value as Spec)
-    : undefined;
+  return isRecord(value) ? value : undefined;
 }
 
 const PRODUCT_ROOT = findProductRoot();
@@ -29,7 +28,8 @@ function resolve(spec: Spec, value: unknown): Spec {
 
 function propertyNames(spec: Spec, schema: unknown): string[] {
   const resolved = resolve(spec, schema);
-  const parts = Array.isArray(resolved["allOf"]) ? resolved["allOf"] : [resolved];
+  const allOf = resolved["allOf"];
+  const parts = isList(allOf) ? allOf : [resolved];
   return parts
     .flatMap((part) => Object.keys(asRecord(resolve(spec, part)["properties"]) ?? {}))
     .toSorted();
@@ -60,15 +60,18 @@ function productOperation(spec: Spec, operationId: string): ProductOperation | u
   const body = asRecord(asRecord(success["content"])?.["application/json"])?.["schema"];
   const bodyProperties = (): Spec => {
     const resolved = resolve(spec, body);
-    const parts = Array.isArray(resolved["allOf"]) ? resolved["allOf"] : [resolved];
-    return Object.assign({}, ...parts.map((part) => asRecord(resolve(spec, part)["properties"])));
+    const allOf = resolved["allOf"];
+    const parts = isList(allOf) ? allOf : [resolved];
+    return Object.fromEntries(
+      parts.flatMap((part) => Object.entries(asRecord(resolve(spec, part)["properties"]) ?? {})),
+    );
   };
   return {
     itemFields: (property) => {
       const field = resolve(spec, bodyProperties()[property]);
       return propertyNames(spec, field["items"] ?? field);
     },
-    parameters: (Array.isArray(operation["parameters"]) ? operation["parameters"] : []).map(
+    parameters: (isList(operation["parameters"]) ? operation["parameters"] : []).map(
       (parameter) => {
         const resolved = resolve(spec, parameter);
         return `${String(resolved["name"])}${resolved["required"] === true ? "!" : ""}`;

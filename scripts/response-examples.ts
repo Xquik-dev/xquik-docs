@@ -6,6 +6,7 @@ import {
   GENERATED_RESPONSE_EXAMPLES_END as END,
   GENERATED_RESPONSE_EXAMPLES_START as START,
 } from "./lib/generated-response-examples.ts";
+import { isList } from "./lib/json-shape.ts";
 
 type Node = Record<string, unknown>;
 
@@ -37,11 +38,11 @@ function isNode(value: unknown): value is Node {
 }
 
 function list(value: unknown): readonly unknown[] {
-  return Array.isArray(value) ? value : [];
+  return isList(value) ? value : [];
 }
 
 function field(value: unknown, key: string): unknown {
-  if (Array.isArray(value)) return value[Number(key)];
+  if (isList(value)) return value[Number(key)];
   return isNode(value) ? value[key] : undefined;
 }
 
@@ -107,7 +108,7 @@ function schemaExample(
 }
 
 function compact(value: unknown, limit: number, depth: number): unknown {
-  if (Array.isArray(value)) return value.slice(0, 1).map((item) => compact(item, limit, depth + 1));
+  if (isList(value)) return value.slice(0, 1).map((item) => compact(item, limit, depth + 1));
   if (!isNode(value)) return value;
   const fields = depth > 0 ? Math.min(limit, MAX_NESTED_FIELDS) : limit;
   return Object.fromEntries(

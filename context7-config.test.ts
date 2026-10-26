@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
+import { z } from "zod";
 
 const CONTEXT7_LIBRARY_URL = "https://context7.com/xquik-dev/xquik-docs";
 const CONTEXT7_WEBSITE_URL = "https://context7.com/websites/xquik";
@@ -52,18 +53,20 @@ const REQUIRED_RULE_SNIPPETS = [
   "guides/direct-message-workflow.mdx",
 ] as const;
 
-interface Context7Config {
-  readonly $schema?: string;
-  readonly branch?: string;
-  readonly excludeFiles?: readonly string[];
-  readonly folders?: readonly string[];
-  readonly public_key?: string;
-  readonly rules?: readonly string[];
-  readonly url?: string;
-}
+const context7Config = z.looseObject({
+  $schema: z.string().optional(),
+  branch: z.string().optional(),
+  excludeFiles: z.array(z.string()).optional(),
+  folders: z.array(z.string()).optional(),
+  public_key: z.string().optional(),
+  rules: z.array(z.string()).optional(),
+  url: z.string().optional(),
+});
+
+type Context7Config = z.infer<typeof context7Config>;
 
 function readContext7Config(path: string): Context7Config {
-  return JSON.parse(readFileSync(path, "utf8")) as Context7Config;
+  return context7Config.parse(JSON.parse(readFileSync(path, "utf8")));
 }
 
 function missingEntries(

@@ -1,39 +1,54 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { z } from "zod";
 
 const PROJECT_ROOT = process.cwd();
 const DOCS_OPENAPI_PATH = join(PROJECT_ROOT, "openapi.yaml");
-interface OpenApiSpec {
-  readonly components?: {
-    readonly responses?: Record<string, OpenApiResponse>;
-    readonly schemas?: Record<string, OpenApiSchema>;
-  };
-  readonly paths?: Record<string, Record<string, OpenApiOperation>>;
-}
-
-interface OpenApiMediaType {
-  readonly schema?: OpenApiSchema;
-}
-
-interface OpenApiOperation {
-  readonly responses?: Record<string, OpenApiResponse>;
-}
-
-interface OpenApiResponse {
-  readonly $ref?: string;
-  readonly content?: Record<string, OpenApiMediaType>;
-}
-
 interface OpenApiSchema {
-  readonly $ref?: string;
-  readonly allOf?: readonly OpenApiSchema[];
-  readonly anyOf?: readonly OpenApiSchema[];
-  readonly items?: OpenApiSchema;
-  readonly oneOf?: readonly OpenApiSchema[];
-  readonly properties?: Record<string, OpenApiSchema>;
-  readonly required?: readonly string[];
+  readonly $ref?: string | undefined;
+  readonly allOf?: readonly OpenApiSchema[] | undefined;
+  readonly anyOf?: readonly OpenApiSchema[] | undefined;
+  readonly items?: OpenApiSchema | undefined;
+  readonly oneOf?: readonly OpenApiSchema[] | undefined;
+  readonly properties?: Readonly<Record<string, OpenApiSchema>> | undefined;
+  readonly required?: readonly string[] | undefined;
 }
+
+const openApiSchema: z.ZodType<OpenApiSchema> = z.lazy(() =>
+  z.looseObject({
+    $ref: z.string().optional(),
+    allOf: z.array(openApiSchema).optional(),
+    anyOf: z.array(openApiSchema).optional(),
+    items: openApiSchema.optional(),
+    oneOf: z.array(openApiSchema).optional(),
+    properties: z.record(z.string(), openApiSchema).optional(),
+    required: z.array(z.string()).optional(),
+  }),
+);
+
+const openApiResponse = z.looseObject({
+  $ref: z.string().optional(),
+  content: z.record(z.string(), z.looseObject({ schema: openApiSchema.optional() })).optional(),
+});
+
+type OpenApiResponse = z.infer<typeof openApiResponse>;
+
+const openApiOperation = z.looseObject({
+  responses: z.record(z.string(), openApiResponse).optional(),
+});
+
+const openApiSpec = z.looseObject({
+  components: z
+    .looseObject({
+      responses: z.record(z.string(), openApiResponse).optional(),
+      schemas: z.record(z.string(), openApiSchema).optional(),
+    })
+    .optional(),
+  paths: z.record(z.string(), z.record(z.string(), z.unknown())).optional(),
+});
+
+type OpenApiSpec = z.infer<typeof openApiSpec>;
 
 interface PageContract {
   readonly allowedFields: readonly string[];
@@ -141,7 +156,7 @@ const X_ACCOUNT_BULK_RETRY_PAGE = "api-reference/x-accounts/bulk-retry.mdx";
 const X_ACCOUNT_DISCONNECT_PAGE = "api-reference/x-accounts/disconnect.mdx";
 
 function parseYaml(source: string): OpenApiSpec {
-  return Bun.YAML.parse(source) as OpenApiSpec;
+  return openApiSpec.parse(Bun.YAML.parse(source));
 }
 
 function readOpenApi(): OpenApiSpec {
@@ -168,11 +183,10 @@ function resolveSchema(spec: OpenApiSpec, schema: OpenApiSchema): OpenApiSchema 
   ].map((item): OpenApiSchema => resolveSchema(spec, item));
   return {
     ...resolved,
-    properties: Object.assign(
-      {},
-      ...composed.map((item): Record<string, OpenApiSchema> => item.properties ?? {}),
-      resolved.properties ?? {},
-    ),
+    properties: Object.fromEntries([
+      ...composed.flatMap((item) => Object.entries(item.properties ?? {})),
+      ...Object.entries(resolved.properties ?? {}),
+    ]),
     required: uniqueSorted([
       ...(resolved.required ?? []),
       ...(resolved.allOf ?? []).flatMap(
@@ -254,7 +268,8 @@ function responseSchema(
   method: string,
   status = "200",
 ): OpenApiSchema {
-  const schema = resolveResponse(spec, spec.paths?.[path]?.[method]?.responses?.[status] ?? {})
+  const operation = openApiOperation.optional().parse(spec.paths?.[path]?.[method]);
+  const schema = resolveResponse(spec, operation?.responses?.[status] ?? {})
     .content?.["application/json"]?.schema;
   if (schema === undefined) {
     throw new Error(`Missing ${status} JSON response schema: ${method} ${path}`);

@@ -1,44 +1,48 @@
 import { readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
+import { z } from "zod";
 
 interface NavigationNode {
-  readonly expanded?: boolean;
-  readonly group?: string;
-  readonly groups?: readonly NavigationNode[];
-  readonly pages?: readonly NavigationItem[];
-  readonly tab?: string;
-  readonly tabs?: readonly NavigationNode[];
+  readonly expanded?: boolean | undefined;
+  readonly group?: string | undefined;
+  readonly groups?: readonly NavigationNode[] | undefined;
+  readonly pages?: readonly NavigationItem[] | undefined;
+  readonly tab?: string | undefined;
+  readonly tabs?: readonly NavigationNode[] | undefined;
 }
 
 type NavigationItem = string | NavigationNode;
 
-interface ApiMdxConfig {
-  readonly auth?: {
-    readonly method?: string;
-    readonly name?: string;
-  };
-  readonly server?: string;
-}
+const navigationNode: z.ZodType<NavigationNode> = z.lazy(() =>
+  z.looseObject({
+    expanded: z.boolean().optional(),
+    group: z.string().optional(),
+    groups: z.array(navigationNode).optional(),
+    pages: z.array(z.union([z.string(), navigationNode])).optional(),
+    tab: z.string().optional(),
+    tabs: z.array(navigationNode).optional(),
+  }),
+);
 
-interface DocsRedirect {
-  readonly destination: string;
-  readonly source: string;
-}
 
-interface DocsConfig {
-  readonly api: {
-    readonly examples?: {
-      readonly languages?: readonly string[];
-    };
-    readonly mdx?: ApiMdxConfig;
-  };
-  readonly banner?: {
-    readonly content?: string;
-  };
-  readonly navigation: NavigationNode;
-  readonly redirects: readonly DocsRedirect[];
-}
+
+const docsConfigSchema = z.looseObject({
+  api: z.looseObject({
+    examples: z.looseObject({ languages: z.array(z.string()).optional() }).optional(),
+    mdx: z
+      .looseObject({
+        auth: z.looseObject({ method: z.string().optional(), name: z.string().optional() }).optional(),
+        server: z.string().optional(),
+      })
+      .optional(),
+  }),
+  banner: z.looseObject({ content: z.string().optional() }).optional(),
+  navigation: navigationNode,
+  redirects: z.array(z.looseObject({ destination: z.string(), source: z.string() })),
+});
+
+type DocsConfig = z.infer<typeof docsConfigSchema>;
 
 const X_API_GROUPS = [
   "Users",
@@ -71,7 +75,7 @@ const PRIORITY_API_ROUTES = [
 ] as const;
 
 function docsConfig(): DocsConfig {
-  return JSON.parse(readFileSync("docs.json", "utf8")) as DocsConfig;
+  return docsConfigSchema.parse(JSON.parse(readFileSync("docs.json", "utf8")));
 }
 
 function objectItems(items: readonly NavigationItem[] | undefined): readonly NavigationNode[] {

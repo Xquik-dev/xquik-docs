@@ -2,6 +2,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
 
 import { describe, expect, it } from "vitest";
+import { z } from "zod";
 
 const PROJECT_ROOT = process.cwd();
 const API_REFERENCE_DIR = join(PROJECT_ROOT, "api-reference");
@@ -34,42 +35,64 @@ interface DocumentedOperationField {
   readonly path: string;
 }
 
-interface OpenApiParameter {
-  readonly $ref?: string;
-  readonly in?: string;
-  readonly name?: string;
-  readonly required?: boolean;
-  readonly schema?: OpenApiSchema;
-}
-
-interface OpenApiRequestBody {
-  readonly content?: Record<string, { readonly schema?: OpenApiSchema }>;
-}
-
-interface OpenApiOperation {
-  readonly parameters?: readonly OpenApiParameter[];
-  readonly requestBody?: OpenApiRequestBody;
-}
-
 interface OpenApiSchema {
-  readonly $ref?: string;
-  readonly allOf?: readonly OpenApiSchema[];
-  readonly anyOf?: readonly OpenApiSchema[];
-  readonly oneOf?: readonly OpenApiSchema[];
-  readonly properties?: Record<string, OpenApiSchema>;
-  readonly required?: readonly string[];
-  readonly type?: string;
-  readonly minimum?: number;
-  readonly maximum?: number;
+  readonly $ref?: string | undefined;
+  readonly allOf?: readonly OpenApiSchema[] | undefined;
+  readonly anyOf?: readonly OpenApiSchema[] | undefined;
+  readonly oneOf?: readonly OpenApiSchema[] | undefined;
+  readonly properties?: Readonly<Record<string, OpenApiSchema>> | undefined;
+  readonly required?: readonly string[] | undefined;
+  readonly type?: string | undefined;
+  readonly minimum?: number | undefined;
+  readonly maximum?: number | undefined;
 }
 
-interface OpenApiSpec {
-  readonly components?: {
-    readonly parameters?: Record<string, OpenApiParameter>;
-    readonly schemas?: Record<string, OpenApiSchema>;
-  };
-  readonly paths?: Record<string, Record<string, OpenApiOperation>>;
-}
+const openApiSchema: z.ZodType<OpenApiSchema> = z.lazy(() =>
+  z.looseObject({
+    $ref: z.string().optional(),
+    allOf: z.array(openApiSchema).optional(),
+    anyOf: z.array(openApiSchema).optional(),
+    oneOf: z.array(openApiSchema).optional(),
+    properties: z.record(z.string(), openApiSchema).optional(),
+    required: z.array(z.string()).optional(),
+    type: z.string().optional(),
+    minimum: z.number().optional(),
+    maximum: z.number().optional(),
+  }),
+);
+
+const openApiParameter = z.looseObject({
+  $ref: z.string().optional(),
+  in: z.string().optional(),
+  name: z.string().optional(),
+  required: z.boolean().optional(),
+  schema: openApiSchema.optional(),
+});
+
+type OpenApiParameter = z.infer<typeof openApiParameter>;
+
+const openApiOperation = z.looseObject({
+  parameters: z.array(openApiParameter).optional(),
+  requestBody: z
+    .looseObject({
+      content: z.record(z.string(), z.looseObject({ schema: openApiSchema.optional() })).optional(),
+    })
+    .optional(),
+});
+
+type OpenApiOperation = z.infer<typeof openApiOperation>;
+
+const openApiSpec = z.looseObject({
+  components: z
+    .looseObject({
+      parameters: z.record(z.string(), openApiParameter).optional(),
+      schemas: z.record(z.string(), openApiSchema).optional(),
+    })
+    .optional(),
+  paths: z.record(z.string(), z.record(z.string(), z.unknown())).optional(),
+});
+
+type OpenApiSpec = z.infer<typeof openApiSpec>;
 
 interface SchemaFields {
   readonly properties: readonly string[];
@@ -77,7 +100,7 @@ interface SchemaFields {
 }
 
 function parseYaml(source: string): OpenApiSpec {
-  return Bun.YAML.parse(source) as OpenApiSpec;
+  return openApiSpec.parse(Bun.YAML.parse(source));
 }
 
 function listApiReferenceFiles(dir: string): readonly string[] {
@@ -141,21 +164,29 @@ function operationKey(apiDoc: ApiDoc): string {
   return `${apiDoc.method.toUpperCase()} ${apiDoc.path}`;
 }
 
-function resolveReference<T>(spec: OpenApiSpec, value: T & { readonly $ref?: string }): T {
-  if (value.$ref === undefined) {
-    return value;
+function referenceName(ref: string, expectedKind: "parameters" | "schemas"): string {
+  const [, section, kind, name] = ref.split("/");
+  if (section !== "components" || kind !== expectedKind || name === undefined) {
+    throw new Error(`Unsupported OpenAPI reference: ${ref}`);
   }
-  const [, section, kind, name] = value.$ref.split("/");
-  if (section !== "components" || name === undefined) {
-    throw new Error(`Unsupported OpenAPI reference: ${value.$ref}`);
-  }
-  if (kind === "parameters") {
-    return spec.components?.parameters?.[name] as T;
-  }
-  if (kind === "schemas") {
-    return spec.components?.schemas?.[name] as T;
-  }
-  throw new Error(`Unsupported OpenAPI reference: ${value.$ref}`);
+  return name;
+}
+
+function resolveParameter(spec: OpenApiSpec, parameter: OpenApiParameter): OpenApiParameter | undefined {
+  return parameter.$ref === undefined ?
+      parameter
+    : spec.components?.parameters?.[referenceName(parameter.$ref, "parameters")];
+}
+
+function resolveSchema(spec: OpenApiSpec, schema: OpenApiSchema): OpenApiSchema | undefined {
+  return schema.$ref === undefined ?
+      schema
+    : spec.components?.schemas?.[referenceName(schema.$ref, "schemas")];
+}
+
+function operationAt(spec: OpenApiSpec, path: string, method: string): OpenApiOperation | undefined {
+  const operation = spec.paths?.[path]?.[method];
+  return operation === undefined ? undefined : openApiOperation.parse(operation);
 }
 
 function schemaFields(
@@ -171,7 +202,7 @@ function schemaFields(
       return { properties: [], required: [] };
     }
     seenRefs.add(schema.$ref);
-    return schemaFields(spec, resolveReference(spec, schema), seenRefs);
+    return schemaFields(spec, resolveSchema(spec, schema), seenRefs);
   }
   const composedFields = (schema.allOf ?? []).map((item): SchemaFields =>
     schemaFields(spec, item, seenRefs),
@@ -220,20 +251,20 @@ function openApiParameters(
   operation: OpenApiOperation,
   kind: "path" | "query",
 ): readonly OpenApiParameter[] {
-  const shared: unknown = spec.paths?.[path]?.["parameters"];
-  return [
-    ...(Array.isArray(shared) ? (shared as OpenApiParameter[]) : []),
-    ...(operation.parameters ?? []),
-  ]
-    .map((parameter): OpenApiParameter => resolveReference(spec, parameter))
-    .filter((parameter): boolean => parameter.in === kind && parameter.name !== undefined)
+  const shared = z.array(openApiParameter).optional().parse(spec.paths?.[path]?.["parameters"]);
+  return [...(shared ?? []), ...(operation.parameters ?? [])]
+    .map((parameter) => resolveParameter(spec, parameter))
+    .filter(
+      (parameter): parameter is OpenApiParameter =>
+        parameter !== undefined && parameter.in === kind && parameter.name !== undefined,
+    )
     .sort((left, right): number => (left.name ?? "").localeCompare(right.name ?? ""));
 }
 
 function collectFieldFindings(spec: OpenApiSpec): readonly FieldFinding[] {
   const findings: FieldFinding[] = [];
   for (const apiDoc of readApiDocs()) {
-    const operation = spec.paths?.[apiDoc.path]?.[apiDoc.method];
+    const operation = operationAt(spec, apiDoc.path, apiDoc.method);
     if (operation === undefined) {
       findings.push({
         field: apiDoc.path,
@@ -309,7 +340,7 @@ function collectDocumentedRequestBodyFieldFindings(
     const apiDoc = apiDocs.find(
       (doc): boolean => doc.method === expected.method && doc.path === expected.path,
     );
-    const operation = spec.paths?.[expected.path]?.[expected.method];
+    const operation = operationAt(spec, expected.path, expected.method);
     const operationLabel = `${expected.method.toUpperCase()} ${expected.path}`;
 
     if (apiDoc === undefined || operation === undefined) {
@@ -361,7 +392,7 @@ describe("API reference cost-control fields", (): void => {
   it("keeps complete reply limits editable above and below the default", (): void => {
     expect.assertions(3);
     const spec = parseYaml(readFileSync(join(PROJECT_ROOT, "openapi.yaml"), "utf8"));
-    const limit = spec.paths?.["/x/tweets/{id}/replies"]?.get?.parameters?.find(
+    const limit = operationAt(spec, "/x/tweets/{id}/replies", "get")?.parameters?.find(
       (parameter) => parameter.in === "query" && parameter.name === "limit",
     );
     expect(limit?.schema).toStrictEqual({ type: "integer", minimum: 1 });

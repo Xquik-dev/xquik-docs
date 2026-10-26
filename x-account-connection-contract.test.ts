@@ -1,53 +1,61 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { z } from "zod";
 
 interface OpenApiSchema {
-  readonly $ref?: string;
-  readonly allOf?: readonly OpenApiSchema[];
-  readonly discriminator?: {
-    readonly mapping: Readonly<Record<string, string>>;
-    readonly propertyName: string;
-  };
-  readonly oneOf?: readonly OpenApiSchema[];
-  readonly properties?: Readonly<Record<string, OpenApiSchema>>;
-  readonly required?: readonly string[];
-  readonly type?: string;
-  readonly "x-stainless-naming"?: {
-    readonly csharp: { readonly type_name: string };
-  };
+  readonly $ref?: string | undefined;
+  readonly allOf?: readonly OpenApiSchema[] | undefined;
+  readonly discriminator?:
+    | { readonly mapping: Readonly<Record<string, string>>; readonly propertyName: string }
+    | undefined;
+  readonly oneOf?: readonly OpenApiSchema[] | undefined;
+  readonly properties?: Readonly<Record<string, OpenApiSchema>> | undefined;
+  readonly required?: readonly string[] | undefined;
+  readonly type?: string | undefined;
+  readonly "x-stainless-naming"?: { readonly csharp: { readonly type_name: string } } | undefined;
 }
 
-interface OpenApiResponse {
-  readonly content: {
-    readonly "application/json": { readonly schema: OpenApiSchema };
-  };
-  readonly headers?: Readonly<Record<string, unknown>>;
-}
+const openApiSchema: z.ZodType<OpenApiSchema> = z.lazy(() =>
+  z.looseObject({
+    $ref: z.string().optional(),
+    allOf: z.array(openApiSchema).optional(),
+    discriminator: z
+      .looseObject({ mapping: z.record(z.string(), z.string()), propertyName: z.string() })
+      .optional(),
+    oneOf: z.array(openApiSchema).optional(),
+    properties: z.record(z.string(), openApiSchema).optional(),
+    required: z.array(z.string()).optional(),
+    type: z.string().optional(),
+    "x-stainless-naming": z
+      .looseObject({ csharp: z.looseObject({ type_name: z.string() }) })
+      .optional(),
+  }),
+);
 
-interface OpenApiDocument {
-  readonly components: {
-    readonly schemas: Readonly<Record<string, OpenApiSchema>>;
-  };
-  readonly paths: {
-    readonly "/x/account-connection-attempts/{id}": {
-      readonly get: { readonly responses: { readonly "200": OpenApiResponse } };
-    };
-    readonly "/x/accounts": {
-      readonly post: {
-        readonly requestBody: {
-          readonly content: {
-            readonly "application/json": { readonly schema: OpenApiSchema };
-          };
-        };
-        readonly responses: {
-          readonly "201": OpenApiResponse;
-          readonly "202": OpenApiResponse;
-        };
-      };
-    };
-  };
-}
+const openApiResponse = z.looseObject({
+  content: z.looseObject({ "application/json": z.looseObject({ schema: openApiSchema }) }),
+  headers: z.record(z.string(), z.unknown()).optional(),
+});
+
+const openApiDocument = z.looseObject({
+  components: z.looseObject({ schemas: z.record(z.string(), openApiSchema) }),
+  paths: z.looseObject({
+    "/x/account-connection-attempts/{id}": z.looseObject({
+      get: z.looseObject({ responses: z.looseObject({ "200": openApiResponse }) }),
+    }),
+    "/x/accounts": z.looseObject({
+      post: z.looseObject({
+        requestBody: z.looseObject({
+          content: z.looseObject({ "application/json": z.looseObject({ schema: openApiSchema }) }),
+        }),
+        responses: z.looseObject({ "201": openApiResponse, "202": openApiResponse }),
+      }),
+    }),
+  }),
+});
+
+type OpenApiDocument = z.infer<typeof openApiDocument>;
 
 const PROJECT_ROOT = process.cwd();
 const CONNECT_PAGE = readFileSync(
@@ -77,7 +85,7 @@ const PRIVATE_CONNECTION_COPY =
   /automatic retr(?:y|ies)|browser session|network tunnel|retry automatically/iu;
 
 function parseOpenApi(source: string): OpenApiDocument {
-  return Bun.YAML.parse(source) as OpenApiDocument;
+  return openApiDocument.parse(Bun.YAML.parse(source));
 }
 
 function refs(schema: Readonly<OpenApiSchema>): readonly string[] {
