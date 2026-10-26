@@ -2,54 +2,28 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
+import {
+  openApiResponse,
+  openApiSchema,
+  type OpenApiSchema,
+} from "./scripts/lib/openapi-schema.ts";
 
-interface OpenApiSchema {
-  readonly $ref?: string | undefined;
-  readonly allOf?: readonly OpenApiSchema[] | undefined;
-  readonly discriminator?:
-    | { readonly mapping: Readonly<Record<string, string>>; readonly propertyName: string }
-    | undefined;
-  readonly oneOf?: readonly OpenApiSchema[] | undefined;
-  readonly properties?: Readonly<Record<string, OpenApiSchema>> | undefined;
-  readonly required?: readonly string[] | undefined;
-  readonly type?: string | undefined;
-  readonly "x-stainless-naming"?: { readonly csharp: { readonly type_name: string } } | undefined;
-}
-
-const openApiSchema: z.ZodType<OpenApiSchema> = z.lazy(() =>
-  z.looseObject({
-    $ref: z.string().optional(),
-    allOf: z.array(openApiSchema).optional(),
-    discriminator: z
-      .looseObject({ mapping: z.record(z.string(), z.string()), propertyName: z.string() })
-      .optional(),
-    oneOf: z.array(openApiSchema).optional(),
-    properties: z.record(z.string(), openApiSchema).optional(),
-    required: z.array(z.string()).optional(),
-    type: z.string().optional(),
-    "x-stainless-naming": z
-      .looseObject({ csharp: z.looseObject({ type_name: z.string() }) })
-      .optional(),
-  }),
-);
-
-const openApiResponse = z.looseObject({
+const jsonResponse = openApiResponse.extend({
   content: z.looseObject({ "application/json": z.looseObject({ schema: openApiSchema }) }),
-  headers: z.record(z.string(), z.unknown()).optional(),
 });
 
 const openApiDocument = z.looseObject({
   components: z.looseObject({ schemas: z.record(z.string(), openApiSchema) }),
   paths: z.looseObject({
     "/x/account-connection-attempts/{id}": z.looseObject({
-      get: z.looseObject({ responses: z.looseObject({ "200": openApiResponse }) }),
+      get: z.looseObject({ responses: z.looseObject({ "200": jsonResponse }) }),
     }),
     "/x/accounts": z.looseObject({
       post: z.looseObject({
         requestBody: z.looseObject({
           content: z.looseObject({ "application/json": z.looseObject({ schema: openApiSchema }) }),
         }),
-        responses: z.looseObject({ "201": openApiResponse, "202": openApiResponse }),
+        responses: z.looseObject({ "201": jsonResponse, "202": jsonResponse }),
       }),
     }),
   }),
@@ -142,7 +116,7 @@ describe("X account connection documentation contract", (): void => {
       "#/components/schemas/XAccountConnectionAttemptFailed",
       "#/components/schemas/XAccountConnectionChallenge",
     ]);
-    expect(status.content["application/json"].schema["x-stainless-naming"]?.csharp.type_name).toBe(
+    expect(status.content["application/json"].schema["x-stainless-naming"]?.csharp?.type_name).toBe(
       "AccountConnectionAttemptRetrieveResponse",
     );
     expect(refs(openapi.components.schemas["XAccountConnectionContinuation"] ?? {})).toStrictEqual([

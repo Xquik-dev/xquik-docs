@@ -2,6 +2,13 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
+import {
+  operationAt,
+  operations,
+  parseOpenApi,
+  type OpenApiDocument,
+  type OpenApiOperation,
+} from "./scripts/lib/openapi-schema.ts";
 
 import {
   GENERATED_RESPONSE_EXAMPLES_END,
@@ -9,36 +16,19 @@ import {
   stripGeneratedResponseExamples,
 } from "./scripts/lib/generated-response-examples";
 
-const openApiOperation = z.looseObject({
-  responses: z.record(z.string(), z.unknown()).optional(),
-  "x-write-action": z.string().optional(),
-});
-
-type OpenApiOperation = z.infer<typeof openApiOperation>;
-
-const openApiSpec = z.looseObject({
-  paths: z.record(z.string(), z.record(z.string(), z.unknown())).optional(),
-});
-
-type OpenApiSpec = z.infer<typeof openApiSpec>;
-
-function operationAt(spec: OpenApiSpec, path: string, method: string): OpenApiOperation | undefined {
-  const operation = spec.paths?.[path]?.[method];
-  return operation === undefined ? undefined : openApiOperation.parse(operation);
-}
+type OpenApiSpec = OpenApiDocument;
 
 const PROJECT_ROOT = process.cwd();
-const spec = openApiSpec.parse(
-  Bun.YAML.parse(readFileSync(join(PROJECT_ROOT, "openapi.yaml"), "utf8")),
+const spec = parseOpenApi(readFileSync(join(PROJECT_ROOT, "openapi.yaml"), "utf8"));
+const OPERATIONS = Object.values(spec.paths ?? {}).flatMap((pathItem) =>
+  operations(pathItem).map(([, operation]) => operation),
 );
-const OPERATIONS = Object.values(spec.paths ?? {})
-  .flatMap((methods) => Object.values(methods))
-  .flatMap((value) => {
-    const parsed = openApiOperation.safeParse(value);
-    return parsed.success ? [parsed.data] : [];
-  });
-const WRITE_OPERATION_COUNT = OPERATIONS.filter((operation) => operation["x-write-action"] !== undefined).length;
-const NO_CONTENT_OPERATION_COUNT = OPERATIONS.filter((operation) => operation.responses?.["204"] !== undefined).length;
+const WRITE_OPERATION_COUNT = OPERATIONS.filter(
+  (operation) => operation["x-write-action"] !== undefined,
+).length;
+const NO_CONTENT_OPERATION_COUNT = OPERATIONS.filter(
+  (operation) => operation.responses?.["204"] !== undefined,
+).length;
 const WRITE_ACTION_LIFECYCLE_SNIPPET_PATH = join(
   PROJECT_ROOT,
   "snippets/write-action-lifecycle-response.mdx",

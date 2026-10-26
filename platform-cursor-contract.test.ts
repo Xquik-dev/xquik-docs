@@ -32,7 +32,9 @@ describe("platform cursor contract", (): void => {
     const staleSdkParameters = files
       .filter((file) => file.startsWith("sdks/"))
       .filter((file) => SDK_AFTER_PARAMETER.test(readFileSync(file, "utf8")));
-    const openApi = openApiCursorContract.parse(Bun.YAML.parse(readFileSync("openapi.yaml", "utf8")));
+    const openApi = openApiCursorContract.parse(
+      Bun.YAML.parse(readFileSync("openapi.yaml", "utf8")),
+    );
 
     expect(stalePlatformUrls).toStrictEqual([]);
     expect(staleSdkParameters).toStrictEqual([]);

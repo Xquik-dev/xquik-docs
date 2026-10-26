@@ -99,7 +99,9 @@ describe("Plugin docs", (): void => {
     }
 
     const guide = readFileSync(TWEETCLAW_GUIDE, "utf8");
-    const packageJson = packageJsonSchema.parse(JSON.parse(readFileSync(TWEETCLAW_PACKAGE, "utf8")));
+    const packageJson = packageJsonSchema.parse(
+      JSON.parse(readFileSync(TWEETCLAW_PACKAGE, "utf8")),
+    );
     const apiSpec = readFileSync(TWEETCLAW_API_SPEC, "utf8");
     const endpointCount =
       [...apiSpec.matchAll(/^\s+path: '/gmu)].length -

@@ -6,7 +6,7 @@ import {
   GENERATED_RESPONSE_EXAMPLES_END as END,
   GENERATED_RESPONSE_EXAMPLES_START as START,
 } from "./lib/generated-response-examples.ts";
-import { isList } from "./lib/json-shape.ts";
+import { isList, isRecord as isNode } from "./lib/json-shape.ts";
 
 type Node = Record<string, unknown>;
 
@@ -32,10 +32,6 @@ const MAX_NESTED_FIELDS = 5;
 const FRONTMATTER = /^---\r?\n.*?\r?\n---\r?\n/su;
 const IMPORTS = /^(?:\r?\n)*(?:import [^\r\n]+;\r?\n)+/u;
 const API_LINE = /^api: "([A-Z]+) ([^"]+)"$/mu;
-
-function isNode(value: unknown): value is Node {
-  return value !== null && typeof value === "object" && !Array.isArray(value);
-}
 
 function list(value: unknown): readonly unknown[] {
   return isList(value) ? value : [];

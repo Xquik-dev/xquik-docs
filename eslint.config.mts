@@ -6,7 +6,10 @@ export default defineConfig(
   {
     files: ["**/*.{js,jsx,mjs,cjs}"],
     rules: {
-      "no-restricted-syntax": ["error", { selector: "Program", message: "Write this file in TypeScript." }],
+      "no-restricted-syntax": [
+        "error",
+        { selector: "Program", message: "Write this file in TypeScript." },
+      ],
     },
   },
   {
@@ -33,10 +36,22 @@ export default defineConfig(
       "@typescript-eslint/use-unknown-in-catch-callback-variable": "error",
       "no-restricted-syntax": [
         "error",
-        { selector: "TSDeclareFunction", message: "Write 1 checked signature instead of overloads." },
-        { selector: "TSEmptyBodyFunctionExpression", message: "Write 1 checked signature instead of overloads." },
-        { selector: "[definite=true]", message: "Initialize the value instead of asserting that it is set." },
-        { selector: "[declare=true]", message: "Give this value a checked source instead of declaring its type." },
+        {
+          selector: "TSDeclareFunction",
+          message: "Write 1 checked signature instead of overloads.",
+        },
+        {
+          selector: "TSEmptyBodyFunctionExpression",
+          message: "Write 1 checked signature instead of overloads.",
+        },
+        {
+          selector: "[definite=true]",
+          message: "Initialize the value instead of asserting that it is set.",
+        },
+        {
+          selector: "[declare=true]",
+          message: "Give this value a checked source instead of declaring its type.",
+        },
         {
           selector:
             ":matches(Identifier[name=/^(JSON|Reflect)$/], MemberExpression > Literal.property[value=/^(JSON|Reflect)$/]):not(CallExpression > MemberExpression.callee > .object)",
@@ -47,8 +62,18 @@ export default defineConfig(
           message: "Import the module or parse the value instead of evaluating code.",
         },
         {
-          selector: "MemberExpression[object.name='Object'][property.name='create']:not(CallExpression > .callee)",
-          message: "Call Object.create directly and type its result as unknown.",
+          selector:
+            "MemberExpression[object.name='Object'][property.name=/^(assign|create)$/]:not(CallExpression > .callee)",
+          message: "Call Object.assign and Object.create directly and type their results.",
+        },
+        {
+          selector: "Identifier[name='runInNewContext']:not(CallExpression > .callee, ImportSpecifier > Identifier)",
+          message: "Call runInNewContext directly and type its result as unknown.",
+        },
+        {
+          selector: "TSTypeReference[typeName.left.name='z'][typeName.right.name='ZodType']",
+          message:
+            "Infer the type from the zod schema instead of annotating the schema with a separate type.",
         },
         {
           selector: "Identifier[name='require']:not(CallExpression > .callee)",
@@ -57,14 +82,23 @@ export default defineConfig(
       ],
       "no-warning-comments": [
         "error",
-        { terms: ["type-coverage:ignore", "oxlint-disable", "oxlint-enable"], location: "anywhere" },
+        {
+          terms: ["type-coverage:ignore", "oxlint-disable", "oxlint-enable"],
+          location: "anywhere",
+        },
       ],
     },
   },
   {
     files: ["**/*.d.ts", "**/*.d.mts", "**/*.d.cts"],
     rules: {
-      "no-restricted-syntax": ["error", { selector: "Program", message: "Write the value in TypeScript instead of declaring its type." }],
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: "Program",
+          message: "Write the value in TypeScript instead of declaring its type.",
+        },
+      ],
     },
   },
 );

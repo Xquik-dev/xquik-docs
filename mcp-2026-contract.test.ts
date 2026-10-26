@@ -25,7 +25,9 @@ describe("MCP 2026-07-28 documentation contract", (): void => {
     const spec = { components: { schemas: { PaginatedTweets: { properties } } } };
     const responseRun: unknown = runInNewContext(responseExample ?? "", { spec });
     const responseResult: unknown =
-      typeof responseRun === "function" ? await Reflect.apply(responseRun, undefined, []) : undefined;
+      typeof responseRun === "function"
+        ? await Reflect.apply(responseRun, undefined, [])
+        : undefined;
     expect(responseResult).toEqual(properties);
     const path = "/api/v1/x/tweets/search";
     const operation = {

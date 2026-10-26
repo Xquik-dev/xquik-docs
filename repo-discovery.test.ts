@@ -11,7 +11,6 @@ interface DiscoveryFinding {
   readonly issue: string;
 }
 
-
 const docsConfigSchema = z.looseObject({
   redirects: z.array(z.looseObject({ destination: z.string(), source: z.string() })),
 });

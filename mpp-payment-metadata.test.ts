@@ -2,27 +2,18 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
-import { z } from "zod";
+import {
+  operations as pathOperations,
+  parseOpenApi,
+  type OpenApiDocument,
+  type OpenApiOperation,
+} from "./scripts/lib/openapi-schema.ts";
 
 const PROJECT_ROOT = process.cwd();
 const DOCS_OPENAPI_PATH = join(PROJECT_ROOT, "openapi.yaml");
 const HTTP_METHODS = new Set(["delete", "get", "patch", "post", "put"]);
 
-const openApiOperation = z.looseObject({
-  responses: z.record(z.string(), z.looseObject({ $ref: z.string().optional() })).optional(),
-  security: z.array(z.record(z.string(), z.array(z.string()))).optional(),
-  "x-payment-info": z
-    .looseObject({ offers: z.array(z.looseObject({ intent: z.string().optional() })).optional() })
-    .optional(),
-});
-
-type OpenApiOperation = z.infer<typeof openApiOperation>;
-
-const openApiSpec = z.looseObject({
-  paths: z.record(z.string(), z.record(z.string(), z.unknown())).optional(),
-});
-
-type OpenApiSpec = z.infer<typeof openApiSpec>;
+type OpenApiSpec = OpenApiDocument;
 
 interface OperationMetadata {
   readonly optionalCredential: boolean;
@@ -39,7 +30,7 @@ interface MppFinding {
 }
 
 function parseYaml(source: string): OpenApiSpec {
-  return openApiSpec.parse(Bun.YAML.parse(source));
+  return parseOpenApi(source);
 }
 
 function readOpenApi(path: string): OpenApiSpec {
@@ -62,11 +53,10 @@ function hasOptionalCredential(operation: OpenApiOperation): boolean {
 function collectOperations(spec: OpenApiSpec): readonly OperationMetadata[] {
   const operations: OperationMetadata[] = [];
   for (const [path, pathItem] of Object.entries(spec.paths ?? {})) {
-    for (const [method, rawOperation] of Object.entries(pathItem)) {
+    for (const [method, operation] of pathOperations(pathItem)) {
       if (!HTTP_METHODS.has(method)) {
         continue;
       }
-      const operation = openApiOperation.parse(rawOperation);
       operations.push({
         optionalCredential: hasOptionalCredential(operation),
         key: normalizeOperationKey(method, path),

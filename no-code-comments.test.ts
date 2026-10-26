@@ -55,7 +55,9 @@ function flaggedLines(): Map<string, number> {
     { encoding: "utf8" },
   );
   const { diagnostics } = z
-    .looseObject({ diagnostics: z.array(z.looseObject({ code: z.string(), filename: z.string() })) })
+    .looseObject({
+      diagnostics: z.array(z.looseObject({ code: z.string(), filename: z.string() })),
+    })
     .parse(JSON.parse(stdout));
   const counts = new Map<string, number>();
   for (const { code, filename } of diagnostics) {

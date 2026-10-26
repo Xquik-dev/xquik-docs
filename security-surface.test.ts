@@ -3,7 +3,6 @@ import { readFileSync, readdirSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 
-
 const docsConfigSchema = z.looseObject({
   footer: z
     .looseObject({

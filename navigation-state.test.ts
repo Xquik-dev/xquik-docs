@@ -2,44 +2,28 @@ import { readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
-
-interface NavigationNode {
-  readonly expanded?: boolean | undefined;
-  readonly group?: string | undefined;
-  readonly groups?: readonly NavigationNode[] | undefined;
-  readonly pages?: readonly NavigationItem[] | undefined;
-  readonly tab?: string | undefined;
-  readonly tabs?: readonly NavigationNode[] | undefined;
-}
-
-type NavigationItem = string | NavigationNode;
-
-const navigationNode: z.ZodType<NavigationNode> = z.lazy(() =>
-  z.looseObject({
-    expanded: z.boolean().optional(),
-    group: z.string().optional(),
-    groups: z.array(navigationNode).optional(),
-    pages: z.array(z.union([z.string(), navigationNode])).optional(),
-    tab: z.string().optional(),
-    tabs: z.array(navigationNode).optional(),
-  }),
-);
-
-
+import {
+  docsRedirect,
+  navigationNode,
+  type NavigationItem,
+  type NavigationNode,
+} from "./scripts/lib/docs-config-schema.ts";
 
 const docsConfigSchema = z.looseObject({
   api: z.looseObject({
     examples: z.looseObject({ languages: z.array(z.string()).optional() }).optional(),
     mdx: z
       .looseObject({
-        auth: z.looseObject({ method: z.string().optional(), name: z.string().optional() }).optional(),
+        auth: z
+          .looseObject({ method: z.string().optional(), name: z.string().optional() })
+          .optional(),
         server: z.string().optional(),
       })
       .optional(),
   }),
   banner: z.looseObject({ content: z.string().optional() }).optional(),
   navigation: navigationNode,
-  redirects: z.array(z.looseObject({ destination: z.string(), source: z.string() })),
+  redirects: z.array(docsRedirect),
 });
 
 type DocsConfig = z.infer<typeof docsConfigSchema>;

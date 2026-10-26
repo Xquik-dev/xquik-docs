@@ -1,59 +1,12 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { z } from "zod";
-
-interface OpenApiSchema {
-  readonly $ref?: string | undefined;
-  readonly additionalProperties?: boolean | OpenApiSchema | undefined;
-  readonly allOf?: readonly OpenApiSchema[] | undefined;
-  readonly maximum?: number | undefined;
-  readonly properties?: Readonly<Record<string, unknown>> | undefined;
-  readonly required?: readonly string[] | undefined;
-}
-
-const openApiSchema: z.ZodType<OpenApiSchema> = z.lazy(() =>
-  z.looseObject({
-    $ref: z.string().optional(),
-    additionalProperties: z.union([z.boolean(), openApiSchema]).optional(),
-    allOf: z.array(openApiSchema).optional(),
-    maximum: z.number().optional(),
-    properties: z.record(z.string(), z.unknown()).optional(),
-    required: z.array(z.string()).optional(),
-  }),
-);
-
-const openApiParameter = z.looseObject({
-  $ref: z.string().optional(),
-  name: z.string().optional(),
-  schema: openApiSchema.optional(),
-});
-
-type OpenApiParameter = z.infer<typeof openApiParameter>;
-
-const openApiDocument = z.looseObject({
-  components: z
-    .looseObject({
-      parameters: z.record(z.string(), openApiParameter).optional(),
-      schemas: z.record(z.string(), openApiSchema).optional(),
-    })
-    .optional(),
-  paths: z
-    .record(
-      z.string(),
-      z.looseObject({
-        get: z
-          .looseObject({
-            description: z.string().optional(),
-            parameters: z.array(openApiParameter).optional(),
-          })
-          .optional(),
-      }),
-    )
-    .optional(),
-});
-
-type OpenApiDocument = z.infer<typeof openApiDocument>;
+import {
+  openApiDocument,
+  type OpenApiDocument,
+  type OpenApiParameter,
+  type OpenApiSchema,
+} from "./scripts/lib/openapi-schema.ts";
 
 const PROJECT_ROOT = process.cwd();
 const GUIDE = readFileSync(join(PROJECT_ROOT, "guides/tweet-profile-api-fields.mdx"), "utf8");

@@ -1,38 +1,14 @@
 import { readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
-import { z } from "zod";
+import { parseOpenApi, type OpenApiDocument } from "./scripts/lib/openapi-schema.ts";
 
-interface SchemaNode {
-  readonly $ref?: string | undefined;
-  readonly enum?: readonly string[] | undefined;
-  readonly oneOf?: readonly SchemaNode[] | undefined;
-  readonly properties?: Readonly<Record<string, SchemaNode>> | undefined;
-  readonly title?: string | undefined;
-}
-
-const schemaNode: z.ZodType<SchemaNode> = z.lazy(() =>
-  z.looseObject({
-    $ref: z.string().optional(),
-    enum: z.array(z.string()).optional(),
-    oneOf: z.array(schemaNode).optional(),
-    properties: z.record(z.string(), schemaNode).optional(),
-    title: z.string().optional(),
-  }),
-);
-
-const openApiDocument = z.looseObject({
-  components: z.looseObject({ schemas: z.record(z.string(), schemaNode).optional() }).optional(),
-});
-
-type OpenApiDocument = z.infer<typeof openApiDocument>;
-
-function parseOpenApi(): OpenApiDocument {
-  return openApiDocument.parse(Bun.YAML.parse(readFileSync("openapi.yaml", "utf8")));
+function readOpenApi(): OpenApiDocument {
+  return parseOpenApi(readFileSync("openapi.yaml", "utf8"));
 }
 
 function requireErrorEnum(title: string, property?: string): readonly string[] {
-  const schemas = parseOpenApi().components?.schemas;
+  const schemas = readOpenApi().components?.schemas;
   const variants = schemas?.["Error"]?.properties?.["error"]?.oneOf;
   const variant = variants?.find((candidate) => candidate.title === title);
   if (variant === undefined) {
@@ -45,7 +21,13 @@ function requireErrorEnum(title: string, property?: string): readonly string[] {
     const label = property === undefined ? title : `${title}.${property}`;
     throw new Error(`${label} is missing its enum.`);
   }
-  return values;
+  const codes = values.flatMap((value): string[] => (typeof value === "string" ? [value] : []));
+  if (codes.length !== values.length) {
+    throw new Error(
+      `${property === undefined ? title : `${title}.${property}`} has an enum value that is not a string.`,
+    );
+  }
+  return codes;
 }
 
 describe("public error contract", (): void => {

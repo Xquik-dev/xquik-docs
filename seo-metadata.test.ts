@@ -2,6 +2,10 @@ import { readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
+import {
+  navigationNode as navigationGroup,
+  type NavigationItem,
+} from "./scripts/lib/docs-config-schema.ts";
 
 const MIN_DESCRIPTION_LENGTH = 150;
 const MAX_DESCRIPTION_LENGTH = 160;
@@ -10,34 +14,6 @@ const MAX_RENDERED_TITLE_LENGTH = 60;
 const TITLE_SUFFIX = " - Xquik";
 const SITE_DESCRIPTION =
   "Search tweets, export followers and replies, retrieve profiles and timelines, monitor accounts, post tweets, and use webhooks, SDKs & MCP. Not affiliated with X Corp.";
-
-
-interface NavigationGroup {
-  readonly anchors?: readonly NavigationItem[] | undefined;
-  readonly groups?: readonly NavigationItem[] | undefined;
-  readonly pages?: readonly NavigationItem[] | undefined;
-  readonly tabs?: readonly NavigationItem[] | undefined;
-}
-type NavigationItem = string | NavigationGroup;
-
-const navigationItem: z.ZodType<NavigationItem> = z.lazy(() =>
-  z.union([
-    z.string(),
-    z.looseObject({
-      anchors: z.array(navigationItem).optional(),
-      groups: z.array(navigationItem).optional(),
-      pages: z.array(navigationItem).optional(),
-      tabs: z.array(navigationItem).optional(),
-    }),
-  ]),
-);
-
-const navigationGroup = z.looseObject({
-  anchors: z.array(navigationItem).optional(),
-  groups: z.array(navigationItem).optional(),
-  pages: z.array(navigationItem).optional(),
-  tabs: z.array(navigationItem).optional(),
-});
 
 const docsConfigSchema = z.looseObject({
   description: z.string(),
