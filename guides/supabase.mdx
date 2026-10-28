@@ -82,11 +82,13 @@ setup.
 
 ## Call the Twitter API with the TypeScript SDK
 
-The `_shared/xquik.ts` module creates the typed SDK client from
+`createXquik` in `_shared/xquik.ts` creates the typed SDK client from
 `XQUIK_API_KEY`. Import it from any function in `supabase/functions`.
 
 ```typescript
-import { xquik } from "../_shared/xquik.ts";
+import { createXquik } from "../_shared/xquik.ts";
+
+const xquik = createXquik();
 
 Deno.serve(async () => {
   const profile = await xquik.x.users.retrieve("NASA");
@@ -161,9 +163,9 @@ select cron.unschedule('nasa-timeline');
 
 ## Run actions from row inserts
 
-Insert a row into `public.xquik_actions` to run any operation. A trigger sends
-it, and the row moves from `queued` to `sent`. Then `xquik-collect` marks it
-`succeeded` or `failed`.
+Insert a row into `public.xquik_actions` to run an operation. A trigger sends
+it as the row goes in, so the row lands as `sent`. Then `xquik-collect` marks
+it `succeeded` or `failed`.
 
 ```sql
 insert into public.xquik_actions (operation_id, params)
@@ -175,6 +177,9 @@ values ('getUser', '{"id": "NASA"}');
 ```sql
 select xquik.enqueue('getTrends', '{"woeid": 1}');
 ```
+
+Actions and schedules run `GET`, `POST`, and `DELETE` operations. Run `PUT`
+and `PATCH` operations with `xquik.call`.
 
 An app, a trigger, or a Supabase Database Webhook can add these rows. The table
 has row level security with no policies. Insert from your server with the
@@ -228,6 +233,7 @@ The function answers each delivery with 1 status.
 | `webhook.test`                               | `200`  | No     |
 | Stale timestamp, bad signature, reused nonce | `401`  | No     |
 | Any method other than `POST`                 | `405`  | No     |
+| Signed body that is not an Xquik event       | `200`  | No     |
 | Database write failed                        | `503`  | No     |
 
 A `503` makes Xquik retry the delivery later.
@@ -260,7 +266,7 @@ The function handles each case below. Keep the behavior when you edit it.
   <Card title="Fast 2xx" icon="timer">
 
     Xquik waits 10 seconds for a `2xx`. The function stores the event and
-    answers. Slow work runs after the response.
+    answers. Put slow work in `onEvent`, which runs after the response.
 
   </Card>
   <Card title="Signed retries" icon="repeat-2">
@@ -341,7 +347,7 @@ their secrets.
 
 ### How do I call the Twitter API from an Edge Function?
 
-Import the shared client from `_shared/xquik.ts`. Call any SDK method, such as
+Call `createXquik()` from `_shared/xquik.ts`. Then call any SDK method, such as
 `xquik.x.users.retrieve("NASA")`.
 
 ### Can I call the Twitter API from Postgres?
