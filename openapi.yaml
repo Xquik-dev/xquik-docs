@@ -107,6 +107,8 @@ info:
 
     - Pause a runaway agent's API key in 1 click, then resume it anytime.
 
+    - Lock an API key to the IPs or CIDR ranges your servers call from.
+
 
     ### Rich data
 
@@ -766,7 +768,9 @@ paths:
       security: [{ cookieSession: [] }]
       requestBody:
         required: true
-        description: Optional display name, scope & expiry for the new API key.
+        description:
+          Optional display name, scope, expiry & IP allowlist for the new API
+          key.
         content:
           application/json:
             schema:
@@ -806,11 +810,24 @@ paths:
                     Days until the key stops working. Missing or null keeps it
                     working until you revoke it.
                   example: 30
+                allowedIps:
+                  type: array
+                  maxItems: 20
+                  items:
+                    type: string
+                    maxLength: 64
+                    example: 203.0.113.4
+                  description:
+                    Up to 20 IPv4 or IPv6 addresses or CIDR ranges that may use
+                    the key. Calls from other IPs answer 403 with
+                    ip_not_allowed. An empty or missing list allows any IP.
+                  example: ['203.0.113.4', '198.51.100.0/24']
             example:
               name: My API Key
               scope: paid_reads
               scopes: [read]
               expiresInDays: 30
+              allowedIps: ['203.0.113.4']
       responses:
         '201':
           description: API key created
@@ -826,6 +843,7 @@ paths:
                     prefix,
                     scope,
                     scopes,
+                    allowedIps,
                     isActive,
                     createdAt,
                   ]
@@ -852,6 +870,16 @@ paths:
                     items: *api-key-scope-name
                     description: What the key can call.
                     example: [read]
+                  allowedIps:
+                    type: array
+                    items:
+                      type: string
+                      example: 198.51.100.0/24
+                    description:
+                      IPs & CIDR ranges that may use the key. An empty list
+                      allows any IP. Ranges come back normalized, so
+                      198.51.100.7/24 reads 198.51.100.0/24.
+                    example: ['203.0.113.4', '198.51.100.0/24']
                   isActive:
                     type: boolean
                     example: true
@@ -870,6 +898,7 @@ paths:
                 prefix: xq_live_exam
                 scope: paid_reads
                 scopes: [read]
+                allowedIps: ['203.0.113.4']
                 isActive: true
                 createdAt: '2025-01-15T12:00:00Z'
                 expiresAt: '2025-02-14T12:00:00Z'
@@ -975,6 +1004,7 @@ paths:
                         prefix: xq_live_exam
                         scope: paid_reads
                         scopes: [read]
+                        allowedIps: []
                         isActive: true
                         createdAt: '2025-01-15T12:00:00Z'
                         pausedAt: '2025-01-20T08:00:00Z'
@@ -1046,9 +1076,10 @@ paths:
       operationId: updateApiKey
       x-mcp-exclusion-reason: *browser-auth
       description:
-        Renames an active API key, changes its scopes, or pauses or resumes it.
-        Send any of name, scope, scopes & paused. Pausing again keeps the first
-        pause time. Pausing or resuming a revoked or expired key answers 409.
+        Renames an active API key, changes its scopes or IP allowlist, or pauses
+        or resumes it. Send any of name, scope, scopes, paused & allowedIps.
+        Pausing again keeps the first pause time. Pausing or resuming a revoked
+        or expired key answers 409.
       summary: Update API key
       tags: [API Keys]
       security: [{ cookieSession: [] }]
@@ -1056,7 +1087,8 @@ paths:
         - $ref: '#/components/parameters/ResourceId'
       requestBody:
         required: true
-        description: The name, scopes or paused state to save on the key.
+        description:
+          The name, scopes, paused state or IP allowlist to save on the key.
         content:
           application/json:
             schema:
@@ -1085,6 +1117,17 @@ paths:
                     monitors, exports & billing add their routes. scopes wins
                     over scope. Missing keeps the key's scopes.
                   example: [read, monitors]
+                allowedIps:
+                  type: array
+                  maxItems: 20
+                  items:
+                    type: string
+                    maxLength: 64
+                    example: 203.0.113.4
+                  description:
+                    Up to 20 IPv4 or IPv6 addresses or CIDR ranges. The list
+                    replaces the saved one, & an empty list allows any IP.
+                  example: ['203.0.113.4', '198.51.100.0/24']
                 paused:
                   type: boolean
                   description:
@@ -1095,6 +1138,7 @@ paths:
               name: Analytics notebook
               scope: paid_reads
               scopes: [read]
+              allowedIps: ['203.0.113.4']
               paused: true
       responses:
         '200':
@@ -1109,6 +1153,7 @@ paths:
                 prefix: xq_live_exam
                 scope: paid_reads
                 scopes: [read]
+                allowedIps: []
                 isActive: true
                 createdAt: '2025-01-15T12:00:00Z'
         '400':
@@ -19641,6 +19686,7 @@ components:
                 - api_key_limit_reached
                 - api_key_paused
                 - api_key_revoked
+                - ip_not_allowed
                 - article_not_found
                 - closed
                 - dm_not_permitted
@@ -20600,7 +20646,8 @@ components:
     ApiKey:
       description: API key metadata returned when listing keys.
       type: object
-      required: [id, name, prefix, scope, scopes, isActive, createdAt]
+      required:
+        [id, name, prefix, scope, scopes, allowedIps, isActive, createdAt]
       properties:
         id: *resource-id-example-schema
         name:
@@ -20625,6 +20672,16 @@ components:
             The scopes the key holds, such as read & monitors. A Full access key
             holds full.
           example: [read]
+        allowedIps:
+          type: array
+          items:
+            type: string
+            example: 198.51.100.0/24
+          description:
+            The IPs & CIDR ranges the key accepts calls from. An empty list
+            accepts any IP. The API returns each range with host bits cleared,
+            IPv6 in short form and IPv4-mapped IPv6 as IPv4.
+          example: ['203.0.113.4', '198.51.100.0/24']
         isActive:
           type: boolean
           example: true
