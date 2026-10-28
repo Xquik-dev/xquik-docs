@@ -105,6 +105,8 @@ info:
 
     - Common names for cursor, limit, sort & type just work.
 
+    - Pause a runaway agent's API key in 1 click, then resume it anytime.
+
 
     ### Rich data
 
@@ -885,6 +887,76 @@ paths:
                       API keys & OAuth tokens cannot use this route. Sign in at
                       dashboard.xquik.com/account instead.
         '429': *rate-limit-exceeded-response
+    patch:
+      operationId: pauseApiKeys
+      x-mcp-exclusion-reason: *browser-auth
+      description:
+        Pauses or resumes up to 100 of your API keys at once & lists the keys it
+        changed, newest first. Revoked, expired, unknown & other accounts' keys
+        are skipped. Pausing again keeps the first pause time.
+      summary: Pause or resume API keys
+      tags: [API Keys]
+      security: [{ cookieSession: [] }]
+      requestBody:
+        required: true
+        description: IDs of the API keys to pause or resume.
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ids, paused]
+              properties:
+                ids:
+                  type: array
+                  minItems: 1
+                  maxItems: 100
+                  items:
+                    type: string
+                    maxLength: 19
+                    pattern: '^[1-9][0-9]{0,18}$'
+                    example: '42'
+                  example: ['42', '43']
+                paused:
+                  type: boolean
+                  description:
+                    true pauses every listed key, so their calls get 403
+                    `api_key_paused`. false resumes them at once.
+                  example: true
+            example:
+              ids: ['42', '43']
+              paused: true
+      responses:
+        '200':
+          description: API keys paused or resumed
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [keys]
+                properties:
+                  keys:
+                    type: array
+                    description: The keys it changed, newest first.
+                    items:
+                      $ref: '#/components/schemas/ApiKey'
+                    example: &paused-api-keys-example
+                      - id: '43'
+                        name: Analytics notebook
+                        prefix: xq_live_exam
+                        scope: paid_reads
+                        isActive: true
+                        createdAt: '2025-01-15T12:00:00Z'
+                        pausedAt: '2025-01-20T08:00:00Z'
+              example:
+                keys: *paused-api-keys-example
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/SessionRequired'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
   /api-keys/bulk-revoke:
     post:
       operationId: bulkRevokeApiKeys
@@ -943,8 +1015,9 @@ paths:
       operationId: updateApiKey
       x-mcp-exclusion-reason: *browser-auth
       description:
-        Renames an active API key or changes its scope. Send name, scope or
-        both.
+        Renames an active API key, changes its scope, or pauses or resumes it.
+        Send any of name, scope & paused. Pausing again keeps the first pause
+        time. Pausing or resuming a revoked or expired key answers 409.
       summary: Update API key
       tags: [API Keys]
       security: [{ cookieSession: [] }]
@@ -952,7 +1025,7 @@ paths:
         - $ref: '#/components/parameters/ResourceId'
       requestBody:
         required: true
-        description: The name, scope or both to save on the key.
+        description: The name, scope or paused state to save on the key.
         content:
           application/json:
             schema:
@@ -972,9 +1045,16 @@ paths:
                   description:
                     The scope to save. The key's next request uses it.
                   example: paid_reads
+                paused:
+                  type: boolean
+                  description:
+                    true pauses the key, so its calls get 403 `api_key_paused`.
+                    false resumes it, & its next call goes through.
+                  example: true
             example:
               name: Analytics notebook
               scope: paid_reads
+              paused: true
       responses:
         '200':
           description: API key updated
@@ -996,6 +1076,28 @@ paths:
           $ref: '#/components/responses/SessionRequired'
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          description:
+            The key is revoked or expired, so it can't be paused or resumed.
+            Create a new key instead.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                revoked:
+                  summary: A revoked key
+                  value:
+                    error: api_key_revoked
+                    message:
+                      This API key is revoked. Create a new key at
+                      dashboard.xquik.com/api-keys.
+                expired:
+                  summary: An expired key
+                  value:
+                    error: api_key_expired
+                    message:
+                      This API key expired. Create a new key at
+                      dashboard.xquik.com/api-keys.
         '429': *rate-limit-exceeded-response
     delete:
       operationId: revokeApiKey
@@ -4195,6 +4297,7 @@ paths:
         '401': &anonymous-guest-authentication-response
           $ref: '#/components/responses/AnonymousGuestAuthenticationRequired'
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '502': *x-api-error-response
         '503':
           $ref: '#/components/responses/ReadBusy'
@@ -4545,6 +4648,7 @@ paths:
           $ref: '#/components/responses/Unauthenticated'
         '402':
           $ref: '#/components/responses/PaymentRequired'
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '502': *x-api-error-response
         '503':
           $ref: '#/components/responses/ReadBusy'
@@ -4817,6 +4921,7 @@ paths:
                   Ask for a later time.'
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '502': *x-api-error-response
         '503':
           $ref: '#/components/responses/ReadBusy'
@@ -4914,6 +5019,7 @@ paths:
           $ref: '#/components/responses/UnknownField'
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '502': *x-api-error-response
         '503':
           $ref: '#/components/responses/ReadBusy'
@@ -5016,6 +5122,7 @@ paths:
                   x.com/i/trending/2110209733533598095.'
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404':
           description: No story holds the ID. Free.
           content:
@@ -5114,6 +5221,7 @@ paths:
           $ref: '#/components/responses/UnknownField'
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '502': { $ref: '#/components/responses/XApiError' }
         '503':
           $ref: '#/components/responses/ReadBusy'
@@ -5214,6 +5322,7 @@ paths:
                 message: 'Search query required. Use q.'
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '502': { $ref: '#/components/responses/XApiError' }
         '503':
           $ref: '#/components/responses/ReadBusy'
@@ -5471,6 +5580,7 @@ paths:
         '400': *invalid-input-response
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '502': *x-api-error-response
         '503':
           $ref: '#/components/responses/ReadBusy'
@@ -5746,6 +5856,7 @@ paths:
         '400': *invalid-input-response
         '401': *unauthenticated-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404':
           description: Article not found
           content:
@@ -5816,6 +5927,7 @@ paths:
         '400': *invalid-input-response
         '401': *unauthenticated-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404': &tweet-not-found-response
           $ref: '#/components/responses/TweetNotFound'
         '502': *x-api-error-response
@@ -5993,6 +6105,7 @@ paths:
         '400': *invalid-input-response
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '502': *x-api-error-response
         '503':
           $ref: '#/components/responses/ReadBusy'
@@ -6061,6 +6174,7 @@ paths:
         '400': *invalid-input-response
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '502': *x-api-error-response
         '503':
           $ref: '#/components/responses/ReadBusy'
@@ -6121,6 +6235,7 @@ paths:
         '400': *invalid-input-response
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '502': *x-api-error-response
         '503':
           $ref: '#/components/responses/ReadBusy'
@@ -6205,6 +6320,7 @@ paths:
                     parameter: 'types'
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '502': *x-api-error-response
         '503':
           $ref: '#/components/responses/ReadBusy'
@@ -6252,6 +6368,7 @@ paths:
         '400': *invalid-input-response
         '401': *unauthenticated-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404': *user-not-found-response
         '502': *x-api-error-response
         '503':
@@ -6408,6 +6525,7 @@ paths:
                 error: 'missing_params'
         '401': *unauthenticated-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '502': *x-api-error-response
         '503':
           $ref: '#/components/responses/ReadBusy'
@@ -7589,6 +7707,7 @@ paths:
         '400': *invalid-input-response
         '401': *unauthenticated-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '502':
           $ref: '#/components/responses/XApiError'
         '429': *rate-limit-exceeded-response-2
@@ -9058,6 +9177,7 @@ paths:
         '400': *invalid-input-response
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404': *user-not-found-response
         '502': *x-api-error-response
         '503':
@@ -9085,6 +9205,7 @@ paths:
         '400': *invalid-input-response
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404': *user-not-found-response
         '502': *x-api-error-response
         '503':
@@ -9283,6 +9404,7 @@ paths:
           $ref: '#/components/responses/InvalidInput'
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404': *user-not-found-response
         '502':
           $ref: '#/components/responses/XApiError'
@@ -9623,11 +9745,19 @@ paths:
             DM read forbidden. The connected account may not be in the
             conversation, or it may be restricted or need reauthentication. A
             `paid_reads` key gets `forbidden`. Check the error code, then fix
-            the account or use a Full access key.
+            the account or use a Full access key. A paused API key gets
+            `api_key_paused`, so resume it on the dashboard.
           content:
             application/json:
               schema: *error-schema
               examples:
+                apiKeyPaused:
+                  summary: A paused API key
+                  value:
+                    error: api_key_paused
+                    message:
+                      This API key is paused. Resume it at
+                      dashboard.xquik.com/api-keys to use it again.
                 dmNotPermitted:
                   summary: Account is not a conversation participant
                   value:
@@ -9713,6 +9843,7 @@ paths:
         '400': *invalid-input-response
         '401': *unauthenticated-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404': *not-found-response
         '424':
           $ref: '#/components/responses/XApiError'
@@ -9773,6 +9904,7 @@ paths:
           $ref: '#/components/responses/InvalidInput'
         '401': *unauthenticated-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404': *not-found-response
         '424':
           $ref: '#/components/responses/XApiError'
@@ -9821,6 +9953,7 @@ paths:
         '400': *invalid-input-response
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404': *not-found-response
         '424':
           $ref: '#/components/responses/XApiError'
@@ -9884,6 +10017,7 @@ paths:
         '400': *invalid-input-response
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '424':
           $ref: '#/components/responses/XApiError'
         '429': *rate-limit-exceeded-response-2
@@ -9930,6 +10064,7 @@ paths:
         '400': *invalid-input-response
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404': *not-found-response
         '424':
           $ref: '#/components/responses/XApiError'
@@ -10002,6 +10137,7 @@ paths:
         '400': *invalid-input-response
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404': *not-found-response
         '424':
           $ref: '#/components/responses/XApiError'
@@ -10031,6 +10167,7 @@ paths:
         '400': *invalid-input-response
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404': *not-found-response
         '424':
           $ref: '#/components/responses/XApiError'
@@ -10080,6 +10217,7 @@ paths:
         '400': *invalid-input-response
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '424':
           $ref: '#/components/responses/XApiError'
         '429': *rate-limit-exceeded-response-2
@@ -10114,6 +10252,7 @@ paths:
         '400': *invalid-input-response
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '424':
           $ref: '#/components/responses/XApiError'
         '429': *rate-limit-exceeded-response-2
@@ -10183,6 +10322,7 @@ paths:
         '400': *invalid-input-response
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '424':
           $ref: '#/components/responses/XApiError'
         '429': *rate-limit-exceeded-response-2
@@ -10254,6 +10394,7 @@ paths:
         '400': *invalid-input-response
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '424':
           $ref: '#/components/responses/XApiError'
         '429': *rate-limit-exceeded-response-2
@@ -10326,6 +10467,7 @@ paths:
           $ref: '#/components/responses/AnonymousGuestAuthenticationRequired'
         '402':
           $ref: '#/components/responses/PaymentRequired'
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '424':
           $ref: '#/components/responses/XApiError'
         '429':
@@ -10466,6 +10608,7 @@ paths:
                       then use next_cursor.'
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '424': { $ref: '#/components/responses/XApiError' }
         '429': *rate-limit-exceeded-response-2
         '502': { $ref: '#/components/responses/XApiError' }
@@ -10526,6 +10669,7 @@ paths:
                 message: 'Search query required. Use q.'
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '424': { $ref: '#/components/responses/XApiError' }
         '429': *rate-limit-exceeded-response-2
         '502': { $ref: '#/components/responses/XApiError' }
@@ -10600,6 +10744,7 @@ paths:
                 message: 'Send a job ID or job URL, such as x.com/i/jobs/123.'
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404':
           description: Job not found
           content:
@@ -10656,6 +10801,7 @@ paths:
                 message: 'Search query required. Use q.'
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '424':
           $ref: '#/components/responses/XApiError'
         '429': *rate-limit-exceeded-response-2
@@ -10714,6 +10860,7 @@ paths:
         '400': *invalid-input-response
         '401': *unauthenticated-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404': *not-found-response
         '424':
           $ref: '#/components/responses/XApiError'
@@ -10771,6 +10918,7 @@ paths:
         '400': *invalid-input-response
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404': *not-found-response
         '424':
           $ref: '#/components/responses/XApiError'
@@ -10803,6 +10951,7 @@ paths:
         '400': *invalid-input-response
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404': *not-found-response
         '424':
           $ref: '#/components/responses/XApiError'
@@ -10899,6 +11048,7 @@ paths:
         '400': *invalid-input-response
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404': *not-found-response
         '424':
           $ref: '#/components/responses/XApiError'
@@ -10974,6 +11124,7 @@ paths:
           $ref: '#/components/responses/Unauthenticated'
         '402':
           $ref: '#/components/responses/PaymentRequired'
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404':
           description: X knows no such broadcast
           content:
@@ -11056,6 +11207,7 @@ paths:
                   URL.'
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404':
           $ref: '#/components/responses/ContributorNotFound'
         '424': { $ref: '#/components/responses/XApiError' }
@@ -11159,6 +11311,7 @@ paths:
           $ref: '#/components/responses/ContributorNotesInvalidInput'
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404':
           $ref: '#/components/responses/ContributorNotFound'
         '424': { $ref: '#/components/responses/XApiError' }
@@ -11209,6 +11362,7 @@ paths:
           $ref: '#/components/responses/ContributorNotesInvalidInput'
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404':
           $ref: '#/components/responses/ContributorNotFound'
         '424': { $ref: '#/components/responses/XApiError' }
@@ -11318,6 +11472,7 @@ paths:
           $ref: '#/components/responses/AnonymousGuestAuthenticationRequired'
         '402':
           $ref: '#/components/responses/PaymentRequired'
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '424':
           $ref: '#/components/responses/XApiError'
         '429':
@@ -11381,6 +11536,7 @@ paths:
         '400': *invalid-input-response
         '401': *unauthenticated-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404': *not-found-response
         '424':
           $ref: '#/components/responses/XApiError'
@@ -11450,6 +11606,7 @@ paths:
           $ref: '#/components/responses/Unauthenticated'
         '402':
           $ref: '#/components/responses/PaymentRequired'
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404':
           description:
             Unknown Space, a Space without a recording, or a cancelled Space
@@ -11556,6 +11713,7 @@ paths:
           $ref: '#/components/responses/InvalidInput'
         '401': *unauthenticated-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '424':
           $ref: '#/components/responses/XApiError'
         '429': *rate-limit-exceeded-response-2
@@ -11597,6 +11755,7 @@ paths:
           $ref: '#/components/responses/InvalidInput'
         '401': *unauthenticated-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404': *not-found-response
         '424':
           $ref: '#/components/responses/XApiError'
@@ -11638,6 +11797,7 @@ paths:
           $ref: '#/components/responses/InvalidInput'
         '401': *unauthenticated-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404': *not-found-response
         '424':
           $ref: '#/components/responses/XApiError'
@@ -11680,6 +11840,7 @@ paths:
           $ref: '#/components/responses/InvalidInput'
         '401': *unauthenticated-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404': *not-found-response
         '424':
           $ref: '#/components/responses/XApiError'
@@ -11722,6 +11883,7 @@ paths:
           $ref: '#/components/responses/InvalidInput'
         '401': *unauthenticated-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404': *not-found-response
         '424':
           $ref: '#/components/responses/XApiError'
@@ -11764,6 +11926,7 @@ paths:
         '401': *unauthenticated-response
         '402':
           $ref: '#/components/responses/PaymentRequired'
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404': *not-found-response
         '424':
           $ref: '#/components/responses/XApiError'
@@ -11807,6 +11970,7 @@ paths:
           $ref: '#/components/responses/InvalidInput'
         '401': *unauthenticated-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '424':
           $ref: '#/components/responses/XApiError'
         '429':
@@ -11852,6 +12016,7 @@ paths:
           $ref: '#/components/responses/InvalidInput'
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404': *not-found-response
         '424':
           $ref: '#/components/responses/XApiError'
@@ -11958,6 +12123,7 @@ paths:
         '400': *invalid-input-response
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404': *tweet-not-found-response
         '502': *x-api-error-response
         '429': *rate-limit-exceeded-response-2
@@ -12108,6 +12274,7 @@ paths:
         '400': *invalid-input-response
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404': *tweet-not-found-response
         '502': *x-api-error-response
         '429': *rate-limit-exceeded-response-2
@@ -12289,6 +12456,7 @@ paths:
                       then use next_cursor.'
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404': *tweet-not-found-response
         '502': *x-api-error-response
         '503':
@@ -12341,6 +12509,7 @@ paths:
                       then use next_cursor.'
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404': *tweet-not-found-response
         '502': *x-api-error-response
         '503':
@@ -12368,6 +12537,7 @@ paths:
         '400': *invalid-input-response
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404': *tweet-not-found-response
         '502': *x-api-error-response
         '503':
@@ -12398,6 +12568,7 @@ paths:
         '400': *invalid-input-response
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404': *tweet-not-found-response
         '502': *x-api-error-response
         '503':
@@ -12467,6 +12638,7 @@ paths:
         '400': *invalid-input-response
         '401': *unauthenticated-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404': *tweet-not-found-response
         '502': *x-api-error-response
         '503':
@@ -12539,6 +12711,7 @@ paths:
         '400': *invalid-input-response
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404': *user-not-found-response
         '502': *x-api-error-response
         '503':
@@ -12609,6 +12782,7 @@ paths:
         '400': *invalid-input-response
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404': *user-not-found-response
         '502': *x-api-error-response
         '503':
@@ -12645,6 +12819,7 @@ paths:
         '400': *invalid-input-response
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404': *tweet-not-found-response
         '502': *x-api-error-response
         '503':
@@ -12690,6 +12865,7 @@ paths:
         '400': *invalid-input-response
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404': *user-not-found-response
         '502': *x-api-error-response
         '503':
@@ -12762,6 +12938,7 @@ paths:
         '400': *invalid-input-response
         '401': *unauthenticated-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404': *tweet-not-found-response
         '502': *x-api-error-response
         '503':
@@ -12831,6 +13008,7 @@ paths:
           $ref: '#/components/responses/InvalidInput'
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '502':
           $ref: '#/components/responses/XApiError'
         '503':
@@ -12889,6 +13067,7 @@ paths:
           $ref: '#/components/responses/InvalidInput'
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404': *tweet-not-found-response
         '502':
           $ref: '#/components/responses/XApiError'
@@ -13126,6 +13305,7 @@ paths:
         '400': *invalid-input-response
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404': *user-not-found-response
         '502': *x-api-error-response
         '503':
@@ -15019,6 +15199,18 @@ components:
             error: 'unauthenticated'
             message:
               'Authentication required. Provide a valid API key or bearer token.'
+    ApiKeyPaused:
+      description: >-
+        The API key is paused. Resume it at dashboard.xquik.com/api-keys & its
+        next call goes through.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: &api-key-paused
+            error: api_key_paused
+            message:
+              This API key is paused. Resume it at dashboard.xquik.com/api-keys
+              to use it again.
     AnonymousGuestAuthenticationRequired:
       description: >
         Non-MPP paid reads require Bearer authentication. Without credentials,
@@ -15250,38 +15442,57 @@ components:
               Ask the user to confirm a USD amount before creating checkout.
             payment_options: *guest-checkout-payment-options
     ReadKeyForbidden:
-      description: A `paid_reads` key called a route that needs Full access.
+      description:
+        A `paid_reads` key called a route that needs Full access. A paused API
+        key gets `api_key_paused`, so resume it on the dashboard.
       content:
         application/json:
           schema: *error-schema
-          example: &read-key-refusal
-            error: forbidden
-            message:
-              This API key calls paid X read routes only, such as GET
-              /api/v1/x/tweets/search. Create a Full access key at
-              dashboard.xquik.com/api-keys to call this route.
+          examples:
+            apiKeyPaused:
+              summary: A paused API key
+              value: *api-key-paused
+            readKey:
+              summary: A paid_reads key called a Full access route
+              value: &read-key-refusal
+                error: forbidden
+                message:
+                  This API key calls paid X read routes only, such as GET
+                  /api/v1/x/tweets/search. Create a Full access key at
+                  dashboard.xquik.com/api-keys to call this route.
     ProtectedTimeline:
-      description: >-
+      description:
         The account is protected. Choose a public one. This applies to every
         timeline page & mode. Xquik charges nothing. Profile lookup still works.
         Protected accounts & private Lists get a clear answer, not an empty
-        page.
+        page. A paused API key gets `api_key_paused`, so resume it on the
+        dashboard.
       content:
         application/json:
           schema: *error-schema
-          example:
-            error: x_account_protected
-            message: Account is protected. Choose a public account.
+          examples:
+            apiKeyPaused:
+              summary: A paused API key
+              value: *api-key-paused
+            protectedTarget:
+              summary: The target account is protected
+              value:
+                error: x_account_protected
+                message: Account is protected. Choose a public account.
     ExtractionForbidden:
       description:
         A `paid_reads` key gets `forbidden`, so use a Full access key. A
         protected target gets `x_account_protected`, so choose a public one.
         Xquik creates no job & charges nothing. Follower tools name the private
-        list.
+        list. A paused API key gets `api_key_paused`, so resume it on the
+        dashboard.
       content:
         application/json:
           schema: *error-schema
           examples:
+            apiKeyPaused:
+              summary: A paused API key
+              value: *api-key-paused
             protectedTarget:
               summary: The target account is protected
               value:
@@ -15293,47 +15504,73 @@ components:
     ProtectedFollowerList:
       description:
         X keeps a protected account's follower list private. Xquik charges
-        nothing.
-      content:
-        application/json:
-          schema: *error-schema
-          example:
-            error: x_account_protected
-            message:
-              This account's follower list is private. Try a public account.
-    ProtectedFollowingList:
-      description:
-        X keeps a protected account's following list private. Xquik charges
-        nothing.
-      content:
-        application/json:
-          schema: *error-schema
-          example:
-            error: x_account_protected
-            message:
-              This account's following list is private. Try a public account.
-    ProtectedVerifiedFollowerList:
-      description:
-        X keeps a protected account's verified follower list private. Xquik
-        charges nothing.
-      content:
-        application/json:
-          schema: *error-schema
-          example:
-            error: x_account_protected
-            message:
-              This account's verified follower list is private. Try a public
-              account.
-    XWriteForbidden:
-      description: >
-        A `paid_reads` key gets `forbidden`, so use a Full access key. A
-        connected X account that needs reauthentication gets
-        `account_needs_reauth`. A locked, suspended, or recovering account gets
-        `account_restricted`.
+        nothing. A paused API key gets `api_key_paused`, so resume it on the
+        dashboard.
       content:
         application/json:
           schema: *error-schema
           examples:
+            apiKeyPaused:
+              summary: A paused API key
+              value: *api-key-paused
+            protectedTarget:
+              summary: The target account is protected
+              value:
+                error: x_account_protected
+                message:
+                  This account's follower list is private. Try a public account.
+    ProtectedFollowingList:
+      description:
+        X keeps a protected account's following list private. Xquik charges
+        nothing. A paused API key gets `api_key_paused`, so resume it on the
+        dashboard.
+      content:
+        application/json:
+          schema: *error-schema
+          examples:
+            apiKeyPaused:
+              summary: A paused API key
+              value: *api-key-paused
+            protectedTarget:
+              summary: The target account is protected
+              value:
+                error: x_account_protected
+                message:
+                  This account's following list is private. Try a public
+                  account.
+    ProtectedVerifiedFollowerList:
+      description:
+        X keeps a protected account's verified follower list private. Xquik
+        charges nothing. A paused API key gets `api_key_paused`, so resume it on
+        the dashboard.
+      content:
+        application/json:
+          schema: *error-schema
+          examples:
+            apiKeyPaused:
+              summary: A paused API key
+              value: *api-key-paused
+            protectedTarget:
+              summary: The target account is protected
+              value:
+                error: x_account_protected
+                message:
+                  This account's verified follower list is private. Try a public
+                  account.
+    XWriteForbidden:
+      description:
+        A `paid_reads` key gets `forbidden`, so use a Full access key. A
+        connected X account that needs reauthentication gets
+        `account_needs_reauth`. A locked, suspended, or recovering account gets
+        `account_restricted`. A paused API key gets `api_key_paused`, so resume
+        it on the dashboard.
+      content:
+        application/json:
+          schema: *error-schema
+          examples:
+            apiKeyPaused:
+              summary: A paused API key
+              value: *api-key-paused
             accountNeedsReauth:
               summary: The connected X account needs reauthentication
               value:
@@ -19270,7 +19507,10 @@ components:
                 - account_not_found
                 - account_required
                 - account_restricted
+                - api_key_expired
                 - api_key_limit_reached
+                - api_key_paused
+                - api_key_revoked
                 - article_not_found
                 - closed
                 - dm_not_permitted
@@ -20254,6 +20494,13 @@ components:
           format: date-time
           description: When the key last made a request. Missing until it does.
           example: '2025-01-16T09:30:00Z'
+        pausedAt:
+          type: string
+          format: date-time
+          description:
+            When the key was paused. Missing while it works. A paused key gets
+            403 `api_key_paused` on every call.
+          example: '2025-01-20T08:00:00Z'
 
     Monitor:
       description: Account monitor that tracks activity for a given X user.
