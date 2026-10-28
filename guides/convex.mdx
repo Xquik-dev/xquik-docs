@@ -191,12 +191,15 @@ export const onEvent = internalMutation({
 `createWebhook` returns `{ endpointId, url, webhookId }`. The signing secret
 stays in the component's own table. It never reaches your code.
 
-`onEvent` is optional. The component runs it right after it stores each new
-event.
+`onEvent` is optional. The component runs it once for each `streamEventId` an
+endpoint receives. If 2 endpoints receive the same event, each endpoint's
+handler runs once.
 
 Run the `testWebhook` operation with the returned `webhookId` as `id`. The
 receiver answers the `webhook.test` alert with `200` and records `testedAt` on
-the endpoint. Read it with `components.xquik.webhooks.list`.
+the endpoint. Read it with `components.xquik.webhooks.list`. That query returns
+`testedAt` as `null` until the first test. For a webhook from
+`xquik.addWebhook`, the query returns `webhookId` as `null`.
 
 `components.xquik.webhooks.remove` deletes the Xquik webhook and the endpoint.
 
@@ -262,11 +265,14 @@ its arguments, and the timing. Add it to `convex/x.ts`.
 export const pollEvents = internalMutation({
   args: {},
   handler: async (ctx) => {
-    await xquik.schedule(ctx, "listEvents", { limit: 100 }, { everyMs: 300_000 });
+    await xquik.schedule(ctx, "listEvents", { limit: 100 }, { key: "events", everyMs: 300_000 });
   },
 });
 ```
 
+- `key` allows 1 scheduled or running job per key. Another call with that key
+  returns that job's ID. The job keeps its first arguments and timing.
+- If a keyed job's run crashed, the next call with that key replaces it.
 - `everyMs` repeats the job. It takes 60000 or more.
 - `delayMs` delays the first run.
 - The job stores each run's result. Read it with `components.xquik.jobs.get`
@@ -278,7 +284,9 @@ export const pollEvents = internalMutation({
   fills the key for you.
 
 Scheduled `listEvents` jobs store their events with the webhook events. Local
-development sees events without a public URL.
+development sees events without a public URL. The component runs no `onEvent`
+handler for an event from a `listEvents` job. If a webhook later delivers that
+event, the endpoint's handler still runs once.
 
 ## Show Twitter events live in React
 
