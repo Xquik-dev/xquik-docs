@@ -85,7 +85,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 Use this route only when creating a new credential. `fullKey` appears at creation, so store it immediately in a secret manager. List operations return inventory data and never replace this storage step.
 
-Give a workload that only reads X data a `paid_reads` key. Set `expiresInDays` so a forgotten key stops working on its own.
+Give each workload only the `scopes` it needs. A key that only reads X data needs `["read"]`. Set `expiresInDays` so a forgotten key stops working on its own.
 
 Set `allowedIps` so only your servers can use the key. Calls from other IPs get `403 ip_not_allowed`.
 
@@ -198,6 +198,7 @@ func main() {
 | Safe prefix            | `prefix`                    | Use this value in logs and key inventories.  |
 | Key label              | `name`                      | Identify the workload or environment.        |
 | Access scope           | `scope`                     | Confirm the key can call only what it needs. |
+| Scopes held            | `scopes`                    | Confirm the list matches the workload.       |
 | IP allowlist           | `allowedIps`                | Confirm only your servers' IPs are listed.   |
 | Creation time          | `createdAt`                 | Record when credential access began.         |
 | Expiry time            | `expiresAt`                 | Plan the replacement before this time.       |
@@ -233,8 +234,17 @@ Display name for the key. Defaults to `"Default"` if omitted.
 
 What the key can call. `full` calls every route an API key can use. `paid_reads` calls paid X read
 routes only, such as tweet search, profiles and tweets. Other routes answer it with
-`403 forbidden`. Missing or `null` saves `full`. Change it later with
+`403 insufficient_scope`. Missing or `null` saves `full`. Change it later with
 [Update API key](/api-reference/api-keys/update).
+
+</ParamField>
+
+<ParamField body="scopes" type="string[]">
+
+The scopes the key holds. Pick from `full`, `read`, `write`, `monitors`, `exports` & `billing`.
+Every key holds `read`. A list with `full` saves Full access. `scopes` wins over `scope`.
+Calls outside the list get `403 insufficient_scope`.
+[Authentication](/api-reference/authentication#limit-what-a-key-can-call) lists what each scope covers.
 
 </ParamField>
 
