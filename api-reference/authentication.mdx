@@ -265,6 +265,17 @@ It calls paid X read routes only. Other routes answer it with `403 forbidden`.
 Set `expiresInDays` from 1 to 365 so the key stops working on its own.
 [Update API key](/api-reference/api-keys/update) changes the name or scope later.
 
+### Restrict a key to your IPs
+
+Give a key an IP allowlist so only your servers can use it.
+List up to 20 IPs or CIDR ranges, like `203.0.113.4` or `198.51.100.0/24`.
+Both IPv4 & IPv6 work.
+Edit the list in the key's settings on the [API keys page](https://dashboard.xquik.com/en/api-keys).
+The API takes it as `allowedIps` when you create or update a key.
+Calls from any other IP get `403 ip_not_allowed`.
+An empty list allows any IP, so keys without a list work as before.
+Xquik saves each range in its standard form, so `198.51.100.7/24` becomes `198.51.100.0/24`.
+
 ### Pause a key
 
 Pause a key on the [API keys page](https://dashboard.xquik.com/en/api-keys) to stop it for a while.
@@ -314,6 +325,21 @@ A paused key returns this error.
 
 REST routes, webhook management routes & the MCP server all send it.
 Resume the key, then retry. Keys you never pause work as before.
+
+A call from an IP outside the key's allowlist returns this error.
+
+```json
+{
+  "error": "ip_not_allowed",
+  "message": "This API key only accepts calls from its IP allowlist, and 198.51.100.7 is not on it. Add 198.51.100.7 to the key at dashboard.xquik.com/api-keys, or call from a listed IP."
+}
+```
+
+**Status.** `403 Forbidden`
+
+The message names the IP that made the call.
+Add that IP to the key's allowlist, or call from a listed IP.
+Every call with the key checks the list, REST & MCP included.
 
 ## Security best practices
 
