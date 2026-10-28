@@ -109,6 +109,8 @@ info:
 
     - Lock an API key to the IPs or CIDR ranges your servers call from.
 
+    - Cap what an API key spends each month, with an email at 80%.
+
 
     ### Rich data
 
@@ -822,12 +824,21 @@ paths:
                     the key. Calls from other IPs answer 403 with
                     ip_not_allowed. An empty or missing list allows any IP.
                   example: ['203.0.113.4', '198.51.100.0/24']
+                monthlyBudgetCredits:
+                  type: [integer, 'null']
+                  minimum: 1
+                  maximum: 1000000000000
+                  description:
+                    Credits the key can spend each UTC calendar month. Missing
+                    or null sets no budget.
+                  example: 50000
             example:
               name: My API Key
               scope: paid_reads
               scopes: [read]
               expiresInDays: 30
               allowedIps: ['203.0.113.4']
+              monthlyBudgetCredits: 50000
       responses:
         '201':
           description: API key created
@@ -846,6 +857,7 @@ paths:
                     allowedIps,
                     isActive,
                     createdAt,
+                    monthlySpentCredits,
                   ]
                 properties:
                   id: &resource-id-example-schema
@@ -891,6 +903,10 @@ paths:
                     type: string
                     format: date-time
                     example: '2025-02-14T12:00:00Z'
+                  monthlyBudgetCredits:
+                    $ref: '#/components/schemas/ApiKey/properties/monthlyBudgetCredits'
+                  monthlySpentCredits:
+                    $ref: '#/components/schemas/ApiKey/properties/monthlySpentCredits'
               example:
                 id: '42'
                 fullKey: xq_live_example_key
@@ -902,6 +918,8 @@ paths:
                 isActive: true
                 createdAt: '2025-01-15T12:00:00Z'
                 expiresAt: '2025-02-14T12:00:00Z'
+                monthlyBudgetCredits: 50000
+                monthlySpentCredits: 0
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401': *unauthenticated-response
@@ -1007,6 +1025,7 @@ paths:
                         allowedIps: []
                         isActive: true
                         createdAt: '2025-01-15T12:00:00Z'
+                        monthlySpentCredits: 0
                         pausedAt: '2025-01-20T08:00:00Z'
               example:
                 keys: *paused-api-keys-example
@@ -1076,10 +1095,10 @@ paths:
       operationId: updateApiKey
       x-mcp-exclusion-reason: *browser-auth
       description:
-        Renames an active API key, changes its scopes or IP allowlist, or pauses
-        or resumes it. Send any of name, scope, scopes, paused & allowedIps.
-        Pausing again keeps the first pause time. Pausing or resuming a revoked
-        or expired key answers 409.
+        Renames an active API key, changes its scopes, IP allowlist or monthly
+        credit budget, or pauses or resumes it. Send any of name, scope, scopes,
+        paused, allowedIps & monthlyBudgetCredits. Pausing again keeps the first
+        pause time. Pausing or resuming a revoked or expired key answers 409.
       summary: Update API key
       tags: [API Keys]
       security: [{ cookieSession: [] }]
@@ -1088,7 +1107,8 @@ paths:
       requestBody:
         required: true
         description:
-          The name, scopes, paused state or IP allowlist to save on the key.
+          The name, scopes, paused state, IP allowlist or monthly credit budget
+          to save on the key.
         content:
           application/json:
             schema:
@@ -1128,6 +1148,14 @@ paths:
                     Up to 20 IPv4 or IPv6 addresses or CIDR ranges. The list
                     replaces the saved one, & an empty list allows any IP.
                   example: ['203.0.113.4', '198.51.100.0/24']
+                monthlyBudgetCredits:
+                  type: [integer, 'null']
+                  minimum: 1
+                  maximum: 1000000000000
+                  description:
+                    Credits the key can spend each UTC calendar month. Null
+                    removes the budget, & a missing field keeps it.
+                  example: 50000
                 paused:
                   type: boolean
                   description:
@@ -1140,6 +1168,7 @@ paths:
               scopes: [read]
               allowedIps: ['203.0.113.4']
               paused: true
+              monthlyBudgetCredits: 50000
       responses:
         '200':
           description: API key updated
@@ -1156,6 +1185,8 @@ paths:
                 allowedIps: []
                 isActive: true
                 createdAt: '2025-01-15T12:00:00Z'
+                monthlyBudgetCredits: 50000
+                monthlySpentCredits: 1200
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401': *unauthenticated-response
@@ -2910,7 +2941,9 @@ paths:
       operationId: createExtraction
       description:
         Starts 1 single-target or multi-target extraction. Follow waitUrl, then
-        page statusUrl once it completes.
+        page statusUrl once it completes. An API key at its monthly budget gets
+        403 `api_key_budget_reached`, even on a retry with a used
+        Idempotency-Key.
       summary: Create extraction
       tags: [Extractions]
       security: *api-auth-2
@@ -3650,7 +3683,9 @@ paths:
       summary: Run giveaway draw
       description: >-
         Checks credits, then draws winners from inspected replies & reposters.
-        Remaining credits cap the candidates.
+        Remaining credits cap the candidates. An API key at its monthly budget
+        gets 403 `api_key_budget_reached`, even on a retry with a used
+        Idempotency-Key.
 
 
         Giveaway draws pick winners with cryptographic randomness.
@@ -14107,7 +14142,8 @@ components:
         It sends nothing to X & charges nothing. While the first request runs, a
         retry returns 202 & the action. Different input returns 409. Protection
         lasts at least 90 days. Retrying a write is safe with an idempotency
-        key.
+        key. A retry with an API key at its monthly budget gets 403
+        `api_key_budget_reached`.
       schema:
         type: string
         minLength: 1
@@ -15651,11 +15687,21 @@ components:
         A key without the exports scope gets `insufficient_scope`. A protected
         target gets `x_account_protected`, so choose a public one. Xquik creates
         no job & charges nothing. Follower tools name the private list. A paused
-        API key gets `api_key_paused`, so resume it on the dashboard.
+        API key gets `api_key_paused`, so resume it on the dashboard. A key
+        whose monthly credit budget can't pay for 1 result gets
+        `api_key_budget_reached` before any X call.
       content:
         application/json:
           schema: *error-schema
           examples:
+            apiKeyBudgetReached:
+              summary: The API key's monthly credit budget has no room
+              value:
+                error: api_key_budget_reached
+                message:
+                  This API key reached its monthly credit budget. Raise or
+                  remove it at dashboard.xquik.com/api-keys, or wait for the
+                  next UTC month.
             apiKeyPaused:
               summary: A paused API key
               value: *api-key-paused
@@ -19685,6 +19731,7 @@ components:
                 - api_key_expired
                 - api_key_limit_reached
                 - api_key_paused
+                - api_key_budget_reached
                 - api_key_revoked
                 - ip_not_allowed
                 - article_not_found
@@ -20647,7 +20694,17 @@ components:
       description: API key metadata returned when listing keys.
       type: object
       required:
-        [id, name, prefix, scope, scopes, allowedIps, isActive, createdAt]
+        [
+          id,
+          name,
+          prefix,
+          scope,
+          scopes,
+          allowedIps,
+          isActive,
+          createdAt,
+          monthlySpentCredits,
+        ]
       properties:
         id: *resource-id-example-schema
         name:
@@ -20697,6 +20754,31 @@ components:
           format: date-time
           description: When the key last made a request. Missing until it does.
           example: '2025-01-16T09:30:00Z'
+        monthlyBudgetCredits:
+          type: integer
+          minimum: 1
+          maximum: 1000000000000
+          description:
+            Credits the key can spend each UTC calendar month. Missing when the
+            key has no budget. A call that doesn't fit what's left gets 403
+            `api_key_budget_reached` & costs nothing. A refused call never runs.
+            A read with a `limit` needs that many results' price left, & a media
+            download needs the price of every post it names. A read without a
+            `limit`, an extraction, a draw & a style refresh return only what
+            fits. A write needs its price plus 20 credits left, & it charges
+            only what it uses. Calls running at once can't take the key past its
+            budget. A started call bills what it delivered, even past a lowered
+            budget.
+          example: 50000
+        monthlySpentCredits:
+          type: integer
+          minimum: 0
+          description:
+            Credits charged for calls with the key this UTC calendar month. Once
+            it reaches the budget, every call with the key gets 403
+            `api_key_budget_reached` until the next UTC month or a higher
+            budget, even a retry with a used Idempotency-Key.
+          example: 1200
         pausedAt:
           type: string
           format: date-time
