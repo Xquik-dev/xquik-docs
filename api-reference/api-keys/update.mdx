@@ -3,7 +3,18 @@ title: "Update an Xquik API key's name or scope in place"
 sidebarTitle: "Update API key"
 description: "Rename an active Xquik API key or change its scope between full access and paid reads only. It keeps its secret & expiry, and its next request uses the change."
 api: "PATCH /api-keys/{id}"
-keywords: ["api key", "update", "rename", "scope", "paid reads", "read only"]
+keywords:
+  [
+    "api key",
+    "update",
+    "rename",
+    "scope",
+    "paid reads",
+    "read only",
+    "pause",
+    "resume",
+    "ip allowlist",
+  ]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
@@ -90,8 +101,9 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 {/* GENERATED RESPONSE EXAMPLES END */}
 <LlmsDirective />
 
-Rename a key so its owner is clear, or narrow a key that only reads to `paid_reads`. Send `name`,
-`scope`, or both. The key keeps its secret, prefix and expiry.
+Rename a key so its owner is clear, or narrow a key that only reads to `paid_reads`. Pause a key
+to stop it for a while, then resume it. Limit a key to your servers with `allowedIps`. Send 1 or
+more of `name`, `scope`, `paused` & `allowedIps`. The key keeps its secret, prefix and expiry.
 
 <Callout icon="circle-check" color="#16a34a">
 
@@ -219,6 +231,23 @@ routes answer it with `403 forbidden`. The key's next request uses the new scope
 
 </ParamField>
 
+<ParamField body="paused" type="boolean">
+
+`true` pauses the key, and `false` resumes it. A paused key gets `403 api_key_paused` on every
+request. Its next request after you resume goes through. Sending the current state again changes
+nothing. While paused, the key has `pausedAt`, the time you paused it. A revoked key answers
+`409 api_key_revoked`. An expired key answers `409 api_key_expired`.
+
+</ParamField>
+
+<ParamField body="allowedIps" type="string[]">
+
+Up to 20 IPv4 or IPv6 addresses or CIDR ranges that may use the key. The list replaces the saved
+one. Send `[]` to allow any IP again. Calls from other IPs get `403 ip_not_allowed`. The key's next
+request uses the new list.
+
+</ParamField>
+
 ## Response
 
 ### 200 OK
@@ -246,8 +275,9 @@ Returns the saved key with the same fields as [List API keys](/api-reference/api
 }
 ```
 
-The body had neither field, `scope` was not `full` or `paid_reads`, or `name` was longer than 100
-characters. Xquik changes nothing.
+The body had no field to change, `scope` was not `full` or `paid_reads`, or `name` was longer than 100
+characters. An `allowedIps` entry that isn't an IP or CIDR range fails too. So does a list over 20
+entries. Xquik changes nothing.
 
 ### 401 Unauthenticated
 
