@@ -26,8 +26,8 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 Convex is a TypeScript backend with a reactive database, actions, and
 schedules. This guide brings the Twitter API into a Convex app through Xquik.
 You call every public operation as a typed action. Signed X webhook events land
-in Convex tables, each one stored once. A React query shows them as they
-arrive.
+in Convex tables, each one stored once. `usePaginatedQuery` shows them in
+React as they arrive.
 
 Xquik is the world's fastest and cheapest X Twitter scraper service with the
 most complete X data. It bills only for delivered, unique results that match
@@ -62,7 +62,7 @@ X Developer app.
   </Card>
   <Card title="Key in the component" icon="key-round">
 
-    Only the component's own functions read `XQUIK_API_KEY`.
+    The component reads `XQUIK_API_KEY` only inside its own functions.
 
   </Card>
   <Card title="Tests" icon="flask-conical">
@@ -84,7 +84,7 @@ npm install convex-xquik
 
 Add the component in `convex/convex.config.ts`.
 
-```typescript
+```typescript convex/convex.config.ts
 import { defineApp } from "convex/server";
 import { v } from "convex/values";
 import xquik from "convex-xquik/convex.config.js";
@@ -107,9 +107,9 @@ its webhook receiver under `/xquik/` on your deployment's `.convex.site` URL.
 
 Each public operation is an action in `components.xquik.operations`. Its name
 is the operation ID from the [API reference](/api-reference). Call it with
-`ctx.runAction` from your own action, as in `convex/x.ts`.
+`ctx.runAction` from your own action.
 
-```typescript
+```typescript convex/tweets.ts
 import { internalAction } from "./_generated/server";
 import { components } from "./_generated/api";
 
@@ -129,7 +129,7 @@ export const readTweets = internalAction({
 ```
 
 ```bash
-npx convex run x:readTweets
+npx convex run tweets:readTweets
 ```
 
 - Arguments are the operation's path, query, header, and JSON body fields side
@@ -159,7 +159,7 @@ Create a monitor for an account, then call `xquik.createWebhook` from an action.
 It creates an Xquik webhook that points at the component's receiver. A monitor
 bills while it is active, as [Billing](/guides/billing) explains.
 
-```typescript
+```typescript convex/x.ts
 import { Xquik, eventFields } from "convex-xquik";
 import { internalAction, internalMutation } from "./_generated/server";
 import { components, internal } from "./_generated/api";
@@ -198,13 +198,16 @@ Run the `testWebhook` operation with the returned `webhookId` as `id`. The
 receiver answers the `webhook.test` alert with `200` and records `testedAt` on
 the endpoint. Read it with `components.xquik.webhooks.list`.
 
+`components.xquik.webhooks.remove` deletes the Xquik webhook and the endpoint.
+
 ## Register a webhook made elsewhere
 
 `xquik.addWebhook` registers a webhook you made somewhere else. Use it for a
 webhook from the dashboard or an Apify Monitor run. Call it from a mutation
-with the webhook's secret. It returns the URL to paste there.
+with the webhook's secret. It returns the URL to paste there. Add it to
+`convex/x.ts`.
 
-```typescript
+```typescript convex/x.ts
 import { v } from "convex/values";
 
 export const addWebhook = internalMutation({
@@ -245,17 +248,6 @@ The receiver answers `POST https://YOUR_DEPLOYMENT.convex.site/xquik/webhooks/TO
     It stores each `streamEventId` once, so retries never add a second event.
 
   </Card>
-  <Card title="Test alert" icon="flask-conical">
-
-    It answers `200` for `webhook.test` and records `testedAt` on the endpoint.
-
-  </Card>
-  <Card title="Remove a webhook" icon="trash-2">
-
-    `components.xquik.webhooks.remove` deletes the Xquik webhook and the
-    endpoint.
-
-  </Card>
 </CardGroup>
 
 [Signature verification](/webhooks/verification) explains the signing string
@@ -264,9 +256,9 @@ and the replay window.
 ## Schedule durable Twitter API jobs
 
 `xquik.schedule` starts a durable job from a mutation. Pass the operation ID,
-its arguments, and the timing.
+its arguments, and the timing. Add it to `convex/x.ts`.
 
-```typescript
+```typescript convex/x.ts
 export const pollEvents = internalMutation({
   args: {},
   handler: async (ctx) => {
@@ -277,10 +269,11 @@ export const pollEvents = internalMutation({
 
 - `everyMs` repeats the job. It takes 60000 or more.
 - `delayMs` delays the first run.
-- Each run's result lands in the job. Read it with `components.xquik.jobs.get`
+- The job stores each run's result. Read it with `components.xquik.jobs.get`
   or `components.xquik.jobs.list`.
 - `components.xquik.jobs.cancel` stops a job.
-- A failed read retries `429` and `5xx` answers up to 5 times with backoff.
+- A read that gets `429` or `5xx` retries up to 5 times. Each retry waits
+  longer.
 - A write that takes an `Idempotency-Key` retries the same way. The component
   fills the key for you.
 
@@ -290,16 +283,20 @@ development sees events without a public URL.
 ## Show Twitter events live in React
 
 `components.xquik.events.list` returns stored events, newest first. Wrap it in
-your own query.
+your own query, with your own auth check.
 
-```typescript
+```typescript convex/events.ts
 import { paginationOptsValidator } from "convex/server";
+import { ConvexError } from "convex/values";
 import { query } from "./_generated/server";
 import { components } from "./_generated/api";
 
-export const events = query({
+export const list = query({
   args: { paginationOpts: paginationOptsValidator },
-  handler: (ctx, args) => ctx.runQuery(components.xquik.events.list, args),
+  handler: async (ctx, args) => {
+    if ((await ctx.auth.getUserIdentity()) === null) throw new ConvexError("Sign in first");
+    return await ctx.runQuery(components.xquik.events.list, args);
+  },
 });
 ```
 
@@ -311,7 +308,7 @@ import { api } from "../convex/_generated/api";
 
 export function Events() {
   const { results, status, loadMore } = usePaginatedQuery(
-    api.x.events,
+    api.events.list,
     {},
     { initialNumItems: 20 },
   );
@@ -332,19 +329,20 @@ export function Events() {
 
 - Pass `filter` with `{ eventType }` or `{ monitorId }` to narrow
   `events.list`.
-- `components.xquik.events.get` takes `{ streamEventId }` and returns 1 event.
+- `components.xquik.events.get` takes `{ streamEventId }` and returns that
+  event.
 
 ## Protect the functions you expose
 
 Only your backend can call component functions. Clients call only the
-functions you export. Add your own auth check to each one, such as the
-`events` query above. `ctx.auth.getUserIdentity()` returns the signed-in user.
+functions you export. Add your own auth check to each one, as the `list` query
+above does. `ctx.auth.getUserIdentity()` returns the signed-in user.
 
 ## Test your functions with convex-test
 
 `xquikTest.register(t)` adds the component to a `convexTest` instance.
 
-```typescript
+```typescript convex/x.test.ts
 import { convexTest } from "convex-test";
 import xquikTest from "convex-xquik/test";
 import schema from "./schema";
@@ -383,8 +381,8 @@ need no public URL.
 
 ### What happens when Xquik answers 429?
 
-The call throws a `ConvexError` with `retryAfter` in seconds. Scheduled jobs
-retry a `429` up to 5 times.
+The call throws a `ConvexError` with `retryAfter` in seconds. Scheduled reads
+retry a `429` up to 5 times. So do writes that take an `Idempotency-Key`.
 
 ### Is this Convex sign-in with X?
 
