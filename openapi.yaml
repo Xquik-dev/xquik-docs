@@ -189,7 +189,9 @@ security: &api-auth [{ apiKey: [] }, { oauthBearer: [] }]
 
 tags:
   - name: API Keys
-    description: API key management (session auth only)
+    description:
+      API key management (session auth only). Give each agent an API key with
+      only the scopes it needs.
   - name: Account
     description: Account info and settings
   - name: Agent Discovery
@@ -782,9 +784,20 @@ paths:
                   enum: [full, paid_reads, null]
                   description:
                     full calls every route an API key can use. paid_reads calls
-                    paid X read routes only, & other routes answer it with 403.
-                    Missing or null saves full.
+                    paid X reads plus the routes of its scopes. Other routes
+                    answer it with 403. Missing or null saves full.
                   example: paid_reads
+                scopes:
+                  type: array
+                  maxItems: 6
+                  items: &api-key-scope-name
+                    type: string
+                    enum: [full, read, write, monitors, exports, billing]
+                  description:
+                    full calls every route. read calls paid X reads. write,
+                    monitors, exports & billing add their routes. scopes wins
+                    over scope. Missing scopes & scope saves full.
+                  example: [read, monitors]
                 expiresInDays:
                   type: [integer, 'null']
                   minimum: 1
@@ -796,6 +809,7 @@ paths:
             example:
               name: My API Key
               scope: paid_reads
+              scopes: [read]
               expiresInDays: 30
       responses:
         '201':
@@ -805,7 +819,16 @@ paths:
               schema:
                 type: object
                 required:
-                  [id, fullKey, name, prefix, scope, isActive, createdAt]
+                  [
+                    id,
+                    fullKey,
+                    name,
+                    prefix,
+                    scope,
+                    scopes,
+                    isActive,
+                    createdAt,
+                  ]
                 properties:
                   id: &resource-id-example-schema
                     type: string
@@ -823,6 +846,12 @@ paths:
                     type: string
                     enum: [full, paid_reads]
                     example: paid_reads
+                  scopes:
+                    type: array
+                    maxItems: 6
+                    items: *api-key-scope-name
+                    description: What the key can call.
+                    example: [read]
                   isActive:
                     type: boolean
                     example: true
@@ -840,6 +869,7 @@ paths:
                 name: My API Key
                 prefix: xq_live_exam
                 scope: paid_reads
+                scopes: [read]
                 isActive: true
                 createdAt: '2025-01-15T12:00:00Z'
                 expiresAt: '2025-02-14T12:00:00Z'
@@ -892,8 +922,8 @@ paths:
       x-mcp-exclusion-reason: *browser-auth
       description:
         Pauses or resumes up to 100 of your API keys at once & lists the keys it
-        changed, newest first. Revoked, expired, unknown & other accounts' keys
-        are skipped. Pausing again keeps the first pause time.
+        changed, newest first. It skips revoked, expired, unknown & other
+        accounts' keys. Pausing again keeps the first pause time.
       summary: Pause or resume API keys
       tags: [API Keys]
       security: [{ cookieSession: [] }]
@@ -944,6 +974,7 @@ paths:
                         name: Analytics notebook
                         prefix: xq_live_exam
                         scope: paid_reads
+                        scopes: [read]
                         isActive: true
                         createdAt: '2025-01-15T12:00:00Z'
                         pausedAt: '2025-01-20T08:00:00Z'
@@ -1015,9 +1046,9 @@ paths:
       operationId: updateApiKey
       x-mcp-exclusion-reason: *browser-auth
       description:
-        Renames an active API key, changes its scope, or pauses or resumes it.
-        Send any of name, scope & paused. Pausing again keeps the first pause
-        time. Pausing or resuming a revoked or expired key answers 409.
+        Renames an active API key, changes its scopes, or pauses or resumes it.
+        Send any of name, scope, scopes & paused. Pausing again keeps the first
+        pause time. Pausing or resuming a revoked or expired key answers 409.
       summary: Update API key
       tags: [API Keys]
       security: [{ cookieSession: [] }]
@@ -1025,7 +1056,7 @@ paths:
         - $ref: '#/components/parameters/ResourceId'
       requestBody:
         required: true
-        description: The name, scope or paused state to save on the key.
+        description: The name, scopes or paused state to save on the key.
         content:
           application/json:
             schema:
@@ -1045,6 +1076,15 @@ paths:
                   description:
                     The scope to save. The key's next request uses it.
                   example: paid_reads
+                scopes:
+                  type: array
+                  maxItems: 6
+                  items: *api-key-scope-name
+                  description:
+                    full calls every route. read calls paid X reads. write,
+                    monitors, exports & billing add their routes. scopes wins
+                    over scope. Missing keeps the key's scopes.
+                  example: [read, monitors]
                 paused:
                   type: boolean
                   description:
@@ -1054,6 +1094,7 @@ paths:
             example:
               name: Analytics notebook
               scope: paid_reads
+              scopes: [read]
               paused: true
       responses:
         '200':
@@ -1067,6 +1108,7 @@ paths:
                 name: Analytics notebook
                 prefix: xq_live_exam
                 scope: paid_reads
+                scopes: [read]
                 isActive: true
                 createdAt: '2025-01-15T12:00:00Z'
         '400':
@@ -1874,7 +1916,7 @@ paths:
                 hasMore: false
         '400': *invalid-input-response
         '401': *unauthenticated-response
-        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '403': { $ref: '#/components/responses/MonitorsKeyForbidden' }
         '429': *rate-limit-exceeded-response
     post:
       operationId: createMonitor
@@ -1968,7 +2010,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '402': *payment-required-response
-        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '403': { $ref: '#/components/responses/MonitorsKeyForbidden' }
         '404': &user-not-found-response
           $ref: '#/components/responses/UserNotFound'
         '409':
@@ -2017,7 +2059,7 @@ paths:
                 hasMore: false
         '400': *invalid-input-response
         '401': *unauthenticated-response
-        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '403': { $ref: '#/components/responses/MonitorsKeyForbidden' }
         '429': *rate-limit-exceeded-response
     post:
       operationId: createKeywordMonitor
@@ -2081,7 +2123,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '402': *payment-required-response
-        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '403': { $ref: '#/components/responses/MonitorsKeyForbidden' }
         '409':
           description: Keyword monitor already exists
           content:
@@ -2118,7 +2160,7 @@ paths:
           $ref: '#/components/responses/InvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
-        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '403': { $ref: '#/components/responses/MonitorsKeyForbidden' }
         '404': *not-found-response
         '429': *rate-limit-exceeded-response
     patch:
@@ -2161,7 +2203,7 @@ paths:
           $ref: '#/components/responses/InvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
-        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '403': { $ref: '#/components/responses/MonitorsKeyForbidden' }
         '404': *not-found-response
         '429': *rate-limit-exceeded-response
     delete:
@@ -2180,7 +2222,7 @@ paths:
           $ref: '#/components/responses/InvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
-        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '403': { $ref: '#/components/responses/MonitorsKeyForbidden' }
         '404': *not-found-response
         '429': *rate-limit-exceeded-response
 
@@ -2222,7 +2264,7 @@ paths:
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401': *unauthenticated-response
-        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '403': { $ref: '#/components/responses/MonitorsKeyForbidden' }
         '429': *rate-limit-exceeded-response
     post:
       operationId: createPostMonitor
@@ -2308,7 +2350,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '402': *payment-required-response
-        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '403': { $ref: '#/components/responses/MonitorsKeyForbidden' }
         '404':
           $ref: '#/components/responses/TweetNotFound'
         '409':
@@ -2355,7 +2397,7 @@ paths:
           $ref: '#/components/responses/InvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
-        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '403': { $ref: '#/components/responses/MonitorsKeyForbidden' }
         '404': *not-found-response
         '429': *rate-limit-exceeded-response
     patch:
@@ -2398,7 +2440,7 @@ paths:
           $ref: '#/components/responses/InvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
-        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '403': { $ref: '#/components/responses/MonitorsKeyForbidden' }
         '404': *not-found-response
         '409':
           description:
@@ -2469,7 +2511,7 @@ paths:
           $ref: '#/components/responses/InvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
-        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '403': { $ref: '#/components/responses/MonitorsKeyForbidden' }
         '404': *not-found-response
         '429': *rate-limit-exceeded-response
 
@@ -2500,7 +2542,7 @@ paths:
           $ref: '#/components/responses/InvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
-        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '403': { $ref: '#/components/responses/MonitorsKeyForbidden' }
         '404': *not-found-response
         '429': *rate-limit-exceeded-response
     patch:
@@ -2555,7 +2597,7 @@ paths:
           $ref: '#/components/responses/InvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
-        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '403': { $ref: '#/components/responses/MonitorsKeyForbidden' }
         '404': *not-found-response
         '409':
           description: The monitored X account is still unavailable
@@ -2636,7 +2678,7 @@ paths:
                 hasMore: false
         '400': *invalid-input-response
         '401': *unauthenticated-response
-        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '403': { $ref: '#/components/responses/MonitorsKeyForbidden' }
         '429': *rate-limit-exceeded-response
   /events/stream:
     get:
@@ -2705,7 +2747,7 @@ paths:
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401': *unauthenticated-response
-        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '403': { $ref: '#/components/responses/MonitorsKeyForbidden' }
         '429':
           description: >
             The account has 5 streams open, or used Xquik's read limit. Close a
@@ -2769,7 +2811,7 @@ paths:
                   tweetId: '1234567890'
         '401': *unauthenticated-response
         '400': *invalid-input-response
-        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '403': { $ref: '#/components/responses/MonitorsKeyForbidden' }
         '404': *not-found-response
         '429': *rate-limit-exceeded-response
 
@@ -2817,7 +2859,7 @@ paths:
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401': *unauthenticated-response
-        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '403': { $ref: '#/components/responses/ExportsKeyForbidden' }
         '429': *rate-limit-exceeded-response
     post:
       operationId: createExtraction
@@ -3294,7 +3336,7 @@ paths:
                   id: { type: string, example: 'aB3dE6gH9jK2' }
                   status: { type: string, const: canceled }
         '401': *unauthenticated-response
-        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '403': { $ref: '#/components/responses/ExportsKeyForbidden' }
         '404': *not-found-response
         '409':
           description: Extraction already reached a terminal state
@@ -3389,7 +3431,7 @@ paths:
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401': *unauthenticated-response
-        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '403': { $ref: '#/components/responses/ExportsKeyForbidden' }
         '404': *not-found-response
         '429': *rate-limit-exceeded-response
 
@@ -3520,7 +3562,7 @@ paths:
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401': *unauthenticated-response
-        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '403': { $ref: '#/components/responses/ExportsKeyForbidden' }
         '404': *not-found-response
         '429': *rate-limit-exceeded-response
 
@@ -3556,7 +3598,7 @@ paths:
                 hasMore: false
         '400': *invalid-input-response
         '401': *unauthenticated-response
-        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '403': { $ref: '#/components/responses/ExportsKeyForbidden' }
         '429': *rate-limit-exceeded-response
     post:
       operationId: createDraw
@@ -3711,7 +3753,7 @@ paths:
               example:
                 error: 'insufficient_credits'
                 message: 'Insufficient credits'
-        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '403': { $ref: '#/components/responses/ExportsKeyForbidden' }
         '404': *not-found-response
         '409':
           description:
@@ -3795,7 +3837,7 @@ paths:
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401': *unauthenticated-response
-        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '403': { $ref: '#/components/responses/ExportsKeyForbidden' }
         '404': *not-found-response
         '429': *rate-limit-exceeded-response
 
@@ -3831,7 +3873,7 @@ paths:
           content: *binary-download-content
         '400': *invalid-input-response
         '401': *unauthenticated-response
-        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '403': { $ref: '#/components/responses/ExportsKeyForbidden' }
         '404': *not-found-response
         '429': *rate-limit-exceeded-response
 
@@ -3865,7 +3907,7 @@ paths:
                 hasMore: false
         '400': *invalid-input-response
         '401': *unauthenticated-response
-        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '403': { $ref: '#/components/responses/MonitorsKeyForbidden' }
         '429': *rate-limit-exceeded-response
     post:
       operationId: createWebhook
@@ -3933,7 +3975,7 @@ paths:
           $ref: '#/components/responses/InvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
-        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '403': { $ref: '#/components/responses/MonitorsKeyForbidden' }
         '429': *rate-limit-exceeded-response
   /webhooks/telegram:
     post:
@@ -3991,7 +4033,7 @@ paths:
           $ref: '#/components/responses/InvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
-        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '403': { $ref: '#/components/responses/MonitorsKeyForbidden' }
         '429': *rate-limit-exceeded-response
         '503':
           description: Telegram delivery is off for now.
@@ -4050,7 +4092,7 @@ paths:
           $ref: '#/components/responses/InvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
-        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '403': { $ref: '#/components/responses/MonitorsKeyForbidden' }
         '404': *not-found-response
         '429': *rate-limit-exceeded-response
     delete:
@@ -4067,7 +4109,7 @@ paths:
           $ref: '#/components/responses/InvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
-        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '403': { $ref: '#/components/responses/MonitorsKeyForbidden' }
         '404': *not-found-response
         '429': *rate-limit-exceeded-response
 
@@ -4104,7 +4146,7 @@ paths:
                 hasMore: false
         '400': *invalid-input-response
         '401': *unauthenticated-response
-        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '403': { $ref: '#/components/responses/MonitorsKeyForbidden' }
         '404': *not-found-response
         '429': *rate-limit-exceeded-response
 
@@ -4141,7 +4183,7 @@ paths:
           $ref: '#/components/responses/InvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
-        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '403': { $ref: '#/components/responses/MonitorsKeyForbidden' }
         '404': *not-found-response
         '429': *rate-limit-exceeded-response
 
@@ -4212,7 +4254,7 @@ paths:
                 success: false
         '401':
           $ref: '#/components/responses/Unauthenticated'
-        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '403': { $ref: '#/components/responses/MonitorsKeyForbidden' }
         '404': *not-found-response
         '429': *rate-limit-exceeded-response
 
@@ -4448,7 +4490,7 @@ paths:
           $ref: '#/components/responses/WriteActionAccepted'
         '400': *invalid-input-response
         '401': *unauthenticated-response
-        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '403': { $ref: '#/components/responses/WriteKeyForbidden' }
         '404': *not-found-response
         '429': *rate-limit-exceeded-response
 
@@ -8389,7 +8431,7 @@ paths:
                 lifetime_purchased: '200000'
                 lifetime_used: '150000'
         '401': *unauthenticated-response
-        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '403': { $ref: '#/components/responses/BillingKeyForbidden' }
         '429': *rate-limit-exceeded-response-2
   /credits/topup:
     post:
@@ -8607,7 +8649,7 @@ paths:
                 status: paid
         '400': *invalid-input-response
         '401': *unauthenticated-response
-        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '403': { $ref: '#/components/responses/BillingKeyForbidden' }
         '404': *not-found-response
         '429': *rate-limit-exceeded-response-2
   /credits/quick-topup:
@@ -9744,9 +9786,9 @@ paths:
           description: >
             DM read forbidden. The connected account may not be in the
             conversation, or it may be restricted or need reauthentication. A
-            `paid_reads` key gets `forbidden`. Check the error code, then fix
-            the account or use a Full access key. A paused API key gets
-            `api_key_paused`, so resume it on the dashboard.
+            key without Full access gets `insufficient_scope`. Check the error
+            code, then fix the account or use a Full access key. A paused API
+            key gets `api_key_paused`, so resume it on the dashboard.
           content:
             application/json:
               schema: *error-schema
@@ -9758,6 +9800,14 @@ paths:
                     message:
                       This API key is paused. Resume it at
                       dashboard.xquik.com/api-keys to use it again.
+                insufficientScope:
+                  summary: The API key lacks a scope this route needs
+                  value:
+                    error: insufficient_scope
+                    message:
+                      This route needs a Full access key. Turn on Full access at
+                      dashboard.xquik.com/api-keys.
+                    requiredScope: full
                 dmNotPermitted:
                   summary: Account is not a conversation participant
                   value:
@@ -9775,10 +9825,6 @@ paths:
                   summary: Connected account needs reauthentication
                   value:
                     error: account_needs_reauth
-                readKey:
-                  summary: A paid_reads key called a Full access route
-                  value:
-                    error: forbidden
         '404':
           description: Connected X account not found for the authenticated user.
           content:
@@ -15443,8 +15489,8 @@ components:
             payment_options: *guest-checkout-payment-options
     ReadKeyForbidden:
       description:
-        A `paid_reads` key called a route that needs Full access. A paused API
-        key gets `api_key_paused`, so resume it on the dashboard.
+        The API key lacks a scope this route needs. `requiredScope` names it. A
+        paused API key gets `api_key_paused`, so resume it on the dashboard.
       content:
         application/json:
           schema: *error-schema
@@ -15452,14 +15498,90 @@ components:
             apiKeyPaused:
               summary: A paused API key
               value: *api-key-paused
-            readKey:
-              summary: A paid_reads key called a Full access route
-              value: &read-key-refusal
-                error: forbidden
+            insufficientScope:
+              summary: The API key lacks a scope this route needs
+              value:
+                error: insufficient_scope
                 message:
-                  This API key calls paid X read routes only, such as GET
-                  /api/v1/x/tweets/search. Create a Full access key at
-                  dashboard.xquik.com/api-keys to call this route.
+                  This route needs a Full access key. Turn on Full access at
+                  dashboard.xquik.com/api-keys.
+                requiredScope: full
+    WriteKeyForbidden:
+      description:
+        The API key lacks the write scope this route needs. A paused API key
+        gets `api_key_paused`, so resume it on the dashboard.
+      content:
+        application/json:
+          schema: *error-schema
+          examples:
+            apiKeyPaused:
+              summary: A paused API key
+              value: *api-key-paused
+            insufficientScope:
+              summary: The API key lacks the write scope
+              value:
+                error: insufficient_scope
+                message:
+                  This API key lacks the write scope. Add it at
+                  dashboard.xquik.com/api-keys.
+                requiredScope: write
+    MonitorsKeyForbidden:
+      description:
+        The API key lacks the monitors scope this route needs. A paused API key
+        gets `api_key_paused`, so resume it on the dashboard.
+      content:
+        application/json:
+          schema: *error-schema
+          examples:
+            apiKeyPaused:
+              summary: A paused API key
+              value: *api-key-paused
+            insufficientScope:
+              summary: The API key lacks the monitors scope
+              value:
+                error: insufficient_scope
+                message:
+                  This API key lacks the monitors scope. Add it at
+                  dashboard.xquik.com/api-keys.
+                requiredScope: monitors
+    ExportsKeyForbidden:
+      description:
+        The API key lacks the exports scope this route needs. A paused API key
+        gets `api_key_paused`, so resume it on the dashboard.
+      content:
+        application/json:
+          schema: *error-schema
+          examples:
+            apiKeyPaused:
+              summary: A paused API key
+              value: *api-key-paused
+            insufficientScope:
+              summary: The API key lacks the exports scope
+              value:
+                error: insufficient_scope
+                message:
+                  This API key lacks the exports scope. Add it at
+                  dashboard.xquik.com/api-keys.
+                requiredScope: exports
+    BillingKeyForbidden:
+      description:
+        The API key lacks the billing scope this route needs. A paused API key
+        gets `api_key_paused`, so resume it on the dashboard.
+      content:
+        application/json:
+          schema: *error-schema
+          examples:
+            apiKeyPaused:
+              summary: A paused API key
+              value: *api-key-paused
+            insufficientScope:
+              summary: The API key lacks the billing scope
+              value:
+                error: insufficient_scope
+                message:
+                  This API key lacks the billing scope. Add it at
+                  dashboard.xquik.com/api-keys.
+                requiredScope: billing
     ProtectedTimeline:
       description:
         The account is protected. Choose a public one. This applies to every
@@ -15481,11 +15603,10 @@ components:
                 message: Account is protected. Choose a public account.
     ExtractionForbidden:
       description:
-        A `paid_reads` key gets `forbidden`, so use a Full access key. A
-        protected target gets `x_account_protected`, so choose a public one.
-        Xquik creates no job & charges nothing. Follower tools name the private
-        list. A paused API key gets `api_key_paused`, so resume it on the
-        dashboard.
+        A key without the exports scope gets `insufficient_scope`. A protected
+        target gets `x_account_protected`, so choose a public one. Xquik creates
+        no job & charges nothing. Follower tools name the private list. A paused
+        API key gets `api_key_paused`, so resume it on the dashboard.
       content:
         application/json:
           schema: *error-schema
@@ -15499,8 +15620,13 @@ components:
                 error: x_account_protected
                 message: Account is protected. Choose a public account.
             readKey:
-              summary: A paid_reads key called a Full access route
-              value: *read-key-refusal
+              summary: The API key lacks the exports scope
+              value:
+                error: insufficient_scope
+                message:
+                  This API key lacks the exports scope. Add it at
+                  dashboard.xquik.com/api-keys.
+                requiredScope: exports
     ProtectedFollowerList:
       description:
         X keeps a protected account's follower list private. Xquik charges
@@ -15559,11 +15685,10 @@ components:
                   account.
     XWriteForbidden:
       description:
-        A `paid_reads` key gets `forbidden`, so use a Full access key. A
-        connected X account that needs reauthentication gets
-        `account_needs_reauth`. A locked, suspended, or recovering account gets
-        `account_restricted`. A paused API key gets `api_key_paused`, so resume
-        it on the dashboard.
+        A key without the write scope gets `insufficient_scope`. A connected X
+        account that needs reauthentication gets `account_needs_reauth`. A
+        locked, suspended, or recovering account gets `account_restricted`. A
+        paused API key gets `api_key_paused`, so resume it on the dashboard.
       content:
         application/json:
           schema: *error-schema
@@ -15578,8 +15703,13 @@ components:
                 message:
                   'X account needs re-authentication. Re-add the account.'
             readKey:
-              summary: A paid_reads key called a Full access route
-              value: *read-key-refusal
+              summary: The API key lacks the write scope
+              value:
+                error: insufficient_scope
+                message:
+                  This API key lacks the write scope. Add it at
+                  dashboard.xquik.com/api-keys.
+                requiredScope: write
     MediaTooLarge:
       description: The media is over Xquik's or X's size limit.
       content:
@@ -19528,6 +19658,7 @@ components:
                 - invalid_username
                 - invalid_json
                 - insufficient_credits
+                - insufficient_scope
                 - job_not_found
                 - login_cooldown
                 - login_failed
@@ -19700,6 +19831,12 @@ components:
             why X shows no post, when X said, as deleted, author_suspended or
             protected.
           example: temporary_issue
+        requiredScope:
+          type: string
+          enum: [write, monitors, exports, billing, full]
+          description:
+            With insufficient_scope, the scope the API key needs for this route.
+          example: monitors
         retryAfter:
           type: integer
           minimum: 1
@@ -20463,7 +20600,7 @@ components:
     ApiKey:
       description: API key metadata returned when listing keys.
       type: object
-      required: [id, name, prefix, scope, isActive, createdAt]
+      required: [id, name, prefix, scope, scopes, isActive, createdAt]
       properties:
         id: *resource-id-example-schema
         name:
@@ -20477,8 +20614,17 @@ components:
           enum: [full, paid_reads]
           description:
             full calls every route an API key can use. paid_reads calls paid X
-            read routes only, & other routes answer it with 403.
+            reads plus the routes of its scopes. Other routes answer it with
+            403.
           example: paid_reads
+        scopes:
+          type: array
+          maxItems: 6
+          items: *api-key-scope-name
+          description:
+            The scopes the key holds, such as read & monitors. A Full access key
+            holds full.
+          example: [read]
         isActive:
           type: boolean
           example: true
