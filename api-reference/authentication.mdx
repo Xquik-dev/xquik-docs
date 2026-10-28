@@ -260,10 +260,23 @@ The creation response returns the full key (`fullKey`) once. Store it in a secre
 
 ### Limit what a key can call
 
-Create a key with `scope` set to `paid_reads` when a workload only reads X data.
-It calls paid X read routes only. Other routes answer it with `403 forbidden`.
+Give each key only the scopes its workload needs.
+Pick them in the key's settings on the [API keys page](https://dashboard.xquik.com/en/api-keys).
+The API takes them as `scopes` when you create or update a key.
+
+| Scope      | What the key can call                                                       |
+| ---------- | --------------------------------------------------------------------------- |
+| `read`     | Paid X reads, like tweet search, profiles & tweets. Every key holds it.     |
+| `write`    | Posts, likes, reposts, follows, DMs, media, profile edits & communities.    |
+| `monitors` | Monitors, keyword & post monitors, webhooks & events.                       |
+| `exports`  | Extractions, draws & their exports.                                         |
+| `billing`  | Your credit balance & top-up status. Read only.                             |
+| `full`     | Every route an API key can use, including the routes no other scope covers. |
+
+A key without `full` holds `read` plus any of `write`, `monitors`, `exports` & `billing`.
+`scope` still works. `paid_reads` saves a read only key, and `full` saves Full access.
 Set `expiresInDays` from 1 to 365 so the key stops working on its own.
-[Update API key](/api-reference/api-keys/update) changes the name or scope later.
+[Update API key](/api-reference/api-keys/update) changes the name or scopes later.
 
 ### Restrict a key to your IPs
 
@@ -325,6 +338,22 @@ A paused key returns this error.
 
 REST routes, webhook management routes & the MCP server all send it.
 Resume the key, then retry. Keys you never pause work as before.
+
+A call outside the key's scopes returns this error.
+
+```json
+{
+  "error": "insufficient_scope",
+  "message": "This API key lacks the monitors scope. Add it at dashboard.xquik.com/api-keys.",
+  "requiredScope": "monitors"
+}
+```
+
+**Status.** `403 Forbidden`
+
+`requiredScope` names the scope to add. It is `write`, `monitors`, `exports`, `billing` or `full`.
+Add it on the [API keys page](https://dashboard.xquik.com/en/api-keys), then retry.
+REST & MCP refuse the same calls. Full access keys work as before.
 
 A call from an IP outside the key's allowlist returns this error.
 
