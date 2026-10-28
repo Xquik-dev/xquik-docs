@@ -11,6 +11,8 @@ keywords:
     "Supabase receive webhook",
     "Supabase webhook secret",
     "Supabase pg_cron",
+    "Supabase Wrappers",
+    "Supabase foreign data wrapper",
     "Twitter API",
     "X API",
     "Xquik",
@@ -41,6 +43,11 @@ an X Developer app.
   <Card title="SQL calls" icon="database">
 
     `xquik.call` and `xquik.rows` reach every public operation from SQL.
+
+  </Card>
+  <Card title="Foreign tables" icon="table">
+
+    Every public read is a Postgres table through Supabase Wrappers.
 
   </Card>
   <Card title="Schedules" icon="calendar-range">
@@ -130,6 +137,36 @@ select operation_id, method, path from xquik.operations order by path;
 
 Only the `service_role` and the database owner can run `xquik` functions.
 Browser clients with the anon key cannot reach them.
+
+## Query Twitter data as foreign tables
+
+Each public read operation is also a foreign table in the `xquik` schema. The
+tables use the OpenAPI wrapper of
+[Supabase Wrappers](https://supabase.com/docs/guides/database/extensions/wrappers/overview).
+Each table takes its name from the operation ID in snake case, so `getUser`
+becomes `xquik.get_user`.
+
+```sql
+select attrs->>'name' as name, attrs->>'followers' as followers
+from xquik.get_user
+where id = 'NASA';
+
+select attrs->>'id' as id, attrs->>'text' as text
+from xquik.search_tweets
+where q = 'from:NASA'
+limit 20;
+```
+
+- Path and query parameters are columns. An `=` filter sends the value.
+- Quote mixed-case parameter names, as in `where "pageSize" = 50`.
+- `attrs` holds each row as JSON.
+- A `limit` stops paging early. A query reads at most 10 pages.
+- Raise the page cap with `alter server xquik_server options (set max_pages '50')`.
+- Export operations return their rows as JSON.
+
+Query the tables as `postgres`. The SQL editor, cron jobs, and direct database
+connections use that role. The event stream and support attachment downloads
+have no table. Use the `xquik-webhook` receiver or an Edge Function for them.
 
 ## Schedule Twitter API reads with pg_cron
 
@@ -354,6 +391,11 @@ Call `createXquik()` from `_shared/xquik.ts`. Then call any SDK method, such as
 ### Can I call the Twitter API from Postgres?
 
 Yes. Run `xquik.call` for 1 JSON response or `xquik.rows` for 1 row per item.
+
+### Can I query the Twitter API as a Postgres table?
+
+Yes. Every public read is a foreign table in the `xquik` schema, such as
+`xquik.search_tweets`. Filter with `=` on its parameter columns.
 
 ### How do I schedule Twitter API reads in Supabase?
 
