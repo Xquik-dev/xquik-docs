@@ -1,0 +1,384 @@
+---
+title: "Twitter API in Supabase with SQL, pg_cron & webhooks"
+sidebarTitle: "Supabase"
+description: "Call the Twitter API from Supabase Edge Functions, SQL, and pg_cron. Receive signed X webhook events in Postgres, stored once and verified. See examples."
+keywords:
+  [
+    "Twitter API Supabase",
+    "Supabase Twitter",
+    "Supabase Edge Function API call",
+    "Supabase webhook Edge Function",
+    "Supabase receive webhook",
+    "Supabase webhook secret",
+    "Supabase pg_cron",
+    "Twitter API",
+    "X API",
+    "Xquik",
+  ]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+<LlmsDirective />
+
+Supabase is a Postgres platform with Edge Functions, Vault, and pg_cron. This
+guide brings the Twitter API into a Supabase project through Xquik. You read
+tweets and profiles from SQL, schedule reads with pg_cron, and run actions from
+row inserts. Signed X webhook events land in a Postgres table, each one stored
+once.
+
+[`supabase-xquik`](https://github.com/Xquik-dev/supabase-xquik) is a ready
+Supabase project. Clone it and start it with 1 command. Xquik does not require
+an X Developer app.
+
+<CardGroup cols={2}>
+
+  <Card title="Typed calls in Edge Functions" icon="code">
+
+    The `x-twitter-scraper` SDK gives typed calls to every public operation.
+
+  </Card>
+  <Card title="SQL calls" icon="database">
+
+    `xquik.call` and `xquik.rows` reach every public operation from SQL.
+
+  </Card>
+  <Card title="Schedules" icon="calendar-range">
+
+    `xquik.schedule` runs any operation on a pg_cron schedule.
+
+  </Card>
+  <Card title="Actions from rows" icon="list">
+
+    Insert a row into `xquik_actions` and the action runs.
+
+  </Card>
+  <Card title="Signed events" icon="shield-check">
+
+    The `xquik-webhook` Edge Function verifies each event and stores it once.
+
+  </Card>
+  <Card title="Key in Vault" icon="key-round">
+
+    SQL reads the API key from Vault. It never sits in a table.
+
+  </Card>
+</CardGroup>
+
+## Start the project locally
+
+Create an [Xquik API key](/x-api-quickstart). Install Docker, then clone the
+project.
+
+```bash
+git clone https://github.com/Xquik-dev/supabase-xquik.git
+cd supabase-xquik
+XQUIK_API_KEY=xq_YOUR_KEY_HERE npx supabase start
+```
+
+`supabase start` applies the migrations and serves the Edge Functions. The key
+goes to Vault for SQL and to the Edge Function secrets. Nothing else needs
+setup.
+
+## Call the Twitter API with the TypeScript SDK
+
+The `_shared/xquik.ts` module creates the typed SDK client from
+`XQUIK_API_KEY`. Import it from any function in `supabase/functions`.
+
+```typescript
+import { xquik } from "../_shared/xquik.ts";
+
+Deno.serve(async () => {
+  const profile = await xquik.x.users.retrieve("NASA");
+  const page = await xquik.x.tweets.search({ q: "from:NASA", limit: 20 });
+  return Response.json({ profile, tweets: page.tweets });
+});
+```
+
+Each SDK method maps to 1 [API reference](/api-reference) operation. Your
+editor completes parameters and response fields.
+
+## Read Twitter data with SQL
+
+`xquik.call` sends 1 operation and returns its JSON response. Pass the
+operation ID from the API reference and a JSON object of parameters.
+
+```sql
+select xquik.call('getUser', '{"id": "NASA"}');
+```
+
+`xquik.rows` returns the response list as 1 row per item. Use it for search,
+timelines, and other list operations.
+
+```sql
+select tweet->>'id' as id, tweet->>'text' as text
+from xquik.rows('searchTweets', '{"q": "from:NASA", "limit": 20}') as tweet;
+```
+
+Path parameters such as `{id}` fill from the JSON object. The rest go in the
+query string for `GET` and `DELETE`, or in the JSON body otherwise. A failed
+call raises an error with Xquik's `error` and `message` fields.
+
+The `xquik.operations` table lists every operation these functions accept.
+
+```sql
+select operation_id, method, path from xquik.operations order by path;
+```
+
+Only the `service_role` and the database owner can run `xquik` functions.
+Browser clients with the anon key cannot reach them.
+
+## Schedule Twitter API reads with pg_cron
+
+`xquik.schedule` creates a pg_cron job that sends 1 operation on a cron
+schedule. Run it again with the same job name to change the job.
+
+```sql
+select xquik.schedule(
+  'nasa-timeline',
+  '*/15 * * * *',
+  'getUserTweets',
+  '{"id": "NASA"}'
+);
+```
+
+Each run adds a row to `public.xquik_actions`. The `xquik-collect` job copies
+each finished response into that row every 10 seconds.
+
+```sql
+select id, status, http_status, response->'tweets'
+from public.xquik_actions
+where operation_id = 'getUserTweets'
+order by id desc
+limit 5;
+```
+
+Remove a schedule with `cron.unschedule`.
+
+```sql
+select cron.unschedule('nasa-timeline');
+```
+
+## Run actions from row inserts
+
+Insert a row into `public.xquik_actions` to run any operation. A trigger sends
+it, and the row moves from `queued` to `sent`. Then `xquik-collect` marks it
+`succeeded` or `failed`.
+
+```sql
+insert into public.xquik_actions (operation_id, params)
+values ('getUser', '{"id": "NASA"}');
+```
+
+`xquik.enqueue` does the same insert and returns the action ID.
+
+```sql
+select xquik.enqueue('getTrends', '{"woeid": 1}');
+```
+
+An app, a trigger, or a Supabase Database Webhook can add these rows. The table
+has row level security with no policies. Insert from your server with the
+service role key.
+
+## Receive signed Twitter webhook events
+
+The `xquik-webhook` Edge Function receives Xquik monitor events. It verifies
+each signature and stores each event once in `public.xquik_events`.
+
+Create a monitor for an account. Then point a webhook at the function URL. A
+monitor bills while it is active, as [Billing](/guides/billing) explains.
+
+```sql
+select xquik.call(
+  'createMonitor',
+  '{"username": "NASA", "eventTypes": ["tweet.new", "tweet.reply"]}'
+);
+
+select xquik.call(
+  'createWebhook',
+  '{"url": "https://YOUR_PROJECT_REF.supabase.co/functions/v1/xquik-webhook", "eventTypes": ["tweet.new", "tweet.reply"]}'
+);
+```
+
+The webhook response returns `secret` only once. Store it as an Edge Function
+secret, then send a test delivery.
+
+```bash
+npx supabase secrets set XQUIK_WEBHOOK_SECRET=YOUR_WEBHOOK_SECRET
+```
+
+```sql
+select xquik.call('testWebhook', '{"id": "YOUR_WEBHOOK_ID"}');
+```
+
+Read stored events in the order they happened.
+
+```sql
+select event_type, occurred_at, payload->'data'->>'text' as text
+from public.xquik_events
+order by occurred_at, stream_event_id;
+```
+
+The function answers each delivery with 1 status.
+
+| Delivery                                     | Status | Stored |
+| -------------------------------------------- | ------ | ------ |
+| Signed event                                 | `200`  | Once   |
+| Retry or duplicate of a stored event         | `200`  | No     |
+| `webhook.test`                               | `200`  | No     |
+| Stale timestamp, bad signature, reused nonce | `401`  | No     |
+| Any method other than `POST`                 | `405`  | No     |
+| Database write failed                        | `503`  | No     |
+
+A `503` makes Xquik retry the delivery later.
+
+## Handle webhook edge cases
+
+The function handles each case below. Keep the behavior when you edit it.
+
+<CardGroup cols={2}>
+
+  <Card title="No Supabase JWT check" icon="key-round">
+
+    Xquik sends no Supabase JWT, so the default check answers `401`. The
+    project sets `verify_jwt = false` for `xquik-webhook`. The HMAC signature
+    authenticates each delivery instead.
+
+  </Card>
+  <Card title="Raw body" icon="braces">
+
+    The function verifies the raw request bytes before it parses JSON.
+    Re-serialized JSON can change bytes and fail the check.
+
+  </Card>
+  <Card title="Milliseconds" icon="clock">
+
+    `X-Xquik-Timestamp` is Unix time in milliseconds. A value in seconds looks
+    decades old and fails the 5-minute window.
+
+  </Card>
+  <Card title="Fast 2xx" icon="timer">
+
+    Xquik waits 10 seconds for a `2xx`. The function stores the event and
+    answers. Slow work runs after the response.
+
+  </Card>
+  <Card title="Signed retries" icon="repeat-2">
+
+    A retry keeps the body, `deliveryId`, and `streamEventId`. It gets a new
+    timestamp, nonce, and signature, so it passes the nonce check.
+
+  </Card>
+  <Card title="Dedupe on streamEventId" icon="database">
+
+    `stream_event_id` is the primary key of `xquik_events`. A retry or a
+    second webhook adds no second row.
+
+  </Card>
+  <Card title="Order by occurredAt" icon="list">
+
+    Deliveries can arrive in any order. Sort by `occurred_at`, then
+    `stream_event_id`. An index covers that order.
+
+  </Card>
+  <Card title="Test alert" icon="flask-conical">
+
+    `webhook.test` has no `deliveryId` or `streamEventId`. The function
+    answers `200` and stores nothing.
+
+  </Card>
+  <Card title="Several URLs" icon="link">
+
+    Each webhook has its own secret. Put every secret in
+    `XQUIK_WEBHOOK_SECRET`, separated by commas.
+
+  </Card>
+  <Card title="Secret rotation" icon="rotate-ccw">
+
+    Create a new webhook for the same URL and add its secret. Delete the old
+    webhook, then remove its secret.
+
+  </Card>
+  <Card title="No secrets in logs" icon="shield-check">
+
+    The function never logs the secret, the signature, or the headers. Keep
+    them out of any logging you add.
+
+  </Card>
+  <Card title="Nonce cleanup" icon="calendar-range">
+
+    The `xquik-nonce-cleanup` job deletes nonces older than 10 minutes. It
+    runs every 5 minutes.
+
+  </Card>
+</CardGroup>
+
+[Signature verification](/webhooks/verification) explains the signing string
+and the replay window.
+
+## Deploy to a hosted Supabase project
+
+Link the clone to your project and push the migrations.
+
+```bash
+npx supabase link --project-ref YOUR_PROJECT_REF
+npx supabase db push
+npx supabase functions deploy
+npx supabase secrets set XQUIK_API_KEY=xq_YOUR_KEY_HERE XQUIK_WEBHOOK_SECRET=YOUR_WEBHOOK_SECRET
+```
+
+`functions deploy` reads `verify_jwt = false` for `xquik-webhook` from
+`supabase/config.toml`. Then store the API key in Vault from the SQL editor.
+
+```sql
+select vault.create_secret('xq_YOUR_KEY_HERE', 'xquik_api_key');
+```
+
+The SQL functions read the key from Vault. The Edge Functions read it from
+their secrets.
+
+## Common Supabase Twitter API questions
+
+### How do I call the Twitter API from an Edge Function?
+
+Import the shared client from `_shared/xquik.ts`. Call any SDK method, such as
+`xquik.x.users.retrieve("NASA")`.
+
+### Can I call the Twitter API from Postgres?
+
+Yes. Run `xquik.call` for 1 JSON response or `xquik.rows` for 1 row per item.
+
+### How do I schedule Twitter API reads in Supabase?
+
+Run `xquik.schedule` with a job name, a cron schedule, and an operation ID.
+Results land in `public.xquik_actions`.
+
+### Why does my Supabase webhook function return 401?
+
+The Supabase JWT check rejects the delivery before your code runs. Deploy
+`xquik-webhook` with `verify_jwt = false`. A wrong secret also returns `401`.
+
+### Where do I find the webhook secret?
+
+The Create Webhook response returns it once. Store it with
+`supabase secrets set XQUIK_WEBHOOK_SECRET`.
+
+### Does a retried delivery create a duplicate row?
+
+No. The function stores each `streamEventId` once and answers `200` for
+repeats.
+
+### Is this Supabase Twitter login?
+
+No. This guide reads X data and receives X events. Use Supabase Auth for
+sign-in with X.
+
+## Source and next steps
+
+- [supabase-xquik source](https://github.com/Xquik-dev/supabase-xquik)
+- [TypeScript SDK](/sdks/typescript)
+- [Webhooks overview](/webhooks/overview)
+- [Signature verification](/webhooks/verification)
+- [Tweet Search API](/api-reference/x/search-tweets)
+- [Rate Limits](/guides/rate-limits)
+- [Error Handling](/guides/error-handling)
