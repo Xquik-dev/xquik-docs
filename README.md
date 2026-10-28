@@ -54,6 +54,7 @@ fixes or validating contracts. Generated client APIs live in the SDK repositorie
 - [Follower export](https://docs.xquik.com/guides/follower-export-crm). Export X followers to CRM or warehouse.
 - [Direct message workflow](https://docs.xquik.com/guides/direct-message-workflow). Send DMs and store returned message IDs.
 - [Prefect](https://docs.xquik.com/guides/prefect). Schedule tweet, user, timeline, and trend reads in Prefect flows.
+- [Supabase](https://docs.xquik.com/guides/supabase). Call every Xquik operation from Edge Functions, SQL, and pg_cron, and store signed webhook events.
 - [Webhooks](https://docs.xquik.com/webhooks/overview). Verify HMAC signatures and receive monitor events.
 - [Open source assurance](https://docs.xquik.com/guides/open-source-assurance). Review OpenSSF project mapping and controls.
 - [Apify Actors](https://docs.xquik.com/alternatives/apify). Run focused X data jobs on Apify.
