@@ -2,23 +2,12 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
-import { z } from "zod";
-
 import { productRootTest } from "./product-contract.test.helpers.ts";
+import type { Themes } from "./scripts/lib/features-page.ts";
+import { catalogSchema, withThemes } from "./scripts/lib/features-page.ts";
 
 const CATALOG = "lib/seo/output-features.ts";
 const BULLET = /^\s*[*+-] /u;
-
-const catalogSchema = z.object({
-  OUTPUT_FEATURE_THEMES: z.array(
-    z.object({
-      features: z.array(z.object({ id: z.string(), line: z.string() })),
-      heading: z.string(),
-    }),
-  ),
-});
-
-type Themes = z.infer<typeof catalogSchema>["OUTPUT_FEATURE_THEMES"];
 
 interface Drift {
   readonly extraLines: readonly string[];
@@ -136,5 +125,21 @@ describe("Features page", (): void => {
   ])("reports $case", ({ page, want }): void => {
     expect.assertions(1);
     expect(drift(FIXTURE, page)).toStrictEqual(want);
+  });
+
+  it("renders each catalog theme between the intro & Next steps", (): void => {
+    expect.assertions(1);
+    const page = "---\ntitle: x\n---\n\nIntro.\n\n## Old\n\n- Gone.\n\n## Next steps\n\nCards.\n";
+
+    expect(withThemes(page, FIXTURE)).toBe(
+      "---\ntitle: x\n---\n\nIntro.\n\n## Speed\n\n- Reads are fast.\n\n## Billing\n\n- Billing is fair.\n\n## Next steps\n\nCards.\n",
+    );
+  });
+
+  it("refuses a page without Next steps", (): void => {
+    expect.assertions(1);
+    expect(() => withThemes("Intro.\n\n## Speed\n\n- Reads are fast.\n", FIXTURE)).toThrow(
+      "Next steps",
+    );
   });
 });
