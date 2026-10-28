@@ -85,7 +85,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 Use this route only when creating a new credential. `fullKey` appears at creation, so store it immediately in a secret manager. List operations return inventory data and never replace this storage step.
 
-Give a workload that only reads X data a `paid_reads` key. Set `expiresInDays` so a forgotten key stops working on its own.
+Give a workload that only reads X data a `paid_reads` key. Set `expiresInDays` so a forgotten key stops working on its own. Set `monthlyBudgetCredits` to cap what the key spends each UTC calendar month.
 
 <Callout icon="circle-check" color="#16a34a">
 
@@ -242,6 +242,14 @@ it. You cannot change the expiry later. Create a new key instead.
 
 </ParamField>
 
+<ParamField body="monthlyBudgetCredits" type="integer">
+
+Credits the key can spend each UTC calendar month, from 1 to 1,000,000,000,000. Missing or `null`
+sets no budget. At the budget, new calls with the key get `403 api_key_budget_reached`. Change or
+remove it later with [Update API key](/api-reference/api-keys/update).
+
+</ParamField>
+
 ## Response
 
 ### 201 Created
@@ -286,6 +294,16 @@ ISO 8601 creation timestamp.
 ISO 8601 time the key stops working. Omitted when the key never expires.
 
 </ResponseField>
+<ResponseField name="monthlyBudgetCredits" type="integer">
+
+Credits the key can spend each UTC calendar month. Omitted when the key has no budget.
+
+</ResponseField>
+<ResponseField name="monthlySpentCredits" type="integer">
+
+Credits charged for calls with the key this UTC calendar month. Always `0` for a new key.
+
+</ResponseField>
 
 ```json
 {
@@ -295,7 +313,8 @@ ISO 8601 time the key stops working. Omitted when the key never expires.
   "name": "Production",
   "scope": "full",
   "isActive": true,
-  "createdAt": "2026-02-24T10:30:00.000Z"
+  "createdAt": "2026-02-24T10:30:00.000Z",
+  "monthlySpentCredits": 0
 }
 ```
 
@@ -314,8 +333,9 @@ Xquik returns `fullKey` once. Store it in a secret manager. You cannot retrieve 
 }
 ```
 
-`scope` is not `full` or `paid_reads`, `expiresInDays` is outside 1 to 365, or `name` is longer than
-100 characters. The message names the field to fix. Xquik creates no key.
+`scope` is not `full` or `paid_reads`, `expiresInDays` is outside 1 to 365, `monthlyBudgetCredits`
+is not a whole number from 1 to 1,000,000,000,000, or `name` is longer than 100 characters. The
+message names the field to fix. Xquik creates no key.
 
 ### 401 Unauthenticated
 

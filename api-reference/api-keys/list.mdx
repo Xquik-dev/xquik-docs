@@ -91,11 +91,12 @@ running tweet searches, follower exports, webhooks, monitors, or X writes.
 This endpoint returns key inventory metadata. It never returns a complete API
 key. Use `id` for revocation and `prefix` for safe identification.
 
-The key list answers 5 operational questions.
+The key list answers 6 operational questions.
 
 - Which named Xquik keys exist on this account?
 - Which keys are active or revoked?
 - What can each key call, and when does it expire?
+- How many credits did each key spend this month, against which budget?
 - When did each key last authenticate a request?
 - Which key ID should a rotation workflow revoke?
 
@@ -128,6 +129,8 @@ const keyInventory = result.keys.map((key) => ({
   createdAt: key.createdAt,
   expiresAt: key.expiresAt ?? null,
   lastUsedAt: key.lastUsedAt ?? null,
+  monthlyBudgetCredits: key.monthlyBudgetCredits ?? null,
+  monthlySpentCredits: key.monthlySpentCredits,
 }));
 ```
 
@@ -151,6 +154,8 @@ key_inventory = [
         "created_at": key["createdAt"],
         "expires_at": key.get("expiresAt"),
         "last_used_at": key.get("lastUsedAt"),
+        "monthly_budget_credits": key.get("monthlyBudgetCredits"),
+        "monthly_spent_credits": key["monthlySpentCredits"],
     }
     for key in result["keys"]
 ]
@@ -194,21 +199,29 @@ func main() {
 Treat the response as an account credential inventory. Never treat it as a
 secret recovery endpoint.
 
-| Inventory check     | Response field | Management decision                                              |
-| ------------------- | -------------- | ---------------------------------------------------------------- |
-| Stable key record   | `id`           | Pass this ID to the revoke endpoint.                             |
-| Workload label      | `name`         | Match the key to its service or environment.                     |
-| Safe identifier     | `prefix`       | Compare deployments without exposing the full key.               |
-| Current state       | `isActive`     | Accept requests only when this value is `true`.                  |
-| Access scope        | `scope`        | Give each workload the smallest scope it needs.                  |
-| Credential age      | `createdAt`    | Review old keys against your rotation policy.                    |
-| Planned end         | `expiresAt`    | Replace the key before this time. Missing means it never ends.   |
-| Last authentication | `lastUsedAt`   | Investigate stale keys and keys active without a known workload. |
+| Inventory check     | Response field         | Management decision                                              |
+| ------------------- | ---------------------- | ---------------------------------------------------------------- |
+| Stable key record   | `id`                   | Pass this ID to the revoke endpoint.                             |
+| Workload label      | `name`                 | Match the key to its service or environment.                     |
+| Safe identifier     | `prefix`               | Compare deployments without exposing the full key.               |
+| Current state       | `isActive`             | Accept requests only when this value is `true`.                  |
+| Access scope        | `scope`                | Give each workload the smallest scope it needs.                  |
+| Credential age      | `createdAt`            | Review old keys against your rotation policy.                    |
+| Planned end         | `expiresAt`            | Replace the key before this time. Missing means it never ends.   |
+| Monthly budget      | `monthlyBudgetCredits` | Raise it before the key runs out. Missing means no budget.       |
+| Monthly spend       | `monthlySpentCredits`  | Compare it with the budget and spot unexpected usage.            |
+| Last authentication | `lastUsedAt`           | Investigate stale keys and keys active without a known workload. |
 
 `lastUsedAt` is optional. Its absence means Xquik recorded no authenticated use.
 Xquik refreshes it at most once a minute, so it can trail the latest call by up
 to 60 seconds.
 It does not prove that a deployment no longer needs the key.
+
+`monthlySpentCredits` counts the credits charged for calls with the key since
+the current UTC calendar month began. It starts again at 0 each month. Once it
+reaches `monthlyBudgetCredits`, new calls with the key get
+`403 api_key_budget_reached` until the next month. Raise or remove the budget
+with [Update API key](/api-reference/api-keys/update) to unblock the key sooner.
 
 Check scheduled jobs before revoking a quiet key. A monthly follower export
 can remain valid without recent requests. Confirm the owner and workload first.
@@ -347,6 +360,16 @@ Array of API key objects.
       ISO 8601 timestamp of the last API call made with this key, refreshed at most once a minute. Omitted if never used.
 
     </ResponseField>
+    <ResponseField name="monthlyBudgetCredits" type="integer">
+
+      Credits the key can spend each UTC calendar month. Omitted when the key has no budget.
+
+    </ResponseField>
+    <ResponseField name="monthlySpentCredits" type="integer">
+
+      Credits charged for calls with the key this UTC calendar month. `0` when it has no calls yet.
+
+    </ResponseField>
 
 </ResponseField>
 
@@ -367,7 +390,9 @@ Array of API key objects.
       "scope": "full",
       "isActive": true,
       "createdAt": "2026-02-24T10:30:00.000Z",
-      "lastUsedAt": "2026-02-24T18:45:12.000Z"
+      "lastUsedAt": "2026-02-24T18:45:12.000Z",
+      "monthlyBudgetCredits": 50000,
+      "monthlySpentCredits": 1200
     },
     {
       "id": "43",
@@ -376,7 +401,8 @@ Array of API key objects.
       "scope": "paid_reads",
       "isActive": true,
       "createdAt": "2026-02-20T09:00:00.000Z",
-      "expiresAt": "2026-03-22T09:00:00.000Z"
+      "expiresAt": "2026-03-22T09:00:00.000Z",
+      "monthlySpentCredits": 0
     }
   ],
   "hasMore": false
