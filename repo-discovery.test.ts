@@ -1778,7 +1778,11 @@ const REQUIRED_MCP_CONTRACT_SNIPPETS = [
   "the public A2A docs agent",
   "`https://xquik.com/auth.md`",
   "the supported anonymous OAuth client registration path",
-  "Unauthenticated requests to `https://xquik.com/mcp` return `401` with a",
+  "Without a credential, `https://xquik.com/mcp` and `https://xquik.com/mcp?codemode=false` answer a single JSON-RPC `initialize`, `notifications/initialized`, `ping`, `server/discover`, or `tools/list` message.",
+  "Each `initialize` and `server/discover` result carries `instructions`, a short Xquik summary with links to `https://xquik.com/llms.txt` and this page.",
+  "Every other request without a credential returns `401` with a",
+  "This includes every `tools/call`, every batch, and every request to `https://xquik.com/mcp?app=claude`, `https://xquik.com/mcp?app=chatgpt`, and `https://xquik.com/sse`.",
+  "The `?app=chatgpt` challenge asks for `mcp:read`, and its `resource_metadata` URL ends in `?app=chatgpt`.",
   "`WWW-Authenticate: Bearer` challenge.",
   'resource_metadata="https://xquik.com/.well-known/oauth-protected-resource/mcp"',
   '`scope="mcp:tools"`',
@@ -2196,6 +2200,7 @@ const FORBIDDEN_MCP_CONTRACT_SNIPPETS = [
   "const estimate = await xquik.request('/api/v1/extractions/estimate'",
   "`xquik.request(path, { method?, body?, query? })`",
   "resolves to the endpoint body without a `data`, `body`, `result`, or `status` wrapper",
+  "Unauthenticated requests to `https://xquik.com/mcp` return `401` with a",
 ] as const;
 
 const REQUIRED_BILLING_RECOVERY_SNIPPETS = [

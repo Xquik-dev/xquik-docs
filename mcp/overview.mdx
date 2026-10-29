@@ -107,10 +107,22 @@ resume state. Let the client SDK negotiate the protocol.
 
 </Note>
 
-Unauthenticated requests to `https://xquik.com/mcp` return `401` with a
-`WWW-Authenticate: Bearer` challenge. The challenge includes
+Clients and directories can discover Xquik before sign-in. Without a
+credential, `https://xquik.com/mcp` and `https://xquik.com/mcp?codemode=false`
+answer a single JSON-RPC `initialize`, `notifications/initialized`, `ping`,
+`server/discover`, or `tools/list` message. Each `initialize` and
+`server/discover` result carries `instructions`, a short Xquik summary with
+links to `https://xquik.com/llms.txt` and this page.
+
+Every other request without a credential returns `401` with a
+`WWW-Authenticate: Bearer` challenge. This includes every `tools/call`, every
+batch, and every request to `https://xquik.com/mcp?app=claude`,
+`https://xquik.com/mcp?app=chatgpt`, and `https://xquik.com/sse`. A first-time
+OAuth client therefore connects and lists the tools, then gets `401` on its
+first tool call and asks you to sign in. The challenge includes
 `resource_metadata="https://xquik.com/.well-known/oauth-protected-resource/mcp"`,
-`scope="mcp:tools"`, and the OAuth realm. The JSON body is
+`scope="mcp:tools"`, and the OAuth realm. The `?app=chatgpt` challenge asks for
+`mcp:read`, and its `resource_metadata` URL ends in `?app=chatgpt`. The JSON body is
 `{ "error": "Sign in through your MCP client. Or send your Xquik API key as a Bearer token." }`.
 OAuth-capable clients use the
 challenge to discover the authorization metadata. API-key clients should send
