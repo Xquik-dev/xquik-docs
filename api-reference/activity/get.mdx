@@ -1,0 +1,303 @@
+---
+title: "Get an Xquik activity's full technical record"
+sidebarTitle: "Get activity"
+description: "Retrieve 1 write action, extraction or monitor change with its request, API key, OAuth app, charge, related activity & UTC timestamps to the millisecond."
+api: "GET /activity/{id}"
+keywords: ["activity", "audit log", "request id", "debug", "ip address", "user agent"]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+{/* GENERATED RESPONSE EXAMPLES START */}
+
+<Panel>
+
+<Tabs defaultTabIndex={0} sync={false}>
+
+  <Tab title="200" id="response-activity-get-200">
+
+    ```json
+    {
+      "object": "activity",
+      "id": "naF3xqHLWDTs",
+      "kind": "monitor_change",
+      "type": "pause",
+      "status": "completed",
+      "url": "https://dashboard.xquik.com/activity/naF3xqHLWDTs",
+      "requestId": "9f2c1d7e4b8a4c55a1e0d3b2c6f7a8e9",
+      "timestamps": {
+        "createdAt": "2026-10-28T20:22:13.481Z"
+      },
+      "request": {
+        "method": "PATCH",
+        "path": "/api/v1/monitors/42",
+        "httpStatus": 200,
+        "durationMs": 37,
+        "ipAddress": "203.0.113.9"
+      },
+      "caller": {
+        "authMethod": "api_key",
+        "apiKey": {
+          "name": "Production",
+          "prefix": "xq_ab12"
+        },
+        "oauthClient": null
+      }
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="400" id="response-activity-get-400">
+
+    ```json
+    {
+      "error": "invalid_input",
+      "message": "Invalid input. Check the request body."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="401" id="response-activity-get-401">
+
+    ```json
+    {
+      "error": "unauthenticated",
+      "message": "Authentication required. Provide a valid API key or bearer token."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="403" id="response-activity-get-403">
+
+    ```json
+    {
+      "error": "api_key_paused",
+      "message": "This API key is paused. Resume it at dashboard.xquik.com/api-keys to use it again."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="404" id="response-activity-get-404">
+
+    ```json
+    {
+      "error": "not_found",
+      "message": "Resource not found."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="429" id="response-activity-get-429">
+
+    ```json
+    {
+      "error": "rate_limit_exceeded",
+      "message": "Too many requests. Try again later.",
+      "retryAfter": 60
+    }
+    ```
+
+  </Tab>
+</Tabs>
+
+</Panel>
+{/* GENERATED RESPONSE EXAMPLES END */}
+<LlmsDirective />
+
+<Callout icon="circle-check" color="#16a34a">
+
+**Free.** This endpoint does not consume credits.
+
+</Callout>
+
+Every write, extraction & monitor change keeps a full record you can fetch. Take the ID from
+the activity page URL in the dashboard. Copy as cURL on that page gives the same call.
+
+<CodeGroup>
+
+```bash cURL
+curl https://xquik.com/api/v1/activity/naF3xqHLWDTs \
+  -H "x-api-key: xq_YOUR_KEY_HERE" | jq
+```
+
+```javascript Node.js
+const response = await fetch("https://xquik.com/api/v1/activity/naF3xqHLWDTs", {
+  headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
+});
+const activity = await response.json();
+process.stdout.write(`${JSON.stringify(activity, null, 2)}\n`);
+```
+
+```python Python
+import requests
+
+response = requests.get(
+    "https://xquik.com/api/v1/activity/naF3xqHLWDTs",
+    headers={"x-api-key": "xq_YOUR_KEY_HERE"},
+)
+activity = response.json()
+print(activity)
+```
+
+```go Go
+package main
+
+import (
+	"fmt"
+	"io"
+	"log"
+	"net/http"
+)
+
+func main() {
+	req, err := http.NewRequest("GET", "https://xquik.com/api/v1/activity/naF3xqHLWDTs", nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(string(body))
+}
+```
+
+</CodeGroup>
+
+## Debug an activity
+
+| Question                           | Field                                 |
+| ---------------------------------- | ------------------------------------- |
+| Which call made this change?       | `request.method`, `request.path`      |
+| Did the call succeed?              | `request.httpStatus`                  |
+| How long did the call take?        | `request.durationMs`                  |
+| Which key or app made it?          | `caller.apiKey`, `caller.oauthClient` |
+| How many credits did it use?       | `charge.credits`                      |
+| What happened to the same subject? | `related`                             |
+
+Send the record to your support ticket or AI assistant as is. It never holds an API key
+value, and an OAuth app gets it without your IP address and user agent.
+
+## Headers
+
+<ParamField header="x-api-key" type="string" required>
+  Your API key with full access. Generate one from the [API Keys page](https://xquik.com).
+</ParamField>
+
+## Path parameters
+
+<ParamField path="id" type="string" required>
+  Activity ID from the activity page URL, such as `naF3xqHLWDTs`.
+</ParamField>
+
+## Response
+
+### 200 OK
+
+<ResponseField name="object" type="string">
+  Always `activity`.
+</ResponseField>
+
+<ResponseField name="id" type="string">
+  Activity ID.
+</ResponseField>
+
+<ResponseField name="kind" type="string">
+  `write_action`, `extraction` or `monitor_change`.
+</ResponseField>
+
+<ResponseField name="type" type="string">
+  Write action type, extraction tool type or monitor change, such as `pause`.
+</ResponseField>
+
+<ResponseField name="status" type="string">
+  `completed`, `running`, `failed` or `canceled`.
+</ResponseField>
+
+<ResponseField name="url" type="string">
+  Dashboard page of this activity.
+</ResponseField>
+
+<ResponseField name="requestId" type="string | null">
+  ID of the API request behind this activity.
+</ResponseField>
+
+<ResponseField name="timestamps" type="object">
+  Every time of this activity, ISO 8601 in UTC to the millisecond. `createdAt` is always present.
+  `updatedAt`, `completedAt`, `confirmedAt` and `expiresAt` appear when the activity has them.
+</ResponseField>
+
+<ResponseField name="request" type="object | null">
+  The API request behind this activity, with `method`, `path`, `httpStatus`, `durationMs`,
+  `ipAddress`, `userAgent` and `at`. Null for activity from before Oct 30, 2026.
+</ResponseField>
+
+<ResponseField name="caller" type="object">
+  Who made the change. `authMethod` is `api_key`, `oauth` or `session`. `apiKey` holds the key's
+  `name` and `prefix`, and `oauthClient` holds the app's `id` and `name`.
+</ResponseField>
+
+<ResponseField name="charge" type="object | null">
+  Credits charged, with `credits`, `balanceAfter` and `at`. Null when the activity charged nothing.
+</ResponseField>
+
+<ResponseField name="details" type="object">
+  Fields of this kind of activity, such as the target, the search query or the monitor.
+</ResponseField>
+
+<ResponseField name="related" type="object[]">
+  Up to 5 other activities on the same subject within 7 days, newest first. Each has `id`, `type`,
+  `status`, `createdAt` and `url`.
+</ResponseField>
+
+### 400 Invalid input
+
+The activity ID has the wrong format. Copy it from the activity page URL.
+
+### 401 Unauthenticated
+
+```json
+{ "error": "unauthenticated" }
+```
+
+Missing or invalid API key. Check the `x-api-key` header value.
+
+### 403 Forbidden
+
+A read-only or scoped key cannot read activity. Use a key with full access.
+
+### 404 Not found
+
+```json
+{ "error": "not_found" }
+```
+
+No activity exists with this ID, or it belongs to a different account.
+
+### 429 Rate limited
+
+```json
+{
+  "error": "rate_limit_exceeded",
+  "message": "Too many requests. Try again later.",
+  "retryAfter": 1
+}
+```
+
+Too many requests. Wait for the `Retry-After` header before retrying.
+
+<Note>
+  **Related.** [Get account](/api-reference/account/get) &middot; [List
+  events](/api-reference/events/list)
+</Note>
