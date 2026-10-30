@@ -200,8 +200,8 @@ tags:
     description: Account info and settings
   - name: Activity
     description: >-
-      Every write, extraction & monitor change keeps a full record you can
-      fetch.
+      Every write, extraction & monitor change keeps a full record you can fetch
+      & export.
   - name: Agent Discovery
     description: >-
       Public agent discovery and documentation search. Agents can find Xquik on
@@ -722,6 +722,104 @@ paths:
         '403': { $ref: '#/components/responses/ReadKeyForbidden' }
         '429': *rate-limit-exceeded-response
 
+  /activity:
+    get:
+      operationId: listActivity
+      description: >-
+        Returns the account's activity log, newest first, with the Activity
+        page's filters. It covers write actions, extractions, monitor changes
+        and events, webhooks, giveaways, media, support, API keys, X account
+        connections and billing. Pick a file format to get the same rows as a
+        CSV, Excel, Markdown, PDF or text file.
+      summary: List activity
+      tags: [Activity]
+      security: *api-auth
+      parameters:
+        - name: format
+          in: query
+          description: Answer format. JSON by default.
+          schema:
+            type: string
+            enum: [json, csv, xlsx, md, md-document, pdf, txt]
+            default: json
+            example: csv
+        - name: limit
+          in: query
+          description: Most rows to return. PDF stops at 10,000 rows.
+          schema:
+            {
+              type: integer,
+              minimum: 1,
+              maximum: 100000,
+              default: 100,
+              example: 50,
+            }
+        - name: category
+          in: query
+          description: >-
+            Activity group, like the Activity page's tabs. `all` by default, or
+            `actions`, `extractions`, `monitors`, `webhooks` or `billing`.
+          schema: { type: string, maxLength: 11, example: monitors }
+        - name: status
+          in: query
+          description: Comma-separated statuses.
+          schema: { type: string, maxLength: 200, example: 'failed,running' }
+        - name: q
+          in: query
+          description: Search text.
+          schema: { type: string, maxLength: 200, example: artemis }
+        - name: since
+          in: query
+          description: Oldest time, ISO 8601.
+          schema:
+            {
+              type: string,
+              format: date-time,
+              maxLength: 128,
+              example: '2026-10-21T00:00:00Z',
+            }
+        - name: until
+          in: query
+          description: Newest time, ISO 8601.
+          schema:
+            {
+              type: string,
+              format: date-time,
+              maxLength: 128,
+              example: '2026-10-28T00:00:00Z',
+            }
+      responses:
+        '200':
+          description: Activity rows
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ActivityLogRow'
+              example:
+                - time: '2026-10-28T20:22:13.481Z'
+                  category: monitor_change
+                  type: pause
+                  activity: 'Account monitor for @elonmusk paused'
+                  status: completed
+                  source: elonmusk
+                  target: ''
+                  results: ''
+                  credits: ''
+                  details: ''
+                  id: naF3xqHLWDTs
+                  link: ''
+            text/csv:
+              schema: { type: string }
+              example:
+                "time,category,type,activity,status,source,target,results,credits,details,id,link\n2026-10-28T20:22:13.481Z,monitor_change,pause,Account
+                monitor for @elonmusk
+                paused,completed,elonmusk,,,,,naF3xqHLWDTs,\n"
+        '400': { $ref: '#/components/responses/InvalidInput' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '429': { $ref: '#/components/responses/RateLimitExceeded' }
   /activity/{id}:
     get:
       operationId: getActivity
@@ -21316,6 +21414,54 @@ components:
         data:
           $ref: '#/components/schemas/MonitorEventData'
 
+    ActivityLogRow:
+      type: object
+      description: >-
+        1 Activity log row. A cut list ends with a row whose category is notice
+        and whose activity says where it stopped.
+      required:
+        [
+          time,
+          category,
+          type,
+          activity,
+          status,
+          source,
+          target,
+          results,
+          credits,
+          details,
+          id,
+          link,
+        ]
+      properties:
+        time:
+          type: string
+          description: >-
+            ISO 8601 time in UTC to the millisecond. Empty on the notice row.
+          example: '2026-10-28T20:22:13.481Z'
+        category: { type: string, example: monitor_change }
+        type: { type: string, example: pause }
+        activity:
+          { type: string, example: 'Account monitor for @elonmusk paused' }
+        status: { type: string, example: completed }
+        source: { type: string, example: elonmusk }
+        target: { type: string, example: '1846000000000000001' }
+        results:
+          type: [integer, string]
+          minimum: 0
+          maximum: 9007199254740991
+          example: 12
+        credits:
+          type: [integer, string]
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+          example: 1000
+        details: { type: string, example: '200' }
+        id: { type: string, example: naF3xqHLWDTs }
+        link:
+          type: string
+          example: 'https://x.com/elonmusk/status/1846000000000000001'
     ActivityRecord:
       type: object
       description: >-
