@@ -10,7 +10,7 @@ import McpSearchSpec from "/snippets/mcp-search-spec.mdx";
 
 <LlmsDirective />
 
-Xquik API MCP supports 2 explicit tool modes. Code Mode uses `docs`, `search`, and `execute`. Native mode exposes `docs`, `readSavedResult`, and one tool for each eligible OpenAPI operation. Active guest `paid_reads` keys see only the eligible paid-read routes in either mode.
+Xquik API MCP supports 2 explicit tool modes. Code Mode uses `docs`, `search`, `execute`, and `whoami`. Native mode exposes `docs`, `readSavedResult`, `whoami`, and one tool for each eligible OpenAPI operation. Active guest `paid_reads` keys see only the eligible paid-read routes in either mode.
 
 Modern clients negotiate MCP `2026-07-28` through `server/discover`. Current SDKs add required request metadata and headers.
 See [MCP 2026-07-28](/mcp/overview#mcp-2026-07-28).
@@ -33,6 +33,14 @@ Use `https://xquik.com/mcp` for Code Mode. Choose native mode for one tool per o
 Search canonical public documentation. `docs` is read-only and uses no credits.
 
 **Input.** Pass a non-empty `query` string of up to 500 characters.
+
+**Output.** `structuredContent.results` lists each matching passage with its `id`, `url`, `title`, and `text`. The text content shows the same passages as `<result>` blocks within 24,000 characters.
+
+## `whoami`
+
+Return the signed-in account's stable id. `whoami` takes no arguments, makes no API request, and uses no credits.
+
+**Output.** `{ "id": "user:<id>" }`. The `id` stays the same across token refresh, reconnection, and permission changes, and never moves to another account. Use it to tell connected accounts apart. ChatGPT reads it as the app's profile tool.
 
 ## `readSavedResult`
 
@@ -823,5 +831,11 @@ Never combine free and paid endpoints in a single `Promise.all`. A 402 error on 
 - **429 / `rate_limit_exceeded`.** Respect `error.retry_after`, then retry safe reads with backoff.
 - **424 dependency errors.** Report `error.code`, keep partial aggregates, and retry only when `error.retryable` allows it.
 - **Validation errors.** Fix the path, query, or body before retrying.
+
+`execute` throws a failed request as an Error, and a native tool answers it as an error result with the same text. The text names the method, path, and HTTP status of the request that failed, followed by the API's JSON error.
+
+```text
+Xquik API request GET /api/v1/x/tweets/search returned HTTP 400 Bad Request with {"error":{"message":"Use a whole number from 1 to 10,000 for limit.","type":"invalid_request_error","code":"invalid_input"}}
+```
 
 MCP has no subscription, checkout, top-up or guest wallet tool, so no MCP call moves money.

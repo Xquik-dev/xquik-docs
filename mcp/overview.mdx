@@ -95,10 +95,11 @@ It identifies the HTTP request, not the JSON-RPC message or authenticated sessio
 Allowed browser clients can send and read this header.
 
 `server/discover` and `tools/list` include private cache hints with a 5-minute TTL.
-Code Mode advertises tool-list changes. Native catalogs stay static. Cache only within the same authorization context.
+Every catalog stays static for a connection. The server advertises no tool-list changes, and `subscriptions/listen` completes at once. Cache only within the same authorization context.
 
 Xquik also accepts stateless 2025-era clients at the same endpoint. This keeps
-existing integrations working while current SDKs adopt `2026-07-28`.
+existing integrations working while current SDKs adopt `2026-07-28`. Each
+2025-era request gets its answer as 1 JSON response.
 
 <Note>
 
@@ -166,9 +167,17 @@ Use the default endpoint for Code Mode.
 https://xquik.com/mcp
 ```
 
-Code Mode uses 3 tools. API discovery and execution run in isolated sandboxes.
+Code Mode uses 4 tools. API discovery and execution run in isolated sandboxes.
 
-<CardGroup cols={3}>
+| Approach                             | Tools     | Tokens to list them |
+| ------------------------------------ | --------- | ------------------- |
+| The whole OpenAPI spec in the prompt | None      | About 230,000       |
+| Native mode, `?codemode=false`       | About 180 | About 160,000       |
+| Code Mode, the default               | 4         | About 2,000         |
+
+Each token figure is the JSON size divided by 4, measured on 2026-10-30.
+
+<CardGroup cols={2}>
 
   <Card title="docs" icon="book-open">
 
@@ -185,6 +194,11 @@ Code Mode uses 3 tools. API discovery and execution run in isolated sandboxes.
     Call authenticated X/Twitter APIs. Cost follows the endpoint.
 
   </Card>
+  <Card title="whoami" icon="user">
+
+    Return the signed-in account's stable id. No credits.
+
+  </Card>
 </CardGroup>
 
 `server/discover` sends no global model instructions. Tool descriptions identify the X/Twitter domain and explain code mechanics. `docs` searches public documentation. `search` accepts an async arrow function. `spec` is global and its first argument. Its examples show endpoint and operation lookup. `execute` accepts the same form. `xquik` is global and its first argument. OpenAPI and these docs define endpoint behavior.
@@ -194,6 +208,7 @@ Code Mode uses 3 tools. API discovery and execution run in isolated sandboxes.
 | `docs`    | Search Xquik documentation     | Read-only, idempotent, open-world, non-destructive        |
 | `search`  | Search Xquik API specification | Read-only, idempotent, closed-world, non-destructive      |
 | `execute` | Execute Xquik API requests     | May mutate data, may access live services, not idempotent |
+| `whoami`  | Current Xquik account          | Read-only, idempotent, closed-world, non-destructive      |
 
 For a guest `paid_reads` session, `execute` is read-only, idempotent, and limited to live calls across the eligible paid-read routes.
 
@@ -203,7 +218,7 @@ Claude's Connectors Directory and Claude's custom connectors use the Claude cata
 https://xquik.com/mcp?app=claude
 ```
 
-It has `docs`, `search`, `execute` and `executeWrite`. `execute` runs each operation whose search spec says `readOnly: true`, so Claude runs it without asking. `executeWrite` runs the rest, such as posts, follows, monitors, webhooks and drafts, and Claude asks before each call. Claude's directory accepts no single tool that both reads and writes.
+It has `docs`, `search`, `execute`, `executeWrite` and `whoami`. `execute` runs each operation whose search spec says `readOnly: true`, so Claude runs it without asking. `executeWrite` runs the rest, such as posts, follows, monitors, webhooks and drafts, and Claude asks before each call. Claude's directory accepts no single tool that both reads and writes.
 
 Use native mode when a client cannot run Code Mode or needs ordinary MCP tools.
 
@@ -212,9 +227,9 @@ https://xquik.com/mcp?codemode=false
 ```
 
 Native mode serves an OpenAPI-derived catalog. It validates only the called
-tool. Full credentials receive `docs`, `readSavedResult`, and the OpenAPI
-operations. Guest keys receive `docs`, `readSavedResult`, and the eligible GET
-operations.
+tool. Full credentials receive `docs`, `readSavedResult`, `whoami`, and the
+OpenAPI operations. Guest keys receive `docs`, `readSavedResult`, `whoami`, and
+the eligible GET operations.
 
 Each native tool uses its OpenAPI `operationId` as its stable name. Its input
 schema, title, description, HTTP method, path, query parameters, and JSON body
