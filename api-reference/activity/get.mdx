@@ -1,7 +1,7 @@
 ---
 title: "Get an Xquik activity's full technical record"
 sidebarTitle: "Get activity"
-description: "Retrieve 1 write action, extraction or monitor change with its request, API key, OAuth app, charge, related activity & UTC timestamps to the millisecond."
+description: "Retrieve any Xquik activity, from a write to a webhook delivery, with its request, API key, OAuth app, charge, related activity & UTC times to the millisecond."
 api: "GET /activity/{id}"
 keywords: ["activity", "audit log", "request id", "debug", "ip address", "user agent"]
 ---
@@ -115,8 +115,9 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 </Callout>
 
-Every write, extraction & monitor change keeps a full record you can fetch. Take the ID from
-the activity page URL in the dashboard. Copy as cURL on that page gives the same call.
+Every activity keeps a full record you can fetch. Take the ID from the activity page URL in the
+dashboard or from a row of [List activity](/api-reference/activity/list). Copy as cURL on that
+page gives the same call. An API key's own record answers only a signed-in dashboard session.
 
 <CodeGroup>
 
@@ -198,7 +199,7 @@ value, and an OAuth app gets it without your IP address and user agent.
 ## Path parameters
 
 <ParamField path="id" type="string" required>
-  Activity ID from the activity page URL, such as `naF3xqHLWDTs`.
+  Activity ID from the activity page URL or an Activity log row, such as `naF3xqHLWDTs`.
 </ParamField>
 
 ## Response
@@ -214,11 +215,13 @@ value, and an OAuth app gets it without your IP address and user agent.
 </ResponseField>
 
 <ResponseField name="kind" type="string">
-  `write_action`, `extraction` or `monitor_change`.
+  `write_action`, `extraction`, `monitor_change`, `api_key`, `billing`, `giveaway_draw`,
+  `monitor_event`, `media_download`, `media_share`, `support_ticket`, `webhook_delivery`,
+  `webhook_endpoint` or `x_account_connection`.
 </ResponseField>
 
 <ResponseField name="type" type="string">
-  Write action type, extraction tool type or monitor change, such as `pause`.
+  Type within the kind, the same as its Activity log row, such as `pause`.
 </ResponseField>
 
 <ResponseField name="status" type="string">
@@ -235,12 +238,14 @@ value, and an OAuth app gets it without your IP address and user agent.
 
 <ResponseField name="timestamps" type="object">
   Every time of this activity, ISO 8601 in UTC to the millisecond. `createdAt` is always present.
-  `updatedAt`, `completedAt`, `confirmedAt` and `expiresAt` appear when the activity has them.
+  Other times appear when the activity has them, such as `updatedAt`, `completedAt`, `confirmedAt`,
+  `expiresAt`, `occurredAt`, `discoveredAt`, `deliveredAt`, `nextRetryAt` or `lastUsedAt`.
 </ResponseField>
 
 <ResponseField name="request" type="object | null">
   The API request behind this activity, with `method`, `path`, `httpStatus`, `durationMs`,
-  `ipAddress`, `userAgent` and `at`. Null for activity from before Oct 30, 2026.
+  `ipAddress`, `userAgent` and `at`. Null for activity from before Oct 30, 2026, and for activity no
+  API request made, such as a monitor event or a webhook delivery.
 </ResponseField>
 
 <ResponseField name="caller" type="object">
@@ -253,7 +258,8 @@ value, and an OAuth app gets it without your IP address and user agent.
 </ResponseField>
 
 <ResponseField name="details" type="object">
-  Fields of this kind of activity, such as the target, the search query or the monitor.
+  Fields of this kind of activity, such as the target, the search query, the monitor, the event data
+  or the webhook payload.
 </ResponseField>
 
 <ResponseField name="related" type="object[]">

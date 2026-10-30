@@ -200,8 +200,7 @@ tags:
     description: Account info and settings
   - name: Activity
     description: >-
-      Every write, extraction & monitor change keeps a full record you can fetch
-      & export.
+      Every activity keeps a full record you can fetch & export.
   - name: Agent Discovery
     description: >-
       Public agent discovery and documentation search. Agents can find Xquik on
@@ -825,9 +824,11 @@ paths:
       operationId: getActivity
       description: >-
         Returns 1 activity of the account with its full technical record. It
-        covers write actions, extractions and monitor changes. The record holds
+        covers every kind of activity the Activity log shows. The record holds
         the request, the caller, the charge, every timestamp in UTC and related
-        activity. It never holds an API key value or another account's data.
+        activity. It never holds an API key value, a webhook secret or another
+        account's data. Only a signed-in dashboard session sees an `api_key`
+        record, so an API key or an OAuth app gets 404 for its ID.
       summary: Get activity
       tags: [Activity]
       security: *api-auth
@@ -835,8 +836,14 @@ paths:
         - name: id
           in: path
           required: true
-          description: Activity ID from the dashboard's activity page URL.
-          schema: { type: string, minLength: 12, maxLength: 12 }
+          description: >-
+            Activity ID. It is the id of an Activity log row and the last part
+            of the dashboard's activity page URL.
+          schema:
+            type: string
+            minLength: 12
+            maxLength: 22
+            pattern: '^[A-Za-z0-9_-]{12}([A-Za-z0-9_-]{10})?$'
           example: naF3xqHLWDTs
       responses:
         '200':
@@ -21458,7 +21465,10 @@ components:
           maximum: 9007199254740991
           example: 1000
         details: { type: string, example: '200' }
-        id: { type: string, example: naF3xqHLWDTs }
+        id:
+          type: string
+          description: Activity ID. GET /activity/{id} returns its full record.
+          example: naF3xqHLWDTs
         link:
           type: string
           example: 'https://x.com/elonmusk/status/1846000000000000001'
@@ -21488,12 +21498,33 @@ components:
         id: { type: string, description: Activity ID., example: naF3xqHLWDTs }
         kind:
           type: string
-          enum: [write_action, extraction, monitor_change]
+          description: >-
+            Kind of the activity. Only a signed-in dashboard session sees an
+            `api_key` record.
+          enum:
+            [
+              write_action,
+              extraction,
+              monitor_change,
+              api_key,
+              billing,
+              giveaway_draw,
+              monitor_event,
+              media_download,
+              media_share,
+              support_ticket,
+              webhook_delivery,
+              webhook_endpoint,
+              x_account_connection,
+            ]
           example: monitor_change
         type:
           type: string
-          description:
-            Write action type, extraction tool type or monitor change.
+          description: >-
+            Type of the activity within its kind, the same as the type of its
+            Activity log row. Examples are a write action type, an extraction
+            tool type, a monitor change, a monitor event type or a ledger entry
+            type.
           example: pause
         status:
           type: string
@@ -21543,10 +21574,71 @@ components:
                 format: date-time,
                 example: '2026-10-29T20:22:13.481Z',
               }
+            occurredAt:
+              {
+                type: string,
+                format: date-time,
+                example: '2026-10-28T20:22:11.000Z',
+              }
+            discoveredAt:
+              {
+                type: string,
+                format: date-time,
+                example: '2026-10-28T20:22:12.204Z',
+              }
+            postedAt:
+              {
+                type: string,
+                format: date-time,
+                example: '2026-10-27T15:00:00.000Z',
+              }
+            firstAttemptedAt:
+              {
+                type: string,
+                format: date-time,
+                example: '2026-10-28T20:22:13.610Z',
+              }
+            deliveredAt:
+              {
+                type: string,
+                format: date-time,
+                example: '2026-10-28T20:22:13.702Z',
+              }
+            nextRetryAt:
+              {
+                type: string,
+                format: date-time,
+                example: '2026-10-28T20:23:13.610Z',
+              }
+            exhaustedAt:
+              {
+                type: string,
+                format: date-time,
+                example: '2026-10-29T20:22:13.610Z',
+              }
+            drawnAt:
+              {
+                type: string,
+                format: date-time,
+                example: '2026-10-28T20:22:15.330Z',
+              }
+            lastUsedAt:
+              {
+                type: string,
+                format: date-time,
+                example: '2026-10-29T08:01:44.120Z',
+              }
+            pausedAt:
+              {
+                type: string,
+                format: date-time,
+                example: '2026-10-29T09:00:00.000Z',
+              }
         request:
           description: >-
             The API request behind this activity. Null for activity from before
-            Oct 30, 2026.
+            Oct 30, 2026, and for activity no API request starts, such as a
+            monitor event, a webhook delivery or a credit grant.
           example:
             method: PATCH
             path: /api/v1/monitors/42
@@ -21651,10 +21743,13 @@ components:
                   }
         details:
           type: object
-          description: Fields of this kind of activity, such as its target.
+          description: >-
+            Fields of this kind of activity, such as its target. A field can
+            hold JSON, such as the data of a monitor event or the payload of a
+            webhook delivery.
           example: { monitorKind: account, monitorId: '42', surface: rest }
           additionalProperties:
-            type: [string, number, boolean, 'null']
+            type: [string, number, boolean, object, array, 'null']
         related:
           type: array
           description: >-
