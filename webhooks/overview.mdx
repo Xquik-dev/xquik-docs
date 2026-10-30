@@ -601,8 +601,9 @@ Return `2xx` within 10 seconds for every delivery, even one you skip. Any other
 status, a redirect, a timeout, or a network error is a failure. `410 Gone` is a
 normal failure.
 
-Xquik retries a failed delivery until your endpoint returns `2xx`. There is no
-attempt limit. Xquik never pauses or turns off your webhook.
+Xquik retries a failed delivery until your endpoint returns `2xx`. Each
+delivery gets 7 days from the time Xquik queues it. A delivery still failing
+after 7 days ends as `exhausted`. Xquik never pauses or turns off your webhook.
 
 <CardGroup cols={2}>
 
@@ -655,20 +656,20 @@ waits longer.
 | 3               | 4 seconds        |
 | 10              | About 9 minutes  |
 | 15              | About 4.5 hours  |
-| 20              | About 6 days     |
-| 21 or more      | 7 days           |
+| 19              | About 3 days     |
 
-The wait stops growing at 7 days. Retries can arrive a little later than
-listed.
+No retry comes later than 7 days after Xquik queued the delivery. Retries can
+arrive a little later than listed.
 
 ### Pause or delete a webhook
 
-Only you can stop retries. Pause the webhook with
-[Update Webhook](/api-reference/webhooks/update), or delete it. Xquik holds the
-deliveries that were waiting. Within 1 day, they show `exhausted`.
+Pause the webhook with [Update Webhook](/api-reference/webhooks/update), or
+delete it. Xquik holds the deliveries that were waiting. Each one shows
+`exhausted` once its 7 days end. A paused monitor holds its deliveries the same
+way.
 
-Xquik keeps queued events until all deliveries finish.
-Events expire 30 days after Xquik creates them.
+Events expire 30 days after Xquik creates them. An event whose delivery ended
+as `exhausted` stays 30 days after that delivery ended.
 [Resume Webhook](/api-reference/webhooks/resume) sends a signed test first. Then
 it starts sending held deliveries at once.
 
@@ -678,8 +679,9 @@ Deleting a monitor removes its waiting deliveries.
 ### Check delivery status
 
 [List Deliveries](/api-reference/webhooks/deliveries) shows each delivery's
-`status`, which is `pending`, `delivered`, `failed`, or `exhausted`. `attempts` counts
-the tries so far. A retry reuses the same `deliveryId`, so store it and skip
+`status`, which is `pending`, `delivered`, `failed`, or `exhausted`.
+`exhausted` means 7 days passed without a `2xx`, and `lastError` says why.
+`attempts` counts the tries so far. A retry reuses the same `deliveryId`, so store it and skip
 repeats.
 
 [List Webhooks](/api-reference/webhooks/list) shows `deliveryStatus` and
@@ -788,7 +790,7 @@ Use this handoff when a receiver fails a signed test or keeps failing deliveries
     Check [List Deliveries](/api-reference/webhooks/deliveries) for `status`,
     `attempts`, `lastStatusCode`, `lastError`, `createdAt`, and
     `deliveredAt`. Act on `failed`, wait on `pending`, and ignore
-    `delivered`. `exhausted` means the webhook was paused or deleted.
+    `delivered`. `exhausted` means 7 days passed without a `2xx`.
 
   </Card>
 
