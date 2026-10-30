@@ -198,6 +198,10 @@ tags:
       only the scopes it needs.
   - name: Account
     description: Account info and settings
+  - name: Activity
+    description: >-
+      Every write, extraction & monitor change keeps a full record you can fetch
+      & export.
   - name: Agent Discovery
     description: >-
       Public agent discovery and documentation search. Agents can find Xquik on
@@ -717,6 +721,173 @@ paths:
         '401': *unauthenticated-response
         '403': { $ref: '#/components/responses/ReadKeyForbidden' }
         '429': *rate-limit-exceeded-response
+
+  /activity:
+    get:
+      operationId: listActivity
+      description: >-
+        Returns the account's activity log, newest first, with the Activity
+        page's filters. It covers write actions, extractions, monitor changes
+        and events, webhooks, giveaways, media, support, API keys, X account
+        connections and billing. Pick a file format to get the same rows as a
+        CSV, Excel, Markdown, PDF or text file.
+      summary: List activity
+      tags: [Activity]
+      security: *api-auth
+      parameters:
+        - name: format
+          in: query
+          description: Answer format. JSON by default.
+          schema:
+            type: string
+            enum: [json, csv, xlsx, md, md-document, pdf, txt]
+            default: json
+            example: csv
+        - name: limit
+          in: query
+          description: Most rows to return. PDF stops at 10,000 rows.
+          schema:
+            {
+              type: integer,
+              minimum: 1,
+              maximum: 100000,
+              default: 100,
+              example: 50,
+            }
+        - name: category
+          in: query
+          description: >-
+            Activity group, like the Activity page's tabs. `all` by default, or
+            `actions`, `extractions`, `monitors`, `webhooks` or `billing`.
+          schema: { type: string, maxLength: 11, example: monitors }
+        - name: status
+          in: query
+          description: Comma-separated statuses.
+          schema: { type: string, maxLength: 200, example: 'failed,running' }
+        - name: q
+          in: query
+          description: Search text.
+          schema: { type: string, maxLength: 200, example: artemis }
+        - name: since
+          in: query
+          description: Oldest time, ISO 8601.
+          schema:
+            {
+              type: string,
+              format: date-time,
+              maxLength: 128,
+              example: '2026-10-21T00:00:00Z',
+            }
+        - name: until
+          in: query
+          description: Newest time, ISO 8601.
+          schema:
+            {
+              type: string,
+              format: date-time,
+              maxLength: 128,
+              example: '2026-10-28T00:00:00Z',
+            }
+      responses:
+        '200':
+          description: Activity rows
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ActivityLogRow'
+              example:
+                - time: '2026-10-28T20:22:13.481Z'
+                  category: monitor_change
+                  type: pause
+                  activity: 'Account monitor for @elonmusk paused'
+                  status: completed
+                  source: elonmusk
+                  target: ''
+                  results: ''
+                  credits: ''
+                  details: ''
+                  id: naF3xqHLWDTs
+                  link: ''
+            text/csv:
+              schema: { type: string }
+              example:
+                "time,category,type,activity,status,source,target,results,credits,details,id,link\n2026-10-28T20:22:13.481Z,monitor_change,pause,Account
+                monitor for @elonmusk
+                paused,completed,elonmusk,,,,,naF3xqHLWDTs,\n"
+        '400': { $ref: '#/components/responses/InvalidInput' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '429': { $ref: '#/components/responses/RateLimitExceeded' }
+  /activity/{id}:
+    get:
+      operationId: getActivity
+      description: >-
+        Returns 1 activity of the account with its full technical record. It
+        covers write actions, extractions and monitor changes. The record holds
+        the request, the caller, the charge, every timestamp in UTC and related
+        activity. It never holds an API key value or another account's data.
+      summary: Get activity
+      tags: [Activity]
+      security: *api-auth
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Activity ID from the dashboard's activity page URL.
+          schema: { type: string, minLength: 12, maxLength: 12 }
+          example: naF3xqHLWDTs
+      responses:
+        '200':
+          description: Activity record
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActivityRecord'
+              example:
+                object: activity
+                id: naF3xqHLWDTs
+                kind: monitor_change
+                type: pause
+                status: completed
+                url: 'https://dashboard.xquik.com/activity/naF3xqHLWDTs'
+                requestId: 9f2c1d7e4b8a4c55a1e0d3b2c6f7a8e9
+                timestamps:
+                  createdAt: '2026-10-28T20:22:13.481Z'
+                request:
+                  method: PATCH
+                  path: /api/v1/monitors/42
+                  httpStatus: 200
+                  durationMs: 37
+                  ipAddress: 203.0.113.9
+                  userAgent: 'my-agent/1.0'
+                  at: '2026-10-28T20:22:13.519Z'
+                caller:
+                  authMethod: api_key
+                  apiKey: { name: Production, prefix: xq_ab12 }
+                  oauthClient: null
+                charge: null
+                details:
+                  monitorKind: account
+                  monitorId: '42'
+                  subjectUsername: elonmusk
+                  subjectQuery: null
+                  subjectName: null
+                  subjectXId: '44196397'
+                  subjectAvatar: null
+                  surface: rest
+                related:
+                  - id: Q7wErTyUiOpA
+                    type: create
+                    status: completed
+                    createdAt: '2026-10-21T09:12:40.002Z'
+                    url: 'https://dashboard.xquik.com/activity/Q7wErTyUiOpA'
+        '400': { $ref: '#/components/responses/InvalidInput' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/RateLimitExceeded' }
 
   # ── API Keys ─────────────────────────────────────────────
   /api-keys:
@@ -21243,6 +21414,278 @@ components:
         data:
           $ref: '#/components/schemas/MonitorEventData'
 
+    ActivityLogRow:
+      type: object
+      description: >-
+        1 Activity log row. A cut list ends with a row whose category is notice
+        and whose activity says where it stopped.
+      required:
+        [
+          time,
+          category,
+          type,
+          activity,
+          status,
+          source,
+          target,
+          results,
+          credits,
+          details,
+          id,
+          link,
+        ]
+      properties:
+        time:
+          type: string
+          description: >-
+            ISO 8601 time in UTC to the millisecond. Empty on the notice row.
+          example: '2026-10-28T20:22:13.481Z'
+        category: { type: string, example: monitor_change }
+        type: { type: string, example: pause }
+        activity:
+          { type: string, example: 'Account monitor for @elonmusk paused' }
+        status: { type: string, example: completed }
+        source: { type: string, example: elonmusk }
+        target: { type: string, example: '1846000000000000001' }
+        results:
+          type: [integer, string]
+          minimum: 0
+          maximum: 9007199254740991
+          example: 12
+        credits:
+          type: [integer, string]
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+          example: 1000
+        details: { type: string, example: '200' }
+        id: { type: string, example: naF3xqHLWDTs }
+        link:
+          type: string
+          example: 'https://x.com/elonmusk/status/1846000000000000001'
+    ActivityRecord:
+      type: object
+      description: >-
+        Full technical record of 1 activity. Timestamps are ISO 8601 in UTC to
+        the millisecond.
+      required:
+        [
+          object,
+          id,
+          kind,
+          type,
+          status,
+          url,
+          requestId,
+          timestamps,
+          request,
+          caller,
+          charge,
+          details,
+          related,
+        ]
+      properties:
+        object: { type: string, enum: [activity], example: activity }
+        id: { type: string, description: Activity ID., example: naF3xqHLWDTs }
+        kind:
+          type: string
+          enum: [write_action, extraction, monitor_change]
+          example: monitor_change
+        type:
+          type: string
+          description:
+            Write action type, extraction tool type or monitor change.
+          example: pause
+        status:
+          type: string
+          enum: [completed, running, failed, canceled]
+          example: completed
+        url:
+          type: string
+          format: uri
+          description: Dashboard page of this activity.
+          example: 'https://dashboard.xquik.com/activity/naF3xqHLWDTs'
+        requestId:
+          type: [string, 'null']
+          description: ID of the API request behind this activity.
+          example: 9f2c1d7e4b8a4c55a1e0d3b2c6f7a8e9
+        timestamps:
+          type: object
+          required: [createdAt]
+          example: { createdAt: '2026-10-28T20:22:13.481Z' }
+          properties:
+            createdAt:
+              {
+                type: string,
+                format: date-time,
+                example: '2026-10-28T20:22:13.481Z',
+              }
+            updatedAt:
+              {
+                type: string,
+                format: date-time,
+                example: '2026-10-28T20:22:14.002Z',
+              }
+            completedAt:
+              {
+                type: string,
+                format: date-time,
+                example: '2026-10-28T20:22:13.950Z',
+              }
+            confirmedAt:
+              {
+                type: string,
+                format: date-time,
+                example: '2026-10-28T20:22:13.900Z',
+              }
+            expiresAt:
+              {
+                type: string,
+                format: date-time,
+                example: '2026-10-29T20:22:13.481Z',
+              }
+        request:
+          description: >-
+            The API request behind this activity. Null for activity from before
+            Oct 30, 2026.
+          example:
+            method: PATCH
+            path: /api/v1/monitors/42
+            httpStatus: 200
+            durationMs: 37
+            ipAddress: 203.0.113.9
+            userAgent: 'my-agent/1.0'
+            at: '2026-10-28T20:22:13.519Z'
+          oneOf:
+            - type: 'null'
+            - type: object
+              required:
+                [method, path, httpStatus, durationMs, ipAddress, userAgent, at]
+              properties:
+                method:
+                  {
+                    type: string,
+                    enum: [DELETE, PATCH, POST, PUT],
+                    example: PATCH,
+                  }
+                path: { type: string, example: /api/v1/monitors/42 }
+                httpStatus:
+                  { type: integer, minimum: 100, maximum: 599, example: 200 }
+                durationMs:
+                  {
+                    type: integer,
+                    minimum: 0,
+                    maximum: 9007199254740991,
+                    example: 37,
+                  }
+                ipAddress: { type: [string, 'null'], example: 203.0.113.9 }
+                userAgent: { type: [string, 'null'], example: 'my-agent/1.0' }
+                at:
+                  {
+                    type: string,
+                    format: date-time,
+                    example: '2026-10-28T20:22:13.519Z',
+                  }
+        caller:
+          type: object
+          required: [authMethod, apiKey, oauthClient]
+          example:
+            authMethod: api_key
+            apiKey: { name: Production, prefix: xq_ab12 }
+            oauthClient: null
+          properties:
+            authMethod:
+              type: [string, 'null']
+              enum: [api_key, oauth, session, null]
+              example: api_key
+            apiKey:
+              description: Name and prefix of the API key used. Never its value.
+              example: { name: Production, prefix: xq_ab12 }
+              oneOf:
+                - type: 'null'
+                - type: object
+                  required: [name, prefix]
+                  properties:
+                    name: { type: string, example: Production }
+                    prefix: { type: string, example: xq_ab12 }
+            oauthClient:
+              example: { id: claude, name: Claude }
+              oneOf:
+                - type: 'null'
+                - type: object
+                  required: [id, name]
+                  properties:
+                    id: { type: string, example: claude }
+                    name: { type: string, example: Claude }
+        charge:
+          description: Credits charged for this activity.
+          example:
+            {
+              credits: 1300,
+              balanceAfter: 898700,
+              at: '2026-10-28T20:22:13.900Z',
+            }
+          oneOf:
+            - type: 'null'
+            - type: object
+              required: [credits, balanceAfter, at]
+              properties:
+                credits:
+                  {
+                    type: integer,
+                    minimum: 0,
+                    maximum: 9007199254740991,
+                    example: 1300,
+                  }
+                balanceAfter:
+                  {
+                    type: integer,
+                    minimum: -9007199254740991,
+                    maximum: 9007199254740991,
+                    example: 898700,
+                  }
+                at:
+                  {
+                    type: string,
+                    format: date-time,
+                    example: '2026-10-28T20:22:13.900Z',
+                  }
+        details:
+          type: object
+          description: Fields of this kind of activity, such as its target.
+          example: { monitorKind: account, monitorId: '42', surface: rest }
+          additionalProperties:
+            type: [string, number, boolean, 'null']
+        related:
+          type: array
+          description: >-
+            Up to 5 other activities on the same subject within 7 days, newest
+            first.
+          example:
+            - id: Q7wErTyUiOpA
+              type: create
+              status: completed
+              createdAt: '2026-10-21T09:12:40.002Z'
+              url: 'https://dashboard.xquik.com/activity/Q7wErTyUiOpA'
+          items:
+            type: object
+            required: [id, type, status, createdAt, url]
+            properties:
+              id: { type: string, example: Q7wErTyUiOpA }
+              type: { type: string, example: create }
+              status:
+                type: string
+                enum: [completed, running, failed, canceled]
+                example: completed
+              createdAt:
+                {
+                  type: string,
+                  format: date-time,
+                  example: '2026-10-21T09:12:40.002Z',
+                }
+              url:
+                type: string
+                format: uri
+                example: 'https://dashboard.xquik.com/activity/Q7wErTyUiOpA'
     EventDetail:
       description:
         Full monitor event including payload data and optional X event ID.

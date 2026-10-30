@@ -108,7 +108,7 @@ curl https://xquik.com/api/v1/webhooks/15/deliveries \
     delivered_at: (.deliveredAt // null),
     action: (
       if .status == "failed" then "fix_receiver"
-      elif .status == "exhausted" then "resume_webhook"
+      elif .status == "exhausted" then "read_event"
       elif .status == "pending" then "wait"
       else "done"
       end
@@ -123,7 +123,7 @@ const response = await fetch("https://xquik.com/api/v1/webhooks/15/deliveries", 
 const data = await response.json();
 const deliveryActions = {
   delivered: "done",
-  exhausted: "resume_webhook",
+  exhausted: "read_event",
   failed: "fix_receiver",
   pending: "wait",
 };
@@ -151,7 +151,7 @@ response = requests.get(
 data = response.json()
 delivery_actions = {
     "delivered": "done",
-    "exhausted": "resume_webhook",
+    "exhausted": "read_event",
     "failed": "fix_receiver",
     "pending": "wait",
 }
@@ -215,7 +215,7 @@ func actionForDelivery(delivery Delivery) string {
   case "failed":
     return "fix_receiver"
   case "exhausted":
-    return "resume_webhook"
+    return "read_event"
   case "pending":
     return "wait"
   }
@@ -301,7 +301,7 @@ Do not depend on a `nextRetryAt` field. The response has none. Triage incidents 
 | Delivery ID                      | `deliveries[].id`             | Use this ID for idempotency and support lookup.                   |
 | Monitor event ID                 | `deliveries[].streamEventId`  | Join the delivery to `GET /events/{id}`.                          |
 | Delivery state                   | `deliveries[].status`         | Handle pending, failed, exhausted, and delivered rows separately. |
-| Attempt count                    | `deliveries[].attempts`       | Count tries so far. There is no attempt limit.                    |
+| Attempt count                    | `deliveries[].attempts`       | Count tries so far. Retries stop after 7 days.                    |
 | Receiver status                  | `deliveries[].lastStatusCode` | Separate HTTP failures from unreachable receivers.                |
 | Failure reason                   | `deliveries[].lastError`      | Show the latest receiver error to operators.                      |
 | Delivery timing                  | `createdAt` and `deliveredAt` | Measure queue time and recovery time.                             |
@@ -330,7 +330,7 @@ Store these fields for support and retry triage.
   <Card title="Attempt count" icon="repeat-2">
 
     Use `attempts` to see how often Xquik tried a delivery. Retries continue
-    until your endpoint returns `2xx`.
+    until your endpoint returns `2xx` or 7 days pass.
 
   </Card>
   <Card title="Receiver result" icon="activity">
@@ -356,7 +356,8 @@ Store these fields for support and retry triage.
 
 Use one row per delivery when the receiver owner must act. Ignore
 `delivered` rows, wait on `pending`, and act on `failed`. An `exhausted` row
-means the webhook was paused or deleted.
+means 7 days passed without a `2xx`. Read its event with
+`GET /api/v1/events/{id}`.
 
 ```json
 {
@@ -384,10 +385,10 @@ means the webhook was paused or deleted.
     reachability failures.
 
   </Card>
-  <Card title="No final failure" icon="rotate-ccw">
+  <Card title="7-day window" icon="rotate-ccw">
 
-    Xquik retries every `failed` delivery until your endpoint returns `2xx`.
-    No delivery ends early, even after `410 Gone`.
+    Xquik retries every `failed` delivery until 7 days pass. No delivery ends
+    earlier, even after `410 Gone`.
 
   </Card>
   <Card title="Event join" icon="link">
@@ -404,9 +405,9 @@ means the webhook was paused or deleted.
   </Card>
 </CardGroup>
 
-Xquik retries failed deliveries with no attempt limit. While your endpoint fails, Xquik retries 1 waiting delivery at a time. It checks the endpoint at least every 15 minutes. New deliveries wait as `pending`. Return `2xx` for a delivery you will never accept. See the [retry policy](/webhooks/overview#retry-policy).
+Xquik retries failed deliveries for 7 days. While your endpoint fails, Xquik retries 1 waiting delivery at a time. It checks the endpoint at least every 15 minutes. New deliveries wait as `pending`. Return `2xx` for a delivery you will never accept. See the [retry policy](/webhooks/overview#retry-policy).
 
-Fix the receiving endpoint first. Use [`POST /webhooks/{id}/test`](/api-reference/webhooks/test) to confirm it accepts signed requests. Then call [Resume Webhook](/api-reference/webhooks/resume) to start sending waiting and rejected deliveries at once. Without it, a rejected delivery can wait up to 7 days.
+Fix the receiving endpoint first. Use [`POST /webhooks/{id}/test`](/api-reference/webhooks/test) to confirm it accepts signed requests. Then call [Resume Webhook](/api-reference/webhooks/resume) to start sending waiting and rejected deliveries at once. Without it, a rejected delivery can wait until its 7 days end.
 
 ### Receiver backfill handoff
 
@@ -469,7 +470,7 @@ List of delivery attempts, most recent first. Returns up to 100 deliveries per p
     </ResponseField>
     <ResponseField name="attempts" type="number">
 
-      Total number of delivery attempts made. There is no attempt limit.
+      Total number of delivery attempts made. Retries stop after 7 days.
 
     </ResponseField>
     <ResponseField name="lastStatusCode" type="number">
@@ -610,18 +611,18 @@ Too many requests. Wait for the `Retry-After` header before retrying.
 
     The last attempt failed because the endpoint returned non-`2xx` or the
     network failed. Xquik retries with exponential backoff until your endpoint
-    returns `2xx`.
+    returns `2xx` or 7 days pass.
 
   </Card>
   <Card title="exhausted" icon="pause">
 
-    You paused or deleted the webhook while this delivery waited. Resume it
-    to receive waiting deliveries.
+    7 days passed without a `2xx`. `lastError` says why. Read the event with
+    `GET /api/v1/events/{id}`.
 
   </Card>
 </CardGroup>
 
-Xquik retries deliveries until your endpoint returns `2xx`. Retries never stop on their own. Pausing or deleting the webhook stops them. Within 1 day, its waiting deliveries show `exhausted`. Xquik keeps queued events until all deliveries finish. Events expire 30 days after Xquik creates them.
+Xquik retries deliveries until your endpoint returns `2xx` or 7 days pass. Pausing or deleting the webhook holds its deliveries. Each one shows `exhausted` once its 7 days end. Events expire 30 days after Xquik creates them. An event whose delivery ended as `exhausted` stays 30 days after that delivery ended.
 
 <Note>
 
