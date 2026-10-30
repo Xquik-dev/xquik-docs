@@ -1,0 +1,287 @@
+---
+title: "List your Xquik activity log or export it as a file"
+sidebarTitle: "List activity"
+description: "List the account's activity log, newest first, with the Activity page's filters. Get JSON, or the same rows as a CSV, Excel, Markdown, PDF or text file."
+api: "GET /activity"
+keywords: ["activity", "activity log", "audit log", "export", "csv", "pdf"]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+{/* GENERATED RESPONSE EXAMPLES START */}
+
+<Panel>
+
+<Tabs defaultTabIndex={0} sync={false}>
+
+  <Tab title="200" id="response-activity-list-200">
+
+    ```json
+    [
+      {
+        "time": "2026-10-28T20:22:13.481Z",
+        "category": "monitor_change",
+        "type": "pause",
+        "activity": "Account monitor for @elonmusk paused",
+        "status": "completed"
+      }
+    ]
+    ```
+
+  </Tab>
+
+  <Tab title="400" id="response-activity-list-400">
+
+    ```json
+    {
+      "error": "invalid_input",
+      "message": "Invalid input. Check the request body."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="401" id="response-activity-list-401">
+
+    ```json
+    {
+      "error": "unauthenticated",
+      "message": "Authentication required. Provide a valid API key or bearer token."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="403" id="response-activity-list-403">
+
+    ```json
+    {
+      "error": "api_key_paused",
+      "message": "This API key is paused. Resume it at dashboard.xquik.com/api-keys to use it again."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="429" id="response-activity-list-429">
+
+    ```json
+    {
+      "error": "rate_limit_exceeded",
+      "message": "Too many requests. Try again later.",
+      "retryAfter": 60
+    }
+    ```
+
+  </Tab>
+</Tabs>
+
+</Panel>
+{/* GENERATED RESPONSE EXAMPLES END */}
+<LlmsDirective />
+
+<Callout icon="circle-check" color="#16a34a">
+
+**Free.** This endpoint does not consume credits.
+
+</Callout>
+
+The rows match the dashboard's Activity log. Copy as cURL on that page gives this call with
+its filters. A cut list ends with a `notice` row that says where it stopped.
+
+<CodeGroup>
+
+```bash cURL
+curl "https://xquik.com/api/v1/activity?category=monitors&status=failed&limit=50" \
+  -H "x-api-key: xq_YOUR_KEY_HERE" | jq
+```
+
+```javascript Node.js
+const response = await fetch(
+  "https://xquik.com/api/v1/activity?category=monitors&status=failed&limit=50",
+  { headers: { "x-api-key": "xq_YOUR_KEY_HERE" } },
+);
+const rows = await response.json();
+process.stdout.write(`${JSON.stringify(rows, null, 2)}\n`);
+```
+
+```python Python
+import requests
+
+response = requests.get(
+    "https://xquik.com/api/v1/activity",
+    headers={"x-api-key": "xq_YOUR_KEY_HERE"},
+    params={"category": "monitors", "status": "failed", "limit": 50},
+)
+rows = response.json()
+print(rows)
+```
+
+```go Go
+package main
+
+import (
+	"fmt"
+	"io"
+	"log"
+	"net/http"
+)
+
+func main() {
+	req, err := http.NewRequest("GET", "https://xquik.com/api/v1/activity?category=monitors&status=failed&limit=50", nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(string(body))
+}
+```
+
+</CodeGroup>
+
+## Download the log as a file
+
+Add `format` to get a file in the same format as every other Xquik export.
+
+| `format`      | File                    |
+| ------------- | ----------------------- |
+| `json`        | JSON array, the default |
+| `csv`         | CSV                     |
+| `xlsx`        | Excel workbook          |
+| `md`          | Markdown table          |
+| `md-document` | Markdown document       |
+| `pdf`         | PDF, up to 10,000 rows  |
+| `txt`         | Plain text              |
+
+## Headers
+
+<ParamField header="x-api-key" type="string" required>
+  Your API key with full access. Generate one from the [API Keys page](https://xquik.com).
+</ParamField>
+
+## Query parameters
+
+<ParamField query="format" type="string" default="json">
+  Answer format. `json`, `csv`, `xlsx`, `md`, `md-document`, `pdf` or `txt`.
+</ParamField>
+
+<ParamField query="limit" type="number" default="100">
+  Most rows to return, from 1 to 100,000. PDF stops at 10,000 rows.
+</ParamField>
+
+<ParamField query="category" type="string" default="all">
+  `all`, `actions`, `extractions`, `monitors`, `webhooks` or `billing`.
+</ParamField>
+
+<ParamField query="status" type="string">
+  Comma-separated statuses, such as `failed,running`.
+</ParamField>
+
+<ParamField query="q" type="string">
+  Search text, up to 200 characters.
+</ParamField>
+
+<ParamField query="since" type="string">
+  Oldest time, ISO 8601.
+</ParamField>
+
+<ParamField query="until" type="string">
+  Newest time, ISO 8601.
+</ParamField>
+
+## Response
+
+### 200 OK
+
+An array of rows, newest first. Each row has these fields.
+
+<ResponseField name="time" type="string">
+  ISO 8601 time in UTC to the millisecond. Empty on the notice row.
+</ResponseField>
+
+<ResponseField name="category" type="string">
+  Kind of activity, such as `write_action`, `extraction` or `monitor_change`.
+</ResponseField>
+
+<ResponseField name="type" type="string">
+  Type within the category, such as `like` or `pause`.
+</ResponseField>
+
+<ResponseField name="activity" type="string">
+  The row's title, as the Activity log shows it.
+</ResponseField>
+
+<ResponseField name="status" type="string">
+  `completed`, `running`, `failed` or `canceled`.
+</ResponseField>
+
+<ResponseField name="source" type="string">
+  The account, monitor or key the activity came from.
+</ResponseField>
+
+<ResponseField name="target" type="string">
+  The post or account it acted on.
+</ResponseField>
+
+<ResponseField name="results" type="number | string">
+  Results, for extractions and giveaways.
+</ResponseField>
+
+<ResponseField name="credits" type="number | string">
+  Credits charged, or added for billing rows.
+</ResponseField>
+
+<ResponseField name="details" type="string">
+  Extra detail, such as a result ID or an HTTP status.
+</ResponseField>
+
+<ResponseField name="id" type="string">
+  Activity ID. For a write action, an extraction or a monitor change, pass it to [Get
+  activity](/api-reference/activity/get) for the full record.
+</ResponseField>
+
+<ResponseField name="link" type="string">
+  Link to the post or profile on X.
+</ResponseField>
+
+### 400 Invalid input
+
+A query parameter has the wrong format. Check the values above.
+
+### 401 Unauthenticated
+
+```json
+{ "error": "unauthenticated" }
+```
+
+Missing or invalid API key. Check the `x-api-key` header value.
+
+### 403 Forbidden
+
+A read-only or scoped key cannot read activity. Use a key with full access.
+
+### 429 Rate limited
+
+```json
+{
+  "error": "rate_limit_exceeded",
+  "message": "Too many requests. Try again later.",
+  "retryAfter": 1
+}
+```
+
+Too many requests. Wait for the `Retry-After` header before retrying.
+
+<Note>
+  **Related.** [Get activity](/api-reference/activity/get) &middot; [List
+  events](/api-reference/events/list)
+</Note>
