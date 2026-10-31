@@ -15155,9 +15155,9 @@ components:
         enum: ['admission', 'reads']
     XquikCause:
       description: >
-        Sent when X's servers failed the request. The value x names X as the
-        cause. Xquik's own failures & other answers omit this header.
-        `X-Xquik-Cause` tells X's outages apart from Xquik's.
+        Xquik answers 502 with `X-Xquik-Cause` & `Retry-After` when X fails a
+        read on every account. The value x names X as the cause. Xquik's own
+        failures omit it.
       schema:
         type: string
         enum: ['x']
@@ -16098,9 +16098,13 @@ components:
         or when a filtered search goes far back without a match. The message
         says how far back the search looked. "X can't run this search" appears
         only when it's true. Searches X can't run fail at once, with the fix.
+        When X fails a read, Xquik answers 502 `x_api_unavailable` with
+        `X-Xquik-Cause` & `Retry-After`. Retry after that many seconds.
       headers:
         X-Xquik-Cause:
           $ref: '#/components/headers/XquikCause'
+        Retry-After:
+          $ref: '#/components/headers/BusyRetryAfter'
       content:
         application/json:
           schema: *error-schema
@@ -16153,8 +16157,6 @@ components:
         Retry x_api_unavailable after Retry-After. After pagination_stalled,
         retry once, 30 s or more later.
       headers: &busy-headers
-        X-Xquik-Cause:
-          $ref: '#/components/headers/XquikCause'
         Retry-After:
           $ref: '#/components/headers/BusyRetryAfter'
         X-Xquik-Busy:
