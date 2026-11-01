@@ -21,7 +21,7 @@ The `mppx` package provides both client and server utilities. You only need the 
 
 ## Step 2. Set up a Tempo wallet
 
-You need a Tempo wallet funded with USDC, plus its raw hex private key for the `mppx` client.
+You need a Tempo wallet funded with USDC. The `mppx` client also needs the wallet's raw hex private key.
 
 **Path A. CLI only.** Recommended for agents.
 
@@ -30,7 +30,7 @@ mppx account create             # generates a local keychain-backed account
 mppx account export             # prints the hex private key (0x...)
 ```
 
-Fund the account's address with USDC on Tempo, then copy the exported key into `TEMPO_PRIVATE_KEY`.
+Fund the account's address with USDC on Tempo. Then copy the exported key into `TEMPO_PRIVATE_KEY`.
 
 **Path B. Web wallet as a USDC source.**
 
@@ -64,7 +64,7 @@ const data = await response.json();
 console.log(data.tweet.text);
 ```
 
-`Mppx.create()` patches the global `fetch` function. When a direct MPP request returns 402 with a `WWW-Authenticate: Payment` header, the SDK pays the requested amount and retransmits the request with an `Authorization: Payment` credential. Every response after accepted payment includes a `Payment-Receipt` header confirming settlement.
+`Mppx.create()` patches the global `fetch` function. A direct MPP request can return 402 with a `WWW-Authenticate: Payment` header. The SDK then pays the requested amount. It sends the request again with an `Authorization: Payment` credential. Every response after accepted payment includes a `Payment-Receipt` header confirming settlement.
 
 ## Step 4. Raw HTTP flow without the SDK
 
@@ -83,9 +83,9 @@ HTTP/2 402
 WWW-Authenticate: Payment id="abc...", realm="xquik.com", method="tempo", intent="charge", request="eyJhbW91bnQiOi..."
 ```
 
-The `request` parameter is a base64url-encoded JSON object containing the amount, currency, and recipient address.
+The `request` parameter is a base64url-encoded JSON object. It holds the amount, currency, and recipient address.
 
-The `application/problem+json` body also includes an optional `payment_options.guest_wallet.create_checkout` action. It does not replace the MPP header. The failed request creates no checkout. Ignore it when completing MPP. Use it only after a user explicitly chooses and confirms a USD 10 to 250 guest wallet.
+The `application/problem+json` body also includes an optional `payment_options.guest_wallet.create_checkout` action. It does not replace the MPP header. The failed request creates no checkout. Ignore it when completing MPP. Use it only after a user explicitly picks and confirms a guest wallet. Its amount is USD 10 to 250.
 
 **Step 3.** Pay and retry.
 
@@ -96,7 +96,7 @@ curl -i https://xquik.com/api/v1/x/tweets/1893456789012345678 \
   -H "Authorization: Payment eyJjaGFsbGVuZ2UiOnsi..."
 ```
 
-The `Authorization: Payment` value is a base64url-encoded JSON object containing the original challenge and your payment proof.
+The `Authorization: Payment` value is a base64url-encoded JSON object. It holds the original challenge and your payment proof.
 
 **Step 4.** Receive the response and receipt.
 
@@ -108,7 +108,7 @@ Content-Type: application/json
 {"tweet": {"id": "1893456789012345678", "text": "..."}}
 ```
 
-The `Payment-Receipt` header confirms settlement. Check the HTTP status and response body separately because accepted payments also include a receipt on non-2xx responses.
+The `Payment-Receipt` header confirms settlement. Check the HTTP status and response body separately. Accepted payments include a receipt on non-2xx responses too.
 
 ## Next steps
 

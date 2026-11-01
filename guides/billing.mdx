@@ -68,7 +68,7 @@ Subscribe from the [dashboard billing page](https://dashboard.xquik.com/en/accou
 
 ### Pick a billing path by job
 
-Use these cards to estimate the cost of an X API task before you run it.
+Use these cards to estimate the cost of an X API task. Do it before you run the task.
 
 <CardGroup cols={2}>
 
@@ -79,7 +79,7 @@ Use these cards to estimate the cost of an X API task before you run it.
   </Card>
   <Card title="Export followers" icon="users">
 
-    Use [Follower extraction](/guides/extraction-workflow) for CSV, JSON, or XLSX exports or [`GET /x/users/{id}/followers`](/api-reference/x/followers) for paginated API reads. Each follower returned costs 1 credit.
+    Use [Follower extraction](/guides/extraction-workflow) for CSV, JSON, or XLSX exports. Use [`GET /x/users/{id}/followers`](/api-reference/x/followers) for paginated API reads. Each follower returned costs 1 credit.
 
   </Card>
   <Card title="Post tweets or replies" icon="send">
@@ -139,13 +139,13 @@ Account monitors and keyword monitors use the same active billing rate.
 
 Creating or reactivating an account monitor requires at least 30 available credits. They pay for the first active monitor-hour, and the username lookup is free. Creating or reactivating a keyword monitor also requires at least 30 available credits. It then bills 30 credits per active monitor-hour.
 
-New active monitors are due for billing immediately. The create response includes `nextBillingAt`. After a successful hourly charge, the next billing time advances by 1 hour. If hourly billing cannot charge enough credits, the monitor may pause until credits are available.
+New active monitors are due for billing immediately. The create response includes `nextBillingAt`. After a successful hourly charge, the next billing time advances by 1 hour. Hourly billing may not find enough credits. The monitor may then pause until credits are available.
 
-Use [`GET /account`](/api-reference/account/get) to inspect current monitor billing. `monitorsUsed`, `monitorBilling.activeHourlyBurn`, and `monitorBilling.activeDailyEstimate` include active account monitors and active keyword monitors.
+Use [`GET /account`](/api-reference/account/get) to inspect current monitor billing. `monitorsUsed` includes active account monitors and active keyword monitors. So do `monitorBilling.activeHourlyBurn` and `monitorBilling.activeDailyEstimate`.
 
 ### Plan monitor credits before you monitor tweets
 
-Use `GET /account` before creating more tweet monitors or tweet alerts. Each active account monitor or keyword monitor adds `30` credits to `monitorBilling.activeHourlyBurn` and `720` credits to `monitorBilling.activeDailyEstimate`.
+Use `GET /account` before creating more tweet monitors or tweet alerts. Each active account monitor or keyword monitor adds `30` credits to `monitorBilling.activeHourlyBurn`. It also adds `720` credits to `monitorBilling.activeDailyEstimate`.
 
 <CardGroup cols={3}>
 
@@ -170,13 +170,13 @@ The account API returns the daily estimate for capacity planning. It is 24 hours
 
 ## Monthly credits & carry-over
 
-Every paid subscription invoice adds the monthly credit grant to your account balance. Subscription credits, top-up credits, and automatic top-up credits stay in that balance until you spend them.
+Every paid subscription invoice adds the monthly credit grant to your account balance. Subscription, top-up, and automatic top-up credits stay in that balance until you spend them.
 
 - All metered operations deduct from a single shared pool
 - No separate buckets per operation type
 - Unused subscription credits carry over to the next billing period
 - [Rate limits](/guides/rate-limits) also apply to API calls, separately from credit usage
-- When the shared balance reaches 0, metered calls return `402 Payment Required` (see [error handling](/guides/error-handling#billing--credit-errors-402) for recovery patterns)
+- When the shared balance reaches 0, metered calls return `402 Payment Required`. See [error handling](/guides/error-handling#billing--credit-errors-402) for recovery patterns
 - Reading and managing stored monitor records, stored events, webhooks, and account endpoints are free. Active monitors bill hourly.
 
 ```json 402 response body
@@ -198,7 +198,7 @@ A caller on a plan that renews gets top-up only, plus `credits_renew_at`.
 }
 ```
 
-A caller whose plan payment failed gets top-up only, with the message "Your plan's payment failed. Update your payment or top up to keep reading."
+A caller whose plan payment failed gets top-up only. The message reads "Your plan's payment failed. Update your payment or top up to keep reading."
 
 When the balance hits 0 while reads continue, Xquik emails the account.
 It sends at most 1 such email per 7 days, in the account's language.
@@ -238,7 +238,7 @@ Extractions consume 1 or 5 credits per result depending on the extraction type.
   </Card>
   <Card title="People results" icon="users">
 
-    1 credit per result. Includes followers, following, favoriters, retweeters, community members, people search, list members, list followers, and verified followers.
+    1 credit per result. That covers followers, following, favoriters, retweeters, and community members. It also covers people search, list members, list followers, and verified followers.
 
   </Card>
   <Card title="Article results" icon="file-text">
@@ -248,29 +248,29 @@ Extractions consume 1 or 5 credits per result depending on the extraction type.
   </Card>
 </CardGroup>
 
-Draws charge for the source tweet lookup and the reply search. They charge for retweeter profile checks when `mustRetweet` is true. With `mustFollowUsername`, they charge 1 credit for a follow check on each author who passes the other filters. The draw first checks that the minimum cost is affordable. Remaining credits cap how many replies and retweeters the draw can inspect before filters and winner selection run. If the API cannot deduct the final computed cost, it returns `402 insufficient_credits` and does not store a draw result.
+Draws charge for the source tweet lookup and the reply search. They charge for retweeter profile checks when `mustRetweet` is true. With `mustFollowUsername`, they charge 1 credit per follow check. That check runs on each author who passes the other filters. The draw first checks that the minimum cost is affordable. Remaining credits cap how many replies and retweeters the draw can inspect. Filters and winner selection run after that. The API may fail to deduct the final computed cost. It then returns `402 insufficient_credits` and stores no draw result.
 
 ### Credit-affordable result pages
 
-Paid X read endpoints that charge per returned result treat `limit`, `pageSize`, `count`, and multi-ID request sizes as upper bounds. If the remaining credit balance cannot cover the full requested page, the endpoint can return fewer results than requested. If zero paid results are affordable, it returns `402 insufficient_credits`.
+Some paid X read endpoints charge per returned result. They treat `limit`, `pageSize`, `count`, and multi-ID request sizes as upper bounds. The remaining balance may not cover the full requested page. The endpoint can then return fewer results than requested. If zero paid results are affordable, it returns `402 insufficient_credits`.
 
 ### Free operations
 
-Xquik charges no credits for stored monitor management, stored event reads, webhook operations, extraction and draw reads or exports, cost estimates, composition, styles, drafts, support, API keys, X account management, credit top-ups, account status, and [Radar](/api-reference/radar/list). Active monitors cost 30 credits per hour.
+Xquik charges no credits for stored monitor management, stored event reads, or webhook operations. It charges none for extraction and draw reads or exports. It charges none for cost estimates, composition, styles, drafts, support, or API keys. It charges none for X account management, credit top-ups, account status, or [Radar](/api-reference/radar/list). Active monitors cost 30 credits per hour.
 
 ## Credit top-ups
 
-Ask the user to confirm before creating account checkout or charging a saved payment method.
+Ask the user to confirm before you create account checkout. Do the same before you charge a saved payment method.
 
 - Use the [top-up endpoint](/api-reference/credits/topup) to create a checkout redirect after confirmation
 - Use the [top-up status endpoint](/api-reference/credits/topup-status) to poll checkout completion
 - The dashboard uses [quick top-up](/api-reference/credits/quick-topup) for saved methods
-- Configure automatic top-up from the dashboard. `GET /credits` and `GET /account` return the enabled status, dollar amount, and trigger threshold.
-- Automatic top-up stops after 3 declined charges in a row. The dashboard then asks you to update the card. A new card, a paid top-up, or a paid plan renewal restarts it. `GET /credits` reports the stop as `auto_topup_stopped` and `GET /account` as `creditInfo.autoTopupStopped`.
+- Configure automatic top-up from the dashboard. `GET /credits` and `GET /account` return its enabled status and dollar amount. They also return its trigger threshold.
+- Automatic top-up stops after 3 declined charges in a row. The dashboard then asks you to update the card. A new card, a paid top-up, or a paid plan renewal restarts it. `GET /credits` reports the stop as `auto_topup_stopped`. `GET /account` reports it as `creditInfo.autoTopupStopped`.
 - Top-up credits cost USD 0.00015 each and reach your balance immediately
 - Top-up credits do not expire and carry over between billing periods
 
-> **Example.** Starter tier (USD 20, 140K credits). A USD 10 top-up adds 66,666 credits at USD 0.00015 per credit, rounded down to whole credits.
+> **Example.** Starter tier (USD 20, 140K credits). A USD 10 top-up adds 66,666 credits at USD 0.00015 per credit. Xquik rounds down to whole credits.
 
 ### Recover from 402
 
@@ -316,7 +316,7 @@ grants credits. It opens checkout for `declined` or `no_payment_method`.
 
 ## Accountless guest wallets
 
-Guest wallets prepay the eligible paid-read routes without an account. After the user confirms USD 10 to 250, `POST /api/v1/guest-wallets` creates a one-use hosted checkout and returns a `paid_reads` key. Creation does not charge. The key stays inactive until Xquik verifies payment. A guest `402` offers only `POST /api/v1/guest-wallets/topups`. See the [guest wallet guide](/guides/guest-wallets).
+Guest wallets prepay the eligible paid-read routes without an account. The user first confirms USD 10 to 250. `POST /api/v1/guest-wallets` then creates a one-use hosted checkout and returns a `paid_reads` key. Creation does not charge. The key stays inactive until Xquik verifies payment. A guest `402` offers only `POST /api/v1/guest-wallets/topups`. See the [guest wallet guide](/guides/guest-wallets).
 
 ## Pay-per-use (MPP)
 
@@ -386,16 +386,16 @@ curl -s https://xquik.com/api/v1/account \
 }
 ```
 
-The `creditInfo.balance` field shows how many credits remain. The automatic top-up fields show whether top-up is enabled, the charge amount, and the balance threshold. At 0, Xquik rejects metered calls until you [top up credits](/api-reference/credits/topup).
+The `creditInfo.balance` field shows how many credits remain. The automatic top-up fields show whether top-up is enabled. They also show the charge amount and the balance threshold. At 0, Xquik rejects metered calls until you [top up credits](/api-reference/credits/topup).
 
-> **Tip.** Poll the account endpoint on a schedule to track usage. Build alerts when `creditInfo.balance` drops below 20% of your plan's monthly credit grant so you top up before credits run out.
+> **Tip.** Poll the account endpoint on a schedule to track usage. Alert when `creditInfo.balance` drops below 20% of your plan's monthly credit grant. Then you can top up before credits run out.
 
 ### See what a read charged
 
 Every answer to a read carries `X-Xquik-Credits-Charged`, the credits that request charged.
 
 - A filtered list charges only the rows it returns.
-- It is `0` for a page a filter empties and for a page sent again.
+- It is `0` for a page a filter empties. It is `0` for a page sent again too.
 - A write names its charge in `billing.chargedCredits`.
 
 ### Cap spending per API key
@@ -412,7 +412,7 @@ Apify Actor calls that use the key.
 - A refused call never runs.
 - A read with a `limit` needs that many results' price left.
 - A media download needs the price of every post it names.
-- A read without a `limit`, an extraction, a draw and a style refresh return only what fits.
+- A read without a `limit` returns only what fits. An extraction, a draw and a style refresh do the same.
 - A write needs its price plus 20 credits left. It charges only what it uses.
 - A started call bills what it delivered, even past a lowered budget.
 - Raise or remove the budget to unblock the key. Or wait for the next UTC month.
