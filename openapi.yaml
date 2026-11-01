@@ -13186,6 +13186,100 @@ paths:
         '429': *rate-limit-exceeded-response-2
         '424': *x-api-error-response
 
+  /x/users/{id}/shadowban:
+    get:
+      operationId: checkShadowban
+      description: >-
+        Checks 1 X account for a search ban, a search suggestion ban & reply
+        deboosting. It also says if the account is active, protected or
+        suspended.
+
+
+        Each check answers pass, fail or unknown, with its reason & the posts,
+        suggestions or replies it read. The reply check answers pass or unknown,
+        since X ranks replies for each viewer. A protected account gets the
+        suggestion check only, and a suspended account gets the account check
+        only. Each profile, post, suggestion & reply in the answer costs 1
+        credit.
+
+
+        Shadowban checks show if X search lists an account, with each post they
+        read.
+      summary: Check an X account for a shadowban
+      tags:
+        - Users
+      security: *read-auth
+      parameters:
+        - $ref: '#/components/parameters/UserPathId'
+        - $ref: '#/components/parameters/Fields'
+        - $ref: '#/components/parameters/Omit'
+      responses:
+        '200':
+          description: Shadowban checks
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShadowbanReport'
+              example:
+                username: NASA
+                userId: '11348282'
+                account: active
+                checks:
+                  account:
+                    verdict: pass
+                    reason: active
+                    evidence:
+                      profileUrl: 'https://x.com/NASA'
+                  search:
+                    verdict: pass
+                    reason: listed
+                    evidence:
+                      query: 'from:NASA'
+                      searchUrl: 'https://x.com/search?q=from%3ANASA&f=live'
+                      recentPostIds:
+                        - '2103610284464316469'
+                        - '2103583087540003274'
+                      foundPostIds:
+                        - '2103610284464316469'
+                        - '2103583087540003274'
+                  suggestion:
+                    verdict: pass
+                    reason: suggested
+                    evidence:
+                      query: NASA
+                      suggestedUsernames: [NASA, NASAHubble, NASAEarth]
+                  replies:
+                    verdict: unknown
+                    reason: more_replies
+                    evidence:
+                      replies:
+                        - replyId: '2103589735449141451'
+                          replyUrl: 'https://x.com/i/status/2103589735449141451'
+                          parentId: '2102883223948628205'
+                          parentUrl: 'https://x.com/i/status/2102883223948628205'
+                          placement: more_replies
+                        - replyId: '2103215186870239252'
+                          replyUrl: 'https://x.com/i/status/2103215186870239252'
+                          parentId: '2102924351171670302'
+                          parentUrl: 'https://x.com/i/status/2102924351171670302'
+                          placement: thread
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '401': *anonymous-guest-authentication-response
+        '402': { $ref: '#/components/responses/PaymentRequired' }
+        '403':
+          $ref: '#/components/responses/ApiKeyPaused'
+        '404':
+          $ref: '#/components/responses/UserNotFound'
+        '502':
+          $ref: '#/components/responses/XApiError'
+        '503':
+          $ref: '#/components/responses/ReadBusy'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+        '424':
+          $ref: '#/components/responses/XApiError'
+
   /x/tweets/{id}/embed:
     get:
       operationId: getTweetEmbed
@@ -23710,6 +23804,319 @@ components:
           id: '1DxLdZyVPMMxm'
           title: "NASA's SpaceX Crew-12 Re-Entry & Splashdown"
           state: 'Ended'
+
+    ShadowbanVerdict:
+      description:
+        Pass means X shows the account there, and fail means it doesn't. Unknown
+        means the check had nothing to test or X didn't answer.
+      type: string
+      enum: [pass, fail, unknown]
+      example: pass
+
+    ShadowbanReport:
+      description:
+        Says whether X limits 1 account in search, search suggestions or reply
+        threads. Each check holds a verdict, its reason & the evidence it read.
+        Evidence is null for a check that couldn't read the account.
+      type: object
+      required: [username, userId, account, checks]
+      properties:
+        username:
+          type: [string, 'null']
+          description:
+            Username of the account. Null for a suspended account asked for by
+            ID.
+          example: NASA
+        userId:
+          type: [string, 'null']
+          description:
+            ID of the account. Null for a suspended account asked for by
+            username.
+          example: '11348282'
+        account:
+          type: string
+          enum: [active, protected, suspended]
+          description: Whether the account is active, protected or suspended.
+          example: active
+        checks:
+          type: object
+          description: The 4 checks, each with a verdict, a reason & evidence.
+          required: [account, search, suggestion, replies]
+          properties:
+            account:
+              type: object
+              description:
+                Passes an active or protected account & fails a suspended one.
+              required: [verdict, reason, evidence]
+              properties:
+                verdict:
+                  $ref: '#/components/schemas/ShadowbanVerdict'
+                reason:
+                  type: string
+                  enum: [active, protected, suspended]
+                  description: State of the account on X.
+                  example: active
+                evidence:
+                  type: object
+                  description: Where to see the account on X.
+                  required: [profileUrl]
+                  properties:
+                    profileUrl:
+                      type: string
+                      format: uri
+                      description: Profile of the account on X.
+                      example: 'https://x.com/NASA'
+                  example:
+                    profileUrl: 'https://x.com/NASA'
+              example:
+                verdict: pass
+                reason: active
+                evidence:
+                  profileUrl: 'https://x.com/NASA'
+            search:
+              type: object
+              description:
+                Looks for the account's recent posts in X search, sorted by
+                Latest. `listed` passes & `missing` fails.
+              required: [verdict, reason, evidence]
+              properties:
+                verdict:
+                  $ref: '#/components/schemas/ShadowbanVerdict'
+                reason:
+                  type: string
+                  enum:
+                    [
+                      listed,
+                      missing,
+                      no_recent_posts,
+                      unavailable,
+                      protected,
+                      suspended,
+                    ]
+                  description:
+                    '`listed` means search shows its posts & `missing` means it
+                    shows none. `no_recent_posts` means the account has no
+                    recent post to look for.'
+                  example: listed
+                evidence:
+                  type: [object, 'null']
+                  description: The search & the posts it looked for.
+                  required: [query, searchUrl, recentPostIds, foundPostIds]
+                  properties:
+                    query:
+                      type: string
+                      description: The search it ran.
+                      example: 'from:NASA'
+                    searchUrl:
+                      type: string
+                      format: uri
+                      description: The same search on X, sorted by Latest.
+                      example: 'https://x.com/search?q=from%3ANASA&f=live'
+                    recentPostIds:
+                      type: array
+                      description: Up to 5 recent posts of the account.
+                      items: { type: string }
+                      example: ['2103610284464316469']
+                    foundPostIds:
+                      type: array
+                      description:
+                        Up to 5 posts of the account that search showed.
+                      items: { type: string }
+                      example: ['2103610284464316469']
+                  example:
+                    query: 'from:NASA'
+                    searchUrl: 'https://x.com/search?q=from%3ANASA&f=live'
+                    recentPostIds: ['2103610284464316469']
+                    foundPostIds: ['2103610284464316469']
+              example:
+                verdict: pass
+                reason: listed
+                evidence:
+                  query: 'from:NASA'
+                  searchUrl: 'https://x.com/search?q=from%3ANASA&f=live'
+                  recentPostIds: ['2103610284464316469']
+                  foundPostIds: ['2103610284464316469']
+            suggestion:
+              type: object
+              description:
+                Looks for the account among the accounts X suggests for its
+                username. `suggested` passes & `not_suggested` fails.
+              required: [verdict, reason, evidence]
+              properties:
+                verdict:
+                  $ref: '#/components/schemas/ShadowbanVerdict'
+                reason:
+                  type: string
+                  enum: [suggested, not_suggested, unavailable, suspended]
+                  description:
+                    '`suggested` means X suggests the account for its username.'
+                  example: suggested
+                evidence:
+                  type: [object, 'null']
+                  description: The username searched & the accounts X suggested.
+                  required: [query, suggestedUsernames]
+                  properties:
+                    query:
+                      type: string
+                      description: The username it typed.
+                      example: NASA
+                    suggestedUsernames:
+                      type: array
+                      description: Up to 10 accounts X suggested, in its order.
+                      items: { type: string }
+                      example: [NASA, NASAHubble]
+                  example:
+                    query: NASA
+                    suggestedUsernames: [NASA, NASAHubble]
+              example:
+                verdict: pass
+                reason: suggested
+                evidence:
+                  query: NASA
+                  suggestedUsernames: [NASA, NASAHubble]
+            replies:
+              type: object
+              description:
+                Opens the threads of up to 3 recent replies to other accounts.
+                `in_thread` passes. X ranks replies for each viewer, so
+                `more_replies` can't tell.
+              required: [verdict, reason, evidence]
+              properties:
+                verdict:
+                  $ref: '#/components/schemas/ShadowbanVerdict'
+                reason:
+                  type: string
+                  enum:
+                    [
+                      in_thread,
+                      more_replies,
+                      no_recent_replies,
+                      not_found,
+                      unavailable,
+                      protected,
+                      suspended,
+                    ]
+                  description:
+                    '`more_replies` means X put a reply behind its hidden
+                    replies prompt. `not_found` means no reply showed on the
+                    pages the check read.'
+                  example: in_thread
+                evidence:
+                  type: [object, 'null']
+                  description: Each reply it opened & where it showed.
+                  required: [replies]
+                  properties:
+                    replies:
+                      type: array
+                      description: Up to 3 replies, newest first.
+                      items:
+                        type: object
+                        required:
+                          [replyId, replyUrl, parentId, parentUrl, placement]
+                        properties:
+                          replyId:
+                            type: string
+                            description: ID of the reply.
+                            example: '2103589735449141451'
+                          replyUrl:
+                            type: string
+                            format: uri
+                            description: The reply on X.
+                            example: 'https://x.com/i/status/2103589735449141451'
+                          parentId:
+                            type: string
+                            description: ID of the post it replies to.
+                            example: '2102883223948628205'
+                          parentUrl:
+                            type: string
+                            format: uri
+                            description: The thread of that post on X.
+                            example: 'https://x.com/i/status/2102883223948628205'
+                          placement:
+                            type: string
+                            enum: [thread, more_replies, not_found]
+                            description:
+                              "`thread` means the reply shows in the thread.
+                              `more_replies` means it shows only behind X's
+                              hidden replies prompt."
+                            example: thread
+                        example:
+                          replyId: '2103589735449141451'
+                          replyUrl: 'https://x.com/i/status/2103589735449141451'
+                          parentId: '2102883223948628205'
+                          parentUrl: 'https://x.com/i/status/2102883223948628205'
+                          placement: thread
+                  example:
+                    replies:
+                      - replyId: '2103589735449141451'
+                        replyUrl: 'https://x.com/i/status/2103589735449141451'
+                        parentId: '2102883223948628205'
+                        parentUrl: 'https://x.com/i/status/2102883223948628205'
+                        placement: thread
+              example:
+                verdict: pass
+                reason: in_thread
+                evidence:
+                  replies:
+                    - replyId: '2103589735449141451'
+                      replyUrl: 'https://x.com/i/status/2103589735449141451'
+                      parentId: '2102883223948628205'
+                      parentUrl: 'https://x.com/i/status/2102883223948628205'
+                      placement: thread
+          example:
+            account:
+              verdict: pass
+              reason: active
+              evidence:
+                profileUrl: 'https://x.com/NASA'
+            search:
+              verdict: pass
+              reason: listed
+              evidence:
+                query: 'from:NASA'
+                searchUrl: 'https://x.com/search?q=from%3ANASA&f=live'
+                recentPostIds: ['2103610284464316469']
+                foundPostIds: ['2103610284464316469']
+            suggestion:
+              verdict: pass
+              reason: suggested
+              evidence:
+                query: NASA
+                suggestedUsernames: [NASA]
+            replies:
+              verdict: unknown
+              reason: no_recent_replies
+              evidence:
+                replies: []
+      example:
+        username: NASA
+        userId: '11348282'
+        account: active
+        checks:
+          account:
+            verdict: pass
+            reason: active
+            evidence:
+              profileUrl: 'https://x.com/NASA'
+          search:
+            verdict: pass
+            reason: listed
+            evidence:
+              query: 'from:NASA'
+              searchUrl: 'https://x.com/search?q=from%3ANASA&f=live'
+              recentPostIds: ['2103610284464316469']
+              foundPostIds: ['2103610284464316469']
+          suggestion:
+            verdict: pass
+            reason: suggested
+            evidence:
+              query: NASA
+              suggestedUsernames: [NASA]
+          replies:
+            verdict: unknown
+            reason: no_recent_replies
+            evidence:
+              replies: []
 
     ProfileTranslation:
       description:
