@@ -122,7 +122,7 @@ approved top-up. Do not create a new wallet when one paid read returns
 | Guest wallet    | Not required | `paid_reads` API key           | Only the prepaid paid-read routes          | USD 10 to 250 hosted checkout                         |
 | MPP             | Not required | Per-request payment credential | Fixed-price GET operations                 | Per-request payment                                   |
 
-Guest wallets do not grant write actions, connected-account reads, monitors, webhooks, extractions, draws, account management, billing management, API-key management, or OAuth access. Full account keys and OAuth behavior remain unchanged.
+Guest wallets do not grant write actions, connected-account reads, monitors, webhooks, extractions, or draws. They also do not grant account, billing, or API-key management, or OAuth access. Full account keys and OAuth behavior remain unchanged.
 
 ## Create and activate a wallet
 
@@ -130,7 +130,7 @@ Guest wallets do not grant write actions, connected-account reads, monitors, web
 
   <Step title="Confirm the amount">
 
-    Ask the user to choose and explicitly confirm an amount from USD 10 through USD 250. Represent it in cents as `amount_minor`.
+    Ask the user to choose an amount from USD 10 through USD 250. The user must explicitly confirm it. Represent it in cents as `amount_minor`.
 
   </Step>
   <Step title="Create hosted checkout">
@@ -212,15 +212,15 @@ Some of these routes also accept [direct MPP payment](/mpp/machine-payments-prot
 
 ## Top up an active wallet
 
-When a guest read returns `402 insufficient_credits`, its `payment_options` advertises only `POST /api/v1/guest-wallets/topups`. Ask the user to choose and confirm USD 10 to 250. Then create a new one-use hosted checkout with the existing guest key and a new UUID v4 `Idempotency-Key`.
+When a guest read returns `402 insufficient_credits`, its `payment_options` advertises only `POST /api/v1/guest-wallets/topups`. Ask the user to choose and confirm USD 10 to 250. Then create a new one-use hosted checkout with the existing guest key. Send a new UUID v4 `Idempotency-Key` with it.
 
-The top-up response keeps the same wallet and key. It never returns a new key. After payment, poll the same status URL every `poll_after_seconds` until `latest_purchase.status` is no longer `pending`.
+The top-up response keeps the same wallet and key. It never returns a new key. After payment, poll the same status URL every `poll_after_seconds`. Stop when `latest_purchase.status` is no longer `pending`.
 
 See [Top up guest wallet](/api-reference/guest-wallets/topup) for the request and response contract.
 
 ## Handle anonymous 401 and 402 responses
 
-The non-MPP paid reads return `401` with a Bearer authentication challenge and a guest wallet creation action.
+The non-MPP paid reads return `401` with a Bearer authentication challenge. The response also carries a guest wallet creation action.
 
 ```text
 HTTP/2 401
@@ -228,7 +228,7 @@ WWW-Authenticate: Bearer realm="xquik"
 Content-Type: application/json
 ```
 
-The JSON body includes `payment_options.guest_wallet.create_checkout`. That action describes the guest wallet route, amount bounds, required UUID v4 header, and returned fields. The Bearer header requests authentication. It is not a Payment challenge.
+The JSON body includes `payment_options.guest_wallet.create_checkout`. That action describes the guest wallet route and amount bounds. It also gives the required UUID v4 header and returned fields. The Bearer header requests authentication. It is not a Payment challenge.
 
 The [direct MPP operations](/mpp/machine-payments-protocol#eligible-endpoints) return `402 application/problem+json` with `WWW-Authenticate: Payment` and the same guest wallet action. Complete the MPP challenge or ask the user to confirm a guest wallet amount.
 
@@ -244,12 +244,12 @@ The 3 guest credential routes remain direct REST only.
 - `POST /api/v1/guest-wallets/topups`
 - `GET /api/v1/guest-wallets/status`
 
-MCP cannot execute these routes. It may explain the direct REST flow, but the caller must wait for user confirmation before using it. See [MCP tools](/mcp/tools) for the scope-specific catalog.
+MCP cannot execute these routes. It may explain the direct REST flow. The caller must wait for user confirmation before using that flow. See [MCP tools](/mcp/tools) for the scope-specific catalog.
 
 ## Protect wallet access
 
 - Keep `api_key` and `Idempotency-Key` out of URLs, logs, prompts, and shared output.
-- Redact the `Idempotency-Key` request header in proxies, gateways, and APM tools. Many log request headers by default, and an exact replay with the key returns the wallet's `api_key`.
+- Redact the `Idempotency-Key` request header in proxies, gateways, and APM tools. Many log request headers by default. An exact replay with the key returns the wallet's `api_key`.
 - Respect `Cache-Control: no-store, private` on create, top-up, and status responses.
 - Reuse an idempotency key only for the exact same request.
 - Use `usable` and the returned status instead of inferring access from checkout state.

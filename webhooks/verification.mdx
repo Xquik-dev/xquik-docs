@@ -76,7 +76,7 @@ handler routing and logs.
 3. Your server recomputes the signature with the same secret over the raw body.
 4. Reject the request if the signature does not match in constant time.
 5. Reject the request if the timestamp is older than 5 minutes (clock-skew tolerant).
-6. Reject the request if the nonce was already seen in the last 5 minutes (replay protection).
+6. Reject the request if the nonce was already seen in the last 5 minutes. This check is replay protection.
 
 ## Receiver hardening handoff
 
@@ -361,7 +361,7 @@ func webhookHandler(w http.ResponseWriter, r *http.Request) {
 
 ## Idempotency
 
-Xquik retries failed webhook deliveries. Your endpoint may receive the same event multiple times. Each retry sends the first attempt's exact body. Only the signature headers change. Production monitor deliveries include `deliveryId` and `streamEventId`. Use `deliveryId` as the webhook delivery idempotency key. Use `streamEventId` when your system should process one monitor event only once across webhook retries or endpoint changes. Do not hash the raw request body when `deliveryId` is available.
+Xquik retries failed webhook deliveries. Your endpoint may receive the same event multiple times. Each retry sends the first attempt's exact body. Only the signature headers change. Production monitor deliveries include `deliveryId` and `streamEventId`. Use `deliveryId` as the webhook delivery idempotency key. Use `streamEventId` when your system should process one monitor event only once. It applies across webhook retries or endpoint changes. Do not hash the raw request body when `deliveryId` is available.
 
 `webhook.test` deliveries include `eventType`, `data`, and `timestamp`. They omit monitor idempotency fields. Use them to verify signatures and receiver reachability. Skip production event deduplication for the test request.
 
@@ -545,6 +545,6 @@ func processSignedWebhook(w http.ResponseWriter, r *http.Request) {
 
 <Warning>
 
-The in-memory examples above work for single-process servers. In production, use a persistent store such as a database or Redis to track processed delivery IDs and event IDs across restarts and multiple instances.
+The in-memory examples above work for single-process servers. In production, use a persistent store such as a database or Redis. The store tracks processed delivery IDs and event IDs across restarts and multiple instances.
 
 </Warning>

@@ -84,7 +84,7 @@ This step-by-step structure keeps every module focused on one result.
 
   <Card title="Modules" icon="boxes">
 
-    Start with Search Tweets, Get Tweet, Get User, Get Trends, Create Tweet, Create Extraction, Create Monitor, Create Webhook, and Make an API Call.
+    Start with Search Tweets, Get Tweet, Get User, Get Trends, and Create Tweet. Start with Create Extraction, Create Monitor, Create Webhook, and Make an API Call too.
 
   </Card>
 
@@ -101,7 +101,7 @@ This step-by-step structure keeps every module focused on one result.
   </Card>
 </CardGroup>
 
-Make custom apps split this into a connection, base request settings, modules, and optional webhook components. Use Xquik's `/account` endpoint as the connection test because it validates the API key without mutating data.
+Make custom apps split this into a connection, base request settings, and modules. They can also add webhook components. Use Xquik's `/account` endpoint as the connection test. That endpoint fits because it validates the API key without mutating data.
 
 ## Connection
 
@@ -298,11 +298,11 @@ This example shows Search Tweets module communication.
 }
 ```
 
-Add a bounded-pull variant that sends `limit`. If `body.has_next_page` is `true`, send `body.next_cursor` as `cursor` with the same `q`, filters, and `limit`.
+Add a bounded-pull variant that sends `limit`. If `body.has_next_page` is `true`, send `body.next_cursor` as `cursor`. Keep the same `q`, filters, and `limit` on that request.
 
 ## Output handoff
 
-Make response handling lets search modules `iterate` over `body.tweets` while `body` stays available for output, wrapper, and pagination fields. Emit tweet bundles from `item`, then carry setup IDs, write status, and page cursors in scenario state when downstream modules need another request. Use snake_case keys for data-store rows even when the API response uses camelCase.
+Make response handling lets search modules `iterate` over `body.tweets`. Meanwhile, `body` stays available for output, wrapper, and pagination fields. Emit tweet bundles from `item`. Downstream modules may need another request. If so, carry setup IDs, write status, and page cursors in scenario state. Use snake_case keys for data-store rows even when the API response uses camelCase.
 
 <CardGroup cols={2}>
 
@@ -332,13 +332,13 @@ Make response handling lets search modules `iterate` over `body.tweets` while `b
 
   <Card title="Media attachments" icon="image">
 
-    For tweets or replies, pass public URLs in `media` and store `tweet_id` or `write_action_id`. For DMs, upload first, pass one `media_id` in `media_ids`, store `message_id`, and leave `reply_to_message_id` unset.
+    For tweets or replies, pass public URLs in `media` and store `tweet_id` or `write_action_id`. For DMs, upload first and pass one `media_id` in `media_ids`. Store the DM `message_id` and leave `reply_to_message_id` unset.
 
   </Card>
 
   <Card title="Monitor and webhook setup" icon="radio">
 
-    Store monitor `id`, `username`, `xUserId`, `eventTypes`, `isActive`, `nextBillingAt`, webhook `id`, `url`, `eventTypes`, and the one-time `secret`. For Make storage rows, map production `deliveryId` to `delivery_id` for receiver retry deduplication. Map `streamEventId` to `stream_event_id` when one monitor event should process once across endpoint changes.
+    Store monitor `id`, `username`, `xUserId`, `eventTypes`, `isActive`, and `nextBillingAt`. Store webhook `id`, `url`, `eventTypes`, and the one-time `secret`. For Make storage rows, map production `deliveryId` to `delivery_id` for receiver retry deduplication. Map `streamEventId` to `stream_event_id` when one monitor event should process once across endpoint changes.
 
   </Card>
 
@@ -350,19 +350,19 @@ Make response handling lets search modules `iterate` over `body.tweets` while `b
 
   <Card title="Webhook event deduplication" icon="fingerprint">
 
-    Store `deliveryId` for endpoint-level retry deduplication and `streamEventId` when one monitor event must process once across receiver changes.
+    Store `deliveryId` for endpoint-level retry deduplication. Store `streamEventId` when one monitor event must process once across receiver changes.
 
   </Card>
 
   <Card title="Stored event replay" icon="activity">
 
-    Call `GET /api/v1/events` with `cursor` when a scenario needs replay. Map `id`, `monitorId`, `monitorType`, `occurredAt`, `hasMore`, and `nextCursor` to `event_id`, `monitor_id`, `monitor_type`, `occurred_at`, `has_more`, and `next_cursor`.
+    Call `GET /api/v1/events` with `cursor` when a scenario needs replay. Map `id` to `event_id`, `monitorId` to `monitor_id`, and `monitorType` to `monitor_type`. Map `occurredAt` to `occurred_at`, `hasMore` to `has_more`, and `nextCursor` to `next_cursor`.
 
   </Card>
 
   <Card title="Receiver acceptance" icon="copy-check">
 
-    Return `2xx` after accepting duplicate `deliveryId` or `streamEventId`. Keep endpoint signing values, raw request body, raw signature, and full headers out of scenario logs, data stores, Slack messages, CRM rows, and retry queues.
+    Return `2xx` after accepting duplicate `deliveryId` or `streamEventId`. Treat endpoint signing values, raw request body, raw signature, and full headers as private. Exclude them from scenario logs, data stores, Slack messages, CRM rows, and retry queues.
 
   </Card>
 </CardGroup>
@@ -448,7 +448,7 @@ Map webhook output fields for downstream modules.
   </Card>
 </CardGroup>
 
-Keep the webhook secret returned by Xquik. If the scenario includes a verification step before routing, verify `x-xquik-signature` with that secret before sending alerts.
+Keep the webhook secret returned by Xquik. The scenario can include a verification step before routing. If it does, verify `x-xquik-signature` with that secret before sending alerts.
 
 ## Polling trigger when an extraction completes
 
