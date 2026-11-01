@@ -1573,7 +1573,7 @@ const REQUIRED_TERRAFORM_PROVIDER_WORKFLOW_SNIPPETS = [
   "Terraform state for `x-twitter-scraper_x_tweet` does not expose durable write action fields. It does not expose media upload resources or direct-message send resources either.",
   "A worker may need to store lifecycle handoffs or returned DM `message_id`. It may also need to upload local media for one-item DM `media_ids`. In those cases, use the REST API, MCP tools, or a generated SDK",
   "Do not hand off extraction files through Terraform.",
-  "use the REST extraction endpoints or CLI. You can also use MCP tools or generated SDKs. Use them to write CSV, JSON, XLSX, or JSON Lines files.",
+  "Write reply, follower, or tweet search exports as CSV, JSON, XLSX, or JSON Lines. Do it with the REST extraction endpoints, CLI, MCP tools, or generated SDKs.",
   "Reserve Terraform state for long-lived resources and IDs that need plan and apply review.",
 ] as const;
 
@@ -11920,7 +11920,7 @@ const REQUIRED_TRYPOST_ALTERNATIVE_SNIPPETS = [
   "20% yearly saving and a 7-day free trial",
   "all social networks and no listed scheduled-post cap. They also include a visual content calendar and media library",
   "post preview for all networks, no listed team-member cap, and chat support",
-  "They include Instagram, Facebook, LinkedIn personal and company pages, X (Twitter), and TikTok. They also include YouTube Shorts, Pinterest, Threads, Bluesky, and Mastodon",
+  "It names Instagram, Facebook, LinkedIn personal and company pages, X (Twitter), and TikTok. It also names YouTube Shorts, Pinterest, Threads, Bluesky, and Mastodon",
   "TryPost bills each additional workspace separately. It prices 3 workspaces at USD 48/month",
   "cloud-hosted SaaS and self-hosted open-source software",
   "FSL-1.1-MIT and self-hosting costs nothing",
