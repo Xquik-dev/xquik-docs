@@ -251,7 +251,7 @@ The method accepts the same query inputs as the REST endpoint.
   </Card>
 </CardGroup>
 
-Project `page.tweets` into CSV rows for analysts. Project them into JSON Lines rows in `xquik-tweet-search.jsonl` for queues and data lakes. Account teams may need an XLSX workbook. Then load the same projected rows into pandas or openpyxl. Store `tweet_id`, `author_username`, engagement counts, `page_index`, `page_cursor`, `next_cursor`, and `has_next_page`. Then scripts can resume from the last saved cursor without replaying raw SDK models. For explicit `limit` pulls, resume with the same query, filters, `query_type`, and `limit`. Only `cursor` changes.
+Project `page.tweets` into CSV rows for analysts. Project them into JSON Lines rows in `xquik-tweet-search.jsonl` for queues and data lakes. If account teams need an XLSX workbook, load those rows into pandas or openpyxl. Store `tweet_id`, `author_username`, engagement counts, `page_index`, `page_cursor`, `next_cursor`, and `has_next_page`. With them, scripts resume from the last saved cursor without replaying raw SDK models. For explicit `limit` pulls, resume with the same query, filters, `query_type`, and `limit`. Only `cursor` changes.
 
 ## Follower export workflow to CSV, JSON, or XLSX
 
@@ -323,7 +323,7 @@ client.extractions.export_results(job.id, format="xlsx").write_to_file(
 )
 ```
 
-`follower_explorer` requires `target_username`. Store `job.id`, `target_username`, `estimate.estimated_results`, and `estimate.source` before polling. A notebook restart, queue retry, or worker restart can then resume the same export. `client.extractions.retrieve` returns `results`, `has_more`, and `next_cursor`. Pass `next_cursor` back as `cursor` when you need stored JSON pages before exporting files. Use `xquik-followers.jsonl` for queue replay or warehouse loads, and `xquik-followers.json` for app ingestion. Use `xquik-followers.csv` for CRM import and `xquik-followers.xlsx` for analyst handoff. Map exported `User ID` or row `xUserId` as the CRM unique key. The cost is 1 credit per follower extracted or returned. Exports are free after the extraction job exists.
+`follower_explorer` requires `target_username`. Store `job.id`, `target_username`, `estimate.estimated_results`, and `estimate.source` before polling. With them, a notebook restart, queue retry, or worker restart can resume that export. `client.extractions.retrieve` returns `results`, `has_more`, and `next_cursor`. Pass `next_cursor` back as `cursor` when you need stored JSON pages before exporting files. Use `xquik-followers.jsonl` for queue replay or warehouse loads, and `xquik-followers.json` for app ingestion. Use `xquik-followers.csv` for CRM import and `xquik-followers.xlsx` for analyst handoff. Map exported `User ID` or row `xUserId` as the CRM unique key. The cost is 1 credit per follower extracted or returned. Exports cost no credits after the extraction job exists.
 
 ## Tweet replies workflow to CSV, JSON, or XLSX
 
@@ -480,7 +480,7 @@ Text-only tweet and reply writes cost 30 credits. Tweet media adds 2 credits per
 
 ## Cost, limits & retries
 
-Tweet search costs 1 credit per tweet returned. Remaining credits may not cover a bounded `limit` request. Then the API can return fewer tweets. If 0 paid results are affordable, it returns `402 insufficient_credits`. Xquik rate-limits read calls. `429` responses include `Retry-After`.
+Tweet search costs 1 credit per tweet returned. If credits cannot cover a bounded `limit` request, the API can return fewer tweets. If credits cover no results, it returns `402 insufficient_credits`. Xquik rate-limits read calls. `429` responses include `Retry-After`.
 
 The client retries connection errors, 408, 409, 429, and 5xx responses by default. Handle `RateLimitError` with backoff. Fix 400, 401, 403, 404, or 422 responses before retrying.
 

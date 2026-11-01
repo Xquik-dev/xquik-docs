@@ -159,7 +159,7 @@ while :; do
 done
 ```
 
-The response includes `.tweets[]`, `.has_next_page`, and `.next_cursor`. Each tweet can include `id`, `text`, `createdAt`, engagement counts, `bookmarkCount`, and `isNoteTweet`. It can also include `author`, `media`, `quoted_tweet`, and `retweeted_tweet`. The fields depend on what X returns for the result.
+The response includes `.tweets[]`, `.has_next_page`, and `.next_cursor`. Each tweet can include `id`, `text`, `createdAt`, engagement counts, `bookmarkCount`, and `isNoteTweet`. It can also include `author`, `media`, `quoted_tweet`, and `retweeted_tweet`. Each field appears only when the result has it.
 
 Project `.tweets[]` into `xquik-tweet-search.jsonl` and `xquik-tweet-search.csv` rows. Give each row `tweet_id`, `author_username`, engagement counts, `page_index`, `page_cursor`, `next_cursor`, and `has_next_page`. Scripts can then resume. They can also load the same records into XLSX, CRM, warehouse, or agent workflows.
 
@@ -205,7 +205,7 @@ tail -n 1 xquik-tweet-search.jsonl | jq '{query, page_index, next_cursor, has_ne
 
 Use `--limit` as a 1 to 200 upper bound for a bounded pull. When `.has_next_page` is true, keep the same `--q`, filters, `--query-type`, and `--limit`. Only `--cursor` changes.
 
-Tweet search costs 1 credit per tweet returned. Remaining credits may not cover a bounded `--limit` request. Then the API can return fewer tweets. If 0 paid results are affordable, it returns `402 insufficient_credits`. For bounded pulls that return fewer tweets than the requested `--limit`, keep the cursor. Then pass `.next_cursor` back as `--cursor` with the same query, filters, `--query-type`, and `--limit`. Use `--format-error json` so batch jobs can branch on `status` and `code`. Retry `429` or temporary `5xx` responses with backoff.
+Tweet search costs 1 credit per tweet returned. If credits cannot cover a bounded `--limit` request, the API can return fewer tweets. If credits cover no results, it returns `402 insufficient_credits`. If a bounded pull returns fewer tweets than `--limit`, pass `.next_cursor` back as `--cursor`. Send the same query, filters, `--query-type`, and `--limit` with it. Use `--format-error json` so batch jobs can branch on `status` and `code`. Retry `429` or temporary `5xx` responses with backoff.
 
 For XLSX handoff, keep `xquik-tweet-search.jsonl` as the master file. When account managers need a workbook, convert the same projected rows in your pipeline.
 
@@ -293,7 +293,7 @@ x-twitter-scraper extractions export-results \
 
 Use `--format json --output xquik-followers.json` for app ingestion or `--format xlsx --output xquik-followers.xlsx` for XLSX handoff. Map `User ID` or result `xUserId` as the CRM unique key. Keep `xquik-followers.jsonl` for queue replay or warehouse loads, and `xquik-followers.json` for app ingestion. Keep `xquik-followers.csv` for CRM import and `xquik-followers.xlsx` for analyst handoff.
 
-The cost is 1 credit per follower extracted or returned. Exports are free after the
+The cost is 1 credit per follower extracted or returned. Exports cost no credits after the
 extraction job exists.
 
 ## Tweet replies workflow to CSV, JSON, or XLSX
@@ -322,7 +322,7 @@ job_id="$(x-twitter-scraper extractions run \
   --raw-output)"
 ```
 
-The run command calls `POST /extractions`. Store `job_id` before polling. Then a shell restart, queue retry, or CI rerun can resume the same extraction. Reuse the follower export polling loop above with reply filenames.
+The run command calls `POST /extractions`. Store `job_id` before polling. With it, a shell restart, queue retry, or CI rerun can resume that extraction. Reuse the follower export polling loop above with reply filenames.
 
 ```bash
 x-twitter-scraper extractions retrieve \
@@ -348,7 +348,7 @@ x-twitter-scraper extractions export-results \
   --output xquik-tweet-replies.csv
 ```
 
-The export command calls `GET /extractions/{id}/export` and writes bytes to `--output`. Use `--format csv`, `--format json` with `--output xquik-tweet-replies.json`, or `--format xlsx` with `--output xquik-tweet-replies.xlsx`. The cost is 1 credit per reply extracted or returned. Exports are free after the extraction job exists.
+The export command calls `GET /extractions/{id}/export` and writes bytes to `--output`. Use `--format csv`, `--format json` with `--output xquik-tweet-replies.json`, or `--format xlsx` with `--output xquik-tweet-replies.xlsx`. The cost is 1 credit per reply extracted or returned. Exports cost no credits after the extraction job exists.
 
 ## Workflow to post media tweets, replies, and DM attachments
 
