@@ -19,7 +19,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Use the CLI when a shell script, cron job, CI workflow, or operations runbook needs X API data without an application wrapper. It can search tweets, scrape tweets to JSON Lines, CSV, or XLSX, and export follower data. It can upload media, post media tweets, post tweet replies, send direct messages, and monitor tweets. Hand results to `jq`, Python, a warehouse loader, or a queue worker.
+Use the CLI when you need X API data without an application wrapper. It fits a shell script, cron job, CI workflow, or operations runbook. It can search tweets and export follower data. It can scrape tweets to JSON Lines, CSV, or XLSX. It can upload media, post media tweets, and post tweet replies. It can also send direct messages and monitor tweets. Hand results to `jq`, Python, a warehouse loader, or a queue worker.
 
 ## Install
 
@@ -39,7 +39,7 @@ export PATH="$PATH:$(go env GOPATH)/bin"
 export X_TWITTER_SCRAPER_API_KEY="xq_YOUR_KEY_HERE"
 ```
 
-You can also pass `--api-key` per command or use `X_TWITTER_SCRAPER_BEARER_TOKEN` for OAuth 2.1 access tokens.
+You can also pass `--api-key` per command. For OAuth 2.1 access tokens, use `X_TWITTER_SCRAPER_BEARER_TOKEN`.
 
 ## Basic example
 
@@ -58,9 +58,9 @@ x-twitter-scraper x:tweets search --help
 
 ## Tweet search workflow to JSON Lines, CSV, or XLSX
 
-Use this workflow when an analyst, data engineer, or growth operator needs tweets from an X search query in a JSON Lines handoff, analyst CSV file, XLSX workbook, warehouse load, CRM enrichment job, or queue.
+Use this workflow to get tweets from an X search query. It suits an analyst, data engineer, or growth operator. Deliver the tweets as a JSON Lines handoff, analyst CSV file, or XLSX workbook. They can also go to a warehouse load, CRM enrichment job, or queue.
 
-The CLI command below calls `GET /x/tweets/search`. It maps the same REST API query parameters to the flags `--q`, `--limit`, `--cursor`, `--since-time`, `--until-time`, and `--query-type`.
+The CLI command below calls `GET /x/tweets/search`. It maps the same REST API query parameters to CLI flags. The flags are `--q`, `--limit`, `--cursor`, `--since-time`, `--until-time`, and `--query-type`.
 
 ```bash
 query="from:username webhook OR SDK"
@@ -159,9 +159,9 @@ while :; do
 done
 ```
 
-The response includes `.tweets[]`, `.has_next_page`, and `.next_cursor`. Each tweet can include `id`, `text`, `createdAt`, engagement counts, `bookmarkCount`, `isNoteTweet`, `author`, `media`, `quoted_tweet`, and `retweeted_tweet`, depending on what X returns for the result.
+The response includes `.tweets[]`, `.has_next_page`, and `.next_cursor`. Each tweet can include `id`, `text`, `createdAt`, engagement counts, `bookmarkCount`, and `isNoteTweet`. It can also include `author`, `media`, `quoted_tweet`, and `retweeted_tweet`. The fields depend on what X returns for the result.
 
-Project `.tweets[]` into `xquik-tweet-search.jsonl` and `xquik-tweet-search.csv` rows with `tweet_id`, `author_username`, engagement counts, `page_index`, `page_cursor`, `next_cursor`, and `has_next_page`. Scripts can then resume or load the same records into XLSX, CRM, warehouse, or agent workflows.
+Project `.tweets[]` into `xquik-tweet-search.jsonl` and `xquik-tweet-search.csv` rows. Give each row `tweet_id`, `author_username`, engagement counts, `page_index`, `page_cursor`, `next_cursor`, and `has_next_page`. Scripts can then resume. They can also load the same records into XLSX, CRM, warehouse, or agent workflows.
 
 ```bash
 python3 - <<'PY'
@@ -205,13 +205,13 @@ tail -n 1 xquik-tweet-search.jsonl | jq '{query, page_index, next_cursor, has_ne
 
 Use `--limit` as a 1 to 200 upper bound for a bounded pull. When `.has_next_page` is true, keep the same `--q`, filters, `--query-type`, and `--limit`. Only `--cursor` changes.
 
-Tweet search costs 1 credit per tweet returned. If remaining credits cannot cover a bounded `--limit` request, the API can return fewer tweets. If 0 paid results are affordable, it returns `402 insufficient_credits`. For bounded pulls that return fewer tweets than the requested `--limit`, pass `.next_cursor` back as `--cursor` with the same query, filters, `--query-type`, and `--limit`. Use `--format-error json` so batch jobs can branch on `status` and `code`. Retry `429` or temporary `5xx` responses with backoff.
+Tweet search costs 1 credit per tweet returned. Remaining credits may not cover a bounded `--limit` request. Then the API can return fewer tweets. If 0 paid results are affordable, it returns `402 insufficient_credits`. For bounded pulls that return fewer tweets than the requested `--limit`, keep the cursor. Then pass `.next_cursor` back as `--cursor` with the same query, filters, `--query-type`, and `--limit`. Use `--format-error json` so batch jobs can branch on `status` and `code`. Retry `429` or temporary `5xx` responses with backoff.
 
-For XLSX handoff, keep `xquik-tweet-search.jsonl` as the master file and convert the same projected rows in your pipeline when account managers need a workbook.
+For XLSX handoff, keep `xquik-tweet-search.jsonl` as the master file. When account managers need a workbook, convert the same projected rows in your pipeline.
 
 ## Follower export workflow to CSV, JSON, or XLSX
 
-Use this workflow when sales, support, research, or marketing teams need an owned follower list in a CRM import, warehouse load, analyst CSV file, XLSX workbook, or resumable JSON handoff.
+Use this workflow when a team needs an owned follower list. It fits sales, support, research, or marketing teams. Deliver the list as a CRM import, warehouse load, or analyst CSV file. You can also deliver it as an XLSX workbook or resumable JSON handoff.
 
 `follower_explorer` requires `targetUsername`. The CLI flag is `--target-username`.
 
@@ -236,7 +236,7 @@ jq -e '.status == "running" and .toolType == "follower_explorer"' follower-run.j
 job_id="$(jq -r '.id' follower-run.json)"
 ```
 
-The run command calls `POST /extractions` and returns the queued `202 Accepted` receipt. The receipt holds `id`, `toolType`, and `status: "running"`. Store `follower-run.json`, `job_id`, the source username, and the estimate before polling. Credit reservation happens after the job starts. If available credits changed since the estimate, the run can fetch only the affordable count before export or mark the job `failed` with `insufficient_credits`.
+The run command calls `POST /extractions` and returns the queued `202 Accepted` receipt. The receipt holds `id`, `toolType`, and `status: "running"`. Store `follower-run.json`, `job_id`, the source username, and the estimate before polling. Credit reservation happens after the job starts. If available credits changed since the estimate, the run has 2 outcomes. It can fetch only the affordable count before export. Or it can mark the job `failed` with `insufficient_credits`.
 
 ```bash
 while :; do
@@ -252,7 +252,7 @@ while :; do
 done
 ```
 
-The retrieve command returns `.job`, `.results`, `.hasMore`, and `.nextCursor`. When `.hasMore` is true, pass `.nextCursor` back as `--cursor` to fetch the next saved page.
+The retrieve command returns `.job`, `.results`, `.hasMore`, and `.nextCursor`. When `.hasMore` is true, pass `.nextCursor` back as `--cursor`. That fetches the next saved page.
 
 ```bash
 : > xquik-followers.jsonl
@@ -291,7 +291,7 @@ x-twitter-scraper extractions export-results \
   --output xquik-followers.csv
 ```
 
-Use `--format json --output xquik-followers.json` for app ingestion or `--format xlsx --output xquik-followers.xlsx` for XLSX handoff. Map `User ID` or result `xUserId` as the CRM unique key. Keep `xquik-followers.jsonl` for queue replay or warehouse loads, `xquik-followers.json` for app ingestion, `xquik-followers.csv` for CRM import, and `xquik-followers.xlsx` for analyst handoff.
+Use `--format json --output xquik-followers.json` for app ingestion or `--format xlsx --output xquik-followers.xlsx` for XLSX handoff. Map `User ID` or result `xUserId` as the CRM unique key. Keep `xquik-followers.jsonl` for queue replay or warehouse loads, and `xquik-followers.json` for app ingestion. Keep `xquik-followers.csv` for CRM import and `xquik-followers.xlsx` for analyst handoff.
 
 The cost is 1 credit per follower extracted or returned. Exports are free after the
 extraction job exists.
@@ -322,7 +322,7 @@ job_id="$(x-twitter-scraper extractions run \
   --raw-output)"
 ```
 
-The run command calls `POST /extractions`. Store `job_id` before polling so a shell restart, queue retry, or CI rerun can resume the same extraction. Reuse the follower export polling loop above with reply filenames.
+The run command calls `POST /extractions`. Store `job_id` before polling. Then a shell restart, queue retry, or CI rerun can resume the same extraction. Reuse the follower export polling loop above with reply filenames.
 
 ```bash
 x-twitter-scraper extractions retrieve \
@@ -352,9 +352,9 @@ The export command calls `GET /extractions/{id}/export` and writes bytes to `--o
 
 ## Workflow to post media tweets, replies, and DM attachments
 
-Use this workflow when an operator, support queue, or agent needs to publish a media-backed tweet, reply with media, or send one media attachment in a DM from a connected X account.
+Use this workflow when an operator, support queue, or agent sends media. It can publish a media-backed tweet or reply with media. It can also send one media attachment in a DM. The workflow runs from a connected X account.
 
-Tweet and reply media posts use public media URLs directly on `x:tweets create`. Pass repeated `--media` flags for up to 4 image URLs, or pass exactly 1 MP4 video URL up to 100 MB. Do not mix video with other media. Do not upload first when you already have public media URLs.
+Tweet and reply media posts use public media URLs directly on `x:tweets create`. Pass repeated `--media` flags for up to 4 image URLs. Or pass exactly 1 MP4 video URL up to 100 MB. Do not mix video with other media. Do not upload first when you already have public media URLs.
 
 ```bash
 x-twitter-scraper x:tweets create \
@@ -427,7 +427,7 @@ jq -c --arg media_id "$media_id" '{
 }' sent-dm.json > dm-handoff.jsonl
 ```
 
-The `--media-id` flag maps to the REST `media_ids` body field. DMs accept exactly 1 uploaded media ID. Store `messageId` from the DM response on the support ticket, CRM record, queue job, or agent memory. Keep DM body text in private systems. Shared logs, public artifacts, queue status, and agent handoffs should store `message_id`, optional `media_id`, recipient and account identifiers from your job context, and send status instead of full DM bodies. Uploading media costs 10 credits. Sending the DM costs 10 credits.
+The `--media-id` flag maps to the REST `media_ids` body field. DMs accept exactly 1 uploaded media ID. Store `messageId` from the DM response. Put it on the support ticket, CRM record, queue job, or agent memory. Keep DM body text in private systems. Shared logs, public artifacts, queue status, and agent handoffs should omit full DM bodies. They should store `message_id`, optional `media_id`, and send status. They should also store recipient and account identifiers from your job context. Uploading media costs 10 credits. Sending the DM costs 10 credits.
 
 Do not pass `--reply-to-message-id` to `x:dm send`. The REST endpoint rejects `reply_to_message_id`. Start a new DM with `--user-id`, `--account`, `--text`, and optional one-item `--media-id` instead.
 
@@ -444,7 +444,7 @@ Do not pass uploaded `mediaId` values to `x:tweets create`. That command uses `-
   </Card>
   <Card title="Fetch one tweet" icon="file-text">
 
-    Run `x-twitter-scraper x:tweets retrieve` to return the full tweet text, author, metrics, media, quoted tweet, and retweeted tweet.
+    Run `x-twitter-scraper x:tweets retrieve` to return the full tweet text, author, and metrics. It also returns media, the quoted tweet, and the retweeted tweet.
 
   </Card>
   <Card title="Get tweet replies" icon="message-square-text">
@@ -459,12 +459,12 @@ Do not pass uploaded `mediaId` values to `x:tweets create`. That command uses `-
   </Card>
   <Card title="Post a tweet or reply" icon="send">
 
-    Run `x-twitter-scraper x:tweets create` to return `tweetId`, `success`, `charged`, and `chargedCredits`, or `writeActionId` when confirmation is pending.
+    Run `x-twitter-scraper x:tweets create` to return `tweetId`, `success`, `charged`, and `chargedCredits`. When confirmation is pending, it returns `writeActionId` instead.
 
   </Card>
   <Card title="Upload media for a DM attachment" icon="image">
 
-    Run `x-twitter-scraper x:media upload` to return `mediaId` for one-item DM `media_ids` and `mediaUrl` for tweet `media` URL handoff.
+    Run `x-twitter-scraper x:media upload` to return `mediaId` for one-item DM `media_ids`. It also returns `mediaUrl` for tweet `media` URL handoff.
 
   </Card>
   <Card title="Send a direct message" icon="message-square">
@@ -474,7 +474,7 @@ Do not pass uploaded `mediaId` values to `x:tweets create`. That command uses `-
   </Card>
 </CardGroup>
 
-Use `--format json` for scripts, `--format yaml` for readable operations output, and `--transform` with GJSON syntax when you only need one field from the response.
+Use `--format json` for scripts and `--format yaml` for readable operations output. When you only need one field from the response, use `--transform` with GJSON syntax.
 
 ## Error handling
 
@@ -491,7 +491,7 @@ Retryable API responses follow the same semantics as the REST API. See [error ha
 
 ## Pagination
 
-Commands that call paginated endpoints include pagination fields in their JSON output. Keep the response body when your script needs to request the next page with endpoint cursor parameters.
+Commands that call paginated endpoints include pagination fields in their JSON output. Keep the response body when your script needs the next page. The script requests that page with endpoint cursor parameters.
 
 ## Webhooks & references
 
