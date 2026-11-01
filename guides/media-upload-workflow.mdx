@@ -19,13 +19,13 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Use this workflow when a product, support, CRM, or AI agent system needs a hosted media URL for tweet posts or an uploaded media ID for direct messages. Xquik accepts local files with `multipart/form-data` and HTTPS media URLs with `application/json`.
+Use this workflow when a product, support, CRM, or AI agent system needs media. It returns a hosted media URL for tweet posts. For direct messages, it returns an uploaded media ID. Xquik accepts local files with `multipart/form-data` and HTTPS media URLs with `application/json`.
 
-If you already have public image URLs or a public MP4 video URL for a tweet or reply, skip `POST /x/media`. Pass those URLs in the `media` array on `POST /x/tweets`. Send up to 4 images or exactly 1 MP4 video up to 100 MB. Use `POST /x/media` when you need Xquik to host a local file, validate a generated media URL, or produce a `mediaId` for a DM attachment.
+You may already have public image URLs or a public MP4 video URL. If so, skip `POST /x/media` for a tweet or reply. Pass those URLs in the `media` array on `POST /x/tweets`. Send up to 4 images or exactly 1 MP4 video up to 100 MB. `POST /x/media` hosts local files, validates a generated media URL, or produces a DM `mediaId`. Use it when you need one of those.
 
 <Callout icon="video" color="#2563eb">
 
-**Need to post an MP4 tweet?** If the MP4 is already a public HTTPS URL, skip upload and call [Create Tweet](/api-reference/x-write/create-tweet) with `media: ["https://example.com/video.mp4"]`. Use `POST /x/media` first only when Xquik must host a local file or validate a generated URL. Then pass the returned `mediaUrl` to `POST /x/tweets`.
+**Need to post an MP4 tweet?** If the MP4 is already a public HTTPS URL, skip upload. In that case call [Create Tweet](/api-reference/x-write/create-tweet) with `media: ["https://example.com/video.mp4"]`. Use `POST /x/media` first only to host a local file or validate a generated URL. Then pass the returned `mediaUrl` to `POST /x/tweets`.
 
 </Callout>
 
@@ -192,7 +192,7 @@ write. Keep the 2 fields separate. Tweets and replies use public
 
   <Card title="Field boundary" icon="split">
 
-    Reject tweet handoffs that put uploaded media IDs in `media` or send `media_ids` to `POST /x/tweets`.
+    Reject tweet handoffs that put uploaded media IDs in `media`. Also reject those that send `media_ids` to `POST /x/tweets`.
 
   </Card>
 
@@ -205,7 +205,7 @@ write. Keep the 2 fields separate. Tweets and replies use public
 
 ## Step 1. Upload media by URL
 
-Use JSON URL upload when an AI agent, MCP client, or workflow tool has a generated image or MP4 URL that Xquik should validate and host. For tweet-only workflows with already public image URLs or exactly 1 public MP4 video URL up to 100 MB, call `POST /x/tweets` directly with `media`.
+AI agents, MCP clients, or workflow tools may hold generated image or MP4 URLs. If Xquik should validate and host one, use JSON URL upload. Some tweet-only workflows already have public image URLs or exactly 1 public MP4 URL. The MP4 can be up to 100 MB. For those workflows, call `POST /x/tweets` directly with `media`.
 The URL must use HTTPS and resolve to a public address. It must return a supported media content type within 30 seconds. It must stay under the 15,728,640-byte URL download cap.
 
 ```bash
@@ -321,7 +321,7 @@ Store `message_id`, `media_id`, recipient, account, and send status in shared ha
 
 ### JSON Lines handoff
 
-For queues, CRM syncs, warehouse loads, or agent memory, write one record per upload and downstream write to `xquik-media-handoff.jsonl`.
+For queues, CRM syncs, warehouse loads, or agent memory, write to `xquik-media-handoff.jsonl`. Write one record per upload and downstream write.
 
 #### Media upload row
 
@@ -416,7 +416,7 @@ Upload media costs 10 credits per upload call. Posting a tweet or reply is a sep
 
   <Card title="Media download failed" icon="triangle-alert">
 
-    Status `422`. Error `media_download_failed`. Use an HTTPS URL that returns a supported media file, or switch to multipart upload.
+    Status `422`. Error `media_download_failed`. Use an HTTPS URL that returns a supported media file. Or switch to multipart upload.
 
   </Card>
 
@@ -457,8 +457,8 @@ Upload media costs 10 credits per upload call. Posting a tweet or reply is a sep
 
   <Card title="Agent workflow" icon="bot">
 
-    Use JSON URL upload only when the agent needs Xquik to validate or host a
-    generated URL, or needs a DM `mediaId`. For tweet-only public URLs, pass
+    JSON URL upload validates or hosts a generated URL, or returns a DM
+    `mediaId`. Use it only when the agent needs one of those. For tweet-only public URLs, pass
     them directly to `POST /x/tweets`.
 
   </Card>

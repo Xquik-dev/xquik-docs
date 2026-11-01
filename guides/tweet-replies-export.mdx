@@ -42,7 +42,7 @@ An incomplete run keeps partial rows and reports `pagination_safety_limit`.
   </Card>
   <Card title="Moderation queue" icon="list-check">
 
-    Use the direct replies API plus JSON Lines rows before storing, hiding, labeling, or routing replies.
+    Before you store, hide, label, or route replies, use the direct replies API. Pair it with JSON Lines rows.
 
   </Card>
   <Card title="Latest page" icon="search">
@@ -83,11 +83,11 @@ An incomplete run keeps partial rows and reports `pagination_safety_limit`.
   </Card>
 </CardGroup>
 
-For extraction jobs, `GET /extractions/{id}` returns `job`, `results`, `hasMore`, and `nextCursor`. Each reply row includes `xUserId`, `xUsername`, `xDisplayName`, `tweetId`, `tweetText`, `tweetCreatedAt`, `createdAt`, and optional `enrichmentData` fields such as `likeCount`, `replyCount`, `repostCount`, `quoteCount`, `viewCount`, `bookmarkCount`, `conversationId`, `lang`, and `source`.
+For extraction jobs, `GET /extractions/{id}` returns `job`, `results`, `hasMore`, and `nextCursor`. Each reply row includes `xUserId`, `xUsername`, `xDisplayName`, `tweetId`, `tweetText`, `tweetCreatedAt`, and `createdAt`. Rows also include optional `enrichmentData` fields. Examples are `likeCount`, `replyCount`, `repostCount`, `quoteCount`, `viewCount`, `bookmarkCount`, `conversationId`, `lang`, and `source`.
 
 ## End-to-end reply export handoff
 
-Store one checkpoint that carries the target tweet through estimate, job creation, JSON pagination, and file export.
+Store one checkpoint for the target tweet. That checkpoint carries it through estimate, job creation, JSON pagination, and file export.
 
 ```json
 {
@@ -150,12 +150,12 @@ Store one checkpoint that carries the target tweet through estimate, job creatio
   </Card>
   <Card title="Cursor checkpoint" icon="shuffle">
 
-    Store `page_cursor`, `next_cursor`, and `has_more` for JSON page loops, then pass `nextCursor` back as `cursor`.
+    For JSON page loops, store `page_cursor`, `next_cursor`, and `has_more`. Then pass `nextCursor` back as `cursor`.
 
   </Card>
   <Card title="Export checkpoint" icon="download">
 
-    Store the chosen CSV, JSON, or XLSX `export_paths` and the normalized reply fields sent downstream.
+    Store the chosen CSV, JSON, or XLSX `export_paths`. Also store the normalized reply fields sent downstream.
 
   </Card>
 </CardGroup>
@@ -229,11 +229,11 @@ curl https://xquik.com/api/v1/extractions/a1b2c3d4-e5f6-7890-abcd-ef1234567890 \
   -H "x-api-key: xq_YOUR_KEY_HERE" | jq
 ```
 
-Use the paginated response when your app wants JSON rows instead of a file download. Use `limit` up to 1,000 and pass `nextCursor` as `cursor` until `hasMore` is `false`.
+Use the paginated response when your app wants JSON rows, not a file download. Use `limit` up to 1,000 and pass `nextCursor` as `cursor` until `hasMore` is `false`.
 
 ## Step 4. Export CSV, JSON, or XLSX
 
-File exports do not charge credits after job creation. Save `xquik-replies.jsonl` for queue replay or warehouse loads, `xquik-replies.json` for app ingestion, `xquik-replies.csv` for CRM import, and `xquik-replies.xlsx` for analyst handoff.
+File exports do not charge credits after job creation. Save `xquik-replies.jsonl` for queue replay or warehouse loads and `xquik-replies.json` for app ingestion. Save `xquik-replies.csv` for CRM import and `xquik-replies.xlsx` for analyst handoff.
 
 ```bash
 curl -X GET "https://xquik.com/api/v1/extractions/a1b2c3d4-e5f6-7890-abcd-ef1234567890/export?format=csv" \
@@ -255,7 +255,7 @@ curl -X GET "https://xquik.com/api/v1/extractions/a1b2c3d4-e5f6-7890-abcd-ef1234
 
 ### Saved export JSON Lines handoff
 
-Use this after `format=json` when a warehouse, queue, CRM, or AI agent needs one reply per line with stable field names.
+Some consumers need one reply per line with stable field names. If a warehouse, queue, CRM, or AI agent does, use this after `format=json`.
 
 ```bash
 jq -c --arg extraction_id "a1b2c3d4-e5f6-7890-abcd-ef1234567890" \
@@ -278,7 +278,7 @@ jq -c --arg extraction_id "a1b2c3d4-e5f6-7890-abcd-ef1234567890" \
 
 ## Direct replies API
 
-Use `GET /x/tweets/{id}/replies` when you need a paginated API response instead of a stored extraction job.
+Use `GET /x/tweets/{id}/replies` for a paginated API response instead of a stored extraction job.
 
 ```bash
 curl "https://xquik.com/api/v1/x/tweets/1893704267862470862/replies" \
@@ -287,7 +287,7 @@ curl "https://xquik.com/api/v1/x/tweets/1893704267862470862/replies" \
 
 The direct replies API returns `tweets`, `has_next_page`, and `next_cursor`. Pass `next_cursor` back as `cursor` to fetch the next page. It costs 1 credit per tweet returned.
 
-Use `sinceTime` and `untilTime` as Unix timestamps in seconds when a moderation queue, CRM sync, or agent only needs replies from a specific window.
+Use `sinceTime` and `untilTime` as Unix timestamps in seconds. They limit replies to a specific window. Use them when a moderation queue, CRM sync, or agent only needs that window.
 
 ```bash
 curl -G https://xquik.com/api/v1/x/tweets/1893704267862470862/replies \
@@ -298,7 +298,7 @@ curl -G https://xquik.com/api/v1/x/tweets/1893704267862470862/replies \
 
 ## Copy-ready workflow from replies to a moderation queue
 
-Use this direct API workflow when you need the latest reply pages as JSON Lines before deciding what to store, hide, label, or route. Each row maps the API response into stable downstream fields. They are `handoff_source`, `parent_tweet_id`, `reply_tweet_id`, `reply_text`, `reply_author_id`, `reply_author_username`, `reply_author_name`, `reply_author_followers`, `reply_author_verified`, `reply_author_profile_picture`, `created_at`, `in_reply_to_id`, `conversation_id`, engagement counts, `bookmark_count`, `is_note_tweet`, `tweet_source`, `media_urls`, and cursor fields.
+Use this direct API workflow for the latest reply pages as JSON Lines. Run it before deciding what to store, hide, label, or route. Each row maps the API response into stable downstream fields. They are `handoff_source`, `parent_tweet_id`, `reply_tweet_id`, and `reply_text`. Author fields are `reply_author_id`, `reply_author_username`, `reply_author_name`, `reply_author_followers`, `reply_author_verified`, and `reply_author_profile_picture`. The row also has `created_at`, `in_reply_to_id`, `conversation_id`, engagement counts, and `bookmark_count`. It ends with `is_note_tweet`, `tweet_source`, `media_urls`, and cursor fields.
 
 ```javascript
 const apiKey = process.env.XQUIK_API_KEY;

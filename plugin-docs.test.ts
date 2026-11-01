@@ -318,7 +318,7 @@ describe("Plugin docs", (): void => {
       "Then call POST /api/v1/x/dm/{userId} with one media_ids value.",
       "Return the complete action record. Read the confirmed resource ID from result.id.",
       '<Card title="/xstatus" icon="terminal">',
-      "Show Xquik account, subscription, and usage status in an active Hermes CLI or gateway session.",
+      "Show Xquik account, subscription, and usage status. Run it in an active Hermes CLI or gateway session.",
       '<Card title="/xtrends" icon="trending-up">',
       "Show current X trends from the plugin command registry.",
       '<Card title="Public reads" icon="search">',

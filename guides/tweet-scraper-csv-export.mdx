@@ -135,7 +135,7 @@ Python pipelines can use the Python SDK for direct pages. They can also call the
 
 Save the complete request before evaluating search results. Include the query, operators, language, date window, result limit, and export format. 2 files with different filters should never share one comparison label.
 
-Count unique Tweet IDs after every export. Duplicate IDs may appear when date windows overlap or a retry restarts from an earlier cursor. Keep one canonical row for each Tweet ID. Keep the newest complete author and engagement fields.
+Count unique Tweet IDs after every export. Duplicate IDs may appear when date windows overlap. They may also appear when a retry restarts from an earlier cursor. Keep one canonical row for each Tweet ID. Keep the newest complete author and engagement fields.
 
 Check the first and last tweet creation times. Compare them with the requested window. A bounded Twitter search can return fewer tweets than its result limit. This does not prove the job failed.
 
@@ -147,25 +147,25 @@ Validate attached media separately. Store media type and URL with the owning Twe
 
 Keep user profiles separate from tweet identity. A username or display name can change. The author user ID remains the stable join key for later profile reads.
 
-Compare the exported row count with the stored job response. Investigate a difference before loading a warehouse. Common causes include duplicate Tweet IDs, rejected rows, file parsing errors, or an interrupted download.
+Compare the exported row count with the stored job response. Investigate a difference before loading a warehouse. Common causes include duplicate Tweet IDs, rejected rows, file parsing errors, or interrupted downloads.
 
 Use monitors when the workflow needs real-time events. A scheduled Twitter API export creates time-bounded snapshots. It should not claim instant coverage between completed runs.
 
 ## When to use this workflow
 
-Use this workflow for repeatable keyword, hashtag, account, or campaign exports. Choose it when teams need saved tweet rows, author profiles, engagement counts, media URLs, and an auditable file. Prefer direct tweet search for small live pages. Prefer monitors for continuous account or keyword alerts.
+Use this workflow for repeatable keyword, hashtag, account, or campaign exports. Choose it when teams need an auditable file of saved tweet rows. Those rows carry author profiles, engagement counts, and media URLs. Prefer direct tweet search for small live pages. Prefer monitors for continuous account or keyword alerts.
 
 ## Choose the right path
 
-Use extraction jobs for repeatable exports and audit trails. Use the direct API for low-latency pages, small app handoffs, or exact lookup from one stored Tweet ID or X status URL.
+Use extraction jobs for repeatable exports and audit trails. Use the direct API for low-latency pages or small app handoffs. It also handles exact lookup from one stored Tweet ID or X status URL.
 
 Keep API keys outside code and logs. Store search results with tweet fields and user profiles. Respect the read rate limit before requesting another page. Import CSV exports into Google Sheets for shared analyst review.
 
 ## End-to-end export handoff
 
-Store one checkpoint that carries the search request through estimate, job creation, JSON pagination, and file export.
+Store one checkpoint for the search request. That checkpoint carries it through estimate, job creation, JSON pagination, and file export.
 
-Tweet search exports include base user fields, tweet fields, engagement counts, and metadata when available.
+Tweet search exports include base user fields, tweet fields, engagement counts, and metadata. Each appears when available.
 
 ## Step 1. Estimate tweets and credits
 
@@ -177,9 +177,9 @@ The estimate returns allowed, estimatedResults, creditsRequired, creditsAvailabl
 
 tweet_search_extractor accepts structured filter fields beside searchQuery. Use fields when UI or SDK code owns filters. Use advancedQuery when you already have a trusted X search operator string.
 
-Set exactPhrase to match that exact phrase. Set excludeWords to drop posts with any of those comma-separated words. advancedQuery applies your own operators on top.
+Set exactPhrase to match that exact phrase. Set excludeWords to drop posts with any of those comma-separated words. The advancedQuery field applies your own operators on top.
 
-For direct GET /x/tweets/search, put the same operators in q. A plain Tweet ID or X status URL in q is a direct lookup, not a saved extractor job.
+For direct GET /x/tweets/search, put the same operators in q. A plain Tweet ID or X status URL in q is a direct lookup. It is not a saved extractor job.
 
 Create the job with the same toolType, searchQuery, filters, and resultsLimit.
 
@@ -191,7 +191,7 @@ Poll by tweet_search_extraction_id. Keep search_query, filters, and results_limi
 
 Poll `GET /extractions/{id}` until the job completes or fails.
 
-Use the paginated response when your app wants JSON rows instead of a file download.
+Use the paginated response when your app wants JSON rows, not a file download.
 
 ## Step 4. Export CSV, JSON, or XLSX
 
@@ -207,11 +207,11 @@ For JSON Lines, write one normalized tweet object per line to xquik-tweet-search
 
 ## Direct tweet search API
 
-Use GET /x/tweets/search when you need a paginated API response instead of a stored extraction job.
+Use GET /x/tweets/search for a paginated API response instead of a stored extraction job.
 
-The direct search API returns tweets, has_next_page, and next_cursor. Leave limit unset for a simple cursor-driven page loop, and pass next_cursor back as cursor.
+The direct search API returns tweets, has_next_page, and next_cursor. Leave limit unset for a simple cursor-driven page loop. In that loop, pass next_cursor back as cursor.
 
-Set limit when you want Xquik to collect up to that count in one bounded request. If has_next_page is true, continue with the same query, filters, queryType, and limit. Set cursor to next_cursor. Cost is 1 credit per tweet returned.
+Set limit when you want one bounded request. Xquik then collects up to that count. If has_next_page is true, continue with the same query, filters, queryType, and limit. Set cursor to next_cursor. Cost is 1 credit per tweet returned.
 
 For account date windows, sinceTime and untilTime limit results to that window. A request such as q=from:username&sinceTime=2026-05-01&untilTime=2026-05-02 behaves like from:username since:2026-05-01 until:2026-05-02.
 
@@ -233,7 +233,7 @@ Add credits after a 402 response, then continue from the saved checkpoint.
 
 Retry a documented 424 or 502 failure with exponential backoff and jitter. Keep the same extraction ID during status polling. For direct tweet search, keep the same query, filters, queryType, limit, and cursor. Changing those values can skip or duplicate tweets.
 
-Honor retryAfter after a 429 response. Pause only the affected worker. Do not start parallel requests for the same cursor page. Cap retries and send exhausted requests to review with their response status, request ID, and unchanged input.
+Honor retryAfter after a 429 response. Pause only the affected worker. Do not start parallel requests for the same cursor page. Cap retries. Send exhausted requests to review with response status, request ID, and unchanged input.
 
 Treat a failed extraction status as terminal for that job. Save its returned error before deciding whether to create another extraction. Mark every interrupted export as partial. Keep completed pages, unique Tweet IDs, and the last durable cursor.
 
@@ -243,7 +243,7 @@ Validate the downloaded file before advancing any schedule checkpoint. Reject em
 
 Hand off the exact searchQuery, structured filters, advancedQuery, language, sinceTime, untilTime, queryType, and resultsLimit. Include the extraction ID for saved jobs. Include the final cursor for direct tweet search.
 
-Record the terminal status, export format, file name, checksum, byte size, row count, and unique Tweet count. Add the earliest and latest tweet creation times. Mark capped, credit-bounded, interrupted, and partial exports explicitly.
+Record the terminal status, export format, file name, checksum, and byte size. Also record the row count and unique Tweet count. Add the earliest and latest tweet creation times. Mark capped, credit-bounded, interrupted, and partial exports explicitly.
 
 Keep Tweet ID, text, author ID, username, display name, and creation time. Keep replies, reposts, likes, quotes, views, bookmarks, permalinks, and media URLs when returned. Join refreshed profiles through stable author ID, not username.
 
