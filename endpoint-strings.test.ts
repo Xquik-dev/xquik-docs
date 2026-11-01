@@ -13,6 +13,7 @@ const ENDPOINT_PATTERN = new RegExp(
   "g",
 );
 const COLON_PLACEHOLDER_PATTERN = /\/:[A-Za-z][A-Za-z0-9_]*/u;
+const COMPETITOR_PAGE = /alternatives?(?:\/|\.mdx$)/u;
 const BARE_PLACEHOLDER_SEGMENTS = new Set([
   "accountId",
   "drawId",
@@ -214,6 +215,21 @@ function collectEndpointFindings(operations: readonly Operation[]): readonly Fin
   return findings;
 }
 
+type Endpoint = Pick<Operation, "method" | "path">;
+
+function namedEndpoints(): readonly Endpoint[] {
+  return listDocFiles(PROJECT_ROOT)
+    .filter((file): boolean => !COMPETITOR_PAGE.test(file))
+    .flatMap((file): Endpoint[] =>
+      [...readFileSync(join(PROJECT_ROOT, file), "utf8").matchAll(ENDPOINT_PATTERN)].flatMap(
+        ([, method, rawPath]): Endpoint[] =>
+          method === undefined || rawPath === undefined
+            ? []
+            : [{ method, path: normalizeDocumentedPath(rawPath) }],
+      ),
+    );
+}
+
 describe("documented endpoint strings", (): void => {
   it("match OpenAPI route templates and placeholder style", (): void => {
     expect.assertions(1);
@@ -222,5 +238,21 @@ describe("documented endpoint strings", (): void => {
       readFileSync(join(PROJECT_ROOT, "openapi.yaml"), "utf8"),
     );
     expect(collectEndpointFindings(operations)).toStrictEqual([]);
+  });
+
+  it("name every OpenAPI operation outside competitor pages", (): void => {
+    expect.assertions(1);
+
+    const named = namedEndpoints();
+    const unnamed = extractOpenApiOperations(
+      readFileSync(join(PROJECT_ROOT, "openapi.yaml"), "utf8"),
+    ).filter((operation): boolean => {
+      const route = toRoutePattern(operation);
+      return !named.some(
+        (endpoint): boolean =>
+          endpoint.method === operation.method && route.pattern.test(endpoint.path),
+      );
+    });
+    expect(unnamed.map(({ key }): string => key)).toStrictEqual([]);
   });
 });

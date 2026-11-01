@@ -44,12 +44,7 @@ const HTTP_METHODS: ReadonlySet<string> = new Set([
   "put",
   "trace",
 ]);
-const PAGELESS_OPERATIONS = [
-  "DELETE /extractions/{id}",
-  "GET /ask",
-  "GET /credits/topup/redirect",
-  "POST /ask",
-];
+const PAGELESS_OPERATIONS = ["GET /ask", "GET /credits/topup/redirect", "POST /ask"];
 const PAGES_WITHOUT_OPERATION = [
   "api-reference/authentication.mdx",
   "api-reference/features.mdx",
