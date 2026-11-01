@@ -10180,7 +10180,7 @@ const REQUIRED_PIPEDREAM_ALTERNATIVE_SNIPPETS = [
   "Pipedream Workflows",
   "one credit per 30 seconds",
   "does not charge by number of steps",
-  "Development and testing in the workflow builder are free",
+  "Pipedream charges no credits for development and testing in the workflow builder",
   "HTTP trigger",
   "steps.trigger.event",
   "method, payload, headers, path, query, URL",
@@ -11507,7 +11507,7 @@ const FORBIDDEN_MAKE_GUIDE_SNIPPETS = [
 const REQUIRED_MAKE_ALTERNATIVE_SNIPPETS = [
   "## Source-backed Make scope",
   "Make's official pricing page says each scenario module action counts as one credit. It also says Free includes 1,000 credits/month",
-  "Make's official HTTP app documentation lists what the HTTP app can do. It can call services without a native Make integration",
+  "Make's official HTTP app docs say it can call services without a native integration",
   "offset, page, URL, link, or cursor-style pagination",
   "instant webhooks, custom webhooks, webhook queues, response handling",
   "action, search, polling trigger, instant trigger, universal, and responder module types",
@@ -11540,7 +11540,7 @@ const REQUIRED_PHANTOMBUSTER_ALTERNATIVE_SNIPPETS = [
   "Plans differ by automation slots and monthly execution time. They also differ by email credits, AI credits, and URL finder credits",
   "data extraction across 15+ platforms. It lists 100+ automations and workflows, scheduled auto-refresh, and export limits",
   "CSV combines results from all runs so far. JSON covers the most recent run. Free plan and Free Trial exports stop at 10 rows",
-  "Paid plans include full CSV files and JSON files. They also include CSV URLs for Google Sheets or integrations",
+  "Other plans include full CSV files and JSON files. They also include CSV URLs for Google Sheets or integrations",
   "successful launches return status `200` with a Container ID. The API cannot launch Workflows",
   "Twitter Follower Collector, Twitter Following Collector, and Twitter Hashtag Collector. It covers Twitter Auto Unfollow and Twitter Search Export",
   "PhantomBuster's official API help describes launching an individual Phantom through `POST /agents/launch`. The call takes an Agent ID.",
@@ -11592,7 +11592,7 @@ const REQUIRED_BRANDWATCH_ALTERNATIVE_SNIPPETS = [
 ] as const;
 
 const REQUIRED_MELTWATER_ALTERNATIVE_SNIPPETS = [
-  "media monitoring, social listening, or social media management workflow",
+  "That workflow is media monitoring, social listening, or social media management",
   "tweet search, follower export, account or keyword monitoring, webhooks",
   "## Source-backed Meltwater scope",
   "coverage across major social networks, blogs, and forums. Coverage also spans podcasts, online news, reviews, owned channels, and public social content",
@@ -11717,7 +11717,7 @@ const REQUIRED_OUTSTAND_ALTERNATIVE_SNIPPETS = [
   "USD 5/month with 1,000 included posts. Each post over 1,000 costs USD 0.01",
   "connected accounts without a visible account cap. It lists all 10 platforms, webhooks, MCP, and BYO credentials",
   "The getting started docs list core features. They are social accounts, posts, scheduling, first comment scheduling, and media attachment",
-  "`GET /v1/social-accounts` for connected accounts and `POST /v1/posts` with `containers`, `socialAccountIds`, and optional `scheduledAt`",
+  "`GET /v1/social-accounts` for connected accounts. They show `POST /v1/posts` with `containers`, `socialAccountIds`, and optional `scheduledAt`",
   "It passes a Bearer credential in the `Authorization` header",
   "allows multiple named credentials per organization",
   "25 tools. They cover posting, scheduling, analytics, media management, account management, and social network configuration",
