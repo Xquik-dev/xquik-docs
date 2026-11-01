@@ -11638,7 +11638,7 @@ const REQUIRED_TWEETDECK_ALTERNATIVE_SNIPPETS = [
   "multi-column workspace that includes more of X.com",
   "full post composer, scheduled posts, advanced search, top or latest post order, Decks",
   "Column types include home, notifications, search, lists, and communities. Other types are explore, bookmarks, profiles, messages, and scheduled posts",
-  "X Premium as an optional subscription. It has Basic, Premium, and Premium+ tiers",
+  "X Premium as an optional subscription. It has Basic, Premium, and Premium+ tiers, each with a price",
   "Premium features can change",
   "delegate account access without sharing sign-in credentials",
   "does not support scheduled Direct Messages",
@@ -11748,7 +11748,7 @@ const REQUIRED_SOCIALCRAWL_ALTERNATIVE_SNIPPETS = [
   "`GET /v1/credits/balance` costs 0 credits",
   "idempotent replays deduct 0 new credits within a 24-hour TTL",
   "Free with 400 one-time credits. Starter has 2,500 credits for GBP 15. Growth has 20,000 credits for GBP 49. Pro has 150,000 credits for GBP 299",
-  "publish `/llms.txt`, `/llms-full.txt`, OpenAPI JSON and YAML, plus per-platform llms files",
+  "publish `/llms.txt`, `/llms-full.txt`, OpenAPI JSON and YAML. They also publish per-platform llms files",
   "profile, user tweets, and tweet detail endpoints. It also lists community detail, community tweets, video transcript, and AI-powered X search endpoints",
   "`socialcrawl_list_platforms`, `socialcrawl_list_endpoints`, `socialcrawl_request`, and `socialcrawl_get_docs`",
 ] as const;
@@ -11891,7 +11891,7 @@ const REQUIRED_TAPLIO_ALTERNATIVE_SNIPPETS = [
   "no AI credit cap and no comment credit cap. It also lists a dynamic 3M+ lead database",
   "dynamic 3M+ lead database and Auto-DM for likers and commenters. It lists mass DMs to an audience and automated connection requests too",
   "saved posts, draft Kanban, and post scheduling. It lists monthly and daily schedules, analytics, and writer collaboration",
-  "7-day free trial gives Pro access during the trial. Then it switches to the originally selected plan",
+  "7-day free trial gives Pro access during the trial. Then the trial switches to the originally selected plan",
   "Taplio X Chrome extension brings Taplio into LinkedIn. The extension brings instant stats, high-performing posts, trending content, and quick saves",
   "Use current Taplio plan limits when the job is LinkedIn content or lead engagement.",
 ] as const;
