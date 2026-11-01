@@ -15661,7 +15661,7 @@ describe("repository discovery", (): void => {
     const page = readFileSync("mcp/docs-mcp.mdx", "utf8");
     const contract = readFileSync("openapi.yaml", "utf8");
 
-    expect(page).toContain("`GET` or `POST https://xquik.com/ask`");
+    expect(page).toContain("`GET /ask` & `POST /ask` on `https://xquik.com`");
     expect(page).toContain("Streams emit `start`, `result`, and `complete` events.");
     expect(page).toContain("https://xquik.com/.well-known/agent-card.json");
     expect(page).toContain("JSON-RPC endpoint at `https://xquik.com/a2a`");
