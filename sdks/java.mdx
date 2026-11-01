@@ -240,12 +240,12 @@ static void writeCsvRow(BufferedWriter writer, List<?> values) throws IOExceptio
 
   <Card title=".q()" icon="search">
 
-    Java builder method `.q()` maps to REST `q`. Use it for an X search query such as `from:username`, a keyword, hashtag, or boolean operator query.
+    Java builder method `.q()` maps to REST `q`. Use it for an X search query. Examples are `from:username`, a keyword, hashtag, or boolean operator query.
 
   </Card>
   <Card title=".limit()" icon="list">
 
-    Java builder method `.limit()` maps to REST `limit`. Use it as a 1 to 200 upper bound for a bounded pull. If `page.hasNextPage()` is true, keep the same `.q()`, filters, `.queryType()`, and `.limit()` when you continue with `page.nextCursor()`.
+    Java builder method `.limit()` maps to REST `limit`. Use it as a 1 to 200 upper bound for a bounded pull. If `page.hasNextPage()` is true, keep the same `.q()`, filters, `.queryType()`, and `.limit()`. Do so when you continue with `page.nextCursor()`.
 
   </Card>
   <Card title=".cursor()" icon="arrow-right">
@@ -272,21 +272,21 @@ static void writeCsvRow(BufferedWriter writer, List<?> values) throws IOExceptio
 
 ### Returned data & handoff
 
-`client.x().tweets().search` returns `PaginatedTweets`. Use `page.tweets()` for the tweet list, `page.hasNextPage()` to decide whether another page exists, and `page.nextCursor()` as the checkpoint for the next request. For bounded pulls that return fewer tweets than the requested `.limit()`, pass `page.nextCursor()` back as `.cursor()` with the same query, filters, `QueryType`, and `.limit()`.
+`client.x().tweets().search` returns `PaginatedTweets`. Use `page.tweets()` for the tweet list. Use `page.hasNextPage()` to decide whether another page exists. Use `page.nextCursor()` as the checkpoint for the next request. For bounded pulls that return fewer tweets than the requested `.limit()`, use the cursor. Then pass `page.nextCursor()` back as `.cursor()` with the same query, filters, `QueryType`, and `.limit()`.
 
-Each `SearchTweet` includes generated accessors such as `id()`, `text()`, `author()`, `createdAt()`, `likeCount()`, `replyCount()`, `retweetCount()`, `quoteCount()`, `viewCount()`, `bookmarkCount()`, and `isNoteTweet()` when available. Project `page.tweets()` into JSON Lines and CSV rows with `tweet_id`, `author_username`, engagement counts, `page_index`, `page_cursor`, `next_cursor`, and `has_next_page`. Workers can then resume or load the same records into XLSX, CRM, warehouse, or agent workflows.
+Each `SearchTweet` includes generated accessors such as `id()`, `text()`, `author()`, and `createdAt()`. Others are `likeCount()`, `replyCount()`, `retweetCount()`, `quoteCount()`, `viewCount()`, and `bookmarkCount()`. It also includes `isNoteTweet()` when available. Project `page.tweets()` into JSON Lines and CSV rows with `tweet_id`, `author_username`, and engagement counts. Rows also carry `page_index`, `page_cursor`, `next_cursor`, and `has_next_page`. Workers can then resume. They can also load the same records into XLSX, CRM, warehouse, or agent workflows.
 
-Tweet search costs 1 credit per tweet returned. If remaining credits cannot cover a bounded `.limit()` request, the API can return fewer tweets. If 0 paid results are affordable, it returns `402 insufficient_credits`. The SDK supports `withOptions()` for retry and request settings. For explicit `.limit()` pulls, resume with the same query, filters, `QueryType`, and `.limit()`. Only `.cursor()` changes.
+Tweet search costs 1 credit per tweet returned. Remaining credits may not cover a bounded `.limit()` request. If so, the API can return fewer tweets. If 0 paid results are affordable, it returns `402 insufficient_credits`. The SDK supports `withOptions()` for retry and request settings. For explicit `.limit()` pulls, resume with the same query, filters, `QueryType`, and `.limit()`. Only `.cursor()` changes.
 
 ## Follower export workflow to CSV, JSON, or XLSX
 
 Export followers for CRM, warehouses, account scoring, CSV, XLSX, or resumable JSON.
 
-`client.extractions().estimateCost` maps to `POST /extractions/estimate`, `client.extractions().run` maps to `POST /extractions`, `client.extractions().retrieve` maps to `GET /extractions/{id}`, and `client.extractions().exportResults` maps to `GET /extractions/{id}/export`. For follower exports, `follower_explorer` requires `targetUsername`.
+`client.extractions().estimateCost` maps to `POST /extractions/estimate`, and `client.extractions().run` maps to `POST /extractions`. `client.extractions().retrieve` maps to `GET /extractions/{id}`, and `client.extractions().exportResults` maps to `GET /extractions/{id}/export`. For follower exports, `follower_explorer` requires `targetUsername`.
 
 <Info>
 
-`client.extractions().run` returns the queued `202 Accepted` receipt from `POST /extractions`. Java exposes REST `id`, `toolType`, and `status: "running"` as `job.id()`, `job.toolType()`, and `job._status()`. Store `job.id()` immediately, then poll `client.extractions().retrieve` before reading pages or calling `client.extractions().exportResults`. Credit reservation happens after the job starts. If available credits changed since `estimateCost`, the run can fetch only the affordable count before export or mark the job `failed` with `insufficient_credits`.
+`client.extractions().run` returns the queued `202 Accepted` receipt from `POST /extractions`. Java exposes REST `id`, `toolType`, and `status: "running"` as `job.id()`, `job.toolType()`, and `job._status()`. Store `job.id()` immediately, then poll `client.extractions().retrieve` before reading pages or calling `client.extractions().exportResults`. Credit reservation happens after the job starts. Available credits can change after `estimateCost`. If they did, the run can fetch only the affordable count before export. In that case it can instead mark the job `failed` with `insufficient_credits`.
 
 </Info>
 
@@ -420,11 +420,11 @@ try (HttpResponse export = client.extractions().exportResults(
 }
 ```
 
-Store `job.id()`, `targetUsername`, `estimate.estimatedResults()`, and `estimate.source()` before polling so retries can resume the extraction. `client.extractions().retrieve` returns `results()`, `hasMore()`, and `nextCursor()`. Pass `nextCursor()` back as `cursor` to page through large follower lists. Map exported `User ID` or row `xUserId` as the CRM unique key. Use `xquik-followers.jsonl` for queue replay or warehouse loads, `xquik-followers.json` for app ingestion, `xquik-followers.csv` for CRM import, and `xquik-followers.xlsx` for analyst handoff. The cost is 1 credit per follower extracted or returned. Exports are free after the extraction job exists.
+Store `job.id()`, `targetUsername`, `estimate.estimatedResults()`, and `estimate.source()` before polling so retries can resume the extraction. `client.extractions().retrieve` returns `results()`, `hasMore()`, and `nextCursor()`. Pass `nextCursor()` back as `cursor` to page through large follower lists. Map exported `User ID` or row `xUserId` as the CRM unique key. Use `xquik-followers.jsonl` for queue replay or warehouse loads and `xquik-followers.json` for app ingestion. Use `xquik-followers.csv` for CRM import and `xquik-followers.xlsx` for analyst handoff. The cost is 1 credit per follower extracted or returned. Exports are free after the extraction job exists.
 
 ## Tweet replies workflow to CSV, JSON, or XLSX
 
-Use this workflow when a Java worker needs every reply to a campaign, support thread, launch post, or incident update as a durable file. `reply_extractor` requires `targetTweetId`. Estimate first, run the job, poll `retrieve`, then export the completed job as CSV, JSON, or XLSX.
+Use this workflow when a Java worker needs every reply as a durable file. The parent can be a campaign, support thread, launch post, or incident update. `reply_extractor` requires `targetTweetId`. Estimate first, run the job, and poll `retrieve`. Then export the completed job as CSV, JSON, or XLSX.
 
 Reuse the follower export loop above. Change only the required target, tool type, and output names.
 
@@ -456,7 +456,7 @@ if (cursor != null && !cursor.isEmpty()) {
 ExtractionRetrieveResponse page = client.extractions().retrieve(pageParams.build());
 ```
 
-Store `job.id()` before polling so a queue retry can resume with `client.extractions().retrieve(job.id())` and repeat `client.extractions().exportResults(...)` after completion. Stream `page.results()` to `Paths.get("xquik-replies.jsonl")`. Keep `page.nextCursor()` as the checkpoint while streaming replies to JSON Lines. Pass it back as `cursor` on the next `ExtractionRetrieveParams.Builder pageParams`.
+Store `job.id()` before polling. With it, a queue retry can resume with `client.extractions().retrieve(job.id())`. The retry can also repeat `client.extractions().exportResults(...)` after completion. Stream `page.results()` to `Paths.get("xquik-replies.jsonl")`. Keep `page.nextCursor()` as the checkpoint while streaming replies to JSON Lines. Pass it back as `cursor` on the next `ExtractionRetrieveParams.Builder pageParams`.
 
 Keep the same `estimate.allowed()` credit branch from the follower export workflow before calling `run`.
 
@@ -477,11 +477,11 @@ try (HttpResponse export = client.extractions().exportResults(
 }
 ```
 
-Repeat the export with `ExtractionExportResultsParams.Format.JSON` to write `Paths.get("xquik-replies.json")` and `ExtractionExportResultsParams.Format.XLSX` to write `Paths.get("xquik-replies.xlsx")`. Use `xquik-replies.jsonl` for queue replay or warehouse loads, `xquik-replies.json` for app ingestion, `xquik-replies.csv` for CRM import, and `xquik-replies.xlsx` for analyst handoff.
+Repeat the export with `ExtractionExportResultsParams.Format.JSON` to write `Paths.get("xquik-replies.json")` and `ExtractionExportResultsParams.Format.XLSX` to write `Paths.get("xquik-replies.xlsx")`. Use `xquik-replies.jsonl` for queue replay or warehouse loads and `xquik-replies.json` for app ingestion. Use `xquik-replies.csv` for CRM import and `xquik-replies.xlsx` for analyst handoff.
 
 ## Workflow to post media tweets and DM attachments
 
-Use this workflow to post a media tweet or reply, or to DM an uploaded local file. `client.x().tweets().create` maps to `POST /x/tweets`. Pass public media URLs through `.addMedia()` or `.media()`. Send up to 4 image URLs or exactly 1 MP4 video URL up to 100 MB. Do not mix video with other media. For replies, set `.replyToTweetId()` to the parent tweet ID. `client.x().media().upload` maps to `POST /x/media`. Use `media.mediaId()` only for the one-item DM `.addMediaId()` handoff.
+Use this workflow to post a media tweet or reply. It can also DM an uploaded local file. `client.x().tweets().create` maps to `POST /x/tweets`. Pass public media URLs through `.addMedia()` or `.media()`. Send up to 4 image URLs or exactly 1 MP4 video URL. The video can be up to 100 MB. Do not mix video with other media. For replies, set `.replyToTweetId()` to the parent tweet ID. `client.x().media().upload` maps to `POST /x/media`. Use `media.mediaId()` only for the one-item DM `.addMediaId()` handoff.
 
 ```java
 import com.fasterxml.jackson.core.type.TypeReference;

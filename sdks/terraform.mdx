@@ -18,7 +18,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Use the Terraform provider to manage Xquik resources with your infrastructure code. Platform teams can review account monitors, HMAC webhooks, API keys, drafts, tweet actions, profile updates, and support workflows through the same state process.
+Use the Terraform provider to manage Xquik resources with your infrastructure code. Platform teams can review account monitors, HMAC webhooks, API keys, and drafts. They can also review tweet actions, profile updates, and support workflows. Each review uses the same state process.
 
 ## Install
 
@@ -50,11 +50,11 @@ export X_TWITTER_SCRAPER_API_KEY="xq_YOUR_KEY_HERE"
 export X_TWITTER_SCRAPER_BEARER_TOKEN="YOUR_OAUTH_TOKEN"
 ```
 
-Prefer environment variables for credentials. If you pass credentials through Terraform variables, mark them `sensitive = true` and use an encrypted remote state backend.
+Prefer environment variables for credentials. If you pass credentials through Terraform variables, mark them `sensitive = true`. In that case, also use an encrypted remote state backend.
 
 ## Tweet monitor workflow to signed webhooks
 
-Use this workflow when Terraform should own a production tweet monitor and the webhook endpoint that receives signed events for queues, incident tools, social listening dashboards, or CRM enrichment.
+Use this workflow when Terraform should own a production tweet monitor and webhook endpoint. The endpoint receives signed events. They feed queues, incident tools, social listening dashboards, or CRM enrichment.
 
 The provider resources map to the REST API. `x-twitter-scraper_monitor` creates an account monitor through `POST /monitors`. `x-twitter-scraper_webhook` creates a signed webhook through `POST /webhooks`. Both resources use Terraform snake_case arguments that map to the API request fields.
 
@@ -104,13 +104,13 @@ output "webhook_secret" {
 
   <Card title="Monitor resource" icon="radio">
 
-    Terraform resource `x-twitter-scraper_monitor` maps to `POST /monitors`. It requires `username` and `event_types`, accepts optional `is_active`, and returns `id`, `x_user_id`, `is_active`, and `created_at` in state.
+    Terraform resource `x-twitter-scraper_monitor` maps to `POST /monitors`. It requires `username` and `event_types` and accepts optional `is_active`. It returns `id`, `x_user_id`, `is_active`, and `created_at` in state.
 
   </Card>
 
   <Card title="Webhook resource" icon="webhook">
 
-    Terraform resource `x-twitter-scraper_webhook` maps to `POST /webhooks`. It requires `url` and `event_types`, accepts optional `is_active`, and returns `id`, `secret`, and `created_at` in state.
+    Terraform resource `x-twitter-scraper_webhook` maps to `POST /webhooks`. It requires `url` and `event_types` and accepts optional `is_active`. It returns `id`, `secret`, and `created_at` in state.
 
   </Card>
 
@@ -125,9 +125,9 @@ Tweet event types include `tweet.new`, `tweet.reply`, `tweet.quote`, and `tweet.
 
 ### Returned data & handoff
 
-After `terraform apply`, hand `monitor_id` to operators who need to pause, update, or delete the monitor through Terraform. Hand `webhook_id` to delivery dashboards and support playbooks. Store `webhook_secret` in a secret manager. Use it to verify `X-Xquik-Signature`, `X-Xquik-Timestamp`, and `X-Xquik-Nonce` on every delivery.
+Operators may need to pause, update, or delete the monitor through Terraform. After `terraform apply`, hand them `monitor_id`. Hand `webhook_id` to delivery dashboards and support playbooks. Store `webhook_secret` in a secret manager. Use it to verify `X-Xquik-Signature`, `X-Xquik-Timestamp`, and `X-Xquik-Nonce` on every delivery.
 
-Production webhook payloads include `deliveryId` and `streamEventId`. Store `deliveryId` for receiver idempotency. Store `streamEventId` when you must process one monitor event once across retries or endpoint changes. Use `GET /webhooks/{id}/deliveries` to inspect retry state by webhook after apply. Synthetic `webhook.test` requests verify signing only. They omit those production idempotency fields.
+Production webhook payloads include `deliveryId` and `streamEventId`. Store `deliveryId` for receiver idempotency. Store `streamEventId` when monitor events need exactly-once processing across retries or endpoint changes. Use `GET /webhooks/{id}/deliveries` to inspect retry state by webhook after apply. Synthetic `webhook.test` requests verify signing only. They omit those production idempotency fields.
 
 Webhook operations are free. Active monitors check every second and cost 30
 credits per monitor-hour. Creating one requires the credits of
@@ -135,11 +135,11 @@ the first monitor hour. Monitors may pause when credits run out.
 
 ### State & secrets
 
-Terraform state can contain the webhook `secret` returned at creation time. Use an encrypted backend, restrict state access, and mark every output that references the secret as `sensitive = true`. If you lose or expose the secret, delete and recreate the webhook. Terraform then receives a new signing secret.
+Terraform state can contain the webhook `secret` returned at creation time. Use an encrypted backend and restrict state access. Mark every output that references the secret as `sensitive = true`. If you lose or expose the secret, delete and recreate the webhook. Terraform then receives a new signing secret.
 
 ## Workflow to declare media tweets and replies
 
-Use `x-twitter-scraper_x_tweet` when an infrastructure change must create one durable tweet or reply as part of a reviewed apply. The resource maps to `POST /x/tweets`, accepts public media URLs in `media`, and stores the confirmed `tweet_id` in Terraform state.
+Use `x-twitter-scraper_x_tweet` when an infrastructure change must create one durable tweet or reply. The change must create it as part of a reviewed apply. The resource maps to `POST /x/tweets` and accepts public media URLs in `media`. It stores the confirmed `tweet_id` in Terraform state.
 
 ```hcl
 resource "x-twitter-scraper_x_tweet" "launch_reply" {
@@ -160,7 +160,7 @@ output "launch_reply_tweet_id" {
 
   <Card title="Tweet resource" icon="send">
 
-    Terraform resource `x-twitter-scraper_x_tweet` maps to `POST /x/tweets`. It requires `account`, accepts optional `text`, `reply_to_tweet_id`, `is_note_tweet`, and `media`, and returns `tweet_id` plus read-only tweet details in state.
+    Terraform resource `x-twitter-scraper_x_tweet` maps to `POST /x/tweets`. It requires `account` and accepts optional `text`, `reply_to_tweet_id`, `is_note_tweet`, and `media`. It returns `tweet_id` plus read-only tweet details in state.
 
   </Card>
 
@@ -173,15 +173,15 @@ output "launch_reply_tweet_id" {
 
 <Warning>
 
-Generated provider docs may list `media_ids` on `x-twitter-scraper_x_tweet`, but `POST /x/tweets` rejects `media_ids`. Use `media` with public image or MP4 URLs for tweets. Reserve uploaded media IDs for one-item DM `media_ids` through REST, MCP tools, or a generated SDK.
+Generated provider docs may list `media_ids` on `x-twitter-scraper_x_tweet`, but `POST /x/tweets` rejects `media_ids`. Use `media` with public image or MP4 URLs for tweets. Reserve uploaded media IDs for one-item DM `media_ids`. Send them through REST, MCP tools, or a generated SDK.
 
 </Warning>
 
 ### Tweet handoff
 
-After `terraform apply`, hand `tweet_id`, `reply_to_tweet_id`, `account`, and the original `media` URLs to the queue, release record, CRM note, or incident timeline that needs to reconcile the post. Keep the media URLs in your own system so a later state refresh does not become the only audit trail.
+After `terraform apply`, hand off `tweet_id`, `reply_to_tweet_id`, `account`, and the original `media` URLs. They go to the system that needs to reconcile the post. That can be a queue, release record, CRM note, or incident timeline. Keep the media URLs in your own system. That way, a later state refresh does not become the only audit trail.
 
-Terraform state for `x-twitter-scraper_x_tweet` does not expose durable write action fields, media upload resources, or direct-message send resources. Use the REST API, MCP tools, or a generated SDK when a worker must store lifecycle handoffs, upload local media for one-item DM `media_ids`, or store returned DM `message_id`.
+Terraform state for `x-twitter-scraper_x_tweet` does not expose durable write action fields. It does not expose media upload resources or direct-message send resources either. A worker may need to store lifecycle handoffs or returned DM `message_id`. It may also need to upload local media for one-item DM `media_ids`. In those cases, use the REST API, MCP tools, or a generated SDK.
 
 ## Error handling
 
@@ -191,7 +191,7 @@ Terraform prints provider errors during plan and apply. REST API response semant
 
 Terraform tracks resource state in your configured backend. Data sources and resources use the generated provider schema. Review the generated docs in the [provider repository](https://github.com/Xquik-dev/terraform-provider-x-twitter-scraper/tree/main/docs) before adding resources to production state.
 
-Do not hand off extraction files through Terraform. For reply, follower, or tweet search exports, use the REST extraction endpoints, CLI, MCP tools, or generated SDKs to write CSV, JSON, XLSX, or JSON Lines files. Keep Terraform state focused on long-lived resources and IDs that must be reviewed through plan and apply.
+Do not hand off extraction files through Terraform. For reply, follower, or tweet search exports, use the REST extraction endpoints or CLI. You can also use MCP tools or generated SDKs. Use them to write CSV, JSON, XLSX, or JSON Lines files. Reserve Terraform state for long-lived resources and IDs that need plan and apply review.
 
 ## Webhooks & references
 
