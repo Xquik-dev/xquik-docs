@@ -708,7 +708,7 @@ const REQUIRED_RUBY_SDK_WORKFLOW_SNIPPETS = [
   "`xquik-followers.csv` for CRM import",
   "`xquik-followers.xlsx` for analyst handoff",
   "The cost is 1 credit per follower extracted or returned.",
-  "Exports are free after the extraction job exists.",
+  "Exports cost no credits after the extraction job exists.",
   "`reply_extractor` requires `target_tweet_id`.",
   'File.open("xquik-replies.jsonl", "w")',
   'File.binwrite("xquik-replies.csv", csv_response.read)',
@@ -1122,7 +1122,7 @@ const REQUIRED_PHP_SDK_WORKFLOW_SNIPPETS = [
   "`xquik-followers.csv` for CRM import",
   "`xquik-followers.xlsx` for analyst handoff",
   "The cost is 1 credit per follower extracted or returned.",
-  "Exports are free after the extraction job exists.",
+  "Exports cost no credits after the extraction job exists.",
   "## Tweet replies workflow to CSV, JSON, or XLSX",
   "`$client->extractions->estimateCost()`",
   "`$client->extractions->run()`",
@@ -11950,7 +11950,7 @@ const REQUIRED_XANGUARD_ALTERNATIVE_SNIPPETS = [
 ] as const;
 
 const REQUIRED_HOOTSUITE_ALTERNATIVE_SNIPPETS = [
-  "scheduling posts, reviewing inboxes, and analyzing campaigns. Add tweet search, follower exports, and account or keyword monitors",
+  "scheduling posts, reviewing inboxes, and analyzing campaigns. Add tweet search, follower exports, and account or keyword monitors. Also add webhooks and app or agent connections.",
   "Social media management, publishing, engagement, listening, analytics, ads, and enterprise collaboration suite.",
   "## Source-backed Hootsuite scope",
   "Standard with up to 10 social accounts and unlimited scheduling",

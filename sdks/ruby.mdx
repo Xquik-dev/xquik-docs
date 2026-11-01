@@ -227,7 +227,7 @@ Use this workflow when Ruby code needs an owned follower list. That code can be 
 
 <Info>
 
-`client.extractions.run` returns the queued `202 Accepted` receipt from `POST /extractions`. Ruby exposes REST `id`, `toolType`, and `status: "running"` as `job.id`, `job.tool_type`, and `job.status`. Store `job.id` immediately, then poll `client.extractions.retrieve` before reading pages or calling `client.extractions.export_results`. Credit reservation happens after the job starts. Available credits may have changed since `estimate_cost`. If so, the run can fetch only the affordable count before export. If so, it can instead mark the job `failed` with `insufficient_credits`.
+`client.extractions.run` returns the queued `202 Accepted` receipt from `POST /extractions`. Ruby exposes REST `id`, `toolType`, and `status: "running"` as `job.id`, `job.tool_type`, and `job.status`. Store `job.id` immediately, then poll `client.extractions.retrieve` before reading pages or calling `client.extractions.export_results`. Credit reservation happens after the job starts. Available credits may have changed since `estimate_cost`. If so, the run can fetch only the affordable count before export. Or it can mark the job `failed` with `insufficient_credits`.
 
 </Info>
 
@@ -292,7 +292,7 @@ xlsx_response.rewind
 File.binwrite("xquik-followers.xlsx", xlsx_response.read)
 ```
 
-`follower_explorer` requires `target_username`. Store `job.id`, `target_username`, `estimate.estimated_results`, and `estimate.source` before polling. That lets a Sidekiq retry, Rails job retry, or worker restart resume that job. `client.extractions.retrieve` returns `results`, `has_more`, and `next_cursor`. Pass `next_cursor` back as `cursor` when you need stored JSON pages before exporting files. Map exported `User ID` or row `xUserId` as the CRM unique key. Use `xquik-followers.jsonl` for queue replay or warehouse loads, and `xquik-followers.json` for app ingestion. Use `xquik-followers.csv` for CRM import and `xquik-followers.xlsx` for analyst handoff. The cost is 1 credit per follower extracted or returned. Exports are free after the extraction job exists.
+`follower_explorer` requires `target_username`. Store `job.id`, `target_username`, `estimate.estimated_results`, and `estimate.source` before polling. That lets a Sidekiq retry, Rails job retry, or worker restart resume that job. `client.extractions.retrieve` returns `results`, `has_more`, and `next_cursor`. Pass `next_cursor` back as `cursor` when you need stored JSON pages before exporting files. Map exported `User ID` or row `xUserId` as the CRM unique key. Use `xquik-followers.jsonl` for queue replay or warehouse loads, and `xquik-followers.json` for app ingestion. Use `xquik-followers.csv` for CRM import and `xquik-followers.xlsx` for analyst handoff. The cost is 1 credit per follower extracted or returned. Exports cost no credits after the extraction job exists.
 
 ## Tweet replies workflow to CSV, JSON, or XLSX
 
@@ -427,7 +427,7 @@ Text-only tweet and reply writes cost 30 credits. Tweet media adds 2 credits per
 
 ## Cost, limits & retries
 
-Tweet search costs 1 credit per tweet returned. If remaining credits cannot cover bounded `limit` requests, the API can return fewer tweets. If 0 paid results are affordable, it returns `402 insufficient_credits`. Xquik rate-limits read calls. `429` responses include `Retry-After`.
+Tweet search costs 1 credit per tweet returned. If credits cannot cover a bounded `limit` request, the API can return fewer tweets. If credits cover 0 results, it returns `402 insufficient_credits`. Xquik rate-limits read calls. `429` responses include `Retry-After`.
 
 The client retries connection errors, timeouts, 408, 409, 429, and 5xx responses by default. Handle `XTwitterScraper::Errors::RateLimitError` with backoff. Fix 400, 401, 403, 404, or 422 responses before retrying.
 
