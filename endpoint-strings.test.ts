@@ -215,17 +215,15 @@ function collectEndpointFindings(operations: readonly Operation[]): readonly Fin
   return findings;
 }
 
-type Endpoint = Pick<Operation, "method" | "path">;
-
-function namedEndpoints(): readonly Endpoint[] {
+function namedEndpoints(): readonly string[] {
   return listDocFiles(PROJECT_ROOT)
     .filter((file): boolean => !COMPETITOR_PAGE.test(file))
-    .flatMap((file): Endpoint[] =>
+    .flatMap((file): string[] =>
       [...readFileSync(join(PROJECT_ROOT, file), "utf8").matchAll(ENDPOINT_PATTERN)].flatMap(
-        ([, method, rawPath]): Endpoint[] =>
+        ([, method, rawPath]): string[] =>
           method === undefined || rawPath === undefined
             ? []
-            : [{ method, path: normalizeDocumentedPath(rawPath) }],
+            : [`${method} ${normalizeDocumentedPath(rawPath)}`],
       ),
     );
 }
@@ -243,16 +241,12 @@ describe("documented endpoint strings", (): void => {
   it("name every OpenAPI operation outside competitor pages", (): void => {
     expect.assertions(1);
 
-    const named = namedEndpoints();
+    const named = new Set(namedEndpoints());
     const unnamed = extractOpenApiOperations(
       readFileSync(join(PROJECT_ROOT, "openapi.yaml"), "utf8"),
-    ).filter((operation): boolean => {
-      const route = toRoutePattern(operation);
-      return !named.some(
-        (endpoint): boolean =>
-          endpoint.method === operation.method && route.pattern.test(endpoint.path),
-      );
-    });
-    expect(unnamed.map(({ key }): string => key)).toStrictEqual([]);
+    )
+      .map(({ key }): string => key)
+      .filter((key): boolean => !named.has(key));
+    expect(unnamed).toStrictEqual([]);
   });
 });
