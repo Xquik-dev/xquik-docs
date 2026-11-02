@@ -157,7 +157,7 @@ to add one. When your connected X accounts are busy, it returns `503`. Retry
 after the `Retry-After` delay.
 
 Get notifications reads the connected account inbox. Use `type=Mentions` for
-mention triage, `type=Verified` for verified-account activity, or omit `type`
+mention triage or `type=Verified` for verified-account activity. Or omit `type`
 for all notification rows. Store `next_cursor` only when `has_next_page` is
 true.
 
@@ -263,13 +263,14 @@ while data["has_next_page"]:
 
 The Node.js and Python snippets normalize each page for notification triage.
 Keep full message text in private systems. Use `notification_id`,
-`notification_type`, `created_at`, `inbox_type`, and `page_next_cursor` for
-private support dashboards, CRM queues, and agent workflows.
+`notification_type`, `created_at`, `inbox_type`, and `page_next_cursor`. Use
+them for private support dashboards, CRM queues, and agent workflows.
 
 ## Notification triage handoff
 
-Use `GET /api/v1/x/notifications` when a support inbox, CRM workflow, or agent
-queue needs account-level activity for a connected X account. The endpoint
+Use `GET /api/v1/x/notifications` when a caller
+needs account-level activity for a connected X account. The caller can be a
+support inbox, CRM workflow, or agent queue. The endpoint
 returns notification IDs, types, message previews, and timestamps. It omits
 full tweet and direct-message payloads.
 
@@ -289,7 +290,7 @@ full tweet and direct-message payloads.
   </Card>
   <Card title="All inbox" icon="inbox">
 
-    Omit `type` or pass `All` when the workflow needs every notification row
+    Omit `type` or pass `All` for every notification row
     visible to the connected account.
 
   </Card>
@@ -307,7 +308,7 @@ full tweet and direct-message payloads.
   </Card>
   <Card title="Next page" icon="arrow-right">
 
-    Store `has_next_page` and `next_cursor`, then pass `next_cursor` back as `cursor`
+    Store `has_next_page` and `next_cursor`. Then pass `next_cursor` back as `cursor`
     only when `has_next_page` is true.
 
   </Card>
@@ -332,7 +333,7 @@ creating duplicate support tasks.
 Route mention rows by `notification_type`, `message`, and `timestamp`. If an
 agent needs the complete public tweet, follow the related
 [user mentions endpoint](/api-reference/x/user-mentions). [X documents its user
-mentions timeline as a paginated feed of posts that mention one
+mentions timeline as paginated posts that mention one
 user.](https://docs.x.com/x-api/posts/timelines/introduction)
 
 ### Resume notification pages
@@ -352,7 +353,7 @@ This endpoint uses polling. The notification delay includes the
 worker's polling interval. Run each new request from the latest confirmed
 cursor. Stop when `has_next_page` is false.
 
-Use [Xquik webhooks](/webhooks/overview) when an Xquik monitor should push
+Use [Xquik webhooks](/webhooks/overview) when a monitor should push
 captured events to your HTTPS endpoint. X also offers a separate Account
 Activity API for real-time account events. [Its documentation lists mentions,
 replies, reposts, likes, follows, and direct
@@ -369,7 +370,8 @@ page can otherwise look like missing notifications.
 ### Can I delete or clear notifications with this route?
 
 No. This route only reads notifications. Deleting a local triage row does not
-remove the notification from X or another connected client.
+remove the notification from X. Another connected client also keeps the
+notification.
 
 ### What happens when a notification request fails?
 
@@ -429,7 +431,7 @@ Pagination cursor. Pass the `next_cursor` value from the previous response to fe
   <Card title="Webhook delivery" icon="webhook">
 
     Use [`Webhooks`](/webhooks/overview) when notification-like activity should
-    push to your system instead of waiting for a poll.
+    push to your system without a poll.
 
   </Card>
 </CardGroup>
