@@ -4351,7 +4351,7 @@ const REQUIRED_NOTIFICATIONS_API_HANDOFF_SNIPPETS = [
   `description: "Retrieve a connected X account's notifications. Filter mentions or verified activity, store triage rows, and page older rows with next_cursor. 1 credit each."`,
   "Get notifications reads the connected account inbox.",
   "Use `type=Mentions` for",
-  "mention triage, `type=Verified` for verified-account activity",
+  "mention triage or `type=Verified` for verified-account activity",
   "Store `next_cursor` only when `has_next_page` is",
   "```bash Mentions",
   'function notificationsUrl({ cursor, type = "Mentions" })',
