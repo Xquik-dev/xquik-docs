@@ -3428,7 +3428,7 @@ const REQUIRED_X_ACCOUNTS_CONNECT_TOTP_SNIPPETS = [
   "then connect again after `retryAfterMs`.",
   '{ "error": "login_failed", "message": "Login failed. Check credentials and try again.", "retryAfterMs": 300000 }',
   "X rejected the submitted username, email, password, or TOTP secret.",
-  "Retry with the current password and the saved Authenticator App secret key, not a 6-digit code.",
+  "Retry with the current password and the saved Authenticator App secret key. Use the key, not a 6-digit code.",
 ] as const;
 
 const REQUIRED_X_ACCOUNTS_REAUTH_TOTP_SNIPPETS = [
@@ -3440,7 +3440,7 @@ const REQUIRED_X_ACCOUNTS_REAUTH_TOTP_SNIPPETS = [
   "Xquik reuses the saved TOTP secret by default.",
   "Send `totp_secret` only when",
   "Never send a 6-digit code, backup code, passkey, or security",
-  "If you never saved the secret key, or X rejects the current one",
+  "If you never saved the secret key, reset the authenticator app setup before re-authenticating. Do the same if X rejects the current one.",
   "<CardGroup cols={1}>",
   '<Card title="Saved key still works" icon="clipboard-check">',
   "Omit `totp_secret`. Xquik reuses the encrypted key saved during connection.",
@@ -3461,7 +3461,7 @@ const REQUIRED_X_ACCOUNTS_REAUTH_TOTP_SNIPPETS = [
   "keep Authenticator App 2FA on, then re-authenticate.",
   '{ "error": "login_failed", "message": "Login failed. Check credentials and try again." }',
   "X rejected the submitted password or TOTP secret.",
-  "Retry with the current password and the saved Authenticator App secret key, not a 6-digit code.",
+  "Retry with the current password and the saved Authenticator App secret key. Use the key, not a 6-digit code.",
 ] as const;
 
 const REQUIRED_X_ACCOUNTS_SUBMIT_CHALLENGE_SNIPPETS = [
@@ -3481,7 +3481,7 @@ const REQUIRED_X_ACCOUNTS_SUBMIT_CHALLENGE_SNIPPETS = [
   "If X asks for a new email code, this endpoint returns `202` again.",
   '<Card title="Start over when stale" icon="timer-reset">',
   "`410` means the code expired.",
-  "`409` means the challenge already completed, failed, or expired, or a newer challenge replaced it.",
+  "`409` means the challenge already completed, failed, or expired. `409` can also mean a newer challenge replaced it.",
   "Start [Connect X Account](/api-reference/x-accounts/connect) again for a new account",
   "use [Re-authenticate X Account](/api-reference/x-accounts/reauth) for an existing account.",
   "The dashboard follows the same flow",
@@ -3490,7 +3490,7 @@ const REQUIRED_X_ACCOUNTS_SUBMIT_CHALLENGE_SNIPPETS = [
 const REQUIRED_X_ACCOUNTS_BULK_RETRY_SNIPPETS = [
   'description: "Clear temporary login failures for connected X accounts in one call. Credential, TOTP, passkey, locked, or suspended accounts need re-authentication or X fixes."',
   "Bulk retry clears only `transient` and `automated` login-failure states.",
-  "It does not update passwords, TOTP secret keys, passkeys, email challenges, locked accounts, or suspended accounts.",
+  "It does not update passwords, TOTP secret keys, passkeys, or email challenges. It does not update locked or suspended accounts either.",
   "Use re-authentication or reconnect for credential and 2FA fixes",
   "Resolve locks or suspensions on X first.",
   "## What gets retried",
@@ -7381,7 +7381,7 @@ const REQUIRED_WEBHOOK_TESTING_SNIPPETS = [
 
 const REQUIRED_WEBHOOK_CREATE_API_SNIPPETS = [
   "## Integration handoff",
-  "Use this endpoint after creating an account monitor with [`POST /monitors`](/api-reference/monitors/create) or a keyword monitor with [`POST /monitors/keywords`](/api-reference/monitors/create-keyword).",
+  "Use this endpoint after you create a monitor. For an account monitor, call [`POST /monitors`](/api-reference/monitors/create). For a keyword monitor, call [`POST /monitors/keywords`](/api-reference/monitors/create-keyword).",
   "Active monitors produce the events. Monitor billing includes webhook delivery.",
   "Keyword monitors emit only `tweet.*`",
   "Account monitors can emit both `tweet.*` and `profile.*`",
