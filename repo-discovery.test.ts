@@ -5314,6 +5314,7 @@ const REQUIRED_LIST_TWEETS_API_HANDOFF_SNIPPETS = [
   "`GET /x/lists/{id}/tweets`",
   "CRM, warehouse, newsroom, monitoring",
   "caller needs tweets from a curated X List",
+  "monitoring job, or agent.",
   "const tweetRows = data.tweets.map",
   "list_id: listId",
   "tweet_id: tweet.id",
