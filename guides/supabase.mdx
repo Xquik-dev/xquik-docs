@@ -25,9 +25,9 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 Supabase is a Postgres platform with Edge Functions, Vault, and pg_cron. This
 guide brings the Twitter API into a Supabase project through Xquik. You read
-tweets and profiles from SQL, schedule reads with pg_cron, and run actions from
-row inserts. Signed X webhook events land in a Postgres table, each one stored
-once.
+tweets and profiles from SQL and schedule reads with pg_cron. You also run
+actions from row inserts. Signed X webhook events land in a Postgres table, each
+one stored once.
 
 [`xquik-supabase`](https://github.com/Xquik-dev/xquik-supabase) is a ready
 Supabase project. Clone it and start it with 1 command. Xquik does not require
@@ -126,8 +126,8 @@ from xquik.rows('searchTweets', '{"q": "from:NASA", "limit": 20}') as tweet;
 ```
 
 Path parameters such as `{id}` fill from the JSON object. The rest go in the
-query string for `GET` and `DELETE`, or in the JSON body otherwise. A failed
-call raises an error with Xquik's `error` and `message` fields.
+query string for `GET` and `DELETE`. Otherwise they go in the JSON body. A
+failed call raises an error with Xquik's `error` and `message` fields.
 
 The `xquik.operations` table lists every operation these functions accept.
 
@@ -143,7 +143,7 @@ Browser clients with the anon key cannot reach them.
 Each public read that answers with JSON is also a foreign table. Each table is
 in the `xquik` schema. The tables use the OpenAPI wrapper of
 [Supabase Wrappers](https://supabase.com/docs/guides/database/extensions/wrappers/overview).
-Each table takes its name from the operation ID in snake case, so `getUser`
+Each table takes its name from the operation ID in snake case. So `getUser`
 becomes `xquik.get_user`.
 
 ```sql
@@ -165,8 +165,9 @@ limit 20;
 - Raise the page cap with `alter server xquik_server options (set max_pages '50')`.
 - `xquik.export_draw` and `xquik.export_extraction` request `format=json`, so
   they return JSON rows instead of a file.
-- A view on a table that an update rebuilds stops the migration with Postgres's
-  dependency error. Drop the view, run the migration and create the view again.
+- An update can rebuild a table. A view on that table then stops the migration
+  with Postgres's dependency error. Drop the view, run the migration and create
+  the view again.
 
 Query the tables as `postgres`. The SQL editor, cron jobs, and direct database
 connections use that role. The event stream and support attachment downloads
@@ -205,9 +206,9 @@ select cron.unschedule('nasa-timeline');
 
 ## Run actions from row inserts
 
-Insert a row into `public.xquik_actions` to run an operation. A trigger sends
-it as the row goes in, so the row lands as `sent`. Then `xquik-collect` marks
-it `succeeded` or `failed`.
+Insert a row into `public.xquik_actions` to run an operation. A trigger sends it
+as the row goes in. So the row lands as `sent`. Then `xquik-collect` marks it
+`succeeded` or `failed`.
 
 ```sql
 insert into public.xquik_actions (operation_id, params)
@@ -398,9 +399,9 @@ Yes. Run `xquik.call` for 1 JSON response or `xquik.rows` for 1 row per item.
 
 ### Can I query the Twitter API as a Postgres table?
 
-Yes. Each public read that answers with JSON is a foreign table in the `xquik`
-schema, such as `xquik.search_tweets`. Filter with `=` on its parameter
-columns.
+Yes. Each public read that answers with JSON is a foreign table. Each table is
+in the `xquik` schema, such as `xquik.search_tweets`. Filter with `=` on its
+parameter columns.
 
 ### How do I schedule Twitter API reads in Supabase?
 

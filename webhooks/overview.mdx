@@ -23,19 +23,20 @@ Account and keyword monitors check every second. Webhooks deliver matched events
 to your server. Every delivery uses an HMAC-SHA256 signature.
 
 Use webhooks when events from tracked accounts must reach your app without
-polling. The 10 tweet types are `tweet.new`, `tweet.reply`, `tweet.quote`,
-`tweet.retweet`, `tweet.media`, `tweet.link`, `tweet.poll`, `tweet.mention`,
-`tweet.hashtag`, and `tweet.longform`. The 11 profile types are
-`profile.avatar.changed`, `profile.banner.changed`, `profile.name.changed`,
-`profile.username.changed`, `profile.bio.changed`, `profile.location.changed`,
-`profile.url.changed`, `profile.verified.changed`, `profile.protected.changed`,
-`profile.pinned_tweet.changed`, and `profile.unavailable.changed`. The 3
-account activity types are `tweet.deleted`, `broadcast.started`, and
-`space.started`, the 2 following types are `following.added` and
-`following.removed`, the 2 follower types are `follower.added` and
-`follower.removed`, and the 2 count types are `profile.followers.changed` and
-`profile.following.changed`. Keyword monitors support the 10 tweet types only. The setup
-returns a monitor ID, webhook ID, one-time signing secret, and signed JSON
+polling. There are 10 tweet types. They are `tweet.new`, `tweet.reply`,
+`tweet.quote`, `tweet.retweet`, `tweet.media`, `tweet.link`, `tweet.poll`,
+`tweet.mention`, `tweet.hashtag`, and `tweet.longform`. There are 11 profile
+types. They are `profile.avatar.changed`, `profile.banner.changed`,
+`profile.name.changed`, `profile.username.changed`, `profile.bio.changed`,
+`profile.location.changed`, `profile.url.changed`, `profile.verified.changed`,
+`profile.protected.changed`, `profile.pinned_tweet.changed`, and
+`profile.unavailable.changed`. The 3 account activity types are `tweet.deleted`,
+`broadcast.started`, and `space.started`. The 2 following types are
+`following.added` and `following.removed`. The 2 follower types are
+`follower.added` and `follower.removed`. The 2 count types are
+`profile.followers.changed` and `profile.following.changed`. Keyword monitors
+support the 10 tweet types only. The setup returns a monitor ID, webhook ID, and
+one-time signing secret. It also returns signed JSON
 deliveries. Webhook operations are free. Active monitors cost 30 credits/hour
 and include stored events plus webhook delivery.
 
@@ -225,8 +226,8 @@ Account or keyword monitor event -> Xquik -> Your Webhook Endpoint
 
 Xquik sends webhook events as HTTPS POST requests. It sends each monitor event
 as its own payload. If one active monitor check finds multiple new matching
-tweets, expect multiple POST requests, one per matched tweet event, instead of
-one batched payload.
+tweets, expect multiple POST requests. You get one per matched tweet event
+instead of one batched payload.
 
 ### Headers
 
@@ -315,9 +316,9 @@ one batched payload.
 
   <Card title="streamEventId" icon="link">
 
-    Type `string`. Stored monitor event ID. Store it as the event-level
-    deduplication key when you must process one monitor event once across webhook
-    retries or endpoint changes.
+    Type `string`. Stored monitor event ID. You may need one monitor event
+    processed once across webhook retries or endpoint changes. If so, store this
+    ID as the event-level deduplication key.
 
   </Card>
 
@@ -588,9 +589,9 @@ The post was deleted. `text` is the last text the monitor saw.
 
 ## Delivery order
 
-Deliveries can arrive in any order. Xquik sends up to 20 at once to 1
-endpoint, and retries can come after newer events. Order events by
-`occurredAt`, then `streamEventId`.
+Deliveries can arrive in any order. Xquik sends up to 20 at once to 1 endpoint.
+Retries can come after newer events. Order events by `occurredAt`, then
+`streamEventId`.
 
 A `429`, `503` or timeout limits Xquik to 8 at once. The limit holds until 1
 minute passes without one.
@@ -626,9 +627,9 @@ after 7 days ends as `exhausted`. Xquik never pauses or turns off your webhook.
 
   <Card title="1 rejected delivery" icon="triangle-alert">
 
-    If no new event arrives within 2 seconds of a failure, Xquik retries the
-    rejected delivery at the next check. New events wait for that check, up to
-    15 minutes. See the table below.
+    A new event may not arrive within 2 seconds of a failure. In that case,
+    Xquik retries the rejected delivery at the next check. New events wait for
+    that check, up to 15 minutes. See the table below.
 
   </Card>
 
@@ -646,8 +647,8 @@ While a rejected delivery fails, new events can arrive up to 15 minutes late.
 
 </Warning>
 
-If a new event arrives within 2 seconds of each failure, a rejected delivery
-waits longer.
+A new event may arrive within 2 seconds of each failure. In that case, a
+rejected delivery waits longer.
 
 | Failed attempts | Next retry after |
 | --------------- | ---------------- |
@@ -733,8 +734,8 @@ Then use delivery rows and stored event pages to rebuild downstream work.
 Store `nextCursor` after every event page. Reprocess only events your receiver
 never stored. Skip repeats by `streamEventId`, since Xquik also resends failed
 deliveries. Events from a pause may never reach the webhook, so page them here.
-Scope event pages with `monitorId` for account monitors or `keywordMonitorId`
-for keyword monitors when the source is known. Omit both only for all-monitor
+Scope event pages when the source is known. Use `monitorId` for account monitors
+or `keywordMonitorId` for keyword monitors. Omit both only for all-monitor
 replay.
 
 ## Troubleshoot a delivery
@@ -805,8 +806,8 @@ Use this handoff when a receiver fails a signed test or keeps failing deliveries
   <Card title="Event context" icon="link">
 
     Join `streamEventId` to [Get Event](/api-reference/events/get) when the
-    receiver owner needs the original monitor event, tweet fields, username, or
-    keyword query that triggered the delivery.
+    receiver owner needs what triggered the delivery. That means the original
+    monitor event, tweet fields, username, or keyword query.
 
   </Card>
 </CardGroup>

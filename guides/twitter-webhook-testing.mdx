@@ -104,8 +104,8 @@ production monitor deliveries to prove idempotency and storage behavior.
   <Card title="Signature checkpoint" icon="shield-check">
 
     Store the webhook `secret` once. Verify the raw body with
-    `X-Xquik-Signature`, `X-Xquik-Timestamp`, and `X-Xquik-Nonce` before
-    parsing or queueing the event.
+    `X-Xquik-Signature`, `X-Xquik-Timestamp`, and `X-Xquik-Nonce`. Do this
+    before parsing or queueing the event.
 
   </Card>
 
@@ -127,8 +127,8 @@ production monitor deliveries to prove idempotency and storage behavior.
   <Card title="Delivery triage" icon="activity">
 
     Query `GET /api/v1/webhooks/{id}/deliveries` for `status`, `attempts`,
-    `lastStatusCode`, `lastError`, `createdAt`, and `deliveredAt` before
-    paging or replaying work.
+    `lastStatusCode`, `lastError`, `createdAt`, and `deliveredAt`. Do this
+    before paging or replaying work.
 
   </Card>
 
@@ -145,8 +145,8 @@ production monitor deliveries to prove idempotency and storage behavior.
 
 Store signed test deliveries separately from production delivery rows. A
 `webhook.test` row proves reachability and HMAC verification only. Production
-rows carry the IDs your receiver needs for retry deduplication, event deduplication, and
-event detail joins.
+rows carry the IDs your receiver needs. It needs them for retry deduplication,
+event deduplication, and event detail joins.
 
 ```json
 {
@@ -169,9 +169,9 @@ event detail joins.
 ```
 
 Use this row after verification succeeds and before slow downstream work. Keep
-the raw body available for the HMAC check, then store only the deduplication IDs,
-join route, verification state, and sanitized delivery context in shared
-systems.
+the raw body available for the HMAC check. Then limit what you store in shared
+systems. Store only the deduplication IDs, join route, verification state, and
+sanitized delivery context.
 
 ## Local testing with ngrok
 
@@ -391,15 +391,16 @@ curl https://xquik.com/api/v1/events/9002 \
   -H "x-api-key: xq_YOUR_KEY_HERE" | jq
 ```
 
-Store the event `monitorId`, `monitorType`, `type`, `occurredAt`, and `data`
-with the delivery `id`, `status`, `attempts`, `lastStatusCode`, and
-`lastError` before paging support, queue, or receiver owners.
+Store the event `monitorId`, `monitorType`, `type`, `occurredAt`, and `data`.
+Store them with the delivery `id`, `status`, `attempts`, `lastStatusCode`, and
+`lastError`. Do this before paging support, queue, or receiver owners.
 
 ### Reconcile missed deliveries
 
 Use delivery rows for receiver attempts and event pages for stored monitor
-history. The delivery `streamEventId` is the event `id`. A failed receiver
-can rebuild its downstream queue from stored events after you fix the handler.
+history. The delivery `streamEventId` is the event `id`. A failed receiver can
+rebuild its downstream queue from stored events. It can do so after you fix the
+handler.
 
 ```json
 {
