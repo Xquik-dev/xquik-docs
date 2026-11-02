@@ -3563,7 +3563,7 @@ const REQUIRED_X_ACCOUNTS_DISCONNECT_SNIPPETS = [
   "Future `GET /x/accounts/{id}` calls for the same ID return `404`.",
   '<Card title="Stops writes immediately" icon="send">',
   "The dashboard Disconnect button uses the same endpoint",
-  "new write, DM, media upload, and profile actions must choose another connected account",
+  "new write, DM, media upload, and profile actions need another connected account",
   '<Card title="Keeps monitors separate" icon="radio">',
   "Account and keyword monitors are independent.",
   "does not remove monitors that track that username.",
