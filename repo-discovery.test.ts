@@ -1551,7 +1551,7 @@ const REQUIRED_TERRAFORM_PROVIDER_WORKFLOW_SNIPPETS = [
   "It requires `id` and returns `type`, `username`, `monitor_id`, `occurred_at`, `x_event_id`, and `data`.",
   "Production webhook payloads include `deliveryId` and `streamEventId`.",
   "Store `deliveryId` for receiver idempotency.",
-  "Store `streamEventId` when you must process one monitor event once across retries or endpoint changes.",
+  "Store `streamEventId` when monitor events need exactly-once processing across retries or endpoint changes.",
   "`GET /webhooks/{id}/deliveries`",
   "`tweet.new`",
   "`tweet.reply`",
@@ -1569,12 +1569,12 @@ const REQUIRED_TERRAFORM_PROVIDER_WORKFLOW_SNIPPETS = [
   "Do not pass uploaded media IDs to this resource",
   "Generated provider docs may list `media_ids` on `x-twitter-scraper_x_tweet`, but `POST /x/tweets` rejects `media_ids`.",
   "Use `media` with public image or MP4 URLs for tweets.",
-  "Reserve uploaded media IDs for one-item DM `media_ids` through REST, MCP tools, or a generated SDK.",
-  "Terraform state for `x-twitter-scraper_x_tweet` does not expose durable write action fields, media upload resources, or direct-message send resources.",
-  "Use the REST API, MCP tools, or a generated SDK when a worker must store lifecycle handoffs",
+  "Reserve uploaded media IDs for one-item DM `media_ids`. Send them through REST, MCP tools, or a generated SDK.",
+  "Terraform state for `x-twitter-scraper_x_tweet` does not expose durable write action fields. It does not expose media upload resources or direct-message send resources either.",
+  "A worker may need to store lifecycle handoffs or returned DM `message_id`. It may also need to upload local media for one-item DM `media_ids`. In those cases, use the REST API, MCP tools, or a generated SDK",
   "Do not hand off extraction files through Terraform.",
-  "use the REST extraction endpoints, CLI, MCP tools, or generated SDKs to write CSV, JSON, XLSX, or JSON Lines files.",
-  "Keep Terraform state focused on long-lived resources and IDs that must be reviewed through plan and apply.",
+  "Write reply, follower, or tweet search exports as CSV, JSON, XLSX, or JSON Lines. Do it with the REST extraction endpoints, CLI, MCP tools, or generated SDKs.",
+  "Reserve Terraform state for long-lived resources and IDs that need plan and apply review.",
 ] as const;
 
 const FORBIDDEN_TERRAFORM_PROVIDER_WORKFLOW_SNIPPETS = [
@@ -11666,12 +11666,12 @@ const REQUIRED_ZERNIO_ALTERNATIVE_SNIPPETS = [
 
 const REQUIRED_TWSCRAPE_ALTERNATIVE_SNIPPETS = [
   "## Source-backed twscrape scope",
-  "twscrape's official GitHub README describes it as a Twitter GraphQL API implementation with SNScrape data models",
+  "twscrape's official GitHub README describes it as a Twitter GraphQL API implementation. Per the README, it uses SNScrape data models",
   "Installation uses `pip install twscrape`",
-  "The README lists search, async/await functions, a login flow with email verification",
-  "raw Twitter API responses, and SNScrape models",
+  "The README lists search, async/await functions, and a login flow with email verification",
+  "raw Twitter API responses and SNScrape models",
   "requires authorized X/Twitter accounts to work with the API",
-  "adding accounts with cookies or login credentials, login and relogin CLI commands, account status inspection",
+  "adding accounts with cookies or login credentials. It also documents login and relogin CLI commands and account status inspection",
   "They cover tweet details, retweeters, tweet replies, and user lookup by login or ID",
   "followers, verified followers, subscriptions, user tweets, user replies, and user media",
   "one-document-per-line stdout output, raw output, desired `limit`, and per-endpoint pagination behavior",
@@ -11697,16 +11697,16 @@ const REQUIRED_POST_BRIDGE_ALTERNATIVE_SNIPPETS = [
   "## Source-backed Post Bridge scope",
   "API access requires an active Post Bridge subscription and the API add-on",
   "USD 5/month in addition to the plan subscription",
-  "dashboard page for API credentials, API documentation, and Discord support through a dedicated API channel",
-  "upload video content once, connect each social media account, and Post Bridge distributes the content to connected platforms",
+  "a dashboard page for API credentials and to API documentation. For support, it points to Discord through a dedicated API channel",
+  "users upload video content once. They also connect each social media account. Post Bridge then distributes the content to connected platforms",
   "you must upload content directly through Post Bridge",
-  "does not support reposting Instagram collaborative reels, already-live social posts, or videos from other platforms or channels",
+  "does not support reposting Instagram collaborative reels or already-live social posts. It also does not support reposting videos from other platforms or channels",
   "does not support Twitter/X threads, Instagram Threads threaded posts, or split tweets",
   "schedule individual posts to X and Instagram Threads",
   "100 scheduled posts/hour per user",
   "MP4 or MOV videos in 9:16, 16:9, 1:1, and 4:3 ratios",
   "Videos can run 3 to 300 seconds",
-  "Images must use JPG or PNG, stay under 8 MB each, and total no more than 35",
+  "Images must use JPG or PNG and stay under 8 MB each. They must total no more than 35",
 ] as const;
 
 const REQUIRED_OUTSTAND_ALTERNATIVE_SNIPPETS = [
@@ -11918,13 +11918,13 @@ const REQUIRED_TRYPOST_ALTERNATIVE_SNIPPETS = [
   "one workspace includes all features and connects to all 10 social networks",
   "USD 16/month per workspace when billed annually, or USD 192/year",
   "20% yearly saving and a 7-day free trial",
-  "all social networks, no listed scheduled-post cap, a visual content calendar, media library",
+  "all social networks and no listed scheduled-post cap. They also include a visual content calendar and media library",
   "post preview for all networks, no listed team-member cap, and chat support",
-  "Instagram, Facebook, LinkedIn personal and company pages, X (Twitter), TikTok, YouTube Shorts, Pinterest, Threads, Bluesky, and Mastodon",
+  "It names Instagram, Facebook, LinkedIn personal and company pages, X (Twitter), and TikTok. It also names YouTube Shorts, Pinterest, Threads, Bluesky, and Mastodon",
   "TryPost bills each additional workspace separately. It prices 3 workspaces at USD 48/month",
   "cloud-hosted SaaS and self-hosted open-source software",
   "FSL-1.1-MIT and self-hosting costs nothing",
-  "scheduling and auto-publishing across multiple platforms, a drag-and-drop visual calendar",
+  "scheduling and auto-publishing across multiple platforms. They also describe a drag-and-drop visual calendar",
   "REST API. They also list Build with AI for connecting AI assistants through MCP.",
   "## Connect a TryPost schedule to Xquik reads",
   "A scheduler success state does not show engagement.",
@@ -11974,13 +11974,13 @@ const REQUIRED_HOOTSUITE_ALTERNATIVE_SNIPPETS = [
 ] as const;
 
 const REQUIRED_SPRINKLR_ALTERNATIVE_SNIPPETS = [
-  "tweet search, follower exports, account or keyword monitors, publishing, webhooks, and app or agent connections",
+  "tweet search, follower exports, and account or keyword monitors. It also covers publishing, webhooks, and app or agent connections",
   "Enterprise social media management, listening, publishing, engagement, analytics, advertising, care, and compliance suite.",
   "## Source-backed Sprinklr scope",
-  "Sprinklr's official Social page describes publishing, engagement, listening, paid media, compliance, and analytics across 30+ channels",
-  "content planning, a digital asset manager, an editorial calendar, an omnichannel publisher, and an engagement dashboard",
-  "real-time listening across 30+ social and digital channels, visual brand mentions, sentiment analysis, emotion analysis, entity identification, and text classification",
-  "REST JSON APIs, OAuth 2.0, a developer portal, Enterprise license requirements, pre-approved use cases, and extra enablement for Twitter Syndication, Case Compliance API, or Listening API",
+  "Sprinklr's official Social page describes publishing, engagement, listening, paid media, compliance, and analytics. They span 30+ channels",
+  "describes content planning. It also describes a digital asset manager, an editorial calendar, and an omnichannel publisher. It lists an engagement dashboard",
+  "real-time listening across 30+ social and digital channels. It describes visual brand mentions, sentiment analysis, emotion analysis, entity identification, and text classification",
+  "REST JSON APIs, OAuth 2.0, and a developer portal. It also describes Enterprise license requirements and pre-approved use cases. It describes extra enablement for Twitter Syndication, Case Compliance API, or Listening API",
   "ask buyers to request a demo for enterprise social management",
   "pre-approved use cases in the License Order Form",
   "OAuth authorization through the Sprinklr UI",
@@ -11995,7 +11995,7 @@ const REQUIRED_SPRINKLR_ALTERNATIVE_SNIPPETS = [
 ] as const;
 
 const REQUIRED_SPROUT_SOCIAL_ALTERNATIVE_SNIPPETS = [
-  "planning posts, managing a Smart Inbox, and analyzing reports. Add tweet search, follower exports, account or keyword monitors, webhooks",
+  "planning posts, managing a Smart Inbox, and analyzing reports. Add tweet search, follower exports, and account or keyword monitors. Also add webhooks and app or agent connections.",
   "Social media management, publishing, engagement, analytics, listening, advocacy, influencer, and customer-care suite.",
   "## Source-backed Sprout Social scope",
   "Brand Keywords search X by keyword, hashtag, and location",
@@ -12011,7 +12011,7 @@ const REQUIRED_SPROUT_SOCIAL_ALTERNATIVE_SNIPPETS = [
   "Professional starts at USD 299 per seat/month and has no listed social-profile cap.",
   "Advanced starts at USD 399 per seat/month and lists the Sprout API plus Helpdesk integrations.",
   "Sprout's official pages describe Smart Inbox, Brand Keywords for X, multi-profile publishing, approval workflows, analytics reports, listening, Premium Analytics, Advocacy, Influencer Marketing, Enterprise options, CRM integrations, and chatbots.",
-  "tweet IDs, author IDs, timestamps, post results, CSV, JSON & XLSX exports, webhook signatures, and error handling.",
+  "tweet IDs, and author IDs. Also compare timestamps, post results, CSV, JSON & XLSX exports, webhook signatures, and error handling.",
   "Sprout seats, social profiles, Premium Analytics, Listening, Advocacy, Influencer Marketing, and Enterprise scope",
   "Official Sprout Social features",
   "Official Sprout Social pricing",
@@ -12172,10 +12172,10 @@ const REQUIRED_TWITTER_API_PRO_ALTERNATIVE_SNIPPETS = [
 ] as const;
 
 const REQUIRED_AUDIENSE_ALTERNATIVE_SNIPPETS = [
-  "audience intelligence, influencer discovery, tweet search, follower export, account or keyword monitoring, signed webhooks, API access, and agent handoff",
+  "audience intelligence, influencer discovery, tweet search, and follower export. It also covers account or keyword monitoring, signed webhooks, API access, and agent handoff",
   "## Source-backed Audiense scope",
-  "Audiense's official Insights page describes audience intelligence for customer insights, creative decisions, influencer discovery, and consumer segments.",
-  "Its current public pricing page lists a Social Intelligence Insights monthly plan with 5 reports per month, an annual plan with 60 reports per year, onboarding, a dedicated account manager, and refresher trainings.",
+  "Audiense's official Insights page describes audience intelligence. Its listed uses are customer insights, creative decisions, influencer discovery, and consumer segments.",
+  "Its current public pricing page lists a Social Intelligence Insights monthly plan. That plan has 5 reports per month. The page also lists an annual plan with 60 reports per year. It lists onboarding, a dedicated account manager, and refresher trainings too.",
   "Audiense official pages describe audience segments, cultural insights, affinities, demographics, interests, personas, influencer discovery, report exports, audience member XLS exports, influencer XLS exports, and targeting-pack downloads.",
   "## Audience & influencer handoff",
   "This section compares 4 jobs. They are audience segments, influencer discovery, campaign monitoring, and CRM handoff.",
