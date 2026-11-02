@@ -280,7 +280,7 @@ describe("Plugin docs", (): void => {
       "`tweet_action` for approved jobs that create or change state.",
       '<Card title="Tweet search read" icon="search">',
       "Use `tweet_read` with `GET /api/v1/x/tweets/search`, a concrete `q`, and a",
-      "bounded `limit`. It returns tweet IDs, text, authors, timestamps, and metrics.",
+      "bounded `limit`. `tweet_read` returns tweet IDs, text, authors, timestamps, and metrics.",
       '<Card title="Follower export action" icon="users">',
       "Use `tweet_action` to estimate and create `follower_explorer`. Then use",
       "`tweet_read` to poll the job and export CSV, JSON, or XLSX results.",
