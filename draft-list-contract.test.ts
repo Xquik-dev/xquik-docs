@@ -27,7 +27,7 @@ describe("list tweet drafts documentation", (): void => {
         page.includes(`<ResponseField name="${field}"`),
       ),
       unsupportedFieldsDenied: normalizedPage.includes(
-        "The draft object contains no thread order, media attachment, reply target, or public tweet ID.",
+        "It contains no thread order, media attachment, reply target, or public tweet ID.",
       ),
     }).toStrictEqual({
       canonicalDraftFields: true,
