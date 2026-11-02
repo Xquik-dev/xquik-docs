@@ -9751,7 +9751,7 @@ const REQUIRED_ACCOUNT_MONITOR_LIST_API_HANDOFF_SNIPPETS = [
   "warehouse, or queue records.",
   '<Card title="Detail handoff" icon="file-search">',
   "[Get Monitor](/api-reference/monitors/twitter-account-monitor-status)",
-  "latest event filter, active state, or billing",
+  "latest event filter, active state, and billing",
   '<Card title="Active billing" icon="activity">',
   "Filter monitors where `isActive` is `true`.",
   "Each active account monitor",
