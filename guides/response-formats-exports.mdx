@@ -27,9 +27,9 @@ import ConnectedAccountApiLinks from "/snippets/x-connected-account-api-links.md
 <LlmsDirective />
 
 Choose the output shape before wiring a worker, dashboard, spreadsheet, or
-archive. Xquik gives you live JSON pages for endpoint calls and saved JSON pages
-for extraction jobs. It also gives you file exports for downstream tools and draw
-exports for giveaway audits.
+archive. Xquik gives you live JSON pages for endpoint calls. It also gives you
+saved JSON pages for extraction jobs. It adds file exports for downstream tools
+and draw exports for giveaway audits.
 
 This guide covers Xquik API result files. It does not download tweet images or
 videos. It also does not export your private X account archive.
@@ -46,8 +46,8 @@ The export endpoint selects a file format. Filter or select columns downstream.
 
     Use endpoints such as `GET /api/v1/x/tweets/search`,
     `GET /api/v1/x/users/{id}/tweets`, and
-    `GET /api/v1/x/users/{id}/followers` when your app needs fresh API results
-    and endpoint-specific cursors.
+    `GET /api/v1/x/users/{id}/followers`. Use them when your app needs fresh API
+    results and endpoint-specific cursors.
 
   </Card>
 
@@ -81,15 +81,15 @@ The export endpoint selects a file format. Filter or select columns downstream.
 
   <Card title="App UI" icon="monitor">
 
-    Call the live JSON endpoint and store the endpoint cursor with the filters
-    that produced the page.
+    Call the live JSON endpoint. Store the endpoint cursor with the filters that
+    produced the page.
 
   </Card>
 
   <Card title="Worker or queue" icon="route">
 
-    Read saved extraction pages, append JSON Lines, and resume with `cursor`
-    when `hasMore` is true.
+    Read saved extraction pages and append JSON Lines. Resume with `cursor` when
+    `hasMore` is true.
 
   </Card>
 
@@ -101,8 +101,8 @@ The export endpoint selects a file format. Filter or select columns downstream.
 
   <Card title="Archive or report" icon="archive">
 
-    Download JSON for replay, Markdown or TXT for text archives, and PDF for a
-    shareable report file.
+    Download JSON for replay and Markdown or TXT for text archives. Download PDF
+    for a shareable report file.
 
   </Card>
 </CardGroup>
@@ -112,15 +112,15 @@ The export endpoint selects a file format. Filter or select columns downstream.
 Choose a format from the next consumer's exact requirements. Do not convert a
 file twice when Xquik already returns the required format.
 
-Use a live JSON page when code needs fresh tweets, followers, following rows,
-replies, profiles, or media fields. Keep the documented endpoint cursor with
-the same request filters.
+Use a live JSON page when code needs fresh data. That data can be tweets,
+followers, following rows, replies, profiles, or media fields. Keep the
+documented endpoint cursor with the same request filters.
 
 Use saved extraction JSON pages when a worker needs incremental processing.
 Append each completed page to JSON Lines through an idempotent sink. Use the
 extraction ID and requested `cursor` value as the page key. Store the page and
 its `nextCursor` in one atomic commit. A retry must replace or skip an existing
-page key instead of appending duplicate tweets, followers, or replies.
+page key. It must not append duplicate tweets, followers, or replies.
 
 Use a JSON file when an application needs one structured download. The export
 contains the documented columns for that extraction tool. Store the extraction
@@ -129,21 +129,21 @@ ID, tool type, and selected filters beside the file.
 Use CSV for CRM or spreadsheet imports. CSV exports include one header row.
 They also neutralize spreadsheet formula prefixes in result cells.
 
-Use XLSX when analysts need an Excel workbook. Use Markdown, PDF, or TXT when
-people need a readable review file instead of an import file.
+Use XLSX when analysts need an Excel workbook. People may need a readable review
+file instead of an import file. If so, use Markdown, PDF, or TXT.
 
 ## Pagination and cursor map
 
 Direct X API pages expose endpoint-specific cursor fields such as
-`has_next_page` and `next_cursor`. Keep the same query filters between requests
-and only change the cursor parameter documented on that endpoint.
+`has_next_page` and `next_cursor`. Keep the same query filters between requests.
+Only change the cursor parameter documented on that endpoint.
 
 Extraction result pages use `hasMore` and `nextCursor`. Pass `nextCursor` back
 as `cursor`. Use `limit` up to `1000`. The default is `100`.
 
 File exports do not paginate. Xquik caps file exports at 100,000 rows and PDF
-exports at 10,000 rows. Use extraction JSON pages or JSON Lines when
-you need to process larger jobs incrementally.
+exports at 10,000 rows. Use extraction JSON pages or JSON Lines to process
+larger jobs incrementally.
 
 For larger extractions, page results through
 `GET /api/v1/extractions/{id}`. Keep `cursor`, `hasMore`, and `nextCursor` in one
@@ -228,8 +228,8 @@ parser result. Never print CSV, JSON, XLSX, PDF, or TXT bytes to shared logs.
 
 ## Handoff checkpoint
 
-Store enough context to resume a job, verify filters, and download the right
-format later.
+Store enough context to resume a job and verify filters later. Also store enough
+to download the right format later.
 
 ```json
 {
@@ -338,8 +338,8 @@ names.
 Validate `format` before making the request. Invalid formats return a 400
 error.
 
-Store the job ID, tool type, filters, cursor, and chosen export path with the
-downstream task.
+Store the job ID, tool type, filters, and cursor with the downstream task. Also
+store the chosen export path with it.
 
 ## Next steps
 
