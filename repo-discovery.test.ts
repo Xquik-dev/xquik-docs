@@ -7731,7 +7731,7 @@ const REQUIRED_WEBHOOK_DELIVERIES_API_SNIPPETS = [
   "This endpoint returns delivery attempt metadata only.",
   "It does not return the",
   "webhook URL, event type filter, or signing secret.",
-  "raw payload body, raw signature,",
+  "It also does not return raw payload body, raw signature,",
   "or full request headers.",
   "Do not depend on a `nextRetryAt` field.",
   "Triage incidents from `status`, `attempts`, `lastStatusCode`, `lastError`, `createdAt`, and `deliveredAt`.",
