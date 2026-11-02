@@ -2144,7 +2144,7 @@ const REQUIRED_AGENT_MCP_HANDOFF_SNIPPETS = [
   '"surface": "api_mcp"',
   '"event_replay_route": "GET /api/v1/events?cursor=9002"',
   '"export_route": "GET /api/v1/extractions/77777/export?format=json"',
-  "They are API keys, webhook secrets, raw request bodies, raw signatures, and full",
+  "Keep API keys, webhook secrets, raw request bodies, raw signatures, and full",
   '<Card title="File exports" icon="braces" href="/guides/response-formats-exports">',
   '<Card title="Webhook receivers" icon="webhook" href="/guides/twitter-webhook-testing">',
   '<Card title="SDK backends" icon="boxes" href="/sdks">',
