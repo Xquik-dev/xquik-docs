@@ -1,0 +1,114 @@
+---
+title: "Strands Agents Twitter MCP guide for Python"
+sidebarTitle: "Strands Agents"
+description: "Connect Strands Agents to the Xquik X Twitter data API over MCP. Search tweets, read profiles, export followers and monitor accounts from a Python agent."
+keywords:
+  [
+    "Strands Agents MCP",
+    "Strands Agents Twitter",
+    "Strands Agents X API",
+    "Strands Agents tools",
+    "Twitter MCP Python",
+    "X API agent",
+  ]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+<LlmsDirective />
+
+This guide connects a Strands Agents Python agent to the Xquik X Twitter data
+API. The agent can search tweets, read profiles, export followers and monitor
+accounts. Strands is the MCP client, and Xquik hosts the server.
+
+## Strands Agents prerequisites
+
+- Python 3.10 or later
+- An [Xquik API key](/x-api-quickstart) beginning with `xq_`
+- Xquik credits, because Xquik has no free plan
+- A model provider that Strands supports
+- A connected X account for private reads or writes
+
+Public reads need no X Developer credentials. Authenticate through Xquik.
+
+## Install Strands Agents and MCP support
+
+```bash
+python -m pip install --upgrade "strands-agents>=1.63" "mcp>=2.3"
+```
+
+Set your key in the shell. Keep it out of source control.
+
+```bash
+export XQUIK_API_KEY=xq_YOUR_KEY_HERE
+```
+
+## Connect Strands Agents to Xquik
+
+`MCPClient` opens the remote connection. Pass your key in the `Authorization`
+header. The read timeout gives long `execute` calls time to finish.
+
+```python
+import os
+
+import httpx2
+from mcp.client.streamable_http import streamable_http_client
+from strands import Agent
+from strands.tools.mcp import MCPClient
+
+XQUIK_API_KEY = os.environ["XQUIK_API_KEY"]
+
+xquik = MCPClient(
+    lambda: streamable_http_client(
+        "https://xquik.com/mcp",
+        http_client=httpx2.AsyncClient(
+            headers={"Authorization": f"Bearer {XQUIK_API_KEY}"},
+            timeout=httpx2.Timeout(30, read=300),
+        ),
+    )
+)
+
+with xquik:
+    agent = Agent(tools=xquik.list_tools_sync())
+    agent("Find the 5 latest posts about AI agents on X and summarize them.")
+```
+
+Keep the agent call inside the `with` block. The block closes the connection
+when it ends.
+
+## Xquik MCP tools in Strands Agents
+
+| Tool      | What it does                                          | Cost                     |
+| --------- | ----------------------------------------------------- | ------------------------ |
+| `docs`    | Searches the Xquik documentation                      | Free                     |
+| `search`  | Runs your agent's JavaScript to find an API operation | Free                     |
+| `execute` | Runs your agent's JavaScript to call the API          | The called route's price |
+| `whoami`  | Shows the Xquik account the connection uses           | Free                     |
+
+Both `search` and `execute` run on Xquik's servers. The agent should call
+`search` first, then `execute`.
+
+Searches and extractions charge only for delivered, unique, filter-matching
+results. An active monitor costs 30 credits an hour while it runs.
+
+## Keep X actions behind review
+
+`execute` can run every operation your key allows. That includes posts, DMs and
+metered bulk jobs. To limit an agent to discovery, leave `execute` out of its
+tool list.
+
+```python
+with xquik:
+    tools = [
+        tool
+        for tool in xquik.list_tools_sync()
+        if tool.tool_name != "execute"
+    ]
+    agent = Agent(tools=tools)
+```
+
+## Related Strands Agents resources
+
+- [MCP overview](/mcp/overview)
+- [Strands Agents documentation](https://strandsagents.com/docs/)
+- [Xquik MCP repository](https://github.com/Xquik-dev/xquik-mcp)
