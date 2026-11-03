@@ -203,8 +203,8 @@ tags:
       Every activity keeps a full record you can fetch & export.
   - name: Agent Discovery
     description: >-
-      Public agent discovery and documentation search. Agents can find Xquik on
-      their own through llms.txt & an agent card.
+      Public agent discovery, OAuth sign-in and documentation search. Agents can
+      find Xquik on their own through llms.txt & an agent card.
   - name: Analysis
     description: >-
       AI analysis of posts, at 2 credits per analyzed post. AI analysis bills
@@ -401,6 +401,532 @@ paths:
         '400': { $ref: '#/paths/~1ask/post/responses/400' }
         '413': { $ref: '#/paths/~1ask/post/responses/413' }
         '502': { $ref: '#/paths/~1ask/post/responses/502' }
+
+  /api/oauth/authorize:
+    servers:
+      - url: https://xquik.com
+    get:
+      operationId: authorizeOAuthClient
+      x-mcp-exclusion-reason:
+        &oauth-sign-in OAuth sign-in runs between the client, the browser &
+        Xquik.
+      summary: Start OAuth sign-in
+      description: >-
+        Open this URL in the user's browser to start OAuth 2.1 sign-in with
+        PKCE. The user signs in & approves access. Xquik then sends a code to
+        your redirect_uri.
+      tags: [Agent Discovery]
+      security: [{}]
+      parameters:
+        - name: response_type
+          in: query
+          required: true
+          description: The only value is code.
+          schema: { type: string, enum: [code] }
+        - name: client_id
+          in: query
+          required: true
+          description: >-
+            The client_id from registration, or the HTTPS URL of your client
+            metadata document.
+          schema: { type: string, minLength: 1, maxLength: 16384 }
+        - name: redirect_uri
+          in: query
+          description: >-
+            A registered redirect URI. Leave it out only when the client has
+            exactly 1.
+          schema: { type: string, maxLength: 16384 }
+        - name: code_challenge
+          in: query
+          required: true
+          description: Base64url SHA-256 hash of your PKCE code_verifier.
+          schema:
+            type: string
+            minLength: 43
+            maxLength: 43
+            pattern: '^[A-Za-z0-9_-]{43}$'
+        - name: code_challenge_method
+          in: query
+          required: true
+          description: The only value is S256.
+          schema: { type: string, enum: [S256] }
+        - name: scope
+          in: query
+          description: >-
+            Space-separated scopes, mcp:tools or mcp:read. Defaults to
+            mcp:tools.
+          schema: { type: string, maxLength: 16384, default: 'mcp:tools' }
+        - name: resource
+          in: query
+          description:
+            The resource the token is for. Defaults to the MCP server.
+          schema:
+            type: string
+            maxLength: 16384
+            default: 'https://xquik.com/mcp'
+        - name: state
+          in: query
+          description: A value Xquik sends back unchanged with the code.
+          schema: { type: string, maxLength: 16384 }
+        - name: locale
+          in: query
+          description: Language of the sign-in & consent pages.
+          schema: { type: string, enum: [en, es, ja, ko, tr, zh] }
+      responses:
+        '200':
+          description: >-
+            The sign-in or consent page. A missing or unknown client_id, or a
+            redirect_uri the client didn't register, shows an error page
+            instead, since Xquik can't redirect.
+          content:
+            text/html:
+              schema: { type: string }
+              example: '<!doctype html><html lang="en">...</html>'
+        '302':
+          description: >-
+            Redirects to redirect_uri with error, error_description & state when
+            the request is invalid, such as a missing code_challenge.
+          headers:
+            Location:
+              description: The redirect_uri with the error parameters.
+              schema: { type: string, format: uri }
+        '403':
+          description: The signed-in account must confirm its email first.
+          content:
+            text/html:
+              schema: { type: string }
+              example: '<!doctype html><html lang="en">...</html>'
+        '413':
+          description: The query string exceeds 16,384 characters.
+          content:
+            text/html:
+              schema: { type: string }
+              example: '<!doctype html><html lang="en">...</html>'
+        '429':
+          description: Too many sign-in requests. Retry after Retry-After.
+          headers:
+            Retry-After: { $ref: '#/components/headers/SignInRetryAfter' }
+          content:
+            text/html:
+              schema: { type: string }
+              example: '<!doctype html><html lang="en">...</html>'
+  /api/oauth/token:
+    servers:
+      - url: https://xquik.com
+    post:
+      operationId: createOAuthToken
+      x-mcp-exclusion-reason: *oauth-sign-in
+      summary: Get an OAuth access token
+      description: >-
+        Exchange an authorization code, a refresh token, an agent claim token or
+        an identity assertion for an access token.
+      tags: [Agent Discovery]
+      security: [{}]
+      requestBody:
+        description: Form fields of the grant. The body is at most 16 KiB.
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/OAuthTokenRequest'
+            examples:
+              authorizationCode:
+                summary: Exchange an authorization code
+                value:
+                  grant_type: authorization_code
+                  code: AUTHORIZATION_CODE
+                  code_verifier: dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk
+                  redirect_uri: 'https://client.example/callback'
+                  client_id: 550e8400-e29b-41d4-a716-446655440000
+                  resource: 'https://xquik.com/mcp'
+              refreshToken:
+                summary: Refresh an access token
+                value:
+                  grant_type: refresh_token
+                  refresh_token: REFRESH_TOKEN
+                  client_id: 550e8400-e29b-41d4-a716-446655440000
+              agentClaim:
+                summary: Poll for a claimed agent's token
+                value:
+                  grant_type: 'urn:workos:agent-auth:grant-type:claim'
+                  claim_token: clm_0000000000000000000000000000000000000000000000000000000000000000
+              identityAssertion:
+                summary: Exchange an identity assertion
+                value:
+                  grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer'
+                  assertion: IDENTITY_ASSERTION
+      responses:
+        '200':
+          description: >-
+            The access token. Code & refresh grants also return a new refresh
+            token. A claim grant returns identity_assertion instead.
+          headers:
+            Cache-Control: { $ref: '#/components/headers/NoStore' }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OAuthToken'
+              examples:
+                codeOrRefresh:
+                  summary: Code or refresh grant
+                  value:
+                    access_token: ACCESS_TOKEN
+                    token_type: Bearer
+                    expires_in: 3600
+                    refresh_token: REFRESH_TOKEN
+                    scope: 'mcp:tools'
+                agentClaim:
+                  summary: Claim grant
+                  value:
+                    access_token: ACCESS_TOKEN
+                    token_type: Bearer
+                    expires_in: 3600
+                    scope: 'mcp:tools'
+                    identity_assertion: IDENTITY_ASSERTION
+                    assertion_expires: '2026-12-01T12:00:00.000Z'
+        '400':
+          description: >-
+            The grant failed. While the user hasn't claimed the agent yet, a
+            claim poll answers authorization_pending or slow_down.
+          content:
+            application/json:
+              schema: &oauth-error-schema
+                $ref: '#/components/schemas/OAuthError'
+              examples:
+                invalidGrant:
+                  value:
+                    error: invalid_grant
+                    error_description: >-
+                      Authorization code is invalid, expired, or already used
+                authorizationPending:
+                  value:
+                    error: authorization_pending
+                    error_description:
+                      The user has not completed authorization yet.
+        '401':
+          description: The client is unknown or its credentials are wrong.
+          content:
+            application/json:
+              schema: *oauth-error-schema
+              example:
+                error: invalid_client
+                error_description: Unknown client_id
+        '413':
+          description: The request body exceeds 16 KiB.
+          content:
+            application/json:
+              schema: *oauth-error-schema
+              example:
+                error: invalid_request
+                error_description: Request body is too large
+        '415':
+          description: The body isn't application/x-www-form-urlencoded.
+          content:
+            application/json:
+              schema: *oauth-error-schema
+              example:
+                error: invalid_request
+                error_description: >-
+                  Content-Type must be application/x-www-form-urlencoded
+        '429':
+          description: Too many token requests. Retry after Retry-After.
+          headers:
+            Retry-After: { $ref: '#/components/headers/SignInRetryAfter' }
+          content:
+            application/json:
+              schema: *oauth-error-schema
+              example:
+                error: temporarily_unavailable
+                error_description: Too many token requests. Retry in 60 seconds.
+  /api/oauth/revoke:
+    servers:
+      - url: https://xquik.com
+    post:
+      operationId: revokeOAuthToken
+      x-mcp-exclusion-reason: *oauth-sign-in
+      summary: Revoke an OAuth token
+      description: >-
+        Revoke an access token, a refresh token or a claimed agent's identity
+        assertion. An unknown or already revoked token still returns 200.
+      tags: [Agent Discovery]
+      security: [{}]
+      requestBody:
+        description: Form fields of the revocation. The body is at most 16 KiB.
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/OAuthRevokeRequest'
+            example:
+              token: ACCESS_OR_REFRESH_TOKEN
+              client_id: 550e8400-e29b-41d4-a716-446655440000
+              token_type_hint: access_token
+      responses:
+        '200':
+          description: The token no longer works. The body is empty.
+          headers:
+            Cache-Control: { $ref: '#/components/headers/NoStore' }
+        '400':
+          description: A required field is missing or a field repeats.
+          content:
+            application/json:
+              schema: *oauth-error-schema
+              example:
+                error: invalid_request
+                error_description: token is required
+        '401':
+          $ref: '#/paths/~1api~1oauth~1token/post/responses/401'
+        '413':
+          $ref: '#/paths/~1api~1oauth~1token/post/responses/413'
+        '415':
+          $ref: '#/paths/~1api~1oauth~1token/post/responses/415'
+        '429':
+          description: Too many revocation requests. Retry after Retry-After.
+          headers:
+            Retry-After: { $ref: '#/components/headers/SignInRetryAfter' }
+          content:
+            application/json:
+              schema: *oauth-error-schema
+              example:
+                error: temporarily_unavailable
+                error_description: >-
+                  Too many revocation requests. Retry in 60 seconds.
+  /api/oauth/register:
+    servers:
+      - url: https://xquik.com
+    post:
+      operationId: registerOAuthClient
+      x-mcp-exclusion-reason: *oauth-sign-in
+      summary: Register an OAuth client
+      description: >-
+        Register an OAuth client by Dynamic Client Registration. Clients with a
+        client metadata document can skip this step.
+      tags: [Agent Discovery]
+      security: [{}]
+      requestBody:
+        description: Client metadata as JSON. The body is at most 16 KiB.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OAuthClientRegistrationRequest'
+            example:
+              client_name: My MCP Client
+              redirect_uris: ['https://client.example/callback']
+              token_endpoint_auth_method: none
+              grant_types: [authorization_code, refresh_token]
+              response_types: [code]
+      responses:
+        '201':
+          description: >-
+            The registered client. client_secret appears only for
+            client_secret_post.
+          headers:
+            Cache-Control: { $ref: '#/components/headers/NoStore' }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OAuthClientRegistration'
+              example:
+                client_id: 550e8400-e29b-41d4-a716-446655440000
+                client_id_issued_at: 1798761600
+                client_name: My MCP Client
+                grant_types: [authorization_code, refresh_token]
+                redirect_uris: ['https://client.example/callback']
+                response_types: [code]
+                token_endpoint_auth_method: none
+        '400':
+          description: >-
+            The metadata is invalid, the body isn't JSON or it exceeds 16 KiB.
+          content:
+            application/json:
+              schema: *oauth-error-schema
+              examples:
+                invalidRedirectUri:
+                  value:
+                    error: invalid_redirect_uri
+                    error_description: >-
+                      redirect_uris must be a non-empty array of strings
+                invalidClientMetadata:
+                  value:
+                    error: invalid_client_metadata
+                    error_description: Content-Type must be application/json
+        '429':
+          description: Too many registration requests. Retry after Retry-After.
+          headers:
+            Retry-After: { $ref: '#/components/headers/SignInRetryAfter' }
+          content:
+            application/json:
+              schema: *oauth-error-schema
+              example:
+                error: temporarily_unavailable
+                error_description: >-
+                  Too many registration requests. Retry in 60 seconds.
+  /agent/identity:
+    servers:
+      - url: https://xquik.com
+    post:
+      operationId: registerAgentIdentity
+      x-mcp-exclusion-reason: *oauth-sign-in
+      summary: Register an agent identity
+      description: >-
+        Register an agent for a user's verified email. The user claims it at
+        claim.verification_uri with claim.user_code. Poll the token endpoint
+        with claim_token until then. Keep every token secret.
+      tags: [Agent Discovery]
+      security: [{}]
+      requestBody:
+        description:
+          The service_auth request as JSON. The body is at most 4 KiB.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgentIdentityRequest'
+            example:
+              type: service_auth
+              login_hint: user@example.com
+      responses:
+        '200':
+          description: The registration & the code the user enters to claim it.
+          headers:
+            Cache-Control: { $ref: '#/components/headers/NoStore' }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentIdentityRegistration'
+              example:
+                claim:
+                  expires_in: 600
+                  interval: 5
+                  user_code: '042137'
+                  verification_uri: 'https://xquik.com/agent/identity/claim/view?claim_attempt_token=CLAIM_ATTEMPT_TOKEN'
+                claim_token: clm_0000000000000000000000000000000000000000000000000000000000000000
+                claim_token_expires: '2026-12-02T12:00:00.000Z'
+                claim_url: 'https://xquik.com/agent/identity/claim'
+                post_claim_scopes: ['mcp:tools']
+                registration_id: reg_6f1c2a7e-8d4b-4c1a-9e2f-3b5d7a9c1e0f
+                registration_type: service_auth
+        '400':
+          description: >-
+            The body isn't JSON, isn't a service_auth request or has an invalid
+            login_hint.
+          content:
+            application/json:
+              schema: &agent-auth-error-schema
+                $ref: '#/components/schemas/AgentAuthError'
+              examples:
+                invalidLoginHint:
+                  value:
+                    error: invalid_login_hint
+                    message: Use a valid email address as login_hint.
+                invalidRequest:
+                  value:
+                    error: invalid_request
+                    message: Use the documented service_auth request.
+        '413':
+          description: The request body exceeds 4 KiB.
+          content:
+            application/json:
+              schema: *agent-auth-error-schema
+              example:
+                error: invalid_request
+                message: Request body is too large.
+        '415':
+          description: The body isn't application/json.
+          content:
+            application/json:
+              schema: *agent-auth-error-schema
+              example:
+                error: invalid_request
+                message: Content-Type must be application/json.
+        '429':
+          description: Too many registrations. Retry after Retry-After.
+          headers:
+            Retry-After: { $ref: '#/components/headers/SignInRetryAfter' }
+          content:
+            application/json:
+              schema: *agent-auth-error-schema
+              example:
+                error: rate_limited
+                message: Too many registrations. Retry in 60 seconds.
+  /agent/identity/claim:
+    servers:
+      - url: https://xquik.com
+    post:
+      operationId: refreshAgentIdentityClaim
+      x-mcp-exclusion-reason: *oauth-sign-in
+      summary: Refresh an agent claim code
+      description: >-
+        Get a new user code for a pending agent registration, such as after the
+        last one expired. The claim token must still be valid.
+      tags: [Agent Discovery]
+      security: [{}]
+      requestBody:
+        description: The claim token & the user's email as JSON.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgentClaimRequest'
+            example:
+              claim_token: clm_0000000000000000000000000000000000000000000000000000000000000000
+              email: user@example.com
+      responses:
+        '200':
+          description: The new claim attempt & its user code.
+          headers:
+            Cache-Control: { $ref: '#/components/headers/NoStore' }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentClaimAttempt'
+              example:
+                claim_attempt:
+                  expires_in: 600
+                  interval: 5
+                  user_code: '518204'
+                  verification_uri: 'https://xquik.com/agent/identity/claim/view?claim_attempt_token=CLAIM_ATTEMPT_TOKEN'
+                claim_attempt_id: cla_9b2f4d6a8c1e3f5a7b9d1c3e5f7a9b2d
+                expires_at: '2026-12-01T12:10:00.000Z'
+                registration_id: reg_6f1c2a7e-8d4b-4c1a-9e2f-3b5d7a9c1e0f
+                status: initiated
+        '400':
+          description: >-
+            The body isn't a valid claim request, the email doesn't match the
+            registration, or the registration is no longer pending.
+          content:
+            application/json:
+              schema: *agent-auth-error-schema
+              examples:
+                invalidRequest:
+                  value:
+                    error: invalid_request
+                    message: Claim request is invalid. Start again.
+                invalidGrant:
+                  value:
+                    error: invalid_grant
+                    message: Claim request is invalid. Start again.
+        '410':
+          description: The claim token is unknown or expired. Register again.
+          content:
+            application/json:
+              schema: *agent-auth-error-schema
+              example:
+                error: claim_expired
+                message: Claim expired. Register again.
+        '413': { $ref: '#/paths/~1agent~1identity/post/responses/413' }
+        '415': { $ref: '#/paths/~1agent~1identity/post/responses/415' }
+        '429':
+          description: Too many claim attempts. Retry after Retry-After.
+          headers:
+            Retry-After: { $ref: '#/components/headers/SignInRetryAfter' }
+          content:
+            application/json:
+              schema: *agent-auth-error-schema
+              example:
+                error: rate_limited
+                message: Too many claim attempts. Retry in 60 seconds.
 
   # ── Account ──────────────────────────────────────────────
   /account:
@@ -3595,12 +4121,23 @@ paths:
         '403': { $ref: '#/components/responses/ExportsKeyForbidden' }
         '404': *not-found-response
         '409':
-          description: Extraction already reached a terminal state
+          description: >-
+            The extraction already finished. status names how it ended.
           content:
-            {
-              application/json:
-                { schema: { $ref: '#/components/schemas/Error' } },
-            }
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Error'
+                  - type: object
+                    required: [status]
+                    properties:
+                      status:
+                        type: string
+                        enum: [completed, failed]
+              example:
+                error: extraction_terminal
+                message: Extraction already finished. Check its status.
+                status: completed
         '429': *rate-limit-exceeded-response
     get:
       operationId: getExtraction
@@ -4617,6 +5154,7 @@ paths:
       security: *api-auth
       parameters: &write-idempotency-parameters
         - $ref: '#/components/parameters/WriteIdempotencyKey'
+        - $ref: '#/components/parameters/WritePrefer'
       requestBody:
         required: true
         description: Account and tweet content. Requires text, media, or both.
@@ -6244,6 +6782,7 @@ paths:
       security: *api-auth
       parameters: &tweet-write-parameters
         - $ref: '#/components/parameters/WriteIdempotencyKey'
+        - $ref: '#/components/parameters/WritePrefer'
         - $ref: '#/components/parameters/TweetPathId'
       requestBody:
         required: true
@@ -6686,6 +7225,7 @@ paths:
       security: *api-auth
       parameters: &user-write-parameters
         - $ref: '#/components/parameters/WriteIdempotencyKey'
+        - $ref: '#/components/parameters/WritePrefer'
         - $ref: '#/components/parameters/UserPathId'
       requestBody:
         required: true
@@ -6846,6 +7386,7 @@ paths:
       security: *api-auth
       parameters:
         - $ref: '#/components/parameters/WriteIdempotencyKey'
+        - $ref: '#/components/parameters/WritePrefer'
         - $ref: '#/components/parameters/DmUserPathId'
       requestBody:
         required: true
@@ -6894,6 +7435,7 @@ paths:
       security: *api-auth
       parameters:
         - $ref: '#/components/parameters/WriteIdempotencyKey'
+        - $ref: '#/components/parameters/WritePrefer'
         - $ref: '#/components/parameters/DmUserPathId'
         - $ref: '#/components/parameters/DmMessagePathId'
         - name: account
@@ -7106,7 +7648,10 @@ paths:
                           example: photo
                         mediaUrl:
                           type: string
-                          description: Saved copy of the file
+                          description:
+                            Link to the file. It goes to X when X flagged the
+                            post or its media at save time, or sent no post
+                            flag. Xquik keeps no copy of those files.
                           example: 'https://media.xquik.com/tweet_1234567890/0.jpg'
                         fileSize:
                           type: [string, 'null']
@@ -7404,6 +7949,7 @@ paths:
       security: *api-auth
       parameters: &resource-write-parameters
         - $ref: '#/components/parameters/WriteIdempotencyKey'
+        - $ref: '#/components/parameters/WritePrefer'
         - $ref: '#/components/parameters/CommunityWriteId'
       requestBody:
         required: true
@@ -8395,7 +8941,8 @@ paths:
       description: >
         Create a one-use hosted checkout after the user confirms $10-$250 USD.
         The request creates no charge. It returns a paid-read API key without an
-        Xquik account. Idempotent replays return the same key.
+        Xquik account. Idempotent replays return the same key. Stripe creates a
+        paid invoice for each paid checkout.
       tags: [Guest Wallets]
       security: [{}]
       parameters: &guest-idempotency-parameters
@@ -8511,7 +9058,8 @@ paths:
       description: >
         Create a one-use hosted checkout after the user confirms a $10-$250 USD
         amount for an existing paid-read guest key. The key remains the same.
-        This request creates no charge and never redirects through Xquik.
+        This request creates no charge and never redirects through Xquik. Stripe
+        creates a paid invoice for each paid checkout.
       tags: [Guest Wallets]
       security: [{ apiKey: [] }]
       parameters: *guest-idempotency-parameters
@@ -8735,10 +9283,18 @@ paths:
                     Optional site language for Stripe's return page. An
                     unsupported language uses en, the default.
                   example: en
+                returnPath:
+                  type: string
+                  maxLength: 64
+                  description: >
+                    Optional Xquik tool page to return to after Checkout, such
+                    as /en/x-article-reader.
+                  example: /en/x-article-reader
             example:
               currency: EUR
               dollars: 10
               locale: 'en'
+              returnPath: /en/x-article-reader
       responses:
         '200':
           description: Top-up checkouts
@@ -12456,7 +13012,8 @@ paths:
 
         Reply exports include replies that X's post page leaves out. Complete
         mode adds replies the author hid & explains empty threads. Reply exports
-        hold only direct replies, in a proven order.
+        hold only direct replies, in a proven order. Reply pages count the
+        replies a read hasn't reached yet.
       tags:
         - Tweets
       security: *read-auth
@@ -12505,7 +13062,7 @@ paths:
             you set sort. Standard pages ignore it. With likes, each page is
             sorted by likes. A later page can hold a reply with more likes. The
             order is final on the last page. Latest & oldest sort every row by
-            date, which can take up to 20 s. An answer that stopped before every
+            date, which can take up to 80 s. An answer that stopped before every
             reply sets orderPartial.
         - name: excludeOriginalAuthor
           in: query
@@ -13176,6 +13733,100 @@ paths:
           $ref: '#/components/responses/ReadBusy'
         '429': *rate-limit-exceeded-response-2
         '424': *x-api-error-response
+
+  /x/users/{id}/shadowban:
+    get:
+      operationId: checkShadowban
+      description: >-
+        Checks 1 X account for a search ban, a search suggestion ban & reply
+        deboosting. It also says if the account is active, protected or
+        suspended.
+
+
+        Each check answers pass, fail or unknown, with its reason & the posts,
+        suggestions or replies it read. The reply check answers pass or unknown,
+        since X ranks replies for each viewer. A protected account gets the
+        suggestion check only, and a suspended account gets the account check
+        only. Each profile, post, suggestion & reply in the answer costs 1
+        credit.
+
+
+        Shadowban checks show if X search lists an account, with each post they
+        read.
+      summary: Check an X account for a shadowban
+      tags:
+        - Users
+      security: *read-auth
+      parameters:
+        - $ref: '#/components/parameters/UserPathId'
+        - $ref: '#/components/parameters/Fields'
+        - $ref: '#/components/parameters/Omit'
+      responses:
+        '200':
+          description: Shadowban checks
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShadowbanReport'
+              example:
+                username: NASA
+                userId: '11348282'
+                account: active
+                checks:
+                  account:
+                    verdict: pass
+                    reason: active
+                    evidence:
+                      profileUrl: 'https://x.com/NASA'
+                  search:
+                    verdict: pass
+                    reason: listed
+                    evidence:
+                      query: 'from:NASA'
+                      searchUrl: 'https://x.com/search?q=from%3ANASA&f=live'
+                      recentPostIds:
+                        - '2103610284464316469'
+                        - '2103583087540003274'
+                      foundPostIds:
+                        - '2103610284464316469'
+                        - '2103583087540003274'
+                  suggestion:
+                    verdict: pass
+                    reason: suggested
+                    evidence:
+                      query: NASA
+                      suggestedUsernames: [NASA, NASAHubble, NASAEarth]
+                  replies:
+                    verdict: unknown
+                    reason: more_replies
+                    evidence:
+                      replies:
+                        - replyId: '2103589735449141451'
+                          replyUrl: 'https://x.com/i/status/2103589735449141451'
+                          parentId: '2102883223948628205'
+                          parentUrl: 'https://x.com/i/status/2102883223948628205'
+                          placement: more_replies
+                        - replyId: '2103215186870239252'
+                          replyUrl: 'https://x.com/i/status/2103215186870239252'
+                          parentId: '2102924351171670302'
+                          parentUrl: 'https://x.com/i/status/2102924351171670302'
+                          placement: thread
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '401': *anonymous-guest-authentication-response
+        '402': { $ref: '#/components/responses/PaymentRequired' }
+        '403':
+          $ref: '#/components/responses/ApiKeyPaused'
+        '404':
+          $ref: '#/components/responses/UserNotFound'
+        '502':
+          $ref: '#/components/responses/XApiError'
+        '503':
+          $ref: '#/components/responses/ReadBusy'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+        '424':
+          $ref: '#/components/responses/XApiError'
 
   /x/tweets/{id}/embed:
     get:
@@ -14327,6 +14978,19 @@ components:
         minLength: 1
         maxLength: 255
         pattern: '^[!-~]{1,255}$'
+    WritePrefer:
+      name: Prefer
+      in: header
+      required: false
+      description: >
+        A long write answers 202 with a status link, then lands on X.
+        `wait=<seconds>` asks for the answer within that many seconds, up to 85.
+        If the write is still running then, the API answers 202 with Location.
+        Poll Location until `terminal` is true, and don't send the write again.
+      schema:
+        type: string
+        maxLength: 255
+      example: wait=50
     IdempotencyKey:
       name: Idempotency-Key
       in: header
@@ -15115,6 +15779,12 @@ components:
         fails at the edge before Xquik reads it.
 
   headers:
+    SignInRetryAfter:
+      description: Seconds to wait before you retry.
+      schema: { type: integer, minimum: 1, maximum: 60, example: 60 }
+    NoStore:
+      description: Always no-store, so no cache keeps the answer.
+      schema: { type: string, const: no-store }
     RateLimit:
       description: >
         Your requests left in this window & seconds until it resets, for the
@@ -15155,9 +15825,9 @@ components:
         enum: ['admission', 'reads']
     XquikCause:
       description: >
-        Sent when X's servers failed the request. The value x names X as the
-        cause. Xquik's own failures & other answers omit this header.
-        `X-Xquik-Cause` tells X's outages apart from Xquik's.
+        Xquik answers 502 with `X-Xquik-Cause` & `Retry-After` when X fails a
+        read on every account. The value x names X as the cause. Xquik's own
+        failures omit it.
       schema:
         type: string
         enum: ['x']
@@ -16098,9 +16768,13 @@ components:
         or when a filtered search goes far back without a match. The message
         says how far back the search looked. "X can't run this search" appears
         only when it's true. Searches X can't run fail at once, with the fix.
+        When X fails a read, Xquik answers 502 `x_api_unavailable` with
+        `X-Xquik-Cause` & `Retry-After`. Retry after that many seconds.
       headers:
         X-Xquik-Cause:
           $ref: '#/components/headers/XquikCause'
+        Retry-After:
+          $ref: '#/components/headers/BusyRetryAfter'
       content:
         application/json:
           schema: *error-schema
@@ -16153,8 +16827,6 @@ components:
         Retry x_api_unavailable after Retry-After. After pagination_stalled,
         retry once, 30 s or more later.
       headers: &busy-headers
-        X-Xquik-Cause:
-          $ref: '#/components/headers/XquikCause'
         Retry-After:
           $ref: '#/components/headers/BusyRetryAfter'
         X-Xquik-Busy:
@@ -16717,6 +17389,460 @@ components:
           properties:
             code: { type: string }
             message: { type: string }
+
+    OAuthError:
+      description: An OAuth error answer.
+      type: object
+      required: [error, error_description]
+      properties:
+        error:
+          type: string
+          description: The OAuth error code.
+          enum:
+            - access_denied
+            - authorization_pending
+            - expired_token
+            - invalid_client
+            - invalid_client_metadata
+            - invalid_grant
+            - invalid_redirect_uri
+            - invalid_request
+            - invalid_scope
+            - invalid_target
+            - slow_down
+            - temporarily_unavailable
+            - unauthorized_client
+            - unsupported_grant_type
+          example: invalid_request
+        error_description:
+          type: string
+          description: What went wrong & how to fix it.
+          example: grant_type is required
+    OAuthClientAuthentication:
+      description: Form fields that name the client & authenticate it.
+      type: object
+      properties:
+        client_id:
+          type: string
+          maxLength: 16384
+          description: >-
+            Required unless client_assertion or a Basic Authorization header
+            with an empty password names the client.
+          example: 550e8400-e29b-41d4-a716-446655440000
+        client_secret:
+          type: string
+          maxLength: 16384
+          description: Required for clients registered with client_secret_post.
+          example: CLIENT_SECRET
+        client_assertion:
+          type: string
+          maxLength: 16384
+          description: >-
+            A signed JWT for clients whose metadata document names
+            private_key_jwt.
+          example: CLIENT_ASSERTION
+        client_assertion_type:
+          type: string
+          const: 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer'
+          description: Required with client_assertion.
+    OAuthTokenRequest:
+      description:
+        Form fields of a token request. Each grant_type has its own fields.
+      oneOf:
+        - $ref: '#/components/schemas/OAuthAuthorizationCodeGrant'
+        - $ref: '#/components/schemas/OAuthRefreshTokenGrant'
+        - $ref: '#/components/schemas/OAuthAgentClaimGrant'
+        - $ref: '#/components/schemas/OAuthIdentityAssertionGrant'
+    OAuthAuthorizationCodeGrant:
+      description: Exchange an authorization code for tokens.
+      allOf:
+        - $ref: '#/components/schemas/OAuthClientAuthentication'
+        - type: object
+          required: [grant_type, code, code_verifier]
+          properties:
+            grant_type:
+              type: string
+              const: authorization_code
+            code:
+              type: string
+              maxLength: 16384
+              description: The authorization code from the redirect.
+              example: AUTHORIZATION_CODE
+            code_verifier:
+              type: string
+              minLength: 43
+              maxLength: 128
+              pattern: '^[A-Za-z0-9._~-]{43,128}$'
+              description: The PKCE verifier of the code_challenge.
+              example: dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk
+            redirect_uri:
+              type: string
+              maxLength: 16384
+              description: The redirect_uri of the authorization request.
+              example: 'https://client.example/callback'
+            resource:
+              type: string
+              maxLength: 16384
+              default: 'https://xquik.com/mcp'
+              description: >-
+                The resource of the authorization request. Defaults to the MCP
+                server.
+              example: 'https://xquik.com/mcp'
+    OAuthRefreshTokenGrant:
+      description: Trade the latest refresh token for new tokens.
+      allOf:
+        - $ref: '#/components/schemas/OAuthClientAuthentication'
+        - type: object
+          required: [grant_type, refresh_token]
+          properties:
+            grant_type:
+              type: string
+              const: refresh_token
+            refresh_token:
+              type: string
+              maxLength: 16384
+              description: >-
+                The latest refresh token. Each refresh token works once.
+              example: REFRESH_TOKEN
+            scope:
+              type: string
+              maxLength: 16384
+              description: It must equal the granted scope.
+              example: 'mcp:tools'
+            resource:
+              type: string
+              maxLength: 16384
+              default: 'https://xquik.com/mcp'
+              description: >-
+                The resource of the first token. Defaults to the MCP server.
+              example: 'https://xquik.com/mcp'
+    OAuthAgentClaimGrant:
+      description: Poll for the access token of a claimed agent.
+      type: object
+      required: [grant_type, claim_token]
+      properties:
+        grant_type:
+          type: string
+          const: 'urn:workos:agent-auth:grant-type:claim'
+        claim_token:
+          type: string
+          maxLength: 16384
+          description: The claim_token of the agent registration.
+          example: clm_0000000000000000000000000000000000000000000000000000000000000000
+    OAuthIdentityAssertionGrant:
+      description:
+        Trade a claimed agent's identity assertion for an access token.
+      type: object
+      required: [grant_type, assertion]
+      properties:
+        grant_type:
+          type: string
+          const: 'urn:ietf:params:oauth:grant-type:jwt-bearer'
+        assertion:
+          type: string
+          maxLength: 16384
+          description: A current identity_assertion from the claim grant.
+          example: IDENTITY_ASSERTION
+    OAuthToken:
+      description: An issued OAuth access token.
+      type: object
+      required: [access_token, token_type, expires_in, scope]
+      properties:
+        access_token:
+          type: string
+          description: Send it as a Bearer token.
+          example: ACCESS_TOKEN
+        token_type:
+          type: string
+          const: Bearer
+        expires_in:
+          type: integer
+          minimum: 0
+          maximum: 3600
+          description: Seconds until the access token expires.
+          example: 3600
+        scope:
+          type: string
+          description: The granted scopes, space-separated.
+          example: 'mcp:tools'
+        refresh_token:
+          type: string
+          description: >-
+            Only code & refresh grants return it. Each refresh token works once,
+            so store the latest one.
+          example: REFRESH_TOKEN
+        identity_assertion:
+          type: string
+          description: >-
+            Only the claim grant returns it. Send it with the jwt-bearer grant
+            for a new access token.
+          example: IDENTITY_ASSERTION
+        assertion_expires:
+          type: string
+          format: date-time
+          description: When identity_assertion expires.
+          example: '2026-12-01T12:00:00.000Z'
+    OAuthRevokeRequest:
+      description: Form fields of a revocation request.
+      allOf:
+        - $ref: '#/components/schemas/OAuthClientAuthentication'
+        - type: object
+          required: [token]
+          properties:
+            token:
+              type: string
+              minLength: 1
+              maxLength: 16384
+              description: The token to revoke.
+              example: ACCESS_OR_REFRESH_TOKEN
+            token_type_hint:
+              type: string
+              enum:
+                - access_token
+                - refresh_token
+                - 'urn:ietf:params:oauth:token-type:id-jag'
+              description: >-
+                The kind of token. The id-jag hint with client_id
+                urn:xquik:agent-auth revokes a claimed agent & all its access
+                tokens.
+              example: access_token
+    OAuthClientRegistrationRequest:
+      description: Metadata of the client to register.
+      type: object
+      required: [redirect_uris]
+      properties:
+        client_name:
+          type: string
+          maxLength: 256
+          default: MCP Client
+          description: The name the consent page shows.
+          example: My MCP Client
+        redirect_uris:
+          type: array
+          minItems: 1
+          maxItems: 10
+          uniqueItems: true
+          description: >-
+            Allowed redirect URIs. Each uses HTTPS, localhost or a native app
+            callback.
+          items: { type: string, maxLength: 2048, format: uri }
+          example: ['https://client.example/callback']
+        token_endpoint_auth_method:
+          type: string
+          enum: [none, client_secret_post]
+          default: none
+          description: >-
+            none for public clients. client_secret_post returns a client_secret.
+          example: none
+        grant_types:
+          type: array
+          minItems: 1
+          maxItems: 2
+          uniqueItems: true
+          description: Must include authorization_code.
+          items: { type: string, enum: [authorization_code, refresh_token] }
+          default: [authorization_code, refresh_token]
+          example: [authorization_code, refresh_token]
+        response_types:
+          type: array
+          minItems: 1
+          maxItems: 1
+          items: { type: string, enum: [code] }
+          default: [code]
+          example: [code]
+    OAuthClientRegistration:
+      description: A registered OAuth client.
+      type: object
+      required:
+        [
+          client_id,
+          client_id_issued_at,
+          client_name,
+          grant_types,
+          redirect_uris,
+          response_types,
+          token_endpoint_auth_method,
+        ]
+      properties:
+        client_id:
+          type: string
+          format: uuid
+          example: 550e8400-e29b-41d4-a716-446655440000
+        client_id_issued_at:
+          type: integer
+          minimum: 0
+          description: Unix time in seconds.
+          example: 1798761600
+        client_name:
+          type: string
+          example: My MCP Client
+        grant_types:
+          type: array
+          items: { type: string, enum: [authorization_code, refresh_token] }
+          example: [authorization_code, refresh_token]
+        redirect_uris:
+          type: array
+          items: { type: string, format: uri }
+          example: ['https://client.example/callback']
+        response_types:
+          type: array
+          items: { type: string, enum: [code] }
+          example: [code]
+        token_endpoint_auth_method:
+          type: string
+          enum: [none, client_secret_post]
+          example: none
+        client_secret:
+          type: string
+          description: >-
+            Only client_secret_post clients get it. Xquik shows it once, so
+            store it now.
+          example: CLIENT_SECRET
+        client_secret_expires_at:
+          type: integer
+          const: 0
+          description: 0, since a client_secret never expires.
+    AgentAuthError:
+      description: An agent registration error answer.
+      type: object
+      required: [error, message]
+      properties:
+        error:
+          type: string
+          enum:
+            - claim_expired
+            - invalid_grant
+            - invalid_login_hint
+            - invalid_request
+            - rate_limited
+          example: invalid_request
+        message:
+          type: string
+          description: How to fix the request.
+          example: Use the documented service_auth request.
+    AgentIdentityRequest:
+      description: A service_auth registration for a user's verified email.
+      type: object
+      required: [type, login_hint]
+      additionalProperties: false
+      properties:
+        type:
+          type: string
+          const: service_auth
+        login_hint:
+          type: string
+          format: email
+          maxLength: 320
+          description: >-
+            The user's verified email. The user must sign in with it to claim
+            the agent.
+          example: user@example.com
+    AgentClaimChallenge:
+      description: The code the user enters to claim the agent.
+      type: object
+      required: [expires_in, interval, user_code, verification_uri]
+      properties:
+        expires_in:
+          type: integer
+          const: 600
+          description: Seconds until the user code expires.
+        interval:
+          type: integer
+          const: 5
+          description: Seconds to wait between token polls.
+        user_code:
+          type: string
+          pattern: '^\d{6}$'
+          description: The 6-digit code the user enters.
+          example: '042137'
+        verification_uri:
+          type: string
+          format: uri
+          description: The page where the user signs in & enters the code.
+          example: 'https://xquik.com/agent/identity/claim/view?claim_attempt_token=CLAIM_ATTEMPT_TOKEN'
+    AgentIdentityRegistration:
+      description: A pending agent registration.
+      type: object
+      required:
+        [
+          claim,
+          claim_token,
+          claim_token_expires,
+          claim_url,
+          post_claim_scopes,
+          registration_id,
+          registration_type,
+        ]
+      properties:
+        claim:
+          $ref: '#/components/schemas/AgentClaimChallenge'
+        claim_token:
+          type: string
+          pattern: '^clm_[a-f0-9]{64}$'
+          description: >-
+            Poll the token endpoint with it & refresh the user code with it.
+            Keep it secret.
+          example: clm_0000000000000000000000000000000000000000000000000000000000000000
+        claim_token_expires:
+          type: string
+          format: date-time
+          description: When claim_token expires, 24 hours after registration.
+          example: '2026-12-02T12:00:00.000Z'
+        claim_url:
+          type: string
+          format: uri
+          description: Where to refresh an expired user code.
+          example: 'https://xquik.com/agent/identity/claim'
+        post_claim_scopes:
+          type: array
+          items: { type: string, const: 'mcp:tools' }
+          description: The scopes the access token gets once claimed.
+          example: ['mcp:tools']
+        registration_id:
+          type: string
+          example: reg_6f1c2a7e-8d4b-4c1a-9e2f-3b5d7a9c1e0f
+        registration_type:
+          type: string
+          const: service_auth
+    AgentClaimRequest:
+      description: A request for a new user code.
+      type: object
+      required: [claim_token, email]
+      properties:
+        claim_token:
+          type: string
+          maxLength: 68
+          pattern: '^clm_[a-f0-9]{64}$'
+          description: The claim_token from the registration.
+          example: clm_0000000000000000000000000000000000000000000000000000000000000000
+        email:
+          type: string
+          format: email
+          maxLength: 320
+          description: The login_hint of the registration.
+          example: user@example.com
+    AgentClaimAttempt:
+      description: A new claim attempt for a pending agent registration.
+      type: object
+      required:
+        [claim_attempt, claim_attempt_id, expires_at, registration_id, status]
+      properties:
+        claim_attempt:
+          $ref: '#/components/schemas/AgentClaimChallenge'
+        claim_attempt_id:
+          type: string
+          example: cla_9b2f4d6a8c1e3f5a7b9d1c3e5f7a9b2d
+        expires_at:
+          type: string
+          format: date-time
+          description: When the new user code expires.
+          example: '2026-12-01T12:10:00.000Z'
+        registration_id:
+          type: string
+          example: reg_6f1c2a7e-8d4b-4c1a-9e2f-3b5d7a9c1e0f
+        status:
+          type: string
+          const: initiated
 
     ComposePrepareRequest:
       description: Inputs for preparing source-backed post guidance.
@@ -18251,6 +19377,16 @@ components:
                 Present on an answer that lacks some replies posted before this
                 time. A retry returns about the same replies.
               example: '2026-10-07T00:00:00.000Z'
+            unreachedReplies:
+              type: integer
+              minimum: 1
+              description:
+                Present on automatic pages without filters while X counts
+                replies the read hasn't reached. If a reply that belongs in your
+                rows is missing, it's among them. The count drops as you read
+                more pages. On the last page, it counts the replies the read
+                can't reach.
+              example: 120
             message:
               type: string
               description: Explains an answer cut by your limit.
@@ -19977,6 +21113,7 @@ components:
                 - no_media
                 - no_credits
                 - no_subscription
+                - extraction_terminal
                 - not_found
                 - payment_failed
                 - post_unavailable
@@ -23689,6 +24826,319 @@ components:
           id: '1DxLdZyVPMMxm'
           title: "NASA's SpaceX Crew-12 Re-Entry & Splashdown"
           state: 'Ended'
+
+    ShadowbanVerdict:
+      description:
+        Pass means X shows the account there, and fail means it doesn't. Unknown
+        means the check had nothing to test or X didn't answer.
+      type: string
+      enum: [pass, fail, unknown]
+      example: pass
+
+    ShadowbanReport:
+      description:
+        Says whether X limits 1 account in search, search suggestions or reply
+        threads. Each check holds a verdict, its reason & the evidence it read.
+        Evidence is null for a check that couldn't read the account.
+      type: object
+      required: [username, userId, account, checks]
+      properties:
+        username:
+          type: [string, 'null']
+          description:
+            Username of the account. Null for a suspended account asked for by
+            ID.
+          example: NASA
+        userId:
+          type: [string, 'null']
+          description:
+            ID of the account. Null for a suspended account asked for by
+            username.
+          example: '11348282'
+        account:
+          type: string
+          enum: [active, protected, suspended]
+          description: Whether the account is active, protected or suspended.
+          example: active
+        checks:
+          type: object
+          description: The 4 checks, each with a verdict, a reason & evidence.
+          required: [account, search, suggestion, replies]
+          properties:
+            account:
+              type: object
+              description:
+                Passes an active or protected account & fails a suspended one.
+              required: [verdict, reason, evidence]
+              properties:
+                verdict:
+                  $ref: '#/components/schemas/ShadowbanVerdict'
+                reason:
+                  type: string
+                  enum: [active, protected, suspended]
+                  description: State of the account on X.
+                  example: active
+                evidence:
+                  type: object
+                  description: Where to see the account on X.
+                  required: [profileUrl]
+                  properties:
+                    profileUrl:
+                      type: string
+                      format: uri
+                      description: Profile of the account on X.
+                      example: 'https://x.com/NASA'
+                  example:
+                    profileUrl: 'https://x.com/NASA'
+              example:
+                verdict: pass
+                reason: active
+                evidence:
+                  profileUrl: 'https://x.com/NASA'
+            search:
+              type: object
+              description:
+                Looks for the account's recent posts in X search, sorted by
+                Latest. `listed` passes & `missing` fails.
+              required: [verdict, reason, evidence]
+              properties:
+                verdict:
+                  $ref: '#/components/schemas/ShadowbanVerdict'
+                reason:
+                  type: string
+                  enum:
+                    [
+                      listed,
+                      missing,
+                      no_recent_posts,
+                      unavailable,
+                      protected,
+                      suspended,
+                    ]
+                  description:
+                    '`listed` means search shows its posts & `missing` means it
+                    shows none. `no_recent_posts` means the account has no
+                    recent post to look for.'
+                  example: listed
+                evidence:
+                  type: [object, 'null']
+                  description: The search & the posts it looked for.
+                  required: [query, searchUrl, recentPostIds, foundPostIds]
+                  properties:
+                    query:
+                      type: string
+                      description: The search it ran.
+                      example: 'from:NASA'
+                    searchUrl:
+                      type: string
+                      format: uri
+                      description: The same search on X, sorted by Latest.
+                      example: 'https://x.com/search?q=from%3ANASA&f=live'
+                    recentPostIds:
+                      type: array
+                      description: Up to 5 recent posts of the account.
+                      items: { type: string }
+                      example: ['2103610284464316469']
+                    foundPostIds:
+                      type: array
+                      description:
+                        Up to 5 posts of the account that search showed.
+                      items: { type: string }
+                      example: ['2103610284464316469']
+                  example:
+                    query: 'from:NASA'
+                    searchUrl: 'https://x.com/search?q=from%3ANASA&f=live'
+                    recentPostIds: ['2103610284464316469']
+                    foundPostIds: ['2103610284464316469']
+              example:
+                verdict: pass
+                reason: listed
+                evidence:
+                  query: 'from:NASA'
+                  searchUrl: 'https://x.com/search?q=from%3ANASA&f=live'
+                  recentPostIds: ['2103610284464316469']
+                  foundPostIds: ['2103610284464316469']
+            suggestion:
+              type: object
+              description:
+                Looks for the account among the accounts X suggests for its
+                username. `suggested` passes & `not_suggested` fails.
+              required: [verdict, reason, evidence]
+              properties:
+                verdict:
+                  $ref: '#/components/schemas/ShadowbanVerdict'
+                reason:
+                  type: string
+                  enum: [suggested, not_suggested, unavailable, suspended]
+                  description:
+                    '`suggested` means X suggests the account for its username.'
+                  example: suggested
+                evidence:
+                  type: [object, 'null']
+                  description: The username searched & the accounts X suggested.
+                  required: [query, suggestedUsernames]
+                  properties:
+                    query:
+                      type: string
+                      description: The username it typed.
+                      example: NASA
+                    suggestedUsernames:
+                      type: array
+                      description: Up to 10 accounts X suggested, in its order.
+                      items: { type: string }
+                      example: [NASA, NASAHubble]
+                  example:
+                    query: NASA
+                    suggestedUsernames: [NASA, NASAHubble]
+              example:
+                verdict: pass
+                reason: suggested
+                evidence:
+                  query: NASA
+                  suggestedUsernames: [NASA, NASAHubble]
+            replies:
+              type: object
+              description:
+                Opens the threads of up to 3 recent replies to other accounts.
+                `in_thread` passes. X ranks replies for each viewer, so
+                `more_replies` can't tell.
+              required: [verdict, reason, evidence]
+              properties:
+                verdict:
+                  $ref: '#/components/schemas/ShadowbanVerdict'
+                reason:
+                  type: string
+                  enum:
+                    [
+                      in_thread,
+                      more_replies,
+                      no_recent_replies,
+                      not_found,
+                      unavailable,
+                      protected,
+                      suspended,
+                    ]
+                  description:
+                    '`more_replies` means X put a reply behind its hidden
+                    replies prompt. `not_found` means no reply showed on the
+                    pages the check read.'
+                  example: in_thread
+                evidence:
+                  type: [object, 'null']
+                  description: Each reply it opened & where it showed.
+                  required: [replies]
+                  properties:
+                    replies:
+                      type: array
+                      description: Up to 3 replies, newest first.
+                      items:
+                        type: object
+                        required:
+                          [replyId, replyUrl, parentId, parentUrl, placement]
+                        properties:
+                          replyId:
+                            type: string
+                            description: ID of the reply.
+                            example: '2103589735449141451'
+                          replyUrl:
+                            type: string
+                            format: uri
+                            description: The reply on X.
+                            example: 'https://x.com/i/status/2103589735449141451'
+                          parentId:
+                            type: string
+                            description: ID of the post it replies to.
+                            example: '2102883223948628205'
+                          parentUrl:
+                            type: string
+                            format: uri
+                            description: The thread of that post on X.
+                            example: 'https://x.com/i/status/2102883223948628205'
+                          placement:
+                            type: string
+                            enum: [thread, more_replies, not_found]
+                            description:
+                              "`thread` means the reply shows in the thread.
+                              `more_replies` means it shows only behind X's
+                              hidden replies prompt."
+                            example: thread
+                        example:
+                          replyId: '2103589735449141451'
+                          replyUrl: 'https://x.com/i/status/2103589735449141451'
+                          parentId: '2102883223948628205'
+                          parentUrl: 'https://x.com/i/status/2102883223948628205'
+                          placement: thread
+                  example:
+                    replies:
+                      - replyId: '2103589735449141451'
+                        replyUrl: 'https://x.com/i/status/2103589735449141451'
+                        parentId: '2102883223948628205'
+                        parentUrl: 'https://x.com/i/status/2102883223948628205'
+                        placement: thread
+              example:
+                verdict: pass
+                reason: in_thread
+                evidence:
+                  replies:
+                    - replyId: '2103589735449141451'
+                      replyUrl: 'https://x.com/i/status/2103589735449141451'
+                      parentId: '2102883223948628205'
+                      parentUrl: 'https://x.com/i/status/2102883223948628205'
+                      placement: thread
+          example:
+            account:
+              verdict: pass
+              reason: active
+              evidence:
+                profileUrl: 'https://x.com/NASA'
+            search:
+              verdict: pass
+              reason: listed
+              evidence:
+                query: 'from:NASA'
+                searchUrl: 'https://x.com/search?q=from%3ANASA&f=live'
+                recentPostIds: ['2103610284464316469']
+                foundPostIds: ['2103610284464316469']
+            suggestion:
+              verdict: pass
+              reason: suggested
+              evidence:
+                query: NASA
+                suggestedUsernames: [NASA]
+            replies:
+              verdict: unknown
+              reason: no_recent_replies
+              evidence:
+                replies: []
+      example:
+        username: NASA
+        userId: '11348282'
+        account: active
+        checks:
+          account:
+            verdict: pass
+            reason: active
+            evidence:
+              profileUrl: 'https://x.com/NASA'
+          search:
+            verdict: pass
+            reason: listed
+            evidence:
+              query: 'from:NASA'
+              searchUrl: 'https://x.com/search?q=from%3ANASA&f=live'
+              recentPostIds: ['2103610284464316469']
+              foundPostIds: ['2103610284464316469']
+          suggestion:
+            verdict: pass
+            reason: suggested
+            evidence:
+              query: NASA
+              suggestedUsernames: [NASA]
+          replies:
+            verdict: unknown
+            reason: no_recent_replies
+            evidence:
+              replies: []
 
     ProfileTranslation:
       description:

@@ -408,15 +408,11 @@ const REQUIRED_OPERATIONAL_CONTENT = [
   {
     file: "api-reference/x-write/create-community.mdx",
     snippets: [
-      "Create a Twitter community with the X community API",
-      "## How to create a community on Twitter with Xquik",
+      "Why you can't create a Twitter community by API",
+      "## Why you can't create a community on Twitter",
       "This route does not add rules, members,",
-      "## Confirm the community admin account",
-      "## Plan community rules and membership",
-      "The request has no website, app, rules, or invitation field.",
+      "`422 x_community_creation_closed`",
       "OAuth bearer authentication is also supported.",
-      "| Community creation record | Request or response source | Completion rule |",
-      "| Community ID | Response `communityId` | Store it after success. |",
     ],
   },
   {

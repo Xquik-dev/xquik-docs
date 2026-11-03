@@ -215,17 +215,17 @@ print(json.dumps(monitor_state))
 </CodeGroup>
 
 The cURL, Node.js, and Python examples convert the created or reactivated
-keyword monitor into one state row. Store `keyword_monitor_id`, `query`,
-`event_types`, `is_active`, `next_billing_at`, `verify_endpoint`,
-`update_endpoint`, `delete_endpoint`, `events_endpoint`,
-`event_detail_endpoint_pattern`, `webhooks_endpoint`, and
+keyword monitor. The result is one state row. Store `keyword_monitor_id`,
+`query`, `event_types`, `is_active`, `next_billing_at`, `verify_endpoint`,
+`update_endpoint`, `delete_endpoint`, and `events_endpoint` before routing
+alerts. Also store `event_detail_endpoint_pattern`, `webhooks_endpoint`, and
 `deliveries_endpoint_pattern` before routing alerts.
 
 ## Keyword monitor handoff
 
-Use `POST /monitors/keywords` when a queue, CRM, warehouse, Slack alert, or agent
-needs 1-second checks for one X search query. Create the monitor first. Then
-create a signed webhook with
+`POST /monitors/keywords` sets up 1-second checks for one X search query. Use it
+when a queue, CRM, warehouse, Slack alert, or agent needs those checks. Create
+the monitor first. Then create a signed webhook with
 [`POST /webhooks`](/api-reference/webhooks/create). Test it with
 [`POST /webhooks/{id}/test`](/api-reference/webhooks/test).
 
@@ -234,10 +234,11 @@ create a signed webhook with
   <Card title="Monitor ID" icon="fingerprint">
 
     Store `id` as `keyword_monitor_id`. Use
-    [Get Keyword Monitor](/api-reference/monitors/get-keyword) to verify state,
-    [Update Keyword Monitor](/api-reference/monitors/update-keyword) to pause or
-    resume, and [Delete Keyword Monitor](/api-reference/monitors/delete-keyword)
-    only when the query should stop permanently.
+    [Get Keyword Monitor](/api-reference/monitors/get-keyword) to verify state.
+    Use [Update Keyword Monitor](/api-reference/monitors/update-keyword) to
+    pause or resume. Use
+    [Delete Keyword Monitor](/api-reference/monitors/delete-keyword) only when
+    the query should stop permanently.
 
   </Card>
   <Card title="Normalized query" icon="search">
@@ -261,8 +262,8 @@ create a signed webhook with
   <Card title="Stored event join" icon="link">
 
     Use `monitorType: "keyword"`, `keywordMonitorId`, and `query` from
-    [List Events](/api-reference/events/list) to join stored events back to the
-    monitor. Use [Get Event](/api-reference/events/get) for one event's full
+    [List Events](/api-reference/events/list). They join stored events back to
+    the monitor. Use [Get Event](/api-reference/events/get) for one event's full
     payload.
 
   </Card>
@@ -325,10 +326,9 @@ Add the brand name when plain-text mentions also matter.
 Add specific product names only when workers own those alerts.
 Keep unrelated brands in separate monitors and queues.
 
-For every matched tweet,
-store the tweet ID, author ID, event type, query, and timestamp.
-Keep `keywordMonitorId` beside each stored event.
-This join shows which query matched the tweet.
+For every matched tweet, store its ID, author ID, event type, query, and
+timestamp. Keep `keywordMonitorId` beside each stored event. This join shows
+which query matched the tweet.
 
 The selected query monitors conversations across public matching tweets.
 It does not calculate sentiment or brand reputation.
@@ -470,7 +470,7 @@ X search query to monitor. Xquik normalizes whitespace. Maximum length is 512 ch
 
 <ParamField body="name" type="string">
 
-Your own label for the monitor, 1 to 80 characters. Every event the monitor produces carries it as `monitorName`, so you can route events from the payload. Xquik normalizes whitespace.
+Your own label for the monitor, 1 to 80 characters. Every event the monitor produces carries it as `monitorName`. With it, you can route events from the payload. Xquik normalizes whitespace.
 
 </ParamField>
 
@@ -482,7 +482,7 @@ Array of event types to subscribe to. At least 1 required. See [Valid Event Type
 
 ## Valid event types
 
-Valid keyword monitor types are `tweet.new`, `tweet.quote`, `tweet.reply`,
+Keyword monitors accept `tweet.new`, `tweet.quote`, `tweet.reply`,
 `tweet.retweet`, `tweet.media`, `tweet.link`, `tweet.poll`, `tweet.mention`,
 `tweet.hashtag`, `tweet.longform`.
 
@@ -570,7 +570,7 @@ Missing or invalid API key.
 { "error": "insufficient_credits", "message": "Insufficient credits" }
 ```
 
-You need at least 30 available credits to create or reactivate an active keyword monitor. Possible errors include `no_credits` and `insufficient_credits`.
+You need at least 30 available credits to create an active keyword monitor. You need the same to reactivate one. Possible errors include `no_credits` and `insufficient_credits`.
 
 ### 409 Duplicate
 
@@ -594,12 +594,21 @@ Too many requests. Wait for the `Retry-After` header before retrying.
 
 <Info>
 
-If a keyword monitor for the same query exists but is paused, creating it again reactivates that monitor with the new event types.
+A paused keyword monitor for the same query may already exist. If so, creating it again reactivates that monitor with the new event types.
 
 </Info>
 
 <Note>
 
-**Next steps.** [List Keyword Monitors](/api-reference/monitors/list-keywords), [Get Keyword Monitor](/api-reference/monitors/get-keyword), [Update Keyword Monitor](/api-reference/monitors/update-keyword), [Create Webhook](/api-reference/webhooks/create), [List Webhooks](/api-reference/webhooks/list), [List Events](/api-reference/events/list), [Get Event](/api-reference/events/get), or [List Deliveries](/api-reference/webhooks/deliveries).
+**Next steps.**
+
+- [List Keyword Monitors](/api-reference/monitors/list-keywords)
+- [Get Keyword Monitor](/api-reference/monitors/get-keyword)
+- [Update Keyword Monitor](/api-reference/monitors/update-keyword)
+- [Create Webhook](/api-reference/webhooks/create)
+- [List Webhooks](/api-reference/webhooks/list)
+- [List Events](/api-reference/events/list)
+- [Get Event](/api-reference/events/get)
+- [List Deliveries](/api-reference/webhooks/deliveries)
 
 </Note>

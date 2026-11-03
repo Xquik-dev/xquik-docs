@@ -70,7 +70,7 @@ Use that credential in every HTTP Request node that calls `https://xquik.com/api
 
 ## Community node blueprint
 
-If you package Xquik as a community node, limit the first release to core X tasks.
+If you package Xquik as a community node, ship only core X tasks first.
 Share reusable templates through the n8n community. Keep credentials outside
 exported workflow JSON.
 Use custom code nodes only for signature checks or bounded transforms.
@@ -103,7 +103,7 @@ Use custom code nodes only for signature checks or bounded transforms.
 
   <Card title="Actions" icon="play">
 
-    Ship Get Tweet, Search Tweets, Get User, Get Trends, Create Tweet, Create Extraction, Create Monitor, and Create Webhook first.
+    Ship Get Tweet, Search Tweets, Get User, and Get Trends first. Ship Create Tweet, Create Extraction, Create Monitor, and Create Webhook first too.
 
   </Card>
 
@@ -151,7 +151,7 @@ Handle each of these response classes.
 
 ## Result handoff
 
-Use an Edit Fields node after each HTTP Request node when the next node only
+An Edit Fields node can follow each HTTP Request node. Use one when the next node only
 needs stable handoff fields. Keep raw responses out of Slack messages, Sheets
 rows, and retry queues. Use snake_case storage keys for handoff rows even when
 direct API responses use camelCase.
@@ -166,7 +166,7 @@ direct API responses use camelCase.
 
   <Card title="User profile rows" icon="users">
 
-    Store source `id` as `user_id`, plus `username`, `name`, `followers`, `verified`, `profile_picture`, `has_next_page`, `next_cursor`, and the lookup or search input.
+    Store source `id` as `user_id`. Also store `username`, `name`, `followers`, `verified`, and `profile_picture`. Store `has_next_page`, `next_cursor`, and the lookup or search input.
 
   </Card>
 
@@ -184,7 +184,7 @@ direct API responses use camelCase.
 
   <Card title="Media attachments" icon="image">
 
-    For tweets or replies, pass public URLs in `media`. Do not send `media_ids`. For DMs, upload first, pass 1 `media_id` in `media_ids`, store `message_id`, and leave `reply_to_message_id` unset.
+    For tweets or replies, pass public URLs in `media`. Do not send `media_ids`. For DMs, upload first and pass 1 `media_id` in `media_ids`. Store the DM `message_id` and leave `reply_to_message_id` unset.
 
   </Card>
 
@@ -202,19 +202,19 @@ direct API responses use camelCase.
 
   <Card title="Stored event replay" icon="activity">
 
-    Call `GET /events` with `cursor` when a workflow needs replay. Map `id`, `monitorId`, `monitorType`, `occurredAt`, `hasMore`, and `nextCursor` to `event_id`, `monitor_id`, `monitor_type`, `occurred_at`, `has_more`, and `next_cursor`.
+    Call `GET /events` with `cursor` when a workflow needs replay. Map `id` to `event_id`, `monitorId` to `monitor_id`, and `monitorType` to `monitor_type`. Map `occurredAt` to `occurred_at`, `hasMore` to `has_more`, and `nextCursor` to `next_cursor`.
 
   </Card>
 
   <Card title="Receiver acceptance" icon="copy-check">
 
-    Return `2xx` after accepting duplicate `deliveryId` or `streamEventId`. Keep endpoint signing values, raw request body, raw signature, and full headers out of n8n executions, data stores, Slack messages, Sheets rows, and retry queues.
+    Return `2xx` after accepting duplicate `deliveryId` or `streamEventId`. Treat endpoint signing values, raw request body, raw signature, and full headers as private. Exclude them from n8n executions, data stores, Slack messages, Sheets rows, and retry queues.
 
   </Card>
 
   <Card title="Extraction job" icon="database">
 
-    Store `id` as `extraction_id`, `toolType` as `tool_type`, plus `status`, `has_more`, and `next_cursor` before batch loops fetch detail rows.
+    Before batch loops fetch detail rows, store `id` as `extraction_id` and `toolType` as `tool_type`. Also store `status`, `has_more`, and `next_cursor` before those loops.
 
   </Card>
 </CardGroup>
@@ -238,7 +238,7 @@ tweets, summarize trends, inspect profiles, and compare follower activity.
   </Step>
   <Step title="Prompt the agent">
 
-    Tell the agent to use Xquik for X search, trends, account lookups, and extraction planning.
+    Have the agent use Xquik for X search, trends, account lookups, and extraction planning.
 
   </Step>
 </Steps>
@@ -261,11 +261,11 @@ Then try this example user prompt.
 Find recent posts about AI agents in fintech, group them by theme, and list 5 accounts worth monitoring.
 ```
 
-The MCP server exposes `docs` for documentation, `search` for endpoint discovery, and `execute` for authenticated calls. One agent loop can select an endpoint and request current API data.
+The MCP server exposes `docs` for documentation and `search` for endpoint discovery. It also exposes `execute` for authenticated calls. One agent loop can select an endpoint and request current API data.
 
 ## Recipe 2. Monitor to Slack
 
-Use this when a Slack channel should receive new tweets, replies, quotes, or retweets from monitored accounts.
+Use this when a Slack channel should receive activity from monitored accounts. That activity is new tweets, replies, quotes, or retweets.
 
 ### Workflow shape
 
@@ -353,7 +353,7 @@ sending Slack messages. Use custom verification code when your plan supports it.
 
 ## Recipe 3. Extraction to Google Sheets
 
-Use this when a team needs bulk follower, reply, quote, media, list, community, or search results in a spreadsheet.
+Use this when a team needs bulk results in a spreadsheet. The results can be follower, reply, quote, media, list, community, or search results.
 
 ### Workflow shape
 
@@ -477,7 +477,7 @@ Map these fields into Google Sheets.
   </Card>
 </CardGroup>
 
-For jobs larger than 1,000 rows, loop while `hasMore` is `true` and pass `cursor` with the `nextCursor` value.
+For jobs larger than 1,000 rows, loop while `hasMore` is `true`. On each loop, pass `cursor` with the `nextCursor` value.
 
 ## Useful REST actions
 

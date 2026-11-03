@@ -58,9 +58,9 @@ Anonymous non-MPP paid reads return `401` with a Bearer challenge and guest wall
 Try these fixes.
 
 - For account keys, check `GET /api/v1/account` and use only the advertised account payment action
-- For guest keys, check [guest wallet status](/api-reference/guest-wallets/status) and use only the advertised guest top-up action
-- For the direct MPP operations, complete the MPP challenge or ask the user to confirm a guest wallet amount
-- For the other guest-eligible reads, authenticate or ask the user to confirm a guest wallet amount
+- For guest keys, check [guest wallet status](/api-reference/guest-wallets/status). Then use only the advertised guest top-up action
+- For the direct MPP operations, complete the MPP challenge. You can also ask the user to confirm a guest wallet amount
+- For the other guest-eligible reads, authenticate. You can also ask the user to confirm a guest wallet amount
 - Use [Estimate Extraction](/api-reference/extractions/twitter-scraping-cost-estimator) to see the credit cost before running extractions
 
 Ask the user to choose an option and amount before creating checkout. Never trigger checkout, top-up, or subscription automatically after `401` or `402`.
@@ -140,9 +140,9 @@ Try these fixes.
 - Respect `Retry-After` when present, then retry the request
 - If no `Retry-After` header is present, retry after 5 to 10 seconds
 - Use exponential backoff (see [Error Handling](/guides/error-handling))
-- If the error continues for more than 5 minutes, the read service may have an outage
+- After 5 minutes of errors, the read service may have an outage
 
-The same applies to draws and tweet, profile, follower, reply, timeline, community, and list endpoints under `/api/v1/x/*`.
+The same applies to draws. So do tweet, profile, follower, reply, timeline, community and list endpoints under `/api/v1/x/*`.
 
 ## Common questions
 
@@ -174,8 +174,8 @@ If your monitor is active but no events appear, check these items.
 ### How do I replay stored monitor events?
 
 Call `GET /api/v1/events?monitorId={id}&limit=50` for account monitors, or
-`GET /api/v1/events?keywordMonitorId={id}&limit=50` for keyword monitors, then
-process each event once. If `hasMore` is `true`, store `nextCursor` and pass it as `cursor` on the next request. Add `eventType` when you need to separate tweets, replies, quotes, or profile changes.
+`GET /api/v1/events?keywordMonitorId={id}&limit=50` for keyword monitors. Then
+process each event once. If `hasMore` is `true`, store `nextCursor` and pass it as `cursor` next time. Add `eventType` when you need to separate tweets, replies, quotes, or profile changes.
 
 ### Write action still pending?
 
@@ -203,7 +203,7 @@ Call `GET /api/v1/account`. The `creditInfo` object shows your balance.
 ```
 
 - `creditInfo.balance` shows the remaining credits available for metered calls
-- When `balance` reaches `0`, Xquik rejects metered calls until you top up credits or auto top-up triggers
+- At a `balance` of `0`, Xquik rejects metered calls. A credit top-up or an auto top-up ends that
 - Auto top-up stops after 3 declined charges in a row. Update your card in the dashboard to restart it.
 - With exchange rates over 3 ECB working days old, non-USD auto top-ups skip. Nothing is charged.
 
@@ -243,17 +243,17 @@ Follow these setup steps.
 
 1. For docs search, add `https://docs.xquik.com/mcp`.
 2. For account actions, use a full API key or OAuth login. Prefer OAuth when the client supports browser authorization.
-3. For guest reads, activate a guest key through direct REST, then authenticate MCP with that key.
+3. For guest reads, activate a guest key through direct REST. Then authenticate MCP with that key.
 
 Guest wallet creation, status, and top-up are never executable through MCP.
 
 These are the current client paths.
 
-- **OAuth 2.1.** Claude.ai, Claude Desktop, Claude Code, ChatGPT, Cursor, VS Code, Windsurf, OpenCode, Gemini CLI, GitHub Copilot CLI, Cline, Qwen Code, Pi, Goose, and Codex CLI
+- **OAuth 2.1.** Claude.ai, Claude Desktop, Claude Code, ChatGPT, Cursor, VS Code, Windsurf, and OpenCode. Gemini CLI, GitHub Copilot CLI, Cline and Qwen Code also use it. So do Pi, Goose and Codex CLI
 - **API-key only.** Roo Code's archived final release has no MCP OAuth provider
 - **Older Pi.** Builds without `pi mcp` require an upgrade or a tested adapter
 
-See [Docs MCP server](/mcp/docs-mcp) for docs search, [MCP Server overview](/mcp/overview) for account actions, and the [MCP Tools](/mcp/tools) reference for tool details.
+See [Docs MCP server](/mcp/docs-mcp) for docs search. See [MCP Server overview](/mcp/overview) for account actions. The [MCP Tools](/mcp/tools) reference has the tool details.
 
 ### MCP OAuth does not open or shows an unknown application
 
@@ -272,13 +272,12 @@ Xquik publishes all required discovery documents.
 - The agent-readable auth guide is at `https://xquik.com/auth.md`
 
 Xquik supports CIMD and DCR. Let the client use its documented registration
-flow. Claude selects CIMD when the authorization metadata advertises support
-and the public `none` authentication method. Otherwise it can use DCR. ChatGPT
-app creators choose CIMD or DCR during setup. If a URL-form `client_id` fails,
-its public HTTPS metadata URL must include an explicit path. A trailing `/` is
-sufficient. It must return JSON
-without a redirect. Repeat the exact URL in `client_id`. List the callback in
-`redirect_uris`.
+flow. Claude selects CIMD when authorization metadata advertises support and the
+public `none` authentication method. Otherwise it can use DCR. ChatGPT app
+creators choose CIMD or DCR during setup. If a URL-form `client_id` fails, check
+its public HTTPS metadata URL. It must include an explicit path. A trailing `/`
+is sufficient. It must return JSON without a redirect. Repeat the exact URL in
+`client_id`. List the callback in `redirect_uris`.
 
 ### How do I export extraction results?
 

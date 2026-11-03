@@ -40,7 +40,7 @@ Search canonical public documentation. `docs` is read-only and uses no credits.
 
 Return the signed-in account's stable id. `whoami` takes no arguments, makes no API request, and uses no credits.
 
-**Output.** `{ "id": "user:<id>" }`. The `id` stays the same across token refresh, reconnection, and permission changes, and never moves to another account. Use it to tell connected accounts apart. ChatGPT reads it as the app's profile tool.
+**Output.** `{ "id": "user:<id>" }`. The `id` stays the same across token refresh, reconnection, and permission changes. It never moves to another account. Use it to tell connected accounts apart. ChatGPT reads it as the app's profile tool.
 
 ## `readSavedResult`
 
@@ -94,7 +94,7 @@ async () => spec.components.schemas.PaginatedTweets.properties;
 
 Execute API calls allowed by the authenticated credential. Full account keys and OAuth tokens keep their existing account capabilities. Guest keys can execute only the eligible GET reads. The server injects authentication and required idempotency headers.
 
-For full credentials, `execute` carries `destructiveHint: true` and `openWorldHint: true`, so MCP clients such as Claude ask before each call. Guest keys see it as read-only. Native tools carry the hints of their operation, so reads run without a prompt.
+For full credentials, `execute` carries `destructiveHint: true` and `openWorldHint: true`. As a result, MCP clients such as Claude ask before each call. Guest keys see it as read-only. Native tools carry the hints of their operation, so reads run without a prompt.
 
 **Input.**
 
@@ -152,7 +152,7 @@ Optional-field fallbacks remain valid. Warnings contain field names, never respo
 With warnings, text and structured output both contain `{ result, warnings }`.
 The combined output follows the existing 24,000-character limit.
 
-List and search responses use `has_more` and `next_cursor`, even when REST shows `has_next_page` or `hasMore`. Pass `next_cursor` unchanged as `cursor` for X reads, draws, extractions, and events. Never replace an extraction cursor with `offset`. Use `after` for `/api/v1/radar` and `afterCursor` for drafts.
+List and search responses use `has_more` and `next_cursor`. They do so even when REST shows `has_next_page` or `hasMore`. Pass `next_cursor` unchanged as `cursor` for X reads, draws, extractions, and events. Never replace an extraction cursor with `offset`. Use `after` for `/api/v1/radar` and `afterCursor` for drafts.
 
 Hosted MCP keeps each requested `limit`. REST enforces documented bounds.
 
@@ -160,7 +160,7 @@ Omit `mode` for tweet search, replies, followers, following, and verified
 followers. Those operations use automatic maximum coverage. Pass
 `next_cursor` back unchanged. Use `mode=standard` only for legacy pagination.
 
-Continue through empty pages, filtered or not, while `has_more` is true and the cursor advances. Stop when you reach the requested total or `has_more` becomes false. Treat a missing or repeated `next_cursor` while `has_more` is true as stalled pagination. Return the partial count plus a stop reason.
+Keep paging while `has_more` is true and the cursor advances. That includes empty pages, filtered or not. Stop when you reach the requested total or `has_more` becomes false. Treat a missing or repeated `next_cursor` while `has_more` is true as stalled pagination. Return the partial count plus a stop reason.
 
 For advanced nested-reply diagnostics, call
 `/api/v1/x/tweets/<tweet_id>/replies?mode=complete&limit=25000`.
@@ -171,7 +171,7 @@ MCP returns that documented body instead of a tool error.
 Inspect `coveragePercentage`, `recommendedFallback`, and X-dependent coverage
 limits.
 
-Errors use `error.type`, `error.code`, and `error.message`, with fields such as `error.retryable` or `error.retry_after` when available. Invalid routes stay blocked without suggesting or calling a different operation. Find the exact method and path in `spec.paths` before retrying. Dependency failures use HTTP `424` in this contract. Fix validation errors before retrying. Respect `retry_after` on `429`.
+Errors use `error.type`, `error.code`, and `error.message`. They add fields such as `error.retryable` or `error.retry_after` when available. Invalid routes stay blocked without suggesting or calling a different operation. Find the exact method and path in `spec.paths` before retrying. Dependency failures use HTTP `424` in this contract. Fix validation errors before retrying. Respect `retry_after` on `429`.
 
 Write and media results follow the same contract. Read `tweet_id`, `write_action_id`, `charged_credits`, `media_id`, `media_url`, and `message_id` from `response.result`.
 
@@ -195,7 +195,7 @@ The separate 24,000-character tool output limit still applies.
 
 ### Recover oversized results
 
-When saving succeeds, the first page of an oversized API result includes `result_id` and a resource link.
+When saving succeeds, the first page of an oversized API result includes `result_id`. The page also includes a resource link.
 Its `next` names only tools your catalog lists. Use 1 of these retrieval methods.
 
 - In Code Mode, pass `result_id` to `execute`, then project or page `xquik.result`.
@@ -220,21 +220,21 @@ Missing or unavailable results return an error.
 Recovery applies only when the response supplies `result_id`.
 Every API answer MCP accepts fits in storage. A storage failure may still prevent saving.
 An oversized `search` answer is not saved. Return a smaller selection for the rest.
-Without a saved result, contact support before repeating paid requests.
+Without a saved result, contact support before repeating requests that cost credits.
 Verify completed writes before retrying them.
 
 ### Scope and unavailable operations
 
 The [MCP operation boundary](/mcp/overview#mcp-operation-boundary) lists excluded operations. Guest wallet credential routes and file downloads use REST. Guest keys expose only [eligible paid-read routes](/guides/guest-wallets#eligible-paid-read-routes).
 
-A `402` creates no checkout. Its MCP answer keeps `error`, `message`, `balance`, `required`, `credits_renew_at` when a plan renews, and `dashboard` as a full link. It leaves out `payment_options`, `next_step` and the top-up fields. Report the balance and send the user to the `dashboard` link to add credits.
+A `402` creates no checkout. Its MCP answer keeps `error`, `message`, `balance`, and `required`. It also keeps `credits_renew_at` when a plan renews, and `dashboard` as a full link. It leaves out `payment_options`, `next_step` and the top-up fields. Report the balance and send the user to the `dashboard` link to add credits.
 
 **Examples.**
 
 > Summarize up to 100 tweets with guarded pagination (credits required)
 
-Use `q` for keywords and X search operators, or pass a plain Tweet ID or X
-status URL when the agent receives a single stored link.
+Use `q` for keywords and X search operators.
+For a single stored link, pass a plain Tweet ID or X status URL.
 
 ```javascript
 async () => {
@@ -547,7 +547,7 @@ async () => {
 };
 ```
 
-> Monitor a user + create webhook (monitor creation requires credits, webhook is free)
+> Monitor a user + create webhook (monitor creation requires credits, webhook costs no credits)
 
 ```javascript
 async () => {
@@ -580,7 +580,7 @@ async () => {
 };
 ```
 
-> Poll stored monitor events (free)
+> Poll stored monitor events (costs no credits)
 
 ```javascript
 async () => {
@@ -656,12 +656,12 @@ Avoid raw pages when later workers need durable rows.
 
   <Card title="Search tweets to JSON" icon="search">
 
-    Call `GET /api/v1/x/tweets/search` with keywords, operators, a Tweet ID, or an X status URL in `q`. Valid time bounds apply to every page. The start is inclusive and the end is exclusive. Store `tweets[].id`, `tweets[].text`, `tweets[].author`, `tweets[].created`, `has_more`, `next_cursor`, and the original `q`. The cost is 1 credit per tweet returned.
+    Call `GET /api/v1/x/tweets/search`. Put keywords, operators, a Tweet ID, or an X status URL in `q`. Valid time bounds apply to every page. The start is inclusive and the end is exclusive. Store `tweets[].id`, `tweets[].text`, `tweets[].author`, `tweets[].created`, `has_more`, `next_cursor`, and the original `q`. The cost is 1 credit per tweet returned.
 
   </Card>
   <Card title="Scrape tweet replies to files" icon="messages-square">
 
-    Call `POST /api/v1/extractions` with `reply_extractor` and `targetTweetId`. The create route handles required preflight. Poll `GET /api/v1/extractions/{id}`, export CSV, JSON, or XLSX with `GET /api/v1/extractions/{id}/export`, and store reply rows plus `has_more` and `next_cursor`. The cost is 1 credit per reply extracted or returned.
+    Call `POST /api/v1/extractions` with `reply_extractor` and `targetTweetId`. The create route handles required preflight. Poll `GET /api/v1/extractions/{id}`. Export CSV, JSON, or XLSX with `GET /api/v1/extractions/{id}/export`. Store reply rows plus `has_more` and `next_cursor`. The cost is 1 credit per reply extracted or returned.
 
   </Card>
   <Card title="Export followers to CRM" icon="users">
@@ -671,7 +671,7 @@ Avoid raw pages when later workers need durable rows.
   </Card>
   <Card title="Post media tweets or replies" icon="image">
 
-    Call `POST /api/v1/x/tweets` with `media: ["https://..."]`. Store `tweet_id` or `write_action_id`, `reply_to_tweet_id`, `account`, `charged_credits`, and the original `media` URLs. The cost is 30 credits text-only, plus 2 credits per started MB across attached media.
+    Call `POST /api/v1/x/tweets` with `media: ["https://..."]`. Store `tweet_id` or `write_action_id`, `reply_to_tweet_id`, `account`, `charged_credits`, and the original `media` URLs. The cost is 30 credits text-only. Add 2 credits per started MB across attached media.
 
   </Card>
   <Card title="Send DMs with media" icon="send">
@@ -681,7 +681,7 @@ Avoid raw pages when later workers need durable rows.
   </Card>
   <Card title="Track tweet or reply writes" icon="activity">
 
-    Call `POST /api/v1/x/tweets`, then `GET /api/v1/x/write-actions/{id}` when pending. Store `tweet_id`, `reply_to_tweet_id`, `write_action_id`, `status`, `charged`, `charged_credits`, and `media`. The cost is 30 credits text-only, plus 2 credits per started MB across attached media.
+    Call `POST /api/v1/x/tweets`, then `GET /api/v1/x/write-actions/{id}` when pending. Store `tweet_id`, `reply_to_tweet_id`, `write_action_id`, `status`, `charged`, `charged_credits`, and `media`. The cost is 30 credits text-only. Add 2 credits per started MB across attached media.
 
   </Card>
   <Card title="Monitor tweets to webhooks" icon="radio">
@@ -696,7 +696,7 @@ Avoid raw pages when later workers need durable rows.
   </Card>
 </CardGroup>
 
-Do not upload media before posting tweets or replies when the media is already public. `POST /api/v1/x/tweets` rejects `media_ids` with `400 unsupported_field`. Pass up to 4 public image URLs or exactly 1 public MP4 video URL up to 100 MB in `media` instead. Reserve uploaded `media_id` values for direct messages.
+When the media is already public, post tweets or replies without uploading it first. `POST /api/v1/x/tweets` rejects `media_ids` with `400 unsupported_field`. Pass public URLs in `media` instead. Send up to 4 image URLs or exactly 1 MP4 video URL. The video can be up to 100 MB. Reserve uploaded `media_id` values for direct messages.
 
 ```javascript
 async () => {
@@ -750,7 +750,7 @@ The full MCP catalog groups its operations into 10 categories.
 
   <Card title="Account, composition, and credits" icon="user">
 
-    MCP operations across `account`, `composition`, and `credits` cover account info, X identity, compose, styles, drafts, radar, and balance checks.
+    MCP operations across `account`, `composition`, and `credits` cover account info and X identity. They also cover compose, styles, drafts, radar, and balance checks.
 
   </Card>
   <Card title="Extractions and media" icon="download">
@@ -760,7 +760,7 @@ The full MCP catalog groups its operations into 10 categories.
   </Card>
   <Card title="Monitoring and webhooks" icon="radio">
 
-    Operations in `monitoring` cover account monitors, keyword monitors, post monitors, stored events, webhooks, deliveries, and test delivery.
+    Operations in `monitoring` cover account monitors, keyword monitors, and post monitors. They also cover stored events, webhooks, deliveries, and test delivery.
 
   </Card>
   <Card title="Support" icon="message-circle">
@@ -770,35 +770,35 @@ The full MCP catalog groups its operations into 10 categories.
   </Card>
   <Card title="Tweets, profiles & followers" icon="search">
 
-    Operations in `twitter` cover batch and single tweet lookup, tweet search, article lookup, user Article lists, hidden replies, user lookup, repost checks, follower and following ID lists, creator subscriptions, affiliates, follow checks, trends, bookmarks, notifications, timeline, DM history, likes, media, highlights, followers, replies, communities, lists, and job listings. Timeline and thread results exclude X ads.
+    Operations in `twitter` cover batch and single tweet lookup, tweet search, and article lookup. The category also covers user Article lists, hidden replies, user lookup, and repost checks. It covers follower and following ID lists, creator subscriptions, affiliates, and follow checks. It covers trends, bookmarks, notifications, timeline, DM history, likes, media, and highlights. It also covers followers, replies, communities, lists, and job listings. Timeline and thread results exclude X ads.
 
   </Card>
   <Card title="X accounts and writes" icon="send">
 
-    Operations across `x-accounts` and `x-write` connect accounts, resolve challenges, post tweets, like, retweet, follow, remove followers, send and delete DMs, upload media, update profiles, and manage communities.
+    Operations across `x-accounts` and `x-write` connect accounts and resolve challenges. They post tweets, like, retweet, follow, and remove followers. They also send and delete DMs, upload media, update profiles, and manage communities.
 
   </Card>
 </CardGroup>
 
-With a guest `paid_reads` key, `search` and `execute` expose only the eligible `twitter` GET operations. The `docs` tool remains available. Use the [guest paid-read route inventory](/guides/guest-wallets#eligible-paid-read-routes) as the public route list.
+A guest `paid_reads` key limits `search` and `execute` to the eligible `twitter` GET operations. The `docs` tool remains available. Use the [guest paid-read route inventory](/guides/guest-wallets#eligible-paid-read-routes) as the public route list.
 
 ## Cost summary
 
 <CardGroup cols={2}>
 
-  <Card title="Always free discovery" icon="sparkles">
+  <Card title="Always unmetered discovery" icon="sparkles">
 
-    `docs` and `search` are free. They return documentation and API contract details.
+    `docs` and `search` cost no credits. They return documentation and API contract details.
 
   </Card>
-  <Card title="Free account and stored records" icon="circle-check">
+  <Card title="Unmetered account and stored records" icon="circle-check">
 
-    Compose, cached styles, drafts, radar, account, support, credits, X account management, webhooks, stored monitors, stored events, and existing extraction or draw reads are free.
+    Compose, cached styles, drafts, radar, account, and support cost no credits. The same goes for credits, X account management, webhooks, and stored monitors. Stored events and existing extraction or draw reads cost no credits either.
 
   </Card>
   <Card title="Metered reads and jobs" icon="gauge">
 
-    Tweet search, user lookup, follow checks, media download, trends, extraction creation, and draw creation are metered.
+    Tweet search, user lookup, follow checks, media download, and trends are metered. Extraction creation and draw creation are metered too.
 
   </Card>
   <Card title="Monitor billing" icon="radio">
@@ -820,22 +820,22 @@ With a guest `paid_reads` key, `search` and `execute` expose only the eligible `
 
 <Warning>
 
-Never combine free and paid endpoints in a single `Promise.all`. A 402 error on one call fails every result. Call free endpoints first, then paid ones separately.
+Never combine unmetered and metered endpoints in a single `Promise.all`. A 402 error on one call fails every result. Call unmetered endpoints first, then metered ones separately.
 
 </Warning>
 
 ## Error handling
 
 - **402 / `no_subscription` / `subscription_inactive`.** Report the billing state. Existing available credits can still fund metered calls. Send the user to the `dashboard` link to choose a plan.
-- **402 / `no_credits` / `insufficient_credits`.** Report `balance` and `required`, then send the user to the `dashboard` link to add credits. Guest sessions may explain the direct REST top-up flow, but MCP cannot execute it.
+- **402 / `no_credits` / `insufficient_credits`.** Report `balance` and `required`. Then send the user to the `dashboard` link to add credits. Guest sessions may explain the direct REST top-up flow, but MCP cannot execute it.
 - **429 / `rate_limit_exceeded`.** Respect `error.retry_after`, then retry safe reads with backoff.
 - **424 dependency errors.** Report `error.code`, keep partial aggregates, and retry only when `error.retryable` allows it.
 - **Validation errors.** Fix the path, query, or body before retrying.
 
-`execute` throws a failed request as an Error, and a native tool answers it as an error result with the same text. The text names the method, path, and HTTP status of the request that failed, followed by the API's JSON error.
+`execute` throws a failed request as an Error. A native tool answers it as an error result with the same text. The text names the method, path, and HTTP status of the failed request. The API's JSON error follows.
 
 ```text
 Xquik API request GET /api/v1/x/tweets/search returned HTTP 400 Bad Request with {"error":{"message":"Use a whole number from 1 to 10,000 for limit.","type":"invalid_request_error","code":"invalid_input"}}
 ```
 
-MCP has no subscription, checkout, top-up or guest wallet tool, so no MCP call moves money.
+MCP has no subscription, checkout, top-up or guest wallet tool. No MCP call moves money.
