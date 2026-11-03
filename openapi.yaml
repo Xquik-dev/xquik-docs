@@ -7900,7 +7900,10 @@ paths:
   /x/communities:
     post:
       operationId: createCommunity
-      description: Creates an X Community through a connected account.
+      deprecated: true
+      description: >-
+        X isn't accepting new Communities. This call answers
+        `x_community_creation_closed` & charges nothing.
       x-write-action: create_community
       summary: Create Community
       tags: [X Write]
@@ -7937,7 +7940,31 @@ paths:
               account: '@elonmusk'
               name: 'Example Name'
               description: 'A community for Tesla enthusiasts'
-      responses: *write-responses
+      responses:
+        '200':
+          $ref: '#/components/responses/WriteActionCompleted'
+        '202':
+          $ref: '#/components/responses/WriteActionAccepted'
+        '409':
+          $ref: '#/components/responses/WriteIdempotencyConflict'
+        '400':
+          $ref: '#/components/responses/WriteInvalidInput'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
+        '403':
+          $ref: '#/components/responses/XWriteForbidden'
+        '404':
+          $ref: '#/components/responses/XAccountNotFound'
+        '422':
+          $ref: '#/components/responses/CommunityCreationClosed'
+        '429':
+          $ref: '#/components/responses/WriteRateLimited'
+        '503':
+          $ref: '#/components/responses/WriteTrackingUnavailable'
+        '500':
+          $ref: '#/components/responses/WriteError'
 
   /x/communities/{id}:
     delete:
@@ -16714,6 +16741,19 @@ components:
             message:
               'X rejected this request. Check what you sent & the account on
               x.com before you try again.'
+    CommunityCreationClosed:
+      description: >
+        X isn't accepting new Communities, so the write answers
+        `x_community_creation_closed`. It's final, so don't retry it. Xquik
+        charges nothing.
+      content:
+        application/json:
+          schema: *error-schema
+          example:
+            error: 'x_community_creation_closed'
+            message:
+              "X isn't accepting new Communities, so Xquik created nothing.
+              Xquik didn't charge you. Join an existing Community instead."
     RateLimitedByX:
       description: >
         X throttled the write, with `x_rate_limited` (short-term) or
@@ -21206,6 +21246,7 @@ components:
                 - x_api_unauthorized
                 - x_auth_failure
                 - x_automation_refused
+                - x_community_creation_closed
                 - x_community_not_joined
                 - x_community_not_selectable
                 - x_community_post_public
