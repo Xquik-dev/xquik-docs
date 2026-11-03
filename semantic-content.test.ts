@@ -408,7 +408,7 @@ const REQUIRED_OPERATIONAL_CONTENT = [
   {
     file: "api-reference/x-write/create-community.mdx",
     snippets: [
-      "Why you can't create a Twitter community with the X community API",
+      "Why you can't create a Twitter community by API",
       "## Why you can't create a community on Twitter",
       "This route does not add rules, members,",
       "`422 x_community_creation_closed`",
