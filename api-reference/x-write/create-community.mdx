@@ -1,7 +1,7 @@
 ---
-title: "Create a Twitter community with the X community API"
+title: "Why you can't create a Twitter community by API"
 sidebarTitle: "Create community"
-description: "Create an X community from one connected account. Submit its name and description, then track its community ID, admin account, and write lifecycle state."
+description: "X stopped accepting new Communities in April 2026. POST /x/communities answers x_community_creation_closed and charges nothing. Existing Communities still work."
 api: "POST /x/communities"
 keywords:
   [
@@ -191,25 +191,21 @@ import WriteActionLifecycleResponse from "/snippets/write-action-lifecycle-respo
 {/* GENERATED RESPONSE EXAMPLES END */}
 <LlmsDirective />
 
-## How to create a community on Twitter with Xquik
+## Why you can't create a community on Twitter
 
-Call `POST /x/communities` to create a community on Twitter from one connected
-account. The request submits a name and optional
-description. Xquik then tracks the write until X returns a final result.
+X stopped accepting new Communities in April 2026. `POST /x/communities` answers
+`422 x_community_creation_closed`. Xquik charges nothing.
 
-Use this route only when the account should own a new community. Use join or
-leave routes for an existing community. This route does not add rules, members,
+Existing Communities still work. Use
+[Join Community](/api-reference/x-write/join-community) to enter one and
+[Community Info](/api-reference/x/community-info) to read one.
+
+This route does not add rules, members,
 moderators, invitations, posts, analytics, or membership settings.
-
-Each community gives one topic a dedicated space on X.
-People can search for communities by name, description, or creator.
-They can join a community later. Each member of the community follows
-the chosen membership type and community rules. This route
-creates the empty community only.
 
 <Callout icon="coins" color="#5c3327">
 
-**10 credits per call** · [All plans](https://xquik.com/#pricing) from $0.00012/credit
+**0 credits** when X refuses the request · [All plans](https://xquik.com/#pricing) from $0.00012/credit
 
 </Callout>
 
@@ -303,212 +299,38 @@ func main() {
 
 </CodeGroup>
 
-## Prepare a community creation request
-
-Approve the community name, description, and rules before this call. Keep the
-connected owner in the approval record.
-
-Create one idempotency key for the intended community. Reuse it only when the
-same request needs network recovery. Use a new key after any approved input
-changes.
-
-Community creation workflows should include these steps.
-
-- Checking the final name for spelling and scope.
-- Reviewing rules with the future moderation team.
-- Recording the owner account and approval reference.
-- Saving the returned community and action identifiers.
-
-Do not submit parallel requests with different keys for one intended
-community. That can create multiple communities. Read the lifecycle state
-before other workflows use the new community.
-
-## Build a reviewable community brief
-
-Create a short brief before calling this endpoint. Record the proposed name,
-description, owner account, audience, and moderation purpose. Keep that brief
-beside the approval record. Reviewers can then compare the submitted fields
-against the approved community identity.
-
-The name is public and hard to change later. Check spelling, capitalization, and
-topic scope before approval. Use the description to explain who should join.
-Avoid campaign dates or temporary slogans in either field. Those details go out of date
-and confuse people who find the community later.
-
-Choose one connected account as the owner. Record its username and
-stable account ID when available. Confirm that the account appears in your
-connected-account list. Keep the same owner during network recovery. A
-different owner means a different write request.
-
-Store these creation inputs together.
-
-- Connected owner username and account ID.
-- Final community name and description.
-- Approval reference and approving operator.
-- Idempotency key for this exact submission.
-- Returned action ID and lifecycle state.
-
-Repeat the unchanged
-request only after a network timeout. Changed text needs a new approval and key.
-
-## Confirm the community admin account
-
-Choose the connected account before review. X assigns admin ownership to the
-original creator. Community admins manage names, descriptions, rules, and
-moderators in X. Xquik only sends the creation request.
-
-X requires an eligible admin account. Its official moderator
-playbook lists these checks.
-
-- Use a public account.
-- Use an account that is at least 6 months old.
-- Verify an email address or phone number.
-- Keep the account compliant with the X Terms of Service.
-
-X enforces these requirements and can change them. The request has no
-eligibility override. It also has no Premium field. Confirm current eligibility
-inside X before approval. Save any rejection reason for the operator.
-
-Review the [X Communities moderator playbook](https://help.x.com/en/using-x/communities-moderator-playbook)
-before assigning the owner. It explains creator, admin, moderator, and member
-responsibilities. Store the chosen account with the approved community brief.
-
-## Plan community rules and membership
-
-Define community rules before creating the community. Rules should describe
-the topic, allowed behavior, and moderation response. Do not place temporary
-campaign instructions in the public description. Keep the full rule set in
-the team's approved moderation record.
-
-X offers open communities and restricted membership. Open
-communities show a Join button at the top of the community page. Restricted
-communities can let a person request to join. A moderator then accepts or
-denies that request. X may also allow member invitations.
-
-This endpoint does not choose a membership type. It does not add community
-members or moderators. Configure those settings after creation through the
-current X interface. Record the selected mode beside the returned community ID.
-
-Read the [X Communities guide](https://help.x.com/en/using-x/communities) before
-opening membership. It covers visibility, roles, invitations, and moderation.
-Use the guide as the source for current X behavior. Use this page for Xquik's
-API contract.
-
-## Prepare a brand or product community
-
-Use a specific name that explains the shared topic. Write a description that
-identifies the intended community members. State who operates the community.
-Avoid names that imply an unsupported partnership or endorsement.
-
-Prepare the first discussion topics before launch. Assign community admins and
-moderators before invitations begin. Decide who reviews reports and removes
-disruptive members. Keep escalation rules outside the public description.
-
-This route cannot publish welcome posts or schedule discussions. It cannot
-promote or monetize the community. After launch, publish Community posts with
-[Create Tweet](/api-reference/x-write/create-tweet). X may display Community
-posts inside a member's Twitter feed.
-
-## Connect the community to a website or app
-
-The request has no website, app, rules, or invitation field. Store those links
-in your application after X confirms creation. Associate them with the returned
-community ID, owner account, approval, and lifecycle record.
-
-After success, verify the name on the community page. Search
-for communities by name, description, or creator through X when available.
-X notes that not every community appears in search results. Do not treat search
-visibility as proof of creation.
-
-Use the community ID as the stable integration key. Do not key integrations by
-the editable display name. Store a verified community URL only after the read
-route confirms the new ID.
-
 ## Community creation questions
 
 ### Do X communities still exist?
 
-Yes. X still publishes current Communities and moderator guidance. This API
-creates an X Community through a connected account. X controls feature
-availability and account eligibility.
+Yes. Existing Communities still work, and people post in them every day. X
+stopped accepting new ones in April 2026.
 
 ### Do you need X Premium to create a community?
 
-The Xquik request does not accept a Premium setting. X decides whether the
-connected account can create the community. Check current X eligibility before
-submitting a billable write.
+Premium doesn't help. X refuses new Communities, so an account upgrade doesn't
+fix `x_community_creation_closed`.
 
 ### Can the API add rules, members, or moderators?
 
-No. The request accepts `account`, `name`, and `description`. Set
-community rules, membership type, invitations, and moderator roles after
-creation. Never send undocumented fields.
-
-### Can the API schedule, grow, or monetize a community?
-
-No. This route creates the community and tracks that write. It does not schedule
-posts, invite initial members, or run promotions. It also does not provide
-analytics or configure monetization.
+No. The request accepts `account`, `name`, and `description`. Never send
+undocumented fields.
 
 ### How should software handle community creation?
 
-Require an approved brief and one idempotency key. Store the action ID
-immediately. Poll the lifecycle and verify the new community ID. Then start
-separate membership or publishing workflows.
-
-## Validate the new community
-
-Wait for the write lifecycle to finish before announcing the community. A
-`202` response means Xquik accepted the write for processing. It does not prove
-that X completed community creation. Follow the returned lifecycle state until
-the action reaches its final result.
-
-Capture the new community ID from the confirmed result. Then call
-[Community Info](/api-reference/x/community-info). Compare its
-name and description with the approved brief. Save the returned community ID
-beside the owner account and action ID.
-
-Run these checks before inviting members.
-
-1. Confirm the community ID resolves.
-2. Compare the returned name with the approved name.
-3. Compare the returned description with the approved description.
-4. Confirm the intended owner account remains connected.
-5. Record the final write state and verification time.
-
-Repeat the information request after a temporary read failure. Keep the same
-key only when every input remains unchanged.
+Treat `422 x_community_creation_closed` as final, and don't retry it. Send people
+to an existing Community, an XChat group link or an X List.
 
 ## Handle creation failures
 
-Fix invalid names or missing accounts
-before sending another write. Restore credits before retrying a `402` response.
-Reconnect the owner after `403`.
+`422 x_community_creation_closed` means X isn't accepting new Communities. Don't
+retry it or add credits for it. Xquik charges nothing.
 
 A `409` means the key already identifies another request. Compare both request
-bodies. Reuse the key only when every creation input matches.
-Generate a new key after any approved field changes.
+bodies. Reuse the key only when every input matches.
 
-`422 x_account_feature_required` means X won't let this account create communities.
-Use another account. Xquik charges nothing.
-
-For other `422` errors, save the rejected request and returned reason. Do not rewrite
-the community brief in code. Return it to the operator for review. For
-`429`, respect the retry guidance and keep the same approved intent.
-
-After `503`, check the write lifecycle before retrying. A disconnected client
-does not prove failure. A retry can create a 2nd community.
-
-| Community creation record | Request or response source       | Completion rule                |
-| ------------------------- | -------------------------------- | ------------------------------ |
-| Owner                     | Request `account`                | Match the connected owner.     |
-| Name                      | Request `name`                   | Keep the approved name.        |
-| Purpose                   | Request `description`            | Keep the approved description. |
-| Replay key                | Request header                   | Reuse it for one exact replay. |
-| Action ID                 | Response `id`                    | Poll this lifecycle record.    |
-| State                     | Response `status` and `terminal` | Stop after a terminal result.  |
-| Community ID              | Response `communityId`           | Store it after success.        |
-| Verification              | `GET /x/communities/{id}/info`   | Match the name and owner.      |
+After `503`, check the write lifecycle before you retry. A disconnected client
+doesn't prove failure.
 
 ## Headers
 
