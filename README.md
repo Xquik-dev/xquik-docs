@@ -1,5 +1,7 @@
 # Twitter API documentation & X API docs by Xquik
 
+[![Convex Component](https://www.convex.dev/components/badge/convex-xquik)](https://www.convex.dev/components/convex-xquik)
+
 > **Xquik is an independent third-party service.** Not affiliated with X Corp.
 > "Twitter" and "X" are trademarks of X Corp.
 
