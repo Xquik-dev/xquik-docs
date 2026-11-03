@@ -4296,6 +4296,47 @@ paths:
           in: query
           schema: { type: boolean }
           description: Require a non-empty location.
+        - name: compare
+          in: query
+          schema: { type: string, maxLength: 12 }
+          description: >
+            ID of an earlier run that read the same account's whole list. The
+            export then holds only the rows that differ.
+        - name: change
+          in: query
+          schema: { type: string, enum: [added, removed], maxLength: 7 }
+          description: >
+            With compare, `added` keeps this run's new rows and `removed` keeps
+            the earlier run's rows that this run lacks. The default is `added`.
+        - name: hasWebsite
+          in: query
+          schema: { type: boolean }
+          description: Require a website on the profile.
+        - name: joinedSince
+          in: query
+          schema: { type: string, format: date, maxLength: 10 }
+          description: Keep accounts that joined X on this UTC day or later.
+        - name: joinedUntil
+          in: query
+          schema: { type: string, format: date, maxLength: 10 }
+          description: Keep accounts that joined X before this UTC day.
+        - name: location
+          in: query
+          schema: { type: string, maxLength: 100 }
+          description: Keep accounts whose location contains this text.
+        - name: hideInactive
+          in: query
+          schema: { type: boolean }
+          description: >
+            Drop accounts with under 1 post a month since joining that are at
+            least 180 days old.
+        - name: hideFake
+          in: query
+          schema: { type: boolean }
+          description: >
+            Drop accounts with at least 3 of these signs. No posts, a default
+            picture, an empty bio, or following at least 100 accounts and 10
+            times their followers.
         - name: hasEmail
           in: query
           schema: { type: boolean }
@@ -23396,7 +23437,13 @@ components:
         replyCount: *whole-number
         retweetCount: *whole-number
         viewCount: *whole-number
-        enrichmentData: { $ref: '#/components/schemas/PublicMetadata' }
+        enrichmentData:
+          type: object
+          $ref: '#/components/schemas/PublicMetadata'
+          description: >
+            Nested row details. On a user list, `user` also holds `joinedOn`,
+            `followRatio`, `postsPerMonth`, `standing`, `website`, `isProtected`
+            and `isSensitive` when they apply.
 
     DrawListItem:
       description: Giveaway draw summary with entry counts and status.
