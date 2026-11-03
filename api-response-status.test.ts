@@ -44,16 +44,19 @@ const HTTP_METHODS: ReadonlySet<string> = new Set([
   "put",
   "trace",
 ]);
-const PAGELESS_OPERATIONS = [
-  "DELETE /extractions/{id}",
-  "GET /ask",
-  "GET /credits/topup/redirect",
-  "POST /ask",
-];
+const PAGELESS_OPERATIONS = ["GET /ask", "GET /credits/topup/redirect", "POST /ask"];
 const PAGES_WITHOUT_OPERATION = [
   "api-reference/authentication.mdx",
   "api-reference/features.mdx",
   "api-reference/overview.mdx",
+];
+const OAUTH_OVERVIEW_OPERATIONS = [
+  "GET /api/oauth/authorize",
+  "POST /agent/identity",
+  "POST /agent/identity/claim",
+  "POST /api/oauth/register",
+  "POST /api/oauth/revoke",
+  "POST /api/oauth/token",
 ];
 interface ApiDoc {
   readonly file: string;
@@ -260,7 +263,9 @@ describe("API success response status documentation", (): void => {
         !FRONTMATTER_API_PATTERN.test(readFileSync(join(PROJECT_ROOT, file), "utf8")),
     );
 
-    expect([...paged, ...PAGELESS_OPERATIONS].toSorted()).toStrictEqual(operations.toSorted());
+    expect(
+      [...paged, ...PAGELESS_OPERATIONS, ...OAUTH_OVERVIEW_OPERATIONS].toSorted(),
+    ).toStrictEqual(operations.toSorted());
     expect(unnamed).toStrictEqual(PAGES_WITHOUT_OPERATION);
   });
 

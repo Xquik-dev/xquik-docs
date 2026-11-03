@@ -17,13 +17,14 @@ See [every Xquik feature](/api-reference/features) in 1 list, grouped by theme.
 <Note>
 
 Public reads need no connected X account. This covers tweets, profiles, followers, replies, timelines, communities & lists.
-Every X write requires one. Private reads also require one, including DMs, bookmarks, notifications, home timeline, likes, likers & mutual followers. See [Connect X account](/api-reference/x-accounts/connect).
+Every X write requires one. Private reads also require one. They include DMs, bookmarks, notifications, home timeline, likes, likers & mutual followers. See [Connect X account](/api-reference/x-accounts/connect).
 
 </Note>
 
-This page covers the API MCP server at `https://xquik.com/mcp` for
-authenticated account actions and guest paid reads. For public documentation
-search, use the [Docs MCP server](/mcp/docs-mcp) at `https://docs.xquik.com/mcp`.
+This page covers the API MCP server at `https://xquik.com/mcp` for authenticated
+account actions. That server is also for guest prepaid reads. For public
+documentation search, use the [Docs MCP server](/mcp/docs-mcp) at
+`https://docs.xquik.com/mcp`.
 
 Supported browsers expose a read-only WebMCP tool on the homepage. It searches the public OpenAPI contract without calling an endpoint.
 
@@ -54,7 +55,7 @@ Supported browsers expose a read-only WebMCP tool on the homepage. It searches t
   </Card>
 </CardGroup>
 
-`GET` and `POST` on `/.well-known/mcp.json` return a compatibility document derived from the MCP Registry manifest.
+`GET` and `POST` on `/.well-known/mcp.json` return a compatibility document. It comes from the MCP Registry manifest.
 `/server.json` and `/.well-known/mcp/server-card.json` return the same document. Its standard `remotes` entry identifies the `streamable-http` endpoint.
 Extra top-level convenience fields support older clients. They are not MCP Registry or experimental MCP Server Card fields.
 OAuth clients read `GET /.well-known/oauth-protected-resource/mcp` for protected-resource metadata.
@@ -67,12 +68,12 @@ endpoint. Clients without OAuth may send an API key as
 Create API keys at `https://dashboard.xquik.com/en/account?tab=api-keys`. The direct client examples below use OAuth. Use the API-key fallback only when the client documents secure request headers.
 
 Discover Xquik through `https://xquik.com/.well-known/ard.json` or `https://xquik.com/.well-known/agents.json`.
-ARD lists the MCP server and the REST API, each with example queries and its `https://xquik.com` identity.
+ARD lists the MCP server and the REST API. Each has example queries and its `https://xquik.com` identity.
 The agent catalog adds the public A2A docs agent, capabilities, OAuth metadata, and `https://xquik.com/auth.md`.
-`auth.md` covers Client ID Metadata Documents (CIMD), Dynamic Client Registration (DCR), PKCE, and the `mcp:tools` & `mcp:read` scopes.
+`auth.md` covers Client ID Metadata Documents (CIMD), Dynamic Client Registration (DCR) and PKCE. It also covers the `mcp:tools` & `mcp:read` scopes.
 MCP connection metadata also lives at `https://xquik.com/.well-known/mcp.json`.
 
-DCR at `https://xquik.com/api/oauth/register` is the supported anonymous OAuth client registration path when a client cannot use CIMD.
+A client that cannot use CIMD takes the supported anonymous OAuth client registration path. That is DCR at `https://xquik.com/api/oauth/register`.
 
 Agent Skills discovery is available at
 `https://xquik.com/.well-known/agent-skills/index.json`. It publishes a
@@ -95,10 +96,11 @@ It identifies the HTTP request, not the JSON-RPC message or authenticated sessio
 Allowed browser clients can send and read this header.
 
 `server/discover` and `tools/list` include private cache hints with a 5-minute TTL.
-Code Mode advertises tool-list changes. Native catalogs stay static. Cache only within the same authorization context.
+Every catalog stays static for a connection. The server advertises no tool-list changes, and `subscriptions/listen` completes at once. Cache only within the same authorization context.
 
 Xquik also accepts stateless 2025-era clients at the same endpoint. This keeps
-existing integrations working while current SDKs adopt `2026-07-28`.
+existing integrations working while current SDKs adopt `2026-07-28`. Each
+2025-era request gets its answer as 1 JSON response.
 
 <Note>
 
@@ -107,10 +109,22 @@ resume state. Let the client SDK negotiate the protocol.
 
 </Note>
 
-Unauthenticated requests to `https://xquik.com/mcp` return `401` with a
-`WWW-Authenticate: Bearer` challenge. The challenge includes
+Clients and directories can discover Xquik before sign-in. Without a credential,
+`https://xquik.com/mcp` and `https://xquik.com/mcp?codemode=false` answer a
+single JSON-RPC message. That message is `initialize`,
+`notifications/initialized`, `ping`, `server/discover`, or `tools/list`. Each
+`initialize` and `server/discover` result carries `instructions`. That is a
+short Xquik summary with links to `https://xquik.com/llms.txt` and this page.
+
+Every other request without a credential returns `401` with a
+`WWW-Authenticate: Bearer` challenge. This includes every `tools/call`, every
+batch, and every request to `https://xquik.com/mcp?app=claude`,
+`https://xquik.com/mcp?app=chatgpt`, and `https://xquik.com/sse`. A first-time
+OAuth client therefore connects and lists the tools. It then gets `401` on its
+first tool call. Then it asks you to sign in. The challenge includes
 `resource_metadata="https://xquik.com/.well-known/oauth-protected-resource/mcp"`,
-`scope="mcp:tools"`, and the OAuth realm. The JSON body is
+`scope="mcp:tools"`, and the OAuth realm. The `?app=chatgpt` challenge asks for
+`mcp:read`, and its `resource_metadata` URL ends in `?app=chatgpt`. The JSON body is
 `{ "error": "Sign in through your MCP client. Or send your Xquik API key as a Bearer token." }`.
 OAuth-capable clients use the
 challenge to discover the authorization metadata. API-key clients should send
@@ -127,11 +141,21 @@ The `error` text says what to fix when Xquik refuses a credential.
 | An OAuth token that expired or was revoked           | `This access token expired or was revoked. Sign in again from your app.`          |
 | An `Authorization` header without `Bearer` & a token | `Xquik could not read the Authorization header. Send Bearer, a space & your key.` |
 
+A paused API key gets `403` with `error` set to `api_key_paused`. Resume it on the
+[API keys page](https://dashboard.xquik.com/en/api-keys), and the next request goes through.
+
+A key sees only the tools & routes its scopes allow. Other calls fail with a
+message. It names the scope to add on the
+[API keys page](https://dashboard.xquik.com/en/api-keys).
+
+Calls from IPs outside a key's allowlist get `403` with `error` set to `ip_not_allowed`. Add
+the IP on the [API keys page](https://dashboard.xquik.com/en/api-keys), or connect from a listed IP.
+
 ## Authentication
 
 The MCP server supports 2 authentication methods.
 
-- **OAuth 2.1** is recommended. Compatible clients discover Xquik, open the browser login and consent flow, then store and refresh Bearer tokens. Xquik supports CIMD and DCR. Normal client setup needs no manual client ID, client secret, or API key.
+- **OAuth 2.1** is recommended. Compatible clients discover Xquik and open the browser login and consent flow. They then store and refresh Bearer tokens. Xquik supports CIMD and DCR. Normal client setup needs no manual client ID, client secret, or API key.
 - **API key** (`x-api-key` or `Authorization: Bearer xq_your_api_key_here`) is an Xquik-specific fallback, not an OAuth token. Do not apply OAuth discovery or refresh rules. Use it only with secure header storage. Full account keys expose every catalog route. Active guest keys expose the `paid_reads` routes.
 
 See [OAuth 2.1 authorization](/oauth/overview) for discovery URLs, token
@@ -145,9 +169,17 @@ Use the default endpoint for Code Mode.
 https://xquik.com/mcp
 ```
 
-Code Mode uses 3 tools. API discovery and execution run in isolated sandboxes.
+Code Mode uses 4 tools. API discovery and execution run in isolated sandboxes.
 
-<CardGroup cols={3}>
+| Approach                             | Tools     | Tokens to list them |
+| ------------------------------------ | --------- | ------------------- |
+| The whole OpenAPI spec in the prompt | None      | About 230,000       |
+| Native mode, `?codemode=false`       | About 180 | About 160,000       |
+| Code Mode, the default               | 4         | About 2,000         |
+
+Each token figure is the JSON size divided by 4, measured on 2026-10-30.
+
+<CardGroup cols={2}>
 
   <Card title="docs" icon="book-open">
 
@@ -164,6 +196,11 @@ Code Mode uses 3 tools. API discovery and execution run in isolated sandboxes.
     Call authenticated X/Twitter APIs. Cost follows the endpoint.
 
   </Card>
+  <Card title="whoami" icon="user">
+
+    Return the signed-in account's stable id. No credits.
+
+  </Card>
 </CardGroup>
 
 `server/discover` sends no global model instructions. Tool descriptions identify the X/Twitter domain and explain code mechanics. `docs` searches public documentation. `search` accepts an async arrow function. `spec` is global and its first argument. Its examples show endpoint and operation lookup. `execute` accepts the same form. `xquik` is global and its first argument. OpenAPI and these docs define endpoint behavior.
@@ -173,8 +210,9 @@ Code Mode uses 3 tools. API discovery and execution run in isolated sandboxes.
 | `docs`    | Search Xquik documentation     | Read-only, idempotent, open-world, non-destructive        |
 | `search`  | Search Xquik API specification | Read-only, idempotent, closed-world, non-destructive      |
 | `execute` | Execute Xquik API requests     | May mutate data, may access live services, not idempotent |
+| `whoami`  | Current Xquik account          | Read-only, idempotent, closed-world, non-destructive      |
 
-For a guest `paid_reads` session, `execute` is read-only, idempotent, and limited to live calls across the eligible paid-read routes.
+For a guest `paid_reads` session, `execute` is read-only and idempotent. In that session it makes live calls only to the eligible paid-read routes.
 
 Claude's Connectors Directory and Claude's custom connectors use the Claude catalog.
 
@@ -182,24 +220,25 @@ Claude's Connectors Directory and Claude's custom connectors use the Claude cata
 https://xquik.com/mcp?app=claude
 ```
 
-It has `docs`, `search`, `execute` and `executeWrite`. `execute` runs each operation whose search spec says `readOnly: true`, so Claude runs it without asking. `executeWrite` runs the rest, such as posts, follows, monitors, webhooks and drafts, and Claude asks before each call. Claude's directory accepts no single tool that both reads and writes.
+It has `docs`, `search`, `execute`, `executeWrite` and `whoami`. `execute` runs each operation whose search spec says `readOnly: true`. Claude runs those without asking. `executeWrite` runs the rest, such as posts, follows, monitors, webhooks and drafts. Claude asks before each of those calls. Claude's directory accepts no single tool that both reads and writes.
 
-Use native mode when a client cannot run Code Mode or needs ordinary MCP tools.
+Use native mode when a client cannot run Code Mode. It also suits a client that needs ordinary MCP tools.
 
 ```text
 https://xquik.com/mcp?codemode=false
 ```
 
 Native mode serves an OpenAPI-derived catalog. It validates only the called
-tool. Full credentials receive `docs`, `readSavedResult`, and the OpenAPI
-operations. Guest keys receive `docs`, `readSavedResult`, and the eligible GET
-operations.
+tool. Full credentials receive `docs`, `readSavedResult`, `whoami`, and the
+OpenAPI operations. Guest keys receive `docs`, `readSavedResult`, `whoami`, and
+the eligible GET operations.
 
 Each native tool uses its OpenAPI `operationId` as its stable name. Its input
-schema, title, description, HTTP method, path, query parameters, and JSON body
-come from the same OpenAPI contract as REST and the generated SDKs. The server
-injects authentication and required idempotency headers. It rejects unknown
-routes, custom headers, redirects, traversal, and unsupported binary responses.
+schema, title, description, and HTTP method come from the OpenAPI contract. Its
+path, query parameters, and JSON body come from that contract too. REST and the
+generated SDKs use the same contract. The server injects authentication and
+required idempotency headers. It rejects unknown routes, custom headers,
+redirects, traversal, and unsupported binary responses.
 
 `docs` searches canonical Xquik documentation. Pass a non-empty `query` string.
 `readSavedResult` reads a saved oversized answer in free pages.
@@ -232,10 +271,11 @@ An `execute` call can run for up to 55 seconds. Sandbox API requests stop after 
 
 ### MCP operation boundary
 
-Full credentials expose every JSON or text route of the REST contract except the actions below. They stay outside MCP, so no MCP tool moves money.
+Full credentials expose every JSON or text route of the REST contract. The actions below are the exception. They stay outside MCP, so no MCP tool moves money.
 
 - Create, list, or revoke account API keys
-- Create a subscription or top-up checkout, read its status, or charge a saved payment method
+- Create a subscription or top-up checkout, or read its status
+- Charge a saved payment method
 - Create, poll, or top up a guest wallet
 - Download support attachments or draw and extraction exports
 
@@ -243,7 +283,7 @@ Guest wallet credential routes remain direct REST only. MCP cannot execute `POST
 
 A guest `paid_reads` MCP session exposes exactly the [eligible paid-read routes](/guides/guest-wallets#eligible-paid-read-routes). It cannot execute writes or any other route.
 
-An MCP answer to a `402` names no checkout step. It keeps `error`, `message`, `balance`, `required` and, for an account, `dashboard` as a full link. Send the user to that link to add credits or change the plan in the browser.
+An MCP answer to a `402` names no checkout step. It keeps `error`, `message`, `balance` and `required`. For an account, it also keeps `dashboard` as a full link. Send the user to that link. There they add credits or change the plan in the browser.
 
 ## MCP vs REST API
 
@@ -277,7 +317,7 @@ Start with [Claude.ai](https://claude.ai) for OAuth login or [Claude Code](#setu
 
 See [Coding agents & MCP compatibility](/mcp/coding-agents) for current releases & configuration changes.
 
-Choose the authentication path that your current client can complete. Xquik keeps OAuth issuer, redirect, resource, and Proof Key for Code Exchange (PKCE) validation enabled for every client.
+Choose the authentication path that your current client can complete. Xquik validates the OAuth issuer, redirect and resource for every client. It also keeps Proof Key for Code Exchange (PKCE) validation on.
 
 | Client                                                                                                         | API MCP authentication today            | Registration and behavior                                                             |
 | -------------------------------------------------------------------------------------------------------------- | --------------------------------------- | ------------------------------------------------------------------------------------- |
@@ -357,8 +397,8 @@ No plugin package is required.
     codex mcp list
     ```
 
-    Codex CLI, the IDE extension, and the ChatGPT desktop app share the same
-    `config.toml` MCP configuration.
+    Codex CLI, the IDE extension, and the ChatGPT desktop app share an MCP
+    configuration. It is in `config.toml`.
 
   </Tab>
   <Tab title="Codex Desktop">
@@ -553,8 +593,8 @@ Never commit the key or place its value in `config.toml`.
     copilot mcp add --transport http xquik https://xquik.com/mcp
     ```
 
-    If your installed build does not expose the noninteractive add flags, start
-    Copilot CLI and run `/mcp add`. Enter `xquik`, choose **HTTP**, enter
+    If your installed build lacks the noninteractive add flags, start Copilot
+    CLI. Then run `/mcp add`. Enter `xquik`, choose **HTTP**, enter
     `https://xquik.com/mcp`, keep `*` for tools, then press **Ctrl+S**. Run
     `/mcp` & complete authentication after the server appears. Enterprise policy may block
     servers outside the organization allowlist.
@@ -622,8 +662,8 @@ API-key authentication is client-specific. ChatGPT custom apps require OAuth and
 cannot present custom API keys. Codex uses the environment-backed
 `bearer_token_env_var` configuration above. For other clients, follow that
 client's documented secret-input or environment-variable syntax. Never copy a
-generic header example into an incompatible schema, place a literal key in a
-configuration file, or commit a key.
+generic header example into an incompatible schema. Never place a literal key in
+a configuration file or commit a key.
 
 <Tabs>
 
@@ -753,7 +793,7 @@ Once connected, ask questions like these.
 **Giveaways**
 
 - Pick 3 random winners from the tweet at `https://x.com/example_user/status/1893456789012345678`
-- Run a giveaway draw where participants must have retweeted and have at least 100 followers.
+- Run a giveaway draw. Each participant must have retweeted and have at least 100 followers.
 - Show the results of my last giveaway draw.
 
 **Webhooks**
@@ -825,11 +865,11 @@ Build agents with Xquik's MCP tools in your preferred framework.
 
 ## AI agent skill
 
-The [Xquik Skill](https://github.com/Xquik-dev/x-twitter-scraper) documents the Xquik API for AI coding agents. It needs no MCP connection. Install it so your agent can write API integrations, set up webhooks, and configure MCP connections.
+The [Xquik Skill](https://github.com/Xquik-dev/x-twitter-scraper) documents the Xquik API for AI coding agents. It needs no MCP connection. With it installed, your agent can write API integrations and set up webhooks. It can also configure MCP connections.
 
-It works with Claude Code, Cursor, GitHub Copilot, Codex, Windsurf, VS Code, Gemini CLI, and other Skill-capable agents. It covers MCP tools and the REST API operations.
+Claude Code, Cursor, GitHub Copilot, Codex, Windsurf, VS Code and Gemini CLI support it. Other Skill-capable agents work too. It covers MCP tools and the REST API operations.
 
-To move existing code off the official X API, install the [X API alternative Skill](https://github.com/Xquik-dev/x-api) with `npx skills add Xquik-dev/x-api`.
+Install the [X API alternative Skill](https://github.com/Xquik-dev/x-api) to move code off the official X API. Run `npx skills add Xquik-dev/x-api`.
 
 ```bash
 npx skills add Xquik-dev/x-twitter-scraper

@@ -86,8 +86,8 @@ const CONTENT_REQUIREMENTS: readonly ContentRequirement[] = [
   {
     file: "api-reference/x-write/create-community.mdx",
     phrases: [
-      "Build a reviewable community brief",
-      "Validate the new community",
+      "x_community_creation_closed",
+      "Community creation questions",
       "Handle creation failures",
     ],
   },

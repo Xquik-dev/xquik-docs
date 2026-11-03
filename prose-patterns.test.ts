@@ -233,6 +233,7 @@ const HEADING_NAMES: readonly string[] = [
   "Spanish",
   "Sprinklr",
   "Sprout Social",
+  "Strands Agents",
   "Syften",
   "Talkwalker",
   "Taplio",

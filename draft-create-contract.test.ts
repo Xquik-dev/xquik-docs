@@ -27,7 +27,7 @@ describe("create tweet draft documentation", (): void => {
         page.includes(`<ResponseField name="${field}"`),
       ),
       unsupportedFieldsDenied: normalizedPage.includes(
-        "The response contains no thread order, media attachment, reply target, schedule, publishing status, or public tweet ID.",
+        "The response contains no thread order, media attachment, reply target, or schedule. It also contains no publishing status or public tweet ID.",
       ),
     }).toStrictEqual({
       requestFields: true,

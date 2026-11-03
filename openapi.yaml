@@ -105,6 +105,12 @@ info:
 
     - Common names for cursor, limit, sort & type just work.
 
+    - Pause a runaway agent's API key in 1 click, then resume it anytime.
+
+    - Lock an API key to the IPs or CIDR ranges your servers call from.
+
+    - Cap what an API key spends each month, with an email at 80%.
+
 
     ### Rich data
 
@@ -124,7 +130,7 @@ info:
 
     - Every read is checked live each hour.
 
-    - Docs match the API spec, & every Actor input has a proof run.
+    - Xquik checks each API spec change against the docs before it ships.
 
 
     ## Rate limits
@@ -187,13 +193,18 @@ security: &api-auth [{ apiKey: [] }, { oauthBearer: [] }]
 
 tags:
   - name: API Keys
-    description: API key management (session auth only)
+    description:
+      API key management (session auth only). Give each agent an API key with
+      only the scopes it needs.
   - name: Account
     description: Account info and settings
+  - name: Activity
+    description: >-
+      Every activity keeps a full record you can fetch & export.
   - name: Agent Discovery
     description: >-
-      Public agent discovery and documentation search. Agents can find Xquik on
-      their own through llms.txt & an agent card.
+      Public agent discovery, OAuth sign-in and documentation search. Agents can
+      find Xquik on their own through llms.txt & an agent card.
   - name: Analysis
     description: >-
       AI analysis of posts, at 2 credits per analyzed post. AI analysis bills
@@ -390,6 +401,532 @@ paths:
         '400': { $ref: '#/paths/~1ask/post/responses/400' }
         '413': { $ref: '#/paths/~1ask/post/responses/413' }
         '502': { $ref: '#/paths/~1ask/post/responses/502' }
+
+  /api/oauth/authorize:
+    servers:
+      - url: https://xquik.com
+    get:
+      operationId: authorizeOAuthClient
+      x-mcp-exclusion-reason:
+        &oauth-sign-in OAuth sign-in runs between the client, the browser &
+        Xquik.
+      summary: Start OAuth sign-in
+      description: >-
+        Open this URL in the user's browser to start OAuth 2.1 sign-in with
+        PKCE. The user signs in & approves access. Xquik then sends a code to
+        your redirect_uri.
+      tags: [Agent Discovery]
+      security: [{}]
+      parameters:
+        - name: response_type
+          in: query
+          required: true
+          description: The only value is code.
+          schema: { type: string, enum: [code] }
+        - name: client_id
+          in: query
+          required: true
+          description: >-
+            The client_id from registration, or the HTTPS URL of your client
+            metadata document.
+          schema: { type: string, minLength: 1, maxLength: 16384 }
+        - name: redirect_uri
+          in: query
+          description: >-
+            A registered redirect URI. Leave it out only when the client has
+            exactly 1.
+          schema: { type: string, maxLength: 16384 }
+        - name: code_challenge
+          in: query
+          required: true
+          description: Base64url SHA-256 hash of your PKCE code_verifier.
+          schema:
+            type: string
+            minLength: 43
+            maxLength: 43
+            pattern: '^[A-Za-z0-9_-]{43}$'
+        - name: code_challenge_method
+          in: query
+          required: true
+          description: The only value is S256.
+          schema: { type: string, enum: [S256] }
+        - name: scope
+          in: query
+          description: >-
+            Space-separated scopes, mcp:tools or mcp:read. Defaults to
+            mcp:tools.
+          schema: { type: string, maxLength: 16384, default: 'mcp:tools' }
+        - name: resource
+          in: query
+          description:
+            The resource the token is for. Defaults to the MCP server.
+          schema:
+            type: string
+            maxLength: 16384
+            default: 'https://xquik.com/mcp'
+        - name: state
+          in: query
+          description: A value Xquik sends back unchanged with the code.
+          schema: { type: string, maxLength: 16384 }
+        - name: locale
+          in: query
+          description: Language of the sign-in & consent pages.
+          schema: { type: string, enum: [en, es, ja, ko, tr, zh] }
+      responses:
+        '200':
+          description: >-
+            The sign-in or consent page. A missing or unknown client_id, or a
+            redirect_uri the client didn't register, shows an error page
+            instead, since Xquik can't redirect.
+          content:
+            text/html:
+              schema: { type: string }
+              example: '<!doctype html><html lang="en">...</html>'
+        '302':
+          description: >-
+            Redirects to redirect_uri with error, error_description & state when
+            the request is invalid, such as a missing code_challenge.
+          headers:
+            Location:
+              description: The redirect_uri with the error parameters.
+              schema: { type: string, format: uri }
+        '403':
+          description: The signed-in account must confirm its email first.
+          content:
+            text/html:
+              schema: { type: string }
+              example: '<!doctype html><html lang="en">...</html>'
+        '413':
+          description: The query string exceeds 16,384 characters.
+          content:
+            text/html:
+              schema: { type: string }
+              example: '<!doctype html><html lang="en">...</html>'
+        '429':
+          description: Too many sign-in requests. Retry after Retry-After.
+          headers:
+            Retry-After: { $ref: '#/components/headers/SignInRetryAfter' }
+          content:
+            text/html:
+              schema: { type: string }
+              example: '<!doctype html><html lang="en">...</html>'
+  /api/oauth/token:
+    servers:
+      - url: https://xquik.com
+    post:
+      operationId: createOAuthToken
+      x-mcp-exclusion-reason: *oauth-sign-in
+      summary: Get an OAuth access token
+      description: >-
+        Exchange an authorization code, a refresh token, an agent claim token or
+        an identity assertion for an access token.
+      tags: [Agent Discovery]
+      security: [{}]
+      requestBody:
+        description: Form fields of the grant. The body is at most 16 KiB.
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/OAuthTokenRequest'
+            examples:
+              authorizationCode:
+                summary: Exchange an authorization code
+                value:
+                  grant_type: authorization_code
+                  code: AUTHORIZATION_CODE
+                  code_verifier: dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk
+                  redirect_uri: 'https://client.example/callback'
+                  client_id: 550e8400-e29b-41d4-a716-446655440000
+                  resource: 'https://xquik.com/mcp'
+              refreshToken:
+                summary: Refresh an access token
+                value:
+                  grant_type: refresh_token
+                  refresh_token: REFRESH_TOKEN
+                  client_id: 550e8400-e29b-41d4-a716-446655440000
+              agentClaim:
+                summary: Poll for a claimed agent's token
+                value:
+                  grant_type: 'urn:workos:agent-auth:grant-type:claim'
+                  claim_token: clm_0000000000000000000000000000000000000000000000000000000000000000
+              identityAssertion:
+                summary: Exchange an identity assertion
+                value:
+                  grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer'
+                  assertion: IDENTITY_ASSERTION
+      responses:
+        '200':
+          description: >-
+            The access token. Code & refresh grants also return a new refresh
+            token. A claim grant returns identity_assertion instead.
+          headers:
+            Cache-Control: { $ref: '#/components/headers/NoStore' }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OAuthToken'
+              examples:
+                codeOrRefresh:
+                  summary: Code or refresh grant
+                  value:
+                    access_token: ACCESS_TOKEN
+                    token_type: Bearer
+                    expires_in: 3600
+                    refresh_token: REFRESH_TOKEN
+                    scope: 'mcp:tools'
+                agentClaim:
+                  summary: Claim grant
+                  value:
+                    access_token: ACCESS_TOKEN
+                    token_type: Bearer
+                    expires_in: 3600
+                    scope: 'mcp:tools'
+                    identity_assertion: IDENTITY_ASSERTION
+                    assertion_expires: '2026-12-01T12:00:00.000Z'
+        '400':
+          description: >-
+            The grant failed. While the user hasn't claimed the agent yet, a
+            claim poll answers authorization_pending or slow_down.
+          content:
+            application/json:
+              schema: &oauth-error-schema
+                $ref: '#/components/schemas/OAuthError'
+              examples:
+                invalidGrant:
+                  value:
+                    error: invalid_grant
+                    error_description: >-
+                      Authorization code is invalid, expired, or already used
+                authorizationPending:
+                  value:
+                    error: authorization_pending
+                    error_description:
+                      The user has not completed authorization yet.
+        '401':
+          description: The client is unknown or its credentials are wrong.
+          content:
+            application/json:
+              schema: *oauth-error-schema
+              example:
+                error: invalid_client
+                error_description: Unknown client_id
+        '413':
+          description: The request body exceeds 16 KiB.
+          content:
+            application/json:
+              schema: *oauth-error-schema
+              example:
+                error: invalid_request
+                error_description: Request body is too large
+        '415':
+          description: The body isn't application/x-www-form-urlencoded.
+          content:
+            application/json:
+              schema: *oauth-error-schema
+              example:
+                error: invalid_request
+                error_description: >-
+                  Content-Type must be application/x-www-form-urlencoded
+        '429':
+          description: Too many token requests. Retry after Retry-After.
+          headers:
+            Retry-After: { $ref: '#/components/headers/SignInRetryAfter' }
+          content:
+            application/json:
+              schema: *oauth-error-schema
+              example:
+                error: temporarily_unavailable
+                error_description: Too many token requests. Retry in 60 seconds.
+  /api/oauth/revoke:
+    servers:
+      - url: https://xquik.com
+    post:
+      operationId: revokeOAuthToken
+      x-mcp-exclusion-reason: *oauth-sign-in
+      summary: Revoke an OAuth token
+      description: >-
+        Revoke an access token, a refresh token or a claimed agent's identity
+        assertion. An unknown or already revoked token still returns 200.
+      tags: [Agent Discovery]
+      security: [{}]
+      requestBody:
+        description: Form fields of the revocation. The body is at most 16 KiB.
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/OAuthRevokeRequest'
+            example:
+              token: ACCESS_OR_REFRESH_TOKEN
+              client_id: 550e8400-e29b-41d4-a716-446655440000
+              token_type_hint: access_token
+      responses:
+        '200':
+          description: The token no longer works. The body is empty.
+          headers:
+            Cache-Control: { $ref: '#/components/headers/NoStore' }
+        '400':
+          description: A required field is missing or a field repeats.
+          content:
+            application/json:
+              schema: *oauth-error-schema
+              example:
+                error: invalid_request
+                error_description: token is required
+        '401':
+          $ref: '#/paths/~1api~1oauth~1token/post/responses/401'
+        '413':
+          $ref: '#/paths/~1api~1oauth~1token/post/responses/413'
+        '415':
+          $ref: '#/paths/~1api~1oauth~1token/post/responses/415'
+        '429':
+          description: Too many revocation requests. Retry after Retry-After.
+          headers:
+            Retry-After: { $ref: '#/components/headers/SignInRetryAfter' }
+          content:
+            application/json:
+              schema: *oauth-error-schema
+              example:
+                error: temporarily_unavailable
+                error_description: >-
+                  Too many revocation requests. Retry in 60 seconds.
+  /api/oauth/register:
+    servers:
+      - url: https://xquik.com
+    post:
+      operationId: registerOAuthClient
+      x-mcp-exclusion-reason: *oauth-sign-in
+      summary: Register an OAuth client
+      description: >-
+        Register an OAuth client by Dynamic Client Registration. Clients with a
+        client metadata document can skip this step.
+      tags: [Agent Discovery]
+      security: [{}]
+      requestBody:
+        description: Client metadata as JSON. The body is at most 16 KiB.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OAuthClientRegistrationRequest'
+            example:
+              client_name: My MCP Client
+              redirect_uris: ['https://client.example/callback']
+              token_endpoint_auth_method: none
+              grant_types: [authorization_code, refresh_token]
+              response_types: [code]
+      responses:
+        '201':
+          description: >-
+            The registered client. client_secret appears only for
+            client_secret_post.
+          headers:
+            Cache-Control: { $ref: '#/components/headers/NoStore' }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OAuthClientRegistration'
+              example:
+                client_id: 550e8400-e29b-41d4-a716-446655440000
+                client_id_issued_at: 1798761600
+                client_name: My MCP Client
+                grant_types: [authorization_code, refresh_token]
+                redirect_uris: ['https://client.example/callback']
+                response_types: [code]
+                token_endpoint_auth_method: none
+        '400':
+          description: >-
+            The metadata is invalid, the body isn't JSON or it exceeds 16 KiB.
+          content:
+            application/json:
+              schema: *oauth-error-schema
+              examples:
+                invalidRedirectUri:
+                  value:
+                    error: invalid_redirect_uri
+                    error_description: >-
+                      redirect_uris must be a non-empty array of strings
+                invalidClientMetadata:
+                  value:
+                    error: invalid_client_metadata
+                    error_description: Content-Type must be application/json
+        '429':
+          description: Too many registration requests. Retry after Retry-After.
+          headers:
+            Retry-After: { $ref: '#/components/headers/SignInRetryAfter' }
+          content:
+            application/json:
+              schema: *oauth-error-schema
+              example:
+                error: temporarily_unavailable
+                error_description: >-
+                  Too many registration requests. Retry in 60 seconds.
+  /agent/identity:
+    servers:
+      - url: https://xquik.com
+    post:
+      operationId: registerAgentIdentity
+      x-mcp-exclusion-reason: *oauth-sign-in
+      summary: Register an agent identity
+      description: >-
+        Register an agent for a user's verified email. The user claims it at
+        claim.verification_uri with claim.user_code. Poll the token endpoint
+        with claim_token until then. Keep every token secret.
+      tags: [Agent Discovery]
+      security: [{}]
+      requestBody:
+        description:
+          The service_auth request as JSON. The body is at most 4 KiB.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgentIdentityRequest'
+            example:
+              type: service_auth
+              login_hint: user@example.com
+      responses:
+        '200':
+          description: The registration & the code the user enters to claim it.
+          headers:
+            Cache-Control: { $ref: '#/components/headers/NoStore' }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentIdentityRegistration'
+              example:
+                claim:
+                  expires_in: 600
+                  interval: 5
+                  user_code: '042137'
+                  verification_uri: 'https://xquik.com/agent/identity/claim/view?claim_attempt_token=CLAIM_ATTEMPT_TOKEN'
+                claim_token: clm_0000000000000000000000000000000000000000000000000000000000000000
+                claim_token_expires: '2026-12-02T12:00:00.000Z'
+                claim_url: 'https://xquik.com/agent/identity/claim'
+                post_claim_scopes: ['mcp:tools']
+                registration_id: reg_6f1c2a7e-8d4b-4c1a-9e2f-3b5d7a9c1e0f
+                registration_type: service_auth
+        '400':
+          description: >-
+            The body isn't JSON, isn't a service_auth request or has an invalid
+            login_hint.
+          content:
+            application/json:
+              schema: &agent-auth-error-schema
+                $ref: '#/components/schemas/AgentAuthError'
+              examples:
+                invalidLoginHint:
+                  value:
+                    error: invalid_login_hint
+                    message: Use a valid email address as login_hint.
+                invalidRequest:
+                  value:
+                    error: invalid_request
+                    message: Use the documented service_auth request.
+        '413':
+          description: The request body exceeds 4 KiB.
+          content:
+            application/json:
+              schema: *agent-auth-error-schema
+              example:
+                error: invalid_request
+                message: Request body is too large.
+        '415':
+          description: The body isn't application/json.
+          content:
+            application/json:
+              schema: *agent-auth-error-schema
+              example:
+                error: invalid_request
+                message: Content-Type must be application/json.
+        '429':
+          description: Too many registrations. Retry after Retry-After.
+          headers:
+            Retry-After: { $ref: '#/components/headers/SignInRetryAfter' }
+          content:
+            application/json:
+              schema: *agent-auth-error-schema
+              example:
+                error: rate_limited
+                message: Too many registrations. Retry in 60 seconds.
+  /agent/identity/claim:
+    servers:
+      - url: https://xquik.com
+    post:
+      operationId: refreshAgentIdentityClaim
+      x-mcp-exclusion-reason: *oauth-sign-in
+      summary: Refresh an agent claim code
+      description: >-
+        Get a new user code for a pending agent registration, such as after the
+        last one expired. The claim token must still be valid.
+      tags: [Agent Discovery]
+      security: [{}]
+      requestBody:
+        description: The claim token & the user's email as JSON.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgentClaimRequest'
+            example:
+              claim_token: clm_0000000000000000000000000000000000000000000000000000000000000000
+              email: user@example.com
+      responses:
+        '200':
+          description: The new claim attempt & its user code.
+          headers:
+            Cache-Control: { $ref: '#/components/headers/NoStore' }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentClaimAttempt'
+              example:
+                claim_attempt:
+                  expires_in: 600
+                  interval: 5
+                  user_code: '518204'
+                  verification_uri: 'https://xquik.com/agent/identity/claim/view?claim_attempt_token=CLAIM_ATTEMPT_TOKEN'
+                claim_attempt_id: cla_9b2f4d6a8c1e3f5a7b9d1c3e5f7a9b2d
+                expires_at: '2026-12-01T12:10:00.000Z'
+                registration_id: reg_6f1c2a7e-8d4b-4c1a-9e2f-3b5d7a9c1e0f
+                status: initiated
+        '400':
+          description: >-
+            The body isn't a valid claim request, the email doesn't match the
+            registration, or the registration is no longer pending.
+          content:
+            application/json:
+              schema: *agent-auth-error-schema
+              examples:
+                invalidRequest:
+                  value:
+                    error: invalid_request
+                    message: Claim request is invalid. Start again.
+                invalidGrant:
+                  value:
+                    error: invalid_grant
+                    message: Claim request is invalid. Start again.
+        '410':
+          description: The claim token is unknown or expired. Register again.
+          content:
+            application/json:
+              schema: *agent-auth-error-schema
+              example:
+                error: claim_expired
+                message: Claim expired. Register again.
+        '413': { $ref: '#/paths/~1agent~1identity/post/responses/413' }
+        '415': { $ref: '#/paths/~1agent~1identity/post/responses/415' }
+        '429':
+          description: Too many claim attempts. Retry after Retry-After.
+          headers:
+            Retry-After: { $ref: '#/components/headers/SignInRetryAfter' }
+          content:
+            application/json:
+              schema: *agent-auth-error-schema
+              example:
+                error: rate_limited
+                message: Too many claim attempts. Retry in 60 seconds.
 
   # ── Account ──────────────────────────────────────────────
   /account:
@@ -635,7 +1172,7 @@ paths:
               properties:
                 locale:
                   type: string
-                  enum: [en, tr, es]
+                  enum: [en, es, tr, ja, ko, zh]
                   example: en
             example:
               locale: en
@@ -710,6 +1247,181 @@ paths:
         '403': { $ref: '#/components/responses/ReadKeyForbidden' }
         '429': *rate-limit-exceeded-response
 
+  /activity:
+    get:
+      operationId: listActivity
+      description: >-
+        Returns the account's activity log, newest first, with the Activity
+        page's filters. It covers write actions, extractions, monitor changes
+        and events, webhooks, giveaways, media, support, API keys, X account
+        connections and billing. Pick a file format to get the same rows as a
+        CSV, Excel, Markdown, PDF or text file.
+      summary: List activity
+      tags: [Activity]
+      security: *api-auth
+      parameters:
+        - name: format
+          in: query
+          description: Answer format. JSON by default.
+          schema:
+            type: string
+            enum: [json, csv, xlsx, md, md-document, pdf, txt]
+            default: json
+            example: csv
+        - name: limit
+          in: query
+          description: Most rows to return. PDF stops at 10,000 rows.
+          schema:
+            {
+              type: integer,
+              minimum: 1,
+              maximum: 100000,
+              default: 100,
+              example: 50,
+            }
+        - name: category
+          in: query
+          description: >-
+            Activity group, like the Activity page's tabs. `all` by default, or
+            `actions`, `extractions`, `monitors`, `webhooks` or `billing`.
+          schema: { type: string, maxLength: 11, example: monitors }
+        - name: status
+          in: query
+          description: Comma-separated statuses.
+          schema: { type: string, maxLength: 200, example: 'failed,running' }
+        - name: q
+          in: query
+          description: Search text.
+          schema: { type: string, maxLength: 200, example: artemis }
+        - name: since
+          in: query
+          description: Oldest time, ISO 8601.
+          schema:
+            {
+              type: string,
+              format: date-time,
+              maxLength: 128,
+              example: '2026-10-21T00:00:00Z',
+            }
+        - name: until
+          in: query
+          description: Newest time, ISO 8601.
+          schema:
+            {
+              type: string,
+              format: date-time,
+              maxLength: 128,
+              example: '2026-10-28T00:00:00Z',
+            }
+      responses:
+        '200':
+          description: Activity rows
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ActivityLogRow'
+              example:
+                - time: '2026-10-28T20:22:13.481Z'
+                  category: monitor_change
+                  type: pause
+                  activity: 'Account monitor for @elonmusk paused'
+                  status: completed
+                  source: elonmusk
+                  target: ''
+                  results: ''
+                  credits: ''
+                  details: ''
+                  id: naF3xqHLWDTs
+                  link: ''
+            text/csv:
+              schema: { type: string }
+              example:
+                "time,category,type,activity,status,source,target,results,credits,details,id,link\n2026-10-28T20:22:13.481Z,monitor_change,pause,Account
+                monitor for @elonmusk
+                paused,completed,elonmusk,,,,,naF3xqHLWDTs,\n"
+        '400': { $ref: '#/components/responses/InvalidInput' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '429': { $ref: '#/components/responses/RateLimitExceeded' }
+  /activity/{id}:
+    get:
+      operationId: getActivity
+      description: >-
+        Returns 1 activity of the account with its full technical record. It
+        covers every kind of activity the Activity log shows. The record holds
+        the request, the caller, the charge, every timestamp in UTC and related
+        activity. It never holds an API key value, a webhook secret or another
+        account's data. Only a signed-in dashboard session sees an `api_key`
+        record, so an API key or an OAuth app gets 404 for its ID.
+      summary: Get activity
+      tags: [Activity]
+      security: *api-auth
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: >-
+            Activity ID. It is the id of an Activity log row and the last part
+            of the dashboard's activity page URL.
+          schema:
+            type: string
+            minLength: 12
+            maxLength: 22
+            pattern: '^[A-Za-z0-9_-]{12}([A-Za-z0-9_-]{10})?$'
+          example: naF3xqHLWDTs
+      responses:
+        '200':
+          description: Activity record
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActivityRecord'
+              example:
+                object: activity
+                id: naF3xqHLWDTs
+                kind: monitor_change
+                type: pause
+                status: completed
+                url: 'https://dashboard.xquik.com/activity/naF3xqHLWDTs'
+                requestId: 9f2c1d7e4b8a4c55a1e0d3b2c6f7a8e9
+                timestamps:
+                  createdAt: '2026-10-28T20:22:13.481Z'
+                request:
+                  method: PATCH
+                  path: /api/v1/monitors/42
+                  httpStatus: 200
+                  durationMs: 37
+                  ipAddress: 203.0.113.9
+                  userAgent: 'my-agent/1.0'
+                  at: '2026-10-28T20:22:13.519Z'
+                caller:
+                  authMethod: api_key
+                  apiKey: { name: Production, prefix: xq_ab12 }
+                  oauthClient: null
+                charge: null
+                details:
+                  monitorKind: account
+                  monitorId: '42'
+                  subjectUsername: elonmusk
+                  subjectQuery: null
+                  subjectName: null
+                  subjectXId: '44196397'
+                  subjectAvatar: null
+                  surface: rest
+                related:
+                  - id: Q7wErTyUiOpA
+                    type: create
+                    status: completed
+                    createdAt: '2026-10-21T09:12:40.002Z'
+                    url: 'https://dashboard.xquik.com/activity/Q7wErTyUiOpA'
+        '400': { $ref: '#/components/responses/InvalidInput' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/RateLimitExceeded' }
+
   # ── API Keys ─────────────────────────────────────────────
   /api-keys:
     get:
@@ -762,7 +1474,9 @@ paths:
       security: [{ cookieSession: [] }]
       requestBody:
         required: true
-        description: Optional display name, scope & expiry for the new API key.
+        description:
+          Optional display name, scope, expiry & IP allowlist for the new API
+          key.
         content:
           application/json:
             schema:
@@ -780,9 +1494,20 @@ paths:
                   enum: [full, paid_reads, null]
                   description:
                     full calls every route an API key can use. paid_reads calls
-                    paid X read routes only, & other routes answer it with 403.
-                    Missing or null saves full.
+                    paid X reads plus the routes of its scopes. Other routes
+                    answer it with 403. Missing or null saves full.
                   example: paid_reads
+                scopes:
+                  type: array
+                  maxItems: 6
+                  items: &api-key-scope-name
+                    type: string
+                    enum: [full, read, write, monitors, exports, billing]
+                  description:
+                    full calls every route. read calls paid X reads. write,
+                    monitors, exports & billing add their routes. scopes wins
+                    over scope. Missing scopes & scope saves full.
+                  example: [read, monitors]
                 expiresInDays:
                   type: [integer, 'null']
                   minimum: 1
@@ -791,10 +1516,33 @@ paths:
                     Days until the key stops working. Missing or null keeps it
                     working until you revoke it.
                   example: 30
+                allowedIps:
+                  type: array
+                  maxItems: 20
+                  items:
+                    type: string
+                    maxLength: 64
+                    example: 203.0.113.4
+                  description:
+                    Up to 20 IPv4 or IPv6 addresses or CIDR ranges that may use
+                    the key. Calls from other IPs answer 403 with
+                    ip_not_allowed. An empty or missing list allows any IP.
+                  example: ['203.0.113.4', '198.51.100.0/24']
+                monthlyBudgetCredits:
+                  type: [integer, 'null']
+                  minimum: 1
+                  maximum: 1000000000000
+                  description:
+                    Credits the key can spend each UTC calendar month. Missing
+                    or null sets no budget.
+                  example: 50000
             example:
               name: My API Key
               scope: paid_reads
+              scopes: [read]
               expiresInDays: 30
+              allowedIps: ['203.0.113.4']
+              monthlyBudgetCredits: 50000
       responses:
         '201':
           description: API key created
@@ -803,7 +1551,18 @@ paths:
               schema:
                 type: object
                 required:
-                  [id, fullKey, name, prefix, scope, isActive, createdAt]
+                  [
+                    id,
+                    fullKey,
+                    name,
+                    prefix,
+                    scope,
+                    scopes,
+                    allowedIps,
+                    isActive,
+                    createdAt,
+                    monthlySpentCredits,
+                  ]
                 properties:
                   id: &resource-id-example-schema
                     type: string
@@ -821,6 +1580,22 @@ paths:
                     type: string
                     enum: [full, paid_reads]
                     example: paid_reads
+                  scopes:
+                    type: array
+                    maxItems: 6
+                    items: *api-key-scope-name
+                    description: What the key can call.
+                    example: [read]
+                  allowedIps:
+                    type: array
+                    items:
+                      type: string
+                      example: 198.51.100.0/24
+                    description:
+                      IPs & CIDR ranges that may use the key. An empty list
+                      allows any IP. Ranges come back normalized, so
+                      198.51.100.7/24 reads 198.51.100.0/24.
+                    example: ['203.0.113.4', '198.51.100.0/24']
                   isActive:
                     type: boolean
                     example: true
@@ -832,15 +1607,23 @@ paths:
                     type: string
                     format: date-time
                     example: '2025-02-14T12:00:00Z'
+                  monthlyBudgetCredits:
+                    $ref: '#/components/schemas/ApiKey/properties/monthlyBudgetCredits'
+                  monthlySpentCredits:
+                    $ref: '#/components/schemas/ApiKey/properties/monthlySpentCredits'
               example:
                 id: '42'
                 fullKey: xq_live_example_key
                 name: My API Key
                 prefix: xq_live_exam
                 scope: paid_reads
+                scopes: [read]
+                allowedIps: ['203.0.113.4']
                 isActive: true
                 createdAt: '2025-01-15T12:00:00Z'
                 expiresAt: '2025-02-14T12:00:00Z'
+                monthlyBudgetCredits: 50000
+                monthlySpentCredits: 0
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401': *unauthenticated-response
@@ -885,6 +1668,79 @@ paths:
                       API keys & OAuth tokens cannot use this route. Sign in at
                       dashboard.xquik.com/account instead.
         '429': *rate-limit-exceeded-response
+    patch:
+      operationId: pauseApiKeys
+      x-mcp-exclusion-reason: *browser-auth
+      description:
+        Pauses or resumes up to 100 of your API keys at once & lists the keys it
+        changed, newest first. It skips revoked, expired, unknown & other
+        accounts' keys. Pausing again keeps the first pause time.
+      summary: Pause or resume API keys
+      tags: [API Keys]
+      security: [{ cookieSession: [] }]
+      requestBody:
+        required: true
+        description: IDs of the API keys to pause or resume.
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ids, paused]
+              properties:
+                ids:
+                  type: array
+                  minItems: 1
+                  maxItems: 100
+                  items:
+                    type: string
+                    maxLength: 19
+                    pattern: '^[1-9][0-9]{0,18}$'
+                    example: '42'
+                  example: ['42', '43']
+                paused:
+                  type: boolean
+                  description:
+                    true pauses every listed key, so their calls get 403
+                    `api_key_paused`. false resumes them at once.
+                  example: true
+            example:
+              ids: ['42', '43']
+              paused: true
+      responses:
+        '200':
+          description: API keys paused or resumed
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [keys]
+                properties:
+                  keys:
+                    type: array
+                    description: The keys it changed, newest first.
+                    items:
+                      $ref: '#/components/schemas/ApiKey'
+                    example: &paused-api-keys-example
+                      - id: '43'
+                        name: Analytics notebook
+                        prefix: xq_live_exam
+                        scope: paid_reads
+                        scopes: [read]
+                        allowedIps: []
+                        isActive: true
+                        createdAt: '2025-01-15T12:00:00Z'
+                        monthlySpentCredits: 0
+                        pausedAt: '2025-01-20T08:00:00Z'
+              example:
+                keys: *paused-api-keys-example
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/SessionRequired'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
   /api-keys/bulk-revoke:
     post:
       operationId: bulkRevokeApiKeys
@@ -943,8 +1799,10 @@ paths:
       operationId: updateApiKey
       x-mcp-exclusion-reason: *browser-auth
       description:
-        Renames an active API key or changes its scope. Send name, scope or
-        both.
+        Renames an active API key, changes its scopes, IP allowlist or monthly
+        credit budget, or pauses or resumes it. Send any of name, scope, scopes,
+        paused, allowedIps & monthlyBudgetCredits. Pausing again keeps the first
+        pause time. Pausing or resuming a revoked or expired key answers 409.
       summary: Update API key
       tags: [API Keys]
       security: [{ cookieSession: [] }]
@@ -952,7 +1810,9 @@ paths:
         - $ref: '#/components/parameters/ResourceId'
       requestBody:
         required: true
-        description: The name, scope or both to save on the key.
+        description:
+          The name, scopes, paused state, IP allowlist or monthly credit budget
+          to save on the key.
         content:
           application/json:
             schema:
@@ -972,9 +1832,47 @@ paths:
                   description:
                     The scope to save. The key's next request uses it.
                   example: paid_reads
+                scopes:
+                  type: array
+                  maxItems: 6
+                  items: *api-key-scope-name
+                  description:
+                    full calls every route. read calls paid X reads. write,
+                    monitors, exports & billing add their routes. scopes wins
+                    over scope. Missing keeps the key's scopes.
+                  example: [read, monitors]
+                allowedIps:
+                  type: array
+                  maxItems: 20
+                  items:
+                    type: string
+                    maxLength: 64
+                    example: 203.0.113.4
+                  description:
+                    Up to 20 IPv4 or IPv6 addresses or CIDR ranges. The list
+                    replaces the saved one, & an empty list allows any IP.
+                  example: ['203.0.113.4', '198.51.100.0/24']
+                monthlyBudgetCredits:
+                  type: [integer, 'null']
+                  minimum: 1
+                  maximum: 1000000000000
+                  description:
+                    Credits the key can spend each UTC calendar month. Null
+                    removes the budget, & a missing field keeps it.
+                  example: 50000
+                paused:
+                  type: boolean
+                  description:
+                    true pauses the key, so its calls get 403 `api_key_paused`.
+                    false resumes it, & its next call goes through.
+                  example: true
             example:
               name: Analytics notebook
               scope: paid_reads
+              scopes: [read]
+              allowedIps: ['203.0.113.4']
+              paused: true
+              monthlyBudgetCredits: 50000
       responses:
         '200':
           description: API key updated
@@ -987,8 +1885,12 @@ paths:
                 name: Analytics notebook
                 prefix: xq_live_exam
                 scope: paid_reads
+                scopes: [read]
+                allowedIps: []
                 isActive: true
                 createdAt: '2025-01-15T12:00:00Z'
+                monthlyBudgetCredits: 50000
+                monthlySpentCredits: 1200
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401': *unauthenticated-response
@@ -996,6 +1898,28 @@ paths:
           $ref: '#/components/responses/SessionRequired'
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          description:
+            The key is revoked or expired, so it can't be paused or resumed.
+            Create a new key instead.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                revoked:
+                  summary: A revoked key
+                  value:
+                    error: api_key_revoked
+                    message:
+                      This API key is revoked. Create a new key at
+                      dashboard.xquik.com/api-keys.
+                expired:
+                  summary: An expired key
+                  value:
+                    error: api_key_expired
+                    message:
+                      This API key expired. Create a new key at
+                      dashboard.xquik.com/api-keys.
         '429': *rate-limit-exceeded-response
     delete:
       operationId: revokeApiKey
@@ -1772,7 +2696,7 @@ paths:
                 hasMore: false
         '400': *invalid-input-response
         '401': *unauthenticated-response
-        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '403': { $ref: '#/components/responses/MonitorsKeyForbidden' }
         '429': *rate-limit-exceeded-response
     post:
       operationId: createMonitor
@@ -1866,7 +2790,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '402': *payment-required-response
-        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '403': { $ref: '#/components/responses/MonitorsKeyForbidden' }
         '404': &user-not-found-response
           $ref: '#/components/responses/UserNotFound'
         '409':
@@ -1915,7 +2839,7 @@ paths:
                 hasMore: false
         '400': *invalid-input-response
         '401': *unauthenticated-response
-        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '403': { $ref: '#/components/responses/MonitorsKeyForbidden' }
         '429': *rate-limit-exceeded-response
     post:
       operationId: createKeywordMonitor
@@ -1979,7 +2903,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '402': *payment-required-response
-        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '403': { $ref: '#/components/responses/MonitorsKeyForbidden' }
         '409':
           description: Keyword monitor already exists
           content:
@@ -2016,7 +2940,7 @@ paths:
           $ref: '#/components/responses/InvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
-        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '403': { $ref: '#/components/responses/MonitorsKeyForbidden' }
         '404': *not-found-response
         '429': *rate-limit-exceeded-response
     patch:
@@ -2059,7 +2983,7 @@ paths:
           $ref: '#/components/responses/InvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
-        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '403': { $ref: '#/components/responses/MonitorsKeyForbidden' }
         '404': *not-found-response
         '429': *rate-limit-exceeded-response
     delete:
@@ -2078,7 +3002,7 @@ paths:
           $ref: '#/components/responses/InvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
-        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '403': { $ref: '#/components/responses/MonitorsKeyForbidden' }
         '404': *not-found-response
         '429': *rate-limit-exceeded-response
 
@@ -2120,7 +3044,7 @@ paths:
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401': *unauthenticated-response
-        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '403': { $ref: '#/components/responses/MonitorsKeyForbidden' }
         '429': *rate-limit-exceeded-response
     post:
       operationId: createPostMonitor
@@ -2148,7 +3072,7 @@ paths:
                   description:
                     Post link or ID. x.com, twitter.com, mobile & /i/web/status/
                     links work with any query string.
-                  example: 'https://x.com/xquik/status/2104984505677430978'
+                  example: 'https://x.com/NASA/status/2102882545427714266'
                 name:
                   type: [string, 'null']
                   minLength: 1
@@ -2160,7 +3084,7 @@ paths:
                 eventTypes:
                   $ref: '#/components/schemas/PostEventTypeArray'
             example:
-              post: 'https://x.com/xquik/status/2104984505677430978'
+              post: 'https://x.com/NASA/status/2102882545427714266'
               name: Launch post
               eventTypes: [post.reply.new, post.likes.changed]
       responses:
@@ -2172,14 +3096,16 @@ paths:
                 $ref: '#/components/schemas/PostMonitor'
               example:
                 id: '31'
-                postId: '2104984505677430978'
-                postUrl: 'https://x.com/xquik/status/2104984505677430978'
-                authorId: '1661816432185823232'
-                authorUsername: xquik
-                authorName: Xquik
+                postId: '2102882545427714266'
+                postUrl: 'https://x.com/NASA/status/2102882545427714266'
+                authorId: '11348282'
+                authorUsername: NASA
+                authorName: NASA
                 media: []
-                text: 'We shipped post monitors.'
-                postedAt: '2026-09-29T17:19:49.000Z'
+                text:
+                  'Today, Croatia became the 74th nation that has committed to a
+                  peaceful and prosperous exploration of space.'
+                postedAt: '2026-09-23T22:07:23.000Z'
                 eventTypes: [post.reply.new, post.likes.changed]
                 isActive: true
                 createdAt: '2026-10-22T11:00:00Z'
@@ -2204,7 +3130,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '402': *payment-required-response
-        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '403': { $ref: '#/components/responses/MonitorsKeyForbidden' }
         '404':
           $ref: '#/components/responses/TweetNotFound'
         '409':
@@ -2251,7 +3177,7 @@ paths:
           $ref: '#/components/responses/InvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
-        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '403': { $ref: '#/components/responses/MonitorsKeyForbidden' }
         '404': *not-found-response
         '429': *rate-limit-exceeded-response
     patch:
@@ -2294,7 +3220,7 @@ paths:
           $ref: '#/components/responses/InvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
-        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '403': { $ref: '#/components/responses/MonitorsKeyForbidden' }
         '404': *not-found-response
         '409':
           description:
@@ -2365,7 +3291,7 @@ paths:
           $ref: '#/components/responses/InvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
-        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '403': { $ref: '#/components/responses/MonitorsKeyForbidden' }
         '404': *not-found-response
         '429': *rate-limit-exceeded-response
 
@@ -2396,7 +3322,7 @@ paths:
           $ref: '#/components/responses/InvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
-        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '403': { $ref: '#/components/responses/MonitorsKeyForbidden' }
         '404': *not-found-response
         '429': *rate-limit-exceeded-response
     patch:
@@ -2451,7 +3377,7 @@ paths:
           $ref: '#/components/responses/InvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
-        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '403': { $ref: '#/components/responses/MonitorsKeyForbidden' }
         '404': *not-found-response
         '409':
           description: The monitored X account is still unavailable
@@ -2532,7 +3458,7 @@ paths:
                 hasMore: false
         '400': *invalid-input-response
         '401': *unauthenticated-response
-        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '403': { $ref: '#/components/responses/MonitorsKeyForbidden' }
         '429': *rate-limit-exceeded-response
   /events/stream:
     get:
@@ -2601,7 +3527,7 @@ paths:
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401': *unauthenticated-response
-        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '403': { $ref: '#/components/responses/MonitorsKeyForbidden' }
         '429':
           description: >
             The account has 5 streams open, or used Xquik's read limit. Close a
@@ -2665,7 +3591,7 @@ paths:
                   tweetId: '1234567890'
         '401': *unauthenticated-response
         '400': *invalid-input-response
-        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '403': { $ref: '#/components/responses/MonitorsKeyForbidden' }
         '404': *not-found-response
         '429': *rate-limit-exceeded-response
 
@@ -2713,13 +3639,15 @@ paths:
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401': *unauthenticated-response
-        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '403': { $ref: '#/components/responses/ExportsKeyForbidden' }
         '429': *rate-limit-exceeded-response
     post:
       operationId: createExtraction
       description:
         Starts 1 single-target or multi-target extraction. Follow waitUrl, then
-        page statusUrl once it completes.
+        page statusUrl once it completes. An API key at its monthly budget gets
+        403 `api_key_budget_reached`, even on a retry with a used
+        Idempotency-Key.
       summary: Create extraction
       tags: [Extractions]
       security: *api-auth-2
@@ -3190,15 +4118,26 @@ paths:
                   id: { type: string, example: 'aB3dE6gH9jK2' }
                   status: { type: string, const: canceled }
         '401': *unauthenticated-response
-        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '403': { $ref: '#/components/responses/ExportsKeyForbidden' }
         '404': *not-found-response
         '409':
-          description: Extraction already reached a terminal state
+          description: >-
+            The extraction already finished. status names how it ended.
           content:
-            {
-              application/json:
-                { schema: { $ref: '#/components/schemas/Error' } },
-            }
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Error'
+                  - type: object
+                    required: [status]
+                    properties:
+                      status:
+                        type: string
+                        enum: [completed, failed]
+              example:
+                error: extraction_terminal
+                message: Extraction already finished. Check its status.
+                status: completed
         '429': *rate-limit-exceeded-response
     get:
       operationId: getExtraction
@@ -3285,7 +4224,7 @@ paths:
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401': *unauthenticated-response
-        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '403': { $ref: '#/components/responses/ExportsKeyForbidden' }
         '404': *not-found-response
         '429': *rate-limit-exceeded-response
 
@@ -3416,7 +4355,7 @@ paths:
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401': *unauthenticated-response
-        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '403': { $ref: '#/components/responses/ExportsKeyForbidden' }
         '404': *not-found-response
         '429': *rate-limit-exceeded-response
 
@@ -3452,14 +4391,16 @@ paths:
                 hasMore: false
         '400': *invalid-input-response
         '401': *unauthenticated-response
-        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '403': { $ref: '#/components/responses/ExportsKeyForbidden' }
         '429': *rate-limit-exceeded-response
     post:
       operationId: createDraw
       summary: Run giveaway draw
       description: >-
         Checks credits, then draws winners from inspected replies & reposters.
-        Remaining credits cap the candidates.
+        Remaining credits cap the candidates. An API key at its monthly budget
+        gets 403 `api_key_budget_reached`, even on a retry with a used
+        Idempotency-Key.
 
 
         Giveaway draws pick winners with cryptographic randomness.
@@ -3607,7 +4548,7 @@ paths:
               example:
                 error: 'insufficient_credits'
                 message: 'Insufficient credits'
-        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '403': { $ref: '#/components/responses/ExportsKeyForbidden' }
         '404': *not-found-response
         '409':
           description:
@@ -3691,7 +4632,7 @@ paths:
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401': *unauthenticated-response
-        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '403': { $ref: '#/components/responses/ExportsKeyForbidden' }
         '404': *not-found-response
         '429': *rate-limit-exceeded-response
 
@@ -3727,7 +4668,7 @@ paths:
           content: *binary-download-content
         '400': *invalid-input-response
         '401': *unauthenticated-response
-        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '403': { $ref: '#/components/responses/ExportsKeyForbidden' }
         '404': *not-found-response
         '429': *rate-limit-exceeded-response
 
@@ -3761,7 +4702,7 @@ paths:
                 hasMore: false
         '400': *invalid-input-response
         '401': *unauthenticated-response
-        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '403': { $ref: '#/components/responses/MonitorsKeyForbidden' }
         '429': *rate-limit-exceeded-response
     post:
       operationId: createWebhook
@@ -3829,7 +4770,7 @@ paths:
           $ref: '#/components/responses/InvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
-        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '403': { $ref: '#/components/responses/MonitorsKeyForbidden' }
         '429': *rate-limit-exceeded-response
   /webhooks/telegram:
     post:
@@ -3887,7 +4828,7 @@ paths:
           $ref: '#/components/responses/InvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
-        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '403': { $ref: '#/components/responses/MonitorsKeyForbidden' }
         '429': *rate-limit-exceeded-response
         '503':
           description: Telegram delivery is off for now.
@@ -3946,7 +4887,7 @@ paths:
           $ref: '#/components/responses/InvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
-        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '403': { $ref: '#/components/responses/MonitorsKeyForbidden' }
         '404': *not-found-response
         '429': *rate-limit-exceeded-response
     delete:
@@ -3963,7 +4904,7 @@ paths:
           $ref: '#/components/responses/InvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
-        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '403': { $ref: '#/components/responses/MonitorsKeyForbidden' }
         '404': *not-found-response
         '429': *rate-limit-exceeded-response
 
@@ -4000,7 +4941,7 @@ paths:
                 hasMore: false
         '400': *invalid-input-response
         '401': *unauthenticated-response
-        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '403': { $ref: '#/components/responses/MonitorsKeyForbidden' }
         '404': *not-found-response
         '429': *rate-limit-exceeded-response
 
@@ -4037,7 +4978,7 @@ paths:
           $ref: '#/components/responses/InvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
-        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '403': { $ref: '#/components/responses/MonitorsKeyForbidden' }
         '404': *not-found-response
         '429': *rate-limit-exceeded-response
 
@@ -4108,7 +5049,7 @@ paths:
                 success: false
         '401':
           $ref: '#/components/responses/Unauthenticated'
-        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '403': { $ref: '#/components/responses/MonitorsKeyForbidden' }
         '404': *not-found-response
         '429': *rate-limit-exceeded-response
 
@@ -4193,6 +5134,7 @@ paths:
         '401': &anonymous-guest-authentication-response
           $ref: '#/components/responses/AnonymousGuestAuthenticationRequired'
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '502': *x-api-error-response
         '503':
           $ref: '#/components/responses/ReadBusy'
@@ -4212,6 +5154,7 @@ paths:
       security: *api-auth
       parameters: &write-idempotency-parameters
         - $ref: '#/components/parameters/WriteIdempotencyKey'
+        - $ref: '#/components/parameters/WritePrefer'
       requestBody:
         required: true
         description: Account and tweet content. Requires text, media, or both.
@@ -4343,7 +5286,7 @@ paths:
           $ref: '#/components/responses/WriteActionAccepted'
         '400': *invalid-input-response
         '401': *unauthenticated-response
-        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '403': { $ref: '#/components/responses/WriteKeyForbidden' }
         '404': *not-found-response
         '429': *rate-limit-exceeded-response
 
@@ -4543,6 +5486,7 @@ paths:
           $ref: '#/components/responses/Unauthenticated'
         '402':
           $ref: '#/components/responses/PaymentRequired'
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '502': *x-api-error-response
         '503':
           $ref: '#/components/responses/ReadBusy'
@@ -4815,6 +5759,7 @@ paths:
                   Ask for a later time.'
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '502': *x-api-error-response
         '503':
           $ref: '#/components/responses/ReadBusy'
@@ -4912,6 +5857,7 @@ paths:
           $ref: '#/components/responses/UnknownField'
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '502': *x-api-error-response
         '503':
           $ref: '#/components/responses/ReadBusy'
@@ -5014,6 +5960,7 @@ paths:
                   x.com/i/trending/2110209733533598095.'
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404':
           description: No story holds the ID. Free.
           content:
@@ -5112,6 +6059,7 @@ paths:
           $ref: '#/components/responses/UnknownField'
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '502': { $ref: '#/components/responses/XApiError' }
         '503':
           $ref: '#/components/responses/ReadBusy'
@@ -5212,6 +6160,7 @@ paths:
                 message: 'Search query required. Use q.'
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '502': { $ref: '#/components/responses/XApiError' }
         '503':
           $ref: '#/components/responses/ReadBusy'
@@ -5235,9 +6184,9 @@ paths:
         operators you combine. Search results hold every post that matches your
         query & nothing else. Word & phrase matching works in every language &
         script. Language, date & engagement filters hold on every row you get.
-        Messy queries still run instead of failing. Newest-first results stay in
-        true date order across pages. Filtered pages come back full until the
-        results run out. Searches stay fast on busy topics.
+        Messy queries still run instead of failing. Newest-first results come
+        back in date order. Filtered pages come back full until the results run
+        out. Searches stay fast on busy topics.
       tags:
         - Tweets
       security: *read-auth
@@ -5469,6 +6418,7 @@ paths:
         '400': *invalid-input-response
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '502': *x-api-error-response
         '503':
           $ref: '#/components/responses/ReadBusy'
@@ -5744,6 +6694,7 @@ paths:
         '400': *invalid-input-response
         '401': *unauthenticated-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404':
           description: Article not found
           content:
@@ -5765,8 +6716,8 @@ paths:
         Returns 1 public tweet with author, metrics, and media.
 
 
-        Post rows carry note text, edits, Community Notes, reach labels & reply
-        controls.
+        Posts carry note text, edits, Community Notes, reach labels, reply
+        controls & live events.
       summary: Get tweet with full text, author, metrics and media
       tags:
         - Tweets
@@ -5814,6 +6765,7 @@ paths:
         '400': *invalid-input-response
         '401': *unauthenticated-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404': &tweet-not-found-response
           $ref: '#/components/responses/TweetNotFound'
         '502': *x-api-error-response
@@ -5830,6 +6782,7 @@ paths:
       security: *api-auth
       parameters: &tweet-write-parameters
         - $ref: '#/components/parameters/WriteIdempotencyKey'
+        - $ref: '#/components/parameters/WritePrefer'
         - $ref: '#/components/parameters/TweetPathId'
       requestBody:
         required: true
@@ -5991,6 +6944,7 @@ paths:
         '400': *invalid-input-response
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '502': *x-api-error-response
         '503':
           $ref: '#/components/responses/ReadBusy'
@@ -6059,6 +7013,7 @@ paths:
         '400': *invalid-input-response
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '502': *x-api-error-response
         '503':
           $ref: '#/components/responses/ReadBusy'
@@ -6119,6 +7074,7 @@ paths:
         '400': *invalid-input-response
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '502': *x-api-error-response
         '503':
           $ref: '#/components/responses/ReadBusy'
@@ -6203,6 +7159,7 @@ paths:
                     parameter: 'types'
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '502': *x-api-error-response
         '503':
           $ref: '#/components/responses/ReadBusy'
@@ -6250,6 +7207,7 @@ paths:
         '400': *invalid-input-response
         '401': *unauthenticated-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404': *user-not-found-response
         '502': *x-api-error-response
         '503':
@@ -6267,6 +7225,7 @@ paths:
       security: *api-auth
       parameters: &user-write-parameters
         - $ref: '#/components/parameters/WriteIdempotencyKey'
+        - $ref: '#/components/parameters/WritePrefer'
         - $ref: '#/components/parameters/UserPathId'
       requestBody:
         required: true
@@ -6406,6 +7365,7 @@ paths:
                 error: 'missing_params'
         '401': *unauthenticated-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '502': *x-api-error-response
         '503':
           $ref: '#/components/responses/ReadBusy'
@@ -6426,6 +7386,7 @@ paths:
       security: *api-auth
       parameters:
         - $ref: '#/components/parameters/WriteIdempotencyKey'
+        - $ref: '#/components/parameters/WritePrefer'
         - $ref: '#/components/parameters/DmUserPathId'
       requestBody:
         required: true
@@ -6474,6 +7435,7 @@ paths:
       security: *api-auth
       parameters:
         - $ref: '#/components/parameters/WriteIdempotencyKey'
+        - $ref: '#/components/parameters/WritePrefer'
         - $ref: '#/components/parameters/DmUserPathId'
         - $ref: '#/components/parameters/DmMessagePathId'
         - name: account
@@ -6558,8 +7520,9 @@ paths:
         Downloads images and videos attached to selected tweets.
 
 
-        Saving the same media again is free. Removed media isn't billed, &
-        `media_unavailable` gives the reason.
+        Saving the same media again is free. Removed media isn't billed, & a
+        single-post download with all its media removed returns
+        `media_unavailable`.
       summary: Download images and videos from tweets
       tags:
         - Media
@@ -6685,7 +7648,10 @@ paths:
                           example: photo
                         mediaUrl:
                           type: string
-                          description: Saved copy of the file
+                          description:
+                            Link to the file. It goes to X when X flagged the
+                            post or its media at save time, or sent no post
+                            flag. Xquik keeps no copy of those files.
                           example: 'https://media.xquik.com/tweet_1234567890/0.jpg'
                         fileSize:
                           type: [string, 'null']
@@ -6983,6 +7949,7 @@ paths:
       security: *api-auth
       parameters: &resource-write-parameters
         - $ref: '#/components/parameters/WriteIdempotencyKey'
+        - $ref: '#/components/parameters/WritePrefer'
         - $ref: '#/components/parameters/CommunityWriteId'
       requestBody:
         required: true
@@ -7586,6 +8553,7 @@ paths:
         '400': *invalid-input-response
         '401': *unauthenticated-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '502':
           $ref: '#/components/responses/XApiError'
         '429': *rate-limit-exceeded-response-2
@@ -7973,7 +8941,8 @@ paths:
       description: >
         Create a one-use hosted checkout after the user confirms $10-$250 USD.
         The request creates no charge. It returns a paid-read API key without an
-        Xquik account. Idempotent replays return the same key.
+        Xquik account. Idempotent replays return the same key. Stripe creates a
+        paid invoice for each paid checkout.
       tags: [Guest Wallets]
       security: [{}]
       parameters: &guest-idempotency-parameters
@@ -8089,7 +9058,8 @@ paths:
       description: >
         Create a one-use hosted checkout after the user confirms a $10-$250 USD
         amount for an existing paid-read guest key. The key remains the same.
-        This request creates no charge and never redirects through Xquik.
+        This request creates no charge and never redirects through Xquik. Stripe
+        creates a paid invoice for each paid checkout.
       tags: [Guest Wallets]
       security: [{ apiKey: [] }]
       parameters: *guest-idempotency-parameters
@@ -8267,7 +9237,7 @@ paths:
                 lifetime_purchased: '200000'
                 lifetime_used: '150000'
         '401': *unauthenticated-response
-        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '403': { $ref: '#/components/responses/BillingKeyForbidden' }
         '429': *rate-limit-exceeded-response-2
   /credits/topup:
     post:
@@ -8313,10 +9283,18 @@ paths:
                     Optional site language for Stripe's return page. An
                     unsupported language uses en, the default.
                   example: en
+                returnPath:
+                  type: string
+                  maxLength: 64
+                  description: >
+                    Optional Xquik tool page to return to after Checkout, such
+                    as /en/x-article-reader.
+                  example: /en/x-article-reader
             example:
               currency: EUR
               dollars: 10
               locale: 'en'
+              returnPath: /en/x-article-reader
       responses:
         '200':
           description: Top-up checkouts
@@ -8350,8 +9328,8 @@ paths:
                     type: string
                     format: uri
                     description: >
-                      Same stable Xquik redirect URL as redirect_url. The
-                      response never exposes the hosted checkout URL.
+                      With an API key, the same stable Xquik redirect URL as
+                      redirect_url.
                     example: 'https://xquik.com/api/v1/credits/topup/redirect?session_id=checkout_example'
               example:
                 chargedCurrency: EUR
@@ -8485,7 +9463,7 @@ paths:
                 status: paid
         '400': *invalid-input-response
         '401': *unauthenticated-response
-        '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '403': { $ref: '#/components/responses/BillingKeyForbidden' }
         '404': *not-found-response
         '429': *rate-limit-exceeded-response-2
   /credits/quick-topup:
@@ -8754,10 +9732,10 @@ paths:
         Rows stay newest first. Send retweets=exclude to drop reposts.
 
 
-        Account history comes back complete, old posts included. Profile posts
-        without replies still keep the author's own threads. Profile reads
-        include the pinned post, flagged as pinned. Timelines page all the way
-        to the last post.
+        Account history comes back complete, old posts included. Profile exports
+        keep every post of the author's own threads. Profile reads include the
+        pinned post, flagged as pinned. Timelines page all the way to the last
+        post. With an API key or OAuth, account timeline cursors fit in a URL.
       tags:
         - Users
       security: *read-auth
@@ -9055,6 +10033,7 @@ paths:
         '400': *invalid-input-response
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404': *user-not-found-response
         '502': *x-api-error-response
         '503':
@@ -9082,6 +10061,7 @@ paths:
         '400': *invalid-input-response
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404': *user-not-found-response
         '502': *x-api-error-response
         '503':
@@ -9280,6 +10260,7 @@ paths:
           $ref: '#/components/responses/InvalidInput'
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404': *user-not-found-response
         '502':
           $ref: '#/components/responses/XApiError'
@@ -9619,12 +10600,28 @@ paths:
           description: >
             DM read forbidden. The connected account may not be in the
             conversation, or it may be restricted or need reauthentication. A
-            `paid_reads` key gets `forbidden`. Check the error code, then fix
-            the account or use a Full access key.
+            key without Full access gets `insufficient_scope`. Check the error
+            code, then fix the account or use a Full access key. A paused API
+            key gets `api_key_paused`, so resume it on the dashboard.
           content:
             application/json:
               schema: *error-schema
               examples:
+                apiKeyPaused:
+                  summary: A paused API key
+                  value:
+                    error: api_key_paused
+                    message:
+                      This API key is paused. Resume it at
+                      dashboard.xquik.com/api-keys to use it again.
+                insufficientScope:
+                  summary: The API key lacks a scope this route needs
+                  value:
+                    error: insufficient_scope
+                    message:
+                      This route needs a Full access key. Turn on Full access at
+                      dashboard.xquik.com/api-keys.
+                    requiredScope: full
                 dmNotPermitted:
                   summary: Account is not a conversation participant
                   value:
@@ -9642,10 +10639,6 @@ paths:
                   summary: Connected account needs reauthentication
                   value:
                     error: account_needs_reauth
-                readKey:
-                  summary: A paid_reads key called a Full access route
-                  value:
-                    error: forbidden
         '404':
           description: Connected X account not found for the authenticated user.
           content:
@@ -9710,6 +10703,7 @@ paths:
         '400': *invalid-input-response
         '401': *unauthenticated-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404': *not-found-response
         '424':
           $ref: '#/components/responses/XApiError'
@@ -9770,6 +10764,7 @@ paths:
           $ref: '#/components/responses/InvalidInput'
         '401': *unauthenticated-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404': *not-found-response
         '424':
           $ref: '#/components/responses/XApiError'
@@ -9818,6 +10813,7 @@ paths:
         '400': *invalid-input-response
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404': *not-found-response
         '424':
           $ref: '#/components/responses/XApiError'
@@ -9881,6 +10877,7 @@ paths:
         '400': *invalid-input-response
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '424':
           $ref: '#/components/responses/XApiError'
         '429': *rate-limit-exceeded-response-2
@@ -9927,6 +10924,7 @@ paths:
         '400': *invalid-input-response
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404': *not-found-response
         '424':
           $ref: '#/components/responses/XApiError'
@@ -9999,6 +10997,7 @@ paths:
         '400': *invalid-input-response
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404': *not-found-response
         '424':
           $ref: '#/components/responses/XApiError'
@@ -10028,6 +11027,7 @@ paths:
         '400': *invalid-input-response
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404': *not-found-response
         '424':
           $ref: '#/components/responses/XApiError'
@@ -10077,6 +11077,7 @@ paths:
         '400': *invalid-input-response
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '424':
           $ref: '#/components/responses/XApiError'
         '429': *rate-limit-exceeded-response-2
@@ -10111,6 +11112,7 @@ paths:
         '400': *invalid-input-response
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '424':
           $ref: '#/components/responses/XApiError'
         '429': *rate-limit-exceeded-response-2
@@ -10180,6 +11182,7 @@ paths:
         '400': *invalid-input-response
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '424':
           $ref: '#/components/responses/XApiError'
         '429': *rate-limit-exceeded-response-2
@@ -10251,6 +11254,7 @@ paths:
         '400': *invalid-input-response
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '424':
           $ref: '#/components/responses/XApiError'
         '429': *rate-limit-exceeded-response-2
@@ -10323,6 +11327,7 @@ paths:
           $ref: '#/components/responses/AnonymousGuestAuthenticationRequired'
         '402':
           $ref: '#/components/responses/PaymentRequired'
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '424':
           $ref: '#/components/responses/XApiError'
         '429':
@@ -10463,6 +11468,7 @@ paths:
                       then use next_cursor.'
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '424': { $ref: '#/components/responses/XApiError' }
         '429': *rate-limit-exceeded-response-2
         '502': { $ref: '#/components/responses/XApiError' }
@@ -10523,6 +11529,7 @@ paths:
                 message: 'Search query required. Use q.'
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '424': { $ref: '#/components/responses/XApiError' }
         '429': *rate-limit-exceeded-response-2
         '502': { $ref: '#/components/responses/XApiError' }
@@ -10597,6 +11604,7 @@ paths:
                 message: 'Send a job ID or job URL, such as x.com/i/jobs/123.'
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404':
           description: Job not found
           content:
@@ -10653,6 +11661,7 @@ paths:
                 message: 'Search query required. Use q.'
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '424':
           $ref: '#/components/responses/XApiError'
         '429': *rate-limit-exceeded-response-2
@@ -10711,6 +11720,7 @@ paths:
         '400': *invalid-input-response
         '401': *unauthenticated-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404': *not-found-response
         '424':
           $ref: '#/components/responses/XApiError'
@@ -10768,6 +11778,7 @@ paths:
         '400': *invalid-input-response
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404': *not-found-response
         '424':
           $ref: '#/components/responses/XApiError'
@@ -10800,6 +11811,7 @@ paths:
         '400': *invalid-input-response
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404': *not-found-response
         '424':
           $ref: '#/components/responses/XApiError'
@@ -10896,6 +11908,7 @@ paths:
         '400': *invalid-input-response
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404': *not-found-response
         '424':
           $ref: '#/components/responses/XApiError'
@@ -10971,6 +11984,7 @@ paths:
           $ref: '#/components/responses/Unauthenticated'
         '402':
           $ref: '#/components/responses/PaymentRequired'
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404':
           description: X knows no such broadcast
           content:
@@ -11053,6 +12067,7 @@ paths:
                   URL.'
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404':
           $ref: '#/components/responses/ContributorNotFound'
         '424': { $ref: '#/components/responses/XApiError' }
@@ -11156,6 +12171,7 @@ paths:
           $ref: '#/components/responses/ContributorNotesInvalidInput'
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404':
           $ref: '#/components/responses/ContributorNotFound'
         '424': { $ref: '#/components/responses/XApiError' }
@@ -11206,6 +12222,7 @@ paths:
           $ref: '#/components/responses/ContributorNotesInvalidInput'
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404':
           $ref: '#/components/responses/ContributorNotFound'
         '424': { $ref: '#/components/responses/XApiError' }
@@ -11315,6 +12332,7 @@ paths:
           $ref: '#/components/responses/AnonymousGuestAuthenticationRequired'
         '402':
           $ref: '#/components/responses/PaymentRequired'
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '424':
           $ref: '#/components/responses/XApiError'
         '429':
@@ -11378,6 +12396,7 @@ paths:
         '400': *invalid-input-response
         '401': *unauthenticated-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404': *not-found-response
         '424':
           $ref: '#/components/responses/XApiError'
@@ -11447,6 +12466,7 @@ paths:
           $ref: '#/components/responses/Unauthenticated'
         '402':
           $ref: '#/components/responses/PaymentRequired'
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404':
           description:
             Unknown Space, a Space without a recording, or a cancelled Space
@@ -11553,6 +12573,7 @@ paths:
           $ref: '#/components/responses/InvalidInput'
         '401': *unauthenticated-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '424':
           $ref: '#/components/responses/XApiError'
         '429': *rate-limit-exceeded-response-2
@@ -11594,6 +12615,7 @@ paths:
           $ref: '#/components/responses/InvalidInput'
         '401': *unauthenticated-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404': *not-found-response
         '424':
           $ref: '#/components/responses/XApiError'
@@ -11635,6 +12657,7 @@ paths:
           $ref: '#/components/responses/InvalidInput'
         '401': *unauthenticated-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404': *not-found-response
         '424':
           $ref: '#/components/responses/XApiError'
@@ -11677,6 +12700,7 @@ paths:
           $ref: '#/components/responses/InvalidInput'
         '401': *unauthenticated-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404': *not-found-response
         '424':
           $ref: '#/components/responses/XApiError'
@@ -11719,6 +12743,7 @@ paths:
           $ref: '#/components/responses/InvalidInput'
         '401': *unauthenticated-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404': *not-found-response
         '424':
           $ref: '#/components/responses/XApiError'
@@ -11761,6 +12786,7 @@ paths:
         '401': *unauthenticated-response
         '402':
           $ref: '#/components/responses/PaymentRequired'
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404': *not-found-response
         '424':
           $ref: '#/components/responses/XApiError'
@@ -11804,6 +12830,7 @@ paths:
           $ref: '#/components/responses/InvalidInput'
         '401': *unauthenticated-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '424':
           $ref: '#/components/responses/XApiError'
         '429':
@@ -11849,6 +12876,7 @@ paths:
           $ref: '#/components/responses/InvalidInput'
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404': *not-found-response
         '424':
           $ref: '#/components/responses/XApiError'
@@ -11955,6 +12983,7 @@ paths:
         '400': *invalid-input-response
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404': *tweet-not-found-response
         '502': *x-api-error-response
         '429': *rate-limit-exceeded-response-2
@@ -11972,10 +13001,10 @@ paths:
       x-mcp-return-body-statuses: [404, 424]
       summary: List replies to a tweet
       description: >
-        Returns direct replies with automatic maximum coverage and pagination. A
-        repost's ID returns the original post's replies. Complete mode adds
-        nested replies, diagnostics, and a 424 below 80% coverage. A sinceDate
-        or untilDate window read in full returns 200. So does a post that shows
+        Returns direct replies with automatic maximum coverage and pagination.
+        Reply exports work from any post ID or link. Complete mode adds nested
+        replies, diagnostics, and a 424 below 80% coverage. A sinceDate or
+        untilDate window read in full returns 200. So does a post that shows
         none of the replies it counts, with hiddenReplies. q or query answers
         400 before any read or charge. To search a post's replies, call GET
         /x/tweets/search with q=conversation_id:{id}.
@@ -11983,7 +13012,8 @@ paths:
 
         Reply exports include replies that X's post page leaves out. Complete
         mode adds replies the author hid & explains empty threads. Reply exports
-        hold only direct replies, in a proven order.
+        hold only direct replies, in a proven order. Reply pages count the
+        replies a read hasn't reached yet.
       tags:
         - Tweets
       security: *read-auth
@@ -12032,7 +13062,7 @@ paths:
             you set sort. Standard pages ignore it. With likes, each page is
             sorted by likes. A later page can hold a reply with more likes. The
             order is final on the last page. Latest & oldest sort every row by
-            date, which can take up to 20 s. An answer that stopped before every
+            date, which can take up to 80 s. An answer that stopped before every
             reply sets orderPartial.
         - name: excludeOriginalAuthor
           in: query
@@ -12105,6 +13135,7 @@ paths:
         '400': *invalid-input-response
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404': *tweet-not-found-response
         '502': *x-api-error-response
         '429': *rate-limit-exceeded-response-2
@@ -12286,6 +13317,7 @@ paths:
                       then use next_cursor.'
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404': *tweet-not-found-response
         '502': *x-api-error-response
         '503':
@@ -12338,6 +13370,7 @@ paths:
                       then use next_cursor.'
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404': *tweet-not-found-response
         '502': *x-api-error-response
         '503':
@@ -12365,6 +13398,7 @@ paths:
         '400': *invalid-input-response
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404': *tweet-not-found-response
         '502': *x-api-error-response
         '503':
@@ -12395,6 +13429,7 @@ paths:
         '400': *invalid-input-response
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404': *tweet-not-found-response
         '502': *x-api-error-response
         '503':
@@ -12464,6 +13499,7 @@ paths:
         '400': *invalid-input-response
         '401': *unauthenticated-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404': *tweet-not-found-response
         '502': *x-api-error-response
         '503':
@@ -12536,6 +13572,7 @@ paths:
         '400': *invalid-input-response
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404': *user-not-found-response
         '502': *x-api-error-response
         '503':
@@ -12606,6 +13643,7 @@ paths:
         '400': *invalid-input-response
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404': *user-not-found-response
         '502': *x-api-error-response
         '503':
@@ -12642,6 +13680,7 @@ paths:
         '400': *invalid-input-response
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404': *tweet-not-found-response
         '502': *x-api-error-response
         '503':
@@ -12687,12 +13726,107 @@ paths:
         '400': *invalid-input-response
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404': *user-not-found-response
         '502': *x-api-error-response
         '503':
           $ref: '#/components/responses/ReadBusy'
         '429': *rate-limit-exceeded-response-2
         '424': *x-api-error-response
+
+  /x/users/{id}/shadowban:
+    get:
+      operationId: checkShadowban
+      description: >-
+        Checks 1 X account for a search ban, a search suggestion ban & reply
+        deboosting. It also says if the account is active, protected or
+        suspended.
+
+
+        Each check answers pass, fail or unknown, with its reason & the posts,
+        suggestions or replies it read. The reply check answers pass or unknown,
+        since X ranks replies for each viewer. A protected account gets the
+        suggestion check only, and a suspended account gets the account check
+        only. Each profile, post, suggestion & reply in the answer costs 1
+        credit.
+
+
+        Shadowban checks show if X search lists an account, with each post they
+        read.
+      summary: Check an X account for a shadowban
+      tags:
+        - Users
+      security: *read-auth
+      parameters:
+        - $ref: '#/components/parameters/UserPathId'
+        - $ref: '#/components/parameters/Fields'
+        - $ref: '#/components/parameters/Omit'
+      responses:
+        '200':
+          description: Shadowban checks
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShadowbanReport'
+              example:
+                username: NASA
+                userId: '11348282'
+                account: active
+                checks:
+                  account:
+                    verdict: pass
+                    reason: active
+                    evidence:
+                      profileUrl: 'https://x.com/NASA'
+                  search:
+                    verdict: pass
+                    reason: listed
+                    evidence:
+                      query: 'from:NASA'
+                      searchUrl: 'https://x.com/search?q=from%3ANASA&f=live'
+                      recentPostIds:
+                        - '2103610284464316469'
+                        - '2103583087540003274'
+                      foundPostIds:
+                        - '2103610284464316469'
+                        - '2103583087540003274'
+                  suggestion:
+                    verdict: pass
+                    reason: suggested
+                    evidence:
+                      query: NASA
+                      suggestedUsernames: [NASA, NASAHubble, NASAEarth]
+                  replies:
+                    verdict: unknown
+                    reason: more_replies
+                    evidence:
+                      replies:
+                        - replyId: '2103589735449141451'
+                          replyUrl: 'https://x.com/i/status/2103589735449141451'
+                          parentId: '2102883223948628205'
+                          parentUrl: 'https://x.com/i/status/2102883223948628205'
+                          placement: more_replies
+                        - replyId: '2103215186870239252'
+                          replyUrl: 'https://x.com/i/status/2103215186870239252'
+                          parentId: '2102924351171670302'
+                          parentUrl: 'https://x.com/i/status/2102924351171670302'
+                          placement: thread
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '401': *anonymous-guest-authentication-response
+        '402': { $ref: '#/components/responses/PaymentRequired' }
+        '403':
+          $ref: '#/components/responses/ApiKeyPaused'
+        '404':
+          $ref: '#/components/responses/UserNotFound'
+        '502':
+          $ref: '#/components/responses/XApiError'
+        '503':
+          $ref: '#/components/responses/ReadBusy'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+        '424':
+          $ref: '#/components/responses/XApiError'
 
   /x/tweets/{id}/embed:
     get:
@@ -12759,6 +13893,7 @@ paths:
         '400': *invalid-input-response
         '401': *unauthenticated-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404': *tweet-not-found-response
         '502': *x-api-error-response
         '503':
@@ -12828,6 +13963,7 @@ paths:
           $ref: '#/components/responses/InvalidInput'
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '502':
           $ref: '#/components/responses/XApiError'
         '503':
@@ -12886,6 +14022,7 @@ paths:
           $ref: '#/components/responses/InvalidInput'
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404': *tweet-not-found-response
         '502':
           $ref: '#/components/responses/XApiError'
@@ -13123,6 +14260,7 @@ paths:
         '400': *invalid-input-response
         '401': *anonymous-guest-authentication-response
         '402': *payment-required-response
+        '403': { $ref: '#/components/responses/ApiKeyPaused' }
         '404': *user-not-found-response
         '502': *x-api-error-response
         '503':
@@ -13833,12 +14971,26 @@ components:
         It sends nothing to X & charges nothing. While the first request runs, a
         retry returns 202 & the action. Different input returns 409. Protection
         lasts at least 90 days. Retrying a write is safe with an idempotency
-        key.
+        key. A retry with an API key at its monthly budget gets 403
+        `api_key_budget_reached`.
       schema:
         type: string
         minLength: 1
         maxLength: 255
         pattern: '^[!-~]{1,255}$'
+    WritePrefer:
+      name: Prefer
+      in: header
+      required: false
+      description: >
+        A long write answers 202 with a status link, then lands on X.
+        `wait=<seconds>` asks for the answer within that many seconds, up to 85.
+        If the write is still running then, the API answers 202 with Location.
+        Poll Location until `terminal` is true, and don't send the write again.
+      schema:
+        type: string
+        maxLength: 255
+      example: wait=50
     IdempotencyKey:
       name: Idempotency-Key
       in: header
@@ -14000,8 +15152,8 @@ components:
       description: >
         Automatic pages accept 1-300 Tweets, standard pages 1-100. Default 20.
         Follow next_cursor for more pages. Its aliases are limit, count,
-        max_results, maxItems, max_items & per_page. A small page size never
-        loses rows between pages.
+        max_results, maxItems, max_items & per_page. Every page size returns the
+        same complete results.
       schema:
         type: integer
         minimum: 1
@@ -14627,6 +15779,12 @@ components:
         fails at the edge before Xquik reads it.
 
   headers:
+    SignInRetryAfter:
+      description: Seconds to wait before you retry.
+      schema: { type: integer, minimum: 1, maximum: 60, example: 60 }
+    NoStore:
+      description: Always no-store, so no cache keeps the answer.
+      schema: { type: string, const: no-store }
     RateLimit:
       description: >
         Your requests left in this window & seconds until it resets, for the
@@ -14667,9 +15825,9 @@ components:
         enum: ['admission', 'reads']
     XquikCause:
       description: >
-        Sent when X's servers failed the request. The value x names X as the
-        cause. Xquik's own failures & other answers omit this header.
-        `X-Xquik-Cause` tells X's outages apart from Xquik's.
+        Xquik answers 502 with `X-Xquik-Cause` & `Retry-After` when X fails a
+        read on every account. The value x names X as the cause. Xquik's own
+        failures omit it.
       schema:
         type: string
         enum: ['x']
@@ -15016,6 +16174,18 @@ components:
             error: 'unauthenticated'
             message:
               'Authentication required. Provide a valid API key or bearer token.'
+    ApiKeyPaused:
+      description: >-
+        The API key is paused. Resume it at dashboard.xquik.com/api-keys & its
+        next call goes through.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: &api-key-paused
+            error: api_key_paused
+            message:
+              This API key is paused. Resume it at dashboard.xquik.com/api-keys
+              to use it again.
     AnonymousGuestAuthenticationRequired:
       description: >
         Non-MPP paid reads require Bearer authentication. Without credentials,
@@ -15247,90 +16417,224 @@ components:
               Ask the user to confirm a USD amount before creating checkout.
             payment_options: *guest-checkout-payment-options
     ReadKeyForbidden:
-      description: A `paid_reads` key called a route that needs Full access.
-      content:
-        application/json:
-          schema: *error-schema
-          example: &read-key-refusal
-            error: forbidden
-            message:
-              This API key calls paid X read routes only, such as GET
-              /api/v1/x/tweets/search. Create a Full access key at
-              dashboard.xquik.com/api-keys to call this route.
-    ProtectedTimeline:
-      description: >-
-        The account is protected. Choose a public one. This applies to every
-        timeline page & mode. Xquik charges nothing. Profile lookup still works.
-        Protected accounts & private Lists get a clear answer, not an empty
-        page.
-      content:
-        application/json:
-          schema: *error-schema
-          example:
-            error: x_account_protected
-            message: Account is protected. Choose a public account.
-    ExtractionForbidden:
       description:
-        A `paid_reads` key gets `forbidden`, so use a Full access key. A
-        protected target gets `x_account_protected`, so choose a public one.
-        Xquik creates no job & charges nothing. Follower tools name the private
-        list.
+        The API key lacks a scope this route needs. `requiredScope` names it. A
+        paused API key gets `api_key_paused`, so resume it on the dashboard.
       content:
         application/json:
           schema: *error-schema
           examples:
+            apiKeyPaused:
+              summary: A paused API key
+              value: *api-key-paused
+            insufficientScope:
+              summary: The API key lacks a scope this route needs
+              value:
+                error: insufficient_scope
+                message:
+                  This route needs a Full access key. Turn on Full access at
+                  dashboard.xquik.com/api-keys.
+                requiredScope: full
+    WriteKeyForbidden:
+      description:
+        The API key lacks the write scope this route needs. A paused API key
+        gets `api_key_paused`, so resume it on the dashboard.
+      content:
+        application/json:
+          schema: *error-schema
+          examples:
+            apiKeyPaused:
+              summary: A paused API key
+              value: *api-key-paused
+            insufficientScope:
+              summary: The API key lacks the write scope
+              value:
+                error: insufficient_scope
+                message:
+                  This API key lacks the write scope. Add it at
+                  dashboard.xquik.com/api-keys.
+                requiredScope: write
+    MonitorsKeyForbidden:
+      description:
+        The API key lacks the monitors scope this route needs. A paused API key
+        gets `api_key_paused`, so resume it on the dashboard.
+      content:
+        application/json:
+          schema: *error-schema
+          examples:
+            apiKeyPaused:
+              summary: A paused API key
+              value: *api-key-paused
+            insufficientScope:
+              summary: The API key lacks the monitors scope
+              value:
+                error: insufficient_scope
+                message:
+                  This API key lacks the monitors scope. Add it at
+                  dashboard.xquik.com/api-keys.
+                requiredScope: monitors
+    ExportsKeyForbidden:
+      description:
+        The API key lacks the exports scope this route needs. A paused API key
+        gets `api_key_paused`, so resume it on the dashboard.
+      content:
+        application/json:
+          schema: *error-schema
+          examples:
+            apiKeyPaused:
+              summary: A paused API key
+              value: *api-key-paused
+            insufficientScope:
+              summary: The API key lacks the exports scope
+              value:
+                error: insufficient_scope
+                message:
+                  This API key lacks the exports scope. Add it at
+                  dashboard.xquik.com/api-keys.
+                requiredScope: exports
+    BillingKeyForbidden:
+      description:
+        The API key lacks the billing scope this route needs. A paused API key
+        gets `api_key_paused`, so resume it on the dashboard.
+      content:
+        application/json:
+          schema: *error-schema
+          examples:
+            apiKeyPaused:
+              summary: A paused API key
+              value: *api-key-paused
+            insufficientScope:
+              summary: The API key lacks the billing scope
+              value:
+                error: insufficient_scope
+                message:
+                  This API key lacks the billing scope. Add it at
+                  dashboard.xquik.com/api-keys.
+                requiredScope: billing
+    ProtectedTimeline:
+      description:
+        The account is protected. Choose a public one. This applies to every
+        timeline page & mode. Xquik charges nothing. Profile lookup still works.
+        Protected accounts & private Lists get a clear answer, not an empty
+        page. A paused API key gets `api_key_paused`, so resume it on the
+        dashboard.
+      content:
+        application/json:
+          schema: *error-schema
+          examples:
+            apiKeyPaused:
+              summary: A paused API key
+              value: *api-key-paused
+            protectedTarget:
+              summary: The target account is protected
+              value:
+                error: x_account_protected
+                message: Account is protected. Choose a public account.
+    ExtractionForbidden:
+      description:
+        A key without the exports scope gets `insufficient_scope`. A protected
+        target gets `x_account_protected`, so choose a public one. Xquik creates
+        no job & charges nothing. Follower tools name the private list. A paused
+        API key gets `api_key_paused`, so resume it on the dashboard. A key
+        whose monthly credit budget can't pay for 1 result gets
+        `api_key_budget_reached` before any X call.
+      content:
+        application/json:
+          schema: *error-schema
+          examples:
+            apiKeyBudgetReached:
+              summary: The API key's monthly credit budget has no room
+              value:
+                error: api_key_budget_reached
+                message:
+                  This API key reached its monthly credit budget. Raise or
+                  remove it at dashboard.xquik.com/api-keys, or wait for the
+                  next UTC month.
+            apiKeyPaused:
+              summary: A paused API key
+              value: *api-key-paused
             protectedTarget:
               summary: The target account is protected
               value:
                 error: x_account_protected
                 message: Account is protected. Choose a public account.
             readKey:
-              summary: A paid_reads key called a Full access route
-              value: *read-key-refusal
+              summary: The API key lacks the exports scope
+              value:
+                error: insufficient_scope
+                message:
+                  This API key lacks the exports scope. Add it at
+                  dashboard.xquik.com/api-keys.
+                requiredScope: exports
     ProtectedFollowerList:
       description:
         X keeps a protected account's follower list private. Xquik charges
-        nothing.
-      content:
-        application/json:
-          schema: *error-schema
-          example:
-            error: x_account_protected
-            message:
-              This account's follower list is private. Try a public account.
-    ProtectedFollowingList:
-      description:
-        X keeps a protected account's following list private. Xquik charges
-        nothing.
-      content:
-        application/json:
-          schema: *error-schema
-          example:
-            error: x_account_protected
-            message:
-              This account's following list is private. Try a public account.
-    ProtectedVerifiedFollowerList:
-      description:
-        X keeps a protected account's verified follower list private. Xquik
-        charges nothing.
-      content:
-        application/json:
-          schema: *error-schema
-          example:
-            error: x_account_protected
-            message:
-              This account's verified follower list is private. Try a public
-              account.
-    XWriteForbidden:
-      description: >
-        A `paid_reads` key gets `forbidden`, so use a Full access key. A
-        connected X account that needs reauthentication gets
-        `account_needs_reauth`. A locked, suspended, or recovering account gets
-        `account_restricted`.
+        nothing. A paused API key gets `api_key_paused`, so resume it on the
+        dashboard.
       content:
         application/json:
           schema: *error-schema
           examples:
+            apiKeyPaused:
+              summary: A paused API key
+              value: *api-key-paused
+            protectedTarget:
+              summary: The target account is protected
+              value:
+                error: x_account_protected
+                message:
+                  This account's follower list is private. Try a public account.
+    ProtectedFollowingList:
+      description:
+        X keeps a protected account's following list private. Xquik charges
+        nothing. A paused API key gets `api_key_paused`, so resume it on the
+        dashboard.
+      content:
+        application/json:
+          schema: *error-schema
+          examples:
+            apiKeyPaused:
+              summary: A paused API key
+              value: *api-key-paused
+            protectedTarget:
+              summary: The target account is protected
+              value:
+                error: x_account_protected
+                message:
+                  This account's following list is private. Try a public
+                  account.
+    ProtectedVerifiedFollowerList:
+      description:
+        X keeps a protected account's verified follower list private. Xquik
+        charges nothing. A paused API key gets `api_key_paused`, so resume it on
+        the dashboard.
+      content:
+        application/json:
+          schema: *error-schema
+          examples:
+            apiKeyPaused:
+              summary: A paused API key
+              value: *api-key-paused
+            protectedTarget:
+              summary: The target account is protected
+              value:
+                error: x_account_protected
+                message:
+                  This account's verified follower list is private. Try a public
+                  account.
+    XWriteForbidden:
+      description:
+        A key without the write scope gets `insufficient_scope`. A connected X
+        account that needs reauthentication gets `account_needs_reauth`. A
+        locked, suspended, or recovering account gets `account_restricted`. A
+        paused API key gets `api_key_paused`, so resume it on the dashboard.
+      content:
+        application/json:
+          schema: *error-schema
+          examples:
+            apiKeyPaused:
+              summary: A paused API key
+              value: *api-key-paused
             accountNeedsReauth:
               summary: The connected X account needs reauthentication
               value:
@@ -15338,8 +16642,13 @@ components:
                 message:
                   'X account needs re-authentication. Re-add the account.'
             readKey:
-              summary: A paid_reads key called a Full access route
-              value: *read-key-refusal
+              summary: The API key lacks the write scope
+              value:
+                error: insufficient_scope
+                message:
+                  This API key lacks the write scope. Add it at
+                  dashboard.xquik.com/api-keys.
+                requiredScope: write
     MediaTooLarge:
       description: The media is over Xquik's or X's size limit.
       content:
@@ -15459,9 +16768,13 @@ components:
         or when a filtered search goes far back without a match. The message
         says how far back the search looked. "X can't run this search" appears
         only when it's true. Searches X can't run fail at once, with the fix.
+        When X fails a read, Xquik answers 502 `x_api_unavailable` with
+        `X-Xquik-Cause` & `Retry-After`. Retry after that many seconds.
       headers:
         X-Xquik-Cause:
           $ref: '#/components/headers/XquikCause'
+        Retry-After:
+          $ref: '#/components/headers/BusyRetryAfter'
       content:
         application/json:
           schema: *error-schema
@@ -15511,11 +16824,9 @@ components:
               without cursor.'
     MaximumCoverageBusy:
       description:
-        Retry x_api_unavailable after Retry-After. Retry pagination_stalled once
-        after 30 s.
+        Retry x_api_unavailable after Retry-After. After pagination_stalled,
+        retry once, 30 s or more later.
       headers: &busy-headers
-        X-Xquik-Cause:
-          $ref: '#/components/headers/XquikCause'
         Retry-After:
           $ref: '#/components/headers/BusyRetryAfter'
         X-Xquik-Busy:
@@ -15847,14 +17158,48 @@ components:
   schemas:
     Currency:
       description: >
-        ISO 4217 code of 1 of the 10 currencies Xquik charges in.
+        ISO 4217 code of a currency Xquik charges in.
       type: string
-      enum: [USD, EUR, GBP, TRY, JPY, CNY, KRW, CAD, AUD, MXN]
+      enum:
+        [
+          USD,
+          EUR,
+          GBP,
+          TRY,
+          JPY,
+          CNY,
+          KRW,
+          CAD,
+          AUD,
+          MXN,
+          AED,
+          BRL,
+          CHF,
+          CZK,
+          DKK,
+          HKD,
+          HUF,
+          IDR,
+          ILS,
+          INR,
+          MYR,
+          NOK,
+          NZD,
+          PHP,
+          PLN,
+          QAR,
+          RON,
+          SAR,
+          SEK,
+          SGD,
+          THB,
+          ZAR,
+        ]
       example: EUR
     NextCursor:
       description: >-
         Cursor for the next page. Send it unchanged. Each next page arrives
-        fast. Cursors fit in a URL & last 90 days.
+        fast.
       type: string
       example: 'DAACCgACGRElMJcAAA'
     WholeNumber:
@@ -16044,6 +17389,460 @@ components:
           properties:
             code: { type: string }
             message: { type: string }
+
+    OAuthError:
+      description: An OAuth error answer.
+      type: object
+      required: [error, error_description]
+      properties:
+        error:
+          type: string
+          description: The OAuth error code.
+          enum:
+            - access_denied
+            - authorization_pending
+            - expired_token
+            - invalid_client
+            - invalid_client_metadata
+            - invalid_grant
+            - invalid_redirect_uri
+            - invalid_request
+            - invalid_scope
+            - invalid_target
+            - slow_down
+            - temporarily_unavailable
+            - unauthorized_client
+            - unsupported_grant_type
+          example: invalid_request
+        error_description:
+          type: string
+          description: What went wrong & how to fix it.
+          example: grant_type is required
+    OAuthClientAuthentication:
+      description: Form fields that name the client & authenticate it.
+      type: object
+      properties:
+        client_id:
+          type: string
+          maxLength: 16384
+          description: >-
+            Required unless client_assertion or a Basic Authorization header
+            with an empty password names the client.
+          example: 550e8400-e29b-41d4-a716-446655440000
+        client_secret:
+          type: string
+          maxLength: 16384
+          description: Required for clients registered with client_secret_post.
+          example: CLIENT_SECRET
+        client_assertion:
+          type: string
+          maxLength: 16384
+          description: >-
+            A signed JWT for clients whose metadata document names
+            private_key_jwt.
+          example: CLIENT_ASSERTION
+        client_assertion_type:
+          type: string
+          const: 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer'
+          description: Required with client_assertion.
+    OAuthTokenRequest:
+      description:
+        Form fields of a token request. Each grant_type has its own fields.
+      oneOf:
+        - $ref: '#/components/schemas/OAuthAuthorizationCodeGrant'
+        - $ref: '#/components/schemas/OAuthRefreshTokenGrant'
+        - $ref: '#/components/schemas/OAuthAgentClaimGrant'
+        - $ref: '#/components/schemas/OAuthIdentityAssertionGrant'
+    OAuthAuthorizationCodeGrant:
+      description: Exchange an authorization code for tokens.
+      allOf:
+        - $ref: '#/components/schemas/OAuthClientAuthentication'
+        - type: object
+          required: [grant_type, code, code_verifier]
+          properties:
+            grant_type:
+              type: string
+              const: authorization_code
+            code:
+              type: string
+              maxLength: 16384
+              description: The authorization code from the redirect.
+              example: AUTHORIZATION_CODE
+            code_verifier:
+              type: string
+              minLength: 43
+              maxLength: 128
+              pattern: '^[A-Za-z0-9._~-]{43,128}$'
+              description: The PKCE verifier of the code_challenge.
+              example: dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk
+            redirect_uri:
+              type: string
+              maxLength: 16384
+              description: The redirect_uri of the authorization request.
+              example: 'https://client.example/callback'
+            resource:
+              type: string
+              maxLength: 16384
+              default: 'https://xquik.com/mcp'
+              description: >-
+                The resource of the authorization request. Defaults to the MCP
+                server.
+              example: 'https://xquik.com/mcp'
+    OAuthRefreshTokenGrant:
+      description: Trade the latest refresh token for new tokens.
+      allOf:
+        - $ref: '#/components/schemas/OAuthClientAuthentication'
+        - type: object
+          required: [grant_type, refresh_token]
+          properties:
+            grant_type:
+              type: string
+              const: refresh_token
+            refresh_token:
+              type: string
+              maxLength: 16384
+              description: >-
+                The latest refresh token. Each refresh token works once.
+              example: REFRESH_TOKEN
+            scope:
+              type: string
+              maxLength: 16384
+              description: It must equal the granted scope.
+              example: 'mcp:tools'
+            resource:
+              type: string
+              maxLength: 16384
+              default: 'https://xquik.com/mcp'
+              description: >-
+                The resource of the first token. Defaults to the MCP server.
+              example: 'https://xquik.com/mcp'
+    OAuthAgentClaimGrant:
+      description: Poll for the access token of a claimed agent.
+      type: object
+      required: [grant_type, claim_token]
+      properties:
+        grant_type:
+          type: string
+          const: 'urn:workos:agent-auth:grant-type:claim'
+        claim_token:
+          type: string
+          maxLength: 16384
+          description: The claim_token of the agent registration.
+          example: clm_0000000000000000000000000000000000000000000000000000000000000000
+    OAuthIdentityAssertionGrant:
+      description:
+        Trade a claimed agent's identity assertion for an access token.
+      type: object
+      required: [grant_type, assertion]
+      properties:
+        grant_type:
+          type: string
+          const: 'urn:ietf:params:oauth:grant-type:jwt-bearer'
+        assertion:
+          type: string
+          maxLength: 16384
+          description: A current identity_assertion from the claim grant.
+          example: IDENTITY_ASSERTION
+    OAuthToken:
+      description: An issued OAuth access token.
+      type: object
+      required: [access_token, token_type, expires_in, scope]
+      properties:
+        access_token:
+          type: string
+          description: Send it as a Bearer token.
+          example: ACCESS_TOKEN
+        token_type:
+          type: string
+          const: Bearer
+        expires_in:
+          type: integer
+          minimum: 0
+          maximum: 3600
+          description: Seconds until the access token expires.
+          example: 3600
+        scope:
+          type: string
+          description: The granted scopes, space-separated.
+          example: 'mcp:tools'
+        refresh_token:
+          type: string
+          description: >-
+            Only code & refresh grants return it. Each refresh token works once,
+            so store the latest one.
+          example: REFRESH_TOKEN
+        identity_assertion:
+          type: string
+          description: >-
+            Only the claim grant returns it. Send it with the jwt-bearer grant
+            for a new access token.
+          example: IDENTITY_ASSERTION
+        assertion_expires:
+          type: string
+          format: date-time
+          description: When identity_assertion expires.
+          example: '2026-12-01T12:00:00.000Z'
+    OAuthRevokeRequest:
+      description: Form fields of a revocation request.
+      allOf:
+        - $ref: '#/components/schemas/OAuthClientAuthentication'
+        - type: object
+          required: [token]
+          properties:
+            token:
+              type: string
+              minLength: 1
+              maxLength: 16384
+              description: The token to revoke.
+              example: ACCESS_OR_REFRESH_TOKEN
+            token_type_hint:
+              type: string
+              enum:
+                - access_token
+                - refresh_token
+                - 'urn:ietf:params:oauth:token-type:id-jag'
+              description: >-
+                The kind of token. The id-jag hint with client_id
+                urn:xquik:agent-auth revokes a claimed agent & all its access
+                tokens.
+              example: access_token
+    OAuthClientRegistrationRequest:
+      description: Metadata of the client to register.
+      type: object
+      required: [redirect_uris]
+      properties:
+        client_name:
+          type: string
+          maxLength: 256
+          default: MCP Client
+          description: The name the consent page shows.
+          example: My MCP Client
+        redirect_uris:
+          type: array
+          minItems: 1
+          maxItems: 10
+          uniqueItems: true
+          description: >-
+            Allowed redirect URIs. Each uses HTTPS, localhost or a native app
+            callback.
+          items: { type: string, maxLength: 2048, format: uri }
+          example: ['https://client.example/callback']
+        token_endpoint_auth_method:
+          type: string
+          enum: [none, client_secret_post]
+          default: none
+          description: >-
+            none for public clients. client_secret_post returns a client_secret.
+          example: none
+        grant_types:
+          type: array
+          minItems: 1
+          maxItems: 2
+          uniqueItems: true
+          description: Must include authorization_code.
+          items: { type: string, enum: [authorization_code, refresh_token] }
+          default: [authorization_code, refresh_token]
+          example: [authorization_code, refresh_token]
+        response_types:
+          type: array
+          minItems: 1
+          maxItems: 1
+          items: { type: string, enum: [code] }
+          default: [code]
+          example: [code]
+    OAuthClientRegistration:
+      description: A registered OAuth client.
+      type: object
+      required:
+        [
+          client_id,
+          client_id_issued_at,
+          client_name,
+          grant_types,
+          redirect_uris,
+          response_types,
+          token_endpoint_auth_method,
+        ]
+      properties:
+        client_id:
+          type: string
+          format: uuid
+          example: 550e8400-e29b-41d4-a716-446655440000
+        client_id_issued_at:
+          type: integer
+          minimum: 0
+          description: Unix time in seconds.
+          example: 1798761600
+        client_name:
+          type: string
+          example: My MCP Client
+        grant_types:
+          type: array
+          items: { type: string, enum: [authorization_code, refresh_token] }
+          example: [authorization_code, refresh_token]
+        redirect_uris:
+          type: array
+          items: { type: string, format: uri }
+          example: ['https://client.example/callback']
+        response_types:
+          type: array
+          items: { type: string, enum: [code] }
+          example: [code]
+        token_endpoint_auth_method:
+          type: string
+          enum: [none, client_secret_post]
+          example: none
+        client_secret:
+          type: string
+          description: >-
+            Only client_secret_post clients get it. Xquik shows it once, so
+            store it now.
+          example: CLIENT_SECRET
+        client_secret_expires_at:
+          type: integer
+          const: 0
+          description: 0, since a client_secret never expires.
+    AgentAuthError:
+      description: An agent registration error answer.
+      type: object
+      required: [error, message]
+      properties:
+        error:
+          type: string
+          enum:
+            - claim_expired
+            - invalid_grant
+            - invalid_login_hint
+            - invalid_request
+            - rate_limited
+          example: invalid_request
+        message:
+          type: string
+          description: How to fix the request.
+          example: Use the documented service_auth request.
+    AgentIdentityRequest:
+      description: A service_auth registration for a user's verified email.
+      type: object
+      required: [type, login_hint]
+      additionalProperties: false
+      properties:
+        type:
+          type: string
+          const: service_auth
+        login_hint:
+          type: string
+          format: email
+          maxLength: 320
+          description: >-
+            The user's verified email. The user must sign in with it to claim
+            the agent.
+          example: user@example.com
+    AgentClaimChallenge:
+      description: The code the user enters to claim the agent.
+      type: object
+      required: [expires_in, interval, user_code, verification_uri]
+      properties:
+        expires_in:
+          type: integer
+          const: 600
+          description: Seconds until the user code expires.
+        interval:
+          type: integer
+          const: 5
+          description: Seconds to wait between token polls.
+        user_code:
+          type: string
+          pattern: '^\d{6}$'
+          description: The 6-digit code the user enters.
+          example: '042137'
+        verification_uri:
+          type: string
+          format: uri
+          description: The page where the user signs in & enters the code.
+          example: 'https://xquik.com/agent/identity/claim/view?claim_attempt_token=CLAIM_ATTEMPT_TOKEN'
+    AgentIdentityRegistration:
+      description: A pending agent registration.
+      type: object
+      required:
+        [
+          claim,
+          claim_token,
+          claim_token_expires,
+          claim_url,
+          post_claim_scopes,
+          registration_id,
+          registration_type,
+        ]
+      properties:
+        claim:
+          $ref: '#/components/schemas/AgentClaimChallenge'
+        claim_token:
+          type: string
+          pattern: '^clm_[a-f0-9]{64}$'
+          description: >-
+            Poll the token endpoint with it & refresh the user code with it.
+            Keep it secret.
+          example: clm_0000000000000000000000000000000000000000000000000000000000000000
+        claim_token_expires:
+          type: string
+          format: date-time
+          description: When claim_token expires, 24 hours after registration.
+          example: '2026-12-02T12:00:00.000Z'
+        claim_url:
+          type: string
+          format: uri
+          description: Where to refresh an expired user code.
+          example: 'https://xquik.com/agent/identity/claim'
+        post_claim_scopes:
+          type: array
+          items: { type: string, const: 'mcp:tools' }
+          description: The scopes the access token gets once claimed.
+          example: ['mcp:tools']
+        registration_id:
+          type: string
+          example: reg_6f1c2a7e-8d4b-4c1a-9e2f-3b5d7a9c1e0f
+        registration_type:
+          type: string
+          const: service_auth
+    AgentClaimRequest:
+      description: A request for a new user code.
+      type: object
+      required: [claim_token, email]
+      properties:
+        claim_token:
+          type: string
+          maxLength: 68
+          pattern: '^clm_[a-f0-9]{64}$'
+          description: The claim_token from the registration.
+          example: clm_0000000000000000000000000000000000000000000000000000000000000000
+        email:
+          type: string
+          format: email
+          maxLength: 320
+          description: The login_hint of the registration.
+          example: user@example.com
+    AgentClaimAttempt:
+      description: A new claim attempt for a pending agent registration.
+      type: object
+      required:
+        [claim_attempt, claim_attempt_id, expires_at, registration_id, status]
+      properties:
+        claim_attempt:
+          $ref: '#/components/schemas/AgentClaimChallenge'
+        claim_attempt_id:
+          type: string
+          example: cla_9b2f4d6a8c1e3f5a7b9d1c3e5f7a9b2d
+        expires_at:
+          type: string
+          format: date-time
+          description: When the new user code expires.
+          example: '2026-12-01T12:10:00.000Z'
+        registration_id:
+          type: string
+          example: reg_6f1c2a7e-8d4b-4c1a-9e2f-3b5d7a9c1e0f
+        status:
+          type: string
+          const: initiated
 
     ComposePrepareRequest:
       description: Inputs for preparing source-backed post guidance.
@@ -17578,6 +19377,16 @@ components:
                 Present on an answer that lacks some replies posted before this
                 time. A retry returns about the same replies.
               example: '2026-10-07T00:00:00.000Z'
+            unreachedReplies:
+              type: integer
+              minimum: 1
+              description:
+                Present on automatic pages without filters while X counts
+                replies the read hasn't reached. If a reply that belongs in your
+                rows is missing, it's among them. The count drops as you read
+                more pages. On the last page, it counts the replies the read
+                can't reach.
+              example: 120
             message:
               type: string
               description: Explains an answer cut by your limit.
@@ -19267,7 +21076,12 @@ components:
                 - account_not_found
                 - account_required
                 - account_restricted
+                - api_key_expired
                 - api_key_limit_reached
+                - api_key_paused
+                - api_key_budget_reached
+                - api_key_revoked
+                - ip_not_allowed
                 - article_not_found
                 - closed
                 - dm_not_permitted
@@ -19285,6 +21099,7 @@ components:
                 - invalid_username
                 - invalid_json
                 - insufficient_credits
+                - insufficient_scope
                 - job_not_found
                 - login_cooldown
                 - login_failed
@@ -19298,6 +21113,7 @@ components:
                 - no_media
                 - no_credits
                 - no_subscription
+                - extraction_terminal
                 - not_found
                 - payment_failed
                 - post_unavailable
@@ -19457,6 +21273,12 @@ components:
             why X shows no post, when X said, as deleted, author_suspended or
             protected.
           example: temporary_issue
+        requiredScope:
+          type: string
+          enum: [write, monitors, exports, billing, full]
+          description:
+            With insufficient_scope, the scope the API key needs for this route.
+          example: monitors
         retryAfter:
           type: integer
           minimum: 1
@@ -20220,7 +22042,18 @@ components:
     ApiKey:
       description: API key metadata returned when listing keys.
       type: object
-      required: [id, name, prefix, scope, isActive, createdAt]
+      required:
+        [
+          id,
+          name,
+          prefix,
+          scope,
+          scopes,
+          allowedIps,
+          isActive,
+          createdAt,
+          monthlySpentCredits,
+        ]
       properties:
         id: *resource-id-example-schema
         name:
@@ -20234,8 +22067,27 @@ components:
           enum: [full, paid_reads]
           description:
             full calls every route an API key can use. paid_reads calls paid X
-            read routes only, & other routes answer it with 403.
+            reads plus the routes of its scopes. Other routes answer it with
+            403.
           example: paid_reads
+        scopes:
+          type: array
+          maxItems: 6
+          items: *api-key-scope-name
+          description:
+            The scopes the key holds, such as read & monitors. A Full access key
+            holds full.
+          example: [read]
+        allowedIps:
+          type: array
+          items:
+            type: string
+            example: 198.51.100.0/24
+          description:
+            The IPs & CIDR ranges the key accepts calls from. An empty list
+            accepts any IP. The API returns each range with host bits cleared,
+            IPv6 in short form and IPv4-mapped IPv6 as IPv4.
+          example: ['203.0.113.4', '198.51.100.0/24']
         isActive:
           type: boolean
           example: true
@@ -20251,6 +22103,38 @@ components:
           format: date-time
           description: When the key last made a request. Missing until it does.
           example: '2025-01-16T09:30:00Z'
+        monthlyBudgetCredits:
+          type: integer
+          minimum: 1
+          maximum: 1000000000000
+          description:
+            Credits the key can spend each UTC calendar month. Missing when the
+            key has no budget. A call that doesn't fit what's left gets 403
+            `api_key_budget_reached` & costs nothing. A refused call never runs.
+            A read with a `limit` needs that many results' price left, & a media
+            download needs the price of every post it names. A read without a
+            `limit`, an extraction, a draw & a style refresh return only what
+            fits. A write needs its price plus 20 credits left, & it charges
+            only what it uses. Calls running at once can't take the key past its
+            budget. A started call bills what it delivered, even past a lowered
+            budget.
+          example: 50000
+        monthlySpentCredits:
+          type: integer
+          minimum: 0
+          description:
+            Credits charged for calls with the key this UTC calendar month. Once
+            it reaches the budget, every call with the key gets 403
+            `api_key_budget_reached` until the next UTC month or a higher
+            budget, even a retry with a used Idempotency-Key.
+          example: 1200
+        pausedAt:
+          type: string
+          format: date-time
+          description:
+            When the key was paused. Missing while it works. A paused key gets
+            403 `api_key_paused` on every call.
+          example: '2025-01-20T08:00:00Z'
 
     Monitor:
       description: Account monitor that tracks activity for a given X user.
@@ -20437,32 +22321,32 @@ components:
         postId:
           type: string
           description: ID of the post you gave.
-          example: '2104984505677430978'
+          example: '2102882545427714266'
         postUrl:
           type: string
           format: uri
-          example: 'https://x.com/xquik/status/2104984505677430978'
+          example: 'https://x.com/NASA/status/2102882545427714266'
         authorId:
           type: string
           description: Permanent X user ID of the post's author.
-          example: '1661816432185823232'
+          example: '11348282'
         authorUsername:
           type: string
-          example: xquik
+          example: NASA
         authorName:
           type: string
-          example: Xquik
+          example: NASA
         authorAvatarUrl:
           type: string
           format: uri
           description: The author's profile picture. Omitted when X shows none.
-          example: 'https://pbs.twimg.com/profile_images/1/xquik_normal.jpg'
+          example: 'https://pbs.twimg.com/profile_images/1321163587679784960/0ZxKlEKB_normal.jpg'
         authorVerified:
           type: string
           enum: [blue, business, government]
           description:
             The author's verified badge on X. Omitted when the author has none.
-          example: blue
+          example: government
         media:
           type: array
           description: Photos, videos & GIFs on the post, in X's order.
@@ -20484,11 +22368,13 @@ components:
         text:
           type: string
           description: Text of the newest version Xquik read.
-          example: 'We shipped post monitors.'
+          example:
+            'Today, Croatia became the 74th nation that has committed to a
+            peaceful and prosperous exploration of space.'
         postedAt:
           type: string
           format: date-time
-          example: '2026-09-29T17:19:49.000Z'
+          example: '2026-09-23T22:07:23.000Z'
         eventTypes:
           $ref: '#/components/schemas/PostEventTypeArray'
         isActive: *boolean-example-true
@@ -20672,6 +22558,366 @@ components:
         data:
           $ref: '#/components/schemas/MonitorEventData'
 
+    ActivityLogRow:
+      type: object
+      description: >-
+        1 Activity log row. A cut list ends with a row whose category is notice
+        and whose activity says where it stopped.
+      required:
+        [
+          time,
+          category,
+          type,
+          activity,
+          status,
+          source,
+          target,
+          results,
+          credits,
+          details,
+          id,
+          link,
+        ]
+      properties:
+        time:
+          type: string
+          description: >-
+            ISO 8601 time in UTC to the millisecond. Empty on the notice row.
+          example: '2026-10-28T20:22:13.481Z'
+        category: { type: string, example: monitor_change }
+        type: { type: string, example: pause }
+        activity:
+          { type: string, example: 'Account monitor for @elonmusk paused' }
+        status: { type: string, example: completed }
+        source: { type: string, example: elonmusk }
+        target: { type: string, example: '1846000000000000001' }
+        results:
+          type: [integer, string]
+          minimum: 0
+          maximum: 9007199254740991
+          example: 12
+        credits:
+          type: [integer, string]
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+          example: 1000
+        details: { type: string, example: '200' }
+        id:
+          type: string
+          description: Activity ID. GET /activity/{id} returns its full record.
+          example: naF3xqHLWDTs
+        link:
+          type: string
+          example: 'https://x.com/elonmusk/status/1846000000000000001'
+    ActivityRecord:
+      type: object
+      description: >-
+        Full technical record of 1 activity. Timestamps are ISO 8601 in UTC to
+        the millisecond.
+      required:
+        [
+          object,
+          id,
+          kind,
+          type,
+          status,
+          url,
+          requestId,
+          timestamps,
+          request,
+          caller,
+          charge,
+          details,
+          related,
+        ]
+      properties:
+        object: { type: string, enum: [activity], example: activity }
+        id: { type: string, description: Activity ID., example: naF3xqHLWDTs }
+        kind:
+          type: string
+          description: >-
+            Kind of the activity. Only a signed-in dashboard session sees an
+            `api_key` record.
+          enum:
+            [
+              write_action,
+              extraction,
+              monitor_change,
+              api_key,
+              billing,
+              giveaway_draw,
+              monitor_event,
+              media_download,
+              media_share,
+              support_ticket,
+              webhook_delivery,
+              webhook_endpoint,
+              x_account_connection,
+            ]
+          example: monitor_change
+        type:
+          type: string
+          description: >-
+            Type of the activity within its kind, the same as the type of its
+            Activity log row. Examples are a write action type, an extraction
+            tool type, a monitor change, a monitor event type or a ledger entry
+            type.
+          example: pause
+        status:
+          type: string
+          enum: [completed, running, failed, canceled]
+          example: completed
+        url:
+          type: string
+          format: uri
+          description: Dashboard page of this activity.
+          example: 'https://dashboard.xquik.com/activity/naF3xqHLWDTs'
+        requestId:
+          type: [string, 'null']
+          description: ID of the API request behind this activity.
+          example: 9f2c1d7e4b8a4c55a1e0d3b2c6f7a8e9
+        timestamps:
+          type: object
+          required: [createdAt]
+          example: { createdAt: '2026-10-28T20:22:13.481Z' }
+          properties:
+            createdAt:
+              {
+                type: string,
+                format: date-time,
+                example: '2026-10-28T20:22:13.481Z',
+              }
+            updatedAt:
+              {
+                type: string,
+                format: date-time,
+                example: '2026-10-28T20:22:14.002Z',
+              }
+            completedAt:
+              {
+                type: string,
+                format: date-time,
+                example: '2026-10-28T20:22:13.950Z',
+              }
+            confirmedAt:
+              {
+                type: string,
+                format: date-time,
+                example: '2026-10-28T20:22:13.900Z',
+              }
+            expiresAt:
+              {
+                type: string,
+                format: date-time,
+                example: '2026-10-29T20:22:13.481Z',
+              }
+            occurredAt:
+              {
+                type: string,
+                format: date-time,
+                example: '2026-10-28T20:22:11.000Z',
+              }
+            discoveredAt:
+              {
+                type: string,
+                format: date-time,
+                example: '2026-10-28T20:22:12.204Z',
+              }
+            postedAt:
+              {
+                type: string,
+                format: date-time,
+                example: '2026-10-27T15:00:00.000Z',
+              }
+            firstAttemptedAt:
+              {
+                type: string,
+                format: date-time,
+                example: '2026-10-28T20:22:13.610Z',
+              }
+            deliveredAt:
+              {
+                type: string,
+                format: date-time,
+                example: '2026-10-28T20:22:13.702Z',
+              }
+            nextRetryAt:
+              {
+                type: string,
+                format: date-time,
+                example: '2026-10-28T20:23:13.610Z',
+              }
+            exhaustedAt:
+              {
+                type: string,
+                format: date-time,
+                example: '2026-10-29T20:22:13.610Z',
+              }
+            drawnAt:
+              {
+                type: string,
+                format: date-time,
+                example: '2026-10-28T20:22:15.330Z',
+              }
+            lastUsedAt:
+              {
+                type: string,
+                format: date-time,
+                example: '2026-10-29T08:01:44.120Z',
+              }
+            pausedAt:
+              {
+                type: string,
+                format: date-time,
+                example: '2026-10-29T09:00:00.000Z',
+              }
+        request:
+          description: >-
+            The API request behind this activity. Null for activity from before
+            Oct 30, 2026, and for activity no API request starts, such as a
+            monitor event, a webhook delivery or a credit grant.
+          example:
+            method: PATCH
+            path: /api/v1/monitors/42
+            httpStatus: 200
+            durationMs: 37
+            ipAddress: 203.0.113.9
+            userAgent: 'my-agent/1.0'
+            at: '2026-10-28T20:22:13.519Z'
+          oneOf:
+            - type: 'null'
+            - type: object
+              required:
+                [method, path, httpStatus, durationMs, ipAddress, userAgent, at]
+              properties:
+                method:
+                  {
+                    type: string,
+                    enum: [DELETE, PATCH, POST, PUT],
+                    example: PATCH,
+                  }
+                path: { type: string, example: /api/v1/monitors/42 }
+                httpStatus:
+                  { type: integer, minimum: 100, maximum: 599, example: 200 }
+                durationMs:
+                  {
+                    type: integer,
+                    minimum: 0,
+                    maximum: 9007199254740991,
+                    example: 37,
+                  }
+                ipAddress: { type: [string, 'null'], example: 203.0.113.9 }
+                userAgent: { type: [string, 'null'], example: 'my-agent/1.0' }
+                at:
+                  {
+                    type: string,
+                    format: date-time,
+                    example: '2026-10-28T20:22:13.519Z',
+                  }
+        caller:
+          type: object
+          required: [authMethod, apiKey, oauthClient]
+          example:
+            authMethod: api_key
+            apiKey: { name: Production, prefix: xq_ab12 }
+            oauthClient: null
+          properties:
+            authMethod:
+              type: [string, 'null']
+              enum: [api_key, oauth, session, null]
+              example: api_key
+            apiKey:
+              description: Name and prefix of the API key used. Never its value.
+              example: { name: Production, prefix: xq_ab12 }
+              oneOf:
+                - type: 'null'
+                - type: object
+                  required: [name, prefix]
+                  properties:
+                    name: { type: string, example: Production }
+                    prefix: { type: string, example: xq_ab12 }
+            oauthClient:
+              example: { id: claude, name: Claude }
+              oneOf:
+                - type: 'null'
+                - type: object
+                  required: [id, name]
+                  properties:
+                    id: { type: string, example: claude }
+                    name: { type: string, example: Claude }
+        charge:
+          description: Credits charged for this activity.
+          example:
+            {
+              credits: 1300,
+              balanceAfter: 898700,
+              at: '2026-10-28T20:22:13.900Z',
+            }
+          oneOf:
+            - type: 'null'
+            - type: object
+              required: [credits, balanceAfter, at]
+              properties:
+                credits:
+                  {
+                    type: integer,
+                    minimum: 0,
+                    maximum: 9007199254740991,
+                    example: 1300,
+                  }
+                balanceAfter:
+                  {
+                    type: integer,
+                    minimum: -9007199254740991,
+                    maximum: 9007199254740991,
+                    example: 898700,
+                  }
+                at:
+                  {
+                    type: string,
+                    format: date-time,
+                    example: '2026-10-28T20:22:13.900Z',
+                  }
+        details:
+          type: object
+          description: >-
+            Fields of this kind of activity, such as its target. A field can
+            hold JSON, such as the data of a monitor event or the payload of a
+            webhook delivery.
+          example: { monitorKind: account, monitorId: '42', surface: rest }
+          additionalProperties:
+            type: [string, number, boolean, object, array, 'null']
+        related:
+          type: array
+          description: >-
+            Up to 5 other activities on the same subject within 7 days, newest
+            first.
+          example:
+            - id: Q7wErTyUiOpA
+              type: create
+              status: completed
+              createdAt: '2026-10-21T09:12:40.002Z'
+              url: 'https://dashboard.xquik.com/activity/Q7wErTyUiOpA'
+          items:
+            type: object
+            required: [id, type, status, createdAt, url]
+            properties:
+              id: { type: string, example: Q7wErTyUiOpA }
+              type: { type: string, example: create }
+              status:
+                type: string
+                enum: [completed, running, failed, canceled]
+                example: completed
+              createdAt:
+                {
+                  type: string,
+                  format: date-time,
+                  example: '2026-10-21T09:12:40.002Z',
+                }
+              url:
+                type: string
+                format: uri
+                example: 'https://dashboard.xquik.com/activity/Q7wErTyUiOpA'
     EventDetail:
       description:
         Full monitor event including payload data and optional X event ID.
@@ -21040,6 +23286,16 @@ components:
             Followers of the account. Absent when X sends no count, as for the
             hosts & speakers of a Space, and never 0 in its place.
         xVerified: { type: boolean }
+        verifiedType:
+          type: string
+          description: >
+            Badge type X shows on the account, with outputPreset=flat. Business
+            is the gold badge of a verified organization. Government is the grey
+            badge of a government or multilateral account. Blue is the badge of
+            X Premium. Default nested output uses
+            enrichmentData.user.verifiedType. Absent when the account has none
+            of these badges.
+          example: Business
         xProfileImageUrl: { type: string, format: uri }
         email:
           type: string
@@ -21163,7 +23419,8 @@ components:
           enum: [active, paused, needs_attention]
           description:
             Endpoint delivery state. paused means the user paused delivery.
-            needs_attention marks repeated failures. Delivery attempts continue.
+            needs_attention marks repeated failures. Xquik keeps each event for
+            7 days and sends it once the endpoint answers.
           example: active
         failureHardCap:
           type: integer
@@ -21185,6 +23442,11 @@ components:
           type: string
         status:
           type: string
+          enum: [pending, delivered, failed, exhausted]
+          description:
+            A `pending` or `failed` delivery waits up to 7 days. `delivered`
+            means your endpoint accepted it. `exhausted` means it wasn't
+            delivered within 7 days.
         attempts:
           $ref: '#/components/schemas/WholeNumber'
         createdAt: *date-time-string
@@ -21195,6 +23457,9 @@ components:
           maximum: 599
         lastError:
           type: string
+          description:
+            Why the last try failed. A delivery that ended before any try
+            carries `Webhook paused`, `Monitor paused` or `Endpoint failing`.
 
     ArticleAuthor:
       description: Available X Article author fields.
@@ -22562,6 +24827,319 @@ components:
           title: "NASA's SpaceX Crew-12 Re-Entry & Splashdown"
           state: 'Ended'
 
+    ShadowbanVerdict:
+      description:
+        Pass means X shows the account there, and fail means it doesn't. Unknown
+        means the check had nothing to test or X didn't answer.
+      type: string
+      enum: [pass, fail, unknown]
+      example: pass
+
+    ShadowbanReport:
+      description:
+        Says whether X limits 1 account in search, search suggestions or reply
+        threads. Each check holds a verdict, its reason & the evidence it read.
+        Evidence is null for a check that couldn't read the account.
+      type: object
+      required: [username, userId, account, checks]
+      properties:
+        username:
+          type: [string, 'null']
+          description:
+            Username of the account. Null for a suspended account asked for by
+            ID.
+          example: NASA
+        userId:
+          type: [string, 'null']
+          description:
+            ID of the account. Null for a suspended account asked for by
+            username.
+          example: '11348282'
+        account:
+          type: string
+          enum: [active, protected, suspended]
+          description: Whether the account is active, protected or suspended.
+          example: active
+        checks:
+          type: object
+          description: The 4 checks, each with a verdict, a reason & evidence.
+          required: [account, search, suggestion, replies]
+          properties:
+            account:
+              type: object
+              description:
+                Passes an active or protected account & fails a suspended one.
+              required: [verdict, reason, evidence]
+              properties:
+                verdict:
+                  $ref: '#/components/schemas/ShadowbanVerdict'
+                reason:
+                  type: string
+                  enum: [active, protected, suspended]
+                  description: State of the account on X.
+                  example: active
+                evidence:
+                  type: object
+                  description: Where to see the account on X.
+                  required: [profileUrl]
+                  properties:
+                    profileUrl:
+                      type: string
+                      format: uri
+                      description: Profile of the account on X.
+                      example: 'https://x.com/NASA'
+                  example:
+                    profileUrl: 'https://x.com/NASA'
+              example:
+                verdict: pass
+                reason: active
+                evidence:
+                  profileUrl: 'https://x.com/NASA'
+            search:
+              type: object
+              description:
+                Looks for the account's recent posts in X search, sorted by
+                Latest. `listed` passes & `missing` fails.
+              required: [verdict, reason, evidence]
+              properties:
+                verdict:
+                  $ref: '#/components/schemas/ShadowbanVerdict'
+                reason:
+                  type: string
+                  enum:
+                    [
+                      listed,
+                      missing,
+                      no_recent_posts,
+                      unavailable,
+                      protected,
+                      suspended,
+                    ]
+                  description:
+                    '`listed` means search shows its posts & `missing` means it
+                    shows none. `no_recent_posts` means the account has no
+                    recent post to look for.'
+                  example: listed
+                evidence:
+                  type: [object, 'null']
+                  description: The search & the posts it looked for.
+                  required: [query, searchUrl, recentPostIds, foundPostIds]
+                  properties:
+                    query:
+                      type: string
+                      description: The search it ran.
+                      example: 'from:NASA'
+                    searchUrl:
+                      type: string
+                      format: uri
+                      description: The same search on X, sorted by Latest.
+                      example: 'https://x.com/search?q=from%3ANASA&f=live'
+                    recentPostIds:
+                      type: array
+                      description: Up to 5 recent posts of the account.
+                      items: { type: string }
+                      example: ['2103610284464316469']
+                    foundPostIds:
+                      type: array
+                      description:
+                        Up to 5 posts of the account that search showed.
+                      items: { type: string }
+                      example: ['2103610284464316469']
+                  example:
+                    query: 'from:NASA'
+                    searchUrl: 'https://x.com/search?q=from%3ANASA&f=live'
+                    recentPostIds: ['2103610284464316469']
+                    foundPostIds: ['2103610284464316469']
+              example:
+                verdict: pass
+                reason: listed
+                evidence:
+                  query: 'from:NASA'
+                  searchUrl: 'https://x.com/search?q=from%3ANASA&f=live'
+                  recentPostIds: ['2103610284464316469']
+                  foundPostIds: ['2103610284464316469']
+            suggestion:
+              type: object
+              description:
+                Looks for the account among the accounts X suggests for its
+                username. `suggested` passes & `not_suggested` fails.
+              required: [verdict, reason, evidence]
+              properties:
+                verdict:
+                  $ref: '#/components/schemas/ShadowbanVerdict'
+                reason:
+                  type: string
+                  enum: [suggested, not_suggested, unavailable, suspended]
+                  description:
+                    '`suggested` means X suggests the account for its username.'
+                  example: suggested
+                evidence:
+                  type: [object, 'null']
+                  description: The username searched & the accounts X suggested.
+                  required: [query, suggestedUsernames]
+                  properties:
+                    query:
+                      type: string
+                      description: The username it typed.
+                      example: NASA
+                    suggestedUsernames:
+                      type: array
+                      description: Up to 10 accounts X suggested, in its order.
+                      items: { type: string }
+                      example: [NASA, NASAHubble]
+                  example:
+                    query: NASA
+                    suggestedUsernames: [NASA, NASAHubble]
+              example:
+                verdict: pass
+                reason: suggested
+                evidence:
+                  query: NASA
+                  suggestedUsernames: [NASA, NASAHubble]
+            replies:
+              type: object
+              description:
+                Opens the threads of up to 3 recent replies to other accounts.
+                `in_thread` passes. X ranks replies for each viewer, so
+                `more_replies` can't tell.
+              required: [verdict, reason, evidence]
+              properties:
+                verdict:
+                  $ref: '#/components/schemas/ShadowbanVerdict'
+                reason:
+                  type: string
+                  enum:
+                    [
+                      in_thread,
+                      more_replies,
+                      no_recent_replies,
+                      not_found,
+                      unavailable,
+                      protected,
+                      suspended,
+                    ]
+                  description:
+                    '`more_replies` means X put a reply behind its hidden
+                    replies prompt. `not_found` means no reply showed on the
+                    pages the check read.'
+                  example: in_thread
+                evidence:
+                  type: [object, 'null']
+                  description: Each reply it opened & where it showed.
+                  required: [replies]
+                  properties:
+                    replies:
+                      type: array
+                      description: Up to 3 replies, newest first.
+                      items:
+                        type: object
+                        required:
+                          [replyId, replyUrl, parentId, parentUrl, placement]
+                        properties:
+                          replyId:
+                            type: string
+                            description: ID of the reply.
+                            example: '2103589735449141451'
+                          replyUrl:
+                            type: string
+                            format: uri
+                            description: The reply on X.
+                            example: 'https://x.com/i/status/2103589735449141451'
+                          parentId:
+                            type: string
+                            description: ID of the post it replies to.
+                            example: '2102883223948628205'
+                          parentUrl:
+                            type: string
+                            format: uri
+                            description: The thread of that post on X.
+                            example: 'https://x.com/i/status/2102883223948628205'
+                          placement:
+                            type: string
+                            enum: [thread, more_replies, not_found]
+                            description:
+                              "`thread` means the reply shows in the thread.
+                              `more_replies` means it shows only behind X's
+                              hidden replies prompt."
+                            example: thread
+                        example:
+                          replyId: '2103589735449141451'
+                          replyUrl: 'https://x.com/i/status/2103589735449141451'
+                          parentId: '2102883223948628205'
+                          parentUrl: 'https://x.com/i/status/2102883223948628205'
+                          placement: thread
+                  example:
+                    replies:
+                      - replyId: '2103589735449141451'
+                        replyUrl: 'https://x.com/i/status/2103589735449141451'
+                        parentId: '2102883223948628205'
+                        parentUrl: 'https://x.com/i/status/2102883223948628205'
+                        placement: thread
+              example:
+                verdict: pass
+                reason: in_thread
+                evidence:
+                  replies:
+                    - replyId: '2103589735449141451'
+                      replyUrl: 'https://x.com/i/status/2103589735449141451'
+                      parentId: '2102883223948628205'
+                      parentUrl: 'https://x.com/i/status/2102883223948628205'
+                      placement: thread
+          example:
+            account:
+              verdict: pass
+              reason: active
+              evidence:
+                profileUrl: 'https://x.com/NASA'
+            search:
+              verdict: pass
+              reason: listed
+              evidence:
+                query: 'from:NASA'
+                searchUrl: 'https://x.com/search?q=from%3ANASA&f=live'
+                recentPostIds: ['2103610284464316469']
+                foundPostIds: ['2103610284464316469']
+            suggestion:
+              verdict: pass
+              reason: suggested
+              evidence:
+                query: NASA
+                suggestedUsernames: [NASA]
+            replies:
+              verdict: unknown
+              reason: no_recent_replies
+              evidence:
+                replies: []
+      example:
+        username: NASA
+        userId: '11348282'
+        account: active
+        checks:
+          account:
+            verdict: pass
+            reason: active
+            evidence:
+              profileUrl: 'https://x.com/NASA'
+          search:
+            verdict: pass
+            reason: listed
+            evidence:
+              query: 'from:NASA'
+              searchUrl: 'https://x.com/search?q=from%3ANASA&f=live'
+              recentPostIds: ['2103610284464316469']
+              foundPostIds: ['2103610284464316469']
+          suggestion:
+            verdict: pass
+            reason: suggested
+            evidence:
+              query: NASA
+              suggestedUsernames: [NASA]
+          replies:
+            verdict: unknown
+            reason: no_recent_replies
+            evidence:
+              replies: []
+
     ProfileTranslation:
       description:
         Holds X's translation of 1 profile's bio into the requested language.
@@ -23350,6 +25928,19 @@ components:
                     { type: string, description: Logo for light backgrounds. }
                   darkLogoUrl:
                     { type: string, description: Logo for dark backgrounds. }
+        liveEventContext:
+          type: object
+          description: The live event the post belongs to, such as an election.
+          properties:
+            title:
+              type: string
+              description: Event name.
+              example: US Midterm Elections
+            url:
+              type: string
+              description: The event's page on X.
+              example: https://x.com/i/election/104725482743328773
+            imageUrl: { type: string, description: The event's image. }
         subscriberBadge:
           $ref: '#/components/schemas/TweetSubscriberBadge'
         tombstone:
@@ -24210,6 +26801,13 @@ components:
       description: Organization affiliation label shown on an X profile.
       type: object
       properties:
+        auxiliaryLabels:
+          type: array
+          description:
+            More labels X shows beside the affiliation, such as an automated
+            account's owner.
+          items:
+            $ref: '#/components/schemas/UserAuxiliaryLabel'
         badgeUrl:
           type: string
         description:
@@ -24221,6 +26819,21 @@ components:
         url:
           type: string
         urlType:
+          type: string
+        userLabelDisplayType:
+          type: string
+        userLabelType:
+          type: string
+
+    UserAuxiliaryLabel:
+      description: A label X shows on an X profile beside its affiliation label.
+      type: object
+      properties:
+        badgeUrl:
+          type: string
+        description:
+          type: string
+        url:
           type: string
         userLabelDisplayType:
           type: string

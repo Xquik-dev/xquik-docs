@@ -57,8 +57,8 @@ webhook workflow. Do not build a bulk export from repeated page-one reads.
   <Card title="Monitor event webhooks" icon="radio">
 
     Use `POST /api/v1/monitors` or `POST /api/v1/monitors/keywords`, then
-    `POST /api/v1/webhooks`, when the workflow needs fresh account or keyword
-    events.
+    `POST /api/v1/webhooks`. Do this when the workflow needs fresh account or
+    keyword events.
 
   </Card>
 
@@ -72,7 +72,7 @@ webhook workflow. Do not build a bulk export from repeated page-one reads.
   <Card title="Direct read pages" icon="search">
 
     Use `GET /api/v1/x/tweets/search` or follower pages when the workflow owns
-    the cursor loop and can store `next_cursor`.
+    the cursor loop. The workflow must also be able to store `next_cursor`.
 
   </Card>
 
@@ -193,7 +193,7 @@ Use this extraction sequence.
 Read job status before exporting. Resume failures from their committed cursor.
 
 Use [Twitter API Export Formats](/guides/response-formats-exports) for CSV,
-JSON, XLSX, Markdown, PDF, TXT, and pagination limits.
+JSON, XLSX, Markdown, PDF, and TXT. Use it for pagination limits too.
 
 ## Direct read loop
 
@@ -309,8 +309,9 @@ Scope checkpoints by endpoint, filters, monitor, job, and destination.
 
   <Card title="Make" icon="route" href="/guides/make">
 
-    Use a custom app with webhook triggers, data stores, iterators, and a
-    universal API call module. Keep cursors in a Data Store between runs.
+    Use a custom app with webhook triggers and data stores. It also has
+    iterators and a universal API call module. Keep cursors in a Data Store
+    between runs.
 
   </Card>
 
@@ -323,8 +324,9 @@ Scope checkpoints by endpoint, filters, monitor, job, and destination.
 
   <Card title="n8n" icon="workflow" href="/guides/n8n">
 
-    Use HTTP Request nodes, webhook triggers, and workflow state for replay,
-    cursor, and deduplication checkpoints. Use persistent state in production.
+    Use HTTP Request nodes, webhook triggers, and workflow state. Use them for
+    replay, cursor, and deduplication checkpoints. Use persistent state in
+    production.
 
   </Card>
 </CardGroup>
@@ -339,7 +341,7 @@ Each guide includes pre-built HTTP patterns for complex workflows.
 
 <Check>
 
-Active account and keyword monitors check every 1 second and cost 30 credits
+Active account and keyword monitors check every 1 second. They cost 30 credits
 per active monitor-hour. The rate includes event storage and webhook delivery.
 
 </Check>
@@ -356,11 +358,10 @@ detail or list completed jobs before exporting rows.
 
 ## Handle webhook retries and missed events
 
-Webhook deliveries retry with backoff until your endpoint returns `2xx`. There
-is no attempt limit. Return `2xx` for events your workflow skips. Webhook
-health exposes `deliveryStatus`, `consecutiveFailures`, and `failureHardCap`.
-`needs_attention` does not stop retries. Only a paused or deleted webhook marks
-deliveries `exhausted`.
+Webhook deliveries retry with backoff for up to 7 days. Return `2xx` for
+events your workflow skips. Webhook health exposes `deliveryStatus`,
+`consecutiveFailures`, and `failureHardCap`. `needs_attention` does not stop
+retries. A delivery still failing after 7 days shows `exhausted`.
 
 Use this repair sequence.
 
@@ -372,7 +373,7 @@ Use this repair sequence.
    at once.
 6. Replay only event IDs your workflow never stored.
 
-A paused webhook keeps waiting deliveries until you resume.
+A paused webhook holds each waiting delivery until its 7 days end.
 Events expire 30 days after Xquik creates them.
 
 Use `monitorId` or `keywordMonitorId` during replay. Store each `nextCursor`.
