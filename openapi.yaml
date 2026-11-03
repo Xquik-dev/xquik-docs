@@ -13765,17 +13765,19 @@ paths:
     get:
       operationId: checkShadowban
       description: >-
-        Checks 1 X account for a search ban, a search suggestion ban & reply
-        deboosting. It also says if the account is active, protected or
-        suspended.
+        Checks 1 X account for a search ban, a search suggestion ban, reply
+        deboosting & a reply lock. It also tests timeline visibility & early
+        engagement, reads the sensitive flag & the countries that withhold the
+        account, and says if the account is active, protected or suspended.
 
 
-        Each check answers pass, fail or unknown, with its reason & the posts,
-        suggestions or replies it read. The reply check answers pass or unknown,
-        since X ranks replies for each viewer. A protected account gets the
-        suggestion check only, and a suspended account gets the account check
-        only. Each profile, post, suggestion & reply in the answer costs 1
-        credit.
+        Each check answers pass, fail or unknown, with its reason & what it
+        read. `overall` sums up the checks, and `checkedAt` holds the time of
+        the check. The reply checks and the engagement check answer pass or
+        unknown, since X ranks replies for each viewer and a drop alone proves
+        nothing. A protected account skips the checks that need public posts,
+        and a suspended account gets the account check only. Each profile, post,
+        suggestion & reply in the answer costs 1 credit.
 
 
         Shadowban checks show if X search lists an account, with each post they
@@ -13799,6 +13801,8 @@ paths:
                 username: NASA
                 userId: '11348282'
                 account: active
+                checkedAt: '2026-11-03T02:15:00.000Z'
+                overall: clear
                 checks:
                   account:
                     verdict: pass
@@ -13838,6 +13842,35 @@ paths:
                           parentId: '2102924351171670302'
                           parentUrl: 'https://x.com/i/status/2102924351171670302'
                           placement: thread
+                  replyLock:
+                    verdict: pass
+                    reason: replies_show
+                    evidence:
+                      checkedReplies: 2
+                      shownReplies: 2
+                  timeline:
+                    verdict: pass
+                    reason: visible
+                    evidence:
+                      postCount: 74486
+                      timelinePosts: 20
+                  engagement:
+                    verdict: pass
+                    reason: typical
+                    evidence:
+                      newestMedian: 4268
+                      newestPosts: 5
+                      earlierMedian: 2773
+                      earlierPosts: 7
+                  sensitive:
+                    verdict: pass
+                    reason: not_flagged
+                    evidence: null
+                  withheld:
+                    verdict: pass
+                    reason: none
+                    evidence:
+                      countries: []
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401': *anonymous-guest-authentication-response
@@ -24878,11 +24911,12 @@ components:
 
     ShadowbanReport:
       description:
-        Says whether X limits 1 account in search, search suggestions or reply
-        threads. Each check holds a verdict, its reason & the evidence it read.
-        Evidence is null for a check that couldn't read the account.
+        Says whether X limits 1 account in search, search suggestions, reply
+        threads or its timeline. Each check holds a verdict, its reason & the
+        evidence it read. Evidence is null for a check that couldn't read the
+        account.
       type: object
-      required: [username, userId, account, checks]
+      required: [username, userId, account, checkedAt, overall, checks]
       properties:
         username:
           type: [string, 'null']
@@ -24901,10 +24935,34 @@ components:
           enum: [active, protected, suspended]
           description: Whether the account is active, protected or suspended.
           example: active
+        checkedAt:
+          type: string
+          format: date-time
+          description: When the check ran.
+          example: '2026-11-03T02:15:00.000Z'
+        overall:
+          type: string
+          enum: [clear, limited, unclear, suspended]
+          description:
+            '`suspended` means X suspended the account. `limited` means at least
+            1 check failed. `clear` means search & suggestions passed with no
+            fail. `unclear` means neither of those.'
+          example: clear
         checks:
           type: object
-          description: The 4 checks, each with a verdict, a reason & evidence.
-          required: [account, search, suggestion, replies]
+          description: The 9 checks, each with a verdict, a reason & evidence.
+          required:
+            [
+              account,
+              search,
+              suggestion,
+              replies,
+              replyLock,
+              timeline,
+              engagement,
+              sensitive,
+              withheld,
+            ]
           properties:
             account:
               type: object
@@ -25126,6 +25184,227 @@ components:
                       parentId: '2102883223948628205'
                       parentUrl: 'https://x.com/i/status/2102883223948628205'
                       placement: thread
+            replyLock:
+              type: object
+              description:
+                Reads the same reply threads as `replies`. `replies_show` passes
+                when any checked reply shows. X ranks replies for each viewer,
+                so `replies_missing` can't tell.
+              required: [verdict, reason, evidence]
+              properties:
+                verdict:
+                  $ref: '#/components/schemas/ShadowbanVerdict'
+                reason:
+                  type: string
+                  enum:
+                    [
+                      replies_show,
+                      replies_missing,
+                      no_recent_replies,
+                      unavailable,
+                      protected,
+                      suspended,
+                    ]
+                  description:
+                    '`replies_show` means X showed at least 1 checked reply.
+                    `replies_missing` means it showed none on the pages read.'
+                  example: replies_show
+                evidence:
+                  type: [object, 'null']
+                  description: How many replies it opened & how many showed.
+                  required: [checkedReplies, shownReplies]
+                  properties:
+                    checkedReplies:
+                      type: integer
+                      minimum: 0
+                      maximum: 3
+                      description: Replies it looked for, up to 3.
+                      example: 3
+                    shownReplies:
+                      type: integer
+                      minimum: 0
+                      maximum: 3
+                      description: Replies that showed in their thread.
+                      example: 3
+                  example:
+                    checkedReplies: 3
+                    shownReplies: 3
+              example:
+                verdict: pass
+                reason: replies_show
+                evidence:
+                  checkedReplies: 3
+                  shownReplies: 3
+            timeline:
+              type: object
+              description:
+                Looks for the account's posts on its profile timeline. `visible`
+                passes & `hidden` fails.
+              required: [verdict, reason, evidence]
+              properties:
+                verdict:
+                  $ref: '#/components/schemas/ShadowbanVerdict'
+                reason:
+                  type: string
+                  enum:
+                    [
+                      visible,
+                      hidden,
+                      no_posts,
+                      unavailable,
+                      protected,
+                      suspended,
+                    ]
+                  description:
+                    '`visible` means the timeline shows posts. `hidden` means X
+                    counts posts but shows none. `no_posts` means the account
+                    has none to show.'
+                  example: visible
+                evidence:
+                  type: [object, 'null']
+                  description: The post count on the profile & the posts read.
+                  required: [postCount, timelinePosts]
+                  properties:
+                    postCount:
+                      type: [integer, 'null']
+                      minimum: 0
+                      maximum: 9007199254740991
+                      description: Posts X counts on the profile.
+                      example: 74486
+                    timelinePosts:
+                      type: integer
+                      minimum: 0
+                      maximum: 20
+                      description: Posts the timeline read returned, up to 20.
+                      example: 20
+                  example:
+                    postCount: 74486
+                    timelinePosts: 20
+              example:
+                verdict: pass
+                reason: visible
+                evidence:
+                  postCount: 74486
+                  timelinePosts: 20
+            engagement:
+              type: object
+              description:
+                Compares the newest 5 of the account's own posts older than 24
+                hours with its earlier posts, by the median of likes, replies,
+                reposts & quotes. `typical` passes at 25% or more. A drop alone
+                proves nothing, so `low` can't tell.
+              required: [verdict, reason, evidence]
+              properties:
+                verdict:
+                  $ref: '#/components/schemas/ShadowbanVerdict'
+                reason:
+                  type: string
+                  enum:
+                    [
+                      typical,
+                      low,
+                      too_few_posts,
+                      unavailable,
+                      protected,
+                      suspended,
+                    ]
+                  description:
+                    '`too_few_posts` means fewer than 8 posts to compare, or
+                    earlier posts with no engagement.'
+                  example: typical
+                evidence:
+                  type: [object, 'null']
+                  description: The 2 medians & how many posts each one covers.
+                  required:
+                    [newestMedian, newestPosts, earlierMedian, earlierPosts]
+                  properties:
+                    newestMedian:
+                      type: number
+                      description: Median engagement of the newest posts.
+                      example: 4268
+                    newestPosts:
+                      type: integer
+                      minimum: 0
+                      maximum: 5
+                      description: Posts in the newest group, up to 5.
+                      example: 5
+                    earlierMedian:
+                      type: number
+                      description: Median engagement of the earlier posts.
+                      example: 2773
+                    earlierPosts:
+                      type: integer
+                      minimum: 0
+                      maximum: 20
+                      description: Posts in the earlier group.
+                      example: 7
+                  example:
+                    newestMedian: 4268
+                    newestPosts: 5
+                    earlierMedian: 2773
+                    earlierPosts: 7
+              example:
+                verdict: pass
+                reason: typical
+                evidence:
+                  newestMedian: 4268
+                  newestPosts: 5
+                  earlierMedian: 2773
+                  earlierPosts: 7
+            sensitive:
+              type: object
+              description:
+                Reads X's sensitive flag on the profile. `not_flagged` passes &
+                `flagged` fails.
+              required: [verdict, reason, evidence]
+              properties:
+                verdict:
+                  $ref: '#/components/schemas/ShadowbanVerdict'
+                reason:
+                  type: string
+                  enum: [not_flagged, flagged, unknown, suspended]
+                  description:
+                    '`unknown` means X left the flag out of the profile.'
+                  example: not_flagged
+                evidence:
+                  type: 'null'
+                  description: Always null, since the reason holds the answer.
+                  example: null
+              example:
+                verdict: pass
+                reason: not_flagged
+                evidence: null
+            withheld:
+              type: object
+              description:
+                Reads the countries where X withholds the account. `none` passes
+                & `countries` fails.
+              required: [verdict, reason, evidence]
+              properties:
+                verdict:
+                  $ref: '#/components/schemas/ShadowbanVerdict'
+                reason:
+                  type: string
+                  enum: [none, countries, suspended]
+                  description: '`countries` means X lists at least 1 country.'
+                  example: none
+                evidence:
+                  type: [object, 'null']
+                  description: The countries X lists.
+                  required: [countries]
+                  properties:
+                    countries:
+                      type: array
+                      description: Country codes as X gives them.
+                      items: { type: string }
+                      example: [DE, TR]
+                  example:
+                    countries: []
+              example:
+                verdict: pass
+                reason: none
+                evidence:
+                  countries: []
           example:
             account:
               verdict: pass
@@ -25151,10 +25430,41 @@ components:
               reason: no_recent_replies
               evidence:
                 replies: []
+            replyLock:
+              verdict: unknown
+              reason: no_recent_replies
+              evidence:
+                checkedReplies: 0
+                shownReplies: 0
+            timeline:
+              verdict: pass
+              reason: visible
+              evidence:
+                postCount: 74486
+                timelinePosts: 20
+            engagement:
+              verdict: pass
+              reason: typical
+              evidence:
+                newestMedian: 4268
+                newestPosts: 5
+                earlierMedian: 2773
+                earlierPosts: 7
+            sensitive:
+              verdict: pass
+              reason: not_flagged
+              evidence: null
+            withheld:
+              verdict: pass
+              reason: none
+              evidence:
+                countries: []
       example:
         username: NASA
         userId: '11348282'
         account: active
+        checkedAt: '2026-11-03T02:15:00.000Z'
+        overall: clear
         checks:
           account:
             verdict: pass
@@ -25180,6 +25490,35 @@ components:
             reason: no_recent_replies
             evidence:
               replies: []
+          replyLock:
+            verdict: unknown
+            reason: no_recent_replies
+            evidence:
+              checkedReplies: 0
+              shownReplies: 0
+          timeline:
+            verdict: pass
+            reason: visible
+            evidence:
+              postCount: 74486
+              timelinePosts: 20
+          engagement:
+            verdict: pass
+            reason: typical
+            evidence:
+              newestMedian: 4268
+              newestPosts: 5
+              earlierMedian: 2773
+              earlierPosts: 7
+          sensitive:
+            verdict: pass
+            reason: not_flagged
+            evidence: null
+          withheld:
+            verdict: pass
+            reason: none
+            evidence:
+              countries: []
 
     ProfileTranslation:
       description:
@@ -30174,7 +30513,8 @@ components:
               isRobotIndexable?, isSelf?, isSpoiler?, isVideo?, locked? & stickied?.
             - github has starsToday.
             - hacker_news has points & numberComments.
-            - google_trends has approxTraffic.
+            - google_trends has approxTraffic, active?, crossSources?, endedAt?,
+              growthPercent?, news?, relatedSearches? & topics?.
             - polymarket has volume24hr.
             - wikipedia has views.
             - trustmrr has mrr, growthPercent, last30Days, total, customers, activeSubscriptions, onSale, xHandle?, category?, askingPrice?, country?, foundedDate?, googleSearchImpressionsLast30Days?, growthMrrPercent?, multiple?, paymentProvider?, profitMarginLast30Days?, rank?, revenuePerVisitor?, targetAudience? & visitorsLast30Days?.
