@@ -1680,7 +1680,7 @@ const PUBLIC_READ_RATE_LIMIT_EXPECTATIONS = [
     required: [
       "`GET`, `HEAD`, and `OPTIONS` share a standard user limit. It is 500 requests per 1 second.",
       "Other methods on Xquik resources share a standard user limit. It is 6,000 requests per 60 seconds.",
-      "Actions through a connected X account have a limit of 120 requests per 60 seconds.",
+      "Actions through a connected X account allow 120 requests per 60 seconds.",
     ],
     forbidden: [
       "standard user limit of 10 requests per",
@@ -7998,7 +7998,7 @@ const REQUIRED_ARCHITECTURE_RATE_LIMIT_SNIPPETS = [
   '<Card title="Change bucket" icon="pen-line">',
   "Other methods on Xquik resources share a standard user limit. It is 6,000 requests per 60 seconds.",
   '<Card title="X action bucket" icon="send">',
-  "Actions through a connected X account have a limit of 120 requests per 60 seconds.",
+  "Actions through a connected X account allow 120 requests per 60 seconds.",
   '<Card title="Retry window" icon="timer">',
   "Throttled reads return `Retry-After: 1`. Throttled changes and X actions",
 ] as const;
