@@ -175,6 +175,7 @@ describe("SEO metadata", (): void => {
   });
 
   it.each([
+    ["api-reference/overview.mdx", "Xquik API docs"],
     ["sdks/python.mdx", "Twitter API Python SDK"],
     ["sdks/typescript.mdx", "Twitter API TypeScript SDK"],
     ["sdks/go.mdx", "Twitter API Go SDK"],
