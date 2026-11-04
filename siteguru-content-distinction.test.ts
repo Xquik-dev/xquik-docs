@@ -203,24 +203,8 @@ const CONTENT_REQUIREMENTS: readonly ContentRequirement[] = [
     phrases: ["Confirm like removal"],
   },
   {
-    file: "alternatives/antwork.mdx",
-    phrases: ["Antwork trial evidence"],
-  },
-  {
-    file: "alternatives/black-magic.mdx",
-    phrases: ["Black Magic trial evidence"],
-  },
-  {
     file: "alternatives/hypefury.mdx",
     phrases: ["Hypefury trial evidence"],
-  },
-  {
-    file: "alternatives/postwise.mdx",
-    phrases: ["Postwise creator calendar trial", "Test the Postwise-to-Xquik handoff"],
-  },
-  {
-    file: "alternatives/postproxy.mdx",
-    phrases: ["Postproxy webhook & quota trial"],
   },
 ] as const;
 

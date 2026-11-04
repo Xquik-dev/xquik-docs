@@ -9972,30 +9972,6 @@ const FORBIDDEN_ACCOUNT_MONITOR_DELETE_RAW_OUTPUT_SNIPPETS = [
   "fmt.Println(data)",
 ] as const;
 
-const REQUIRED_ZAPIER_ALTERNATIVE_SNIPPETS = [
-  "## Source-backed Zapier scope",
-  "API by Zapier",
-  "Webhooks by Zapier",
-  "Zaps, Agents, and Zapier MCP",
-  "OAuth2, static headers, or no authentication",
-  "New Item from API, API Request, and exact request passthrough. It also has JQ extraction",
-  "Zapier Platform CLI",
-  "REST Hooks",
-  "bundle.targetUrl",
-  "`performSubscribe`",
-  "`performUnsubscribe`",
-  "20,000 requests every 5 minutes",
-  "1,000 requests every 5 minutes",
-  "Task tiers run from 100 tasks/month through custom task limits",
-  "MCP tool calls use 2 tasks from the plan quota",
-  "## Monitor webhook receiver handoff",
-  "This handoff covers a Zapier REST Hook, Catch Hook, or Catch Raw Hook. When it receives Xquik monitor events, verify `X-Xquik-Signature` before field mapping.",
-  "Store `deliveryId` and `streamEventId` as separate Zap storage keys.",
-  "Return `2xx` after accepting a duplicate `deliveryId` or `streamEventId`.",
-  "Do not store endpoint signing values, raw request body, raw signature, or full headers. This applies to Zap history, tables, Slack messages, CRM rows, and retry queues.",
-  "/guides/zapier",
-] as const;
-
 const REQUIRED_ZAPIER_GUIDE_SNIPPETS = [
   'title: "Zapier Twitter automation with webhooks & X API"',
   "Build Zapier Twitter automation through Xquik",
@@ -10178,28 +10154,6 @@ const FORBIDDEN_ZAPIER_GUIDE_SNIPPETS = [
   "proves demand.",
   "Then call Xquik.",
   "Never expose `secret` as",
-] as const;
-
-const REQUIRED_PIPEDREAM_ALTERNATIVE_SNIPPETS = [
-  "## Source-backed Pipedream scope",
-  "Pipedream Workflows",
-  "one credit per 30 seconds",
-  "does not charge by number of steps",
-  "Pipedream charges no credits for development and testing in the workflow builder",
-  "HTTP trigger",
-  "steps.trigger.event",
-  "method, payload, headers, path, query, URL",
-  "`413 Payload Too Large`",
-  "Pipedream CLI",
-  "pd publish",
-  "use npm packages without a package file",
-  "add app props for managed auth",
-  "## Monitor webhook receiver handoff",
-  "When a Pipedream HTTP trigger or source receives Xquik monitor events, verify `X-Xquik-Signature`. Do this before exporting data to later steps.",
-  "Store `deliveryId` and `streamEventId` as separate workflow keys.",
-  "Return `2xx` after accepting a duplicate `deliveryId` or `streamEventId`.",
-  "Do not store endpoint signing values, raw request body, raw signature, or full headers. This applies to logs, data stores, Slack messages, CRM rows, and retry queues.",
-  "/guides/pipedream",
 ] as const;
 
 const REQUIRED_PIPEDREAM_GUIDE_SNIPPETS = [
@@ -11178,20 +11132,6 @@ const FORBIDDEN_MASTRA_GUIDE_SNIPPETS = [
   "| `@modelcontextprotocol/sdk` | 1.29.0 |",
 ] as const;
 
-const REQUIRED_N8N_ALTERNATIVE_SNIPPETS = [
-  "## Source-backed n8n scope",
-  "n8n's official X node docs list built-in operations for direct messages",
-  "For tweets, they cover creating or replying, deleting, searching, liking, and retweeting.",
-  "n8n's official HTTP Request node docs describe REST calls. The calls can reach any app or service with a REST API",
-  "query parameters, headers, and form, form-data, JSON, binary-file, and raw request bodies",
-  "production executions started automatically by triggers, schedules, or polling",
-  "Examples are projects, sharing, external credential storage, log streaming, and multi-main mode. Other examples are SSO and Git version control",
-  "n8n HTTP Request node",
-  "n8n executions",
-  "n8n Community Edition",
-  "/guides/n8n",
-] as const;
-
 const REQUIRED_N8N_GUIDE_SNIPPETS = [
   'title: "n8n Twitter node for X API automation & webhooks"',
   '"n8n Twitter integration"',
@@ -11509,49 +11449,16 @@ const FORBIDDEN_MAKE_GUIDE_SNIPPETS = [
   "Make officially decommissioned its native X app in 2025.",
 ] as const;
 
-const REQUIRED_MAKE_ALTERNATIVE_SNIPPETS = [
-  "## Source-backed Make scope",
-  "Make's official pricing page says each scenario module action counts as one credit. It also says Free includes 1,000 credits/month",
-  "Make's official HTTP app docs say it can call services without a native integration",
-  "offset, page, URL, link, or cursor-style pagination",
-  "instant webhooks, custom webhooks, webhook queues, response handling",
-  "action, search, polling trigger, instant trigger, universal, and responder module types",
-  "## Monitor webhook receiver handoff",
-  "When a Make webhook receives Xquik monitor events, verify `X-Xquik-Signature`. Do this before routing bundles to routers, Slack, Sheets, queues, or CRMs.",
-  "Store `deliveryId` and `streamEventId` as separate Make data-store keys.",
-  "Return `2xx` after accepting a duplicate `deliveryId` or `streamEventId`.",
-  "Do not store endpoint signing values, raw request body, raw signature, or full headers. This applies to scenario logs, data stores, Slack messages, CRM rows, and retry queues.",
-  "Make webhooks",
-  "Make custom app modules",
-  "/guides/make",
-] as const;
-
 const REQUIRED_WORKFLOW_SHORTLIST_SNIPPETS = [
   "## Workflow automation shortlist",
-  '<Card title="n8n" icon="workflow" href="/alternatives/n8n">',
-  '<Card title="Make" icon="route" href="/alternatives/make">',
-  '<Card title="Pipedream" icon="code" href="/alternatives/pipedream">',
-  '<Card title="Zapier" icon="zap" href="/alternatives/zapier">',
-  '<Card title="PhantomBuster" icon="timer" href="/alternatives/phantombuster">',
+  '<Card title="n8n" icon="workflow" href="/guides/n8n">',
+  '<Card title="Make" icon="route" href="/guides/make">',
+  '<Card title="Pipedream" icon="code" href="/guides/pipedream">',
+  '<Card title="Zapier" icon="zap" href="/guides/zapier">',
+  '<Card title="PhantomBuster" icon="timer">',
   "tweet search",
   "signed monitor webhooks",
   "CSV, JSON, or XLSX exports",
-] as const;
-
-const REQUIRED_PHANTOMBUSTER_ALTERNATIVE_SNIPPETS = [
-  "collecting profiles, sending outreach, exporting followers, and searching tweets. Others monitor accounts, trigger webhooks, or hand data to an app or AI agent",
-  "No-code cloud automation platform with Phantoms, Flows, execution time, and automation slots.",
-  "## Source-backed PhantomBuster scope",
-  "Plans differ by automation slots and monthly execution time. They also differ by email credits, AI credits, and URL finder credits",
-  "data extraction across 15+ platforms. It lists 100+ automations and workflows, scheduled auto-refresh, and export limits",
-  "CSV combines results from all runs so far. JSON covers the most recent run. Free plan and Free Trial exports stop at 10 rows",
-  "Other plans include full CSV files and JSON files. They also include CSV URLs for Google Sheets or integrations",
-  "successful launches return status `200` with a Container ID. The API cannot launch Workflows",
-  "Twitter Follower Collector, Twitter Following Collector, and Twitter Hashtag Collector. It covers Twitter Auto Unfollow and Twitter Search Export",
-  "PhantomBuster's official API help describes launching an individual Phantom through `POST /agents/launch`. The call takes an Agent ID.",
-  "PhantomBuster export help",
-  "PhantomBuster API launch help",
-  "PhantomBuster rate limits",
 ] as const;
 
 const REQUIRED_ALTERNATIVES_SECTOR_SNIPPETS = [
@@ -11571,70 +11478,12 @@ const REQUIRED_ALTERNATIVES_SECTOR_SNIPPETS = [
   "[X API](/alternatives/x-api)",
   "[Apify](/alternatives/apify)",
   "Xquik on Apify",
-  "[Brandwatch](/alternatives/brandwatch)",
-  "[Meltwater](/alternatives/meltwater)",
-  "[Talkwalker](/alternatives/talkwalker)",
+  '<Card title="Brandwatch" icon="building-2">',
+  '<Card title="Meltwater" icon="building-2">',
+  '<Card title="Talkwalker" icon="building-2">',
   "signed webhooks",
   "CSV, JSON, or XLSX exports",
   "Test MCP tool result, tweet search records, user profile fields, and compose score.",
-] as const;
-
-const REQUIRED_BRANDWATCH_ALTERNATIVE_SNIPPETS = [
-  "social listening, consumer intelligence, or social media management workflow",
-  "tweet search, follower export, account or keyword monitoring, webhooks",
-  "## Source-backed Brandwatch scope",
-  "official firehose access to Twitter, Tumblr, and Reddit",
-  "dashboards, audience demographics, influencers, image analysis, and Signals alerts. They also list Excel, PPT & PDF exports and Brandwatch API access",
-  "content calendar, publishing workflows, approval flows, and an Engage inbox. It also covers sentiment and spam detection, helpdesk integration",
-  "Consumer intelligence and social media management suite.",
-  "Start with tweet search, follower exports, monitor events, or signed webhook payloads. CSV, JSON & XLSX exports, SDK calls, or MCP tool results also work.",
-  "Run one social listening job",
-  "Compare tweet IDs, author IDs, timestamps, text, metrics, and media links. Also compare pagination, export fields, webhook signatures, and error handling.",
-  "Official Brandwatch site",
-  "Brandwatch Consumer Intelligence",
-  "Brandwatch Consumer Research features",
-  "Brandwatch Social Media Management",
-] as const;
-
-const REQUIRED_MELTWATER_ALTERNATIVE_SNIPPETS = [
-  "That workflow is media monitoring, social listening, or social media management",
-  "tweet search, follower export, account or keyword monitoring, webhooks",
-  "## Source-backed Meltwater scope",
-  "coverage across major social networks, blogs, and forums. Coverage also spans podcasts, online news, reviews, owned channels, and public social content",
-  "They list dashboards, reports, real-time alerts, and exportable charts. They also list visual enrichments, influencer discovery",
-  "Export API. It exports media articles and social mentions from existing searches",
-  "offer a demo and publish no self-serve prices",
-  "Instagram, TikTok, X, Facebook, Bluesky, LinkedIn, YouTube, and Reddit among covered channels",
-  "400,000+ traditional media sources, 200M+ online publications",
-  "workflow integrations with Slack and Microsoft Teams. It also describes integrations with business intelligence platforms, APIs, and custom integrations",
-  "## Current access checkpoint",
-  "Confirm X/Twitter coverage, alert channels, export fields, package access, and freshness needs.",
-  "Confirm Slack, Microsoft Teams, BI, Export API, Data Streams, and custom integration access.",
-  "Media intelligence, social listening, and social media management suite.",
-  "Start with tweet search, follower exports, monitor events, or signed webhook payloads. CSV, JSON & XLSX exports, SDK calls, or MCP tool results also work.",
-  "Run one monitoring job",
-  "Compare tweet IDs, author IDs, timestamps, text, metrics, and media links. Also compare pagination, export fields, webhook signatures, and error handling.",
-  "Official Meltwater site",
-  "Meltwater media monitoring",
-  "Meltwater social management",
-  "Meltwater Export API",
-] as const;
-
-const REQUIRED_TALKWALKER_ALTERNATIVE_SNIPPETS = [
-  "social listening, consumer intelligence, or social media analytics workflow",
-  "tweet search, follower export, account or keyword monitoring, webhooks",
-  "## Source-backed Talkwalker scope",
-  "tracking keywords and mentions. The tracking spans 30 social networks, 150+ million websites, videos, and images. It also spans podcasts, reviews, surveys, and support interactions",
-  "visual listening, customizable dashboards, and real-time alerts. They describe conversation clusters and sentiment analysis too",
-  "Social Listening, Social Benchmarking, Media Monitoring, and Customer Feedback Analytics. It also includes real-time social insights",
-  "Consumer intelligence, social listening, and social media analytics platform.",
-  "Start with tweet search, follower exports, monitor events, or signed webhook payloads. CSV, JSON & XLSX exports, SDK calls, or MCP tool results also work.",
-  "Run one listening job",
-  "Compare tweet IDs, author IDs, timestamps, text, metrics, and media links. Also compare pagination, export fields, webhook signatures, and error handling.",
-  "Official Talkwalker site",
-  "Talkwalker Social Listening",
-  "Talkwalker products",
-  "Talkwalker data coverage",
 ] as const;
 
 const REQUIRED_TWEETDECK_ALTERNATIVE_SNIPPETS = [
@@ -11684,80 +11533,6 @@ const REQUIRED_TWSCRAPE_ALTERNATIVE_SNIPPETS = [
   "`user_tweets` and `user_tweets_and_replies` can return about 3,200 tweets maximum",
 ] as const;
 
-const REQUIRED_POSTPROXY_ALTERNATIVE_SNIPPETS = [
-  "## Source-backed Postproxy scope",
-  "one API for creating social posts. It works across Facebook, Instagram, TikTok, LinkedIn, YouTube, X, Threads, and Pinterest",
-  "The homepage also lists publishing integrations. These include MCP, skills, n8n, Zapier, Make, Needle, and other workflow tools",
-  "built-in scheduling, error handling, retry management, and authentication. It also describes a connected social account requirement",
-  "Free includes 2 profile groups and 10 posts/month",
-  "Build costs USD 17/month. It lists 10 profile groups, 120 posts/month, comments, analytics, 30-day publish logs, and webhooks",
-  "Scale costs USD 99/month. It lists 50 profile groups and no listed monthly post-count cap. It also lists 180-day publish logs, webhooks, and priority support",
-  "Enterprise starts at USD 699/month",
-  "one published post counts as one post. That holds even when you cross-post it to multiple platforms",
-  "`post.processed`, `platform_post.published`, `platform_post.failed`, `platform_post.failed_waiting_for_retry`, `platform_post.insights`, `profile.disconnected`, `profile.connected`, and `media.failed`",
-  "Those profiles are exempt from the shared 24-hour posting quota",
-] as const;
-
-const REQUIRED_POST_BRIDGE_ALTERNATIVE_SNIPPETS = [
-  "## Source-backed Post Bridge scope",
-  "API access requires an active Post Bridge subscription and the API add-on",
-  "USD 5/month in addition to the plan subscription",
-  "a dashboard page for API credentials and to API documentation. For support, it points to Discord through a dedicated API channel",
-  "users upload video content once. They also connect each social media account. Post Bridge then distributes the content to connected platforms",
-  "you must upload content directly through Post Bridge",
-  "does not support reposting Instagram collaborative reels or already-live social posts. It also does not support reposting videos from other platforms or channels",
-  "does not support Twitter/X threads, Instagram Threads threaded posts, or split tweets",
-  "schedule individual posts to X and Instagram Threads",
-  "100 scheduled posts/hour per user",
-  "MP4 or MOV videos in 9:16, 16:9, 1:1, and 4:3 ratios",
-  "Videos can run 3 to 300 seconds",
-  "Images must use JPG or PNG and stay under 8 MB each. They must total no more than 35",
-] as const;
-
-const REQUIRED_OUTSTAND_ALTERNATIVE_SNIPPETS = [
-  "## Source-backed Outstand scope",
-  "unified social media API for builders. The page cites 10 platforms, 1 API, and pay-per-post pricing",
-  "The home page says one API call can post to 10 platforms.",
-  "X, LinkedIn, Instagram, TikTok, Facebook, Threads, Bluesky, YouTube, Pinterest, and Google Business",
-  "USD 5/month with 1,000 included posts. Each post over 1,000 costs USD 0.01",
-  "connected accounts without a visible account cap. It lists all 10 platforms, webhooks, MCP, and BYO credentials",
-  "The getting started docs list core features. They are social accounts, posts, scheduling, first comment scheduling, and media attachment",
-  "`GET /v1/social-accounts` for connected accounts. They show `POST /v1/posts` with `containers`, `socialAccountIds`, and optional `scheduledAt`",
-  "It passes a Bearer credential in the `Authorization` header",
-  "allows multiple named credentials per organization",
-  "25 tools. They cover posting, scheduling, analytics, media management, account management, and social network configuration",
-  "`create_post`, `list_posts`, `get_post`, `get_post_analytics`, `delete_post`, `create_reply`, and `get_replies`",
-  "`scheduled_at` up to 30 days ahead",
-  "uses `upload_media`, then HTTP PUT to the upload URL. Next it calls `confirm_media_upload`, then `create_post` with the media ID",
-  "Outstand retains confirmed media files for 60 days",
-  "per-account `status`, `error`, `platformPostId`, and `publishedAt`",
-  "scheduled publishing starts at the scheduled time with a 30-second tolerance",
-  "`post.published` and `post.error` events plus an account re-authentication event",
-  "`X-Outstand-Signature: sha256=<signature>`",
-  "HMAC-SHA256 over the raw request body",
-] as const;
-
-const REQUIRED_SOCIALCRAWL_ALTERNATIVE_SNIPPETS = [
-  "## Source-backed SocialCrawl scope",
-  "unified social media data API. They say it is for developers and AI agents",
-  "The docs introduction says 21 platforms and 108 endpoints. The pricing page says 27 platforms and 133 APIs.",
-  "`engagement_rate`, `language`, `content_category`, and `estimated_reach`",
-  "requests use the `x-api-key` header",
-  "`401 MISSING_API_KEY` or `401 INVALID_API_KEY`",
-  "Accounts can keep up to 5 active keys",
-  "credit-based pay-as-you-go billing. Each credential has a 50 concurrent request ceiling",
-  "Standard requests cost 1 credit across 84 endpoints. Advanced requests cost 5 credits across 18 endpoints. Premium requests cost 10 credits across 6 endpoints",
-  "`success`, `platform`, `endpoint`, `data`, `credits_used`, `credits_remaining`, `request_id`, and `cached`",
-  "List endpoints return `items`, optional `next_cursor`, and optional `total`",
-  "cache hits cost 0 credits",
-  "`GET /v1/credits/balance` costs 0 credits",
-  "idempotent replays deduct 0 new credits within a 24-hour TTL",
-  "Free with 400 one-time credits. Starter has 2,500 credits for GBP 15. Growth has 20,000 credits for GBP 49. Pro has 150,000 credits for GBP 299",
-  "publish `/llms.txt`, `/llms-full.txt`, OpenAPI JSON and YAML. They also publish per-platform llms files",
-  "profile, user tweets, and tweet detail endpoints. It also lists community detail, community tweets, video transcript, and AI-powered X search endpoints",
-  "`socialcrawl_list_platforms`, `socialcrawl_list_endpoints`, `socialcrawl_request`, and `socialcrawl_get_docs`",
-] as const;
-
 const REQUIRED_HYPEFURY_ALTERNATIVE_SNIPPETS = [
   "## Source-backed Hypefury scope",
   "Starter costs USD 29/month. It schedules up to 1 month for 6 social accounts, including 1 X account",
@@ -11772,26 +11547,6 @@ const REQUIRED_HYPEFURY_ALTERNATIVE_SNIPPETS = [
   "DMs run in batches every 30 minutes. It says campaigns last 3 days",
   "edited tweets can break Auto DM because the tweet ID changes. It says DM recipients must follow the account",
   "Validate REST, SDK, webhook, and MCP handoff needs before buying.",
-] as const;
-
-const REQUIRED_ANTWORK_ALTERNATIVE_SNIPPETS = [
-  "## Source-backed Antwork scope",
-  "social media infrastructure for scheduling, publishing, and analytics. The page says it connects AI agents and workflows to social platforms",
-  "LinkedIn, X, Instagram, Facebook, YouTube, TikTok, Threads, and Pinterest",
-  "MCP client setup for Claude Code, Claude Desktop, Cursor, and ChatGPT. It shows setup for VS Code, Windsurf, Gemini CLI, OpenClaw, and JetBrains too",
-  "`https://api.antwork.io/mcp`",
-  "setup uses OAuth in the browser",
-  "connecting at least one social account",
-  "letting Antwork learn brand voice from existing content",
-  "`create_post`, `get_performance`, `get_brand_dna`, `list_social_accounts`, `schedule_post`, and `get_optimal_posting_times`",
-  "brand DNA extraction, AI content generation, and 30+ post campaign generation. They also include smart scheduling, media library, team collaboration, and analytics",
-  "Free plan at USD 0/month. It has 2 social accounts, 20 posts/month, and 5 AI images/month. It also has brand DNA and voice, plus all MCP tools",
-  "Solo is USD 19/month with 5 social accounts and 100 posts/month. It has 50 AI images/month and 5 AI videos/month. It also has brand DNA and voice, plus all MCP tools",
-  "Grow is USD 49/month with 15 social accounts and no listed post-count cap. It has 200 AI images/month and 20 AI videos/month. It also has brand DNA and voice, plus all MCP tools",
-  "Scale is USD 99/month with 50 social accounts and no listed post-count cap. It has 500 AI images/month and 50 AI videos/month. It also has brand DNA and voice, all MCP tools, and priority support",
-  "Price by plan, social-account count, monthly post allowance, AI image allowance, and AI video allowance",
-  "Antwork exposes MCP tools through `https://api.antwork.io/mcp` with OAuth setup",
-  "Search tweets and follower exports cost 1 credit/result, with CSV, JSON, XLSX, Markdown, API, SDK, and MCP handoff options.",
 ] as const;
 
 const REQUIRED_CHIRRAPP_ALTERNATIVE_SNIPPETS = [
@@ -11821,52 +11576,6 @@ const REQUIRED_CHIRRAPP_ALTERNATIVE_SNIPPETS = [
   "Search tweets and follower exports cost 1 credit/result, with CSV, JSON, XLSX, Markdown, API, SDK, and MCP handoff options.",
 ] as const;
 
-const REQUIRED_BLACK_MAGIC_ALTERNATIVE_SNIPPETS = [
-  "## Source-backed Black Magic scope",
-  "Twitter analytics, engagement growth, Twitter CRM, and scheduling plus publishing",
-  "browser extensions for Chrome, Firefox, and Safari plus iOS and Android apps",
-  "tracks tweet performance over time",
-  "compares tweets against account averages",
-  "tracks consistency, followers, engagements, and reports why a tweet takes off",
-  "sync Twitter Lists",
-  "track whether a person liked, retweeted, or replied to previous tweets",
-  "write private notes and set reminders for DMs or follow-up. It can see past interactions",
-  "schedule tweets and threads",
-  "daily or weekly email reports and tweet performance reports. It also lists record-breaking tweets, new notable followers, and account summaries",
-  "prices are in USD. It says subscriptions are tied to one Twitter account",
-  "Personal at USD 16.25/month with USD 195 billed annually",
-  "Professional at USD 32.41/month with USD 389 billed annually",
-  "Business at USD 124.91/month with USD 1499 billed annually",
-  "Professional includes engagement tracking and active followers tracking. It includes real-time tweet metrics, engagement heatmap, and tweet replies search.",
-  "Business adds priority support, data export, and custom setup plus reports",
-  "extra Twitter accounts are not included in Personal",
-  "Professional lists additional accounts at USD 19.99/month per account or USD 179.91 annually",
-  "Business lists additional accounts at USD 69.99/month per account or USD 629.91 annually",
-  "Personal does not list schedule tweets or schedule threads. Professional and Business include them.",
-  "Search tweets and follower exports cost 1 credit/result, with CSV, JSON, XLSX, Markdown, API, SDK, and MCP handoff options.",
-] as const;
-
-const REQUIRED_TWEETSTREAM_ALTERNATIVE_SNIPPETS = [
-  "## Source-backed TweetStream scope",
-  "Twitter WebSocket API for crypto traders. It says the API streams structured JSON for tracked accounts",
-  "track accounts with keyword filters",
-  "OCR text, detected crypto assets, live prices, and Polymarket detection",
-  "Basic annual plan at USD 139/month billed annually. It has 3 WebSocket connections and 50 monitored X/Twitter accounts",
-  "Elite annual plan costs USD 349/month billed annually. It has 10 WebSocket connections and 250 monitored accounts",
-  "monthly Basic pricing from USD 199/month and Elite pricing at USD 499/month",
-  "`wss://ws.tweetstream.io/ws`, protocol `tweetstream.v1`, and an auth subprotocol",
-  "the server accepts Bearer auth headers and query parameters",
-  "`v`, `t`, `op`, `ts`, and `d`",
-  "`tweet`, `account`, or `control`",
-  "`content`, `meta`, `update`, `delete`, `profile_update`, `follow`, `auth_ping`, `auth_pong`, and `twitter_handles_result`",
-  "tweet events send a `content` message first. They also send optional `update` messages and a `meta` message when enrichment is ready",
-  "`tweetId`, `text`, `createdAt`, `author`, optional `link`, optional `media`, and optional `ref`",
-  "profile updates and follow notifications",
-  "avatar, banner, bio, handle, location, and name",
-  "OCR text and detected crypto assets, centralized-exchange markets, and prediction markets",
-  "`tweetId`, `body`, `time`, `receivedTime`, `link`, `messageType`, `twitterHandle`, `twitterId`, `content`, and optional `meta`",
-] as const;
-
 const REQUIRED_TWEET_HUNTER_ALTERNATIVE_SNIPPETS = [
   "## Source-backed Tweet Hunter scope",
   "all-in-one AI X tool. The page says it is for growing an audience and brand on X",
@@ -11884,90 +11593,20 @@ const REQUIRED_TWEET_HUNTER_ALTERNATIVE_SNIPPETS = [
   "Search tweets and follower exports cost 1 credit/result, with CSV, JSON, XLSX, Markdown, API, SDK, and MCP handoff options.",
 ] as const;
 
-const REQUIRED_TAPLIO_ALTERNATIVE_SNIPPETS = [
-  "## Source-backed Taplio scope",
-  "all-in-one AI-powered tool to grow a brand on LinkedIn",
-  "Starter costs USD 39/month or USD 32/month when billed yearly",
-  "0 AI credits, 0 comment credits, and 1-click post scheduling. It also includes 5M+ post ideas",
-  "Growth costs USD 69/month or USD 49/month when billed yearly",
-  "250 AI credits, 500 comment credits",
-  "hook and post generation and repurposing viral posts or content. It also includes AI copilot writing",
-  "Pro costs USD 199/month or USD 149/month when billed yearly",
-  "no AI credit cap and no comment credit cap. It also lists a dynamic 3M+ lead database",
-  "dynamic 3M+ lead database and Auto-DM for likers and commenters. It lists mass DMs to an audience and automated connection requests too",
-  "saved posts, draft Kanban, and post scheduling. It lists monthly and daily schedules, analytics, and writer collaboration",
-  "7-day free trial gives Pro access during the trial. Then the trial switches to the originally selected plan",
-  "Taplio X Chrome extension brings Taplio into LinkedIn. The extension brings instant stats, high-performing posts, trending content, and quick saves",
-  "Use current Taplio plan limits when the job is LinkedIn content or lead engagement.",
-] as const;
-
-const REQUIRED_POSTWISE_ALTERNATIVE_SNIPPETS = [
-  "## Source-backed Postwise scope",
-  "integrations for Twitter, LinkedIn, and Meta Threads",
-  "Basic costs USD 37/month",
-  "3 social accounts, 500 AI-generated posts/month, and 3 months scheduling. It also includes 3 custom AI voices",
-  "Boss costs USD 59/month",
-  "5 social accounts, 1,000 AI-generated posts/month, and 12 months scheduling",
-  "The top visible plan costs USD 97/month",
-  "no social-account cap, no AI-generated-post cap, and no scheduling cap",
-  "It lists Basic, Advanced, and Enterprise-grade analytics tiers",
-  "annual subscriptions receive a 20% discount",
-  "the 7-day trial converts to the selected plan",
-  "AI content creation, scheduling across platforms, and viral post repurposing. It also describes engagement tracking and a multi-platform dashboard",
-  "smart scheduling, analytics and insights, and team collaboration. It also lists multi-account management, tweet threading, and retweet scheduling",
-  "Confirm current limits at checkout because official pages expose more than one plan grid.",
-] as const;
-
-const REQUIRED_TRYPOST_ALTERNATIVE_SNIPPETS = [
-  "## Source-backed TryPost scope",
-  "one workspace includes all features and connects to all 10 social networks",
-  "USD 16/month per workspace when billed annually, or USD 192/year",
-  "20% yearly saving and a 7-day free trial",
-  "all social networks and no listed scheduled-post cap. They also include a visual content calendar and media library",
-  "post preview for all networks, no listed team-member cap, and chat support",
-  "It names Instagram, Facebook, LinkedIn personal and company pages, X (Twitter), and TikTok. It also names YouTube Shorts, Pinterest, Threads, Bluesky, and Mastodon",
-  "TryPost bills each additional workspace separately. It prices 3 workspaces at USD 48/month",
-  "cloud-hosted SaaS and self-hosted open-source software",
-  "FSL-1.1-MIT and self-hosting costs nothing",
-  "scheduling and auto-publishing across multiple platforms. They also describe a drag-and-drop visual calendar",
-  "REST API. They also list Build with AI for connecting AI assistants through MCP.",
-  "## Connect a TryPost schedule to Xquik reads",
-  "A scheduler success state does not show engagement.",
-  "## Verify a cloud or self-hosted TryPost trial",
-  "TryPost runs the editorial",
-  "calendar and cross-network schedule.",
-] as const;
-
-const REQUIRED_XANGUARD_ALTERNATIVE_SNIPPETS = [
-  "## Source-backed Xanguard scope",
-  "sub-second Twitter/X alerts for crypto",
-  "Telegram, REST API, and HMAC-signed webhooks. It also lists WebSocket streaming on B2B plans",
-  "14 REST API endpoints and 4 delivery channels. It also lists HMAC-SHA256 webhook signatures",
-  "plans from USD 19/month paid in SOL",
-  "keyword filters, mute rules, and reply and repost exclusions",
-  "4 real-time modules in one connection. They cover tweets, follows, profile changes, and community monitoring",
-  "full untruncated text, media URLs, quoted tweet content, and contract address extraction",
-  "wss://api.xanguard.tech/v1/dt/realtime/ws",
-  "RT 25 at USD 49/month for 25 tracked accounts",
-  "RT 100 at USD 149/month for 100 tracked accounts",
-  "RT 500 at USD 499/month for 500 tracked accounts",
-  "you pay with SOL or Telegram Stars",
-] as const;
-
 const REQUIRED_HOOTSUITE_ALTERNATIVE_SNIPPETS = [
   "scheduling posts, reviewing inboxes, and analyzing campaigns. Add tweet search, follower exports, and account or keyword monitors. Also add webhooks and app or agent connections.",
   "Social media management, publishing, engagement, listening, analytics, ads, and enterprise collaboration suite.",
   "## Source-backed Hootsuite scope",
   "Standard with up to 10 social accounts and unlimited scheduling",
-  "bulk scheduling for up to 350 posts",
-  "PDF, PPT, CSV, XLSX, scheduled email, and calendar exports",
+  "It also automates inbox replies and workflows.",
+  "team approvals, message assignment and routing",
   "custom approvals, task assignments, posting-time suggestions",
   "Standard at USD 99 per user/month with 10 social accounts",
-  "Advanced costs USD 249 per user/month and lists no social-account cap",
+  "Professional costs USD 199 per user/month and Advanced USD 399 per user/month",
   "Enterprise uses contact pricing",
-  "## Current cost checkpoint",
+  "## Hootsuite pricing vs Xquik pricing",
   "Standard starts at USD 99 per user/month billed annually with 10 social accounts.",
-  "Advanced starts at USD 249 per user/month billed annually and has no listed social-account cap.",
+  "Professional starts at USD 199 per user/month billed annually with unlimited social accounts.",
   "Enterprise uses contact pricing with a customized plan, custom user access permissions, support, and services.",
   "Hootsuite's official pages describe social scheduling, AI content help, recommended posting times, bulk scheduling, calendar and list views, approval workflows, inboxes, saved replies, automated responses, automated routing, analytics exports, competitor benchmarks, listening, SSO, advanced inbox, compliance integration, chatbot, and Salesforce integration.",
   "tweet IDs, and author IDs. Also compare timestamps, post results, CSV, JSON & XLSX exports, webhook signatures, and error handling.",
@@ -11976,27 +11615,6 @@ const REQUIRED_HOOTSUITE_ALTERNATIVE_SNIPPETS = [
   "Official Hootsuite plans",
   "Hootsuite publishing",
   "Hootsuite Enterprise",
-] as const;
-
-const REQUIRED_SPRINKLR_ALTERNATIVE_SNIPPETS = [
-  "tweet search, follower exports, and account or keyword monitors. It also covers publishing, webhooks, and app or agent connections",
-  "Enterprise social media management, listening, publishing, engagement, analytics, advertising, care, and compliance suite.",
-  "## Source-backed Sprinklr scope",
-  "Sprinklr's official Social page describes publishing, engagement, listening, paid media, compliance, and analytics. They span 30+ channels",
-  "describes content planning. It also describes a digital asset manager, an editorial calendar, and an omnichannel publisher. It lists an engagement dashboard",
-  "real-time listening across 30+ social and digital channels. It describes visual brand mentions, sentiment analysis, emotion analysis, entity identification, and text classification",
-  "REST JSON APIs, OAuth 2.0, and a developer portal. It also describes Enterprise license requirements and pre-approved use cases. It describes extra enablement for Twitter Syndication, Case Compliance API, or Listening API",
-  "ask buyers to request a demo for enterprise social management",
-  "pre-approved use cases in the License Order Form",
-  "OAuth authorization through the Sprinklr UI",
-  "## Current access checkpoint",
-  "Confirm Enterprise license scope, LOF use cases, developer portal setup, OAuth authorization, and approved data sets.",
-  "Verify whether you need Twitter Syndication, Case Compliance API, or Listening API enablement.",
-  "Sprinklr official pages describe publishing, engagement, listening, paid media, compliance, analytics, integrations, approval workflows, crisis workflows, reports, exports, and Enterprise API access.",
-  "Official Sprinklr Social",
-  "Sprinklr publishing",
-  "Sprinklr social listening",
-  "Sprinklr APIs",
 ] as const;
 
 const REQUIRED_SPROUT_SOCIAL_ALTERNATIVE_SNIPPETS = [
@@ -12174,23 +11792,6 @@ const REQUIRED_TWITTER_API_PRO_ALTERNATIVE_SNIPPETS = [
   "Owned Reads at USD 0.001 per resource",
   "24-hour UTC deduplication for billable resources",
   "read the next-page cursor from response metadata",
-] as const;
-
-const REQUIRED_AUDIENSE_ALTERNATIVE_SNIPPETS = [
-  "audience intelligence, influencer discovery, tweet search, and follower export. It also covers account or keyword monitoring, signed webhooks, API access, and agent handoff",
-  "## Source-backed Audiense scope",
-  "Audiense's official Insights page describes audience intelligence. Its listed uses are customer insights, creative decisions, influencer discovery, and consumer segments.",
-  "Its current public pricing page lists a Social Intelligence Insights monthly plan. That plan has 5 reports per month. The page also lists an annual plan with 60 reports per year. It lists onboarding, a dedicated account manager, and refresher trainings too.",
-  "Audiense official pages describe audience segments, cultural insights, affinities, demographics, interests, personas, influencer discovery, report exports, audience member XLS exports, influencer XLS exports, and targeting-pack downloads.",
-  "## Audience & influencer handoff",
-  "This section compares 4 jobs. They are audience segments, influencer discovery, campaign monitoring, and CRM handoff.",
-  "Use Audiense influencer views, filters, affinity sorting, uniqueness sorting, and paid-plan XLS export.",
-  "Use follower exports, tweet search, verified follower exports, and engagement fields to build your own scoring model.",
-  "Audiense ranks influencers for you. Xquik returns the rows, so you score and automate them yourself.",
-  "Use 1-second keyword monitors, tweet search exports, signed webhooks, and `GET /events` for stored records.",
-  "Audiense pricing",
-  "Audiense data sources",
-  "Audiense report exports",
 ] as const;
 
 const FORBIDDEN_APIFY_ALTERNATIVE_SNIPPETS = [
@@ -13910,30 +13511,6 @@ describe("repository discovery", (): void => {
       REQUIRED_TWEET_PROFILE_API_FIELDS_SNIPPETS,
     ],
     [
-      "keeps Zapier comparison workflow details source-backed",
-      "alternatives/zapier.mdx",
-      "Zapier alternative",
-      REQUIRED_ZAPIER_ALTERNATIVE_SNIPPETS,
-    ],
-    [
-      "keeps Pipedream comparison workflow details source-backed",
-      "alternatives/pipedream.mdx",
-      "Pipedream alternative",
-      REQUIRED_PIPEDREAM_ALTERNATIVE_SNIPPETS,
-    ],
-    [
-      "keeps the Make alternative focused on source-backed workflow handoffs",
-      "alternatives/make.mdx",
-      "Make alternative",
-      REQUIRED_MAKE_ALTERNATIVE_SNIPPETS,
-    ],
-    [
-      "keeps the PhantomBuster alternative focused on no-code automation handoffs",
-      "alternatives/phantombuster.mdx",
-      "PhantomBuster alternative",
-      REQUIRED_PHANTOMBUSTER_ALTERNATIVE_SNIPPETS,
-    ],
-    [
       "keeps the X API alternative aligned with current official pricing signals",
       "alternatives/x-api.mdx",
       "X API alternative",
@@ -13944,12 +13521,6 @@ describe("repository discovery", (): void => {
       "alternatives/twitter-api-pro.mdx",
       "Twitter API Pro alternative",
       REQUIRED_TWITTER_API_PRO_ALTERNATIVE_SNIPPETS,
-    ],
-    [
-      "keeps the Audiense alternative focused on audience intelligence handoffs",
-      "alternatives/audiense.mdx",
-      "Audiense alternative",
-      REQUIRED_AUDIENSE_ALTERNATIVE_SNIPPETS,
     ],
   ])("%s", (_name, path, label, snippets): void => {
     expect.assertions(1);
@@ -15495,16 +15066,6 @@ describe("repository discovery", (): void => {
     expect(source).not.toContain("| Tool | Use it for | Put Xquik behind it when |");
   });
 
-  it("keeps the n8n alternative focused on source-backed workflow handoffs", (): void => {
-    expect.assertions(1);
-
-    const source = readFileSync("alternatives/n8n.mdx", "utf8");
-
-    expect(
-      collectSnippetFindings(source, "n8n alternative", REQUIRED_N8N_ALTERNATIVE_SNIPPETS),
-    ).toStrictEqual([]);
-  });
-
   it("keeps the n8n guide response handling concrete", (): void => {
     expect.assertions(1);
 
@@ -15549,71 +15110,24 @@ describe("repository discovery", (): void => {
 
   it.each([
     [
-      "Brandwatch alternative",
-      "alternatives/brandwatch.mdx",
-      REQUIRED_BRANDWATCH_ALTERNATIVE_SNIPPETS,
-    ],
-    [
-      "Meltwater alternative",
-      "alternatives/meltwater.mdx",
-      REQUIRED_MELTWATER_ALTERNATIVE_SNIPPETS,
-    ],
-    [
-      "Talkwalker alternative",
-      "alternatives/talkwalker.mdx",
-      REQUIRED_TALKWALKER_ALTERNATIVE_SNIPPETS,
-    ],
-    [
       "TweetDeck alternative",
       "alternatives/tweetdeck.mdx",
       REQUIRED_TWEETDECK_ALTERNATIVE_SNIPPETS,
     ],
     ["Zernio alternative", "alternatives/late.mdx", REQUIRED_ZERNIO_ALTERNATIVE_SNIPPETS],
     ["twscrape alternative", "alternatives/twscrape.mdx", REQUIRED_TWSCRAPE_ALTERNATIVE_SNIPPETS],
-    [
-      "Postproxy alternative",
-      "alternatives/postproxy.mdx",
-      REQUIRED_POSTPROXY_ALTERNATIVE_SNIPPETS,
-    ],
-    [
-      "Post Bridge alternative",
-      "alternatives/post-bridge.mdx",
-      REQUIRED_POST_BRIDGE_ALTERNATIVE_SNIPPETS,
-    ],
-    [
-      "SocialCrawl alternative",
-      "alternatives/socialcrawl.mdx",
-      REQUIRED_SOCIALCRAWL_ALTERNATIVE_SNIPPETS,
-    ],
-    ["Outstand alternative", "alternatives/outstand.mdx", REQUIRED_OUTSTAND_ALTERNATIVE_SNIPPETS],
     ["Hypefury alternative", "alternatives/hypefury.mdx", REQUIRED_HYPEFURY_ALTERNATIVE_SNIPPETS],
-    ["Antwork alternative", "alternatives/antwork.mdx", REQUIRED_ANTWORK_ALTERNATIVE_SNIPPETS],
     ["ChirrApp alternative", "alternatives/chirrapp.mdx", REQUIRED_CHIRRAPP_ALTERNATIVE_SNIPPETS],
-    [
-      "Black Magic alternative",
-      "alternatives/black-magic.mdx",
-      REQUIRED_BLACK_MAGIC_ALTERNATIVE_SNIPPETS,
-    ],
-    [
-      "TweetStream alternative",
-      "alternatives/tweetstream.mdx",
-      REQUIRED_TWEETSTREAM_ALTERNATIVE_SNIPPETS,
-    ],
     [
       "Tweet Hunter alternative",
       "alternatives/tweet-hunter.mdx",
       REQUIRED_TWEET_HUNTER_ALTERNATIVE_SNIPPETS,
     ],
-    ["Taplio alternative", "alternatives/taplio.mdx", REQUIRED_TAPLIO_ALTERNATIVE_SNIPPETS],
-    ["Postwise alternative", "alternatives/postwise.mdx", REQUIRED_POSTWISE_ALTERNATIVE_SNIPPETS],
-    ["TryPost alternative", "alternatives/trypost.mdx", REQUIRED_TRYPOST_ALTERNATIVE_SNIPPETS],
-    ["Xanguard alternative", "alternatives/xanguard.mdx", REQUIRED_XANGUARD_ALTERNATIVE_SNIPPETS],
     [
       "Hootsuite alternative",
       "alternatives/hootsuite.mdx",
       REQUIRED_HOOTSUITE_ALTERNATIVE_SNIPPETS,
     ],
-    ["Sprinklr alternative", "alternatives/sprinklr.mdx", REQUIRED_SPRINKLR_ALTERNATIVE_SNIPPETS],
     [
       "Sprout Social alternative",
       "alternatives/sprout-social.mdx",
