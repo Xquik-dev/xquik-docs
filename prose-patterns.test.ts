@@ -227,6 +227,7 @@ const HEADING_NAMES: readonly string[] = [
   "Retry-After",
   "Roo Code",
   "Slack",
+  "snscrape",
   "Social Fetch",
   "Sorsa",
   "Spaces?",
