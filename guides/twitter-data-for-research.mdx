@@ -1,0 +1,123 @@
+---
+title: "Twitter data for research, datasets & run records"
+sidebarTitle: "Data for research"
+description: "Collect Twitter data for research. Pull tweets by query & date, export CSV or JSON, then cite each run by job ID, query & row count. USD 0.00015 a tweet."
+keywords:
+  [
+    "Twitter dataset",
+    "Twitter data for research",
+    "historical Twitter data",
+    "Twitter academic API alternative",
+  ]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+<LlmsDirective />
+
+This guide shows how to build a tweet dataset with Xquik for a study. It covers cost, collection and the run record your methods section needs.
+
+## What a tweet dataset costs
+
+[X's pricing docs](https://docs.x.com/x-api/getting-started/pricing), read on 2026-11-04, list USD 0.005 per post read. Xquik bills 1 credit per delivered tweet. A top-up credit costs USD 0.00015.
+
+| Dataset size     | X API      | Xquik    |
+| ---------------- | ---------- | -------- |
+| 10,000 tweets    | USD 50     | USD 1.50 |
+| 100,000 tweets   | USD 500    | USD 15   |
+| 2,000,000 tweets | USD 10,000 | USD 300  |
+
+Empty pages, duplicates and filtered rows cost nothing on Xquik. Check the price of a job before you run it with the [cost estimator](/api-reference/extractions/twitter-scraping-cost-estimator).
+
+## Pull a small sample
+
+Each search call returns 1 page of tweets. Put the date window in the query with `since:` and `until:`. Days are UTC.
+
+```python
+from x_twitter_scraper import XTwitterScraper
+
+client = XTwitterScraper()
+page = client.x.tweets.search(q="heatwave lang:en since:2026-07-01 until:2026-07-08", limit=100)
+for tweet in page.tweets:
+    print(tweet.id, tweet.created_at, tweet.text)
+```
+
+Continue with `next_cursor` until it is empty. Store tweet IDs so a rerun skips rows you already have.
+
+## Collect a large dataset
+
+<Steps>
+
+  <Step title="Estimate the job">
+
+    Send the query to the [cost estimator](/api-reference/extractions/twitter-scraping-cost-estimator) first. It returns `estimatedResults` and `creditsRequired`.
+
+  </Step>
+  <Step title="Start an extraction job">
+
+    [Create an extraction](/api-reference/extractions/create) with `toolType` set to `tweet_search_extractor`. Pass your query as `searchQuery` and a cap as `resultsLimit`.
+
+  </Step>
+  <Step title="Wait for the job">
+
+    Poll [Get Extraction](/api-reference/extractions/twitter-extraction-results) until the job finishes. Its `totalResults` field gives the row count.
+
+  </Step>
+  <Step title="Export the rows">
+
+    Download the rows as CSV, JSON or XLSX with [Export Extraction](/api-reference/extractions/export). Use `sinceDate` and `untilDate` to keep one study window.
+
+  </Step>
+</Steps>
+
+## Cite the run in your methods section
+
+Each extraction job keeps its own record. Copy these fields from Get Extraction into your notes.
+
+| Field          | What it records                 |
+| -------------- | ------------------------------- |
+| `id`           | The job ID, which names the run |
+| `toolType`     | The kind of collection          |
+| `searchQuery`  | The exact query the job ran     |
+| `totalResults` | The number of rows collected    |
+| `createdAt`    | When the job started            |
+| `completedAt`  | When the job finished           |
+
+Add the `sinceDate` and `untilDate` you exported with. A methods sentence can follow this template.
+
+```text
+We collected TOTAL_RESULTS posts matching SEARCH_QUERY from SINCE_DATE to UNTIL_DATE
+with Xquik extraction job ID, completed on COMPLETED_AT.
+```
+
+Keep the job ID and the tweet IDs with your data. Another team can then repeat the same query and window.
+
+## Plan the study
+
+- Fix the query and window before you collect. A changed query is a new run with a new job ID.
+- Keep raw exports unchanged. Clean a copy, and record each cleaning step.
+- Follow your ethics board's rules for storing and sharing user data.
+
+<CardGroup cols={2}>
+
+  <Card title="Search tweets by date" icon="calendar" href="/guides/search-tweets-by-date">
+
+    Set exact date windows with `since:` and `until:`.
+
+  </Card>
+  <Card title="Create an extraction" icon="database" href="/api-reference/extractions/create">
+
+    Start a bulk job for tweets, replies, followers or lists.
+
+  </Card>
+  <Card title="Export an extraction" icon="download" href="/api-reference/extractions/export">
+
+    Download rows as CSV, JSON or XLSX.
+
+  </Card>
+  <Card title="Python SDK" icon="code" href="/sdks/python">
+
+    Install the SDK and run your first search.
+
+  </Card>
+</CardGroup>
