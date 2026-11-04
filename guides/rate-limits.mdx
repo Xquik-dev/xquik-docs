@@ -21,27 +21,27 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 <LlmsDirective />
 
 Xquik applies fixed-window Twitter API rate limits per Xquik account.
-These limits protect tweet reads, profile lookups, writes, and deletions.
-Standard API keys for one account share the same method buckets.
-Separate read, write, and delete buckets reset independently.
+These limits protect tweet reads, Xquik resources, and connected X accounts.
+Standard API keys for one account share the same buckets.
+Separate read, change, and X action buckets reset independently.
 
 <Note>
 
-**Standard limits.** 500 reads per second, 120 writes per minute, and 60
-deletes per minute. After `429`, wait for `Retry-After` before retrying.
+**Standard limits.** 500 reads per second, 6,000 changes per minute, and 120
+X actions per minute. After `429`, wait for `Retry-After` before retrying.
 
 </Note>
 
 ## Twitter API rate limits at a glance
 
-| Rate-limit signal              | Meaning                                                | Client action                                                                        |
-| ------------------------------ | ------------------------------------------------------ | ------------------------------------------------------------------------------------ |
-| 500 reads per second           | `GET`, `HEAD`, and `OPTIONS` share one account bucket. | Pace tweet, profile, follower, reply, and event reads below 500 requests per second. |
-| 120 writes per minute          | `POST`, `PUT`, and `PATCH` share one account bucket.   | Queue tweets, monitors, webhooks, and profile changes below 120 requests per minute. |
-| 60 deletes per minute          | Every `DELETE` request uses the delete bucket.         | Serialize cleanup work and keep each deleted resource ID.                            |
-| `429 Too Many Requests`        | An Xquik tier or action limit blocked the request.     | Read the error code before choosing a retry delay.                                   |
-| `Retry-After` header           | The response supplies a wait in seconds.               | Pause that bucket for the supplied duration.                                         |
-| `retryAfter` or `retryAfterMs` | The JSON body supplies a retry duration.               | Use the documented unit before resuming work.                                        |
+| Rate-limit signal              | Meaning                                                 | Client action                                                                        |
+| ------------------------------ | ------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| 500 reads per second           | `GET`, `HEAD`, and `OPTIONS` share one account bucket.  | Pace tweet, profile, follower, reply, and event reads below 500 requests per second. |
+| 6,000 changes per minute       | Other methods on Xquik resources share one bucket.      | Queue monitor, webhook, key, and extraction changes below 6,000 requests per minute. |
+| 120 X actions per minute       | Actions through a connected X account share one bucket. | Queue posts, likes, follows, and DMs below 120 requests per minute.                  |
+| `429 Too Many Requests`        | An Xquik tier or action limit blocked the request.      | Read the error code before choosing a retry delay.                                   |
+| `Retry-After` header           | The response supplies a wait in seconds.                | Pause that bucket for the supplied duration.                                         |
+| `retryAfter` or `retryAfterMs` | The JSON body supplies a retry duration.                | Use the documented unit before resuming work.                                        |
 
 <CardGroup cols={3}>
 
@@ -50,21 +50,22 @@ deletes per minute. After `429`, wait for `Retry-After` before retrying.
     `GET`, `HEAD`, and `OPTIONS` allow 500 requests per 1 second.
 
   </Card>
-  <Card title="Write bucket" icon="pen-line">
+  <Card title="Change bucket" icon="pen-line">
 
-    `POST`, `PUT`, and `PATCH` allow 120 requests per 60 seconds.
+    `POST`, `PUT`, `PATCH`, and `DELETE` on Xquik resources allow 6,000 requests per 60 seconds.
 
   </Card>
-  <Card title="Delete bucket" icon="circle-x">
+  <Card title="X action bucket" icon="send">
 
-    `DELETE` allows 60 requests per 60 seconds.
+    Actions through a connected X account allow 120 requests per 60 seconds. These include posts, likes, follows, DMs, uploads, and profile edits. This keeps your X accounts safe.
 
   </Card>
 </CardGroup>
 
 The listed request count succeeds inside each window. The next request receives
-`429 rate_limit_exceeded`. A read burst does not consume write capacity.
-A write burst does not consume delete capacity.
+`429 rate_limit_exceeded`. Its message names the limit and the wait.
+A read burst does not count against changes. A change burst does not count
+against X actions.
 
 ### Action-specific Twitter API limits
 
@@ -94,7 +95,7 @@ The first counted request starts that bucket's window.
   </Step>
   <Step title="Count every request">
 
-    Each request increments its read, write, or delete counter.
+    Each request increments its read, change, or X action counter.
 
   </Step>
   <Step title="Reject the overflow">
@@ -148,8 +149,8 @@ Content-Type: application/json
 | `retryAfterMs`    | Milliseconds | Login cooldown wait for account connection flows. |
 | `error`           | String       | The exact reason, such as `rate_limit_exceeded`.  |
 
-Standard read throttles return `Retry-After: 1`. Standard write and delete
-throttles return `Retry-After: 60`. Account connection returns the remaining
+Standard read throttles return `Retry-After: 1`. Standard change and X action
+throttles return up to `Retry-After: 60`. Account connection returns the remaining
 window. A login cooldown returns its own remaining duration.
 
 ### Retry-After does not always mean rate limited

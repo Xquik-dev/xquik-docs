@@ -69,7 +69,7 @@ It deletes a DM through `DELETE /x/dm/{userId}/messages/{messageId}`.
 
   <Card title="Look up the recipient" icon="user">
 
-    Use `GET /x/users/{id}` to convert a username to the numeric recipient ID required by DM writes.
+    Use `GET /x/users/{id}` to convert a username to a numeric recipient ID. DM writes require that ID.
 
   </Card>
 
@@ -129,10 +129,10 @@ It deletes a DM through `DELETE /x/dm/{userId}/messages/{messageId}`.
 
 ## End-to-end direct message handoff
 
-Use one checkpoint object after recipient lookup, history sync, a text send, and
-an optional media send. Keep full DM bodies in restricted support, CRM,
-warehouse, or agent memory systems. Shared run logs should carry IDs, status,
-cursors, and media references.
+Use one checkpoint object after recipient lookup and history sync. Use the same
+object after a text send and an optional media send. Keep full DM bodies in
+restricted support, CRM, warehouse, or agent memory systems. Shared run logs
+should carry IDs, status, cursors, and media references.
 
 ```json
 {
@@ -265,11 +265,11 @@ curl -G https://xquik.com/api/v1/x/dm/987654321/history \
 }
 ```
 
-For older messages, pass the previous `next_cursor` as `cursor`. Store each message `id`, `text`, `senderId`, `receiverId`, `createdAt`, and optional `mediaUrl` in your support ticket, CRM note, or JSON export.
+For older messages, pass the previous `next_cursor` as `cursor`. Store each message `id`, `text`, `senderId`, `receiverId`, `createdAt`, and optional `mediaUrl`. Put them in your support ticket, CRM note, or JSON export.
 
 <Note>
 
-DM history and outbound `message_text` values can contain private customer or community conversations. Store them only in private support, CRM, warehouse, or agent memory systems. Shared logs, public artifacts, and status dashboards should keep `message_id`, `sender_id`, `receiver_id`, `created_at`, `media_url`, and job status instead of full DM bodies.
+DM history and outbound `message_text` values can contain private customer or community conversations. Store them only in private support, CRM, warehouse, or agent memory systems. Shared logs, public artifacts, and status dashboards should omit full DM bodies. They should keep `message_id`, `sender_id`, `receiver_id`, `created_at`, `media_url`, and job status instead.
 
 </Note>
 
@@ -294,8 +294,8 @@ DM history and outbound `message_text` values can contain private customer or co
   <Card title="Participant account" icon="user-check">
 
     Use a participant account. `GET /x/dm/{userId}/history` returns
-    `400 account_required` without `account` and `403 dm_not_permitted` when
-    the connected account is not in the conversation.
+    `400 account_required` without `account`. It returns `403 dm_not_permitted`
+    when the connected account is not in the conversation.
 
   </Card>
 
@@ -335,7 +335,7 @@ curl -X POST https://xquik.com/api/v1/x/dm/987654321 \
 
 ### Store the outbound handoff
 
-After a `200` response, store one outbound record before handing control back to a CRM, ticket, queue, or agent. `POST /x/dm/{userId}` returns `messageId` and `success`. Use your own job timestamp if the next system needs `sent_at`.
+After a `200` response, store one outbound record. Do it before handing control back to a CRM, ticket, queue, or agent. `POST /x/dm/{userId}` returns `messageId` and `success`. Use your own job timestamp if the next system needs `sent_at`.
 
 ```json
 {
@@ -347,14 +347,14 @@ After a `200` response, store one outbound record before handing control back to
 }
 ```
 
-Text-only DM sends omit media fields. Add `media_ids` in the request and
-`media_id` in the handoff only for the media send in Step 4.
+Text-only DM sends omit media fields. Add `media_ids` in the request only for
+the media send in Step 4. Add `media_id` in the handoff only for that send.
 
-When you also sync history, normalize each `messages[]` item separately with `message_id`, `sender_id`, `receiver_id`, `created_at`, optional `media_url`, and `conversation_user_id`.
+When you also sync history, normalize each `messages[]` item separately. Give each item `message_id`, `sender_id`, `receiver_id`, `created_at`, optional `media_url`, and `conversation_user_id`.
 
 ### JSON Lines handoff
 
-For queue, warehouse, CRM, or agent memory, write one record per history message or outbound send to `xquik-dm-handoff.jsonl`.
+For queue, warehouse, CRM, or agent memory, write to `xquik-dm-handoff.jsonl`. Write one record per history message or outbound send.
 
 ```json
 {
@@ -413,9 +413,9 @@ curl -X POST https://xquik.com/api/v1/x/dm/987654321 \
 
 DMs accept one uploaded media ID. Do not pass multiple IDs, an empty array, or `reply_to_message_id`.
 
-The media DM send returns the same `messageId` and `success` fields as a text
-DM. Store the uploaded `media_id` beside that returned message ID. Attachment
-audits can then join the upload, recipient, sender account, and outbound message.
+The media DM send returns the `messageId` and `success` fields, like a text DM.
+Store the uploaded `media_id` beside that returned message ID. Attachment audits
+can then join the upload, recipient, sender account, and outbound message.
 
 ```json
 {
@@ -652,20 +652,21 @@ Give recipients a clear way to stop automated messages.
   <Card title="Response" icon="circle-check">
 
     Store `messageId`, `recipient_user_id`, `sender_account`, `message_text`,
-    and optional `media_id` in private audit records or support systems.
+    and optional `media_id`. Keep them in private audit records or support
+    systems.
 
   </Card>
 
   <Card title="JSON Lines" icon="braces">
 
-    Store history and send records in `xquik-dm-handoff.jsonl` for queues, warehouse loads, CRM syncs, or agent memory.
+    Store history and send records in `xquik-dm-handoff.jsonl`. Use it for queues, warehouse loads, CRM syncs, or agent memory.
 
   </Card>
 </CardGroup>
 
 <Note>
 
-**Related.** [Send Direct Message](/api-reference/x-write/send-dm) &middot; [Delete Direct Message](/api-reference/x-write/delete-dm) &middot; [Get DM History](/api-reference/x/dm-history) &middot; [Get User](/api-reference/x/twitter-profile-lookup) &middot; [Media Upload Workflow](/guides/media-upload-workflow)
+**Related.** [Send Direct Message](/api-reference/x-write/send-dm) · [Delete Direct Message](/api-reference/x-write/delete-dm) · [Get DM History](/api-reference/x/dm-history) · [Get User](/api-reference/x/twitter-profile-lookup) · [Media Upload Workflow](/guides/media-upload-workflow)
 
 </Note>
 

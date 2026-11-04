@@ -13,6 +13,7 @@ const ENDPOINT_PATTERN = new RegExp(
   "g",
 );
 const COLON_PLACEHOLDER_PATTERN = /\/:[A-Za-z][A-Za-z0-9_]*/u;
+const COMPETITOR_PAGE = /alternatives?(?:\/|\.mdx$)/u;
 const BARE_PLACEHOLDER_SEGMENTS = new Set([
   "accountId",
   "drawId",
@@ -103,8 +104,8 @@ function extractOpenApiOperations(source: string): readonly Operation[] {
 function normalizeDocumentedPath(rawPath: string): string {
   let normalized = rawPath.trim();
   normalized = normalized.replace(/^["'`]+/u, "");
-  normalized = normalized.replace(/^https:\/\/xquik\.com/u, "");
   normalized = normalized.replace(/["'`.,;:\]]+$/u, "");
+  normalized = normalized.replace(/^https:\/\/xquik\.com(?:\/|$)/u, "/");
   normalized = normalized.replace(/^\/api\/v1(?=\/)/u, "");
   normalized = normalized.split(/[?#]/u)[0] ?? normalized;
   normalized = normalized.replace(/\/$/u, "");
@@ -214,6 +215,19 @@ function collectEndpointFindings(operations: readonly Operation[]): readonly Fin
   return findings;
 }
 
+function namedEndpoints(): readonly string[] {
+  return listDocFiles(PROJECT_ROOT)
+    .filter((file): boolean => !COMPETITOR_PAGE.test(file))
+    .flatMap((file): string[] =>
+      [...readFileSync(join(PROJECT_ROOT, file), "utf8").matchAll(ENDPOINT_PATTERN)].flatMap(
+        ([, method, rawPath]): string[] =>
+          method === undefined || rawPath === undefined
+            ? []
+            : [`${method} ${normalizeDocumentedPath(rawPath)}`],
+      ),
+    );
+}
+
 describe("documented endpoint strings", (): void => {
   it("match OpenAPI route templates and placeholder style", (): void => {
     expect.assertions(1);
@@ -222,5 +236,17 @@ describe("documented endpoint strings", (): void => {
       readFileSync(join(PROJECT_ROOT, "openapi.yaml"), "utf8"),
     );
     expect(collectEndpointFindings(operations)).toStrictEqual([]);
+  });
+
+  it("name every OpenAPI operation outside competitor pages", (): void => {
+    expect.assertions(1);
+
+    const named = new Set(namedEndpoints());
+    const unnamed = extractOpenApiOperations(
+      readFileSync(join(PROJECT_ROOT, "openapi.yaml"), "utf8"),
+    )
+      .map(({ key }): string => key)
+      .filter((key): boolean => !named.has(key));
+    expect(unnamed).toStrictEqual([]);
   });
 });

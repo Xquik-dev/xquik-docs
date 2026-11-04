@@ -86,8 +86,8 @@ const CONTENT_REQUIREMENTS: readonly ContentRequirement[] = [
   {
     file: "api-reference/x-write/create-community.mdx",
     phrases: [
-      "Build a reviewable community brief",
-      "Validate the new community",
+      "x_community_creation_closed",
+      "Community creation questions",
       "Handle creation failures",
     ],
   },
@@ -203,24 +203,8 @@ const CONTENT_REQUIREMENTS: readonly ContentRequirement[] = [
     phrases: ["Confirm like removal"],
   },
   {
-    file: "alternatives/antwork.mdx",
-    phrases: ["Antwork trial evidence"],
-  },
-  {
-    file: "alternatives/black-magic.mdx",
-    phrases: ["Black Magic trial evidence"],
-  },
-  {
     file: "alternatives/hypefury.mdx",
     phrases: ["Hypefury trial evidence"],
-  },
-  {
-    file: "alternatives/postwise.mdx",
-    phrases: ["Postwise creator calendar trial", "Test the Postwise-to-Xquik handoff"],
-  },
-  {
-    file: "alternatives/postproxy.mdx",
-    phrases: ["Postproxy webhook & quota trial"],
   },
 ] as const;
 
