@@ -15108,6 +15108,14 @@ describe("repository discovery", (): void => {
     expect(collectAlternativesOverviewCardParagraphFindings()).toStrictEqual([]);
   });
 
+  it("keeps the TwitterAPIs link swap on the alternatives overview", (): void => {
+    expect.assertions(1);
+
+    const source = readFileSync("twitter-api-alternatives.mdx", "utf8");
+
+    expect(source).toContain("[TwitterAPIs, a pay-per-call X API](https://twitterapis.com)");
+  });
+
   it.each([
     [
       "TweetDeck alternative",
