@@ -13753,27 +13753,25 @@ describe("repository discovery", (): void => {
     const source = readFileSync("api-reference/x/check-follower.mdx", "utf8");
 
     expect(
-      REQUIRED_CHECK_FOLLOWER_API_HANDOFF_SNIPPETS.flatMap(
-        (snippet): readonly DiscoveryFinding[] =>
-          source.includes(snippet)
-            ? []
-            : [
-                {
-                  issue: `Check Follower API page is missing campaign-audit snippet "${snippet}".`,
-                },
-              ],
+      REQUIRED_CHECK_FOLLOWER_API_HANDOFF_SNIPPETS.flatMap((snippet): readonly DiscoveryFinding[] =>
+        source.includes(snippet)
+          ? []
+          : [
+              {
+                issue: `Check Follower API page is missing campaign-audit snippet "${snippet}".`,
+              },
+            ],
       ),
     ).toStrictEqual([]);
     expect(
-      FORBIDDEN_CHECK_FOLLOWER_RAW_OUTPUT_SNIPPETS.flatMap(
-        (snippet): readonly DiscoveryFinding[] =>
-          source.includes(snippet)
-            ? [
-                {
-                  issue: `Check Follower API page prints raw follow-check data with "${snippet}".`,
-                },
-              ]
-            : [],
+      FORBIDDEN_CHECK_FOLLOWER_RAW_OUTPUT_SNIPPETS.flatMap((snippet): readonly DiscoveryFinding[] =>
+        source.includes(snippet)
+          ? [
+              {
+                issue: `Check Follower API page prints raw follow-check data with "${snippet}".`,
+              },
+            ]
+          : [],
       ),
     ).toStrictEqual([]);
   });
@@ -14285,11 +14283,10 @@ describe("repository discovery", (): void => {
         "Architecture guide platform limitations",
         REQUIRED_ARCHITECTURE_LIMITATION_SNIPPETS,
       ),
-      ...FORBIDDEN_ARCHITECTURE_COMPONENT_SNIPPETS.flatMap(
-        (snippet): readonly DiscoveryFinding[] =>
-          architecture.includes(snippet)
-            ? [{ issue: `Architecture guide components contains forbidden "${snippet}".` }]
-            : [],
+      ...FORBIDDEN_ARCHITECTURE_COMPONENT_SNIPPETS.flatMap((snippet): readonly DiscoveryFinding[] =>
+        architecture.includes(snippet)
+          ? [{ issue: `Architecture guide components contains forbidden "${snippet}".` }]
+          : [],
       ),
       ...FORBIDDEN_ARCHITECTURE_AUTHENTICATION_SNIPPETS.flatMap(
         (snippet): readonly DiscoveryFinding[] =>
