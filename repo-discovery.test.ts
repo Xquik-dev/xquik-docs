@@ -1606,8 +1606,8 @@ const REQUIRED_LLMS_SNIPPETS = [
 const REQUIRED_SKILL_RATE_LIMIT_SNIPPETS = [
   "### Rate limits",
   "- **Read.** `GET`, `HEAD`, and `OPTIONS` share a 500 per 1s user bucket.",
-  "- **Write.** `POST`, `PUT`, and `PATCH` share a 120 per 60s user bucket.",
-  "- **Delete.** `DELETE` requests use a 60 per 60s user bucket.",
+  "- **Change.** Other methods on Xquik resources share a 6,000 per 60s user bucket.",
+  "- **X action.** Connected X account actions share a 120 per 60s user bucket.",
   "Exceeding limits returns `429 Too Many Requests` with a `Retry-After` header.",
 ] as const;
 
@@ -1622,7 +1622,7 @@ const PUBLIC_READ_RATE_LIMIT_EXPECTATIONS = [
   {
     file: "guides/rate-limits.mdx",
     required: [
-      "**Standard limits.** 500 reads per second, 120 writes per minute, and 60",
+      "**Standard limits.** 500 reads per second, 6,000 changes per minute, and 120",
       "`GET`, `HEAD`, and `OPTIONS` allow 500 requests per 1 second.",
       "Read bucket: 500 requests per 1 second",
       "reservoir: 450,",
@@ -1654,7 +1654,7 @@ const PUBLIC_READ_RATE_LIMIT_EXPECTATIONS = [
   },
   {
     file: "x-api-quickstart.mdx",
-    required: ["500 reads per 1 second. They allow 120 writes and 60 deletes per 60 seconds"],
+    required: ["500 reads per 1 second. They allow 6,000 changes and 120 X actions per 60 seconds"],
     forbidden: ["60 reads/1s, 30 writes/60s, 15 deletes/60s"],
   },
   {
@@ -1666,8 +1666,8 @@ const PUBLIC_READ_RATE_LIMIT_EXPECTATIONS = [
     file: "guides/troubleshooting.mdx",
     required: [
       "`GET`, `HEAD`, and `OPTIONS` share 500 requests per 1 second.",
-      "`POST`, `PUT`, and `PATCH` share 120 requests per 60 seconds.",
-      "`DELETE` allows 60 requests per 60 seconds.",
+      "Other methods on Xquik resources share 6,000 requests per 60 seconds.",
+      "Actions through a connected X account share 120 requests per 60 seconds.",
     ],
     forbidden: [
       "`GET`, `HEAD`, and `OPTIONS` share a limit of 60 requests per 1 second.",
@@ -1679,8 +1679,8 @@ const PUBLIC_READ_RATE_LIMIT_EXPECTATIONS = [
     file: "guides/architecture.mdx",
     required: [
       "`GET`, `HEAD`, and `OPTIONS` share a standard user limit. It is 500 requests per 1 second.",
-      "`POST`, `PUT`, and `PATCH` share a standard user limit. It is 120 requests per 60 seconds.",
-      "`DELETE` requests have a limit of 60 requests per 60 seconds.",
+      "Other methods on Xquik resources share a standard user limit. It is 6,000 requests per 60 seconds.",
+      "Actions through a connected X account allow 120 requests per 60 seconds.",
     ],
     forbidden: [
       "standard user limit of 10 requests per",
@@ -2622,7 +2622,7 @@ const FORBIDDEN_SEARCH_TWEETS_QUERY_PARAM_SNIPPETS = ["/x/tweets/search?query="]
 const REQUIRED_RATE_LIMIT_TROUBLESHOOTING_SNIPPETS = [
   "Respect `Retry-After`. Otherwise start at 1 second, add jitter, and stop after 3 retries.",
   "Requests sent before the fixed window resets keep returning `429` until `Retry-After` elapses.",
-  "Standard read throttles return `Retry-After: 1`. Standard write and delete",
+  "Standard read throttles return `Retry-After: 1`. Standard change and X action",
   "Account connection returns the remaining",
   "window. A login cooldown returns its own remaining duration.",
   '"error": "rate_limit_exceeded"',
@@ -2644,7 +2644,7 @@ const FORBIDDEN_RATE_LIMIT_TROUBLESHOOTING_SNIPPETS = [
 
 const REQUIRED_TWITTER_RATE_LIMIT_GUIDE_SNIPPETS = [
   'title: "Twitter API rate limits, 429 errors & retry-after"',
-  "Standard API keys for one account share the same method buckets.",
+  "Standard API keys for one account share the same buckets.",
   "| Follow or remove follower | `POST /x/users/{id}/follow` and `POST /x/users/{id}/remove-follower` | 20 actions per minute and 400 per day, shared |",
   "| Connect X account | `POST /x/accounts` | 10 attempts per 15 minutes |",
   "The window starts with your first request. It does not follow wall-clock seconds.",
@@ -7995,12 +7995,12 @@ const REQUIRED_ARCHITECTURE_DATA_ISOLATION_SNIPPETS = [
 const REQUIRED_ARCHITECTURE_RATE_LIMIT_SNIPPETS = [
   '<Card title="Read bucket" icon="database">',
   "`GET`, `HEAD`, and `OPTIONS` share a standard user limit. It is 500 requests per 1 second.",
-  '<Card title="Write bucket" icon="pen-line">',
-  "`POST`, `PUT`, and `PATCH` share a standard user limit. It is 120 requests per 60 seconds.",
-  '<Card title="Delete bucket" icon="circle-x">',
-  "`DELETE` requests have a limit of 60 requests per 60 seconds.",
+  '<Card title="Change bucket" icon="pen-line">',
+  "Other methods on Xquik resources share a standard user limit. It is 6,000 requests per 60 seconds.",
+  '<Card title="X action bucket" icon="send">',
+  "Actions through a connected X account allow 120 requests per 60 seconds.",
   '<Card title="Retry window" icon="timer">',
-  "Throttled reads return `Retry-After: 1`. Throttled writes and deletes",
+  "Throttled reads return `Retry-After: 1`. Throttled changes and X actions",
 ] as const;
 
 const REQUIRED_ARCHITECTURE_BILLING_SNIPPETS = [
@@ -8321,7 +8321,7 @@ const REQUIRED_SEND_DM_API_SNIPPETS = [
   "It does not send group messages or accept public media URLs.",
   "## Poll and verify the direct message",
   "Wait for `terminal: true` before closing the send job.",
-  "The Xquik POST limit is 120 requests per minute.",
+  "Each account gets 120 X actions per minute.",
   "## Handle every Twitter DM API response",
   "`422 x_dm_not_allowed` means this sender cannot message that person.",
   "Try another approved sender or ask the person to allow DMs.",

@@ -45,8 +45,8 @@ Reach for Xquik in these cases.
 ### Rate limits
 
 - **Read.** `GET`, `HEAD`, and `OPTIONS` share a 500 per 1s user bucket.
-- **Write.** `POST`, `PUT`, and `PATCH` share a 120 per 60s user bucket.
-- **Delete.** `DELETE` requests use a 60 per 60s user bucket.
+- **Change.** Other methods on Xquik resources share a 6,000 per 60s user bucket.
+- **X action.** Connected X account actions share a 120 per 60s user bucket.
 
 Exceeding limits returns `429 Too Many Requests` with a `Retry-After` header.
 Retry safe reads only on `429` and temporary `5xx` responses. For writes, poll
