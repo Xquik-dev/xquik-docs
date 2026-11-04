@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
@@ -9,6 +10,10 @@ const MAX_DESCRIPTION_LENGTH = 160;
 const MIN_RENDERED_TITLE_LENGTH = 50;
 const MAX_RENDERED_TITLE_LENGTH = 60;
 const TITLE_SUFFIX = " - Xquik";
+const URL_WORDS_PER_TITLE_MATCH = 5;
+const DOCS_ORIGIN = "https://docs.xquik.com";
+const INTERNAL_LINK =
+  /\]\((\/[^)\s]*|https:\/\/docs\.xquik\.com[^)\s]*)\)|href=\{?["'](\/[^"']*|https:\/\/docs\.xquik\.com[^"']*)["']|"href":\s*"(\/[^"]*)"/gu;
 const SITE_DESCRIPTION =
   "Search tweets, export followers and replies, retrieve profiles and timelines, monitor accounts, post tweets, and use webhooks, SDKs & MCP. Not affiliated with X Corp.";
 
@@ -57,6 +62,33 @@ function frontmatterValue(metadata: string, key: string): string | undefined {
   return match?.[1] ?? match?.[2] ?? match?.[3]?.trim();
 }
 
+function words(text: string): readonly string[] {
+  return text
+    .toLowerCase()
+    .split(/[^a-z0-9]+/u)
+    .filter(Boolean);
+}
+
+function urlWordsInTitle(page: string, renderedTitle: string): readonly string[] {
+  const titleWords = new Set(words(renderedTitle));
+  return words(page).filter((word): boolean => titleWords.has(word));
+}
+
+function trackedFiles(...patterns: readonly string[]): readonly string[] {
+  return execFileSync("git", ["ls-files", "--", ...patterns], { encoding: "utf8" })
+    .trim()
+    .split("\n");
+}
+
+function linkedPaths(source: string): readonly string[] {
+  const markup = source.replace(/```[\s\S]*?```/gu, "").replace(/`[^`\n]*`/gu, "");
+  return [...markup.matchAll(INTERNAL_LINK)].map((match): string => {
+    const url = match[1] ?? match[2] ?? match[3] ?? "";
+    const path = url.startsWith(DOCS_ORIGIN) ? url.slice(DOCS_ORIGIN.length) : url;
+    return path.split(/[#?]/u)[0] || "/";
+  });
+}
+
 function loadDocsConfig(): DocsConfig {
   return docsConfigSchema.parse(JSON.parse(readFileSync("docs.json", "utf8")));
 }
@@ -94,6 +126,15 @@ function collectMetadataFindings(): readonly MetadataFinding[] {
         findings.push({
           file,
           issue: `Rendered title is ${renderedTitle.length} characters; maximum is ${MAX_RENDERED_TITLE_LENGTH}.`,
+        });
+      }
+
+      const urlWords = words(page).length;
+      const matched = urlWordsInTitle(page, renderedTitle).length;
+      if (matched * URL_WORDS_PER_TITLE_MATCH < urlWords) {
+        findings.push({
+          file,
+          issue: `Title holds ${matched} of ${urlWords} URL words; it needs 1 in ${URL_WORDS_PER_TITLE_MATCH}.`,
         });
       }
 
@@ -160,6 +201,24 @@ describe("SEO metadata", (): void => {
       openGraphDescription: SITE_DESCRIPTION,
       searchPrompt: "Search docs",
     });
+  });
+
+  it("links every internal URL straight to a page or file", (): void => {
+    expect.assertions(1);
+
+    const targets = new Set([
+      ...navigationPages().map((page): string => `/${page}`),
+      ...trackedFiles()
+        .filter((file): boolean => !/\.(?:mdx?|ts)$/u.test(file))
+        .map((file): string => `/${file}`),
+    ]);
+    const findings = ["docs.json", ...trackedFiles("*.mdx")].flatMap((file): readonly string[] =>
+      linkedPaths(readFileSync(file, "utf8"))
+        .filter((path): boolean => !targets.has(path))
+        .map((path): string => `${file} links ${path}, which redirects or fails.`),
+    );
+
+    expect(findings).toStrictEqual([]);
   });
 
   it("disables timezone-sensitive page timestamps", (): void => {
