@@ -5,6 +5,10 @@ import { describe, expect, it } from "vitest";
 
 const PROJECT_ROOT = process.cwd();
 const LINK_SOURCE_DIRECTORIES = ["api-reference", "guides"] as const;
+const SKIPPED_DIRECTORIES: ReadonlySet<string> = new Set(["node_modules"]);
+const INTERNAL_LINK = /\]\((\/[^)\s#?]*)|href="(\/[^"#?]*)/gu;
+const ASSET_PATH = /\.[a-z\d]+$/u;
+const MDX_EXTENSION = ".mdx";
 
 interface LinkCluster {
   readonly minimumInboundSources: number;
@@ -129,7 +133,39 @@ function listMdxFiles(dir: string): readonly string[] {
   });
 }
 
+function listPageFiles(): readonly string[] {
+  return readdirSync(PROJECT_ROOT, { withFileTypes: true }).flatMap((entry) => {
+    if (entry.name.startsWith(".") || SKIPPED_DIRECTORIES.has(entry.name)) {
+      return [];
+    }
+    if (entry.isDirectory()) {
+      return listMdxFiles(join(PROJECT_ROOT, entry.name));
+    }
+    return entry.name.endsWith(MDX_EXTENSION) ? [entry.name] : [];
+  });
+}
+
+function pageRoute(link: string): string {
+  const route = link.replace(/\/$/u, "");
+  return route === "" ? "/index" : route;
+}
+
 describe("internal link coverage", (): void => {
+  it("links each internal route to a page file, so no link redirects", (): void => {
+    expect.assertions(1);
+
+    const files = listPageFiles();
+    const routes = new Set(files.map((file): string => `/${file.slice(0, -MDX_EXTENSION.length)}`));
+    const findings = files.flatMap((file): string[] =>
+      [...readFileSync(join(PROJECT_ROOT, file), "utf8").matchAll(INTERNAL_LINK)]
+        .map((match): string => match[1] ?? match[2] ?? "")
+        .filter((link): boolean => !ASSET_PATH.test(link) && !routes.has(pageRoute(link)))
+        .map((link): string => `${file} links ${link}, which has no page.`),
+    );
+
+    expect(findings).toStrictEqual([]);
+  });
+
   it("keeps every previously underlinked X API route well connected", (): void => {
     expect.assertions(1);
 
