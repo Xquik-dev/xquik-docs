@@ -6327,7 +6327,7 @@ const FORBIDDEN_USER_MEDIA_API_RAW_SNIPPETS = [
 
 const REQUIRED_EXTRACTION_WORKFLOW_SNIPPETS = [
   "Use the Twitter scraper API to scrape tweets, export follower and following profiles, collect reply authors, paginate JSON, and download CSV, JSON, or XLSX.",
-  'title: "Twitter scraper API for tweets, replies & followers"',
+  'title: "Twitter scraper API extraction of tweets & followers"',
   "Use `reply_extractor` for reply authors and `follower_explorer` for profiles.",
   "Jobs also cover posts, communities, lists, likes, reposts, quotes, and media.",
   "Retrieve structured JSON or export CSV, JSON, or XLSX files.",
@@ -8681,7 +8681,7 @@ const REQUIRED_TARGET_AUDIENCE_DISCOVERY_WORKFLOW_SNIPPETS = [
 ] as const;
 
 const REQUIRED_BRAND_MONITORING_WORKFLOW_SNIPPETS = [
-  'title: "Monitor Twitter accounts & keywords with webhooks"',
+  'title: "Twitter brand monitoring with keywords & webhooks"',
   "sidebarTitle: Brand monitoring",
   "Monitor Twitter accounts, keywords, mentions, hashtags, products, and campaigns every second. Deliver signed webhook alerts with replayable stored events.",
   "## Pick the monitor path",
