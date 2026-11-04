@@ -1,0 +1,119 @@
+---
+title: "snscrape alternative for Twitter scraping in Python"
+sidebarTitle: "snscrape"
+description: "snscrape Twitter scrapes have failed since June 2023. Xquik searches tweets from Python with no X account or cookies, at USD 0.00015 a tweet. See the code."
+keywords: ["snscrape", "snscrape twitter", "snscrape alternative", "snscrape Python"]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+<LlmsDirective />
+
+snscrape is an open-source Python scraper for social networks. Its Twitter module stopped working in 2023. This page shows what broke and how to run the same jobs with Xquik.
+
+<Info>
+
+Check the snscrape repository for its current state before you plan around it.
+
+</Info>
+
+## What happened to snscrape on Twitter
+
+[Issue #846](https://github.com/JustAnotherArchivist/snscrape/issues/846) reported in April 2023 that Twitter searches failed with `blocked (403)`. [Issue #996](https://github.com/JustAnotherArchivist/snscrape/issues/996) opened on 2023-06-30. It says all Twitter scrapes fail with `blocked (404)`. It was still open on 2026-11-04.
+
+The last snscrape release, v0.7.0.20230622, came out 8 days before that issue. The repository has had no commit since then.
+
+## Search tweets without an X account
+
+Xquik's Python SDK runs each search on Xquik's infrastructure. You add no X account and no cookies. So no account of yours can get banned.
+
+```bash
+pip install x_twitter_scraper
+export X_TWITTER_SCRAPER_API_KEY="xq_YOUR_KEY_HERE"
+```
+
+```python
+from x_twitter_scraper import XTwitterScraper
+
+client = XTwitterScraper()
+page = client.x.tweets.search(q="python since:2026-10-01 until:2026-10-02", limit=10)
+for tweet in page.tweets:
+    print(tweet.id, tweet.text)
+```
+
+Each returned tweet costs 1 credit, or USD 0.00015 with pay-as-you-go credits. Empty searches cost nothing. Continue with `next_cursor` to read the next page.
+
+Xquik keeps the X search operators you send, such as `from:`, `since:` and `until:`. The [operator list](https://github.com/Xquik-dev/x-twitter-advanced-search) covers the rest.
+
+## snscrape scrapers and their Xquik calls
+
+| snscrape scraper                                    | Xquik call                                                      |
+| --------------------------------------------------- | --------------------------------------------------------------- |
+| `TwitterSearchScraper`                              | [Search tweets](/api-reference/x/search-tweets)                 |
+| `TwitterHashtagScraper` and `TwitterCashtagScraper` | [Search tweets](/api-reference/x/search-tweets) with `#` or `$` |
+| `TwitterUserScraper` and `TwitterProfileScraper`    | [User tweets](/api-reference/x/user-tweets)                     |
+| `TwitterTweetScraper`                               | [Tweet thread](/api-reference/x/tweet-thread)                   |
+| `TwitterListPostsScraper`                           | [List tweets](/api-reference/x/list-tweets)                     |
+| `TwitterCommunityScraper`                           | [Community tweets](/api-reference/x/community-tweets)           |
+| `TwitterUsersScraper`                               | [Batch users](/api-reference/x/batch-users)                     |
+| `TwitterTrendsScraper`                              | [Trends](/api-reference/trends/list)                            |
+
+## snscrape vs Xquik
+
+| Area           | snscrape                                    | Xquik                                                   |
+| -------------- | ------------------------------------------- | ------------------------------------------------------- |
+| Twitter status | Every Twitter scrape fails, per issue #996. | Search, timelines, replies and followers work today.    |
+| X account      | None needed while it worked.                | None needed. Xquik needs only its own API key.          |
+| Cost           | Free under GPL-3.0.                         | 1 credit per returned tweet, USD 0.00015 pay-as-you-go. |
+| Output         | Python objects, or JSON Lines from the CLI. | JSON pages, plus CSV, JSON or XLSX export files.        |
+| Upkeep         | You fix the scraper when X changes.         | Xquik keeps the API working when X changes.             |
+
+## Move a snscrape job to Xquik
+
+<Steps>
+
+  <Step title="Copy the query">
+
+    Keep the search string you passed to snscrape. Xquik reads the same operators.
+
+  </Step>
+  <Step title="Swap the call">
+
+    Replace the scraper class with the Xquik call from the table above. Map each field you stored to the new response.
+
+  </Step>
+  <Step title="Page and store">
+
+    Read `next_cursor` until it is empty. Store tweet IDs so a rerun skips rows you already have.
+
+  </Step>
+  <Step title="Export large pulls">
+
+    Run an extraction job for thousands of tweets. Download the result as CSV, JSON or XLSX.
+
+  </Step>
+</Steps>
+
+<CardGroup cols={2}>
+
+  <Card title="Python SDK" icon="code" href="/sdks/python">
+
+    Install the SDK, set the API key and run your first search.
+
+  </Card>
+  <Card title="Search tweets by date" icon="calendar" href="/guides/search-tweets-by-date">
+
+    Pull tweets from a fixed date window with `since:` and `until:`.
+
+  </Card>
+  <Card title="twscrape comparison" icon="code" href="/alternatives/twscrape">
+
+    Compare the account-based twscrape library with Xquik.
+
+  </Card>
+  <Card title="Official snscrape repository" icon="external-link" href="https://github.com/JustAnotherArchivist/snscrape">
+
+    Check the current code and open issues.
+
+  </Card>
+</CardGroup>
