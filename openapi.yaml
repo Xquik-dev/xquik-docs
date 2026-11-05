@@ -2596,17 +2596,19 @@ paths:
           schema:
             type: integer
             minimum: 1
-            maximum: 72
+            maximum: 168
             default: 6
-          description: Lookback window in hours (1-72, default 6).
+          description:
+            Lookback window in hours (1-168, default 6). Radar keeps 7 days of
+            items.
         - name: limit
           in: query
           schema:
             type: integer
             minimum: 1
-            maximum: 100
+            maximum: 1000
             default: 50
-          description: Number of items to return (1-100, default 50).
+          description: Number of items to return (1-1000, default 50).
         - name: region
           in: query
           schema:
@@ -7754,6 +7756,8 @@ paths:
                         tweetId: '1234567890'
                         mediaType: photo
                         mediaUrl: 'https://media.xquik.com/tweet_1234567890/0.jpg'
+                        posterUrl: null
+                        qualities: []
                         fileSize: '2097152'
                         createdAt: '2026-10-16T11:00:00.000Z'
                         authorUsername: elonmusk
@@ -7776,6 +7780,8 @@ paths:
                           likes,
                           mediaType,
                           mediaUrl,
+                          posterUrl,
+                          qualities,
                           retweets,
                           tweetId,
                           tweetText,
@@ -7798,6 +7804,37 @@ paths:
                             post or its media at save time, or sent no post
                             flag. Xquik keeps no copy of those files.
                           example: 'https://media.xquik.com/tweet_1234567890/0.jpg'
+                        posterUrl:
+                          type: [string, 'null']
+                          description:
+                            Cover image of a video or GIF. Null for photos &
+                            files first saved to Xquik before 2026-11-03.
+                          example: null
+                        qualities:
+                          type: array
+                          description:
+                            The MP4 sizes X stores for a video, highest bitrate
+                            first. Empty for photos, GIFs & files first saved to
+                            Xquik before 2026-11-03.
+                          items:
+                            type: object
+                            required: [bitrate, height, url, width]
+                            properties:
+                              bitrate:
+                                type: integer
+                                minimum: 0
+                                example: 2176000
+                              height:
+                                type: integer
+                                minimum: 1
+                                example: 720
+                              url:
+                                type: string
+                                example: 'https://video.twimg.com/amplify_video/1/vid/avc1/1280x720/a.mp4'
+                              width:
+                                type: integer
+                                minimum: 1
+                                example: 1280
                         fileSize:
                           type: [string, 'null']
                           description: File size in bytes, as a string
@@ -23611,6 +23648,12 @@ components:
           description: >
             Attached media with outputPreset=flat. Default nested output uses
             enrichmentData.tweet.media.
+          items: { $ref: '#/components/schemas/TweetMedia' }
+        quotedMedia:
+          type: array
+          description: >
+            Media of the quoted post with outputPreset=flat. Default nested
+            output uses enrichmentData.tweet.quotedMedia.
           items: { $ref: '#/components/schemas/TweetMedia' }
         bookmarkCount: *whole-number
         likeCount: *whole-number
