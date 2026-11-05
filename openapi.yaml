@@ -3887,6 +3887,7 @@ paths:
                   maxReplies: 100000
                   maxQuotes: 10000
                   textOnlyTerms: 'Artemis'
+                  maxHashtags: 3
                   verifiedOnly: true
                   blueVerifiedOnly: false
                   replies: 'exclude'
@@ -6331,6 +6332,7 @@ paths:
         - $ref: '#/components/parameters/MaxReplies'
         - $ref: '#/components/parameters/MaxQuotes'
         - $ref: '#/components/parameters/TextOnlyTerms'
+        - $ref: '#/components/parameters/MaxHashtags'
         - $ref: '#/components/parameters/BlueVerifiedOnly'
         - $ref: '#/components/parameters/CardName'
         - $ref: '#/components/parameters/Source'
@@ -15721,6 +15723,14 @@ components:
         Keeps a post only when at least 1 of these words or quoted phrases
         appears outside the author's name and username, such as in its text, a
         link, its card or a quoted post.
+    MaxHashtags:
+      name: maxHashtags
+      in: query
+      schema: *nonnegative-integer
+      description: >-
+        Keeps a post only when it holds at most this many different hashtags.
+        Pair 1 with hashtags to find posts where that hashtag stands alone. 0
+        keeps posts with no hashtag.
     BlueVerifiedOnly:
       name: blueVerifiedOnly
       in: query
@@ -21606,7 +21616,8 @@ components:
         that post. following.added & following.removed fire when the account
         follows or unfollows someone, with that account's profile.
         follower.added & follower.removed fire when someone follows the account
-        or leaves its followers, with that account's profile. Xquik names lost
+        or leaves its followers, with that account's profile. An old follow X
+        lists again fires only after a reported removal. Xquik names lost
         followers for accounts with up to 100,000 followers.
         profile.followers.changed & profile.following.changed fire when the
         account's follower or following count moves, at most once a minute each.
@@ -21917,6 +21928,13 @@ components:
             Collects a post only when 1 of these words or quoted phrases is in
             its text, a link, its card or a quoted post. The author's name and
             username don't count.
+        maxHashtags:
+          type: integer
+          minimum: 0
+          description: >-
+            Collects a post only when it holds at most this many different
+            hashtags. Pair 1 with hashtags to find posts where that hashtag
+            stands alone.
         blueVerifiedOnly:
           type: boolean
           default: false
@@ -23347,6 +23365,15 @@ components:
             Whether followedAt is X's exact time of this follow. False means
             followedAt is the earliest time the follow can have.
           example: true
+        followKind:
+          type: string
+          enum: [refollow, return]
+          description: >-
+            Why a removed account is back, on following.added & follower.added.
+            refollow means the account followed again. return means X lists the
+            old follow again, so it never ended. It covers removals the monitor
+            reported in the last 30 days. It is missing on a first follow.
+          example: refollow
         reason:
           type: string
           enum: [unavailable, unfollowed]
