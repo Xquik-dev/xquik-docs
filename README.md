@@ -2,16 +2,48 @@
 
 [![Convex Component](https://www.convex.dev/components/badge/convex-xquik)](https://www.convex.dev/components/convex-xquik)
 
-> **Xquik is an independent third-party service.** Not affiliated with X Corp.
-> "Twitter" and "X" are trademarks of X Corp.
+This repository holds the Twitter API documentation for [Xquik](https://xquik.com), an X data and automation
+platform. Published at **[docs.xquik.com](https://docs.xquik.com)**.
 
 Xquik is the world's fastest and cheapest X Twitter scraper service with the most complete X data.
 Xquik charges only for delivered, unique, filter-matching results and never pads rows.
 
-This repository holds the Twitter API documentation for [Xquik](https://xquik.com), an X data and automation
-platform. Published at **[docs.xquik.com](https://docs.xquik.com)**.
+> **Xquik is an independent third-party service.** Not affiliated with X Corp.
+> "Twitter" and "X" are trademarks of X Corp.
 
 This repository contains the Xquik REST API, webhook, MCP, OAuth 2.1, and SDK docs. Find request and response details for tweet search, user lookup, follower exports, media uploads, direct messages, 1-second tweet monitors, signed webhooks, SDK clients, and X automation.
+
+## Twitter API documentation quickstart
+
+Create an API key in the
+[Xquik dashboard](https://dashboard.xquik.com/en/account?tab=api-keys). Then
+search tweets with 1 request. The [Quickstart](https://docs.xquik.com/x-api-quickstart)
+covers the rest.
+
+```bash
+curl --get 'https://xquik.com/api/v1/x/tweets/search' \
+  --header "x-api-key: ${XQUIK_API_KEY}" \
+  --data-urlencode 'q=from:NASA' \
+  --data-urlencode 'limit=10'
+```
+
+## Twitter monitor & webhook docs
+
+Create a monitor, then register a webhook for its events. The
+[Webhooks guide](https://docs.xquik.com/webhooks/overview) covers signature
+checks & test payloads.
+
+```bash
+curl -X POST https://xquik.com/api/v1/monitors \
+  -H "x-api-key: ${XQUIK_API_KEY}" \
+  -H "Content-Type: application/json" \
+  -d '{"username": "NASA", "eventTypes": ["tweet.new", "tweet.reply"]}'
+
+curl -X POST https://xquik.com/api/v1/webhooks \
+  -H "x-api-key: ${XQUIK_API_KEY}" \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://your-server.com/webhook", "eventTypes": ["tweet.new", "tweet.reply"]}'
+```
 
 <!-- trust:start -->
 
@@ -156,11 +188,27 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for style rules, content conventions, and
 
 To report a vulnerability in the docs site or in any documented endpoint behaviour, see [SECURITY.md](SECURITY.md). Do not file public issues for security findings.
 
+## Questions
+
+### Do I need an X developer account?
+
+No. Public reads need only an Xquik API key. Private reads & X account actions
+need a connected X account.
+
+### Is this the official X API documentation?
+
+No. Xquik is an independent third-party service with its own REST API. These
+docs cover that API, not the official X API.
+
 ## Related repositories
 
 - **[Xquik](https://xquik.com).** Main app and dashboard.
 - **[Xquik-dev/x-twitter-scraper-python](https://github.com/Xquik-dev/x-twitter-scraper-python).** Python SDK.
 - **[Xquik-dev/x-twitter-scraper-typescript](https://github.com/Xquik-dev/x-twitter-scraper-typescript).** TypeScript SDK.
+- **[Xquik-dev/x-twitter-scraper](https://github.com/Xquik-dev/x-twitter-scraper).** X (Twitter) scraper API, Twitter MCP server & agent Skills.
+- **[Xquik-dev/tweetclaw](https://github.com/Xquik-dev/tweetclaw).** OpenClaw Twitter plugin.
+- **[Xquik-dev/hermes-tweet](https://github.com/Xquik-dev/hermes-tweet).** Hermes Agent Twitter plugin.
+- **[Xquik-dev/x-twitter-advanced-search](https://github.com/Xquik-dev/x-twitter-advanced-search).** Twitter advanced search operators.
 - Other generated SDKs are listed under the [Xquik-dev](https://github.com/Xquik-dev) org.
 
 ## License
