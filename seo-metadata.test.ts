@@ -11,7 +11,6 @@ const MIN_RENDERED_TITLE_LENGTH = 50;
 const MAX_RENDERED_TITLE_LENGTH = 60;
 const TITLE_SUFFIX = " - Xquik";
 const URL_WORDS_PER_TITLE_MATCH = 5;
-const DOCS_ORIGIN = "https://docs.xquik.com";
 const INTERNAL_LINK =
   /\]\((\/[^)\s]*|https:\/\/docs\.xquik\.com[^)\s]*)\)|href=\{?["'](\/[^"']*|https:\/\/docs\.xquik\.com[^"']*)["']|"href":\s*"(\/[^"]*)"/gu;
 const SITE_DESCRIPTION =
@@ -84,7 +83,7 @@ function linkedPaths(source: string): readonly string[] {
   const markup = source.replace(/```[\s\S]*?```/gu, "").replace(/`[^`\n]*`/gu, "");
   return [...markup.matchAll(INTERNAL_LINK)].map((match): string => {
     const url = match[1] ?? match[2] ?? match[3] ?? "";
-    const path = url.startsWith(DOCS_ORIGIN) ? url.slice(DOCS_ORIGIN.length) : url;
+    const path = url.replace(/^https:\/\/docs\.xquik\.com(?=[/?#]|$)/u, "");
     return path.split(/[#?]/u)[0] || "/";
   });
 }
