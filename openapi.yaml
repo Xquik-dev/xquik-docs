@@ -209,7 +209,8 @@ tags:
     description: >-
       AI analysis of posts, at 2 credits per analyzed post. AI analysis bills
       only the posts it analyzed. AI answers carry probabilities, confidence & a
-      question version. Changes across analysis runs don't flip on noise.
+      question version. AI analysis reads each post's images with its text, at
+      no extra cost. Changes across analysis runs don't flip on noise.
   - name: Articles
     description: Long-form X Article extraction
   - name: Broadcasts
@@ -3998,9 +3999,18 @@ paths:
               schema:
                 type: object
                 required:
-                  [id, pollAfterMs, status, statusUrl, toolType, waitUrl]
+                  [id, url, pollAfterMs, status, statusUrl, toolType, waitUrl]
                 properties:
                   id: { type: string, example: 'ext_123' }
+                  url:
+                    type: string
+                    format: uri
+                    description: >-
+                      Dashboard page of the job. A signed-in user follows its
+                      progress there and downloads every row as CSV, XLSX, JSON,
+                      Markdown, PDF or text, so give this link to a person who
+                      wants the whole list as a file.
+                    example: 'https://dashboard.xquik.com/activity/a1b2c3d4e5f6'
                   pollAfterMs: { type: integer, minimum: 0, example: 1000 }
                   statusUrl:
                     { type: string, example: '/api/v1/extractions/a1b2c3d4' }
@@ -4212,7 +4222,8 @@ paths:
                   nextCursor: { type: string, example: 'abc123' }
               example:
                 job:
-                  id: 'ext_123'
+                  id: 'a1b2c3d4e5f6'
+                  url: 'https://dashboard.xquik.com/activity/a1b2c3d4e5f6'
                   toolType: follower_explorer
                   status: completed
                   totalResults: 0
@@ -12989,11 +13000,11 @@ paths:
           in: query
           schema: { type: string, enum: [Latest, Top], default: Latest }
           description: >
-            Latest for newest first, or Top for the quotes X ranks highest. Top
-            is X's ranking, not a count order, & a later page can hold a quote X
-            ranks higher. Any case works. Alias sort, which also takes Recency &
-            Relevance. Send the same value with each cursor. Standard pages list
-            Latest.
+            Latest for newest first, or Top for the quotes X ranks highest. A
+            later Latest page can hold a newer quote. Top is X's ranking, not a
+            count order, & a later page can hold a quote X ranks higher. Any
+            case works. Alias sort, which also takes Recency & Relevance. Send
+            the same value with each cursor. Standard pages list Latest.
         - $ref: '#/components/parameters/TweetSinceTime'
         - $ref: '#/components/parameters/TweetUntilTime'
         - $ref: '#/components/parameters/FromUser'
@@ -14416,6 +14427,7 @@ paths:
       summary: Analyze the sentiment of posts with AI
       description:
         Answers each post's attitude, its intensity & its sarcasm probability.
+        Sentiment analysis names each post's main emotion, such as joy or anger.
         Send post IDs, an X search, an account, a List, a post's replies or
         quotes, or your own texts. Each analyzed post costs 2 credits. A post
         without an analysis costs nothing.
@@ -17003,7 +17015,7 @@ components:
                   status: 'succeeded'
                   answers:
                     - questionId: 'sentiment'
-                      questionVersion: 'sentiment:2'
+                      questionVersion: 'sentiment:3'
                       type: 'choice'
                       value: 'mixed'
                       confidence: 0.88
@@ -17014,7 +17026,7 @@ components:
                         neutral: 0.01
                         unclear: 0.01
                     - questionId: 'intensity'
-                      questionVersion: 'sentiment:2'
+                      questionVersion: 'sentiment:3'
                       type: 'score'
                       value: 1
                       confidence: 0.81
@@ -17025,13 +17037,27 @@ components:
                         - 'An emphatic or emotional attitude with strong
                           wording.'
                     - questionId: 'sarcasm'
-                      questionVersion: 'sentiment:2'
+                      questionVersion: 'sentiment:3'
                       type: 'probability'
                       probability: 0.03
+                    - questionId: 'emotion'
+                      questionVersion: 'sentiment:3'
+                      type: 'choice'
+                      value: 'none'
+                      confidence: 0.64
+                      probabilities:
+                        joy: 0.03
+                        anger: 0.2
+                        sadness: 0.06
+                        fear: 0
+                        surprise: 0.01
+                        disgust: 0.01
+                        none: 0.69
                   questions:
-                    - { id: 'sentiment', version: 'sentiment:2' }
-                    - { id: 'intensity', version: 'sentiment:2' }
-                    - { id: 'sarcasm', version: 'sentiment:2' }
+                    - { id: 'sentiment', version: 'sentiment:3' }
+                    - { id: 'intensity', version: 'sentiment:3' }
+                    - { id: 'sarcasm', version: 'sentiment:3' }
+                    - { id: 'emotion', version: 'sentiment:3' }
                   contextBytes: 612
                   contextAvailability:
                     quote: 'not_applicable'
@@ -17040,7 +17066,13 @@ components:
                     media: 'not_supplied'
                     article: 'not_supplied'
                     postText: 'full'
-                answers: { sentiment: 'mixed', intensity: 1, sarcasm: 0.03 }
+                answers:
+                  {
+                    sentiment: 'mixed',
+                    intensity: 1,
+                    sarcasm: 0.03,
+                    emotion: 'none',
+                  }
                 sourceDomains: []
                 cashtags: []
                 monitor:
@@ -23364,15 +23396,23 @@ components:
       description: Extraction job tracking status, tool type, and result count.
       type: object
       example:
-        id: id
+        id: a1b2c3d4e5f6
+        url: 'https://dashboard.xquik.com/activity/a1b2c3d4e5f6'
         toolType: follower_explorer
         status: completed
         totalResults: 0
         createdAt: '2026-08-23T10:00:00Z'
-      required: [id, toolType, status, totalResults, createdAt]
+      required: [id, url, toolType, status, totalResults, createdAt]
       properties:
         id:
           type: string
+        url:
+          type: string
+          format: uri
+          description: >-
+            Dashboard page where a signed-in user follows this job & downloads
+            its rows as CSV, XLSX, JSON, Markdown, PDF or text.
+          example: 'https://dashboard.xquik.com/activity/a1b2c3d4e5f6'
         toolType:
           $ref: '#/components/schemas/ExtractionToolType'
         status:
@@ -30610,7 +30650,10 @@ components:
               has ranks, name? & repo?.
             - hacker_news has points & numberComments.
             - google_trends has approxTraffic, active?, crossSources?, endedAt?,
-              growthPercent?, news?, relatedSearches? & topics?.
+              growthPercent?, news?, relatedSearches?, topics? & volumes?.
+              Each news item has title, url, source, imageUrl? & publishedAt?.
+              volumes lists [unix seconds, searches] pairs, 1 for each change
+              Xquik saw, up to 48.
             - polymarket has volume24hr, liquidity, closesAt?, competitive?,
               crossSources?, move1d?, move1h?, odds?, startedAt?, topics?,
               volume?, volume1mo? & volume1wk?. Each odd has label, price,
@@ -31035,8 +31078,8 @@ components:
 
     TweetAnalysisSettings:
       description:
-        Analysis settings, the same as the analysis input of Xquik's AI Actors.
-        Leave it out for the route's own questions.
+        Analysis settings, the same as the analysis input of Xquik's AI Actors,
+        plus images. Leave it out for the route's own questions.
       type: object
       additionalProperties: false
       example:
@@ -31127,6 +31170,14 @@ components:
           default: 16
           description: Posts analyzed at the same time.
           example: 16
+        images:
+          type: boolean
+          default: true
+          description:
+            Reads up to 4 images per post with its text, at no extra cost.
+            Images of posts X marks sensitive stay unread. Send false to analyze
+            the text alone.
+          example: true
 
     TweetAnalysisQuestion:
       description:
@@ -31285,7 +31336,7 @@ components:
                 required: [id, version]
                 properties:
                   id: { type: string, example: 'sentiment' }
-                  version: { type: string, example: 'sentiment:2' }
+                  version: { type: string, example: 'sentiment:3' }
             contextBytes:
               type: integer
               minimum: 0
@@ -31310,8 +31361,11 @@ components:
                   example: 'available'
                 media:
                   type: string
-                  enum: [text_descriptions_only, not_supplied]
-                  example: 'not_supplied'
+                  enum: [images, text_descriptions_only, not_supplied]
+                  description:
+                    images when the AI read the post's images.
+                    text_descriptions_only when it read only their alt text.
+                  example: 'images'
                 article:
                   type: string
                   enum: [text_blocks, summary, not_supplied]
@@ -31452,7 +31506,7 @@ components:
       required: [questionId, questionVersion, type]
       example:
         questionId: 'sentiment'
-        questionVersion: 'sentiment:2'
+        questionVersion: 'sentiment:3'
         type: 'choice'
         value: 'negative'
         confidence: 0.93
@@ -31466,7 +31520,7 @@ components:
           }
       properties:
         questionId: { type: string, example: 'sentiment' }
-        questionVersion: { type: string, example: 'sentiment:2' }
+        questionVersion: { type: string, example: 'sentiment:3' }
         type:
           type: string
           enum: [choice, score, probability]
