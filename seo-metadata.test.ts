@@ -221,6 +221,16 @@ describe("SEO metadata", (): void => {
     expect(findings).toStrictEqual([]);
   });
 
+  it("keeps a link to a longer host than docs.xquik.com outside the docs", (): void => {
+    expect.assertions(1);
+
+    expect(
+      linkedPaths(
+        "[a](https://docs.xquik.com.example.test/quickstart) [b](https://docs.xquik.com/quickstart#auth) [c](https://docs.xquik.com) [d](/api?x=1)",
+      ),
+    ).toStrictEqual(["https://docs.xquik.com.example.test/quickstart", "/quickstart", "/", "/api"]);
+  });
+
   it("disables timezone-sensitive page timestamps", (): void => {
     expect.assertions(1);
 
