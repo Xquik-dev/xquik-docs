@@ -6569,6 +6569,7 @@ const REQUIRED_EXTRACTION_CREATE_TOOL_TYPE_SNIPPETS = [
   "`mention_extractor` extracts tweets mentioning an account.",
   "`post_extractor` extracts posts from an account.",
   "`user_likes` extracts liked tweets that X makes visible.",
+  "`user_affiliates` extracts the accounts an organization lists as its",
   "`user_media` extracts media posts from a user.",
   "`verified_follower_explorer` extracts verified followers of an account.",
   '<Card title="Community target" icon="users">',
