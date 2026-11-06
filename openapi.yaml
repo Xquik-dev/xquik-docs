@@ -86,6 +86,10 @@ info:
 
     - Large answers fit the agent's context, capped at 24,000 characters.
 
+    - A cut answer links to a CSV file of every row.
+
+    - Each MCP tool states its credit price.
+
     - Clients can run reads without prompts & confirm writes.
 
     - 1 stable shape with snake_case, Unix seconds, `has_more` & `next_cursor`.
@@ -293,7 +297,7 @@ paths:
               flat:
                 summary: 'A flat request'
                 value:
-                  query: 'How does MCP OAuth work?'
+                  query: 'What is Xquik?'
                   site: 'docs.xquik.com'
                   streaming: false
                   response_format: 'conversational_search'
@@ -306,7 +310,7 @@ paths:
                 summary: 'A structured request'
                 value:
                   query:
-                    text: 'How does MCP OAuth work?'
+                    text: 'What is Xquik?'
                     site: 'docs.xquik.com'
                   prefer:
                     mode: 'list'
@@ -329,7 +333,17 @@ paths:
                   response_format: conversational_search
                   response_type: answer
                   version: '0.55'
-                results: []
+                answer: &nlweb-answer-example >-
+                  Xquik is a hosted service for tweet search, follower exports,
+                  profile lookup, monitors, webhooks, and X account actions.
+                sources: [https://docs.xquik.com/guides/architecture]
+                results:
+                  - '@context': https://schema.org
+                    '@id': https://docs.xquik.com/guides/architecture
+                    '@type': TechArticle
+                    description: *nlweb-answer-example
+                    name: Xquik platform architecture & X API workflows
+                    url: https://docs.xquik.com/guides/architecture
             text/event-stream:
               schema:
                 type: string
@@ -6976,9 +6990,11 @@ paths:
             type: string
             maxLength: 13081
           description:
-            Comma-separated numeric user IDs (1-100 values). Xquik ignores
-            duplicate IDs and keeps the first-seen order. A longer URL fails at
-            the edge before Xquik reads it.
+            Comma-separated numeric user IDs (1-100 values). Xquik reads any
+            other entry as a username, with or without @, so IDs and usernames
+            can mix. Xquik ignores duplicates and keeps the first-seen order,
+            IDs before usernames. A longer URL fails at the edge before Xquik
+            reads it.
         - name: usernames
           in: query
           schema:
@@ -7059,9 +7075,11 @@ paths:
             type: string
             maxLength: 13074
           description:
-            Comma-separated numeric user IDs (1-20 values). Xquik ignores
-            duplicate IDs and keeps the first-seen order. A longer URL fails at
-            the edge before Xquik reads it.
+            Comma-separated numeric user IDs (1-20 values). Xquik reads any
+            other entry as a username, with or without @, so IDs and usernames
+            can mix. Xquik ignores duplicates and keeps the first-seen order,
+            IDs before usernames. A longer URL fails at the edge before Xquik
+            reads it.
         - name: usernames
           in: query
           schema:
@@ -17642,6 +17660,18 @@ components:
             - type: object
               properties:
                 response_type: { const: answer }
+        answer:
+          description: >-
+            Sentences quoted from the cited docs pages. When no page answers the
+            query, it says so and suggests topics to ask about.
+          example: *nlweb-answer-example
+          type: string
+        sources:
+          description: Docs pages the answer quotes. Empty when no page answers.
+          example: [https://docs.xquik.com/guides/architecture]
+          type: array
+          maxItems: 10
+          items: *uri-string
         results:
           example: []
           type: array
@@ -17665,7 +17695,11 @@ components:
           items:
             $ref: '#/components/schemas/NlwebDocumentationResult'
       oneOf:
-        - { required: [results], properties: { results: { type: array } } }
+        - required: [answer, results, sources]
+          properties:
+            answer: { type: string }
+            results: { type: array }
+            sources: { type: array }
         - required: [content, structuredData]
           properties:
             content: { type: array }
