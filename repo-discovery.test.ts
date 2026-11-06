@@ -370,7 +370,7 @@ const FORBIDDEN_TYPESCRIPT_SDK_RAW_SEARCH_SNIPPETS = [
   "Write `page.tweets` as JSON Lines to `xquik-tweet-search.jsonl`",
   "process.stdout.write(JSON.stringify(tweets, null, 2));",
   "results_limit",
-  "Maps to REST `limit`. Use it for a bounded request from 1 to 200. Omit it for cursor loops.",
+  "Maps to REST `limit`. Use it for a bounded request from 1 to 10,000. Omit it for cursor loops.",
 ] as const;
 
 const REQUIRED_GO_SDK_WORKFLOW_SNIPPETS = [
@@ -493,7 +493,7 @@ const REQUIRED_GO_SDK_WORKFLOW_SNIPPETS = [
 const FORBIDDEN_GO_SDK_WEAK_SEARCH_SNIPPETS = [
   'fmt.Printf("%+v\\n", tweets.HasNextPage)',
   "ResultsLimit",
-  "Go field `Limit` maps to REST `limit`. Use it for a bounded request from 1 to 200. Omit it for cursor loops.",
+  "Go field `Limit` maps to REST `limit`. Use it for a bounded request from 1 to 10,000. Omit it for cursor loops.",
 ] as const;
 
 const REQUIRED_PYTHON_SDK_WORKFLOW_SNIPPETS = [
@@ -626,7 +626,7 @@ const FORBIDDEN_PYTHON_SDK_RAW_SEARCH_SNIPPETS = [
   "Write `page.tweets` to CSV for analysts",
   "print(tweets.to_json())",
   "results_limit",
-  "Python argument `limit` maps to REST `limit`. Use it for a bounded request from 1 to 200. Omit it for cursor loops.",
+  "Python argument `limit` maps to REST `limit`. Use it for a bounded request from 1 to 10,000. Omit it for cursor loops.",
 ] as const;
 
 const REQUIRED_RUBY_SDK_WORKFLOW_SNIPPETS = [
@@ -767,7 +767,7 @@ const FORBIDDEN_RUBY_SDK_WEAK_SEARCH_SNIPPETS = [
   "`tweet.to_json`",
   "`tweet.deep_to_h`",
   "results_limit",
-  "Ruby keyword `limit` maps to REST `limit`. Use it for a bounded request from 1 to 200. Omit it for cursor loops.",
+  "Ruby keyword `limit` maps to REST `limit`. Use it for a bounded request from 1 to 10,000. Omit it for cursor loops.",
 ] as const;
 
 const REQUIRED_CLI_SDK_WORKFLOW_SNIPPETS = [
@@ -895,7 +895,7 @@ const FORBIDDEN_CLI_SDK_WORKFLOW_SNIPPETS = [
   "Write one JSON object per line for downstream jobs",
   "projected records to CSV for analysts",
   "produce XLSX from those rows",
-  "Use `--limit` for a bounded request from 1 to 200. Omit it when passing `--cursor` in page loops.",
+  "Use `--limit` for a bounded request from 1 to 10,000. Omit it when passing `--cursor` in page loops.",
 ] as const;
 
 const REQUIRED_CSHARP_SDK_WORKFLOW_SNIPPETS = [
@@ -1043,7 +1043,7 @@ const FORBIDDEN_CSHARP_SDK_WEAK_SEARCH_SNIPPETS = [
   "projected rows into CSV for analysts",
   "results_limit",
   "xquik-tweet-replies",
-  "C# property `Limit` maps to REST `limit`. Use it for a bounded request from 1 to 200. Omit it for cursor loops.",
+  "C# property `Limit` maps to REST `limit`. Use it for a bounded request from 1 to 10,000. Omit it for cursor loops.",
 ] as const;
 
 const REQUIRED_PHP_SDK_WORKFLOW_SNIPPETS = [
@@ -1187,7 +1187,7 @@ const FORBIDDEN_PHP_SDK_WEAK_SEARCH_SNIPPETS = [
   "Write `$page->tweets` as JSON Lines to `xquik-tweet-search.jsonl`",
   "'id' => $tweet->id",
   "results_limit",
-  "PHP argument `limit` maps to REST `limit`. Use it for a bounded request from 1 to 200. Omit it for cursor loops.",
+  "PHP argument `limit` maps to REST `limit`. Use it for a bounded request from 1 to 10,000. Omit it for cursor loops.",
 ] as const;
 
 const REQUIRED_JAVA_SDK_WORKFLOW_SNIPPETS = [
@@ -1345,7 +1345,7 @@ const FORBIDDEN_JAVA_SDK_WEAK_SEARCH_SNIPPETS = [
   "transform the same projected records into CSV for analysts",
   "results_limit",
   "xquik-tweet-replies",
-  "Java builder method `.limit()` maps to REST `limit`. Use it for a bounded request from 1 to 200. Omit it for cursor loops.",
+  "Java builder method `.limit()` maps to REST `limit`. Use it for a bounded request from 1 to 10,000. Omit it for cursor loops.",
 ] as const;
 
 const REQUIRED_KOTLIN_SDK_WORKFLOW_SNIPPETS = [
@@ -1503,11 +1503,11 @@ const FORBIDDEN_KOTLIN_SDK_WEAK_SEARCH_SNIPPETS = [
   "transform the projected records into CSV for analysts",
   "results_limit",
   "xquik-tweet-replies",
-  "Kotlin builder method `.limit()` maps to REST `limit`. Use it for a bounded request from 1 to 200. Omit it for cursor loops.",
+  "Kotlin builder method `.limit()` maps to REST `limit`. Use it for a bounded request from 1 to 10,000. Omit it for cursor loops.",
 ] as const;
 
 const FORBIDDEN_TWEET_SEARCH_CURSOR_LIMIT_SNIPPETS = [
-  "Use it for the page size from 1 to 200",
+  "Use it for the page size from 1 to 10,000",
   "Use it for the maximum tweets to return for the page",
   "`q`, `limit`, and optional `cursor`",
   "with `q`, `limit`, and optional `cursor`",
@@ -9163,7 +9163,7 @@ const REQUIRED_KEYWORD_MONITOR_LIST_API_HANDOFF_SNIPPETS = [
   "and `deliveries_endpoint_pattern`",
   "## Inventory handoff",
   "Use `GET /monitors/keywords` after create, update, pause, or delete operations",
-  "up to 200",
+  "up to 10,000",
   "keyword monitors ordered by creation time",
   "`total` count for the returned",
   '<Card title="Active burn" icon="activity">',
@@ -9749,7 +9749,7 @@ const REQUIRED_ACCOUNT_MONITOR_LIST_API_HANDOFF_SNIPPETS = [
   "## Inventory handoff",
   "Use `GET /monitors` after create, update, pause, or delete operations",
   "your account monitor inventory.",
-  "up to 200 monitors ordered",
+  "up to 10,000 monitors ordered",
   "`total` count for the returned set.",
   '<Card title="Tracked accounts" icon="users">',
   "Store each monitor's `id`, `username`, and `xUserId`",
