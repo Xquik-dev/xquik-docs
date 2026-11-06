@@ -1,24 +1,22 @@
-# Twitter API documentation & X API docs by Xquik
+# Twitter API Documentation & X API Docs by Xquik
 
-[![Convex Component](https://www.convex.dev/components/badge/convex-xquik)](https://www.convex.dev/components/convex-xquik)
-
-This repository holds the Twitter API documentation for [Xquik](https://xquik.com), an X data and automation
-platform. Published at **[docs.xquik.com](https://docs.xquik.com)**.
+Use this Twitter API documentation by Xquik to build on search, monitors & webhooks.
+The published site lives at [docs.xquik.com](https://docs.xquik.com).
 
 Xquik is the world's fastest and cheapest X Twitter scraper service with the most complete X data.
+Most other Apify Actors charge before filtering or deduplication.
 Xquik charges only for delivered, unique, filter-matching results and never pads rows.
+Xquik is independent and not affiliated with X Corp.
 
-> **Xquik is an independent third-party service.** Not affiliated with X Corp.
-> "Twitter" and "X" are trademarks of X Corp.
+<!-- trust:win:start -->
 
-This repository contains the Xquik REST API, webhook, MCP, OAuth 2.1, and SDK docs. Find request and response details for tweet search, user lookup, follower exports, media uploads, direct messages, 1-second tweet monitors, signed webhooks, SDK clients, and X automation.
+The Xquik REST API read 45 tweets per second at $0.15 per 1,000 on 2026-10-15. The fastest of 4 rival Actors read 12.5 per second. The cheapest cost $0.173 per 1,000. [Compare each run](https://xquik.com/benchmarks#benchmark-x-tweet-scraper).
+<!-- trust:win:end -->
 
 ## Twitter API documentation quickstart
 
-Create an API key in the
-[Xquik dashboard](https://dashboard.xquik.com/en/account?tab=api-keys). Then
-search tweets with 1 request. The [Quickstart](https://docs.xquik.com/x-api-quickstart)
-covers the rest.
+Create an API key in the [Xquik dashboard](https://dashboard.xquik.com/en/account?tab=api-keys).
+Then search tweets with 1 request.
 
 ```bash
 curl --get 'https://xquik.com/api/v1/x/tweets/search' \
@@ -27,11 +25,11 @@ curl --get 'https://xquik.com/api/v1/x/tweets/search' \
   --data-urlencode 'limit=10'
 ```
 
+Search tweets with `from:`, `since:`, `until:`, filters, and cursor pagination.
+
 ## Twitter monitor & webhook docs
 
-Create a monitor, then register a webhook for its events. The
-[Webhooks guide](https://docs.xquik.com/webhooks/overview) covers signature
-checks & test payloads.
+Create a monitor, then register a webhook for its events.
 
 ```bash
 curl -X POST https://xquik.com/api/v1/monitors \
@@ -45,51 +43,51 @@ curl -X POST https://xquik.com/api/v1/webhooks \
   -d '{"url": "https://your-server.com/webhook", "eventTypes": ["tweet.new", "tweet.reply"]}'
 ```
 
+Next, read the [Quickstart](https://docs.xquik.com/x-api-quickstart), the [Webhooks guide](https://docs.xquik.com/webhooks/overview) or the [SDK pages](https://docs.xquik.com/sdks).
+
 <!-- trust:start -->
 
-## Trust & usage
+## Benchmarks & usage
 
-[![Twitter API package downloads](https://img.shields.io/endpoint?url=https%3A%2F%2Fxquik.com%2Fbadges%2Fdownloads.json)](https://xquik.com/trust#downloads)
-[![Twitter scraper users on Apify](https://img.shields.io/endpoint?url=https%3A%2F%2Fxquik.com%2Fbadges%2Fapify-users.json)](https://apify.com/xquik)
-[![Twitter scraper runs on Apify](https://img.shields.io/endpoint?url=https%3A%2F%2Fxquik.com%2Fbadges%2Fapify-runs.json)](https://apify.com/xquik)
-[![Tweet scraper rating on Apify](https://img.shields.io/endpoint?url=https%3A%2F%2Fxquik.com%2Fbadges%2Fapify-rating.json)](https://apify.com/xquik/x-tweet-scraper/reviews)
-[![Xquik Twitter API accounts](https://img.shields.io/endpoint?url=https%3A%2F%2Fxquik.com%2Fbadges%2Faccounts.json)](https://xquik.com/trust#accounts)
-[![Twitter Skill installs](https://img.shields.io/endpoint?url=https%3A%2F%2Fxquik.com%2Fbadges%2Fskill-installs.json)](https://xquik.com/trust#skill-installs)
-[![Twitter API p99 server read time](https://img.shields.io/endpoint?url=https%3A%2F%2Fxquik.com%2Fbadges%2Frest-p99.json)](https://xquik.com/trust#speed)
-[![Xquik GitHub stars](https://img.shields.io/endpoint?url=https%3A%2F%2Fxquik.com%2Fbadges%2Fgithub-stars.json)](https://github.com/Xquik-dev)
+[![Twitter API p99 server read time](https://img.shields.io/endpoint?url=https%3A%2F%2Fxquik.com%2Fbadges%2Frest-p99.json)](https://xquik.com/benchmarks#speed)
+[![Xquik Twitter API accounts](https://img.shields.io/endpoint?url=https%3A%2F%2Fxquik.com%2Fbadges%2Faccounts.json)](https://xquik.com/benchmarks#accounts)
+[![Twitter API package downloads](https://img.shields.io/endpoint?url=https%3A%2F%2Fxquik.com%2Fbadges%2Fdownloads.json)](https://xquik.com/benchmarks#downloads)
 
-- 53,000+ downloads of Xquik's Twitter API packages on npm, PyPI, RubyGems, NuGet, Packagist & Terraform ([source](https://xquik.com/trust#downloads)) <!-- trust:downloads 53547 -->
-- 9,500+ users of Xquik's Twitter scraper Actors on Apify ([source](https://apify.com/xquik)) <!-- trust:apify-users 9595 -->
-- 6,700,000+ runs of Xquik's Twitter scraper Actors on Apify ([source](https://apify.com/xquik)) <!-- trust:apify-runs 6765249 -->
-- 4.66 of 5 for the X Tweet Scraper from 16 Apify reviews ([source](https://apify.com/xquik/x-tweet-scraper/reviews)) <!-- trust:apify-rating 4.66 16 -->
-- 4,000+ accounts on xquik.com ([source](https://xquik.com/trust#accounts)) <!-- trust:accounts 4073 -->
-- 1,600+ installs of Xquik's Twitter Skills on skills.sh ([source](https://xquik.com/trust#skill-installs)) <!-- trust:skill-installs 1617 -->
-- 13.2 s p99 REST API server read time over 7 days, failed reads included ([source](https://xquik.com/trust#speed)) <!-- trust:rest-p99 13194 -->
-- 380+ GitHub stars across Xquik's repos ([source](https://github.com/Xquik-dev)) <!-- trust:github-stars 383 -->
+- 6.4 s p99 REST API server read time over 7 days, failed reads included ([source](https://xquik.com/benchmarks#speed)) <!-- trust:rest-p99 6317 -->
+- 4,200+ accounts on xquik.com ([source](https://xquik.com/benchmarks#accounts)) <!-- trust:accounts 4271 -->
+- 59,000+ downloads of Xquik's Twitter API packages on npm, PyPI, RubyGems, NuGet, Packagist & Terraform ([source](https://xquik.com/benchmarks#downloads)) <!-- trust:downloads 59788 -->
 
-Checked on 2026-10-25. See each number with its date & source on [xquik.com/trust](https://xquik.com/trust) or as [JSON](https://xquik.com/trust.json).
+Checked on 2026-11-06. See each number with its date & source on [xquik.com/benchmarks](https://xquik.com/benchmarks) or as [JSON](https://xquik.com/trust.json).
 
 <!-- trust:end -->
 
-## Choose this repository
+## What the docs cover
 
-Use the hosted site for current guidance. Review this repository when proposing
-fixes or validating contracts. Generated client APIs live in the SDK repositories.
+The pages explain tweet search, user lookup, follower exports & media uploads.
+Others cover direct messages, 1-second tweet monitors & signed webhooks.
+SDK clients and X automation guides sit beside them.
+
+- **REST API.** Operations span X data, monitors, webhooks, extractions, draws, writes & accounts.
+- **Webhooks.** HMAC SHA-256 signature verification, retry semantics & payload schemas.
+- **MCP server.** Use Code Mode or OpenAPI-native tools. Binary downloads use REST.
+- **OAuth 2.1.** Automatic discovery, PKCE, client registration & token refresh.
+- **SDKs.** 10 generated clients cover 8 languages, the CLI & Terraform.
+- **OpenAPI 3.1.** A machine-readable contract for endpoint pages and SDK generation.
 
 ## Start here
 
 - [Quickstart](https://docs.xquik.com/x-api-quickstart). Make the first authenticated API call.
 - [API reference](https://docs.xquik.com/api-reference). Browse every OpenAPI-backed operation.
-- [Guest wallets](https://docs.xquik.com/guides/guest-wallets). Fund accountless paid-read routes through a confirmed hosted checkout.
+- [Guest wallets](https://docs.xquik.com/guides/guest-wallets). Fund accountless paid reads through a confirmed hosted checkout.
 - [Direct MPP](https://docs.xquik.com/mpp/machine-payments-protocol). Pay per request on fixed-price GET operations.
-- [SDKs](https://docs.xquik.com/sdks). Use TypeScript, Python, Go, Java, Kotlin, C#, Ruby, PHP, CLI, and Terraform clients.
+- [SDKs](https://docs.xquik.com/sdks). Install a typed client, the CLI or the Terraform provider.
 - [Tweet search export](https://docs.xquik.com/guides/tweet-scraper-csv-export). Export tweets by keyword to CSV, JSON, or XLSX.
 - [Tweet replies export](https://docs.xquik.com/guides/tweet-replies-export). Export replies to CSV, JSON, or XLSX.
 - [Follower export](https://docs.xquik.com/guides/follower-export-crm). Export X followers to CRM or warehouse.
 - [Direct message workflow](https://docs.xquik.com/guides/direct-message-workflow). Send DMs and store returned message IDs.
 - [Prefect](https://docs.xquik.com/guides/prefect). Schedule tweet, user, timeline, and trend reads in Prefect flows.
-- [Supabase](https://docs.xquik.com/guides/supabase). Call every Xquik operation from Edge Functions, SQL, and pg_cron, and store signed webhook events.
-- [Convex](https://docs.xquik.com/guides/convex). Call every Xquik operation as a typed Convex action, and show signed webhook events live.
+- [Supabase](https://docs.xquik.com/guides/supabase). Call Xquik from Edge Functions, SQL & pg_cron, and store webhook events.
+- [Convex](https://docs.xquik.com/guides/convex). Call each Xquik operation as a typed Convex action.
 - [Webhooks](https://docs.xquik.com/webhooks/overview). Verify HMAC signatures and receive monitor events.
 - [Open source assurance](https://docs.xquik.com/guides/open-source-assurance). Review OpenSSF project mapping and controls.
 - [Apify Actors](https://docs.xquik.com/alternatives/apify). Run focused X data jobs on Apify.
@@ -97,11 +95,11 @@ fixes or validating contracts. Generated client APIs live in the SDK repositorie
 ## Use with AI coding agents
 
 - [Context7 library](https://context7.com/xquik-dev/xquik-docs). Load indexed Xquik docs in supported coding agents.
-- [llms.txt](https://docs.xquik.com/llms.txt). Discover every docs page before reading deeper.
+- [llms.txt](https://docs.xquik.com/llms.txt). Discover every docs page before you read deeper.
 - [MCP server](https://docs.xquik.com/mcp). Connect through Code Mode or OpenAPI-native tools.
-- [MCP 2026-07-28](https://docs.xquik.com/mcp/overview#mcp-2026-07-28). Understand `server/discover`, request-scoped calls, and private cache hints.
-- [Coding-agent setup](https://docs.xquik.com/mcp/coding-agents). Connect current Claude Code, Cursor, OpenCode, Pi, Codex & other MCP clients.
-- [Agent catalog](https://xquik.com/.well-known/agents.json). Discover the MCP server, A2A agent, API contract, OAuth metadata, and auth.md.
+- [MCP 2026-07-28](https://docs.xquik.com/mcp/overview#mcp-2026-07-28). Understand `server/discover`, request-scoped calls & private cache hints.
+- [Coding-agent setup](https://docs.xquik.com/mcp/coding-agents). Connect Claude Code, Cursor, OpenCode, Pi, Codex & other MCP clients.
+- [Agent catalog](https://xquik.com/.well-known/agents.json). Discover the MCP server, API contract, OAuth metadata & auth.md.
 - [Agent Skills index](https://xquik.com/.well-known/agent-skills/index.json). Discover and verify Xquik's hosted `SKILL.md`.
 - [auth.md](https://xquik.com/auth.md). Read interactive and claimed agent authorization instructions.
 - [OpenAPI spec](https://docs.xquik.com/openapi.yaml). Generate clients or inspect request and response shapes.
@@ -124,23 +122,9 @@ fixes or validating contracts. Generated client APIs live in the SDK repositorie
 | How does Xquik compare with the X API?       | [X API Alternative Guide](https://docs.xquik.com/alternatives/x-api)              |
 | How can an AI agent use Xquik?               | [MCP Server Guide](https://docs.xquik.com/mcp)                                    |
 
-Search tweets with `from:`, `since:`, `until:`, filters, and cursor pagination.
-
-## What's covered
-
-- **REST API.** Operations span account, guest wallets, API keys, monitors, events, webhooks, draws, extractions, X data, trends, radar, styles, drafts, compose, X accounts, writes, support, and integrations.
-- **Webhooks.** HMAC SHA-256 signature verification, retry semantics, and payload schemas.
-- **MCP server.** Use 3 Code Mode tools or `docs` plus OpenAPI-native tools, 1 for each eligible operation. Guest keys receive the eligible read operations. Binary downloads use REST.
-- **OAuth 2.1.** Automatic discovery, PKCE, client registration, claimed service identities, and token refresh.
-- **Guides.** Workflows, error handling, rate limits, billing, trends, extractions, architecture, troubleshooting, types, webhook testing, and framework integrations.
-- **SDKs.** 10 generated clients support TypeScript, Python, Go, Java, Kotlin, C#, Ruby, PHP, CLI, and Terraform.
-- **Comparisons.** Alternatives for X APIs, tweet scrapers, follower exporters, creator tools, and social suites.
-- **Apify Actors.** Actors cover tweets, replies, followers, trends, profiles, communities, lists, and user search.
-- **OpenAPI 3.1.** Machine-readable contract for endpoint pages and SDK generation.
-
 ## Repository layout
 
-```
+```text
 api-reference/      OpenAPI operations, grouped by resource
 guides/             Workflow, operations, and framework guides
 webhooks/           Overview + signature verification
@@ -157,64 +141,66 @@ openapi.yaml        OpenAPI 3.1 spec, copied from the application
 
 ## Local development
 
-Install Bun, rustup, OSV-Scanner, Gitleaks & ShellCheck. Use the pinned npm version in `package.json`.
+Install Bun, rustup, OSV-Scanner, Gitleaks & ShellCheck.
+Use the pinned npm version in `package.json`.
 
 ```bash
 bunx --bun npm@12.2.0 ci --ignore-scripts
 bun run check:all
 ```
 
-`openapi.yaml` is an exact copy of the application's spec. Never edit it here.
+`openapi.yaml` is an exact copy of the application's spec.
+Never edit it here.
 Clone the application beside this repository, or set `XQUIK_PRODUCT_ROOT` to it.
 `bun run sync` then copies the spec & rewrites each page's response examples.
-The parity & features catalog tests need that checkout too. Without it, they skip & say so.
-If the checkout lacks a file a test reads, that test fails & says to update the checkout.
+The parity & features catalog tests need that checkout too.
+Without it, they skip & say so.
+A test that can't find its file fails & says to update the checkout.
 
-Run `bunx --bun mint@4.2.1035 dev` when visual previewing is necessary.
+Run `bunx --bun mint@4.2.1035 dev` when you need a visual preview.
 
 ## Deployment
 
-`main` auto-deploys to [docs.xquik.com](https://docs.xquik.com).
+`main` deploys to [docs.xquik.com](https://docs.xquik.com) on each merge.
 Deployment status appears in commit check runs.
 
-This repository runs no GitHub Actions. Run every required check locally before pushing.
-Verify the published pages after deployment.
+This repository runs no GitHub Actions.
+Run every required check locally before you push.
+Verify the published pages after each deployment.
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for style rules, content conventions, and the workflow for opening a PR.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for style rules, content conventions & the pull request workflow.
 
 ## Security
 
-To report a vulnerability in the docs site or in any documented endpoint behaviour, see [SECURITY.md](SECURITY.md). Do not file public issues for security findings.
+Report a vulnerability in the docs site or a documented endpoint through [SECURITY.md](SECURITY.md).
+Do not file public issues for security findings.
 
 ## Questions
 
 ### Do I need an X developer account?
 
-No. Public reads need only an Xquik API key. Private reads & X account actions
-need a connected X account.
+No. Public reads need only an Xquik API key.
+Private reads & X account actions need a connected X account.
 
 ### Is this the official X API documentation?
 
-No. Xquik is an independent third-party service with its own REST API. These
-docs cover that API, not the official X API.
+No. Xquik runs its own REST API.
+These docs cover that API, not the official X API.
 
-## Related repositories
+## More Xquik tools
 
-- **[Xquik](https://xquik.com).** Main app and dashboard.
-- **[Xquik-dev/x-twitter-scraper-python](https://github.com/Xquik-dev/x-twitter-scraper-python).** Python SDK.
-- **[Xquik-dev/x-twitter-scraper-typescript](https://github.com/Xquik-dev/x-twitter-scraper-typescript).** TypeScript SDK.
-- **[Xquik-dev/x-twitter-scraper](https://github.com/Xquik-dev/x-twitter-scraper).** X (Twitter) scraper API, Twitter MCP server & agent Skills.
-- **[Xquik-dev/tweetclaw](https://github.com/Xquik-dev/tweetclaw).** OpenClaw Twitter plugin.
-- **[Xquik-dev/hermes-tweet](https://github.com/Xquik-dev/hermes-tweet).** Hermes Agent Twitter plugin.
-- **[Xquik-dev/x-twitter-advanced-search](https://github.com/Xquik-dev/x-twitter-advanced-search).** Twitter advanced search operators.
-- Other generated SDKs are listed under the [Xquik-dev](https://github.com/Xquik-dev) org.
+- [X (Twitter) scraper API & Twitter MCP server](https://github.com/Xquik-dev/x-twitter-scraper) with REST, MCP & Skill setup.
+- Twitter API SDKs for [TypeScript](https://github.com/Xquik-dev/x-twitter-scraper-typescript), [Python](https://github.com/Xquik-dev/x-twitter-scraper-python), [Go](https://github.com/Xquik-dev/x-twitter-scraper-go), [Ruby](https://github.com/Xquik-dev/x-twitter-scraper-ruby), [Java](https://github.com/Xquik-dev/x-twitter-scraper-java), [Kotlin](https://github.com/Xquik-dev/x-twitter-scraper-kotlin), [C#](https://github.com/Xquik-dev/x-twitter-scraper-csharp) & [PHP](https://github.com/Xquik-dev/x-twitter-scraper-php).
+- [Twitter CLI & X CLI](https://github.com/Xquik-dev/x-twitter-scraper-cli) for terminal workflows.
+- Twitter agent plugins for [OpenClaw](https://github.com/Xquik-dev/tweetclaw) & [Hermes Agent](https://github.com/Xquik-dev/hermes-tweet).
+- [Twitter advanced search operators](https://github.com/Xquik-dev/x-twitter-advanced-search) with tested examples.
+- [Xquik X API & Twitter scraper](https://xquik.com) and its [main dashboard](https://dashboard.xquik.com).
 
 ## License
 
 The documentation source uses the [MIT License](LICENSE).
-
-The license does not cover the Xquik product, brand, or platform.
+The license does not cover the Xquik product, brand or platform.
 
 Xquik is an independent third-party service. Not affiliated with X Corp. "Twitter" and "X" are trademarks of X Corp.
