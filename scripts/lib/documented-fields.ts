@@ -56,7 +56,7 @@ function documentedFields(source: string): readonly DocumentedField[] {
     const row = tableCells(line);
     if (kind === undefined) {
       headers = row;
-      kind = KIND_BY_LABEL.get(row[0] ?? "");
+      kind = row[1] === "Type" ? KIND_BY_LABEL.get(row[0] ?? "") : undefined;
     } else if (!/^-+$/u.test(row[0] ?? "")) {
       fields.push(fieldFromRow(kind, headers, row));
     }

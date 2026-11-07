@@ -13048,7 +13048,7 @@ describe("repository discovery", (): void => {
   it("keeps the Java SDK page useful for tweet search handoffs", (): void => {
     expect.assertions(1);
 
-    const source = readFileSync("sdks/java.mdx", "utf8");
+    const source = readPageFamily("sdks/java.mdx");
 
     expect([
       ...collectSnippetFindings(
@@ -13067,7 +13067,7 @@ describe("repository discovery", (): void => {
   it("keeps the Kotlin SDK page useful for tweet search handoffs", (): void => {
     expect.assertions(1);
 
-    const source = readFileSync("sdks/kotlin.mdx", "utf8");
+    const source = readPageFamily("sdks/kotlin.mdx");
 
     expect([
       ...collectSnippetFindings(
@@ -14585,13 +14585,12 @@ describe("repository discovery", (): void => {
   it("keeps the keyword monitor API handoff concrete", (): void => {
     expect.assertions(1);
 
-    const source = stripGeneratedResponseExamples(
-      readFileSync("api-reference/monitors/create-keyword.mdx", "utf8"),
-    );
+    const page = readFileSync("api-reference/monitors/create-keyword.mdx", "utf8");
+    const source = stripGeneratedResponseExamples(page);
 
     expect([
       ...collectSnippetFindings(
-        source,
+        page,
         "Create keyword monitor endpoint page",
         REQUIRED_KEYWORD_MONITOR_API_HANDOFF_SNIPPETS,
       ),
