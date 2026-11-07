@@ -1,0 +1,410 @@
+---
+title: "Monitor a Twitter account by username in 1 call"
+sidebarTitle: "Create or update monitor"
+description: "Monitor one X (Twitter) account by username in 1 call. Xquik creates the monitor if it does not exist, or updates it. The created field says which ran."
+api: "PUT /monitors/username/{username}"
+keywords:
+  [
+    "monitor Twitter account",
+    "Twitter monitor",
+    "create or update Twitter monitor",
+    "upsert Twitter monitor",
+    "Twitter account monitor API",
+  ]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+{/* GENERATED RESPONSE EXAMPLES START */}
+
+<Panel>
+
+<Tabs defaultTabIndex={0} sync={false}>
+
+  <Tab title="200" id="response-monitors-create-or-update-200">
+
+    ```json
+    {
+      "created": false,
+      "id": "42",
+      "username": "elonmusk",
+      "xUserId": "1234567890",
+      "name": "Launch watch",
+      "eventTypes": [
+        "tweet.new"
+      ],
+      "isActive": true,
+      "createdAt": "2025-01-15T12:00:00Z",
+      "nextBillingAt": "2025-01-15T13:00:00Z"
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="201" id="response-monitors-create-or-update-201">
+
+    ```json
+    {
+      "created": true,
+      "id": "42",
+      "username": "elonmusk",
+      "xUserId": "1234567890",
+      "name": "Launch watch",
+      "eventTypes": [
+        "tweet.new"
+      ],
+      "isActive": true,
+      "createdAt": "2025-01-15T12:00:00Z",
+      "nextBillingAt": "2025-01-15T12:00:00Z"
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="400" id="response-monitors-create-or-update-400">
+
+    ```json
+    {
+      "error": "invalid_input",
+      "message": "Invalid input. Check the request body."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="401" id="response-monitors-create-or-update-401">
+
+    ```json
+    {
+      "error": "unauthenticated",
+      "message": "Authentication required. Provide a valid API key or bearer token."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="402" id="response-monitors-create-or-update-402">
+
+    ```json
+    {
+      "error": "insufficient_credits",
+      "message": "Insufficient credits. Top up or subscribe to continue."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="403" id="response-monitors-create-or-update-403">
+
+    ```json
+    {
+      "error": "api_key_paused",
+      "message": "This API key is paused. Resume it at dashboard.xquik.com/api-keys to use it again."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="404" id="response-monitors-create-or-update-404">
+
+    ```json
+    {
+      "error": "user_not_found",
+      "message": "X user not found. Check the username."
+    }
+    ```
+
+  </Tab>
+
+  <Tab title="429" id="response-monitors-create-or-update-429">
+
+    ```json
+    {
+      "error": "rate_limit_exceeded",
+      "message": "Too many requests. Try again later.",
+      "retryAfter": 60
+    }
+    ```
+
+  </Tab>
+</Tabs>
+
+</Panel>
+{/* GENERATED RESPONSE EXAMPLES END */}
+<LlmsDirective />
+
+Keep 1 X account under watch with the event types you choose. Send its
+username in the path. Xquik creates the monitor if it does not exist, or
+updates it if it does. The same call twice still leaves 1 monitor.
+
+<Callout icon="coins" color="#5c3327">
+
+**Creating requires 30 available credits.** They pay for the first active monitor hour. Updating a running monitor is free.
+
+</Callout>
+
+## When to use this route
+
+Use it when your app knows the username but not the monitor ID. It
+replaces a create call, a `409` answer and a list search. Agents and
+schedulers can send it on every run.
+
+| Your situation                                      | Route                                                    |
+| --------------------------------------------------- | -------------------------------------------------------- |
+| You know the username & want its monitor to exist   | `PUT /monitors/username/{username}`                      |
+| You want a `409` when the monitor already exists    | [Create Account Monitor](/api-reference/monitors/create) |
+| You hold the monitor ID & want to pause or resume it | [Update Monitor](/api-reference/monitors/update)         |
+
+## How Xquik picks create or update
+
+Xquik looks up the X account for the username, then matches its user ID.
+Case and a leading `@` make no difference. A renamed account keeps its
+monitor.
+
+- Xquik creates a monitor and answers `201` when you have none for the account.
+- Xquik turns a stopped monitor back on and answers `201`.
+- Xquik updates a running monitor and answers `200`.
+
+`created` is `true` in a `201` answer and `false` in a `200` answer. Read it
+instead of comparing monitor lists.
+
+An update replaces `eventTypes`. It changes `name` only when you send it.
+Send `null` to remove the label.
+
+<CodeGroup>
+
+```bash cURL
+curl -X PUT https://xquik.com/api/v1/monitors/username/elonmusk \
+  -H "x-api-key: xq_YOUR_KEY_HERE" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "eventTypes": ["tweet.new", "tweet.reply"],
+    "name": "Launch watch"
+  }' | jq -c '{
+    created,
+    monitor_id: .id,
+    username,
+    x_user_id: .xUserId,
+    event_types: .eventTypes,
+    is_active: .isActive,
+    events_endpoint: ("/api/v1/events?monitorId=" + .id)
+  }'
+```
+
+```javascript Node.js
+const response = await fetch(
+  "https://xquik.com/api/v1/monitors/username/elonmusk",
+  {
+    method: "PUT",
+    headers: {
+      "x-api-key": "xq_YOUR_KEY_HERE",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      eventTypes: ["tweet.new", "tweet.reply"],
+      name: "Launch watch",
+    }),
+  },
+);
+const monitor = await response.json();
+const monitorState = {
+  created: monitor.created,
+  monitor_id: monitor.id,
+  username: monitor.username,
+  x_user_id: monitor.xUserId,
+  event_types: monitor.eventTypes,
+  is_active: monitor.isActive,
+  events_endpoint: `/api/v1/events?monitorId=${monitor.id}`,
+};
+process.stdout.write(`${JSON.stringify(monitorState)}\n`);
+```
+
+```python Python
+import json
+import requests
+
+response = requests.put(
+    "https://xquik.com/api/v1/monitors/username/elonmusk",
+    headers={"x-api-key": "xq_YOUR_KEY_HERE"},
+    json={
+        "eventTypes": ["tweet.new", "tweet.reply"],
+        "name": "Launch watch",
+    },
+)
+monitor = response.json()
+monitor_state = {
+    "created": monitor["created"],
+    "monitor_id": monitor["id"],
+    "username": monitor["username"],
+    "x_user_id": monitor["xUserId"],
+    "event_types": monitor["eventTypes"],
+    "is_active": monitor["isActive"],
+    "events_endpoint": f"/api/v1/events?monitorId={monitor['id']}",
+}
+print(json.dumps(monitor_state))
+```
+
+</CodeGroup>
+
+## Headers
+
+<ParamField header="x-api-key" type="string" required>
+
+Send your Xquik API key. Create one in the [Xquik dashboard](https://dashboard.xquik.com/en/account?tab=api-keys).
+
+</ParamField>
+
+<ParamField header="Authorization" type="string">
+
+Send `Bearer <token>` instead of `x-api-key` when using OAuth 2.1.
+
+</ParamField>
+
+<ParamField header="Content-Type" type="string" required>
+
+Must be `application/json`.
+
+</ParamField>
+
+## Path
+
+<ParamField path="username" type="string" required>
+
+Send an X username or the account's numeric user ID. A username has 1 to 15
+letters, numerals, or underscores, with or without a leading `@`. A number is
+a user ID, up to 19 digits.
+
+</ParamField>
+
+## Body
+
+<ParamField body="eventTypes" type="string[]" required>
+
+Event types to monitor. Send at least 1. An update replaces the current list.
+See [Valid Event Types](/api-reference/monitors/create#valid-event-types).
+
+</ParamField>
+
+<ParamField body="name" type="string | null">
+
+Your label for the monitor, 1 to 80 characters. Every event carries it as
+`monitorName`. Leave it out to keep the current label. Send `null` to remove
+it.
+
+</ParamField>
+
+## Response
+
+### 200 Updated & 201 Created
+
+<ResponseField name="created" type="boolean">
+  `true` when this call created the monitor or turned it back on. `false` when it updated a running monitor.
+</ResponseField>
+<ResponseField name="id" type="string">
+  Unique monitor ID. It stays the same across updates.
+</ResponseField>
+<ResponseField name="username" type="string">
+  The username X shows for the account.
+</ResponseField>
+<ResponseField name="name" type="string">
+  Your label for the monitor. Present when you set one.
+</ResponseField>
+<ResponseField name="xUserId" type="string">
+  Resolved X user ID for the account.
+</ResponseField>
+<ResponseField name="eventTypes" type="string[]">
+  Event types this monitor is subscribed to.
+</ResponseField>
+<ResponseField name="isActive" type="boolean">
+  Whether the monitor is active.
+</ResponseField>
+<ResponseField name="createdAt" type="string">
+  Xquik records the creation time in ISO 8601 format.
+</ResponseField>
+<ResponseField name="nextBillingAt" type="string">
+  Next hourly credit charge time. A new monitor is due immediately.
+</ResponseField>
+
+```json
+{
+  "created": true,
+  "id": "7",
+  "username": "elonmusk",
+  "xUserId": "44196397",
+  "name": "Launch watch",
+  "eventTypes": ["tweet.new", "tweet.reply"],
+  "isActive": true,
+  "createdAt": "2026-02-24T10:30:00.000Z",
+  "nextBillingAt": "2026-02-24T10:30:00.000Z"
+}
+```
+
+### 400 Invalid input
+
+```json
+{ "error": "invalid_input", "message": "Invalid input. Check the request body." }
+```
+
+The body has no `eventTypes` array, or it holds an unknown event type. A path
+that is no X username or user ID gets its own message.
+
+```json
+{
+  "error": "invalid_input",
+  "message": "Set username to an X username or user ID, like @NASA."
+}
+```
+
+### 401 Missing API key
+
+```json
+{
+  "error": "unauthenticated",
+  "message": "Authentication required. Provide a valid API key or bearer token."
+}
+```
+
+Missing or invalid API key or OAuth bearer token.
+
+### 402 Payment required
+
+```json
+{
+  "error": "insufficient_credits",
+  "message": "Insufficient credits. Top up or subscribe to continue."
+}
+```
+
+Creating needs 30 available credits. An update of a running monitor never
+returns `402`.
+
+### 404 User not found
+
+```json
+{ "error": "user_not_found", "message": "X user not found. Check the username." }
+```
+
+Xquik could not find that username or user ID. Check the spelling.
+
+### 429 Rate limited
+
+```json
+{
+  "error": "rate_limit_exceeded",
+  "message": "Too many requests. Try again later.",
+  "retryAfter": 60
+}
+```
+
+Too many requests. Wait for the `Retry-After` header before retrying.
+
+<Note>
+
+**Next steps.**
+
+- [Create Webhook](/api-reference/webhooks/create) to receive events.
+- [List Events](/api-reference/events/list) to audit stored events.
+- [Get Monitor](/api-reference/monitors/twitter-account-monitor-status) to fetch one monitor.
+- [Delete Twitter Account Monitor](/api-reference/monitors/delete-twitter-account-monitor) to stop checks for good.
+
+</Note>

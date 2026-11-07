@@ -2810,7 +2810,7 @@ paths:
               type: object
               required: [username, eventTypes]
               properties:
-                username:
+                username: &monitor-username
                   type: string
                   maxLength: 19
                   pattern: '^(@?[A-Za-z0-9_]{1,15}|[0-9]{1,19})$'
@@ -3424,6 +3424,102 @@ paths:
         '429':
           $ref: '#/components/responses/RateLimitExceeded'
 
+  /monitors/username/{username}:
+    put:
+      operationId: upsertMonitorByUsername
+      summary: Create or update a monitor by username
+      description:
+        Creates the account monitor if it does not exist, or updates it if it
+        does. Send the same call twice & you still have 1 monitor. A new
+        monitor answers 201 & an update answers 200. Both carry `created`, so
+        you know which one ran. Creating needs the credits of the first hour,
+        then costs 30 credits an hour. A stopped monitor turns back on & counts
+        as created. Updating is free & replaces the event types. It changes the
+        name only when you send one.
+      tags: [Monitors]
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
+      parameters:
+        - name: username
+          in: path
+          required: true
+          schema: *monitor-username
+      requestBody:
+        required: true
+        description: Event types to monitor, plus an optional label.
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [eventTypes]
+              properties:
+                eventTypes: *event-types
+                name:
+                  type: [string, 'null']
+                  minLength: 1
+                  maxLength: 80
+                  description:
+                    Your label for the monitor. Its events carry it as
+                    monitorName. Leave it out to keep the current label, or
+                    send null to remove it.
+                  example: Launch watch
+            example:
+              eventTypes:
+                - 'tweet.new'
+                - 'tweet.reply'
+              name: 'Launch watch'
+      responses:
+        '200':
+          description: Monitor updated
+          content:
+            application/json:
+              schema: &saved-monitor-schema
+                type: object
+                required: [created]
+                properties:
+                  created:
+                    type: boolean
+                    description:
+                      True when this call created the monitor or turned it back
+                      on. False when it updated a running monitor.
+                    example: false
+                allOf:
+                  - $ref: '#/components/schemas/Monitor'
+              example:
+                created: false
+                id: '42'
+                username: elonmusk
+                xUserId: '1234567890'
+                name: Launch watch
+                eventTypes: [tweet.new, tweet.reply]
+                isActive: true
+                createdAt: '2025-01-15T12:00:00Z'
+                nextBillingAt: '2025-01-15T13:00:00Z'
+        '201':
+          description: Monitor created
+          content:
+            application/json:
+              schema: *saved-monitor-schema
+              example:
+                created: true
+                id: '42'
+                username: elonmusk
+                xUserId: '1234567890'
+                name: Launch watch
+                eventTypes: [tweet.new, tweet.reply]
+                isActive: true
+                createdAt: '2025-01-15T12:00:00Z'
+                nextBillingAt: '2025-01-15T12:00:00Z'
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
+        '403': { $ref: '#/components/responses/MonitorsKeyForbidden' }
+        '404':
+          $ref: '#/components/responses/UserNotFound'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
   /monitors/{id}:
     get:
       operationId: getMonitor
