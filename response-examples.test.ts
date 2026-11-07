@@ -124,7 +124,7 @@ describe("response example sync", (): void => {
     [
       "429",
       jsonResponse({ example: { detail: "wait", error: "rate_limited", retryAfter: 30 } }),
-      '- **429** `{"error":"rate_limited","retryAfter":30}`',
+      '- **429** `{ "error": "rate_limited", "retryAfter": 30 }`',
     ],
     [
       "200",

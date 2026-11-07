@@ -267,7 +267,7 @@ function responseFields(page: string): readonly string[] {
 }
 
 function responseFieldsAndLeaves(page: string): readonly string[] {
-  const fields = responseFieldsAndLeaves(page);
+  const fields = responseFields(page);
   return uniqueSorted([...fields, ...fields.map(leafName)]);
 }
 
@@ -642,25 +642,25 @@ describe("API response field docs", (): void => {
     ]);
 
     expect([
-      ...setDifference(detailFields, responseFields(STYLES_ANALYZE_PAGE)).map(
+      ...setDifference(detailFields, responseFieldsAndLeaves(STYLES_ANALYZE_PAGE)).map(
         (field): string => `${STYLES_ANALYZE_PAGE} is missing ${field}.`,
       ),
-      ...setDifference(detailFields, responseFields(STYLES_SAVE_PAGE)).map(
+      ...setDifference(detailFields, responseFieldsAndLeaves(STYLES_SAVE_PAGE)).map(
         (field): string => `${STYLES_SAVE_PAGE} is missing ${field}.`,
       ),
-      ...setDifference(detailFields, responseFields(STYLES_GET_PAGE)).map(
+      ...setDifference(detailFields, responseFieldsAndLeaves(STYLES_GET_PAGE)).map(
         (field): string => `${STYLES_GET_PAGE} is missing ${field}.`,
       ),
-      ...setDifference(["styles", ...summaryFields], responseFields(STYLES_LIST_PAGE)).map(
+      ...setDifference(["styles", ...summaryFields], responseFieldsAndLeaves(STYLES_LIST_PAGE)).map(
         (field): string => `${STYLES_LIST_PAGE} is missing ${field}.`,
       ),
       ...setDifference(
         ["style1", "style2", ...detailFields],
-        responseFields(STYLES_COMPARE_PAGE),
+        responseFieldsAndLeaves(STYLES_COMPARE_PAGE),
       ).map((field): string => `${STYLES_COMPARE_PAGE} is missing ${field}.`),
       ...fieldDifferences(
         STYLES_PERFORMANCE_PAGE,
-        responseFields(STYLES_PERFORMANCE_PAGE),
+        responseFieldsAndLeaves(STYLES_PERFORMANCE_PAGE),
         performanceFields,
       ),
     ]).toStrictEqual([]);

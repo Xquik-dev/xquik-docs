@@ -13041,7 +13041,7 @@ describe("repository discovery", (): void => {
     },
   ])("$name", ({ file, label, required, forbidden }): void => {
     expect.assertions(1);
-    const source = readFileSync(file, "utf8");
+    const source = readPageFamily(file);
     expect(collectSnippetFindings(source, label, required, forbidden)).toStrictEqual([]);
   });
 
@@ -13526,7 +13526,7 @@ describe("repository discovery", (): void => {
     ],
   ])("%s", (_name, path, label, snippets): void => {
     expect.assertions(1);
-    const source = readFileSync(path, "utf8");
+    const source = readPageFamily(path);
     expect(collectSnippetFindings(source, label, snippets)).toStrictEqual([]);
   });
 
@@ -15154,7 +15154,7 @@ describe("repository discovery", (): void => {
     ],
   ])("keeps %s source-backed", (label, path, snippets): void => {
     expect.assertions(1);
-    const source = readFileSync(path, "utf8");
+    const source = readPageFamily(path);
     expect(collectSnippetFindings(source, label, snippets)).toStrictEqual([]);
   });
 

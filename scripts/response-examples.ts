@@ -184,16 +184,7 @@ function hasFencedExample(page: string, status: string): boolean {
 }
 
 function inlineJson(value: unknown): string {
-  if (Array.isArray(value)) {
-    return `[${value.map(inlineJson).join(", ")}]`;
-  }
-  if (typeof value === "object" && value !== null) {
-    const entries = Object.entries(value).map(
-      ([key, entry]): string => `${JSON.stringify(key)}: ${inlineJson(entry)}`,
-    );
-    return entries.length === 0 ? "{}" : `{ ${entries.join(", ")} }`;
-  }
-  return JSON.stringify(value);
+  return JSON.stringify(value, undefined, 1).replaceAll(/\n\s*/gu, " ");
 }
 
 function statusItem(status: string, language: string, value: unknown): string {

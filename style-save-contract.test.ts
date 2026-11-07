@@ -22,9 +22,9 @@ describe("save custom tweet style documentation", (): void => {
 
     expect({
       customExampleCorrect:
-        source.includes('"xUsername": "professional voice"') &&
+        source.includes('"xUsername": "product-updates"') &&
         source.includes('"isOwnAccount": false') &&
-        source.includes('"authorUsername": "professional voice"'),
+        source.includes('"authorUsername": "product-updates"'),
       nestedFields: ["id", "text", "authorUsername", "createdAt"].every((field) =>
         hasDocumentedField(source, "response", field),
       ),
