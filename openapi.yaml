@@ -3395,11 +3395,11 @@ paths:
         - $ref: '#/components/parameters/ResourceId'
         - name: hours
           in: query
-          description: Hours to return, from 1 to 720.
+          description: Hours to return, from 1 to 17,520.
           schema:
             type: integer
             minimum: 1
-            maximum: 720
+            maximum: 17520
             default: 12
       responses:
         '200':
@@ -3611,7 +3611,7 @@ paths:
         Last-Event-ID first gets every event after that one from the last 30
         days, then each new event. Set lookBack to also get events saved late. A
         connection lasts up to 30 minutes and sends a comment every 15 seconds
-        while idle. Keep up to 5 streams open per account. Events and streams
+        while idle. Keep up to 200 streams open per account. Events and streams
         cost no credits. Add include=post_metrics to also get post.metrics
         frames. The first poll sends 1 for each post monitor with a check or a
         pause. After that, a frame comes when a monitor's saved numbers or
@@ -3673,8 +3673,8 @@ paths:
         '403': { $ref: '#/components/responses/MonitorsKeyForbidden' }
         '429':
           description: >
-            The account has 5 streams open, or used Xquik's read limit. Close a
-            stream, or wait `Retry-After` seconds.
+            The account has 200 streams open, or used Xquik's read limit. Close
+            a stream, or wait `Retry-After` seconds.
           headers:
             RateLimit: { $ref: '#/components/headers/RateLimit' }
             RateLimit-Policy: { $ref: '#/components/headers/RateLimitPolicy' }
@@ -3697,11 +3697,11 @@ paths:
                         example: 60
               examples:
                 tooManyStreams:
-                  summary: 5 streams open
+                  summary: 200 streams open
                   value:
                     error: 'too_many_streams'
                     message:
-                      'Close a stream first. Keep up to 5 open per account.'
+                      'Close a stream first. Keep up to 200 open per account.'
                 xquikLimit:
                   summary: Xquik limit
                   value:
@@ -3894,6 +3894,12 @@ paths:
                 summary: "A user's likes"
                 value:
                   toolType: 'user_likes'
+                  targetUsername: 'NASA'
+                  resultsLimit: 100
+              affiliates: &extraction-affiliates-example
+                summary: "An organization's affiliates"
+                value:
+                  toolType: 'user_affiliates'
                   targetUsername: 'NASA'
                   resultsLimit: 100
               mentions: &extraction-mentions-example
@@ -4220,6 +4226,7 @@ paths:
               postsOfSeveral: *extraction-postsOfSeveral-example
               media: *extraction-media-example
               likes: *extraction-likes-example
+              affiliates: *extraction-affiliates-example
               mentions: *extraction-mentions-example
               replies: *extraction-replies-example
               quotes: *extraction-quotes-example
@@ -7939,10 +7946,10 @@ paths:
                   example: '@elonmusk'
                 file:
                   type: string
-                  maxLength: 15728640
+                  maxLength: 99614720
                   format: binary
                   description:
-                    Media file to upload, up to 15 MB. A larger file gets 413
+                    Media file to upload, up to 95 MB. A larger file gets 413
                     `media_too_large` before any account lookup.
                   example: 'binary-content'
                 is_long_video:
@@ -7972,7 +7979,7 @@ paths:
                   format: uri
                   pattern: '^https://'
                   description:
-                    HTTPS URL to download and upload as media, up to 15 MB.
+                    HTTPS URL to download and upload as media, up to 95 MB.
                     Another scheme gets 400 `invalid_media_url`.
                   example: 'https://example.com/image.png'
             example:
@@ -8319,9 +8326,9 @@ paths:
                   example: '@elonmusk'
                 file:
                   type: string
-                  maxLength: 15728640
+                  maxLength: 99614720
                   format: binary
-                  description: Avatar image (max 15 MiB)
+                  description: Avatar image (max 95 MiB)
                   example: 'binary-content'
             example:
               account: '@elonmusk'
@@ -8375,9 +8382,9 @@ paths:
                   example: '@elonmusk'
                 file:
                   type: string
-                  maxLength: 15728640
+                  maxLength: 99614720
                   format: binary
-                  description: Banner image (max 15 MiB)
+                  description: Banner image (max 95 MiB)
                   example: 'binary-content'
             example:
               account: '@elonmusk'
@@ -10345,8 +10352,9 @@ paths:
         use createExtraction with tweet_search_extractor & targetUsernames. Omit
         mode for automatic maximum coverage. Pass next_cursor unchanged. Cursors
         from before automatic mode keep their old behavior. The first page opens
-        with the pinned tweet, flagged isPinned, unless replies are included.
-        Rows stay newest first. Send retweets=exclude to drop reposts.
+        with the pinned tweet, flagged isPinned. With replies included, the
+        pinned tweet sits at its date instead. Rows stay newest first. Send
+        retweets=exclude to drop reposts.
 
 
         Account history comes back complete, old posts included. Profile exports
@@ -10455,8 +10463,9 @@ paths:
       description: >-
         Returns target-authored posts & replies, without other authors' context.
         Omit mode for automatic maximum coverage. Pass next_cursor unchanged.
-        Cursors from before automatic mode keep their old behavior. It never
-        opens with the pinned tweet.
+        Cursors from before automatic mode keep their old behavior. The pinned
+        tweet sits at its date, flagged isPinned, so it opens the first page
+        only when it's the newest post.
       tags:
         - Users
       security: [{ apiKey: [] }, { oauthBearer: [] }, {}]
@@ -14468,15 +14477,25 @@ paths:
       operationId: getUserInsights
       description: >
         Returns engagement insights for 1 profile. They are engagement rate,
-        averages per post and posting rate, from its counts and its last 20
-        posts. Reposts and the pinned post stay out of the averages. Each report
-        costs 1 credit, whatever it reads.
+        averages per post and posting rate, from its counts and its most recent
+        posts. It reads 20 posts unless limit names another number. Reposts and
+        the pinned post stay out of the averages. Each report costs 1 credit,
+        whatever it reads.
       summary: Get a user's engagement rate and averages
       tags:
         - Users
       security: [{ apiKey: [] }, { oauthBearer: [] }, {}]
       parameters:
         - $ref: '#/components/parameters/UserPathId'
+        - name: limit
+          in: query
+          description: >-
+            Recent posts to read for the averages and rates. The read stops at
+            this count, at the end of the timeline or after about 40 seconds,
+            and `sample.posts` says how many it read. `pageSize`, `count`,
+            `max_results`, `maxItems`, `max_items` & `per_page` are accepted
+            aliases.
+          schema: { type: integer, minimum: 1, default: 20, example: 50 }
         - $ref: '#/components/parameters/Fields'
         - $ref: '#/components/parameters/Omit'
       responses:
@@ -14658,6 +14677,10 @@ paths:
         suggestion & reply in the answer costs 1 credit.
 
 
+        The timeline, engagement & reply checks read the account's 20 most
+        recent posts unless `limit` names another number.
+
+
         Shadowban checks show if X search lists an account, with each post they
         read.
       summary: Check an X account for a shadowban
@@ -14666,6 +14689,14 @@ paths:
       security: [{ apiKey: [] }, { oauthBearer: [] }, {}]
       parameters:
         - $ref: '#/components/parameters/UserPathId'
+        - name: limit
+          in: query
+          description: >-
+            Recent posts to read for the timeline, engagement & reply checks.
+            The read stops at this count, at the end of the timeline or after
+            about 40 seconds. `pageSize`, `count`, `max_results`, `maxItems`,
+            `max_items` & `per_page` are accepted aliases.
+          schema: { type: integer, minimum: 1, default: 20, example: 50 }
         - $ref: '#/components/parameters/Fields'
         - $ref: '#/components/parameters/Omit'
       responses:
@@ -15788,14 +15819,12 @@ components:
       name: id
       in: path
       required: true
-      schema:
-        type: string
-        maxLength: 19
-        pattern: '^[1-9][0-9]{0,18}$'
-        example: '1500000000000000000'
+      schema: { type: string, maxLength: 2048 }
       description:
-        X Community ID, a number up to 19 digits. Another value gets a free 400
+        X Community ID, or the URL-encoded Community link, such as
+        x.com/i/communities/1500000000000000000. Another value gets a free 400
         `invalid_community_id` before X is read.
+      example: '1500000000000000000'
     SportsLeague:
       name: league
       in: path
@@ -15835,14 +15864,12 @@ components:
       name: id
       in: path
       required: true
-      schema:
-        type: string
-        maxLength: 19
-        pattern: '^[1-9][0-9]{0,18}$'
-        example: '1500000000000000000'
+      schema: { type: string, maxLength: 2048 }
       description:
-        X Community ID, a number up to 19 digits. Another value gets 400
+        X Community ID, or the URL-encoded Community link, such as
+        x.com/i/communities/1500000000000000000. Another value gets 400
         `invalid_community_id` before the write is reserved.
+      example: '1500000000000000000'
     ListPathId:
       name: id
       in: path
@@ -15894,10 +15921,11 @@ components:
     CommunitySearchId:
       name: communityId
       in: query
-      schema: { type: string, maxLength: 19, pattern: '^[1-9][0-9]{0,18}$' }
+      schema: { type: string, maxLength: 2048 }
       description: >
-        Numeric ID of the Community whose posts to search. Leave it out to
-        search posts across every Community.
+        ID or link of the Community whose posts to search, such as
+        x.com/i/communities/1500000000000000000. Leave it out to search posts
+        across every Community.
     CommunityQuery:
       name: q
       in: query
@@ -16092,12 +16120,12 @@ components:
       name: limit
       in: query
       description: >
-        Maximum events per page, from 1 to 100. Default 50. Pass nextCursor as
-        cursor for the next page.
+        Maximum events per page, from 1 to 10,000. Default 50. A page of large
+        events can hold fewer rows. Pass nextCursor as cursor for the next page.
       schema:
         type: integer
         minimum: 1
-        maximum: 100
+        maximum: 10000
         default: 50
     ListLimit:
       name: limit
@@ -16114,12 +16142,12 @@ components:
       name: limit
       in: query
       description: >
-        Maximum deliveries per page, from 1 to 100. Default 100. Pass nextCursor
-        as cursor for the next page.
+        Maximum deliveries per page, from 1 to 10,000. Default 100. Pass
+        nextCursor as cursor for the next page.
       schema:
         type: integer
         minimum: 1
-        maximum: 100
+        maximum: 10000
         default: 100
     ResultPageSize:
       name: pageSize
@@ -22595,6 +22623,7 @@ components:
         - space_explorer
         - thread_extractor
         - tweet_search_extractor
+        - user_affiliates
         - user_likes
         - user_media
         - verified_follower_explorer
@@ -24591,6 +24620,15 @@ components:
           $ref: '#/components/schemas/WholeNumber'
         viewCount:
           $ref: '#/components/schemas/WholeNumber'
+        isDeleted:
+          type: boolean
+          description: >
+            True on a post its author deleted from X after Xquik saw it, with
+            outputPreset=flat. Default nested output uses
+            enrichmentData.tweet.isDeleted. An account post list with a date
+            range adds such posts from the last 30 days. Absent on every other
+            row.
+          example: true
         enrichmentData:
           type: object
           $ref: '#/components/schemas/PublicMetadata'
