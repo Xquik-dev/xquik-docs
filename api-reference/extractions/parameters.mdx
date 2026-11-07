@@ -1,0 +1,191 @@
+---
+title: "Twitter scraper API extraction request parameters"
+sidebarTitle: "Extraction parameters"
+description: "Every body parameter for Twitter extraction jobs and cost estimates, covering targets, collection limits, reply controls, tweet and profile filters, and search."
+keywords:
+  [
+    "extraction parameters",
+    "Twitter scraper API parameters",
+    "extraction request body",
+    "targetUsername",
+    "resultsLimit",
+  ]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+<LlmsDirective />
+
+Create Extraction and the cost estimator accept the same body. Each tool reads the fields it needs and `toolType` picks the tool.
+
+<section>
+
+## Single targets
+
+| Body parameter      | Type     | Required | Description                                                                                                                                                                                                                                                                                           |
+| ------------------- | -------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `targetTweetId`     | `string` | No       | Tweet ID for a tweet-centered extraction.                                                                                                                                                                                                                                                             |
+| `targetUsername`    | `string` | No       | Username for an account-centered extraction. You may include `@`.                                                                                                                                                                                                                                     |
+| `targetCommunityId` | `string` | No       | Community ID for a community extraction.                                                                                                                                                                                                                                                              |
+| `targetListId`      | `string` | No       | List ID for a list extraction.                                                                                                                                                                                                                                                                        |
+| `targetSpaceId`     | `string` | No       | Space ID for `space_explorer`.                                                                                                                                                                                                                                                                        |
+| `searchQuery`       | `string` | No       | Query for `tweet_search_extractor`, `people_search` or `community_search`. `tweet_search_extractor` adds the structured search fields, such as `fromUser` and `minFaves`, to this query. X searches up to 512 characters. A longer tweet or people search answers 400, counted with the added fields. |
+
+</section>
+
+<section>
+
+## Collection targets
+
+| Body parameter       | Type       | Required | Description                                                                                                                                                    |
+| -------------------- | ---------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `targetTweetIds`     | `string[]` | No       | Process 1-10,000 Tweet IDs in one collection job.                                                                                                              |
+| `targetUsernames`    | `string[]` | No       | Process 1-10,000 unique usernames in one job. `tweet_search_extractor` collects their posts.                                                                   |
+| `targetCommunityIds` | `string[]` | No       | Process 1-10,000 unique community IDs in one collection job.                                                                                                   |
+| `targetListIds`      | `string[]` | No       | Process 1-10,000 unique List IDs in one collection job.                                                                                                        |
+| `searchQueries`      | `string[]` | No       | Process 1-10,000 unique search queries in one collection job. Each follows the rules of `searchQuery`, its structured fields and 512-character limit included. |
+| `targets`            | `array`    | No       | Process up to 10,000 mixed targets with automatic routing.                                                                                                     |
+
+Each target accepts a supported string or `{ "kind": "...", "value": "..." }`.
+
+| Body parameter    | Type    | Required | Description                                                   |
+| ----------------- | ------- | -------- | ------------------------------------------------------------- |
+| `relationTargets` | `array` | No       | Process up to 10,000 profile relations in one collection job. |
+
+Each relation target uses `{ "relation": "...", "value": "..." }`.
+
+</section>
+
+<section>
+
+## Collection controls
+
+| Body parameter          | Type      | Required | Description                                                                                                                                                                                                                |
+| ----------------------- | --------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `queryType`             | `string`  | No       | Search ranking. Use `Latest`, `Top`, or `Both`. Defaults to `Latest`.                                                                                                                                                      |
+| `resultsLimit`          | `integer` | No       | Maximum unique results to emit. Defaults to `10,000`. Use any positive integer.                                                                                                                                            |
+| `maxItemsPerTarget`     | `integer` | No       | Maximum results collected for each target. At least `1`.                                                                                                                                                                   |
+| `maxPagesPerTarget`     | `integer` | No       | Reply pages collected per target. Accepts `1-1,000`.                                                                                                                                                                       |
+| `startCursor`           | `string`  | No       | Resume one reply target from this cursor.                                                                                                                                                                                  |
+| `dedupeAcrossTargets`   | `boolean` | No       | Merge duplicates across targets. Defaults to `true`.                                                                                                                                                                       |
+| `dedupeMode`            | `string`  | No       | Duplicate handling. Use `none`, `first`, or `merge`.                                                                                                                                                                       |
+| `overlapMode`           | `boolean` | No       | Use `dedupeMode=merge`. Defaults to `false`.                                                                                                                                                                               |
+| `includeSearchTerms`    | `boolean` | No       | Add matched search terms to collection metadata. Defaults to `false`.                                                                                                                                                      |
+| `includeTargetMetadata` | `boolean` | No       | Add source target metadata to each result. Defaults to `true`.                                                                                                                                                             |
+| `enrichProfiles`        | `boolean` | No       | Add each user's full profile at `enrichmentData.profile`. Applies to `follower_explorer`, `following_explorer`, `verified_follower_explorer`, `people_search` & `repost_extractor`. Jobs take longer. Defaults to `false`. |
+
+</section>
+
+<section>
+
+## Reply collection
+
+| Body parameter          | Type                | Required | Description                                                                   |
+| ----------------------- | ------------------- | -------- | ----------------------------------------------------------------------------- |
+| `collectionStrategy`    | `string`            | No       | Collection strategy. Use `auto`, `complete`, `direct`, `search`, or `thread`. |
+| `scope`                 | `string`            | No       | Reply scope. Use `all`, `direct`, or `nested`. Defaults to `all`.             |
+| `maxDepth`              | `integer`           | No       | Maximum nested reply depth. At least `1`.                                     |
+| `sort`                  | `string`            | No       | Sort order. Use `relevance`, `latest`, `oldest`, or `likes`.                  |
+| `excludeOriginalAuthor` | `boolean`           | No       | Exclude replies from the source author. Defaults to `false`.                  |
+| `includeOriginalPost`   | `boolean`           | No       | Include the source post. Defaults to `false`.                                 |
+| `hasMediaOnly`          | `boolean`           | No       | Return only replies with media. Defaults to `false`.                          |
+| `sinceTime`             | `string \| integer` | No       | Reply start time as ISO 8601 or Unix seconds.                                 |
+| `untilTime`             | `string \| integer` | No       | Reply end time as ISO 8601 or Unix seconds.                                   |
+
+</section>
+
+<section>
+
+## Tweet result filters
+
+| Body parameter     | Type      | Required | Description                                                                                                                                                                                                                       |
+| ------------------ | --------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `minViews`         | `integer` | No       | Minimum Tweet view count.                                                                                                                                                                                                         |
+| `minBookmarks`     | `integer` | No       | Minimum Tweet bookmark count.                                                                                                                                                                                                     |
+| `maxLikes`         | `integer` | No       | Maximum Tweet like count.                                                                                                                                                                                                         |
+| `maxRetweets`      | `integer` | No       | Maximum Tweet repost count.                                                                                                                                                                                                       |
+| `maxReplies`       | `integer` | No       | Maximum Tweet reply count.                                                                                                                                                                                                        |
+| `maxQuotes`        | `integer` | No       | Maximum Tweet quote count.                                                                                                                                                                                                        |
+| `textOnlyTerms`    | `string`  | No       | Keep a post only when 1 of these words is in its text. Links, cards and quoted posts count as text. The author's name and username don't count. Quote a phrase to match it whole.                                                 |
+| `blueVerifiedOnly` | `boolean` | No       | Return only Blue-verified Tweet authors. On a tool that returns users, return only profiles X marks as blue verified. Defaults to `false`.                                                                                        |
+| `cardName`         | `string`  | No       | X search no longer supports `cardName`, so a search with it finds no Tweets.                                                                                                                                                      |
+| `source`           | `string`  | No       | X search no longer supports `source`. An extraction with it answers 424 `search_unavailable` & charges nothing.                                                                                                                   |
+| `excludeSource`    | `string`  | No       | X search ignores `excludeSource`, so an extraction with it returns unfiltered rows. Its answers carry `Deprecation` & `Sunset` headers. From 2027-01-15 an extraction with it answers 424 `search_unavailable` & charges nothing. |
+| `geocode`          | `string`  | No       | X search no longer supports `geocode`. An extraction with it answers 424 `search_unavailable` & charges nothing.                                                                                                                  |
+| `sinceId`          | `string`  | No       | Return Tweets whose IDs exceed this ID.                                                                                                                                                                                           |
+| `maxId`            | `string`  | No       | Return Tweets at or below this ID.                                                                                                                                                                                                |
+| `near`             | `string`  | No       | A place name. A country, such as United States, works like `placeCountry` & keeps Tweets tagged there. A city keeps Tweets about it.                                                                                              |
+| `within`           | `string`  | No       | X search no longer supports `within`. An extraction with it answers 424 `search_unavailable` & charges nothing. Use `near` alone.                                                                                                 |
+| `withinTime`       | `string`  | No       | Match Tweets inside a recent time window.                                                                                                                                                                                         |
+| `nativeRetweets`   | `boolean` | No       | Return only native reposts. Defaults to `false`.                                                                                                                                                                                  |
+| `safe`             | `boolean` | No       | Enable safe search. Defaults to `false`.                                                                                                                                                                                          |
+| `news`             | `boolean` | No       | X search no longer supports `filter:news`. An extraction with `news` set to `true` answers 424 `search_unavailable` & charges nothing.                                                                                            |
+
+</section>
+
+<section>
+
+## Profile result filters
+
+| Body parameter      | Type      | Required | Description                                                                 |
+| ------------------- | --------- | -------- | --------------------------------------------------------------------------- |
+| `minFollowers`      | `integer` | No       | Minimum profile follower count.                                             |
+| `maxFollowers`      | `integer` | No       | Maximum profile follower count.                                             |
+| `minFollowing`      | `integer` | No       | Minimum profile following count.                                            |
+| `maxFollowing`      | `integer` | No       | Maximum profile following count.                                            |
+| `minPosts`          | `integer` | No       | Minimum profile post count.                                                 |
+| `maxPosts`          | `integer` | No       | Maximum profile post count.                                                 |
+| `minAccountAgeDays` | `integer` | No       | Minimum profile age in days.                                                |
+| `verifiedType`      | `string`  | No       | Match the exact profile verification type.                                  |
+| `hasWebsite`        | `boolean` | No       | Require a profile website. Defaults to `false`.                             |
+| `hasLocation`       | `boolean` | No       | Require a profile location. Defaults to `false`.                            |
+| `hasEmail`          | `boolean` | No       | Require an email the profile publishes. Defaults to `false`.                |
+| `businessEmailOnly` | `boolean` | No       | Require an email outside free webmail, such as Gmail. Defaults to `false`.  |
+| `emailDomains`      | `string`  | No       | Require an email at one of these comma-separated domains. Subdomains match. |
+| `bioContains`       | `string`  | No       | Match any bio term, ignoring case. Separate terms with commas or lines.     |
+| `locationContains`  | `string`  | No       | Require matching profile location text.                                     |
+| `usernameContains`  | `string`  | No       | Require matching username text.                                             |
+
+</section>
+
+<section>
+
+## Tweet search filters
+
+These fields apply to `tweet_search_extractor`.
+
+| Body parameter      | Type      | Required | Description                                                                       |
+| ------------------- | --------- | -------- | --------------------------------------------------------------------------------- |
+| `fromUser`          | `string`  | No       | Match an author username without `@`.                                             |
+| `toUser`            | `string`  | No       | Match replies sent to a username.                                                 |
+| `mentioning`        | `string`  | No       | Match Tweets mentioning a username.                                               |
+| `language`          | `string`  | No       | Match a language code, such as `en`.                                              |
+| `sinceDate`         | `string`  | No       | Include Tweets on or after `YYYY-MM-DD`.                                          |
+| `untilDate`         | `string`  | No       | Include Tweets up to `YYYY-MM-DD`, a UTC day, inclusive, so its own Tweets count. |
+| `mediaType`         | `string`  | No       | Media filter. Use `images`, `videos`, `gifs`, `media`, `links`, or `none`.        |
+| `minFaves`          | `integer` | No       | Minimum like count.                                                               |
+| `minRetweets`       | `integer` | No       | Minimum repost count.                                                             |
+| `minReplies`        | `integer` | No       | Minimum reply count.                                                              |
+| `minQuotes`         | `integer` | No       | Minimum quote count.                                                              |
+| `verifiedOnly`      | `boolean` | No       | Return only verified authors.                                                     |
+| `replies`           | `string`  | No       | Reply mode. Use `include`, `exclude`, or `only`.                                  |
+| `retweets`          | `string`  | No       | Repost mode. Use `include`, `exclude`, or `only`.                                 |
+| `quotes`            | `string`  | No       | Quote mode. Use `include`, `exclude`, or `only`.                                  |
+| `exactPhrase`       | `string`  | No       | Match one exact phrase.                                                           |
+| `excludeWords`      | `string`  | No       | Exclude words or quoted phrases.                                                  |
+| `anyWords`          | `string`  | No       | Match any listed word or quoted phrase.                                           |
+| `hashtags`          | `string`  | No       | Match hashtags separated by spaces, commas, or lines.                             |
+| `cashtags`          | `string`  | No       | Match cashtags separated by spaces, commas, or lines.                             |
+| `url`               | `string`  | No       | Match a URL substring or domain.                                                  |
+| `conversationId`    | `string`  | No       | Match a conversation ID.                                                          |
+| `inReplyToTweetId`  | `string`  | No       | Return only replies to this Tweet ID.                                             |
+| `quotesOfTweetId`   | `string`  | No       | Return only quotes of this Tweet ID.                                              |
+| `retweetsOfTweetId` | `string`  | No       | Return only reposts of this Tweet ID.                                             |
+| `listId`            | `string`  | No       | Search within a List ID.                                                          |
+| `place`             | `string`  | No       | Search within a place ID.                                                         |
+| `placeCountry`      | `string`  | No       | Search within a country code.                                                     |
+| `pointRadius`       | `string`  | No       | Set a geographic center and radius.                                               |
+| `boundingBox`       | `string`  | No       | Set a geographic bounding box.                                                    |
+| `advancedQuery`     | `string`  | No       | Append raw advanced search syntax.                                                |
+
+</section>
