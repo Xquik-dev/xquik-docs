@@ -69,7 +69,7 @@ const REQUIRED_CUSTOM_CSS_MOBILE_VIEWPORT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_README_SNIPPETS = [
-  "# Twitter API documentation & X API docs by Xquik",
+  "# Twitter API Documentation by Xquik",
   "tweet search",
   "user lookup",
   "follower exports",
@@ -79,7 +79,7 @@ const REQUIRED_README_SNIPPETS = [
   "1-second tweet monitors",
   "signed webhooks",
   "SDK clients",
-  "X automation",
+  "X (Twitter) automation",
   "[Quickstart](https://docs.xquik.com/x-api-quickstart)",
   "[API reference](https://docs.xquik.com/api-reference)",
   "Browse every OpenAPI-backed operation",
@@ -90,7 +90,7 @@ const REQUIRED_README_SNIPPETS = [
   "[Tweet replies export](https://docs.xquik.com/guides/tweet-replies-export)",
   "Export replies to CSV, JSON, or XLSX",
   "[Follower export](https://docs.xquik.com/guides/follower-export-crm)",
-  "Export X followers to CRM or warehouse",
+  "Export X (Twitter) followers to CRM or warehouse",
   "[Direct message workflow](https://docs.xquik.com/guides/direct-message-workflow)",
   "Send DMs and store returned message IDs",
   "[Prefect](https://docs.xquik.com/guides/prefect)",
@@ -99,7 +99,7 @@ const REQUIRED_README_SNIPPETS = [
   "[Webhooks](https://docs.xquik.com/webhooks/overview)",
   "[Apify Actors](https://docs.xquik.com/alternatives/apify)",
   "Search tweets with `from:`, `since:`, `until:`, filters, and cursor pagination.",
-  "focused X data jobs on Apify",
+  "focused X (Twitter) data jobs on Apify",
   "Apify dataset workflows",
   "[llms.txt](https://docs.xquik.com/llms.txt)",
   "## Use with AI coding agents",
@@ -370,7 +370,7 @@ const FORBIDDEN_TYPESCRIPT_SDK_RAW_SEARCH_SNIPPETS = [
   "Write `page.tweets` as JSON Lines to `xquik-tweet-search.jsonl`",
   "process.stdout.write(JSON.stringify(tweets, null, 2));",
   "results_limit",
-  "Maps to REST `limit`. Use it for a bounded request from 1 to 200. Omit it for cursor loops.",
+  "Maps to REST `limit`. Use it for a bounded request from 1 to 10,000. Omit it for cursor loops.",
 ] as const;
 
 const REQUIRED_GO_SDK_WORKFLOW_SNIPPETS = [
@@ -493,7 +493,7 @@ const REQUIRED_GO_SDK_WORKFLOW_SNIPPETS = [
 const FORBIDDEN_GO_SDK_WEAK_SEARCH_SNIPPETS = [
   'fmt.Printf("%+v\\n", tweets.HasNextPage)',
   "ResultsLimit",
-  "Go field `Limit` maps to REST `limit`. Use it for a bounded request from 1 to 200. Omit it for cursor loops.",
+  "Go field `Limit` maps to REST `limit`. Use it for a bounded request from 1 to 10,000. Omit it for cursor loops.",
 ] as const;
 
 const REQUIRED_PYTHON_SDK_WORKFLOW_SNIPPETS = [
@@ -626,7 +626,7 @@ const FORBIDDEN_PYTHON_SDK_RAW_SEARCH_SNIPPETS = [
   "Write `page.tweets` to CSV for analysts",
   "print(tweets.to_json())",
   "results_limit",
-  "Python argument `limit` maps to REST `limit`. Use it for a bounded request from 1 to 200. Omit it for cursor loops.",
+  "Python argument `limit` maps to REST `limit`. Use it for a bounded request from 1 to 10,000. Omit it for cursor loops.",
 ] as const;
 
 const REQUIRED_RUBY_SDK_WORKFLOW_SNIPPETS = [
@@ -767,7 +767,7 @@ const FORBIDDEN_RUBY_SDK_WEAK_SEARCH_SNIPPETS = [
   "`tweet.to_json`",
   "`tweet.deep_to_h`",
   "results_limit",
-  "Ruby keyword `limit` maps to REST `limit`. Use it for a bounded request from 1 to 200. Omit it for cursor loops.",
+  "Ruby keyword `limit` maps to REST `limit`. Use it for a bounded request from 1 to 10,000. Omit it for cursor loops.",
 ] as const;
 
 const REQUIRED_CLI_SDK_WORKFLOW_SNIPPETS = [
@@ -895,7 +895,7 @@ const FORBIDDEN_CLI_SDK_WORKFLOW_SNIPPETS = [
   "Write one JSON object per line for downstream jobs",
   "projected records to CSV for analysts",
   "produce XLSX from those rows",
-  "Use `--limit` for a bounded request from 1 to 200. Omit it when passing `--cursor` in page loops.",
+  "Use `--limit` for a bounded request from 1 to 10,000. Omit it when passing `--cursor` in page loops.",
 ] as const;
 
 const REQUIRED_CSHARP_SDK_WORKFLOW_SNIPPETS = [
@@ -1043,7 +1043,7 @@ const FORBIDDEN_CSHARP_SDK_WEAK_SEARCH_SNIPPETS = [
   "projected rows into CSV for analysts",
   "results_limit",
   "xquik-tweet-replies",
-  "C# property `Limit` maps to REST `limit`. Use it for a bounded request from 1 to 200. Omit it for cursor loops.",
+  "C# property `Limit` maps to REST `limit`. Use it for a bounded request from 1 to 10,000. Omit it for cursor loops.",
 ] as const;
 
 const REQUIRED_PHP_SDK_WORKFLOW_SNIPPETS = [
@@ -1187,7 +1187,7 @@ const FORBIDDEN_PHP_SDK_WEAK_SEARCH_SNIPPETS = [
   "Write `$page->tweets` as JSON Lines to `xquik-tweet-search.jsonl`",
   "'id' => $tweet->id",
   "results_limit",
-  "PHP argument `limit` maps to REST `limit`. Use it for a bounded request from 1 to 200. Omit it for cursor loops.",
+  "PHP argument `limit` maps to REST `limit`. Use it for a bounded request from 1 to 10,000. Omit it for cursor loops.",
 ] as const;
 
 const REQUIRED_JAVA_SDK_WORKFLOW_SNIPPETS = [
@@ -1345,7 +1345,7 @@ const FORBIDDEN_JAVA_SDK_WEAK_SEARCH_SNIPPETS = [
   "transform the same projected records into CSV for analysts",
   "results_limit",
   "xquik-tweet-replies",
-  "Java builder method `.limit()` maps to REST `limit`. Use it for a bounded request from 1 to 200. Omit it for cursor loops.",
+  "Java builder method `.limit()` maps to REST `limit`. Use it for a bounded request from 1 to 10,000. Omit it for cursor loops.",
 ] as const;
 
 const REQUIRED_KOTLIN_SDK_WORKFLOW_SNIPPETS = [
@@ -1503,11 +1503,11 @@ const FORBIDDEN_KOTLIN_SDK_WEAK_SEARCH_SNIPPETS = [
   "transform the projected records into CSV for analysts",
   "results_limit",
   "xquik-tweet-replies",
-  "Kotlin builder method `.limit()` maps to REST `limit`. Use it for a bounded request from 1 to 200. Omit it for cursor loops.",
+  "Kotlin builder method `.limit()` maps to REST `limit`. Use it for a bounded request from 1 to 10,000. Omit it for cursor loops.",
 ] as const;
 
 const FORBIDDEN_TWEET_SEARCH_CURSOR_LIMIT_SNIPPETS = [
-  "Use it for the page size from 1 to 200",
+  "Use it for the page size from 1 to 10,000",
   "Use it for the maximum tweets to return for the page",
   "`q`, `limit`, and optional `cursor`",
   "with `q`, `limit`, and optional `cursor`",
@@ -3927,7 +3927,7 @@ const REQUIRED_CRM_EXPORT_WORKFLOW_SNIPPETS = [
   "`users[].username` to `x_username`",
   "`users[].createdAt` to `account_created_at`",
   "`statusesCount`",
-  "Automatic `pageSize` accepts `20` to `300`.",
+  "Automatic `pageSize` accepts `20` to `10000`.",
   "Credits can reduce the returned row count.",
   "`402 insufficient_credits`",
   '"page_checkpoint": "44196397:DAACCgACGE..."',
@@ -5048,7 +5048,7 @@ const REQUIRED_FOLLOWERS_API_HANDOFF_SNIPPETS = [
   '"has_next_page": page["has_next_page"]',
   'print(json.dumps(import_row, separators=(",", ":")))',
   "write JSON Lines import rows, not raw",
-  "Automatic `pageSize` accepts 20 to 300.",
+  "Automatic `pageSize` accepts 20 to 10,000.",
   "Standard mode accepts 20 to 200.",
   "Pass `next_cursor` back unchanged.",
   "Existing unprefixed cursors keep legacy behavior.",
@@ -5112,7 +5112,7 @@ const REQUIRED_FOLLOWING_API_HANDOFF_SNIPPETS = [
   "write JSON Lines audience rows, not raw",
   "Pass `next_cursor` back unchanged.",
   "Existing unprefixed cursors keep legacy behavior.",
-  "Automatic pages accept `20` through `300`.",
+  "Automatic pages accept `20` through `10000`.",
   "Credits can reduce the returned row count.",
   "## Which following endpoint?",
   '<Card title="One user\'s following"',
@@ -5271,7 +5271,7 @@ const REQUIRED_LIST_MEMBERS_API_HANDOFF_SNIPPETS = [
   "create one row per List member",
   "`list_id`, `member_id`, `username`,",
   "`has_next_page`, and `next_cursor`",
-  "Automatic pages accept `1-300`",
+  "Automatic pages accept `1-10000`",
   '<Card title="Member roster" icon="users">',
   '<Card title="Next page" icon="arrow-right">',
   '<Card title="Page size" icon="rows-3">',
@@ -6569,6 +6569,7 @@ const REQUIRED_EXTRACTION_CREATE_TOOL_TYPE_SNIPPETS = [
   "`mention_extractor` extracts tweets mentioning an account.",
   "`post_extractor` extracts posts from an account.",
   "`user_likes` extracts liked tweets that X makes visible.",
+  "`user_affiliates` extracts the accounts an organization lists as its",
   "`user_media` extracts media posts from a user.",
   "`verified_follower_explorer` extracts verified followers of an account.",
   '<Card title="Community target" icon="users">',
@@ -8949,7 +8950,7 @@ const REQUIRED_REQUEST_EFFICIENT_API_USAGE_SNIPPETS = [
   "## Use the correct page-size parameter",
   "| Tweet search | `limit` | 1 to 10,000 tweets. Default 20 |",
   "| User tweets and replies | `pageSize` | Automatic 1 to 300. Standard 1 to 100. Default 20 |",
-  "| Followers and following | `pageSize` | Automatic 20 to 300. Standard 20 to 200. Default 200 |",
+  "| Followers and following | `pageSize` | Automatic 20 to 10,000. Standard 20 to 200. Default 200 |",
   "| Extraction results | `limit` | 1 to 1,000 stored rows. Default 100 |",
   "## Use extraction jobs for saved files",
   "Pass `nextCursor` back through `cursor` for more stored rows.",
@@ -9162,7 +9163,7 @@ const REQUIRED_KEYWORD_MONITOR_LIST_API_HANDOFF_SNIPPETS = [
   "and `deliveries_endpoint_pattern`",
   "## Inventory handoff",
   "Use `GET /monitors/keywords` after create, update, pause, or delete operations",
-  "up to 200",
+  "up to 10,000",
   "keyword monitors ordered by creation time",
   "`total` count for the returned",
   '<Card title="Active burn" icon="activity">',
@@ -9748,7 +9749,7 @@ const REQUIRED_ACCOUNT_MONITOR_LIST_API_HANDOFF_SNIPPETS = [
   "## Inventory handoff",
   "Use `GET /monitors` after create, update, pause, or delete operations",
   "your account monitor inventory.",
-  "up to 200 monitors ordered",
+  "up to 10,000 monitors ordered",
   "`total` count for the returned set.",
   '<Card title="Tracked accounts" icon="users">',
   "Store each monitor's `id`, `username`, and `xUserId`",

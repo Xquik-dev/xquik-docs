@@ -86,6 +86,10 @@ info:
 
     - Large answers fit the agent's context, capped at 24,000 characters.
 
+    - A cut answer links to a CSV file of every row.
+
+    - Each MCP tool states its credit price.
+
     - Clients can run reads without prompts & confirm writes.
 
     - 1 stable shape with snake_case, Unix seconds, `has_more` & `next_cursor`.
@@ -265,8 +269,9 @@ tags:
       Connected X accounts. Sign-in & removal need a dashboard session.
   - name: X Write
     description: >-
-      X write actions (tweets, likes, follows, DMs). Writes cost nothing until
-      they land. A write reports success only once it's live on X.
+      Linked X accounts can post, like, repost, follow, bookmark, block, mute &
+      send DMs. Writes cost nothing until they land. A write reports success
+      only once it's live on X.
 paths:
   /ask:
     servers:
@@ -292,7 +297,7 @@ paths:
               flat:
                 summary: 'A flat request'
                 value:
-                  query: 'How does MCP OAuth work?'
+                  query: 'What is Xquik?'
                   site: 'docs.xquik.com'
                   streaming: false
                   response_format: 'conversational_search'
@@ -305,7 +310,7 @@ paths:
                 summary: 'A structured request'
                 value:
                   query:
-                    text: 'How does MCP OAuth work?'
+                    text: 'What is Xquik?'
                     site: 'docs.xquik.com'
                   prefer:
                     mode: 'list'
@@ -328,7 +333,17 @@ paths:
                   response_format: conversational_search
                   response_type: answer
                   version: '0.55'
-                results: []
+                answer: &nlweb-answer-example >-
+                  Xquik is a hosted service for tweet search, follower exports,
+                  profile lookup, monitors, webhooks, and X account actions.
+                sources: [https://docs.xquik.com/guides/architecture]
+                results:
+                  - '@context': https://schema.org
+                    '@id': https://docs.xquik.com/guides/architecture
+                    '@type': TechArticle
+                    description: *nlweb-answer-example
+                    name: Xquik platform architecture & X API workflows
+                    url: https://docs.xquik.com/guides/architecture
             text/event-stream:
               schema:
                 type: string
@@ -1647,7 +1662,7 @@ paths:
                       limit:
                         type: integer
                         minimum: 1
-                        example: 100
+                        example: 10000
                       message:
                         type: string
                         example:
@@ -1658,7 +1673,7 @@ paths:
                   summary: API key limit reached
                   value:
                     error: api_key_limit_reached
-                    limit: 100
+                    limit: 10000
                     message:
                       API key limit reached. Delete an existing key first.
                 sessionRequired:
@@ -1691,7 +1706,7 @@ paths:
                 ids:
                   type: array
                   minItems: 1
-                  maxItems: 100
+                  maxItems: 10000
                   items:
                     type: string
                     maxLength: 19
@@ -1764,7 +1779,7 @@ paths:
                 ids:
                   type: array
                   minItems: 1
-                  maxItems: 100
+                  maxItems: 10000
                   items:
                     type: string
                     maxLength: 19
@@ -2595,17 +2610,19 @@ paths:
           schema:
             type: integer
             minimum: 1
-            maximum: 72
+            maximum: 168
             default: 6
-          description: Lookback window in hours (1-72, default 6).
+          description:
+            Lookback window in hours (1-168, default 6). Radar keeps 7 days of
+            items.
         - name: limit
           in: query
           schema:
             type: integer
             minimum: 1
-            maximum: 100
+            maximum: 1000
             default: 50
-          description: Number of items to return (1-100, default 50).
+          description: Number of items to return (1-1000, default 50).
         - name: region
           in: query
           schema:
@@ -3084,10 +3101,19 @@ paths:
                   example: Launch post
                 eventTypes:
                   $ref: '#/components/schemas/PostEventTypeArray'
+                isActive:
+                  type: boolean
+                  default: true
+                  description:
+                    Send false to create the monitor paused. A paused monitor
+                    reads nothing & costs nothing until a PATCH sets isActive to
+                    true.
+                  example: true
             example:
               post: 'https://x.com/NASA/status/2102882545427714266'
               name: Launch post
               eventTypes: [post.reply.new, post.likes.changed]
+              isActive: true
       responses:
         '201':
           description: Post monitor created
@@ -3410,7 +3436,7 @@ paths:
       tags: [Events]
       security: *api-auth-2
       parameters:
-        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/EventLimit'
         - $ref: '#/components/parameters/After'
         - name: monitorId
           in: query
@@ -6249,20 +6275,22 @@ paths:
       parameters:
         - name: q
           in: query
-          required: true
+          required: false
           schema:
             type: string
             maxLength: 4096
           description: >-
-            Query, Tweet ID, or URL. Alias query. Hyphens negate terms. Use
-            exactPhrase for literals. `from:` & `-from:` take a handle or a user
-            ID, also in an OR group. Valid bounds apply per page. `since:` &
-            `until:` dates are UTC days, written YYYY-MM-DD. 25/12/2026 &
-            12/25/2026 also work. 04/01/2026 fits both orders & answers 424 with
-            the form to write. `since_time:` & `until_time:` take Unix seconds
-            or an ISO 8601 time. `list:` takes a public List's ID. A private
-            List answers 404 list_not_found. Keep q to 512 characters. A longer
-            one can answer 424 before any read, at no charge.
+            Query, Tweet ID, or URL. Alias query. Optional when fromUser,
+            keywords or another field forms the search. Without either, it
+            answers 400 missing_query. Hyphens negate terms. Use exactPhrase for
+            literals. `from:` & `-from:` take a handle or a user ID, also in an
+            OR group. Valid bounds apply per page. `since:` & `until:` dates are
+            UTC days, written YYYY-MM-DD. 25/12/2026 & 12/25/2026 also work.
+            04/01/2026 fits both orders & answers 424 with the form to write.
+            `since_time:` & `until_time:` take Unix seconds or an ISO 8601 time.
+            `list:` takes a public List's ID. A private List answers 404
+            list_not_found. Keep q to 512 characters. A longer one can answer
+            424 before any read, at no charge.
         - name: queryType
           in: query
           required: false
@@ -6898,6 +6926,35 @@ paths:
               account: '@elonmusk'
       responses: *x-rate-limited-write-responses
 
+  /x/tweets/{id}/bookmark:
+    post:
+      operationId: bookmarkTweet
+      description:
+        Bookmarks a post through a connected X account. Only that account sees
+        its bookmarks, and GET /x/bookmarks lists them.
+      x-write-action: bookmark
+      summary: Bookmark tweet
+      tags: [X Write]
+      security: *api-auth
+      parameters: *tweet-write-parameters
+      requestBody:
+        required: true
+        description: Account to save the bookmark.
+        content: *x-account-body-content
+      responses: *x-rate-limited-write-responses
+    delete:
+      operationId: unbookmarkTweet
+      description: Removes a bookmark through a connected X account.
+      x-write-action: unbookmark
+      summary: Remove bookmark
+      tags: [X Write]
+      security: *api-auth
+      parameters: *tweet-write-parameters
+      requestBody:
+        required: true
+        description: Account that bookmarked the tweet.
+        content: *x-account-body-content
+      responses: *x-rate-limited-write-responses
   /x/tweets/{id}/retweet:
     post:
       operationId: retweet
@@ -6944,9 +7001,11 @@ paths:
             type: string
             maxLength: 13081
           description:
-            Comma-separated numeric user IDs (1-100 values). Xquik ignores
-            duplicate IDs and keeps the first-seen order. A longer URL fails at
-            the edge before Xquik reads it.
+            Comma-separated numeric user IDs (1-100 values). Xquik reads any
+            other entry as a username, with or without @, so IDs and usernames
+            can mix. Xquik ignores duplicates and keeps the first-seen order,
+            IDs before usernames. A longer URL fails at the edge before Xquik
+            reads it.
         - name: usernames
           in: query
           schema:
@@ -7027,9 +7086,11 @@ paths:
             type: string
             maxLength: 13074
           description:
-            Comma-separated numeric user IDs (1-20 values). Xquik ignores
-            duplicate IDs and keeps the first-seen order. A longer URL fails at
-            the edge before Xquik reads it.
+            Comma-separated numeric user IDs (1-20 values). Xquik reads any
+            other entry as a username, with or without @, so IDs and usernames
+            can mix. Xquik ignores duplicates and keeps the first-seen order,
+            IDs before usernames. A longer URL fails at the edge before Xquik
+            reads it.
         - name: usernames
           in: query
           schema:
@@ -7275,7 +7336,12 @@ paths:
   /x/users/{id}/follow:
     post:
       operationId: followUser
-      description: Follows a user through a connected X account.
+      description: >
+        Follows a user through a connected X account. Once X rate limits an
+        account's follows, its follows get 429 until X's reset. That hold lasts
+        24 hours at most, or 15 minutes without X's reset. Xquik sends nothing
+        to X & charges nothing. `Retry-After` & `nextAction.afterMs` give the
+        wait.
       x-write-action: follow
       summary: Follow user
       tags: [X Write]
@@ -7327,6 +7393,64 @@ paths:
         content: *x-account-body-content
       responses: *write-responses
 
+  /x/users/{id}/block:
+    post:
+      operationId: blockUser
+      description:
+        Blocks a user through a connected X account. X removes follows both
+        ways, and unblocking doesn't restore them.
+      x-write-action: block
+      summary: Block user
+      tags: [X Write]
+      security: *api-auth
+      parameters: *user-write-parameters
+      requestBody:
+        required: true
+        description: Account to perform the block.
+        content: *x-account-body-content
+      responses: *write-responses
+    delete:
+      operationId: unblockUser
+      description: Unblocks a user through a connected X account.
+      x-write-action: unblock
+      summary: Unblock user
+      tags: [X Write]
+      security: *api-auth
+      parameters: *user-write-parameters
+      requestBody:
+        required: true
+        description: Account that blocked the user.
+        content: *x-account-body-content
+      responses: *write-responses
+  /x/users/{id}/mute:
+    post:
+      operationId: muteUser
+      description:
+        Mutes a user through a connected X account. The user's posts leave that
+        account's timelines, and X doesn't tell the user.
+      x-write-action: mute
+      summary: Mute user
+      tags: [X Write]
+      security: *api-auth
+      parameters: *user-write-parameters
+      requestBody:
+        required: true
+        description: Account to perform the mute.
+        content: *x-account-body-content
+      responses: *write-responses
+    delete:
+      operationId: unmuteUser
+      description: Unmutes a user through a connected X account.
+      x-write-action: unmute
+      summary: Unmute user
+      tags: [X Write]
+      security: *api-auth
+      parameters: *user-write-parameters
+      requestBody:
+        required: true
+        description: Account that muted the user.
+        content: *x-account-body-content
+      responses: *write-responses
   /x/users/{id}/remove-follower:
     post:
       operationId: removeFollower
@@ -7434,9 +7558,9 @@ paths:
       operationId: sendDm
       description: >
         Sends a direct message through a connected X account. Once X rate limits
-        an account's DMs, its DMs get 429 until X's reset. Xquik sends nothing
-        to X & charges nothing. `Retry-After` & `nextAction.afterMs` give the
-        wait.
+        an account's DMs, its DMs get 429 until X's reset. That hold lasts 24
+        hours at most, or 15 minutes without X's reset. Xquik sends nothing to X
+        & charges nothing. `Retry-After` & `nextAction.afterMs` give the wait.
       x-write-action: send_dm
       summary: Send direct message
       tags: [X Write]
@@ -7666,6 +7790,8 @@ paths:
                         tweetId: '1234567890'
                         mediaType: photo
                         mediaUrl: 'https://media.xquik.com/tweet_1234567890/0.jpg'
+                        posterUrl: null
+                        qualities: []
                         fileSize: '2097152'
                         createdAt: '2026-10-16T11:00:00.000Z'
                         authorUsername: elonmusk
@@ -7688,6 +7814,8 @@ paths:
                           likes,
                           mediaType,
                           mediaUrl,
+                          posterUrl,
+                          qualities,
                           retweets,
                           tweetId,
                           tweetText,
@@ -7710,6 +7838,37 @@ paths:
                             post or its media at save time, or sent no post
                             flag. Xquik keeps no copy of those files.
                           example: 'https://media.xquik.com/tweet_1234567890/0.jpg'
+                        posterUrl:
+                          type: [string, 'null']
+                          description:
+                            Cover image of a video or GIF. Null for photos &
+                            files first saved to Xquik before 2026-11-03.
+                          example: null
+                        qualities:
+                          type: array
+                          description:
+                            The MP4 sizes X stores for a video, highest bitrate
+                            first. Empty for photos, GIFs & files first saved to
+                            Xquik before 2026-11-03.
+                          items:
+                            type: object
+                            required: [bitrate, height, url, width]
+                            properties:
+                              bitrate:
+                                type: integer
+                                minimum: 0
+                                example: 2176000
+                              height:
+                                type: integer
+                                minimum: 1
+                                example: 720
+                              url:
+                                type: string
+                                example: 'https://video.twimg.com/amplify_video/1/vid/avc1/1280x720/a.mp4'
+                              width:
+                                type: integer
+                                minimum: 1
+                                example: 1280
                         fileSize:
                           type: [string, 'null']
                           description: File size in bytes, as a string
@@ -15203,9 +15362,20 @@ components:
       name: limit
       in: query
       description: >
-        Maximum items per page, from 1 to 100. Default 50. A low credit balance
-        can return fewer paid results. When it covers none, the answer is 402
-        insufficient_credits.
+        Maximum items per page, from 1 to 10,000. Default 50. A low credit
+        balance can return fewer paid results. When it covers none, the answer
+        is 402 insufficient_credits.
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 10000
+        default: 50
+    EventLimit:
+      name: limit
+      in: query
+      description: >
+        Maximum events per page, from 1 to 100. Default 50. Pass nextCursor as
+        cursor for the next page.
       schema:
         type: integer
         minimum: 1
@@ -15215,12 +15385,12 @@ components:
       name: limit
       in: query
       description: >
-        Maximum items per page, from 1 to 200. Default 200. Pass nextCursor as
-        cursor for the next page.
+        Maximum items per page, from 1 to 10,000. Default 200. Pass nextCursor
+        as cursor for the next page.
       schema:
         type: integer
         minimum: 1
-        maximum: 200
+        maximum: 10000
         default: 200
     DeliveryLimit:
       name: limit
@@ -15367,13 +15537,13 @@ components:
       name: pageSize
       in: query
       description: >
-        Up to 300 user profiles in automatic mode, 200 in standard. Sources can
-        return fewer. Follow next_cursor for more pages. Its aliases are limit,
-        count, max_results, maxItems, max_items & per_page.
+        Up to 10000 user profiles in automatic mode, 200 in standard. Sources
+        can return fewer. Follow next_cursor for more pages. Its aliases are
+        limit, count, max_results, maxItems, max_items & per_page.
       schema:
         type: integer
         minimum: 1
-        maximum: 300
+        maximum: 10000
         default: 200
     UserMinFollowers:
       name: minFollowers
@@ -16789,7 +16959,9 @@ components:
               "This image stays over X's size limit after shrinking. Send a
               smaller one."
     UnsupportedMedia:
-      description: The file isn't a supported, readable image or video.
+      description:
+        The file isn't a supported, readable image or video, or its metadata is
+        too large to read safely.
       content:
         application/json:
           schema: *error-schema
@@ -17506,6 +17678,18 @@ components:
             - type: object
               properties:
                 response_type: { const: answer }
+        answer:
+          description: >-
+            Sentences quoted from the cited docs pages. When no page answers the
+            query, it says so and suggests topics to ask about.
+          example: *nlweb-answer-example
+          type: string
+        sources:
+          description: Docs pages the answer quotes. Empty when no page answers.
+          example: [https://docs.xquik.com/guides/architecture]
+          type: array
+          maxItems: 10
+          items: *uri-string
         results:
           example: []
           type: array
@@ -17529,7 +17713,11 @@ components:
           items:
             $ref: '#/components/schemas/NlwebDocumentationResult'
       oneOf:
-        - { required: [results], properties: { results: { type: array } } }
+        - required: [answer, results, sources]
+          properties:
+            answer: { type: string }
+            results: { type: array }
+            sources: { type: array }
         - required: [content, structuredData]
           properties:
             content: { type: array }
@@ -18487,8 +18675,14 @@ components:
             - unlike
             - retweet
             - unretweet
+            - bookmark
+            - unbookmark
             - follow
             - unfollow
+            - block
+            - unblock
+            - mute
+            - unmute
             - remove_follower
             - send_dm
             - delete_dm
@@ -21512,7 +21706,8 @@ components:
         that post. following.added & following.removed fire when the account
         follows or unfollows someone, with that account's profile.
         follower.added & follower.removed fire when someone follows the account
-        or leaves its followers, with that account's profile. Xquik names lost
+        or leaves its followers, with that account's profile. An old follow X
+        lists again fires only after a reported removal. Xquik names lost
         followers for accounts with up to 100,000 followers.
         profile.followers.changed & profile.following.changed fire when the
         account's follower or following count moves, at most once a minute each.
@@ -22519,6 +22714,27 @@ components:
           description:
             The author's verified badge on X. Omitted when the author has none.
           example: government
+        authorAffiliate:
+          type: object
+          description:
+            The organization badge X shows beside the author's name. Omitted
+            when X shows none.
+          required: [badgeUrl, description]
+          properties:
+            badgeUrl:
+              type: string
+              format: uri
+              description: The organization's badge image.
+              example: 'https://pbs.twimg.com/profile_images/1955359038532653056/OSHY3ewP_bigger.jpg'
+            description:
+              type: string
+              description: The organization's name, as X shows it.
+              example: X
+            url:
+              type: string
+              format: uri
+              description: The organization's X profile, when X links one.
+              example: 'https://twitter.com/X'
         media:
           type: array
           description: Photos, videos & GIFs on the post, in X's order.
@@ -23253,6 +23469,15 @@ components:
             Whether followedAt is X's exact time of this follow. False means
             followedAt is the earliest time the follow can have.
           example: true
+        followKind:
+          type: string
+          enum: [refollow, return]
+          description: >-
+            Why a removed account is back, on following.added & follower.added.
+            refollow means the account followed again. return means X lists the
+            old follow again, so it never ended. It covers removals the monitor
+            reported in the last 30 days. It is missing on a first follow.
+          example: refollow
         reason:
           type: string
           enum: [unavailable, unfollowed]
@@ -23508,6 +23733,38 @@ components:
             Attached media with outputPreset=flat. Default nested output uses
             enrichmentData.tweet.media.
           items: { $ref: '#/components/schemas/TweetMedia' }
+        quotedMedia:
+          type: array
+          description: >
+            Media of the quoted post with outputPreset=flat. Default nested
+            output uses enrichmentData.tweet.quotedMedia.
+          items: { $ref: '#/components/schemas/TweetMedia' }
+        possiblySensitive:
+          type: boolean
+          description: >
+            X's sensitive flag on the post with outputPreset=flat. Default
+            nested output uses enrichmentData.tweet.possiblySensitive.
+        quotedPossiblySensitive:
+          type: boolean
+          description: >
+            X's sensitive flag on the quoted post with outputPreset=flat.
+            Default nested output uses
+            enrichmentData.tweet.quotedPossiblySensitive.
+        quotedPost:
+          type: object
+          description: >
+            The quoted post's ID, text, date & author with outputPreset=flat.
+            Default nested output uses enrichmentData.tweet.quotedPost.
+          properties:
+            id: { type: string }
+            text: { type: string }
+            createdAt: { type: string }
+            author:
+              type: object
+              properties:
+                name: { type: string }
+                userName: { type: string }
+                profilePicture: { type: string }
         bookmarkCount: *whole-number
         likeCount: *whole-number
         quoteCount: *whole-number
