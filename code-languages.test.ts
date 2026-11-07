@@ -17,7 +17,6 @@ const docsStyling = z.looseObject({
 
 const grammarPattern = z.looseObject({ name: z.string() });
 
-// Mintlify renders plain text, with only a console error, when one of these keys is missing.
 const grammar = z.looseObject({
   aliases: z.array(z.string()).nonempty(),
   name: z.string().startsWith("xquik-"),

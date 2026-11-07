@@ -64,6 +64,10 @@ function documentedFields(source: string): readonly DocumentedField[] {
   return fields;
 }
 
+function collapseTableSpacing(source: string): string {
+  return source.replace(/ {2,}/gu, " ");
+}
+
 function leafName(field: string): string {
   return field.split(".").at(-1)?.replace(/\[\]$/u, "") ?? field;
 }
@@ -75,5 +79,5 @@ function hasDocumentedField(source: string, kind: FieldKind, name: string): bool
   );
 }
 
-export { documentedFields, hasDocumentedField, leafName };
+export { collapseTableSpacing, documentedFields, hasDocumentedField, leafName };
 export type { DocumentedField, FieldKind };

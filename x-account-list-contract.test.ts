@@ -2,9 +2,12 @@ import { readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
 
+import { collapseTableSpacing } from "./scripts/lib/documented-fields.ts";
 import { docsContract, productCheck, productOperation } from "./product-contract.test.helpers.ts";
 
-const source = readFileSync(new URL("api-reference/x-accounts/list.mdx", import.meta.url), "utf8");
+const source = collapseTableSpacing(
+  readFileSync(new URL("api-reference/x-accounts/list.mdx", import.meta.url), "utf8"),
+);
 
 describe("connected X accounts list documentation", (): void => {
   it("documents every supported authentication method", (): void => {

@@ -33,7 +33,11 @@ function collectPageStructureFindings(): readonly PageStructureFinding[] {
     let previousHeadingLevel = 1;
 
     const prose = source.replace(/```[\s\S]*?```/gu, "");
-    if (/^## /mu.test(prose) && !/^<section>\n\n## /mu.test(prose)) {
+    if (
+      !file.startsWith("snippets/") &&
+      /^## /mu.test(prose) &&
+      !/^<section>\n\n## /mu.test(prose)
+    ) {
       findings.push({ file, issue: "Wrap each top-level section in a section element." });
     }
 

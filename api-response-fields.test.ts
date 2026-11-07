@@ -262,7 +262,19 @@ function responseFields(page: string): readonly string[] {
   return uniqueSorted(
     documentedFields(source)
       .filter(({ kind }): boolean => kind === "response")
-      .map(({ name }): string => leafName(name)),
+      .map(({ name }): string => name),
+  );
+}
+
+function responseFieldsAndLeaves(page: string): readonly string[] {
+  const fields = responseFieldsAndLeaves(page);
+  return uniqueSorted([...fields, ...fields.map(leafName)]);
+}
+
+function unknownFields(page: string, allowed: readonly string[]): readonly string[] {
+  const known = new Set(allowed);
+  return responseFields(page).filter(
+    (field): boolean => !known.has(field) && !known.has(leafName(field)),
   );
 }
 
@@ -581,12 +593,12 @@ describe("API response field docs", (): void => {
 
     const spec = readOpenApi();
     const findings = pageContracts(spec).flatMap((contract): readonly string[] => {
-      const documented = responseFields(contract.page);
+      const documented = responseFieldsAndLeaves(contract.page);
       return [
         ...setDifference(contract.requiredFields, documented).map(
           (field): string => `${contract.page} is missing ${field}.`,
         ),
-        ...setDifference(documented, contract.allowedFields).map(
+        ...unknownFields(contract.page, contract.allowedFields).map(
           (field): string => `${contract.page} documents unknown ${field}.`,
         ),
       ];
@@ -599,9 +611,9 @@ describe("API response field docs", (): void => {
     expect.assertions(1);
 
     const draftFields = schemaPropertyNames(readOpenApi(), "DraftDetail");
-    const listFields = responseFields(DRAFTS_LIST_PAGE);
-    const createFields = responseFields(DRAFTS_CREATE_PAGE);
-    const getFields = responseFields(DRAFTS_GET_PAGE);
+    const listFields = responseFieldsAndLeaves(DRAFTS_LIST_PAGE);
+    const createFields = responseFieldsAndLeaves(DRAFTS_CREATE_PAGE);
+    const getFields = responseFieldsAndLeaves(DRAFTS_GET_PAGE);
     const listDraftFields = prefixedFields("drafts[].", draftFields);
 
     expect([

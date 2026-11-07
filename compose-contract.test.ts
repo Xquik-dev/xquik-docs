@@ -2,6 +2,8 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
+import { collapseTableSpacing } from "./scripts/lib/documented-fields.ts";
+import { readPageFamily } from "./scripts/lib/page-family.ts";
 import { stripGeneratedResponseExamples } from "./scripts/lib/generated-response-examples";
 
 const ROOT = process.cwd();
@@ -10,13 +12,15 @@ function read(relativePath: string): string {
   return readFileSync(join(ROOT, relativePath), "utf8");
 }
 
-const COMPOSE_PAGE = stripGeneratedResponseExamples(read("api-reference/compose/create.mdx"));
+const COMPOSE_PAGE = collapseTableSpacing(
+  stripGeneratedResponseExamples(read("api-reference/compose/create.mdx")),
+);
 const OPENAPI = read("openapi.yaml");
 const RELATED_GUIDES = [
   read("index.mdx"),
   read("skill.md"),
-  read("mcp/tools.mdx"),
-  read("guides/x-api-typescript-types.mdx"),
+  readPageFamily("mcp/tools.mdx"),
+  readPageFamily("guides/x-api-typescript-types.mdx"),
 ].join("\n");
 
 const REQUIRED_PAGE_COPY = [

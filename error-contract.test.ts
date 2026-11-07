@@ -1,6 +1,8 @@
 import { readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
+
+import { readPageFamily } from "./scripts/lib/page-family.ts";
 import { parseOpenApi, type OpenApiDocument } from "./scripts/lib/openapi-schema.ts";
 
 function readOpenApi(): OpenApiDocument {
@@ -58,7 +60,7 @@ describe("public error contract", (): void => {
   it("keeps copied TypeScript error types aligned with OpenAPI", (): void => {
     expect.assertions(3);
 
-    const source = readFileSync("guides/x-api-typescript-types.mdx", "utf8");
+    const source = readPageFamily("guides/x-api-typescript-types.mdx");
     const typeBlock = source.match(/type ApiErrorType =([\s\S]*?);/u)?.[1];
     if (typeBlock === undefined) {
       throw new Error("guides/x-api-typescript-types.mdx is missing ApiErrorType.");

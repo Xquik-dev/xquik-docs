@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { collapseTableSpacing } from "./scripts/lib/documented-fields.ts";
 import { documentedFields } from "./scripts/lib/documented-fields.ts";
 import { z } from "zod";
 import {
@@ -180,7 +181,7 @@ describe("X account connection documentation contract", (): void => {
       openapi.paths["/x/accounts"].post.requestBody.content["application/json"].schema;
 
     expect(requestSchema.required).toStrictEqual(["username", "email", "password", "totp_secret"]);
-    expect(CONNECT_PAGE).toContain("totp_secret` | `string` | Yes |");
+    expect(collapseTableSpacing(CONNECT_PAGE)).toContain("totp_secret` | `string` | Yes |");
     expect(CONNECT_PAGE).toContain("Missing `username`, `email`, `password`, or `totp_secret`");
   });
 

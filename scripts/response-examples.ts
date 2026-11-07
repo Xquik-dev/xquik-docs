@@ -183,8 +183,21 @@ function hasFencedExample(page: string, status: string): boolean {
   return section.exec(page)?.[1]?.includes("```") === true;
 }
 
+function inlineJson(value: unknown): string {
+  if (Array.isArray(value)) {
+    return `[${value.map(inlineJson).join(", ")}]`;
+  }
+  if (typeof value === "object" && value !== null) {
+    const entries = Object.entries(value).map(
+      ([key, entry]): string => `${JSON.stringify(key)}: ${inlineJson(entry)}`,
+    );
+    return entries.length === 0 ? "{}" : `{ ${entries.join(", ")} }`;
+  }
+  return JSON.stringify(value);
+}
+
 function statusItem(status: string, language: string, value: unknown): string {
-  const text = language === "json" || typeof value !== "string" ? JSON.stringify(value) : value;
+  const text = language === "json" || typeof value !== "string" ? inlineJson(value) : value;
   const code = text.includes("`") ? `\`\` ${text} \`\`` : `\`${text}\``;
   return `- **${status}** ${code}`;
 }

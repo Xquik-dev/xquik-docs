@@ -2,6 +2,8 @@ import { createHash } from "node:crypto";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+
+import { readPageFamily } from "./scripts/lib/page-family.ts";
 import { z } from "zod";
 
 import { stripGeneratedResponseExamples } from "./scripts/lib/generated-response-examples";
@@ -4215,7 +4217,7 @@ const REQUIRED_TWEET_QUOTES_API_HANDOFF_SNIPPETS = [
   "[`POST /webhooks`](/api-reference/webhooks/create)",
   "[`GET /events`](/api-reference/events/list)",
   "Tweet author profile. Omitted if unavailable.",
-  "**Author object fields.**",
+  "tweets[].author.id",
   "id` | `string` | Author user ID.",
   "username` | `string` | Author handle without `@`.",
   "name` | `string` | Author display name.",
@@ -6244,7 +6246,7 @@ const REQUIRED_USER_LIKES_API_HANDOFF_SNIPPETS = [
   '"media_urls": [',
   'print(json.dumps(liked_row, separators=(",", ":")))',
   "Tweet author profile. Omitted if unavailable.",
-  "**Author object fields.**",
+  "tweets[].author.id",
   "id` | `string` | Author user ID.",
   "username` | `string` | Author handle without `@`.",
   "name` | `string` | Author display name.",
@@ -6307,7 +6309,7 @@ const REQUIRED_USER_MEDIA_API_HANDOFF_SNIPPETS = [
   '"media_types": [item["type"] for item in media_items if item.get("type")]',
   'print(json.dumps(media_row, separators=(",", ":")))',
   "Tweet author profile. Omitted if unavailable.",
-  "**Author object fields.**",
+  "tweets[].author.id",
   "id` | `string` | Author user ID.",
   "username` | `string` | Author handle without `@`.",
   "name` | `string` | Author display name.",
@@ -6688,7 +6690,7 @@ const REQUIRED_EXTRACTION_EXPORT_RESPONSE_SNIPPETS = [
   '<Card title="Analyst XLSX" icon="file-spreadsheet">',
   '<Card title="Report formats" icon="file-text">',
   "For exports above 100,000 rows, use",
-  "[Extraction Workflow](/guides/extraction-workflow#durable-json-lines-handoff)",
+  "[Extraction Workflow](/guides/extraction-data-handoff#durable-json-lines-handoff)",
   "Returns a file download. The response includes a `Content-Disposition` header with the filename.",
   "<CardGroup cols={2}>",
   '<Card title="CSV" icon="table">',
@@ -12591,7 +12593,7 @@ describe("repository discovery", (): void => {
   it("keeps the quickstart concrete and aligned with monitor response fields", (): void => {
     expect.assertions(2);
 
-    const quickstart = readFileSync("x-api-quickstart.mdx", "utf8");
+    const quickstart = readPageFamily("x-api-quickstart.mdx");
 
     expect(
       collectSnippetFindings(quickstart, "Quickstart", REQUIRED_QUICKSTART_SNIPPETS),
@@ -12982,9 +12984,9 @@ describe("repository discovery", (): void => {
     },
   ])("$name", ({ file, label, required, forbidden }): void => {
     expect.assertions(1);
-    expect(
-      collectSnippetFindings(readFileSync(file, "utf8"), label, required, forbidden),
-    ).toStrictEqual([]);
+    expect(collectSnippetFindings(readPageFamily(file), label, required, forbidden)).toStrictEqual(
+      [],
+    );
   });
 
   it.each([
@@ -13155,8 +13157,8 @@ describe("repository discovery", (): void => {
 
     const source = [
       readFileSync("mcp/overview.mdx", "utf8"),
-      readFileSync("mcp/tools.mdx", "utf8"),
-      readFileSync("guides/x-api-typescript-types.mdx", "utf8"),
+      readPageFamily("mcp/tools.mdx"),
+      readPageFamily("guides/x-api-typescript-types.mdx"),
     ].join("\n");
     const findings = [
       ...collectSnippetFindings(source, "MCP contract docs", REQUIRED_MCP_CONTRACT_SNIPPETS),
@@ -13870,7 +13872,7 @@ describe("repository discovery", (): void => {
   it("keeps the extraction workflow concrete for credits, JSON, and file handoffs", (): void => {
     expect.assertions(1);
 
-    const source = readFileSync("guides/extraction-workflow.mdx", "utf8");
+    const source = readPageFamily("guides/extraction-workflow.mdx");
 
     expect(
       collectSnippetFindings(
@@ -13959,7 +13961,7 @@ describe("repository discovery", (): void => {
     expect.assertions(2);
 
     const source = [
-      readFileSync("api-reference/extractions/create.mdx", "utf8"),
+      readPageFamily("api-reference/extractions/create.mdx"),
       readFileSync("snippets/extraction-request-params.mdx", "utf8"),
     ].join("\n");
 
@@ -14093,7 +14095,7 @@ describe("repository discovery", (): void => {
   it("keeps the types guide from claiming complete schema coverage", (): void => {
     expect.assertions(1);
 
-    const source = readFileSync("guides/x-api-typescript-types.mdx", "utf8");
+    const source = readPageFamily("guides/x-api-typescript-types.mdx");
 
     expect(
       FORBIDDEN_TYPES_GUIDE_COMPLETENESS_OVERCLAIMS.flatMap(
@@ -14114,7 +14116,7 @@ describe("repository discovery", (): void => {
 
     const source = [
       readFileSync("api-reference/compose/create.mdx", "utf8"),
-      readFileSync("guides/x-api-typescript-types.mdx", "utf8"),
+      readPageFamily("guides/x-api-typescript-types.mdx"),
     ].join("\n");
 
     expect(
@@ -14126,9 +14128,9 @@ describe("repository discovery", (): void => {
     expect.assertions(1);
 
     const testing = readFileSync("guides/twitter-webhook-testing.mdx", "utf8");
-    const types = readFileSync("guides/x-api-typescript-types.mdx", "utf8");
+    const types = readPageFamily("guides/x-api-typescript-types.mdx");
     const overview = readFileSync("webhooks/overview.mdx", "utf8");
-    const verification = readFileSync("webhooks/verification.mdx", "utf8");
+    const verification = readPageFamily("webhooks/verification.mdx");
     const architecture = readFileSync("guides/architecture.mdx", "utf8");
     const createWebhookApi = readFileSync("api-reference/webhooks/create.mdx", "utf8");
     const listWebhookApi = readFileSync("api-reference/webhooks/list.mdx", "utf8");
@@ -14836,7 +14838,7 @@ describe("repository discovery", (): void => {
   it("keeps the Zapier guide setup cards source-backed", (): void => {
     expect.assertions(6);
 
-    const source = readFileSync("guides/zapier.mdx", "utf8");
+    const source = readPageFamily("guides/zapier.mdx");
 
     expect(
       collectSnippetFindings(source, "Zapier guide", REQUIRED_ZAPIER_GUIDE_SNIPPETS),

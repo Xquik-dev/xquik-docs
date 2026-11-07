@@ -1,6 +1,8 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+
+import { collapseTableSpacing } from "./scripts/lib/documented-fields.ts";
 import { z } from "zod";
 import {
   operationAt,
@@ -47,8 +49,12 @@ const HTTP_METHODS: ReadonlySet<string> = new Set([
 const PAGELESS_OPERATIONS = ["GET /ask", "GET /credits/topup/redirect", "POST /ask"];
 const PAGES_WITHOUT_OPERATION = [
   "api-reference/authentication.mdx",
+  "api-reference/extractions/parameters.mdx",
   "api-reference/features.mdx",
   "api-reference/overview.mdx",
+  "api-reference/x/tweet-analysis-parameters.mdx",
+  "api-reference/x/tweet-filters.mdx",
+  "api-reference/x/user-filters.mdx",
 ];
 const OAUTH_OVERVIEW_OPERATIONS = [
   "GET /api/oauth/authorize",
@@ -331,7 +337,10 @@ describe("API success response status documentation", (): void => {
         [false, "Preserve the same key."],
       ] as const;
       return guidance
-        .filter(([required, snippet]): boolean => source.includes(snippet) !== required)
+        .filter(
+          ([required, snippet]): boolean =>
+            collapseTableSpacing(source).includes(snippet) !== required,
+        )
         .map(([, snippet]): string => `${file}: incorrect retry guidance ${snippet}`);
     });
 
