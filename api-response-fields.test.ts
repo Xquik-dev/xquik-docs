@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { documentedFields, leafName } from "./scripts/lib/documented-fields.ts";
 import {
   operationAt,
   parseOpenApi,
@@ -259,10 +260,10 @@ function responseFields(page: string): readonly string[] {
     ? `${pageSource}\n${WRITE_ACTION_STATUS_PAGE_SOURCE}`
     : pageSource;
   return uniqueSorted(
-    [...source.matchAll(/<ResponseField\s+name="(?<field>[^"]+)"/gu)].map(
-      (match): string => match.groups?.["field"] ?? "",
-    ),
-  ).filter((field): boolean => field.length > 0);
+    documentedFields(source)
+      .filter(({ kind }): boolean => kind === "response")
+      .map(({ name }): string => leafName(name)),
+  );
 }
 
 function fieldDifferences(
@@ -270,9 +271,13 @@ function fieldDifferences(
   actual: readonly string[],
   expected: readonly string[],
 ): readonly string[] {
+  const actualLeaves = uniqueSorted(actual.map(leafName));
+  const expectedLeaves = uniqueSorted(expected.map(leafName));
   return [
-    ...setDifference(actual, expected).map((field) => `${label} has no product field ${field}.`),
-    ...setDifference(expected, actual).map((field) => `${label} is missing ${field}.`),
+    ...setDifference(actualLeaves, expectedLeaves).map(
+      (field) => `${label} has no product field ${field}.`,
+    ),
+    ...setDifference(expectedLeaves, actualLeaves).map((field) => `${label} is missing ${field}.`),
   ];
 }
 

@@ -11,8 +11,8 @@ describe("connected X accounts list documentation", (): void => {
     expect.assertions(1);
 
     expect({
-      apiKeyDocumented: source.includes('<ParamField header="x-api-key" type="string">'),
-      bearerDocumented: source.includes('<ParamField header="Authorization" type="string">'),
+      apiKeyDocumented: source.includes("x-api-key` | `string` |"),
+      bearerDocumented: source.includes("Authorization` | `string` |"),
       sessionCookieClaim: source.toLowerCase().includes("session cookie authentication"),
     }).toStrictEqual({
       apiKeyDocumented: true,

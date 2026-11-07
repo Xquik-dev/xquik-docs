@@ -9,7 +9,7 @@ const WRITE_ACTION_LIFECYCLE_SNIPPET = readFileSync(
   join(PROJECT_ROOT, "snippets/write-action-lifecycle-response.mdx"),
   "utf8",
 );
-const FRONTMATTER_API_PATTERN = /^api:\s*"([A-Z]+) ([^"]+)"/mu;
+const FRONTMATTER_API_PATTERN = /^endpoint:\s*"([A-Z]+) ([^"]+)"/mu;
 const UNIX_TIMESTAMP_FILTER_ENDPOINTS: ReadonlySet<string> = new Set([
   "GET /x/lists/{id}/tweets",
   "GET /x/tweets/{id}/quotes",

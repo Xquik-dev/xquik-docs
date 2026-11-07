@@ -31,8 +31,8 @@ const WRITE_ACTION_LIFECYCLE_SNIPPET_PATH = join(
   PROJECT_ROOT,
   "snippets/write-action-lifecycle-response.mdx",
 );
-const FRONTMATTER_API_PATTERN = /^api:\s*"([A-Z]+) ([^"]+)"/mu;
-const RESPONSE_STATUS_PATTERN = /(?:<Tab title="|^### |^  ```(?:json|text) )(\d{3})\b/gmu;
+const FRONTMATTER_API_PATTERN = /^endpoint:\s*"([A-Z]+) ([^"]+)"/mu;
+const RESPONSE_STATUS_PATTERN = /(?:<Tab title="|^### |^- \*\*)(\d{3})\b/gmu;
 const STATUS_CODE_PATTERN = /^\d{3}$/u;
 const HTTP_METHODS: ReadonlySet<string> = new Set([
   "delete",
@@ -107,11 +107,6 @@ function documentedResponseStatuses(source: string): readonly string[] {
     .sort();
 }
 
-interface GeneratedResponseTab {
-  readonly id: string;
-  readonly title: string;
-}
-
 function generatedResponseBlock(source: string): string | undefined {
   const start = source.indexOf(GENERATED_RESPONSE_EXAMPLES_START);
   const end = source.indexOf(GENERATED_RESPONSE_EXAMPLES_END);
@@ -121,34 +116,26 @@ function generatedResponseBlock(source: string): string | undefined {
   return source.slice(start, end);
 }
 
-function generatedResponseTabs(source: string): readonly GeneratedResponseTab[] {
+function generatedStatuses(source: string): readonly string[] {
   const generated = generatedResponseBlock(source);
   if (generated === undefined) return [];
 
-  return [...generated.matchAll(/^  <Tab title="(\d{3})" id="([^"]+)">$/gmu)].map(
-    (match): GeneratedResponseTab => ({
-      id: match[2] ?? "",
-      title: match[1] ?? "",
-    }),
+  return [...generated.matchAll(/^(?:### |- \*\*)(\d{3})\b/gmu)].map(
+    (match): string => match[1] ?? "",
   );
 }
 
-function generatedJsonResponse(
+function responseJson(
   source: string,
   status: string,
 ): Readonly<Record<string, unknown>> | undefined {
-  const generated = generatedResponseBlock(source);
-  if (generated === undefined) return undefined;
-
-  const tabStart = generated.indexOf(`<Tab title="${status}"`);
-  if (tabStart === -1) return undefined;
-
-  const json = /```json\n(?<body>[\s\S]*?)\n    ```/u.exec(generated.slice(tabStart))?.groups?.[
-    "body"
-  ];
-  return json === undefined
-    ? undefined
-    : z.record(z.string(), z.unknown()).parse(JSON.parse(json.replace(/^    /gmu, "")));
+  const section = new RegExp(
+    `^#{2,4} [^\\n]*\\b${status}\\b[^\\n]*\\n(.*?)(?=^#{2,4} |$(?![\\s\\S]))`,
+    "msu",
+  );
+  const json = /```json[^\n]*\n(?<body>[\s\S]*?)\n```/u.exec(section.exec(source)?.[1] ?? "")
+    ?.groups?.["body"];
+  return json === undefined ? undefined : z.record(z.string(), z.unknown()).parse(JSON.parse(json));
 }
 
 function responseStatuses(operation: OpenApiOperation): readonly string[] {
@@ -269,44 +256,32 @@ describe("API success response status documentation", (): void => {
     expect(unnamed).toStrictEqual(PAGES_WITHOUT_OPERATION);
   });
 
-  it("keeps response tabs independent and success-first", (): void => {
-    expect.assertions(2);
+  it("keeps each generated status once with no Panel", (): void => {
+    expect.assertions(1);
 
-    const ids: string[] = [];
     const findings = readApiDocs().flatMap((apiDoc): readonly string[] => {
-      const tabs = generatedResponseTabs(apiDoc.source);
-      const scope = apiDoc.file.replace(/^api-reference\//u, "").replace(/\.mdx$/u, "");
-      ids.push(...tabs.map((tab): string => tab.id));
-
+      const statuses = generatedStatuses(apiDoc.source);
       return [
-        ...(/<Panel>\s*<Tabs defaultTabIndex=\{0\} sync=\{false\}>/u.test(apiDoc.source)
+        ...(apiDoc.source.includes("<Panel>") ? [`${apiDoc.file}: page keeps a Panel.`] : []),
+        ...(new Set(statuses).size === statuses.length
           ? []
-          : [`${apiDoc.file}: response panel tabs are not independent.`]),
-        ...(tabs[0]?.title.startsWith("2") === true
-          ? []
-          : [`${apiDoc.file}: first response tab is not a success status.`]),
-        ...tabs
-          .filter(
-            (tab): boolean => tab.id !== `response-${scope.replaceAll("/", "-")}-${tab.title}`,
-          )
-          .map((tab): string => `${apiDoc.file}: response tab is not page-scoped: ${tab.id}`),
+          : [`${apiDoc.file}: a generated status repeats.`]),
       ];
     });
 
     expect(findings).toStrictEqual([]);
-    expect(new Set(ids).size).toBe(ids.length);
   });
 
   it("renders every 204 response as an empty body", (): void => {
     expect.assertions(2);
 
     const noContentPages = readApiDocs().filter((apiDoc): boolean =>
-      apiDoc.source.includes('<Tab title="204"'),
+      apiDoc.source.includes("- **204** "),
     );
     const findings = noContentPages.flatMap((apiDoc): readonly string[] =>
-      /<Tab title="204"[^>]*>\s+```text\s+No response body\.\s+```/u.test(apiDoc.source)
+      apiDoc.source.includes("- **204** `No response body.`")
         ? []
-        : [`${apiDoc.file}: 204 tab implies a response body.`],
+        : [`${apiDoc.file}: 204 item implies a response body.`],
     );
 
     expect(noContentPages).toHaveLength(NO_CONTENT_OPERATION_COUNT);
@@ -322,7 +297,7 @@ describe("API success response status documentation", (): void => {
     });
     const findings = writeDocs.flatMap(({ action, apiDoc }) =>
       ["200", "202"].flatMap((status): readonly string[] => {
-        const example = generatedJsonResponse(apiDoc.source, status);
+        const example = responseJson(apiDoc.source, status);
         return example?.["action"] === action
           ? []
           : [
@@ -345,7 +320,7 @@ describe("API success response status documentation", (): void => {
     const findings = pages.flatMap(({ file, source }): readonly string[] => {
       const guidance = [
         [true, '-H "Idempotency-Key:'],
-        [true, '<ParamField header="Idempotency-Key" type="string" required>'],
+        [true, "Idempotency-Key` | `string` | Yes |"],
         [true, "<WriteActionLifecycleResponse />"],
         [true, "Replay the same account, target, payload, and media after a lost response."],
         [true, "Retry only when `safeToRetry` is `true`."],

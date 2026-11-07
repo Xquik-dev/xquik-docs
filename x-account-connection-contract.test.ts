@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { documentedFields } from "./scripts/lib/documented-fields.ts";
 import { z } from "zod";
 import {
   openApiResponse,
@@ -74,9 +75,9 @@ function responseFieldsForSection(title: string): readonly string[] {
     throw new Error(`Missing connection status section: ${title}`);
   }
   const end = nextSection < 0 ? STATUS_PAGE.length : nextSection;
-  return [...STATUS_PAGE.slice(start, end).matchAll(/<ResponseField name="(?<field>[^"]+)"/gu)]
-    .map((match): string => match.groups?.["field"] ?? "")
-    .filter((field): boolean => field.length > 0)
+  return documentedFields(STATUS_PAGE.slice(start, end))
+    .filter(({ kind }): boolean => kind === "response")
+    .map(({ name }): string => name)
     .sort((left, right): number => left.localeCompare(right));
 }
 
@@ -179,7 +180,7 @@ describe("X account connection documentation contract", (): void => {
       openapi.paths["/x/accounts"].post.requestBody.content["application/json"].schema;
 
     expect(requestSchema.required).toStrictEqual(["username", "email", "password", "totp_secret"]);
-    expect(CONNECT_PAGE).toContain('<ParamField body="totp_secret" type="string" required>');
+    expect(CONNECT_PAGE).toContain("totp_secret` | `string` | Yes |");
     expect(CONNECT_PAGE).toContain("Missing `username`, `email`, `password`, or `totp_secret`");
   });
 
@@ -187,7 +188,7 @@ describe("X account connection documentation contract", (): void => {
     expect.assertions(5);
 
     expect(CONNECT_PAGE).toContain('"status": "pending"');
-    expect(STATUS_PAGE).toContain('api: "GET /x/account-connection-attempts/{id}"');
+    expect(STATUS_PAGE).toContain('endpoint: "GET /x/account-connection-attempts/{id}"');
     expect(DOCS_CONFIG).toContain('"api-reference/x-accounts/connection-attempt"');
     expect(LLMS_INDEX).toContain(
       "https://docs.xquik.com/api-reference/x-accounts/connection-attempt",

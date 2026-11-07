@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import { docsSecurity } from "./product-contract.test.helpers.ts";
+import { hasDocumentedField } from "./scripts/lib/documented-fields.ts";
 
 const PROJECT_ROOT = dirname(fileURLToPath(import.meta.url));
 const page = readFileSync(join(PROJECT_ROOT, "api-reference/account/x-identity.mdx"), "utf8");
@@ -20,9 +21,9 @@ describe("set X identity documentation", (): void => {
     expect.assertions(1);
 
     expect({
-      requestField: page.includes('<ParamField body="username"'),
+      requestField: hasDocumentedField(page, "body", "username"),
       responseFields: ["success", "xUsername"].every((field) =>
-        page.includes(`<ResponseField name="${field}"`),
+        hasDocumentedField(page, "response", field),
       ),
       lowercase: normalizedPage.includes("The stored value becomes lowercase."),
     }).toStrictEqual({

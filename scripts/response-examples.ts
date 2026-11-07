@@ -2,6 +2,8 @@
 import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 
+import { format } from "oxfmt";
+
 import {
   GENERATED_RESPONSE_EXAMPLES_END as END,
   GENERATED_RESPONSE_EXAMPLES_START as START,
@@ -174,18 +176,33 @@ function responseExample(
 }
 
 function hasFencedExample(page: string, status: string): boolean {
-  const section = new RegExp(`^#{2,4} [^\\n]*\\b${status}\\b[^\\n]*\\n(.*?)(?=^#{2,4} |$(?![\\s\\S]))`, "msu");
+  const section = new RegExp(
+    `^#{2,4} [^\\n]*\\b${status}\\b[^\\n]*\\n(.*?)(?=^#{2,4} |$(?![\\s\\S]))`,
+    "msu",
+  );
   return section.exec(page)?.[1]?.includes("```") === true;
 }
 
-function statusRow(status: string, language: string, value: unknown): string {
+function statusItem(status: string, language: string, value: unknown): string {
   const text = language === "json" || typeof value !== "string" ? JSON.stringify(value) : value;
-  return `| \`${status}\` | \`${text.replaceAll("|", "\\|").replaceAll("\n", " ")}\` |`;
+  const code = text.includes("`") ? `\`\` ${text} \`\`` : `\`${text}\``;
+  return `- **${status}** ${code}`;
+}
+
+function exampleFence(status: string, language: string, value: unknown): string {
+  const body =
+    typeof value === "string" && language !== "json"
+      ? value
+          .split("\n")
+          .map((line) => line.trimEnd())
+          .join("\n")
+      : JSON.stringify(value, undefined, 2);
+  return `### ${status} example\n\n\`\`\`${language}\n${body}\n\`\`\``;
 }
 
 function responseBlock(document: unknown, operation: unknown, page: string): string {
   const responses = field(operation, "responses");
-  const rows: string[] = [];
+  const items: string[] = [];
   const fences: string[] = [];
   for (const [status, response] of Object.entries(isRecord(responses) ? responses : {})) {
     const { language, value } = responseExample(
@@ -194,15 +211,15 @@ function responseBlock(document: unknown, operation: unknown, page: string): str
       status,
       field(operation, "x-write-action"),
     );
-    if (!status.startsWith("2") || status === "204" || language !== "json") {
-      rows.push(statusRow(status, language, value));
+    const multiline = typeof value === "string" && value.includes("\n");
+    if (!status.startsWith("2") || status === "204" || (language !== "json" && !multiline)) {
+      items.push(statusItem(status, language, value));
     } else if (!hasFencedExample(page, status)) {
-      fences.push(`### ${status} example\n\n\`\`\`json\n${JSON.stringify(value, undefined, 2)}\n\`\`\``);
+      fences.push(exampleFence(status, language, value));
     }
   }
-  const table =
-    rows.length > 0 ? [`| Status | Response body |\n| --- | --- |\n${rows.join("\n")}`] : [];
-  return [START, "<section>", "## Response examples", ...fences, ...table, "</section>", END].join(
+  const list = items.length > 0 ? [items.join("\n")] : [];
+  return [START, "<section>", "## Response examples", ...fences, ...list, "</section>", END].join(
     "\n\n",
   );
 }
@@ -211,7 +228,7 @@ function replaceBlock(source: string, block: string): string {
   return `${stripGeneratedResponseExamples(source).trimEnd()}\n\n${block}\n`;
 }
 
-function run(root: string, check: boolean): string {
+async function run(root: string, check: boolean): Promise<string> {
   const document: unknown = Bun.YAML.parse(readFileSync(join(root, "openapi.yaml"), "utf8"));
   const pages = readdirSync(join(root, "api-reference"), { encoding: "utf8", recursive: true })
     .filter((file) => file.endsWith(".mdx"))
@@ -233,7 +250,8 @@ function run(root: string, check: boolean): string {
       continue;
     }
     const page = stripGeneratedResponseExamples(source);
-    const next = replaceBlock(source, responseBlock(document, operation, page));
+    const block = await format("block.mdx", responseBlock(document, operation, page));
+    const next = replaceBlock(source, block.code.trimEnd());
     const responses = field(operation, "responses");
     pageCount += 1;
     statusCount += Object.keys(isRecord(responses) ? responses : {}).length;
@@ -248,7 +266,7 @@ function run(root: string, check: boolean): string {
 
 if (import.meta.main) {
   try {
-    process.stdout.write(run(".", process.argv.includes("--check")));
+    process.stdout.write(await run(".", process.argv.includes("--check")));
   } catch (error) {
     process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);
     process.exitCode = 1;

@@ -9,7 +9,7 @@ import { GENERATED_RESPONSE_EXAMPLES_START } from "./scripts/lib/generated-respo
 import { replaceBlock, run } from "./scripts/response-examples.ts";
 
 const PAGE =
-  '---\napi: "GET /fixture"\n---\n\nimport Intro from "/intro.mdx";\n\nOriginal guidance.\n';
+  '---\nendpoint: "GET /fixture"\n---\n\nimport Intro from "/intro.mdx";\n\nOriginal guidance.\n';
 const roots: string[] = [];
 
 function docsRoot(files: Readonly<Record<string, string>>): string {
@@ -22,7 +22,7 @@ function docsRoot(files: Readonly<Record<string, string>>): string {
   return root;
 }
 
-function syncedExample(response: unknown, components: unknown = {}): string {
+async function syncedExample(response: unknown, components: unknown = {}): Promise<string> {
   const root = docsRoot({
     "api-reference/a.mdx": PAGE,
     "openapi.yaml": JSON.stringify({
@@ -30,9 +30,9 @@ function syncedExample(response: unknown, components: unknown = {}): string {
       paths: { "/fixture": { get: { responses: { "200": response } } } },
     }),
   });
-  run(root, false);
+  await run(root, false);
   const page = readFileSync(join(root, "api-reference/a.mdx"), "utf8");
-  return (page.match(/```\w+\n([\s\S]*?)\n {4}```/u)?.[1] ?? "").replaceAll(/^ {4}/gmu, "");
+  return page.match(/```\w+\n([\s\S]*?)\n```/u)?.[1] ?? "";
 }
 
 function jsonResponse(schema: unknown): unknown {
@@ -44,7 +44,7 @@ afterEach((): void => {
 });
 
 describe("response example sync", (): void => {
-  it("reports a stale page, writes its tabs once, then verifies it", (): void => {
+  it("reports a stale page, writes its examples once, then verifies it", async (): Promise<void> => {
     expect.assertions(6);
     const root = docsRoot({
       "api-reference/a.mdx": PAGE,
@@ -53,20 +53,24 @@ describe("response example sync", (): void => {
     });
     const page = (): string => readFileSync(join(root, "api-reference/a.mdx"), "utf8");
 
-    expect((): string => run(root, true)).toThrow(
+    await expect(run(root, true)).rejects.toThrow(
       "api-reference/a.mdx: response examples are stale.",
     );
     expect(page()).toBe(PAGE);
-    expect(run(root, false)).toBe("Synchronized 1 response statuses across 1 API pages.\n");
-    expect(run(root, true)).toBe("Verified 1 response statuses across 1 API pages.\n");
-    expect(page()).toContain("```text\n    Ready\n    ```");
+    await expect(run(root, false)).resolves.toBe(
+      "Synchronized 1 response statuses across 1 API pages.\n",
+    );
+    await expect(run(root, true)).resolves.toBe(
+      "Verified 1 response statuses across 1 API pages.\n",
+    );
+    expect(page()).toContain("- **200** `Ready`");
     expect([
-      page().endsWith("Original guidance.\n"),
+      page().startsWith(PAGE.trimEnd()),
       page().split(GENERATED_RESPONSE_EXAMPLES_START).length - 1,
     ]).toStrictEqual([true, 1]);
   });
 
-  it("writes no page when 1 page names an unknown operation", (): void => {
+  it("writes no page when 1 page names an unknown operation", async (): Promise<void> => {
     expect.assertions(2);
     const root = docsRoot({
       "api-reference/a.mdx": PAGE,
@@ -74,14 +78,14 @@ describe("response example sync", (): void => {
       "openapi.yaml": "paths: {'/fixture': {get: {responses: {'200': {description: Ready}}}}}\n",
     });
 
-    expect((): string => run(root, false)).toThrow(
+    await expect(run(root, false)).rejects.toThrow(
       "api-reference/z.mdx: OpenAPI operation not found.",
     );
     expect(readFileSync(join(root, "api-reference/a.mdx"), "utf8")).toBe(PAGE);
   });
 
   it.each([
-    [{ items: { format: "uri" }, type: "array" }, '[\n  "https://example.com/resource"\n]'],
+    [{ items: { format: "uri" }, type: "array" }, '["https://example.com/resource"]'],
     [{ oneOf: [{ format: "date-time" }] }, '"2026-08-01T09:00:00.000Z"'],
     [{ anyOf: [{ format: "url" }] }, '"https://example.com/resource"'],
     [{ $ref: "#/missing" }, "{}"],
@@ -100,36 +104,36 @@ describe("response example sync", (): void => {
     [{ default: 0 }, "0"],
     [{ enum: [0, 1] }, "0"],
     [{ properties: { name: {} }, required: ["name"] }, '{\n  "name": "<string>"\n}'],
-  ])("derives the example of schema %j", (schema, example): void => {
+  ])("derives the example of schema %j", async (schema, example): Promise<void> => {
     expect.assertions(1);
-    expect(
+    await expect(
       syncedExample(jsonResponse(schema), {
         schemas: { Loop: { $ref: "#/components/schemas/Loop" } },
       }),
-    ).toBe(example);
+    ).resolves.toBe(example);
   });
 
   it.each([
-    ["204", { description: "Deleted" }, "No response body."],
-    ["200", {}, "No response body."],
+    ["204", { description: "Deleted" }, "- **204** `No response body.`"],
+    ["200", {}, "- **200** `No response body.`"],
     [
       "202",
       jsonResponse({ example: { action: "old", id: "7" } }),
-      '{\n  "action": "create_tweet",\n  "id": "7"\n}',
+      '### 202 example\n\n```json\n{\n  "action": "create_tweet",\n  "id": "7"\n}\n```',
     ],
     [
       "429",
       jsonResponse({ example: { detail: "wait", error: "rate_limited", retryAfter: 30 } }),
-      '{\n  "error": "rate_limited",\n  "retryAfter": 30\n}',
+      '- **429** `{"error":"rate_limited","retryAfter":30}`',
     ],
     [
       "200",
       {
         content: { "text/csv": { example: "id,text" }, "application/problem+json": { example: 1 } },
       },
-      "1",
+      "### 200 example\n\n```json\n1\n```",
     ],
-  ])("shows a %s response of %j as %j", (status, response, example): void => {
+  ])("shows a %s response of %j as %j", async (status, response, example): Promise<void> => {
     expect.assertions(1);
     const root = docsRoot({
       "api-reference/a.mdx": PAGE,
@@ -141,21 +145,16 @@ describe("response example sync", (): void => {
         },
       }),
     });
-    run(root, false);
+    await run(root, false);
     const page = readFileSync(join(root, "api-reference/a.mdx"), "utf8");
 
-    expect(page).toContain(
-      `<Tab title="${status}" id="response-a-${status}">\n\n    \`\`\`${example === "No response body." ? "text" : "json"}\n    ${example.replaceAll("\n", "\n    ")}\n    \`\`\``,
-    );
+    expect(page).toContain(example);
   });
 
   it.each([
-    [
-      "event: a\ndata: 1\n\nevent: b\ndata: 2",
-      "event: a\n    data: 1\n\n    event: b\n    data: 2",
-    ],
-    ["event: a\n  \nevent: b", "event: a\n\n    event: b"],
-    ["event: a  \nevent: b", "event: a\n    event: b"],
+    ["event: a\ndata: 1\n\nevent: b\ndata: 2", "event: a\ndata: 1\n\nevent: b\ndata: 2"],
+    ["event: a\n  \nevent: b", "event: a\n\nevent: b"],
+    ["event: a  \nevent: b", "event: a\nevent: b"],
   ])("writes the text example %j as formatted MDX", async (text, body): Promise<void> => {
     expect.assertions(2);
     const root = docsRoot({
@@ -168,27 +167,26 @@ describe("response example sync", (): void => {
         },
       }),
     });
-    run(root, false);
+    await run(root, false);
     const page = readFileSync(join(root, "api-reference/a.mdx"), "utf8");
 
-    expect(page).toContain(`\`\`\`text\n    ${body}\n    \`\`\``);
+    expect(page).toContain(`\`\`\`text\n${body}\n\`\`\``);
     await expect(format("a.mdx", page)).resolves.toStrictEqual({ code: page, errors: [] });
   });
 
   it.each([
     ["https://example.com/response", "Only local OpenAPI references are supported"],
     ["#/missing", "OpenAPI reference not found: #/missing"],
-  ])("rejects the response reference %s", (ref, message): void => {
+  ])("rejects the response reference %s", async (ref, message): Promise<void> => {
     expect.assertions(1);
-    expect((): string => syncedExample({ $ref: ref })).toThrow(message);
+    await expect(syncedExample({ $ref: ref })).rejects.toThrow(message);
   });
 
-  it.each([
-    [GENERATED_RESPONSE_EXAMPLES_START, "markers are incomplete"],
-    ["No frontmatter", "no frontmatter insertion point"],
-    ["---\ntitle: Test\n---\nNo imports", "no import insertion point"],
-  ])("refuses to place a block in %j", (source, message): void => {
-    expect.assertions(1);
-    expect((): string => replaceBlock(source, "replacement")).toThrow(message);
-  });
+  it.each([[GENERATED_RESPONSE_EXAMPLES_START, "markers are incomplete"]])(
+    "refuses to place a block in %j",
+    (source, message): void => {
+      expect.assertions(1);
+      expect((): string => replaceBlock(source, "replacement")).toThrow(message);
+    },
+  );
 });

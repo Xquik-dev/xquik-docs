@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { hasDocumentedField } from "./scripts/lib/documented-fields.ts";
 
 const source = readFileSync(
   new URL("api-reference/styles/performance.mdx", import.meta.url),
@@ -30,7 +31,7 @@ describe("tweet style performance documentation", (): void => {
         "replyCount",
         "retweetCount",
         "viewCount",
-      ].every((field) => source.includes(`<ResponseField name="${field}"`)),
+      ].every((field) => hasDocumentedField(source, "response", field)),
       privateMetricsDenied: source.includes("It does not expose private analytics."),
       uniqueViewsDenied: source.includes("`viewCount` is not a unique-audience field."),
     }).toStrictEqual({

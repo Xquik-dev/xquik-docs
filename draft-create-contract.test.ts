@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import { docsSecurity } from "./product-contract.test.helpers.ts";
+import { hasDocumentedField } from "./scripts/lib/documented-fields.ts";
 
 const PROJECT_ROOT = dirname(fileURLToPath(import.meta.url));
 const page = readFileSync(join(PROJECT_ROOT, "api-reference/drafts/create.mdx"), "utf8");
@@ -21,10 +22,10 @@ describe("create tweet draft documentation", (): void => {
 
     expect({
       requestFields: ["text", "topic", "goal"].every((field) =>
-        page.includes(`<ParamField body="${field}"`),
+        hasDocumentedField(page, "body", field),
       ),
       responseFields: ["id", "text", "topic", "goal", "createdAt", "updatedAt"].every((field) =>
-        page.includes(`<ResponseField name="${field}"`),
+        hasDocumentedField(page, "response", field),
       ),
       unsupportedFieldsDenied: normalizedPage.includes(
         "The response contains no thread order, media attachment, reply target, or schedule. It also contains no publishing status or public tweet ID.",

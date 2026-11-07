@@ -4,6 +4,10 @@ export const navigationNode = z.looseObject({
   get anchors() {
     return z.array(navigationItem).optional();
   },
+  dropdown: z.string().optional(),
+  get dropdowns() {
+    return z.array(navigationNode).optional();
+  },
   expanded: z.boolean().optional(),
   group: z.string().optional(),
   get groups() {

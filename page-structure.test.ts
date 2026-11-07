@@ -32,10 +32,16 @@ function collectPageStructureFindings(): readonly PageStructureFinding[] {
     let insideCodeGroup = false;
     let previousHeadingLevel = 1;
 
-    if (/<Tabs>(?:(?!<\/Tabs>)[\s\S])*?<ResponseField\b/u.test(source)) {
+    const prose = source.replace(/```[\s\S]*?```/gu, "");
+    if (/^## /mu.test(prose) && !/^<section>\n\n## /mu.test(prose)) {
+      findings.push({ file, issue: "Wrap each top-level section in a section element." });
+    }
+
+    if (/<(?:Panel|ParamField|ResponseField)\b/u.test(prose)) {
       findings.push({
         file,
-        issue: "ResponseField cannot be nested inside Tabs.",
+        issue:
+          "Use a Markdown table for fields. Panel and field components render far more markup.",
       });
     }
 

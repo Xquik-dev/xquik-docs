@@ -18,7 +18,7 @@ const docsConfigSchema = z.looseObject({
 const EVENT_DETAIL_PIN = 'event_detail_endpoint_pattern: "/api/v1/events/{event_id}"';
 const DELIVERIES_PIN = 'deliveries_endpoint_pattern: "/api/v1/webhooks/{webhook_id}/deliveries"';
 const LIST_DELIVERIES_LINK = "[List Deliveries](/api-reference/webhooks/deliveries)";
-const AUTHORIZATION_PARAM = '<ParamField header="Authorization" type="string">';
+const AUTHORIZATION_PARAM = "Authorization` | `string` |";
 const NEXT_CURSOR_JS = "const nextCursor = data.has_next_page ? data.next_cursor : null;";
 const NEXT_CURSOR_PY = 'next_cursor = data["next_cursor"] if data["has_next_page"] else None';
 const SKIPPED_PUBLIC_SCAN_DIRS = new Set<string>([".git", "node_modules", ".github"] as const);
@@ -2940,7 +2940,7 @@ const REQUIRED_CREATE_TWEET_API_SNIPPETS = [
   "Store `id`, `request.hash`, `billing`, `result`, `reply_to_tweet_id`, and `media`.",
   "Poll [Get Write Action Status](/api-reference/x-write/get-write-action-status) while `terminal` is `false`.",
   "Retry only when `safeToRetry` is `true`, using a new key.",
-  '<ParamField header="Idempotency-Key" type="string" required>',
+  "Idempotency-Key` | `string` | Yes |",
   "<WriteActionLifecycleResponse />",
   "[Get Write Action Status](/api-reference/x-write/get-write-action-status)",
 ] as const;
@@ -3340,7 +3340,7 @@ const REQUIRED_WRITE_ACTION_STATUS_API_SNIPPETS = [
   "const action = await response.json();",
   "if (!action.terminal) {",
   'print({"delay_ms": action["pollAfterMs"], "next": action["statusUrl"]})',
-  '<ParamField header="x-api-key" type="string">',
+  "x-api-key` | `string` |",
   AUTHORIZATION_PARAM,
   "Send an OAuth 2.1 bearer token instead of `x-api-key`.",
   '<Tab title="401 Unauthenticated">',
@@ -3349,12 +3349,12 @@ const REQUIRED_WRITE_ACTION_STATUS_API_SNIPPETS = [
   "Check the action ID and environment. Never resubmit the original write.",
   '<Tab title="429 Rate limited">',
   "Wait for `Retry-After`. Poll the same action again. Never resend the write.",
-  '<ResponseField name="request" type="object">',
-  '<ResponseField name="account" type="object">',
-  '<ResponseField name="target" type="object | null">',
-  '<ResponseField name="billing" type="object">',
-  '<ResponseField name="result" type="object | null">',
-  '<ResponseField name="nextAction" type="object | null">',
+  "request` | `object` |",
+  "account` | `object` |",
+  "target` | `object \\| null` |",
+  "billing` | `object` |",
+  "result` | `object \\| null` |",
+  "nextAction` | `object \\| null` |",
   '"object": "x_write_action"',
   '"status": "pending_confirmation"',
   '"terminal": false',
@@ -4116,13 +4116,12 @@ const REQUIRED_TWEET_REPLIES_API_HANDOFF_SNIPPETS = [
   "`sinceTime` and `untilTime`, in Unix seconds",
   "Direct replies use the default paid page size",
   "Tweet author profile. Omitted if unavailable.",
-  '<Expandable title="Author object fields">',
-  '<ResponseField name="id" type="string">Author user ID.',
-  '<ResponseField name="username" type="string">Author handle without `@`.',
-  '<ResponseField name="name" type="string">Author display name.',
-  '<ResponseField name="followers" type="number">This value records the author\'s follower count when available.',
-  '<ResponseField name="verified" type="boolean">Whether the author is verified.',
-  '<ResponseField name="profilePicture" type="string">Author profile image URL.',
+  "id` | `string` | Author user ID.",
+  "username` | `string` | Author handle without `@`.",
+  "name` | `string` | Author display name.",
+  "followers` | `number` | This value records the author's follower count when available.",
+  "verified` | `boolean` | Whether the author is verified.",
+  "profilePicture` | `string` | Author profile image URL.",
   "`resultsLimit`",
   "[Tweet Replies Export Workflow](/guides/tweet-replies-export)",
   "saved CSV, JSON, or XLSX files",
@@ -4217,12 +4216,12 @@ const REQUIRED_TWEET_QUOTES_API_HANDOFF_SNIPPETS = [
   "[`GET /events`](/api-reference/events/list)",
   "Tweet author profile. Omitted if unavailable.",
   "**Author object fields.**",
-  '<ResponseField name="id" type="string">Author user ID.',
-  '<ResponseField name="username" type="string">Author handle without `@`.',
-  '<ResponseField name="name" type="string">Author display name.',
-  '<ResponseField name="followers" type="number">This value records the author\'s follower count when available.',
-  '<ResponseField name="verified" type="boolean">Whether the author is verified.',
-  '<ResponseField name="profilePicture" type="string">Author profile image URL.',
+  "id` | `string` | Author user ID.",
+  "username` | `string` | Author handle without `@`.",
+  "name` | `string` | Author display name.",
+  "followers` | `number` | This value records the author's follower count when available.",
+  "verified` | `boolean` | Whether the author is verified.",
+  "profilePicture` | `string` | Author profile image URL.",
   "`sinceTime`, `untilTime`, `includeReplies`, and tweet result",
   "filters to narrow the quote set",
 ] as const;
@@ -4633,7 +4632,7 @@ const REQUIRED_TWEET_THREAD_API_HANDOFF_SNIPPETS = [
   "[`GET /x/tweets/{id}/quotes`](/api-reference/x/tweet-quotes)",
   "[`GET /x/tweets/search`](/api-reference/x/search-tweets)",
   "`toolType=thread_extractor`",
-  '<ResponseField name="profilePicture" type="string">',
+  "profilePicture` | `string` |",
 ] as const;
 
 const FORBIDDEN_TWEET_THREAD_API_RAW_OUTPUT_SNIPPETS = [
@@ -4889,7 +4888,7 @@ const REQUIRED_COMMUNITY_TWEETS_API_HANDOFF_SNIPPETS = [
   "one row per community tweet",
   "Store each Tweet ID in its own record.",
   "creation time, engagement counts, media, and cursor checkpoint.",
-  '<ResponseField name="profilePicture" type="string">Profile picture URL.',
+  "profilePicture` | `string` | Profile picture URL.",
   '"profilePicture": "https://pbs.twimg.com/profile_images/example.jpg"',
   '<Card title="Community tweet rows" icon="message-square-text">',
   '<Card title="Next page" icon="arrow-right">',
@@ -4969,7 +4968,7 @@ const REQUIRED_COMMUNITY_SEARCH_API_HANDOFF_SNIPPETS = [
   "`community_id`, `search_query`, `query_type`, `tweet_id`,",
   "`author_followers`, `author_verified`,",
   "`author_profile_picture`, `created_at`, engagement counts, & `media_urls`",
-  '<ResponseField name="profilePicture" type="string">',
+  "profilePicture` | `string` |",
   "Set `queryType=Latest` for recent queues or backfills",
   "Set `queryType=Top` for",
   '<Card title="Search row checkpoint" icon="search">',
@@ -5347,7 +5346,7 @@ const REQUIRED_LIST_TWEETS_API_HANDOFF_SNIPPETS = [
   "`author_name`, `author_followers`, `author_verified`,",
   "`author_profile_picture`,",
   "engagement counts, & `media_urls`",
-  '<ResponseField name="profilePicture" type="string">Profile picture URL.',
+  "profilePicture` | `string` | Profile picture URL.",
   '"profilePicture": "https://pbs.twimg.com/profile_images/example.jpg"',
   "Use `sinceTime` & `untilTime` for bounded backfills",
   "`includeReplies=true`",
@@ -5407,7 +5406,7 @@ const REQUIRED_BATCH_TWEETS_API_HANDOFF_SNIPPETS = [
   "`has_next_page`, and `next_cursor`",
   "Join returned tweets by",
   "`tweet_id`. Do not rely on response order.",
-  '<ResponseField name="profilePicture" type="string">',
+  "profilePicture` | `string` |",
   '"profilePicture": "https://pbs.twimg.com/profile_images/example.jpg"',
   "100 IDs per request",
   "`has_next_page: false`",
@@ -5612,7 +5611,7 @@ const REQUIRED_USER_MENTIONS_API_HANDOFF_SNIPPETS = [
   "`page_cursor`,",
   "`has_next_page`, and",
   "`next_cursor`. Treat `next_cursor` as opaque",
-  '<ResponseField name="profilePicture" type="string">Profile picture URL.',
+  "profilePicture` | `string` | Profile picture URL.",
   '"profilePicture": "https://pbs.twimg.com/profile_images/customer/photo.jpg"',
   "Use `sinceTime`",
   "`has_next_page` is true",
@@ -6037,7 +6036,7 @@ const REQUIRED_BOOKMARKS_API_HANDOFF_SNIPPETS = [
   "### How should I store a bookmark export?",
   "https://docs.x.com/x-api/posts/bookmarks/introduction",
   "This object contains the tweet author profile. X may omit it.",
-  '<ResponseField name="profilePicture" type="string">This value contains the profile picture URL.',
+  "profilePicture` | `string` | This value contains the profile picture URL.",
   "This value records the follower count. X may omit it.",
   '<Card title="All saved tweets" icon="bookmark">',
   '<Card title="Folder export" icon="folder">',
@@ -6096,7 +6095,7 @@ const REQUIRED_TIMELINE_API_HANDOFF_SNIPPETS = [
   '"author_profile_picture": (tweet.get("author") or {}).get("profilePicture")',
   'print(json.dumps(timeline_row, separators=(",", ":")))',
   "Returns the tweet author when available.",
-  '<ResponseField name="profilePicture" type="string">Returns the profile image URL',
+  "profilePicture` | `string` | Returns the profile image URL",
   '"followers": 150000000',
   '"profilePicture": "https://pbs.twimg.com/profile_images/example.jpg"',
   '<Card title="Home feed rows" icon="house">',
@@ -6201,7 +6200,7 @@ const REQUIRED_USER_TWEETS_API_HANDOFF_SNIPPETS = [
   '"in_reply_to_id": tweet.get("inReplyToId")',
   'print(json.dumps(timeline_row, separators=(",", ":")))',
   "Tweet author profile. Omitted if unavailable.",
-  '<ResponseField name="profilePicture" type="string">Profile picture URL.',
+  "profilePicture` | `string` | Profile picture URL.",
 ] as const;
 
 const FORBIDDEN_USER_TWEETS_API_RAW_SNIPPETS = [
@@ -6246,12 +6245,12 @@ const REQUIRED_USER_LIKES_API_HANDOFF_SNIPPETS = [
   'print(json.dumps(liked_row, separators=(",", ":")))',
   "Tweet author profile. Omitted if unavailable.",
   "**Author object fields.**",
-  '<ResponseField name="id" type="string">Author user ID.',
-  '<ResponseField name="username" type="string">Author handle without `@`.',
-  '<ResponseField name="name" type="string">Author display name.',
-  '<ResponseField name="followers" type="number">Follower count.',
-  '<ResponseField name="verified" type="boolean">Whether the author is verified.',
-  '<ResponseField name="profilePicture" type="string">Author profile image URL.',
+  "id` | `string` | Author user ID.",
+  "username` | `string` | Author handle without `@`.",
+  "name` | `string` | Author display name.",
+  "followers` | `number` | Follower count.",
+  "verified` | `boolean` | Whether the author is verified.",
+  "profilePicture` | `string` | Author profile image URL.",
 ] as const;
 
 const FORBIDDEN_USER_LIKES_API_RAW_SNIPPETS = [
@@ -6309,12 +6308,12 @@ const REQUIRED_USER_MEDIA_API_HANDOFF_SNIPPETS = [
   'print(json.dumps(media_row, separators=(",", ":")))',
   "Tweet author profile. Omitted if unavailable.",
   "**Author object fields.**",
-  '<ResponseField name="id" type="string">Author user ID.',
-  '<ResponseField name="username" type="string">Author handle without `@`.',
-  '<ResponseField name="name" type="string">Author display name.',
-  '<ResponseField name="followers" type="number">Follower count.',
-  '<ResponseField name="verified" type="boolean">Whether the author is verified.',
-  '<ResponseField name="profilePicture" type="string">Author profile image URL.',
+  "id` | `string` | Author user ID.",
+  "username` | `string` | Author handle without `@`.",
+  "name` | `string` | Author display name.",
+  "followers` | `number` | Follower count.",
+  "verified` | `boolean` | Whether the author is verified.",
+  "profilePicture` | `string` | Author profile image URL.",
 ] as const;
 
 const FORBIDDEN_USER_MEDIA_API_RAW_SNIPPETS = [
@@ -6550,7 +6549,7 @@ const FORBIDDEN_TRENDS_REGION_SNIPPETS = [
 ] as const;
 
 const REQUIRED_EXTRACTION_CREATE_TOOL_TYPE_SNIPPETS = [
-  '<ParamField body="queryType" type="string">',
+  "queryType` | `string` |",
   "Search ranking. Use `Latest`, `Top`, or `Both`.",
   "Choose supported target fields.",
   "`resultsLimit`",
@@ -6607,9 +6606,9 @@ const FORBIDDEN_EXTRACTION_CREATE_TOOL_TYPE_SNIPPETS = [
 ] as const;
 
 const REQUIRED_EXTRACTION_CREATE_LIFECYCLE_SNIPPETS = [
-  '<ResponseField name="pollAfterMs" type="number">',
-  '<ResponseField name="statusUrl" type="string">',
-  '<ResponseField name="waitUrl" type="string">',
+  "pollAfterMs` | `number` |",
+  "statusUrl` | `string` |",
+  "waitUrl` | `string` |",
   "Prefer `waitUrl` while the job runs.",
   "Use `statusUrl` for immediate checks.",
   "New jobs include `Location`",
@@ -6781,7 +6780,7 @@ const REQUIRED_DRAW_DETAIL_SNIPPETS = [
   '"entry_export_path"',
   AUTHORIZATION_PARAM,
   "Send `Bearer <token>` instead of `x-api-key` when using OAuth 2.1.",
-  '<ResponseField name="totalEntries" type="number">Inspected candidate entries.</ResponseField>',
+  "totalEntries` | `number` | Inspected candidate entries.",
   "## Handle giveaway draw responses",
   '<Card title="200 Draw result" icon="circle-check">',
   '<Card title="404 Draw missing" icon="search-x">',
@@ -6796,7 +6795,7 @@ const FORBIDDEN_DRAW_DETAIL_SNIPPETS = [
   'keywords: ["draw", "get", "winners", "results", "tweet metadata"]',
   "This endpoint also accepts session cookie authentication.",
   "Missing or invalid API key / session cookie.",
-  ">Total replies collected.</ResponseField>",
+  "Total replies collected. |",
   "minimum account age, followers, posts, or verification state",
   "excluded usernames or duplicate-author rules",
 ] as const;
@@ -7556,7 +7555,7 @@ const FORBIDDEN_WEBHOOK_TEST_RAW_OUTPUT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_WEBHOOK_RESUME_API_SNIPPETS = [
-  'api: "POST /webhooks/{id}/resume"',
+  'endpoint: "POST /webhooks/{id}/resume"',
   "webhook_id: .webhook.id",
   "resumed: (.success == true)",
   "delivery_status: .webhook.deliveryStatus",
@@ -8252,7 +8251,7 @@ const REQUIRED_DM_HISTORY_API_SNIPPETS = [
   "Also store optional `media_url`, `conversation_user_id`, `sender_account`, and",
   "`page_next_cursor` for each page.",
   "Keep `message_text` only in private systems",
-  '<ParamField query="account" type="string" required>',
+  "account` | `string` | Yes |",
   "Use the previous response's `next_cursor` to fetch older messages.",
   "Legacy pagination cursor. Use `cursor` for new integrations.",
   "messages",
@@ -13754,25 +13753,27 @@ describe("repository discovery", (): void => {
     const source = readFileSync("api-reference/x/check-follower.mdx", "utf8");
 
     expect(
-      REQUIRED_CHECK_FOLLOWER_API_HANDOFF_SNIPPETS.flatMap((snippet): readonly DiscoveryFinding[] =>
-        source.includes(snippet)
-          ? []
-          : [
-              {
-                issue: `Check Follower API page is missing campaign-audit snippet "${snippet}".`,
-              },
-            ],
+      REQUIRED_CHECK_FOLLOWER_API_HANDOFF_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? []
+            : [
+                {
+                  issue: `Check Follower API page is missing campaign-audit snippet "${snippet}".`,
+                },
+              ],
       ),
     ).toStrictEqual([]);
     expect(
-      FORBIDDEN_CHECK_FOLLOWER_RAW_OUTPUT_SNIPPETS.flatMap((snippet): readonly DiscoveryFinding[] =>
-        source.includes(snippet)
-          ? [
-              {
-                issue: `Check Follower API page prints raw follow-check data with "${snippet}".`,
-              },
-            ]
-          : [],
+      FORBIDDEN_CHECK_FOLLOWER_RAW_OUTPUT_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          source.includes(snippet)
+            ? [
+                {
+                  issue: `Check Follower API page prints raw follow-check data with "${snippet}".`,
+                },
+              ]
+            : [],
       ),
     ).toStrictEqual([]);
   });
@@ -14284,10 +14285,11 @@ describe("repository discovery", (): void => {
         "Architecture guide platform limitations",
         REQUIRED_ARCHITECTURE_LIMITATION_SNIPPETS,
       ),
-      ...FORBIDDEN_ARCHITECTURE_COMPONENT_SNIPPETS.flatMap((snippet): readonly DiscoveryFinding[] =>
-        architecture.includes(snippet)
-          ? [{ issue: `Architecture guide components contains forbidden "${snippet}".` }]
-          : [],
+      ...FORBIDDEN_ARCHITECTURE_COMPONENT_SNIPPETS.flatMap(
+        (snippet): readonly DiscoveryFinding[] =>
+          architecture.includes(snippet)
+            ? [{ issue: `Architecture guide components contains forbidden "${snippet}".` }]
+            : [],
       ),
       ...FORBIDDEN_ARCHITECTURE_AUTHENTICATION_SNIPPETS.flatMap(
         (snippet): readonly DiscoveryFinding[] =>

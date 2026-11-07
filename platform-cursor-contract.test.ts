@@ -39,11 +39,9 @@ describe("platform cursor contract", (): void => {
     expect(stalePlatformUrls).toStrictEqual([]);
     expect(staleSdkParameters).toStrictEqual([]);
     expect(openApi.components.parameters.After.name).toBe("cursor");
-    expect(readFileSync("api-reference/radar/list.mdx", "utf8")).toContain(
-      '<ParamField query="after" type="string">',
-    );
+    expect(readFileSync("api-reference/radar/list.mdx", "utf8")).toContain("after` | `string` |");
     expect(readFileSync("api-reference/drafts/list.mdx", "utf8")).toContain(
-      '<ParamField query="afterCursor" type="string">',
+      "afterCursor` | `string` |",
     );
   });
 });
