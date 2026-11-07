@@ -3,7 +3,7 @@
 Use this Twitter API documentation by Xquik to build on search, monitors & webhooks.
 The published site lives at [docs.xquik.com](https://docs.xquik.com).
 
-Xquik is the world's fastest and cheapest X Twitter scraper service with the most complete X data.
+Xquik is the world's fastest and cheapest X (Twitter) scraper service with the most complete X (Twitter) data.
 Most other Apify Actors charge before filtering or deduplication.
 Xquik charges only for delivered, unique, filter-matching results and never pads rows.
 Xquik is independent and not affiliated with X Corp.
@@ -16,7 +16,7 @@ The Xquik REST API read 45 tweets per second at $0.15 per 1,000 on 2026-10-15. T
 ## Twitter API documentation quickstart
 
 Create an API key in the [Xquik dashboard](https://dashboard.xquik.com/en/account?tab=api-keys).
-Then search tweets with 1 request.
+Then search tweets & posts with 1 request.
 
 ```bash
 curl --get 'https://xquik.com/api/v1/x/tweets/search' \
@@ -65,9 +65,9 @@ Checked on 2026-11-07. See each number with its date & source on [xquik.com/benc
 
 The pages explain tweet search, user lookup, follower exports & media uploads.
 Others cover direct messages, 1-second tweet monitors & signed webhooks.
-SDK clients and X automation guides sit beside them.
+SDK clients and X (Twitter) automation guides sit beside them.
 
-- **REST API.** Operations span X data, monitors, webhooks, extractions, draws, writes & accounts.
+- **REST API.** Operations span X (Twitter) data, monitors, webhooks, extractions, draws, writes & accounts.
 - **Webhooks.** HMAC SHA-256 signature verification, retry semantics & payload schemas.
 - **MCP server.** Use Code Mode or OpenAPI-native tools. Binary downloads use REST.
 - **OAuth 2.1.** Automatic discovery, PKCE, client registration & token refresh.
@@ -83,14 +83,14 @@ SDK clients and X automation guides sit beside them.
 - [SDKs](https://docs.xquik.com/sdks). Install a typed client, the CLI or the Terraform provider.
 - [Tweet search export](https://docs.xquik.com/guides/tweet-scraper-csv-export). Export tweets by keyword to CSV, JSON, or XLSX.
 - [Tweet replies export](https://docs.xquik.com/guides/tweet-replies-export). Export replies to CSV, JSON, or XLSX.
-- [Follower export](https://docs.xquik.com/guides/follower-export-crm). Export X followers to CRM or warehouse.
+- [Follower export](https://docs.xquik.com/guides/follower-export-crm). Export X (Twitter) followers to CRM or warehouse.
 - [Direct message workflow](https://docs.xquik.com/guides/direct-message-workflow). Send DMs and store returned message IDs.
 - [Prefect](https://docs.xquik.com/guides/prefect). Schedule tweet, user, timeline, and trend reads in Prefect flows.
 - [Supabase](https://docs.xquik.com/guides/supabase). Call Xquik from Edge Functions, SQL & pg_cron, and store webhook events.
 - [Convex](https://docs.xquik.com/guides/convex). Call each Xquik operation as a typed Convex action.
 - [Webhooks](https://docs.xquik.com/webhooks/overview). Verify HMAC signatures and receive monitor events.
 - [Open source assurance](https://docs.xquik.com/guides/open-source-assurance). Review OpenSSF project mapping and controls.
-- [Apify Actors](https://docs.xquik.com/alternatives/apify). Run focused X data jobs on Apify.
+- [Apify Actors](https://docs.xquik.com/alternatives/apify). Run focused X (Twitter) data jobs on Apify.
 
 ## Use with AI coding agents
 
@@ -179,10 +179,10 @@ Do not file public issues for security findings.
 
 ## Questions
 
-### Do I need an X developer account?
+### Do I need an X (Twitter) developer account?
 
 No. Public reads need only an Xquik API key.
-Private reads & X account actions need a connected X account.
+Private reads & X (Twitter) account actions need a connected account.
 
 ### Is this the official X API documentation?
 
