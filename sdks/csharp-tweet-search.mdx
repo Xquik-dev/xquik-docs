@@ -1,0 +1,175 @@
+---
+title: "Twitter API C# Tweet Search to CSV & JSON Lines"
+sidebarTitle: "Tweet search"
+description: "Search tweets with the Xquik C# SDK, follow cursors, and save rows as JSON Lines, CSV, or XLSX for workers, queues, and analysts in your own apps and jobs."
+keywords:
+  ["C# SDK", "C# tweet search", "tweet search SDK", "CSV export", "XLSX export", "JSON Lines"]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+<LlmsDirective />
+
+This guide builds on the [C# SDK setup](/sdks/csharp-x-api-sdk), which covers install and authentication.
+
+<section>
+
+## Tweet search workflow to JSON Lines, CSV, or XLSX
+
+This workflow is for a .NET worker, console job, or ASP.NET background service. Use it when that code needs tweet search results in a durable handoff format. The handoff can go to a queue, data lake, or analyst CSV export. It can also go to an XLSX workbook or CRM enrichment step.
+
+`client.X.Tweets.Search` calls `GET /x/tweets/search`. Build a `TweetSearchParams` object with the same query parameters the REST API accepts. They are `Q`, `Limit`, `Cursor`, `SinceTime`, `UntilTime`, and `QueryType`.
+
+```csharp
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text.Json;
+using XTwitterScraper;
+using XTwitterScraper.Models;
+using XTwitterScraper.Models.X.Tweets;
+
+XTwitterScraperClient client = new();
+
+string query = "from:username webhook OR SDK";
+string? cursor = null;
+int pageIndex = 0;
+string[] headers = new[]
+{
+    "source",
+    "query",
+    "tweet_id",
+    "text",
+    "author_id",
+    "author_username",
+    "author_name",
+    "created_at",
+    "like_count",
+    "reply_count",
+    "retweet_count",
+    "quote_count",
+    "view_count",
+    "bookmark_count",
+    "is_note_tweet",
+    "page_index",
+    "page_cursor",
+    "next_cursor",
+    "has_next_page",
+};
+
+using StreamWriter jsonlWriter = File.CreateText("xquik-tweet-search.jsonl");
+using StreamWriter csvWriter = File.CreateText("xquik-tweet-search.csv");
+await WriteCsvRow(csvWriter, headers);
+
+do
+{
+    string? pageCursor = cursor;
+    PaginatedTweets page = await client.X.Tweets.Search(
+        new TweetSearchParams
+        {
+            Q = query,
+            Cursor = cursor,
+            QueryType = QueryType.Latest,
+        }
+    );
+
+    foreach (SearchTweet tweet in page.Tweets)
+    {
+        Dictionary<string, object?> row = new()
+        {
+            ["source"] = "xquik.csharp.search",
+            ["query"] = query,
+            ["tweet_id"] = tweet.ID,
+            ["text"] = tweet.Text,
+            ["author_id"] = tweet.Author?.ID,
+            ["author_username"] = tweet.Author?.Username,
+            ["author_name"] = tweet.Author?.Name,
+            ["created_at"] = tweet.CreatedAt,
+            ["like_count"] = tweet.LikeCount ?? 0,
+            ["reply_count"] = tweet.ReplyCount ?? 0,
+            ["retweet_count"] = tweet.RetweetCount ?? 0,
+            ["quote_count"] = tweet.QuoteCount ?? 0,
+            ["view_count"] = tweet.ViewCount ?? 0,
+            ["bookmark_count"] = tweet.BookmarkCount ?? 0,
+            ["is_note_tweet"] = tweet.IsNoteTweet ?? false,
+            ["page_index"] = pageIndex,
+            ["page_cursor"] = pageCursor,
+            ["next_cursor"] = page.HasNextPage ? page.NextCursor : null,
+            ["has_next_page"] = page.HasNextPage,
+        };
+
+        await jsonlWriter.WriteLineAsync(JsonSerializer.Serialize(row));
+        await WriteCsvRow(csvWriter, headers.Select(header => row[header]));
+    }
+
+    cursor = page.HasNextPage ? page.NextCursor : null;
+    pageIndex++;
+} while (!string.IsNullOrEmpty(cursor));
+
+static async Task WriteCsvRow(StreamWriter writer, IEnumerable<object?> values)
+{
+    static string Escape(object? value)
+    {
+        string cell = value?.ToString() ?? "";
+        return "\"" + cell.Replace("\"", "\"\"") + "\"";
+    }
+
+    await writer.WriteLineAsync(string.Join(",", values.Select(Escape)));
+}
+```
+
+### Request mapping
+
+<CardGroup cols={2}>
+
+  <Card title="Q" icon="search">
+
+    C# property `Q` maps to REST `q`. Use it for an X search query. Examples are `from:username`, a keyword, hashtag, or boolean operator query.
+
+  </Card>
+  <Card title="Limit" icon="list">
+
+    C# property `Limit` maps to REST `limit`. Use it as a 1 to 200 upper bound for a bounded pull. If `page.HasNextPage` is true, keep the same `Q`, filters, `QueryType`, and `Limit`. Do so when you continue with `page.NextCursor`.
+
+  </Card>
+  <Card title="Cursor" icon="arrow-right">
+
+    C# property `Cursor` maps to REST `cursor`. Pass the opaque cursor from `page.NextCursor` to request the next page.
+
+  </Card>
+  <Card title="SinceTime" icon="clock">
+
+    C# property `SinceTime` maps to REST `sinceTime`. Use it as the ISO 8601 lower bound for tweet creation time.
+
+  </Card>
+  <Card title="UntilTime" icon="clock">
+
+    C# property `UntilTime` maps to REST `untilTime`. Use it as the ISO 8601 upper bound for tweet creation time.
+
+  </Card>
+  <Card title="QueryType" icon="sliders-horizontal">
+
+    C# property `QueryType` maps to REST `queryType`. Use `QueryType.Latest` for chronological search or `QueryType.Top` for engagement-ranked search.
+
+  </Card>
+</CardGroup>
+
+### Returned data & handoff
+
+`client.X.Tweets.Search` returns `PaginatedTweets`. Use `page.Tweets` for the tweet array. Use `page.HasNextPage` to decide whether another page exists. Use `page.NextCursor` as the checkpoint for the next request. For bounded pulls that return fewer tweets than `Limit`, pass `page.NextCursor` back as `Cursor`. Send the same query, filters, `QueryType`, and `Limit` with that cursor.
+
+Each `SearchTweet` includes typed properties such as `ID`, `Text`, `Author`, and `CreatedAt`. Others are `LikeCount`, `ReplyCount`, `RetweetCount`, `QuoteCount`, `ViewCount`, and `BookmarkCount`. It also includes `IsNoteTweet` when available. Project `page.Tweets` into JSON Lines and CSV rows with `tweet_id`, `author_username`, and engagement counts. Rows also carry `page_index`, `page_cursor`, `next_cursor`, and `has_next_page`. Workers can then resume. They can also load the same records into XLSX, CRM, warehouse, or agent workflows.
+
+Tweet search costs 1 credit per tweet returned. Remaining credits may not cover a bounded `Limit` request. If so, the API can return fewer tweets. If 0 paid results are affordable, it returns `402 insufficient_credits`. The SDK retries connection errors, 408, 409, 429, and 5xx responses. It does so 2 times by default. For explicit `Limit` pulls, resume with the same query, filters, `QueryType`, and `Limit`. Only `Cursor` changes.
+
+</section>
+
+<section>
+
+## Next steps
+
+- [C# SDK setup](/sdks/csharp-x-api-sdk)
+- [Follower export](/sdks/csharp-follower-export)
+- [Media tweets](/sdks/csharp-media-tweets)
+
+</section>

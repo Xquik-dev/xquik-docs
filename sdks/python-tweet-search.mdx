@@ -1,0 +1,186 @@
+---
+title: "Twitter API Python Tweet Search to CSV & JSON Lines"
+sidebarTitle: "Tweet search"
+description: "Search tweets with the Xquik Python SDK, follow cursors, and save rows as JSON Lines, CSV, or XLSX for workers, queues, and analysts in your own apps and jobs."
+keywords:
+  [
+    "Python SDK",
+    "Python tweet search",
+    "tweet search SDK",
+    "CSV export",
+    "XLSX export",
+    "JSON Lines",
+  ]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+<LlmsDirective />
+
+This guide builds on the [Python SDK setup](/sdks/python), which covers install and authentication.
+
+<section>
+
+## Tweet search workflow to CSV, JSON Lines, or XLSX
+
+Search with `client.x.tweets.search`, `GET /x/tweets/search`, and generated `TweetSearchParams`. Save CSV and JSON Lines for notebooks, workers, agents, queues, warehouses, and replay.
+
+```python
+import csv
+import json
+from pathlib import Path
+
+from x_twitter_scraper import XTwitterScraper
+
+client = XTwitterScraper()
+query = "from:username webhook OR SDK"
+csv_output = Path("xquik-tweet-search.csv")
+jsonl_output = Path("xquik-tweet-search.jsonl")
+cursor = None
+page_index = 0
+
+with csv_output.open("w", newline="", encoding="utf-8") as csv_file, jsonl_output.open(
+    "w",
+    encoding="utf-8",
+) as jsonl_file:
+    writer = csv.DictWriter(
+        csv_file,
+        fieldnames=[
+            "source",
+            "query",
+            "tweet_id",
+            "text",
+            "author_id",
+            "author_username",
+            "author_name",
+            "created_at",
+            "like_count",
+            "reply_count",
+            "retweet_count",
+            "quote_count",
+            "view_count",
+            "bookmark_count",
+            "is_note_tweet",
+            "page_index",
+            "page_cursor",
+            "next_cursor",
+            "has_next_page",
+        ],
+    )
+    writer.writeheader()
+
+    while True:
+        page_cursor = cursor
+        page = client.x.tweets.search(
+            q=query,
+            query_type="Latest",
+            cursor=cursor,
+        )
+
+        for tweet in page.tweets:
+            row = {
+                "source": "xquik.python.search",
+                "query": query,
+                "tweet_id": tweet.id,
+                "text": tweet.text,
+                "author_id": tweet.author.id if tweet.author else None,
+                "author_username": tweet.author.username if tweet.author else None,
+                "author_name": tweet.author.name if tweet.author else None,
+                "created_at": tweet.created_at,
+                "like_count": tweet.like_count or 0,
+                "reply_count": tweet.reply_count or 0,
+                "retweet_count": tweet.retweet_count or 0,
+                "quote_count": tweet.quote_count or 0,
+                "view_count": tweet.view_count or 0,
+                "bookmark_count": tweet.bookmark_count or 0,
+                "is_note_tweet": tweet.is_note_tweet or False,
+                "page_index": page_index,
+                "page_cursor": page_cursor,
+                "next_cursor": page.next_cursor or None,
+                "has_next_page": page.has_next_page,
+            }
+            writer.writerow(row)
+            jsonl_file.write(json.dumps(row, ensure_ascii=False) + "\n")
+
+        if not page.has_next_page or not page.next_cursor:
+            break
+        cursor = page.next_cursor
+        page_index += 1
+```
+
+The method accepts the same query inputs as the REST endpoint.
+
+<CardGroup cols={2}>
+
+  <Card title="q" icon="search">
+
+    Python argument `q` maps to REST `q`. Use it for the required X search query with keywords, handles, hashtags, or operators.
+
+  </Card>
+  <Card title="limit" icon="list">
+
+    Python argument `limit` maps to REST `limit`. Use it as a 1 to 200 upper bound for a bounded pull. If `page.has_next_page` is true, keep the same `q`, filters, `query_type`, and `limit`. That applies when you continue with `page.next_cursor`.
+
+  </Card>
+  <Card title="cursor" icon="arrow-right">
+
+    Python argument `cursor` maps to REST `cursor`. Pass the opaque cursor from `page.next_cursor` to request the next page.
+
+  </Card>
+  <Card title="since_time" icon="clock">
+
+    Python argument `since_time` maps to REST `sinceTime`. Use it as the ISO 8601 lower time bound.
+
+  </Card>
+  <Card title="until_time" icon="clock">
+
+    Python argument `until_time` maps to REST `untilTime`. Use it as the ISO 8601 upper time bound.
+
+  </Card>
+  <Card title="query_type" icon="sliders-horizontal">
+
+    Python argument `query_type` maps to REST `queryType`. Use `Latest` for chronological results or `Top` for engagement-ranked results.
+
+  </Card>
+</CardGroup>
+
+</section>
+
+<section>
+
+## Returned data & handoff
+
+`client.x.tweets.search` returns a `PaginatedTweets` Pydantic model.
+
+<CardGroup cols={2}>
+
+  <Card title="page.tweets" icon="message-square-text">
+
+    JSON field `tweets`. Contains `SearchTweet` records with `id`, `text`, optional `author`, and `created_at`. Records also carry `like_count`, `reply_count`, `retweet_count`, `quote_count`, `bookmark_count`, `view_count`, and `is_note_tweet` when available.
+
+  </Card>
+  <Card title="page.has_next_page" icon="circle-check">
+
+    Python field `page.has_next_page`. JSON field `has_next_page`. Tells your script whether another page exists.
+
+  </Card>
+  <Card title="page.next_cursor" icon="arrow-right">
+
+    JSON field `next_cursor`. Store it only when `page.has_next_page` is true. For bounded pulls that return fewer tweets than `limit`, pass it back as `cursor`. Send the same query, filters, `query_type`, and `limit` with it.
+
+  </Card>
+</CardGroup>
+
+Project `page.tweets` into CSV rows for analysts. Project them into JSON Lines rows in `xquik-tweet-search.jsonl` for queues and data lakes. If account teams need an XLSX workbook, load those rows into pandas or openpyxl. Store `tweet_id`, `author_username`, engagement counts, `page_index`, `page_cursor`, `next_cursor`, and `has_next_page`. With them, scripts resume from the last saved cursor without replaying raw SDK models. For explicit `limit` pulls, resume with the same query, filters, `query_type`, and `limit`. Only `cursor` changes.
+
+</section>
+
+<section>
+
+## Next steps
+
+- [Python SDK setup](/sdks/python)
+- [Follower export](/sdks/python-follower-export)
+- [Media tweets](/sdks/python-media-tweets)
+
+</section>

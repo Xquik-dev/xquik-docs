@@ -1,0 +1,128 @@
+---
+title: "MCP Execute Examples for Tweet Search & Replies"
+sidebarTitle: "Tweet examples"
+description: "Copy MCP execute examples that summarize tweets with guarded pagination and scrape tweet replies to CSV, JSON, or XLSX through the Xquik sandbox with credits."
+keywords: ["MCP tools", "MCP execute", "code execution", "agent examples"]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+<LlmsDirective />
+
+Run these inside the [`execute` tool](/mcp/tools#execute). Each example is one sandbox call.
+
+<section>
+
+## Examples
+
+> Summarize up to 100 tweets with guarded pagination (credits required)
+
+Use `q` for keywords and X search operators.
+For a single stored link, pass a plain Tweet ID or X status URL.
+
+```javascript
+async () => {
+  const target = 100;
+  const query = "from:username giveaway";
+  const seenIds = new Set();
+  const seenCursors = new Set();
+  const sampleTweets = [];
+  let cursor;
+  let hasMore = true;
+  let nextCursor = "";
+  let stopReason = "page_cap";
+
+  for (let pageNumber = 0; pageNumber < 10 && seenIds.size < target && hasMore; pageNumber += 1) {
+    const { result: page } = await xquik.request({
+      path: "/api/v1/x/tweets/search",
+      query: {
+        q: query,
+        limit: String(Math.min(200, target - seenIds.size)),
+        ...(cursor ? { cursor } : {}),
+      },
+    });
+
+    for (const tweet of page.tweets) {
+      if (seenIds.has(tweet.id) || seenIds.size >= target) continue;
+      seenIds.add(tweet.id);
+      if (sampleTweets.length < 20) {
+        sampleTweets.push({
+          tweet_id: tweet.id,
+          text_excerpt: tweet.text?.slice(0, 120) ?? null,
+          author_id: tweet.author?.id ?? null,
+          author_username: tweet.author?.username ?? null,
+          created: tweet["created"] ?? null,
+          like_count: tweet.like_count ?? null,
+          view_count: tweet.view_count ?? null,
+        });
+      }
+    }
+
+    hasMore = Boolean(page.has_more);
+    nextCursor = page.next_cursor ?? "";
+    if (!hasMore) {
+      stopReason = "exhausted";
+      break;
+    }
+    if (!nextCursor || nextCursor === cursor || seenCursors.has(nextCursor)) {
+      stopReason = "cursor_stalled";
+      break;
+    }
+    seenCursors.add(nextCursor);
+    cursor = nextCursor;
+  }
+
+  return {
+    source: "xquik_mcp",
+    job: "tweet_search",
+    query,
+    rows_seen: seenIds.size,
+    sample_tweets: sampleTweets,
+    has_more: hasMore,
+    next_cursor: nextCursor,
+    stop_reason: seenIds.size >= target ? "requested_total" : stopReason,
+  };
+};
+```
+
+> Scrape tweet replies to CSV, JSON, or XLSX (credits required)
+
+```javascript
+async () => {
+  const body = {
+    toolType: "reply_extractor",
+    targetTweetId: "1893704267862470862",
+    resultsLimit: 500,
+  };
+
+  const { result: extraction } = await xquik.request({
+    path: "/api/v1/extractions",
+    method: "POST",
+    body,
+  });
+
+  return {
+    source: "xquik_mcp",
+    job: "reply_extraction",
+    extraction_id: extraction.id,
+    status: extraction.status,
+    target_tweet_id: body.targetTweetId,
+    results_limit: body.resultsLimit,
+    poll: `/api/v1/extractions/${extraction.id}`,
+    export_csv: `/api/v1/extractions/${extraction.id}/export?format=csv`,
+    export_json: `/api/v1/extractions/${extraction.id}/export?format=json`,
+    export_xlsx: `/api/v1/extractions/${extraction.id}/export?format=xlsx`,
+  };
+};
+```
+
+</section>
+
+<section>
+
+## Next steps
+
+- [MCP tools](/mcp/tools)
+- [MCP overview](/mcp/overview)
+
+</section>

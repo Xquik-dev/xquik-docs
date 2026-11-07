@@ -1,0 +1,171 @@
+---
+title: "Twitter API Go Follower Export to CSV & XLSX"
+sidebarTitle: "Follower export"
+description: "Export X (Twitter) followers with the Xquik Go SDK. Estimate the job, run the extraction, and save CSV, JSON, or XLSX files for your team and your CRM tools."
+keywords: ["Go SDK", "Go follower export", "follower export", "CSV export", "XLSX export"]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+<LlmsDirective />
+
+This guide builds on the [Go SDK setup](/sdks/go), which covers install and authentication.
+
+<section>
+
+## Follower export workflow to CSV, JSON, or XLSX
+
+Use this workflow when a Go worker needs an owned follower list. It feeds CRM imports, warehouse loads, analyst CSVs, XLSX workbooks, or resumable JSON handoffs. The workflow calls `POST /extractions/estimate` through `client.Extractions.EstimateCost` and creates the job with `client.Extractions.Run`. It reads saved rows with `client.Extractions.Get` and downloads files with `client.Extractions.ExportResults`.
+
+<Info>
+
+`client.Extractions.Run` returns the queued `202 Accepted` receipt from `POST /extractions`. Go exposes REST `id`, `toolType`, and `status: "running"` as `job.ID`, `job.ToolType`, and `job.Status`. Store `job.ID` immediately, then poll `client.Extractions.Get` before reading pages or calling `client.Extractions.ExportResults`. Credit reservation happens after the job starts. Available credits can change after `EstimateCost`. If they did, the run can fetch only the affordable count before export. In that case it can instead mark the job `failed` with `insufficient_credits`.
+
+</Info>
+
+```go
+package main
+
+import (
+	"context"
+	"encoding/json"
+	"io"
+	"os"
+	"time"
+
+	"github.com/Xquik-dev/x-twitter-scraper-go"
+	"github.com/Xquik-dev/x-twitter-scraper-go/option"
+)
+
+func main() {
+	ctx := context.Background()
+	client := xtwitterscraper.NewClient(
+		option.WithAPIKey(os.Getenv("X_TWITTER_SCRAPER_API_KEY")),
+	)
+	targetUsername := "username"
+
+	estimate, err := client.Extractions.EstimateCost(ctx, xtwitterscraper.ExtractionEstimateCostParams{
+		ToolType:       xtwitterscraper.ExtractionEstimateCostParamsToolTypeFollowerExplorer,
+		TargetUsername: xtwitterscraper.String(targetUsername),
+	})
+	if err != nil {
+		panic(err)
+	}
+	if !estimate.Allowed {
+		panic("insufficient credits for follower export")
+	}
+
+	job, err := client.Extractions.Run(ctx, xtwitterscraper.ExtractionRunParams{
+		ToolType:       xtwitterscraper.ExtractionRunParamsToolTypeFollowerExplorer,
+		TargetUsername: xtwitterscraper.String(targetUsername),
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	for {
+		page, err := client.Extractions.Get(ctx, job.ID, xtwitterscraper.ExtractionGetParams{
+			Limit: xtwitterscraper.Int(1000),
+		})
+		if err != nil {
+			panic(err)
+		}
+
+		status, _ := page.Job["status"].(string)
+		if status == "completed" {
+			break
+		}
+		if status == "failed" {
+			panic("follower export failed")
+		}
+
+		time.Sleep(10 * time.Second)
+	}
+
+	writeRows(ctx, client, job.ID, "xquik-followers.jsonl")
+	writeExport(ctx, client, job.ID, xtwitterscraper.ExtractionExportResultsParamsFormatCsv, "xquik-followers.csv")
+	writeExport(ctx, client, job.ID, xtwitterscraper.ExtractionExportResultsParamsFormatJson, "xquik-followers.json")
+	writeExport(ctx, client, job.ID, xtwitterscraper.ExtractionExportResultsParamsFormatXlsx, "xquik-followers.xlsx")
+}
+
+func writeRows(
+	ctx context.Context,
+	client xtwitterscraper.Client,
+	jobID string,
+	filename string,
+) {
+	out, err := os.Create(filename)
+	if err != nil {
+		panic(err)
+	}
+	defer out.Close()
+
+	encoder := json.NewEncoder(out)
+	cursor := ""
+
+	for {
+		params := xtwitterscraper.ExtractionGetParams{
+			Limit: xtwitterscraper.Int(1000),
+		}
+		if cursor != "" {
+			params.Cursor = xtwitterscraper.String(cursor)
+		}
+
+		page, err := client.Extractions.Get(ctx, jobID, params)
+		if err != nil {
+			panic(err)
+		}
+
+		for _, row := range page.Results {
+			if err := encoder.Encode(row); err != nil {
+				panic(err)
+			}
+		}
+
+		if !page.HasMore || page.NextCursor == "" {
+			break
+		}
+		cursor = page.NextCursor
+	}
+}
+
+func writeExport(
+	ctx context.Context,
+	client xtwitterscraper.Client,
+	jobID string,
+	format xtwitterscraper.ExtractionExportResultsParamsFormat,
+	filename string,
+) {
+	response, err := client.Extractions.ExportResults(ctx, jobID, xtwitterscraper.ExtractionExportResultsParams{
+		Format: format,
+	})
+	if err != nil {
+		panic(err)
+	}
+	defer response.Body.Close()
+
+	out, err := os.Create(filename)
+	if err != nil {
+		panic(err)
+	}
+	defer out.Close()
+
+	if _, err := io.Copy(out, response.Body); err != nil {
+		panic(err)
+	}
+}
+```
+
+`follower_explorer` requires `TargetUsername`. Store `job.ID`, `targetUsername`, `estimate.EstimatedResults`, and `estimate.Source` before polling. With them, a worker restart can resume the same follower export. `client.Extractions.Get` returns `Results`, `HasMore`, and `NextCursor`. Pass `NextCursor` back as `Cursor` when you need stored JSON pages before exporting files. Use `xquik-followers.jsonl` for queue replay or warehouse loads and `xquik-followers.json` for app ingestion. Use `xquik-followers.csv` for CRM import and `xquik-followers.xlsx` for analyst handoff. Map exported `User ID` or row `xUserId` as the CRM unique key. The cost is 1 credit per follower extracted or returned. Exports are free after the extraction job exists.
+
+</section>
+
+<section>
+
+## Next steps
+
+- [Go SDK setup](/sdks/go)
+- [Tweet search](/sdks/go-tweet-search)
+- [Media tweets](/sdks/go-media-tweets)
+
+</section>

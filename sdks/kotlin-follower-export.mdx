@@ -1,0 +1,149 @@
+---
+title: "Twitter API Kotlin Follower Export to CSV & XLSX"
+sidebarTitle: "Follower export"
+description: "Export X (Twitter) followers with the Xquik Kotlin SDK. Estimate the job, run the extraction, and save CSV, JSON, or XLSX files for your team and your CRM."
+keywords: ["Kotlin SDK", "Kotlin follower export", "follower export", "CSV export", "XLSX export"]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+<LlmsDirective />
+
+This guide builds on the [Kotlin SDK setup](/sdks/kotlin), which covers install and authentication.
+
+<section>
+
+## Follower export workflow to CSV, JSON, or XLSX
+
+Use this workflow when a Kotlin worker needs an owned follower list. It feeds CRMs, warehouses, account scoring, analyst CSVs, XLSX workbooks, or resumable JSON handoffs.
+
+`client.extractions().estimateCost` maps to `POST /extractions/estimate`, and `client.extractions().run` maps to `POST /extractions`. `client.extractions().retrieve` maps to `GET /extractions/{id}`, and `client.extractions().exportResults` maps to `GET /extractions/{id}/export`. For follower exports, `follower_explorer` requires `targetUsername`.
+
+<Info>
+
+`client.extractions().run` returns the queued `202 Accepted` receipt from `POST /extractions`. Kotlin exposes REST `id`, `toolType`, and `status: "running"` as `job.id()`, `job.toolType()`, and `job._status()`. Store `job.id()` immediately, then poll `client.extractions().retrieve` before reading pages or calling `client.extractions().exportResults`. Credit reservation happens after the job starts. Available credits can change after `estimateCost`. If they did, the run can fetch only the affordable count before export. In that case it can instead mark the job `failed` with `insufficient_credits`.
+
+</Info>
+
+```kotlin
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.x_twitter_scraper.api.client.XTwitterScraperClient
+import com.x_twitter_scraper.api.client.okhttp.XTwitterScraperOkHttpClient
+import com.x_twitter_scraper.api.models.extractions.ExtractionEstimateCostParams
+import com.x_twitter_scraper.api.models.extractions.ExtractionEstimateCostResponse
+import com.x_twitter_scraper.api.models.extractions.ExtractionExportResultsParams
+import com.x_twitter_scraper.api.models.extractions.ExtractionRetrieveParams
+import com.x_twitter_scraper.api.models.extractions.ExtractionRetrieveResponse
+import com.x_twitter_scraper.api.models.extractions.ExtractionRunParams
+import com.x_twitter_scraper.api.models.extractions.ExtractionRunResponse
+import java.nio.charset.StandardCharsets
+import java.nio.file.Files
+import java.nio.file.Paths
+import java.nio.file.StandardCopyOption
+
+val client: XTwitterScraperClient = XTwitterScraperOkHttpClient.fromEnv()
+val objectMapper = ObjectMapper()
+val targetUsername = "username"
+
+val estimate: ExtractionEstimateCostResponse = client.extractions().estimateCost(
+    ExtractionEstimateCostParams.builder()
+        .toolType(ExtractionEstimateCostParams.ToolType.FOLLOWER_EXPLORER)
+        .targetUsername(targetUsername)
+        .build()
+)
+
+if (!estimate.allowed()) {
+    error("Follower export requires ${estimate.creditsRequired()} credits.")
+}
+
+val job: ExtractionRunResponse = client.extractions().run(
+    ExtractionRunParams.builder()
+        .toolType(ExtractionRunParams.ToolType.FOLLOWER_EXPLORER)
+        .targetUsername(targetUsername)
+        .build()
+)
+
+var completed = false
+var attempts = 0
+while (!completed && attempts < 120) {
+    val statusPage = client.extractions().retrieve(job.id())
+    val status = statusPage.job()._additionalProperties()["status"]?.asString() ?: "unknown"
+
+    if (status == "completed") {
+        completed = true
+    } else if (status == "failed") {
+        error("Follower export failed.")
+    } else {
+        Thread.sleep(10_000L)
+    }
+
+    attempts += 1
+}
+
+if (!completed) {
+    error("Follower export did not complete before timeout.")
+}
+
+var cursor: String? = null
+Files.newBufferedWriter(Paths.get("xquik-followers.jsonl"), StandardCharsets.UTF_8).use { writer ->
+    do {
+        val pageParams = ExtractionRetrieveParams.builder()
+            .id(job.id())
+            .limit(1000L)
+
+        if (!cursor.isNullOrEmpty()) {
+            pageParams.cursor(cursor)
+        }
+
+        val page: ExtractionRetrieveResponse = client.extractions().retrieve(pageParams.build())
+
+        for (row in page.results()) {
+            writer.write(objectMapper.writeValueAsString(row._additionalProperties()))
+            writer.newLine()
+        }
+
+        cursor = if (page.hasMore()) page.nextCursor() else null
+    } while (!cursor.isNullOrEmpty())
+}
+
+client.extractions().exportResults(
+    ExtractionExportResultsParams.builder()
+        .id(job.id())
+        .format(ExtractionExportResultsParams.Format.CSV)
+        .build()
+).use { export ->
+    Files.copy(export.body(), Paths.get("xquik-followers.csv"), StandardCopyOption.REPLACE_EXISTING)
+}
+
+client.extractions().exportResults(
+    ExtractionExportResultsParams.builder()
+        .id(job.id())
+        .format(ExtractionExportResultsParams.Format.JSON)
+        .build()
+).use { export ->
+    Files.copy(export.body(), Paths.get("xquik-followers.json"), StandardCopyOption.REPLACE_EXISTING)
+}
+
+client.extractions().exportResults(
+    ExtractionExportResultsParams.builder()
+        .id(job.id())
+        .format(ExtractionExportResultsParams.Format.XLSX)
+        .build()
+).use { export ->
+    Files.copy(export.body(), Paths.get("xquik-followers.xlsx"), StandardCopyOption.REPLACE_EXISTING)
+}
+```
+
+Store `job.id()`, `targetUsername`, `estimate.estimatedResults()`, and `estimate.source()` before polling so retries can resume the extraction. `client.extractions().retrieve` returns `results()`, `hasMore()`, and `nextCursor()`. Pass `nextCursor()` back as `cursor` to page large follower lists. Map exported `User ID` or row `xUserId` as the CRM unique key. Use `xquik-followers.jsonl` for queue replay or warehouse loads and `xquik-followers.json` for app ingestion. Use `xquik-followers.csv` for CRM import and `xquik-followers.xlsx` for analyst handoff. The cost is 1 credit per follower extracted or returned. Exports are free after the extraction job exists.
+
+</section>
+
+<section>
+
+## Next steps
+
+- [Kotlin SDK setup](/sdks/kotlin)
+- [Tweet search](/sdks/kotlin-tweet-search)
+- [Media tweets](/sdks/kotlin-media-tweets)
+
+</section>

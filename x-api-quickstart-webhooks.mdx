@@ -1,0 +1,149 @@
+---
+title: "X API Quickstart for Twitter Webhook Delivery"
+sidebarTitle: "Webhook quickstart"
+description: "Add a webhook to your X API quickstart. Create the endpoint, keep the signing secret, and receive signed X (Twitter) monitor events on your server in minutes."
+keywords: ["X API quickstart", "Twitter webhook", "X API webhook", "monitor events"]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+<LlmsDirective />
+
+This step follows the [X API quickstart](/x-api-quickstart). You need an API key and a monitor from that guide.
+
+<section>
+
+## Set up a webhook
+
+Receive signed monitor events at your endpoint.
+
+<CodeGroup>
+
+```bash cURL
+curl -s -X POST https://xquik.com/api/v1/webhooks \
+  -H "x-api-key: xq_your_api_key_here" \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://your-server.com/webhook", "eventTypes": ["tweet.new"]}' | jq
+```
+
+```typescript TypeScript SDK
+import XTwitterScraper from "x-twitter-scraper";
+
+const client = new XTwitterScraper({ apiKey: "xq_your_api_key_here" });
+const webhook = await client.webhooks.create({
+  url: "https://your-server.com/webhook",
+  eventTypes: ["tweet.new"],
+});
+const webhookSecret = webhook.secret;
+process.stdout.write(`Webhook ${webhook.id} ready\n`);
+// Store webhookSecret in your secret manager. Do not print it.
+```
+
+```javascript Node.js
+const response = await fetch("https://xquik.com/api/v1/webhooks", {
+  method: "POST",
+  headers: {
+    "x-api-key": "xq_your_api_key_here",
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    url: "https://your-server.com/webhook",
+    eventTypes: ["tweet.new"],
+  }),
+});
+const webhook = await response.json();
+const webhookSecret = webhook.secret;
+if (!webhookSecret) throw new Error("missing webhook secret");
+process.stdout.write(`Webhook ${webhook.id} ready\n`);
+// Store webhookSecret in your secret manager; do not print it.
+```
+
+```python Python
+import requests
+
+response = requests.post(
+    "https://xquik.com/api/v1/webhooks",
+    headers={"x-api-key": "xq_your_api_key_here"},
+    json={
+        "url": "https://your-server.com/webhook",
+        "eventTypes": ["tweet.new"],
+    },
+)
+webhook = response.json()
+webhook_secret = webhook["secret"]
+if not webhook_secret:
+    raise RuntimeError("missing webhook secret")
+print(f"Webhook {webhook['id']} ready")
+# Store webhook_secret in your secret manager; do not print it.
+```
+
+```go Go
+package main
+
+import (
+    "bytes"
+    "encoding/json"
+    "fmt"
+    "net/http"
+)
+
+func main() {
+    body, _ := json.Marshal(map[string]interface{}{
+        "url":        "https://your-server.com/webhook",
+        "eventTypes": []string{"tweet.new"},
+    })
+
+    req, _ := http.NewRequest("POST", "https://xquik.com/api/v1/webhooks", bytes.NewReader(body))
+    req.Header.Set("x-api-key", "xq_your_api_key_here")
+    req.Header.Set("Content-Type", "application/json")
+
+    resp, err := http.DefaultClient.Do(req)
+    if err != nil {
+        panic(err)
+    }
+    defer resp.Body.Close()
+
+    var webhook struct {
+        ID     string `json:"id"`
+        Secret string `json:"secret"`
+    }
+    if err := json.NewDecoder(resp.Body).Decode(&webhook); err != nil {
+        panic(err)
+    }
+
+    webhookSecret := webhook.Secret
+    if webhookSecret == "" {
+        panic("missing webhook secret")
+    }
+    fmt.Printf("Webhook %s ready\n", webhook.ID)
+    // Store webhookSecret in your secret manager; do not print it.
+}
+```
+
+</CodeGroup>
+
+**Response.**
+
+```json
+{
+  "id": "15",
+  "url": "https://your-server.com/webhook",
+  "eventTypes": ["tweet.new"],
+  "secret": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+  "createdAt": "2026-02-24T10:30:00.000Z"
+}
+```
+
+Save the `secret` from the response in a secret manager. Xquik returns it once. Use it to [verify webhook signatures](/webhooks/verification). Do not print it in shared logs.
+
+</section>
+
+<section>
+
+## Next steps
+
+- [X API quickstart](/x-api-quickstart)
+- [Webhooks overview](/webhooks/overview)
+- [Signature verification](/webhooks/verification)
+
+</section>

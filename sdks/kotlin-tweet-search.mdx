@@ -1,0 +1,187 @@
+---
+title: "Twitter API Kotlin Tweet Search to CSV & JSON Lines"
+sidebarTitle: "Tweet search"
+description: "Search tweets with the Xquik Kotlin SDK, follow cursors, and save rows as JSON Lines, CSV, or XLSX for workers, queues, and analysts in your own apps and jobs."
+keywords:
+  [
+    "Kotlin SDK",
+    "Kotlin tweet search",
+    "tweet search SDK",
+    "CSV export",
+    "XLSX export",
+    "JSON Lines",
+  ]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+<LlmsDirective />
+
+This guide builds on the [Kotlin SDK setup](/sdks/kotlin), which covers install and authentication.
+
+<section>
+
+## Tweet search workflow to JSON Lines, CSV, or XLSX
+
+Export tweet search from Kotlin services, scheduled workers, queues, or agents. Save files for data lakes, CRM enrichment, CSV, XLSX, or downstream processing.
+
+`client.x().tweets().search` calls `GET /x/tweets/search`. Build `TweetSearchParams` with the REST query parameters `.q()`, `.limit()`, `.cursor()`, `.sinceTime()`, `.untilTime()`, and `.queryType()`.
+
+```kotlin
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.x_twitter_scraper.api.client.XTwitterScraperClient
+import com.x_twitter_scraper.api.client.okhttp.XTwitterScraperOkHttpClient
+import com.x_twitter_scraper.api.models.PaginatedTweets
+import com.x_twitter_scraper.api.models.SearchTweet
+import com.x_twitter_scraper.api.models.x.tweets.TweetSearchParams
+import com.x_twitter_scraper.api.models.x.tweets.TweetSearchParams.QueryType
+import java.io.BufferedWriter
+import java.nio.charset.StandardCharsets
+import java.nio.file.Files
+import java.nio.file.Paths
+
+val client: XTwitterScraperClient = XTwitterScraperOkHttpClient.fromEnv()
+val objectMapper = ObjectMapper()
+
+val query = "from:username webhook OR SDK"
+var cursor: String? = null
+var pageIndex = 0
+val headers = listOf(
+    "source",
+    "query",
+    "tweet_id",
+    "text",
+    "author_id",
+    "author_username",
+    "author_name",
+    "created_at",
+    "like_count",
+    "reply_count",
+    "retweet_count",
+    "quote_count",
+    "view_count",
+    "bookmark_count",
+    "is_note_tweet",
+    "page_index",
+    "page_cursor",
+    "next_cursor",
+    "has_next_page",
+)
+
+Files.newBufferedWriter(Paths.get("xquik-tweet-search.jsonl"), StandardCharsets.UTF_8).use { jsonlWriter ->
+    Files.newBufferedWriter(Paths.get("xquik-tweet-search.csv"), StandardCharsets.UTF_8).use { csvWriter ->
+        writeCsvRow(csvWriter, headers)
+
+        do {
+            val pageCursor = cursor
+            val builder = TweetSearchParams.builder()
+                .q(query)
+                .queryType(QueryType.LATEST)
+
+            if (!cursor.isNullOrEmpty()) {
+                builder.cursor(cursor)
+            }
+
+            val page: PaginatedTweets = client.x().tweets().search(builder.build())
+
+            for (tweet: SearchTweet in page.tweets()) {
+                val author = tweet.author()
+                val row = linkedMapOf<String, Any?>(
+                    "source" to "xquik.kotlin.search",
+                    "query" to query,
+                    "tweet_id" to tweet.id(),
+                    "text" to tweet.text(),
+                    "author_id" to author?.id(),
+                    "author_username" to author?.username(),
+                    "author_name" to author?.name(),
+                    "created_at" to tweet.createdAt(),
+                    "like_count" to (tweet.likeCount() ?: 0L),
+                    "reply_count" to (tweet.replyCount() ?: 0L),
+                    "retweet_count" to (tweet.retweetCount() ?: 0L),
+                    "quote_count" to (tweet.quoteCount() ?: 0L),
+                    "view_count" to (tweet.viewCount() ?: 0L),
+                    "bookmark_count" to (tweet.bookmarkCount() ?: 0L),
+                    "is_note_tweet" to (tweet.isNoteTweet() ?: false),
+                    "page_index" to pageIndex,
+                    "page_cursor" to pageCursor,
+                    "next_cursor" to if (page.hasNextPage()) page.nextCursor() else null,
+                    "has_next_page" to page.hasNextPage(),
+                )
+
+                jsonlWriter.write(objectMapper.writeValueAsString(row))
+                jsonlWriter.newLine()
+                writeCsvRow(csvWriter, headers.map { header -> row[header] })
+            }
+
+            pageIndex++
+            cursor = if (page.hasNextPage()) page.nextCursor() else null
+        } while (!cursor.isNullOrEmpty())
+    }
+}
+
+fun writeCsvRow(writer: BufferedWriter, values: List<Any?>) {
+    writer.write(
+        values.joinToString(",") { value ->
+            val cell = value?.toString() ?: ""
+            "\"" + cell.replace("\"", "\"\"") + "\""
+        }
+    )
+    writer.newLine()
+}
+```
+
+### Request mapping
+
+<CardGroup cols={2}>
+
+  <Card title=".q()" icon="search">
+
+    Kotlin builder method `.q()` maps to REST `q`. Use it for an X search query. Examples are `from:username`, a keyword, hashtag, or boolean operator query.
+
+  </Card>
+  <Card title=".limit()" icon="list">
+
+    Kotlin builder method `.limit()` maps to REST `limit`. Use it as a 1 to 200 upper bound for a bounded pull. If `page.hasNextPage()` is true, keep the same `.q()`, filters, `.queryType()`, and `.limit()`. Then continue with `page.nextCursor()`.
+
+  </Card>
+  <Card title=".cursor()" icon="arrow-right">
+
+    Kotlin builder method `.cursor()` maps to REST `cursor`. Pass the opaque cursor from `page.nextCursor()` to request the next page.
+
+  </Card>
+  <Card title=".sinceTime()" icon="clock">
+
+    Kotlin builder method `.sinceTime()` maps to REST `sinceTime`. Use it as the ISO 8601 lower bound for tweet creation time.
+
+  </Card>
+  <Card title=".untilTime()" icon="clock">
+
+    Kotlin builder method `.untilTime()` maps to REST `untilTime`. Use it as the ISO 8601 upper bound for tweet creation time.
+
+  </Card>
+  <Card title=".queryType()" icon="sliders-horizontal">
+
+    Kotlin builder method `.queryType()` maps to REST `queryType`. Use `QueryType.LATEST` for chronological search or `QueryType.TOP` for engagement-ranked search.
+
+  </Card>
+</CardGroup>
+
+### Returned data & handoff
+
+`client.x().tweets().search` returns `PaginatedTweets`. Use `page.tweets()` for the tweet list. Use `page.hasNextPage()` to decide whether another page exists. Use `page.nextCursor()` as the checkpoint for the next request. For bounded pulls that return fewer tweets than the requested `.limit()`, keep paging. Then pass `page.nextCursor()` back as `.cursor()` with the same query, filters, `QueryType`, and `.limit()`.
+
+Each `SearchTweet` includes generated accessors such as `id()`, `text()`, `author()`, and `createdAt()`. It also has `likeCount()`, `replyCount()`, `retweetCount()`, `quoteCount()`, `viewCount()`, `bookmarkCount()`, and `isNoteTweet()` when available. Project `page.tweets()` into JSON Lines and CSV rows. Rows carry `tweet_id`, `author_username`, engagement counts, `page_index`, `page_cursor`, `next_cursor`, and `has_next_page`. Workers can then resume or load the same records. They can load them into XLSX, CRM, warehouse, or agent workflows.
+
+Tweet search costs 1 credit per tweet returned. Remaining credits may not cover a bounded `.limit()` request. If so, the API can return fewer tweets. If 0 paid results are affordable, it returns `402 insufficient_credits`. The SDK supports `withOptions()` for retry and request settings. For explicit `.limit()` pulls, resume with the same query, filters, `QueryType`, and `.limit()`. Only `.cursor()` changes.
+
+</section>
+
+<section>
+
+## Next steps
+
+- [Kotlin SDK setup](/sdks/kotlin)
+- [Follower export](/sdks/kotlin-follower-export)
+- [Media tweets](/sdks/kotlin-media-tweets)
+
+</section>

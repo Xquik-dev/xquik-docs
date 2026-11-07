@@ -1,0 +1,170 @@
+---
+title: "Zapier Twitter Result Handoff & Output Fields"
+sidebarTitle: "Zapier result handoff"
+description: "Map Xquik results in Zapier with samples and outputFields. Later Zap steps then read stable snake_case values from tweets, profiles, jobs, and monitor events."
+keywords:
+  ["Zapier Twitter", "Zapier outputFields", "Zapier result mapping", "Zapier Twitter automation"]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+<LlmsDirective />
+
+This guide belongs to the [Zapier Twitter integration](/guides/zapier) build.
+
+<section>
+
+## Result handoff
+
+Use Zapier samples and `outputFields` so later Zap steps map stable values.
+Use snake_case storage keys when direct API responses use camelCase. Return
+compact objects from actions and arrays from triggers.
+
+<CardGroup cols={2}>
+
+  <Card title="Search tweets action" icon="search">
+
+    Return `id`, `tweet_id`, `text`, `author_username`, `created_at`, and `url`. Keep `has_next_page` and `next_cursor` when a Zap loops pages.
+
+  </Card>
+  <Card title="User profile rows" icon="users">
+
+    Return source `id` as `user_id`. Keep `username`, `name`, `followers`, `verified`, and `profile_picture`. Store the input, `has_next_page`, and `next_cursor` separately.
+
+  </Card>
+  <Card title="Follower and following rows" icon="user-check">
+
+    Store `user_id`, `username`, `name`, `followers`, `following`, `verified`, and `profile_picture`. Keep the source account, page cursor, and relationship direction.
+
+  </Card>
+  <Card title="Trend rows" icon="trending-up">
+
+    Return each trend `name`, `rank`, `query`, and `description`. Keep response `count`, `woeid`, and the selected region with the Zap run.
+
+  </Card>
+  <Card title="Tweet or reply write" icon="send">
+
+    Send a unique `Idempotency-Key`. Store `id`, `status`, `billing`, `result`, and `statusUrl`. Poll while `terminal` is false. Retry only when `safeToRetry` is true, using a new key.
+
+  </Card>
+  <Card title="Media attachments" icon="image">
+
+    For tweets or replies, pass public URLs in `media`. Do not send `media_ids`. For DMs, upload first. Pass 1 `media_id` in `media_ids`. Store `message_id` and leave `reply_to_message_id` unset.
+
+  </Card>
+  <Card title="Monitor and webhook setup" icon="radio">
+
+    Return monitor `id`, `username`, `xUserId`, `eventTypes`, `isActive`, and `nextBillingAt`. Return webhook `id`, `url`, `eventTypes`, and one-time `secret`. Map production `deliveryId` to `delivery_id` for receiver retry deduplication. Map `streamEventId` to `stream_event_id` for event deduplication across webhook changes.
+
+  </Card>
+  <Card title="REST hook trigger" icon="fingerprint">
+
+    Return `id`, `delivery_id`, and `stream_event_id`. Use delivery IDs for endpoint retries. Use event IDs across webhook changes.
+
+  </Card>
+  <Card title="Stored event replay" icon="activity">
+
+    Call `GET /events` with `cursor` when a Zap needs replay. Map event and monitor IDs first. Then map `occurredAt`, `hasMore`, and `nextCursor` to snake_case fields.
+
+  </Card>
+  <Card title="Receiver acceptance" icon="copy-check">
+
+    Zapier controls responses from its generated hook URL. Use a relay when you
+    need custom acceptance or replay rules. Keep signing values, raw bodies, and
+    raw signatures outside Zap history. Keep full headers outside business apps
+    too.
+
+  </Card>
+  <Card title="Extraction polling trigger" icon="database">
+
+    Return completed job `id`, `toolType`, and `status`. Store normalized IDs, status, `has_more`, and `next_cursor`. Then fetch detail rows.
+
+  </Card>
+</CardGroup>
+
+Map friendly region names to WOEID values. Submit the selected value to Xquik.
+
+This example shows a search action.
+
+```javascript
+async function performSearchTweets(z, bundle) {
+  const response = await xquikRequest(z, {
+    method: "GET",
+    url: `${BASE_URL}/x/tweets/search`,
+    params: {
+      q: bundle.inputData.q,
+      queryType: bundle.inputData.queryType || "Latest",
+      limit: bundle.inputData.limit || 25,
+      cursor: bundle.inputData.cursor || undefined,
+    },
+  });
+
+  const page = response.data;
+
+  return (page.tweets || []).map((tweet) => ({
+    id: tweet.id,
+    tweet_id: tweet.id,
+    text: tweet.text,
+    author_username: tweet.author?.username || null,
+    created_at: tweet.createdAt || null,
+    url: tweet.url || null,
+    has_next_page: Boolean(page.has_next_page),
+    next_cursor: page.next_cursor || null,
+  }));
+}
+
+module.exports = {
+  key: "search_tweets",
+  noun: "Tweet",
+  display: {
+    label: "Search Tweets",
+    description: "Find recent tweets that match a search query.",
+  },
+  operation: {
+    inputFields: [
+      { key: "q", label: "Query", required: true, type: "string" },
+      {
+        key: "queryType",
+        label: "Order",
+        required: false,
+        choices: ["Latest", "Top"],
+      },
+      { key: "limit", label: "Limit", required: false, type: "integer" },
+      { key: "cursor", label: "Cursor", required: false, type: "string" },
+    ],
+    perform: performSearchTweets,
+    sample: {
+      id: "1840000000000000000",
+      tweet_id: "1840000000000000000",
+      text: "Example tweet text",
+      author_username: "example_user",
+      created_at: "2026-08-02T12:00:00Z",
+      url: "https://x.com/example_user/status/1840000000000000000",
+      has_next_page: true,
+      next_cursor: "DAACCgACExample",
+    },
+    outputFields: [
+      { key: "id", label: "Tweet ID" },
+      { key: "tweet_id", label: "Tweet ID for Storage" },
+      { key: "text", label: "Text" },
+      { key: "author_username", label: "Author Username" },
+      { key: "created_at", label: "Created At" },
+      { key: "url", label: "URL" },
+      { key: "has_next_page", label: "Has Next Page", type: "boolean" },
+      { key: "next_cursor", label: "Next Cursor" },
+    ],
+  },
+};
+```
+
+</section>
+
+<section>
+
+## Next steps
+
+- [Zapier Twitter integration](/guides/zapier)
+- [Zapier error handling](/guides/zapier-error-handling)
+- [Monitor event REST hook](/guides/zapier-monitor-rest-hook)
+
+</section>

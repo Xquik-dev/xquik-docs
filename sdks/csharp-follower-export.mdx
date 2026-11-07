@@ -1,0 +1,136 @@
+---
+title: "Twitter API C# Follower Export to CSV & XLSX"
+sidebarTitle: "Follower export"
+description: "Export X (Twitter) followers with the Xquik C# SDK. Estimate the job, run the extraction, and save CSV, JSON, or XLSX files for your team and your CRM tools."
+keywords: ["C# SDK", "C# follower export", "follower export", "CSV export", "XLSX export"]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+<LlmsDirective />
+
+This guide builds on the [C# SDK setup](/sdks/csharp-x-api-sdk), which covers install and authentication.
+
+<section>
+
+## Follower export workflow to CSV, JSON, or XLSX
+
+This workflow is for a .NET worker, console job, or ASP.NET background service. Use it when that code needs an owned follower list. It feeds CRM imports, warehouse loads, analyst CSVs, XLSX workbooks, or resumable JSON handoffs.
+
+`client.Extractions.EstimateCost` and `client.Extractions.Run` map to the extraction workflow. For follower exports, use `ExtractionEstimateCostParamsToolType.FollowerExplorer` and `ExtractionRunParamsToolType.FollowerExplorer`. `follower_explorer` requires `TargetUsername`. `client.Extractions.Retrieve` returns `Results`, `HasMore`, and `NextCursor` for pagination. `client.Extractions.ExportResults` returns an `HttpResponse`. Read CSV and JSON as strings, and copy XLSX from the response stream.
+
+<Info>
+
+`client.Extractions.Run` returns the queued `202 Accepted` receipt from `POST /extractions`. C# exposes REST `id`, `toolType`, and `status: "running"` as `job.ID`, `job.ToolType`, and `job.Status`. Store `job.ID` immediately, then poll `client.Extractions.Retrieve` before reading pages or calling `client.Extractions.ExportResults`. Credit reservation happens after the job starts. Available credits can change after `EstimateCost`. If they did, the run can fetch only the affordable count before export. In that case it can instead mark the job `failed` with `insufficient_credits`.
+
+</Info>
+
+```csharp
+using System;
+using System.IO;
+using System.Text.Json;
+using System.Threading.Tasks;
+using XTwitterScraper;
+using XTwitterScraper.Core;
+using XTwitterScraper.Models.Extractions;
+
+XTwitterScraperClient client = new();
+
+string targetUsername = "username";
+ExtractionEstimateCostResponse estimate = await client.Extractions.EstimateCost(
+    new ExtractionEstimateCostParams
+    {
+        ToolType = ExtractionEstimateCostParamsToolType.FollowerExplorer,
+        TargetUsername = targetUsername,
+    }
+);
+
+if (!estimate.Allowed)
+{
+    throw new InvalidOperationException("Insufficient credits for follower export.");
+}
+
+ExtractionRunResponse job = await client.Extractions.Run(
+    new ExtractionRunParams
+    {
+        ToolType = ExtractionRunParamsToolType.FollowerExplorer,
+        TargetUsername = targetUsername,
+    }
+);
+
+while (true)
+{
+    ExtractionRetrieveResponse statusPage = await client.Extractions.Retrieve(
+        job.ID,
+        new ExtractionRetrieveParams { Limit = 1 }
+    );
+
+    string? status = statusPage.Job.TryGetValue("status", out JsonElement statusValue)
+        ? statusValue.GetString()
+        : null;
+
+    if (status == "completed")
+    {
+        break;
+    }
+
+    if (status == "failed")
+    {
+        throw new InvalidOperationException("Follower export failed.");
+    }
+
+    await Task.Delay(TimeSpan.FromSeconds(10));
+}
+
+string? cursor = null;
+using StreamWriter writer = File.CreateText("xquik-followers.jsonl");
+
+do
+{
+    ExtractionRetrieveResponse page = await client.Extractions.Retrieve(
+        job.ID,
+        new ExtractionRetrieveParams { Cursor = cursor, Limit = 1000 }
+    );
+
+    foreach (var follower in page.Results)
+    {
+        await writer.WriteLineAsync(JsonSerializer.Serialize(follower));
+    }
+
+    cursor = page.HasMore ? page.NextCursor : null;
+} while (!string.IsNullOrEmpty(cursor));
+
+using HttpResponse csvResponse = await client.Extractions.ExportResults(
+    job.ID,
+    new ExtractionExportResultsParams { Format = Format.Csv }
+);
+await File.WriteAllTextAsync("xquik-followers.csv", await csvResponse.ReadAsString());
+
+using HttpResponse jsonResponse = await client.Extractions.ExportResults(
+    job.ID,
+    new ExtractionExportResultsParams { Format = Format.Json }
+);
+await File.WriteAllTextAsync("xquik-followers.json", await jsonResponse.ReadAsString());
+
+using HttpResponse xlsxResponse = await client.Extractions.ExportResults(
+    job.ID,
+    new ExtractionExportResultsParams { Format = Format.Xlsx }
+);
+using Stream xlsxStream = await xlsxResponse.ReadAsStream();
+using FileStream xlsxFile = File.Create("xquik-followers.xlsx");
+await xlsxStream.CopyToAsync(xlsxFile);
+```
+
+The cost is 1 credit per follower extracted or returned. Store `job.ID`, `targetUsername`, `estimate.EstimatedResults`, and `estimate.Source` before polling. With them, a queue retry can resume the same follower export. So can a Windows service restart or worker restart. Keep `page.NextCursor` as the checkpoint when you stream followers to JSON Lines. Map exported `User ID` or row `xUserId` as the CRM unique key. Use `xquik-followers.jsonl` for queue replay or warehouse loads and `xquik-followers.json` for app ingestion. Use `xquik-followers.csv` for CRM import and `xquik-followers.xlsx` for analyst handoff. Exports are free after the extraction job exists.
+
+</section>
+
+<section>
+
+## Next steps
+
+- [C# SDK setup](/sdks/csharp-x-api-sdk)
+- [Tweet search](/sdks/csharp-tweet-search)
+- [Media tweets](/sdks/csharp-media-tweets)
+
+</section>

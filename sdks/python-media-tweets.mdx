@@ -1,0 +1,145 @@
+---
+title: "Twitter API Python Media Tweets & DM Attachments"
+sidebarTitle: "Media tweets"
+description: "Upload media with the Xquik Python SDK, post tweets with photos or video, and send DM attachments from a connected X (Twitter) account in your own apps."
+keywords: ["Python SDK", "Python media upload", "media tweets", "DM attachments", "X write API"]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+import SdkMediaRoutes from "/snippets/sdk-media-routes.mdx";
+
+<LlmsDirective />
+
+This guide builds on the [Python SDK setup](/sdks/python), which covers install and authentication.
+
+<section>
+
+## Workflow to post media tweets and DM attachments
+
+Use this workflow to post a media tweet or reply. Use it too to DM 1 uploaded media item.
+
+Tweet and reply media posts use public media URLs directly on `client.x.tweets.create`. Send up to 4 image URLs or exactly 1 MP4 video URL. The video can be up to 100 MB. Do not mix video with other media. Do not upload first when the media URL is already public.
+
+```python
+import json
+import sys
+from typing import Any
+
+from x_twitter_scraper import XTwitterScraper
+
+client = XTwitterScraper()
+
+def create_tweet_handoff(
+    action: dict[str, Any],
+    base: dict[str, Any],
+) -> dict[str, Any]:
+    result = action.get("result") or {}
+    return {
+        "status": action["status"],
+        "terminal": action["terminal"],
+        "safe_to_retry": action["safeToRetry"],
+        "write_action_id": action["id"],
+        "request_hash": action["request"]["hash"],
+        "tweet_id": result.get("id") or action.get("tweetId"),
+        "charged": action["billing"]["charged"],
+        "charged_credits": action["billing"]["chargedCredits"],
+        "poll": None if action["terminal"] else action["statusUrl"],
+        **base,
+    }
+```
+
+Use `with_raw_response.create` to capture the durable write action. Send a unique `Idempotency-Key`. Store `id`, `request.hash`, `billing`, `result`, and `statusUrl`. Poll while `terminal` is false. Retry only when `safeToRetry` is true, using a new key.
+
+```python
+response = client.x.tweets.with_raw_response.create(
+    account="@username",
+    text="New demo video is live.",
+    media=["https://example.com/product-demo.mp4"],
+)
+payload = response.json()
+
+tweet_handoff = create_tweet_handoff(
+    payload,
+    {
+        "account": "@username",
+        "media": ["https://example.com/product-demo.mp4"],
+    },
+)
+
+sys.stdout.write(json.dumps(tweet_handoff, ensure_ascii=False) + "\n")
+```
+
+To post an image reply, add `reply_to_tweet_id`.
+
+```python
+response = client.x.tweets.with_raw_response.create(
+    account="@username",
+    text="Here is the requested screenshot.",
+    reply_to_tweet_id="1893704267862470862",
+    media=["https://example.com/export-preview.png"],
+)
+payload = response.json()
+
+reply_handoff = create_tweet_handoff(
+    payload,
+    {
+        "account": "@username",
+        "reply_to_tweet_id": "1893704267862470862",
+        "media": ["https://example.com/export-preview.png"],
+    },
+)
+
+sys.stdout.write(json.dumps(reply_handoff, ensure_ascii=False) + "\n")
+```
+
+For DM attachments, upload the local file first. Then pass the returned `media.media_id` as the only `media_ids` item.
+
+```python
+import json
+import sys
+from pathlib import Path
+
+media = client.x.media.upload(
+    account="@username",
+    file=Path("./handoff.png"),
+)
+
+dm = client.x.dm.send(
+    user_id="44196397",
+    account="@username",
+    text="Here is the asset.",
+    media_ids=[media.media_id],
+)
+
+dm_handoff = {
+    "status": "sent",
+    "message_id": dm.message_id,
+    "media_id": media.media_id,
+    "account": "@username",
+    "user_id": "44196397",
+}
+
+sys.stdout.write(json.dumps(dm_handoff, ensure_ascii=False) + "\n")
+```
+
+`client.x.tweets.create` returns `tweet.tweet_id` for confirmed posts. Raw create responses can also include the pending write fields above while confirmation runs. `client.x.media.upload` returns `media.media_id` for DM attachments. `client.x.dm.send` returns `dm.message_id` for support tickets, CRM records, queue jobs, or agent memory.
+
+Keep DM body text in private systems. Shared logs, public artifacts, queue status, and agent handoffs should omit full DM bodies. They should store `message_id`, optional `media_id`, `account`, `user_id`, and send status. Leave `reply_to_message_id` unset even if generated SDK types expose it. The REST endpoint rejects DM reply threading.
+
+`client.x.dm.delete_message` [deletes a DM](/api-reference/x-write/delete-dm).
+
+Text-only tweet and reply writes cost 30 credits. Tweet media adds 2 credits per started MB across attached files. Uploading media costs 10 credits. Sending the DM costs 10 credits. Do not pass uploaded `media.media_id` values to `client.x.tweets.create`. That method uses `media` with public media URLs.
+
+<SdkMediaRoutes />
+
+</section>
+
+<section>
+
+## Next steps
+
+- [Python SDK setup](/sdks/python)
+- [Tweet search](/sdks/python-tweet-search)
+- [Follower export](/sdks/python-follower-export)
+
+</section>

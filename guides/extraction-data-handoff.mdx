@@ -1,0 +1,309 @@
+---
+title: "Twitter Extraction Data Handoff to JSON Lines"
+sidebarTitle: "Extraction data handoff"
+description: "Hand Twitter extraction results to apps, agents, and analysts. Page stored rows, write durable JSON Lines, and export CSV, JSON, or XLSX files for each team."
+keywords:
+  ["Twitter scraper API", "extraction data handoff", "JSON Lines export", "Twitter data export"]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+<LlmsDirective />
+
+This guide continues the [extraction workflow](/guides/extraction-workflow) after results are ready.
+
+<section>
+
+## Data handoff
+
+<CardGroup cols={2}>
+
+  <Card title="App or API pipeline" icon="code">
+
+    Use `GET /extractions/{id}`. Store `job`, `results`, `hasMore`, `nextCursor`.
+    Use `limit` up to 1,000 and pass `nextCursor` as `cursor`.
+    Use compact output for core fields and tweet counts.
+
+  </Card>
+  <Card title="CRM import" icon="users">
+
+    Use `GET /extractions/{id}/export?format=csv`. Store `User ID`,
+    `Username`, `Display Name`, `Followers`, and `Verified`. Upsert by stable X
+    user ID when possible.
+
+  </Card>
+  <Card title="Warehouse or queue" icon="database">
+
+    Use `GET /extractions/{id}/export?format=json` or paginated JSON. Store
+    `xUserId`, `xUsername`, `tweetId`, `tweetText`, `createdAt`. Keep the
+    extraction ID with each load for replay and audit.
+
+  </Card>
+  <Card title="Analyst review" icon="file-spreadsheet">
+
+    Use `GET /extractions/{id}/export?format=xlsx`. Store export columns plus
+    enrichment fields. Use CSV or JSON for automation and XLSX for manual review.
+
+  </Card>
+</CardGroup>
+
+The export limit does not cap paginated JSON. Xquik caps file exports at 100,000 rows and PDF exports at 10,000 rows.
+
+### Option A. Paginate via API
+
+Fetch results in pages of up to 1,000 records. Follow `nextCursor` until `hasMore` is false.
+
+<CodeGroup>
+
+```bash cURL
+# First page
+curl -s "https://xquik.com/api/v1/extractions/77777?limit=1000" \
+  -H "x-api-key: xq_YOUR_KEY_HERE" | jq
+
+# Next page (use nextCursor from previous response)
+curl -s "https://xquik.com/api/v1/extractions/77777?limit=1000&cursor=990100" \
+  -H "x-api-key: xq_YOUR_KEY_HERE" | jq
+```
+
+```javascript Node.js
+const extractionId = "a1b2c3d4-e5f6-7890-abcd-ef1234567890";
+let cursor = undefined;
+const allResults = [];
+
+do {
+  const params = new URLSearchParams({ limit: "1000" });
+  if (cursor) params.set("after", cursor);
+
+  const data = await fetch(`https://xquik.com/api/v1/extractions/${extractionId}?${params}`, {
+    headers: { "x-api-key": "xq_YOUR_KEY_HERE" },
+  }).then((r) => r.json());
+
+  allResults.push(...data.results);
+  cursor = data.hasMore ? data.nextCursor : undefined;
+} while (cursor);
+
+console.log(`Fetched ${allResults.length} results`);
+```
+
+```python Python
+extraction_id = "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+all_results = []
+cursor = None
+
+while True:
+    params = {"limit": 1000}
+    if cursor:
+        params["after"] = cursor
+
+    data = requests.get(
+        f"https://xquik.com/api/v1/extractions/{extraction_id}",
+        headers={"x-api-key": "xq_YOUR_KEY_HERE"},
+        params=params,
+    ).json()
+
+    all_results.extend(data["results"])
+
+    if data.get("hasMore"):
+        cursor = data["nextCursor"]
+    else:
+        break
+
+print(f"Fetched {len(all_results)} results")
+```
+
+```go Go
+extractionID := "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+cursor := ""
+var allResults []map[string]interface{}
+
+for {
+    url := fmt.Sprintf("https://xquik.com/api/v1/extractions/%s?limit=1000", extractionID)
+    if cursor != "" {
+        url += "&cursor=" + cursor
+    }
+
+    req, _ := http.NewRequest("GET", url, nil)
+    req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
+
+    resp, _ := http.DefaultClient.Do(req)
+    var data struct {
+        Results    []map[string]interface{} `json:"results"`
+        HasMore    bool                     `json:"hasMore"`
+        NextCursor string                   `json:"nextCursor"`
+    }
+    json.NewDecoder(resp.Body).Decode(&data)
+    resp.Body.Close()
+
+    allResults = append(allResults, data.Results...)
+
+    if !data.HasMore {
+        break
+    }
+    cursor = data.NextCursor
+}
+
+fmt.Printf("Fetched %d results\n", len(allResults))
+```
+
+</CodeGroup>
+
+### Durable JSON Lines handoff
+
+Some queues, warehouses, or agents need replayable rows without the export row cap. For those, use JSON Lines. Write each paginated result with the cursor state that produced it.
+
+```json
+{
+  "extraction_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "row_id": "990001",
+  "x_user_id": "44196397",
+  "x_username": "elonmusk",
+  "tweet_id": "1893710452812718080",
+  "tweet_text": "This is a great thread, thanks for sharing.",
+  "page_cursor": "990100",
+  "next_cursor": "990200",
+  "has_more": true,
+  "handoff_format": "jsonl"
+}
+```
+
+Store rows in `xquik-extraction-results.jsonl` for queue replay, warehouse loads, or agent audits. Keep `page_cursor` and `next_cursor` so the job can resume from the last successful page.
+
+Each result contains user profile data. Tweet-based tools add tweet data.
+
+<Expandable title="Example response">
+
+```json
+{
+  "id": "990001",
+  "xUserId": "44196397",
+  "xUsername": "elonmusk",
+  "xDisplayName": "Elon Musk",
+  "xFollowersCount": 210500000,
+  "xVerified": true,
+  "xProfileImageUrl": "https://pbs.twimg.com/profile_images/el0n.jpg",
+  "tweetId": "1893710452812718080",
+  "tweetText": "This is a great thread, thanks for sharing.",
+  "tweetCreatedAt": "2026-02-24T10:05:00.000Z",
+  "createdAt": "2026-02-24T10:06:12.000Z"
+}
+```
+
+</Expandable>
+
+<Info>
+
+Every result includes `id`, `xUserId`, and `createdAt`. The API omits other fields when unavailable. It never sends `null`. Check that a field exists before reading it.
+
+</Info>
+
+### Option B. Export as file
+
+Download results as CSV, JSON, XLSX, Markdown, PDF, or TXT.
+Available export rows include bios, locations, and engagement counts.
+
+<CodeGroup>
+
+```bash cURL
+curl -s "https://xquik.com/api/v1/extractions/77777/export?format=csv" \
+  -H "x-api-key: xq_YOUR_KEY_HERE" \
+  -o extraction-reply_extractor-77777.csv
+```
+
+```javascript Node.js
+const extractionId = "a1b2c3d4-e5f6-7890-abcd-ef1234567890";
+const response = await fetch(
+  `https://xquik.com/api/v1/extractions/${extractionId}/export?format=csv`,
+  { headers: { "x-api-key": "xq_YOUR_KEY_HERE" } },
+);
+
+const blob = await response.blob();
+// Save to file or process as needed
+```
+
+```python Python
+response = requests.get(
+    f"https://xquik.com/api/v1/extractions/{extraction_id}/export",
+    headers={"x-api-key": "xq_YOUR_KEY_HERE"},
+    params={"format": "csv"},
+)
+
+with open("extraction-reply_extractor-77777.csv", "wb") as f:
+    f.write(response.content)
+```
+
+```go Go
+req, _ := http.NewRequest("GET", "https://xquik.com/api/v1/extractions/77777/export?format=csv", nil)
+req.Header.Set("x-api-key", "xq_YOUR_KEY_HERE")
+
+resp, _ := http.DefaultClient.Do(req)
+defer resp.Body.Close()
+
+file, _ := os.Create("extraction-reply_extractor-77777.csv")
+defer file.Close()
+io.Copy(file, resp.Body)
+```
+
+</CodeGroup>
+
+<CardGroup cols={2}>
+
+  <Card title="CSV" icon="table">
+
+    `format=csv` returns `text/csv; charset=utf-8` for spreadsheets and data
+    pipelines.
+
+  </Card>
+  <Card title="JSON" icon="braces">
+
+    `format=json` returns `application/json; charset=utf-8` for API clients and
+    programmatic processing.
+
+  </Card>
+  <Card title="Markdown" icon="file-text">
+
+    `format=md` returns `text/markdown; charset=utf-8` for documentation and
+    issue handoffs.
+
+  </Card>
+  <Card title="Markdown document" icon="file-text">
+
+    `format=md-document` returns `text/markdown; charset=utf-8` for longer
+    markdown documents.
+
+  </Card>
+  <Card title="PDF" icon="file-down">
+
+    `format=pdf` returns `application/pdf` for reports and sharing. Xquik caps
+    PDF exports at `10,000` rows.
+
+  </Card>
+  <Card title="TXT" icon="file">
+
+    `format=txt` returns `text/plain; charset=utf-8` for plain text and logs.
+
+  </Card>
+  <Card title="XLSX" icon="file-spreadsheet">
+
+    `format=xlsx` returns
+    `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet` for
+    Excel and formatted reports.
+
+  </Card>
+</CardGroup>
+
+<Warning>
+
+Xquik caps exports at 100,000 rows and PDF exports at 10,000. For larger extractions, page through the API.
+
+</Warning>
+
+</section>
+
+<section>
+
+## Next steps
+
+- [Extraction workflow](/guides/extraction-workflow)
+- [Extraction parameters](/api-reference/extractions/parameters)
+
+</section>

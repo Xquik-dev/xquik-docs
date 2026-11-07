@@ -1,0 +1,121 @@
+---
+title: "Zapier Twitter Automation Error Handling Helper"
+sidebarTitle: "Zapier error handling"
+description: "Normalize Xquik API errors in one Zapier helper so every Twitter automation action reports the same fix for auth, credits, limits, and bad input errors."
+keywords: ["Zapier Twitter", "Zapier error handling", "Zapier Twitter automation", "Xquik Zapier"]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+<LlmsDirective />
+
+This guide belongs to the [Zapier Twitter integration](/guides/zapier) build.
+
+<section>
+
+## Shared error handling
+
+Normalize Xquik responses in one helper. Every action then reports the same remediation.
+
+```javascript
+function throwForXquikError(z, response) {
+  if (response.status < 400) {
+    return;
+  }
+
+  const detail = response.data?.message || response.data?.error;
+
+  if (response.status === 400) {
+    throw new z.errors.Error(
+      detail || "Invalid request. Fix the input fields.",
+      "XquikInvalidRequest",
+      400,
+    );
+  }
+
+  if (response.status === 401) {
+    throw new z.errors.RefreshAuthError("Authentication failed. Check the Xquik API key.");
+  }
+
+  if (response.status === 402) {
+    throw new z.errors.Error(
+      "Subscription or credits required. Update billing in Xquik.",
+      "XquikBillingRequired",
+      402,
+    );
+  }
+
+  if (response.status === 404) {
+    throw new z.errors.Error(
+      detail || "Resource not found. Check the supplied ID.",
+      "XquikResourceMissing",
+      404,
+    );
+  }
+
+  if (response.status === 424) {
+    throw new z.errors.Error(
+      detail || "X dependency failed. Retry only when the workflow is safe.",
+      "XquikDependencyFailure",
+      424,
+    );
+  }
+
+  if (response.status === 429) {
+    const retryAfter = Number.parseInt(
+      response.getHeader?.("retry-after") || response.headers?.["retry-after"] || "",
+      10,
+    );
+
+    if (Number.isInteger(retryAfter) && retryAfter > 0) {
+      throw new z.errors.ThrottledError("Rate limited. Zapier scheduled a retry.", retryAfter);
+    }
+
+    throw new z.errors.Error(
+      "Rate limited. Retry after the cooldown period.",
+      "XquikRateLimit",
+      429,
+    );
+  }
+
+  if (response.status === 502) {
+    throw new z.errors.Error(
+      detail || "X retrieval failed. Retry with a bounded attempt count.",
+      "XquikRetrievalFailure",
+      502,
+    );
+  }
+
+  throw new z.errors.Error(
+    detail || "Xquik request failed. Inspect the safe status.",
+    "XquikRequestError",
+    response.status,
+  );
+}
+
+async function xquikRequest(z, options) {
+  const response = await z.request({
+    ...options,
+    skipThrowForStatus: true,
+    throwForThrottlingEarly: false,
+  });
+
+  throwForXquikError(z, response);
+  return response;
+}
+```
+
+Call `xquikRequest(z, options)` before reading response data. Use each route's
+response widget as the canonical status list.
+
+</section>
+
+<section>
+
+## Next steps
+
+- [Zapier Twitter integration](/guides/zapier)
+- [Zapier result handoff](/guides/zapier-result-handoff)
+- [Monitor event REST hook](/guides/zapier-monitor-rest-hook)
+
+</section>
