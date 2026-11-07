@@ -202,7 +202,9 @@ function responseBlock(document: unknown, operation: unknown, page: string): str
   }
   const table =
     rows.length > 0 ? [`| Status | Response body |\n| --- | --- |\n${rows.join("\n")}`] : [];
-  return [START, "## Response examples", ...fences, ...table, END].join("\n\n");
+  return [START, "<section>", "## Response examples", ...fences, ...table, "</section>", END].join(
+    "\n\n",
+  );
 }
 
 function replaceBlock(source: string, block: string): string {
