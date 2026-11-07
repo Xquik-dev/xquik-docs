@@ -44,10 +44,10 @@ describe("Features page", (): void => {
   it("renders each catalog theme between the intro & Next steps", (): void => {
     expect.assertions(1);
     const page =
-      "---\ntitle: x\n---\n\nIntro.\n\n## Old\n\n- Gone.\n\nA stray paragraph.\n\n## Next steps\n\nCards.\n";
+      "---\ntitle: x\n---\n\nIntro.\n\n<section>\n\n## Old\n\n- Gone.\n\nA stray paragraph.\n\n</section>\n\n<section>\n\n## Next steps\n\nCards.\n\n</section>\n";
 
     expect(withThemes(page, FIXTURE)).toBe(
-      "---\ntitle: x\n---\n\nIntro.\n\n## Speed\n\n- Reads are fast.\n\n## Billing\n\n- Billing is fair.\n\n## Next steps\n\nCards.\n",
+      "---\ntitle: x\n---\n\nIntro.\n\n<section>\n\n## Speed\n\n- Reads are fast.\n\n</section>\n\n<section>\n\n## Billing\n\n- Billing is fair.\n\n</section>\n\n<section>\n\n## Next steps\n\nCards.\n\n</section>\n",
     );
   });
 

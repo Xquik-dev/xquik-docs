@@ -2,7 +2,8 @@ import { z } from "zod";
 
 const FEATURES_PAGE = "api-reference/features.mdx";
 const FEATURES_CATALOG = "lib/seo/output-features.ts";
-const NEXT_STEPS = "\n## Next steps\n";
+const FIRST_SECTION = "\n<section>\n\n## ";
+const NEXT_STEPS = "\n<section>\n\n## Next steps\n";
 
 const catalogSchema = z.object({
   OUTPUT_FEATURE_THEMES: z.array(
@@ -16,13 +17,13 @@ const catalogSchema = z.object({
 type Themes = z.infer<typeof catalogSchema>["OUTPUT_FEATURE_THEMES"];
 
 function withThemes(page: string, themes: Themes): string {
-  const start = page.indexOf("\n## ");
+  const start = page.indexOf(FIRST_SECTION);
   const end = page.indexOf(NEXT_STEPS);
   if (start === -1 || end < start)
     throw new Error(`${FEATURES_PAGE} needs its theme sections before "## Next steps".`);
   const sections = themes.map(
     ({ features, heading }) =>
-      `## ${heading}\n\n${features.map(({ line }) => `- ${line}`).join("\n")}\n`,
+      `<section>\n\n## ${heading}\n\n${features.map(({ line }) => `- ${line}`).join("\n")}\n\n</section>\n`,
   );
   return `${page.slice(0, start + 1)}${sections.join("\n")}${page.slice(end)}`;
 }
