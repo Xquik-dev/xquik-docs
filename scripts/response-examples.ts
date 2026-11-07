@@ -5,6 +5,7 @@ import { join, relative, sep } from "node:path";
 import {
   GENERATED_RESPONSE_EXAMPLES_END as END,
   GENERATED_RESPONSE_EXAMPLES_START as START,
+  stripGeneratedResponseExamples,
 } from "./lib/generated-response-examples.ts";
 import { isList, isRecord } from "./lib/json-shape.ts";
 
@@ -29,9 +30,7 @@ const MAX_PROPERTIES = 12;
 const MAX_SUCCESS_FIELDS = 10;
 const MAX_ERROR_FIELDS = 6;
 const MAX_NESTED_FIELDS = 5;
-const FRONTMATTER = /^---\r?\n.*?\r?\n---\r?\n/su;
-const IMPORTS = /^(?:\r?\n)*(?:import [^\r\n]+;\r?\n)+/u;
-const API_LINE = /^api: "([A-Z]+) ([^"]+)"$/mu;
+const API_LINE = /^endpoint: "([A-Z]+) ([^"]+)"$/mu;
 
 function list(value: unknown): readonly unknown[] {
   return isList(value) ? value : [];
@@ -174,46 +173,40 @@ function responseExample(
   return { language, value: compact(named, MAX_SUCCESS_FIELDS, 0) };
 }
 
-function responseBlock(document: unknown, operation: unknown, scope: string): string {
+function hasFencedExample(page: string, status: string): boolean {
+  const section = new RegExp(`^#{2,4} [^\\n]*\\b${status}\\b[^\\n]*\\n(.*?)(?=^#{2,4} |$(?![\\s\\S]))`, "msu");
+  return section.exec(page)?.[1]?.includes("```") === true;
+}
+
+function statusRow(status: string, language: string, value: unknown): string {
+  const text = language === "json" || typeof value !== "string" ? JSON.stringify(value) : value;
+  return `| \`${status}\` | \`${text.replaceAll("|", "\\|").replaceAll("\n", " ")}\` |`;
+}
+
+function responseBlock(document: unknown, operation: unknown, page: string): string {
   const responses = field(operation, "responses");
-  const tabs = Object.entries(isRecord(responses) ? responses : {}).map(([status, response]) => {
+  const rows: string[] = [];
+  const fences: string[] = [];
+  for (const [status, response] of Object.entries(isRecord(responses) ? responses : {})) {
     const { language, value } = responseExample(
       document,
       response,
       status,
       field(operation, "x-write-action"),
     );
-    const text =
-      language === "json" || typeof value !== "string"
-        ? JSON.stringify(value, undefined, 2)
-        : value;
-    const body = text
-      .split("\n")
-      .map((line) => `    ${line}`.trimEnd())
-      .join("\n");
-    const id = `response-${scope.replaceAll("/", "-")}-${status}`;
-    return `  <Tab title="${status}" id="${id}">\n\n    \`\`\`${language}\n${body}\n    \`\`\`\n\n  </Tab>`;
-  });
-  return `${START}\n\n<Panel>\n\n<Tabs defaultTabIndex={0} sync={false}>\n\n${tabs.join("\n\n")}\n</Tabs>\n\n</Panel>\n${END}`;
+    if (!status.startsWith("2") || status === "204" || language !== "json") {
+      rows.push(statusRow(status, language, value));
+    } else if (!hasFencedExample(page, status)) {
+      fences.push(`### ${status} example\n\n\`\`\`json\n${JSON.stringify(value, undefined, 2)}\n\`\`\``);
+    }
+  }
+  const table =
+    rows.length > 0 ? [`| Status | Response body |\n| --- | --- |\n${rows.join("\n")}`] : [];
+  return [START, "## Response examples", ...fences, ...table, END].join("\n\n");
 }
 
 function replaceBlock(source: string, block: string): string {
-  const start = source.indexOf(START);
-  const end = source.indexOf(END);
-  if ((start === -1) !== (end === -1) || end < start) {
-    throw new Error("Generated response example markers are incomplete.");
-  }
-  const page = start === -1 ? source : source.slice(0, start) + source.slice(end + END.length);
-  const frontmatter = page.match(FRONTMATTER)?.[0];
-  if (frontmatter === undefined) {
-    throw new Error("API reference page has no frontmatter insertion point.");
-  }
-  const imports = page.slice(frontmatter.length).match(IMPORTS)?.[0];
-  if (imports === undefined) {
-    throw new Error("API reference page has no import insertion point.");
-  }
-  const insertion = frontmatter.length + imports.length;
-  return `${page.slice(0, insertion)}\n${block}\n${page.slice(insertion).replace(/^\r?\n*/u, "")}`;
+  return `${stripGeneratedResponseExamples(source).trimEnd()}\n\n${block}\n`;
 }
 
 function run(root: string, check: boolean): string {
@@ -237,8 +230,8 @@ function run(root: string, check: boolean): string {
       findings.push(`${file}: OpenAPI operation not found.`);
       continue;
     }
-    const scope = file.replace(/^api-reference\//u, "").replace(/\.mdx$/u, "");
-    const next = replaceBlock(source, responseBlock(document, operation, scope));
+    const page = stripGeneratedResponseExamples(source);
+    const next = replaceBlock(source, responseBlock(document, operation, page));
     const responses = field(operation, "responses");
     pageCount += 1;
     statusCount += Object.keys(isRecord(responses) ? responses : {}).length;
