@@ -92,16 +92,10 @@ categories. Some props have no line, such as the first touchdown scorer. Their `
 
 ## Path parameters
 
-<ParamField path="league" type="string" required>
-  `nfl`, in any case. X has no college props, so `ncaafb` gets a free `400 unsupported_league`.
-  Another value gets a free `400 invalid_league`.
-</ParamField>
-
-<ParamField path="id" type="string" required>
-  Game ID, a number up to 19 digits, such as `2055084502741929984`. [List football
-  games](/api-reference/x/sports-games) returns it as `id`. Another value gets a free `400
-  invalid_game_id`.
-</ParamField>
+| Path parameter | Type     | Required | Description                                                                                                                                                                                 |
+| -------------- | -------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `league`       | `string` | Yes      | `nfl`, in any case. X has no college props, so `ncaafb` gets a free `400 unsupported_league`. Another value gets a free `400 invalid_league`.                                               |
+| `id`           | `string` | Yes      | Game ID, a number up to 19 digits, such as `2055084502741929984`. [List football games](/api-reference/x/sports-games) returns it as `id`. Another value gets a free `400 invalid_game_id`. |
 
 </section>
 
@@ -117,17 +111,10 @@ categories. Some props have no line, such as the first touchdown scorer. Their `
 
 ## Headers
 
-<ParamField header="x-api-key" type="string">
-
-Full account key. Sessions and OAuth also work.
-
-</ParamField>
-
-<ParamField header="Authorization" type="string">
-
-`Bearer xq_your_guest_key_here` for `paid_reads`.
-
-</ParamField>
+| Header          | Type     | Required | Description                                       |
+| --------------- | -------- | -------- | ------------------------------------------------- |
+| `x-api-key`     | `string` | No       | Full account key. Sessions and OAuth also work.   |
+| `Authorization` | `string` | No       | `Bearer xq_your_guest_key_here` for `paid_reads`. |
 
 </section>
 
@@ -137,71 +124,27 @@ Full account key. Sessions and OAuth also work.
 
 ### 200 OK
 
-<ResponseField name="id" type="string">
-  The game ID from your request.
-</ResponseField>
+| Field                                 | Type       | Description                                                                                                            |
+| ------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `id`                                  | `string`   | The game ID from your request.                                                                                         |
+| `league`                              | `string`   | Always `nfl`.                                                                                                          |
+| `sportsbookUrl`                       | `string`   | The sportsbook page X links for these props. Null without props.                                                       |
+| `categories`                          | `object[]` | Each kind of prop, in X's order.                                                                                       |
+| `categories[].key`                    | `string`   | X's key for the prop, such as `passing_yards`.                                                                         |
+| `categories[].name`                   | `string`   | The name X shows, such as `Passing Yards`.                                                                             |
+| `categories[].rank`                   | `number`   | The category's place in X's order, from 1.                                                                             |
+| `categories[].props`                  | `object[]` | Each player's line, in X's order.                                                                                      |
+| `categories[].props[].playerId`       | `string`   | The player, a key of `players`.                                                                                        |
+| `categories[].props[].rank`           | `number`   | The line's place in its category, from 1.                                                                              |
+| `categories[].props[].line`           | `number`   | The line the odds price, such as `248.5` yards. Null when the prop has no line.                                        |
+| `categories[].props[].odds`           | `number`   | The American odds X shows first, such as `-115` or `240`.                                                              |
+| `categories[].props[].alternateOdds`  | `number`   | The American odds X shows second. Null for a prop with 1 price.                                                        |
+| `categories[].props[].openForBetting` | `boolean`  | Whether the sportsbook takes bets on the line.                                                                         |
+| `players`                             | `object`   | The players these props name, keyed by player ID. X sends each player's name, jersey & team, so other fields are null. |
 
-<ResponseField name="league" type="string">
-  Always `nfl`.
-</ResponseField>
-
-<ResponseField name="sportsbookUrl" type="string">
-  The sportsbook page X links for these props. Null without props.
-</ResponseField>
-
-<ResponseField name="categories" type="object[]">
-Each kind of prop, in X's order.
-
-<ResponseField name="key" type="string">
-  X's key for the prop, such as `passing_yards`.
-</ResponseField>
-
-<ResponseField name="name" type="string">
-  The name X shows, such as `Passing Yards`.
-</ResponseField>
-
-<ResponseField name="rank" type="number">
-  The category's place in X's order, from 1.
-</ResponseField>
-
-<ResponseField name="props" type="object[]">
-Each player's line, in X's order.
-
-<ResponseField name="playerId" type="string">
-  The player, a key of `players`.
-</ResponseField>
-
-<ResponseField name="rank" type="number">
-  The line's place in its category, from 1.
-</ResponseField>
-
-<ResponseField name="line" type="number">
-  The line the odds price, such as `248.5` yards. Null when the prop has no line.
-</ResponseField>
-
-<ResponseField name="odds" type="number">
-  The American odds X shows first, such as `-115` or `240`.
-</ResponseField>
-
-<ResponseField name="alternateOdds" type="number">
-  The American odds X shows second. Null for a prop with 1 price.
-</ResponseField>
-
-<ResponseField name="openForBetting" type="boolean">
-  Whether the sportsbook takes bets on the line.
-</ResponseField>
-
-</ResponseField>
-
-</ResponseField>
-
-<ResponseField name="players" type="object">
-The players these props name, keyed by player ID. X sends each player's name, jersey & team, so
-other fields are null.
+Each value in `players` has these fields.
 
 <FootballPlayerFields />
-
-</ResponseField>
 
 ### 400 Unsupported league
 
@@ -249,16 +192,16 @@ The read service returned an error. Retry after a short delay.
 }
 ```
 
-| Status | Response body |
-| --- | --- |
-| `400` | `{"error":"invalid_input","message":"Invalid input. Check the request body."}` |
-| `401` | `{"error":"unauthenticated","message":"Authentication required. Provide a valid API key or bearer token."}` |
-| `402` | `{"error":"insufficient_credits","message":"Insufficient credits. Top up or subscribe to continue."}` |
-| `403` | `{"error":"api_key_paused","message":"This API key is paused. Resume it at dashboard.xquik.com/api-keys to use it again."}` |
-| `424` | `{"error":"x_api_unavailable","message":"X data source temporarily unavailable. Try again later."}` |
-| `429` | `{"error":"rate_limit_exceeded","message":"Too many requests. Try again later.","retryAfter":60}` |
-| `502` | `{"error":"x_api_unavailable","message":"X data source temporarily unavailable. Try again later."}` |
-| `503` | `{"error":"x_api_unavailable","message":"Xquik is busy right now. Retry shortly."}` |
+| Status | Response body                                                                                                               |
+| ------ | --------------------------------------------------------------------------------------------------------------------------- |
+| `400`  | `{"error":"invalid_input","message":"Invalid input. Check the request body."}`                                              |
+| `401`  | `{"error":"unauthenticated","message":"Authentication required. Provide a valid API key or bearer token."}`                 |
+| `402`  | `{"error":"insufficient_credits","message":"Insufficient credits. Top up or subscribe to continue."}`                       |
+| `403`  | `{"error":"api_key_paused","message":"This API key is paused. Resume it at dashboard.xquik.com/api-keys to use it again."}` |
+| `424`  | `{"error":"x_api_unavailable","message":"X data source temporarily unavailable. Try again later."}`                         |
+| `429`  | `{"error":"rate_limit_exceeded","message":"Too many requests. Try again later.","retryAfter":60}`                           |
+| `502`  | `{"error":"x_api_unavailable","message":"X data source temporarily unavailable. Try again later."}`                         |
+| `503`  | `{"error":"x_api_unavailable","message":"Xquik is busy right now. Retry shortly."}`                                         |
 
 </section>
 

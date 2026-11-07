@@ -90,20 +90,10 @@ with [List football games](/api-reference/x/sports-games). Call it again to foll
 
 ## Path parameters
 
-<ParamField path="league" type="string" required>
-
-`nfl` for the NFL or `ncaafb` for college football, in any case. Another value gets a free
-`400 invalid_league`.
-
-</ParamField>
-
-<ParamField path="id" type="string" required>
-
-Game ID, a number up to 19 digits, such as `2055084502741811200`.
-[List football games](/api-reference/x/sports-games) returns it as `id`. Another value gets a free
-`400 invalid_game_id`.
-
-</ParamField>
+| Path parameter | Type     | Required | Description                                                                                                                                                                                 |
+| -------------- | -------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `league`       | `string` | Yes      | `nfl` for the NFL or `ncaafb` for college football, in any case. Another value gets a free `400 invalid_league`.                                                                            |
+| `id`           | `string` | Yes      | Game ID, a number up to 19 digits, such as `2055084502741811200`. [List football games](/api-reference/x/sports-games) returns it as `id`. Another value gets a free `400 invalid_game_id`. |
 
 </section>
 
@@ -119,17 +109,10 @@ Game ID, a number up to 19 digits, such as `2055084502741811200`.
 
 ## Headers
 
-<ParamField header="x-api-key" type="string">
-
-Full account key. Sessions and OAuth also work.
-
-</ParamField>
-
-<ParamField header="Authorization" type="string">
-
-`Bearer xq_your_guest_key_here` for `paid_reads`.
-
-</ParamField>
+| Header          | Type     | Required | Description                                       |
+| --------------- | -------- | -------- | ------------------------------------------------- |
+| `x-api-key`     | `string` | No       | Full account key. Sessions and OAuth also work.   |
+| `Authorization` | `string` | No       | `Bearer xq_your_guest_key_here` for `paid_reads`. |
 
 </section>
 
@@ -139,60 +122,25 @@ Full account key. Sessions and OAuth also work.
 
 ### 200 OK
 
-<ResponseField name="id" type="string">
-  The game ID from your request.
-</ResponseField>
-<ResponseField name="league" type="string">
-  The league from your request, `nfl` or `ncaafb`.
-</ResponseField>
-<ResponseField name="viewers" type="object">
+| Field              | Type       | Description                                                                                                                                                                     |
+| ------------------ | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`               | `string`   | The game ID from your request.                                                                                                                                                  |
+| `league`           | `string`   | The league from your request, `nfl` or `ncaafb`.                                                                                                                                |
+| `viewers`          | `object`   | People watching the game on X at X's last count. Null before X counts any.                                                                                                      |
+| `viewers.count`    | `number`   | How many people watched the game on X.                                                                                                                                          |
+| `viewers.asOf`     | `string`   | When X counted them, as an ISO 8601 time.                                                                                                                                       |
+| `teamPicks`        | `object`   | How many people on X picked a team to root for.                                                                                                                                 |
+| `teamPicks.total`  | `number`   | Picks for every team in the game.                                                                                                                                               |
+| `teamPicks.teams`  | `object[]` | Picks per team. Each has `teamId`, a key of `teams`, & `count`.                                                                                                                 |
+| `chat`             | `object`   | The game's live chat on X.                                                                                                                                                      |
+| `chat.available`   | `boolean`  | Whether the chat is open now.                                                                                                                                                   |
+| `chat.broadcastId` | `string`   | X's ID for the game's chat room, such as `nfl-2055084502741811200`.                                                                                                             |
+| `chat.opensIn`     | `object`   | Time left until the chat opens, as `days`, `hours` & `minutes`. Null while it is open & after the game.                                                                         |
+| `teams`            | `object`   | The game's teams, keyed by team ID. X sends no short name, alternate ID or X account here. So those are null. [Get football scoreboard](/api-reference/x/sports-game) has them. |
 
-People watching the game on X at X's last count. Null before X counts any.
-
-<ResponseField name="count" type="number">
-  How many people watched the game on X.
-</ResponseField>
-<ResponseField name="asOf" type="string">
-  When X counted them, as an ISO 8601 time.
-</ResponseField>
-
-</ResponseField>
-<ResponseField name="teamPicks" type="object">
-
-How many people on X picked a team to root for.
-
-<ResponseField name="total" type="number">
-  Picks for every team in the game.
-</ResponseField>
-<ResponseField name="teams" type="object[]">
-  Picks per team. Each has `teamId`, a key of `teams`, & `count`.
-</ResponseField>
-
-</ResponseField>
-<ResponseField name="chat" type="object">
-
-The game's live chat on X.
-
-<ResponseField name="available" type="boolean">
-  Whether the chat is open now.
-</ResponseField>
-<ResponseField name="broadcastId" type="string">
-  X's ID for the game's chat room, such as `nfl-2055084502741811200`.
-</ResponseField>
-<ResponseField name="opensIn" type="object">
-  Time left until the chat opens, as `days`, `hours` & `minutes`. Null while it is open & after the
-  game.
-</ResponseField>
-
-</ResponseField>
-<ResponseField name="teams" type="object">
-
-The game's teams, keyed by team ID. X sends no short name, alternate ID or X account here. So those
-are null. [Get football scoreboard](/api-reference/x/sports-game) has them.
+Each value in `teams` has these fields.
 
 <SportsTeamFields />
-
-</ResponseField>
 
 ### 400 Invalid game ID
 
@@ -262,17 +210,17 @@ The read service returned an error. Retry after a short delay.
 }
 ```
 
-| Status | Response body |
-| --- | --- |
-| `400` | `{"error":"invalid_input","message":"Invalid input. Check the request body."}` |
-| `401` | `{"error":"unauthenticated","message":"Authentication required. Provide a valid API key or bearer token."}` |
-| `402` | `{"error":"insufficient_credits","message":"Insufficient credits. Top up or subscribe to continue."}` |
-| `403` | `{"error":"api_key_paused","message":"This API key is paused. Resume it at dashboard.xquik.com/api-keys to use it again."}` |
-| `404` | `{"error":"not_found","message":"Resource not found."}` |
-| `424` | `{"error":"x_api_unavailable","message":"X data source temporarily unavailable. Try again later."}` |
-| `429` | `{"error":"rate_limit_exceeded","message":"Too many requests. Try again later.","retryAfter":60}` |
-| `502` | `{"error":"x_api_unavailable","message":"X data source temporarily unavailable. Try again later."}` |
-| `503` | `{"error":"x_api_unavailable","message":"Xquik is busy right now. Retry shortly."}` |
+| Status | Response body                                                                                                               |
+| ------ | --------------------------------------------------------------------------------------------------------------------------- |
+| `400`  | `{"error":"invalid_input","message":"Invalid input. Check the request body."}`                                              |
+| `401`  | `{"error":"unauthenticated","message":"Authentication required. Provide a valid API key or bearer token."}`                 |
+| `402`  | `{"error":"insufficient_credits","message":"Insufficient credits. Top up or subscribe to continue."}`                       |
+| `403`  | `{"error":"api_key_paused","message":"This API key is paused. Resume it at dashboard.xquik.com/api-keys to use it again."}` |
+| `404`  | `{"error":"not_found","message":"Resource not found."}`                                                                     |
+| `424`  | `{"error":"x_api_unavailable","message":"X data source temporarily unavailable. Try again later."}`                         |
+| `429`  | `{"error":"rate_limit_exceeded","message":"Too many requests. Try again later.","retryAfter":60}`                           |
+| `502`  | `{"error":"x_api_unavailable","message":"X data source temporarily unavailable. Try again later."}`                         |
+| `503`  | `{"error":"x_api_unavailable","message":"Xquik is busy right now. Retry shortly."}`                                         |
 
 </section>
 

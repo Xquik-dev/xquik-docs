@@ -333,23 +333,11 @@ Store `id`, `request.hash`, `billing`, `result`, `reply_to_tweet_id`, and `media
 
 ## Headers
 
-<ParamField header="x-api-key" type="string">
-
-Send your Xquik API key in this header. Alternatively, send an OAuth 2.1 bearer token.
-
-</ParamField>
-
-<ParamField header="Idempotency-Key" type="string" required>
-
-Unique key for this intended write. Reuse it only for an exact network replay.
-
-</ParamField>
-
-<ParamField header="Content-Type" type="string" required>
-
-Must be `application/json`.
-
-</ParamField>
+| Header            | Type     | Required | Description                                                                            |
+| ----------------- | -------- | -------- | -------------------------------------------------------------------------------------- |
+| `x-api-key`       | `string` | No       | Send your Xquik API key in this header. Alternatively, send an OAuth 2.1 bearer token. |
+| `Idempotency-Key` | `string` | Yes      | Unique key for this intended write. Reuse it only for an exact network replay.         |
+| `Content-Type`    | `string` | Yes      | Must be `application/json`.                                                            |
 
 </section>
 
@@ -357,51 +345,14 @@ Must be `application/json`.
 
 ## Body
 
-<ParamField body="account" type="string" required>
-
-Choose the connected X account by username or account ID. Xquik removes an optional `@` prefix.
-
-</ParamField>
-
-<ParamField body="text" type="string">
-
-Send up to 280 characters for a standard tweet. Note tweets accept up to 25,000 characters. Omit text only when `media` exists.
-
-</ParamField>
-
-<ParamField body="reply_to_tweet_id" type="string">
-
-Set the parent Tweet ID. Xquik posts the new tweet inside that thread.
-
-</ParamField>
-
-<ParamField body="community_id" type="string">
-
-Post into a Community you belong to. Use its ID of 1 to 19 digits.
-Xquik checks that the post lands in the Community. A post X puts outside it is deleted and costs nothing.
-Not with `reply_to_tweet_id`, since X keeps replies public.
-
-</ParamField>
-
-<ParamField body="is_note_tweet" type="boolean">
-
-Set `true` for a note tweet with up to 25,000 characters. The default is `false`.
-
-</ParamField>
-
-<ParamField body="media" type="string[]">
-
-Attach public media URLs directly.
-
-- Send up to 4 JPEG, PNG, GIF, WebP, or AVIF image URLs.
-- Send exactly 1 public MP4 URL up to 100 MB.
-- Never mix video with other media.
-- Use [Upload Media](/api-reference/x-write/upload-media) to host a local file.
-- Pass its returned `mediaUrl` in `media`.
-- Never pass uploaded `mediaId` values or `media_ids`.
-- Attached media adds 2 credits per started MB across all files.
-
-</ParamField>
+| Body parameter      | Type       | Required | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| ------------------- | ---------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `account`           | `string`   | Yes      | Choose the connected X account by username or account ID. Xquik removes an optional `@` prefix.                                                                                                                                                                                                                                                                                                                                                                     |
+| `text`              | `string`   | No       | Send up to 280 characters for a standard tweet. Note tweets accept up to 25,000 characters. Omit text only when `media` exists.                                                                                                                                                                                                                                                                                                                                     |
+| `reply_to_tweet_id` | `string`   | No       | Set the parent Tweet ID. Xquik posts the new tweet inside that thread.                                                                                                                                                                                                                                                                                                                                                                                              |
+| `community_id`      | `string`   | No       | Post into a Community you belong to. Use its ID of 1 to 19 digits. Xquik checks that the post lands in the Community. A post X puts outside it is deleted and costs nothing. Not with `reply_to_tweet_id`, since X keeps replies public.                                                                                                                                                                                                                            |
+| `is_note_tweet`     | `boolean`  | No       | Set `true` for a note tweet with up to 25,000 characters. The default is `false`.                                                                                                                                                                                                                                                                                                                                                                                   |
+| `media`             | `string[]` | No       | Attach public media URLs directly.<br />- Send up to 4 JPEG, PNG, GIF, WebP, or AVIF image URLs.<br />- Send exactly 1 public MP4 URL up to 100 MB.<br />- Never mix video with other media.<br />- Use [Upload Media](/api-reference/x-write/upload-media) to host a local file.<br />- Pass its returned `mediaUrl` in `media`.<br />- Never pass uploaded `mediaId` values or `media_ids`.<br />- Attached media adds 2 credits per started MB across all files. |
 
 </section>
 
@@ -453,20 +404,20 @@ Attach public media URLs directly.
 }
 ```
 
-| Status | Response body |
-| --- | --- |
-| `400` | `{"error":"missing_idempotency_key","message":"Idempotency-Key is required. Generate one unique key for this write.","charged":false,"chargedCredits":"0","retryable":false,"safeToRetry":true}` |
-| `401` | `{"error":"unauthenticated","message":"Authentication required. Provide a valid API key or bearer token."}` |
-| `402` | `{"error":"insufficient_credits","message":"Insufficient credits. Top up or subscribe to continue."}` |
-| `403` | `{"error":"api_key_paused","message":"This API key is paused. Resume it at dashboard.xquik.com/api-keys to use it again."}` |
-| `404` | `{"error":"account_not_found","message":"X account not found. Connect it first at /dashboard/x-accounts."}` |
-| `409` | `{"error":"idempotency_conflict","message":"Idempotency-Key was already used with a different request.","charged":false,"chargedCredits":"0","retryable":false,"safeToRetry":true}` |
-| `413` | `{"error":"media_too_large","message":"This image stays over X's size limit after shrinking. Send a smaller one."}` |
-| `415` | `{"error":"unsupported_media_type","message":"Xquik couldn't read this image. Send a valid image file."}` |
-| `422` | `{"error":"x_rejected","message":"X rejected this request. Check what you sent & the account on x.com before you try again."}` |
-| `429` | `{"error":"rate_limit_exceeded","message":"Too many requests. Try again later.","retryAfter":60}` |
-| `500` | `{"error":"x_write_failed","message":"Write action failed unexpectedly. Contact support if this persists."}` |
-| `503` | `{"error":"write_tracking_unavailable","message":"Write tracking unavailable. Try again.","charged":false,"chargedCredits":"0","retryable":true,"safeToRetry":true}` |
+| Status | Response body                                                                                                                                                                                    |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `400`  | `{"error":"missing_idempotency_key","message":"Idempotency-Key is required. Generate one unique key for this write.","charged":false,"chargedCredits":"0","retryable":false,"safeToRetry":true}` |
+| `401`  | `{"error":"unauthenticated","message":"Authentication required. Provide a valid API key or bearer token."}`                                                                                      |
+| `402`  | `{"error":"insufficient_credits","message":"Insufficient credits. Top up or subscribe to continue."}`                                                                                            |
+| `403`  | `{"error":"api_key_paused","message":"This API key is paused. Resume it at dashboard.xquik.com/api-keys to use it again."}`                                                                      |
+| `404`  | `{"error":"account_not_found","message":"X account not found. Connect it first at /dashboard/x-accounts."}`                                                                                      |
+| `409`  | `{"error":"idempotency_conflict","message":"Idempotency-Key was already used with a different request.","charged":false,"chargedCredits":"0","retryable":false,"safeToRetry":true}`              |
+| `413`  | `{"error":"media_too_large","message":"This image stays over X's size limit after shrinking. Send a smaller one."}`                                                                              |
+| `415`  | `{"error":"unsupported_media_type","message":"Xquik couldn't read this image. Send a valid image file."}`                                                                                        |
+| `422`  | `{"error":"x_rejected","message":"X rejected this request. Check what you sent & the account on x.com before you try again."}`                                                                   |
+| `429`  | `{"error":"rate_limit_exceeded","message":"Too many requests. Try again later.","retryAfter":60}`                                                                                                |
+| `500`  | `{"error":"x_write_failed","message":"Write action failed unexpectedly. Contact support if this persists."}`                                                                                     |
+| `503`  | `{"error":"write_tracking_unavailable","message":"Write tracking unavailable. Try again.","charged":false,"chargedCredits":"0","retryable":true,"safeToRetry":true}`                             |
 
 </section>
 
