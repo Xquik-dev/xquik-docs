@@ -79,7 +79,7 @@ const REQUIRED_README_SNIPPETS = [
   "1-second tweet monitors",
   "signed webhooks",
   "SDK clients",
-  "X automation",
+  "X (Twitter) automation",
   "[Quickstart](https://docs.xquik.com/x-api-quickstart)",
   "[API reference](https://docs.xquik.com/api-reference)",
   "Browse every OpenAPI-backed operation",
