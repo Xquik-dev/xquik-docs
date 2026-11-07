@@ -69,7 +69,7 @@ const REQUIRED_CUSTOM_CSS_MOBILE_VIEWPORT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_README_SNIPPETS = [
-  "# Twitter API Documentation & X API Docs by Xquik",
+  "# Twitter API Documentation by Xquik",
   "tweet search",
   "user lookup",
   "follower exports",
