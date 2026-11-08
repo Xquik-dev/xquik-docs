@@ -43,7 +43,7 @@ describe("set X identity documentation", (): void => {
         '"X username"',
         "## Understand handle, display name, and user ID",
         "## Apply the identity to tweet style analysis",
-        "## X username questions",
+        "## X (Twitter) username questions",
       ].every((snippet) => page.includes(snippet)),
     ).toBe(true);
   });
