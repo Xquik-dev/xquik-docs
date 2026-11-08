@@ -46,7 +46,7 @@ import TweetReadApiLinks from "/snippets/x-tweet-read-api-links.mdx";
             "answers": [
               {
                 "questionId": "sentiment",
-                "questionVersion": "sentiment:2",
+                "questionVersion": "sentiment:3",
                 "type": "choice",
                 "value": "mixed",
                 "confidence": 0.88
@@ -55,7 +55,7 @@ import TweetReadApiLinks from "/snippets/x-tweet-read-api-links.mdx";
             "questions": [
               {
                 "id": "sentiment",
-                "version": "sentiment:2"
+                "version": "sentiment:3"
               }
             ],
             "contextBytes": 612,
@@ -70,7 +70,8 @@ import TweetReadApiLinks from "/snippets/x-tweet-read-api-links.mdx";
           "answers": {
             "sentiment": "mixed",
             "intensity": 1,
-            "sarcasm": 0.03
+            "sarcasm": 0.03,
+            "emotion": "none"
           },
           "sourceDomains": [],
           "cashtags": []
@@ -156,8 +157,8 @@ import TweetReadApiLinks from "/snippets/x-tweet-read-api-links.mdx";
 
     ```json
     {
-      "error": "x_account_protected",
-      "message": "Account is protected. Choose a public account."
+      "error": "api_key_paused",
+      "message": "This API key is paused. Resume it at dashboard.xquik.com/api-keys to use it again."
     }
     ```
 
@@ -215,7 +216,7 @@ import TweetReadApiLinks from "/snippets/x-tweet-read-api-links.mdx";
 
 <Callout icon="coins" color="#5c3327">
 
-**2 credits per analyzed post** · [All plans](https://xquik.com/#pricing) from $0.00012/credit · Supports [guest paid reads](/guides/guest-wallets)
+**2 credits per analyzed post** · [All plans](https://xquik.com) from $0.00012/credit · Supports [guest paid reads](/guides/guest-wallets)
 
 </Callout>
 
@@ -315,20 +316,20 @@ print(json.dumps({"reports": len(sourced_reports), "top_sources": top_sources}))
 
 </CodeGroup>
 
-The snippets keep relevant reports that cite a source, then print the most
-linked sites. They do not print the full response.
+The snippets keep relevant reports that cite a source. They then print the
+most linked sites. They do not print the full response.
 
 ## Name the topic
 
 Put the topic in `analysis.targets`, with its other names as aliases. A topic
-can be an event, a company, a person, a ticker, or a product.
+can be an event, company, person, ticker, or product.
 
 ```json
 { "name": "Artemis program", "aliases": ["Artemis II", "SLS", "Orion"] }
 ```
 
-`relevance` is high only when the post names the topic or reports an event
-about it. Posts about the same industry, competitors, or the wider market do
+Only posts naming the topic or reporting an event about it get high
+`relevance`. Posts about the same industry, competitors, or the wider market do
 not count. Filter rows on `relevance` before you count answers.
 
 ## Read the news answers
@@ -369,8 +370,8 @@ Store it per run to see when speculation outgrows reporting.
 `results[].sourceDomains` lists the sites each post links to. The summary's
 `sourceDomains` counts posts per site, most posts first, up to 20.
 
-For more posts than 1 call returns, send the same body again with `cursor` set
-to `next_cursor`. Add `sinceTime` and `untilTime` to read 1 day or 1 hour.
+For more posts than 1 call returns, send the same body again. Add `cursor`
+set to `next_cursor`. Add `sinceTime` and `untilTime` to read 1 day or 1 hour.
 
 ```json
 {
@@ -441,7 +442,7 @@ Each analyzed post with its answers. Each row costs 2 credits.
       Cashtags in the post's text, in upper case.
     </ResponseField>
     <ResponseField name="monitor" type="object">
-      The comparison with `baseline`. It holds `status`, `changedQuestionIds`, `changes` with each `previous` and `current` decision, and the settings' `configurationFingerprint`.
+      The comparison with `baseline`. It holds `status`, `changedQuestionIds`, and `changes` with each `previous` and `current` decision. It also holds the settings' `configurationFingerprint`.
     </ResponseField>
 
   </Expandable>
@@ -605,7 +606,7 @@ Totals of the answers across the analyzed posts.
 }
 ```
 
-The body names no posts, names more than 1 source, or has an invalid field.
+The body names no posts or names more than 1 source. A body with an invalid field gets the same error.
 The message says what to send instead. The request costs nothing.
 
 ### 401 Unauthenticated
@@ -675,7 +676,7 @@ Search the topic in `query` and name it in `analysis.targets`. Each row in
 
 ### Does it check whether a post is true?
 
-No. The answers say what kind of post it is and whether it names a source.
+No. The answers say what kind of post it is. They also say whether the post names a source.
 They do not verify claims or rate the source.
 
 ### How do I find rumors?

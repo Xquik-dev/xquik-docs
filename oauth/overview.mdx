@@ -120,8 +120,8 @@ The MCP endpoint also returns this metadata URL in its unauthenticated
 Bearer realm="OAuth", resource_metadata="https://xquik.com/.well-known/oauth-protected-resource/mcp", scope="mcp:tools"
 ```
 
-The ChatGPT app's `https://xquik.com/mcp?app=chatgpt` asks for `mcp:read`,
-and its `resource_metadata` URL, ending in `?app=chatgpt`, lists only that.
+The ChatGPT app's `https://xquik.com/mcp?app=chatgpt` asks for `mcp:read`. Its
+`resource_metadata` URL, ending in `?app=chatgpt`, lists only that.
 
 ## Client registration choices
 
@@ -151,7 +151,7 @@ response. Redirects fail. Keep the document within 5 KiB. Repeat the exact
 
 Clients without CIMD may register at `POST /api/oauth/register`. DCR supports
 public clients with `none` and confidential clients with
-`client_secret_post`. The manual flow below uses a DCR-issued UUID so each step
+`client_secret_post`. The manual flow below uses a DCR-issued UUID. So each step
 can show a concrete `client_id`.
 
 ## Manual implementation
@@ -297,7 +297,7 @@ can show a concrete `client_id`.
     These examples use `/mcp`. Direct REST clients use `https://xquik.com`.
     Send the same value in every authorization, token, and refresh request.
 
-    The user sees a login page (Google OAuth or email magic link) followed by a consent screen. After approval, Xquik redirects back to your `redirect_uri`.
+    The user sees a login page with Google OAuth or an email magic link. A consent screen follows. The user can set a monthly credit cap there. New connections have none by default. After approval, Xquik redirects back to your `redirect_uri`.
 
   </Step>
 
@@ -366,10 +366,10 @@ can show a concrete `client_id`.
 | Identity assertion | 1 hour     | Reuse it to mint agent access tokens            |
 
 A client that runs several processes may send 1 refresh token twice. Xquik
-answers a repeat within 45 seconds with the same pair it just issued, when it
-comes from the same `client_id` and IP address, or the same /64 for IPv6. A
-later repeat, or one from another client or address, revokes every token of
-that sign-in.
+answers a repeat within 45 seconds with the same pair it just issued. The repeat
+needs the same `client_id`. It also needs the same IP address, or the same /64
+for IPv6. A later repeat revokes every token of that sign-in. So does a repeat
+from another client or address.
 
 ## Claimed agent registration
 
@@ -492,7 +492,7 @@ curl -X POST https://xquik.com/api/oauth/revoke \
 | `client_id`       | Yes      | The client ID that owns the token                                           |
 | `token_type_hint` | No       | `access_token` or `refresh_token`. Helps the server locate the token faster |
 
-It returns `200` with an empty body, even for a revoked or invalid token (RFC 7009).
+It returns `200` with an empty body. That holds even for a revoked or invalid token (RFC 7009).
 
 Revoke a claimed agent with its `identity_assertion`, `client_id=urn:xquik:agent-auth`, and `token_type_hint=urn:ietf:params:oauth:token-type:id-jag`.
 This revokes the registration & every access token. Revoking 1 access token keeps the registration.
@@ -514,8 +514,8 @@ This revokes the registration & every access token. Revoking 1 access token keep
 
 Consent lists only what the requested scopes allow, and the token gets exactly
 those. A refresh keeps them. Asking for others gets `invalid_scope`. Without
-`mcp:tools`, MCP still lists `docs`, `search`, `execute` & `whoami`, and
-`search` & `execute` reach only those 8 reads.
+`mcp:tools`, MCP still lists `docs`, `search`, `execute` & `whoami`. In that
+case, `search` & `execute` reach only those 8 reads.
 
 ## Client registration
 
@@ -561,9 +561,10 @@ format.
 ```
 
 Authorization errors use 2 transports. Xquik returns an HTML error page when it
-cannot safely trust the client or redirect URI. After validating both, Xquik
-redirects errors to the registered callback with `error`, `error_description`,
-optional `state`, and `iss=https://xquik.com` query parameters.
+cannot safely trust the client. It also returns one when it cannot safely trust
+the redirect URI. After validating both, Xquik redirects errors to the
+registered callback. The redirect carries `error`, `error_description`, optional
+`state`, and `iss=https://xquik.com` query parameters.
 
 ### Authorization errors
 

@@ -57,7 +57,7 @@ describe("MCP 2026-07-28 documentation contract", (): void => {
     expect(TOOLS).toContain(
       "Native API tools apply the same limit to successful & failed responses.",
     );
-    expect(TOOLS).toContain("Oversized output returns its first page, never an error.");
+    expect(TOOLS).toContain("Oversized output returns a shortened copy, never an error.");
     expect(TOOLS).toContain("Output errors do not undo completed API actions or charges.");
   });
 

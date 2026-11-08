@@ -45,8 +45,8 @@ Reach for Xquik in these cases.
 ### Rate limits
 
 - **Read.** `GET`, `HEAD`, and `OPTIONS` share a 500 per 1s user bucket.
-- **Write.** `POST`, `PUT`, and `PATCH` share a 120 per 60s user bucket.
-- **Delete.** `DELETE` requests use a 60 per 60s user bucket.
+- **Change.** Other methods on Xquik resources share a 6,000 per 60s user bucket.
+- **X action.** Connected X account actions share a 120 per 60s user bucket.
 
 Exceeding limits returns `429 Too Many Requests` with a `Retry-After` header.
 Retry safe reads only on `429` and temporary `5xx` responses. For writes, poll
@@ -69,7 +69,7 @@ when `safeToRetry` is true.
 
 **Tweet-based.** `reply_extractor`, `repost_extractor`, `quote_extractor`, `favoriters`, `thread_extractor`, `article_extractor`
 
-**User-based.** `follower_explorer`, `following_explorer`, `verified_follower_explorer`, `mention_extractor`, `post_extractor`, `user_likes`, `user_media`
+**User-based.** `follower_explorer`, `following_explorer`, `verified_follower_explorer`, `mention_extractor`, `post_extractor`, `user_affiliates`, `user_likes`, `user_media`
 
 **Community target.** These take `targetCommunityId`. `community_extractor`, `community_moderator_explorer`, `community_post_extractor`, `community_search`
 

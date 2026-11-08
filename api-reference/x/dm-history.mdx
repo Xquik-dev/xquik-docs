@@ -81,8 +81,8 @@ import ConnectedAccountApiLinks from "/snippets/x-connected-account-api-links.md
 
     ```json
     {
-      "error": "dm_not_permitted",
-      "message": "X rejected the DM read. The connected account is not a participant in this conversation, or it needs reauthentication. Reconnect the account on the dashboard and try again."
+      "error": "api_key_paused",
+      "message": "This API key is paused. Resume it at dashboard.xquik.com/api-keys to use it again."
     }
     ```
 
@@ -151,7 +151,7 @@ import ConnectedAccountApiLinks from "/snippets/x-connected-account-api-links.md
 
 <Callout icon="coins" color="#5c3327">
 
-**1 credit per result returned** · [All plans](https://xquik.com/#pricing) from $0.00012/credit
+**1 credit per result returned** · [All plans](https://xquik.com) from $0.00012/credit
 
 </Callout>
 
@@ -195,14 +195,14 @@ Do not write full DM bodies to shared logs or public artifacts.
   </Card>
   <Card title="Send one media item" icon="image">
 
-    Use [`POST /x/media`](/api-reference/x-write/upload-media) first, then pass
-    the returned media ID as the only `media_ids` item on the DM send.
+    Use [`POST /x/media`](/api-reference/x-write/upload-media) first. Then pass
+    the returned media ID as the only `media_ids` item in the DM.
 
   </Card>
   <Card title="Resolve participant ID" icon="user-search">
 
     Use [`GET /x/users/{id}`](/api-reference/x/twitter-profile-lookup) when a workflow starts
-    from a handle and needs the numeric `userId` for history or send calls.
+    from a handle and needs the numeric `userId`. History or send calls use it.
 
   </Card>
 </CardGroup>
@@ -327,7 +327,7 @@ Use IDs, timestamps, media URLs, and job status in shared logs.
 
 <ParamField path="userId" type="string" required>
 
-The other person in the conversation. Send a user ID, a username with or without `@`, or a URL-encoded profile URL, such as `x.com/nasa`. See [path IDs](/api-reference/overview#path-ids).
+The other person in the conversation. Send a user ID or a username with or without `@`. A URL-encoded profile URL, such as `x.com/nasa`, works too. See [path IDs](/api-reference/overview#path-ids).
 
 </ParamField>
 
@@ -335,7 +335,7 @@ The other person in the conversation. Send a user ID, a username with or without
 
 <ParamField query="account" type="string" required>
 
-X handle (without the `@` prefix) of the connected X account used to read the conversation. DM history is participant-scoped. The account must belong to the conversation. Connect an account on the dashboard before calling this endpoint.
+X handle of the connected X account used to read the conversation. Send it without the `@` prefix. DM history is participant-scoped. The account must belong to the conversation. Connect an account on the dashboard before calling this endpoint.
 
 </ParamField>
 
@@ -535,36 +535,38 @@ Wait for `Retry-After`, then retry the same page.
 
 ## History sync handoff
 
-Use this endpoint when a CRM, support desk, warehouse job, or agent needs
-participant-scoped DM context before sending a reply.
+Use this endpoint when a caller needs
+participant-scoped DM context before sending a reply. The caller can be a
+CRM, support desk, warehouse job, or agent.
 
 <CardGroup cols={2}>
 
   <Card title="Deduplicate imported messages" icon="key-round">
 
-    Store `messages[].id` as the external DM ID for CRM notes, support tickets,
-    warehouse rows, or agent memory.
+    Store `messages[].id` as the external DM ID. Use it for CRM notes, support
+    tickets, warehouse rows, or agent memory.
 
   </Card>
 
   <Card title="Keep participants" icon="users">
 
     Store `messages[].senderId` and `messages[].receiverId` with the connected
-    `account` so each private conversation stays tied to the correct sender.
+    `account`. Do this so each private conversation stays tied to the correct
+    sender.
 
   </Card>
 
   <Card title="Resume older pages" icon="history">
 
-    Store `next_cursor` when `has_next_page` is true, then pass it as `cursor`
+    Store `next_cursor` when `has_next_page` is true. Then pass it as `cursor`
     on the next sync job.
 
   </Card>
 
   <Card title="Keep media context" icon="image">
 
-    Store optional `messages[].mediaUrl` with `messages[].createdAt` when a DM
-    includes an image, GIF, or video attachment.
+    Store optional `messages[].mediaUrl` with `messages[].createdAt` for a DM
+    image, GIF, or video attachment.
 
   </Card>
 </CardGroup>

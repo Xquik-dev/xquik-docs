@@ -26,7 +26,7 @@ This page provides TypeScript helpers you can copy for common Xquik API objects.
 
 Use these types in 1 of 3 ways.
 
-1. **Copy curated types.** Copy the "Response types", "Request types", and "Shared types" tabs into a single `xquik-types.ts` file
+1. **Copy curated types.** Copy the "Response types", "Request types", and "Shared types" tabs into one `xquik-types.ts` file
 2. **Copy individual interfaces.** Grab only the types you need such as `Tweet` or `EventList`
 3. **Generate full coverage from OpenAPI.** Use the [OpenAPI spec](https://docs.xquik.com/openapi.yaml) with tools like `openapi-typescript` to auto-generate types.
    ```bash
@@ -35,7 +35,7 @@ Use these types in 1 of 3 ways.
 
 <Tip>
 
-For production projects, option 3 or an official SDK is the safest source for complete coverage. For quick prototypes, copy only the interfaces you need.
+For complete coverage in production projects, option 3 or an official SDK is safest. For quick prototypes, copy only the interfaces you need.
 
 </Tip>
 
@@ -776,6 +776,7 @@ For production projects, option 3 or an official SDK is the safest source for co
       | "space_explorer"
       | "thread_extractor"
       | "tweet_search_extractor"
+      | "user_affiliates"
       | "user_likes"
       | "user_media"
       | "verified_follower_explorer";
@@ -850,7 +851,7 @@ API keys have 2 shapes. Only `POST /api/v1/api-keys` returns `ApiKeyCreated`, wh
 
 ### Monitors
 
-Account monitor endpoints return `Monitor`. The `xUserId` is the X (Twitter) user ID resolved from the `username` at creation time. Keyword monitor endpoints return `KeywordMonitor` with the normalized X search `query`. Both monitor types include `eventTypes`, `isActive`, `createdAt`, and `nextBillingAt` for active monitor billing. Post monitor endpoints return `PostMonitor` with the tracked post & its 6 metrics.
+Account monitor endpoints return `Monitor`. The `xUserId` is the X (Twitter) user ID resolved from the `username`. That resolution happens at creation time. Keyword monitor endpoints return `KeywordMonitor` with the normalized X search `query`. Both monitor types include `eventTypes`, `isActive`, `createdAt`, and `nextBillingAt` for active monitor billing. Post monitor endpoints return `PostMonitor` with the tracked post & its 6 metrics.
 
 ### Events
 
@@ -868,7 +869,7 @@ Like API keys, webhooks have 2 shapes. `WebhookCreated` includes the `secret` fi
 
 ### Deliveries
 
-Each `Delivery` tracks 1 event sent to 1 webhook endpoint. Status starts as `pending` and becomes `delivered` on success. A failed attempt sets `failed`. Xquik retries until your endpoint returns `2xx`. A paused or deleted webhook marks its waiting deliveries `exhausted`. `lastStatusCode` and `lastError` help diagnose delivery failures.
+Each `Delivery` tracks 1 event sent to 1 webhook endpoint. Status starts as `pending` and becomes `delivered` on success. A failed attempt sets `failed`. Xquik retries until your endpoint returns `2xx` or 7 days pass. Then the delivery shows `exhausted`. `lastStatusCode` and `lastError` help diagnose delivery failures.
 
 ### Webhook payload
 
@@ -882,7 +883,7 @@ The `WebhookPayload` type describes the JSON body your endpoint receives on each
 
 ### Draws
 
-`Draw` is the full draw object returned by `GET /api/v1/draws/{id}` with tweet metadata and engagement counts. `DrawListItem` is the compact shape returned in list responses. `DrawWinner` contains the position, username, tweet ID, and backup flag for each winner. Filter fields on `CreateDrawRequest` control which entries qualify for the draw.
+`Draw` is the full draw object returned by `GET /api/v1/draws/{id}`. It includes tweet metadata and engagement counts. `DrawListItem` is the compact shape returned in list responses. `DrawWinner` contains the position, username, tweet ID, and backup flag for each winner. Filter fields on `CreateDrawRequest` control which entries qualify for the draw.
 
 ### Extractions
 
@@ -941,8 +942,8 @@ Write operations (post, retweet, like, reply) return `XWriteResponse`. `success`
 
 ### Support tickets
 
-`SupportTicket` is the compact shape returned in list responses. `SupportTicketDetail` includes the full `messages` array. Each `SupportMessage` has a `sender` field indicating whether the message is from the user or support team. Status progresses from `open` through `in_progress` to `resolved` or `closed`.
+`SupportTicket` is the compact shape returned in list responses. `SupportTicketDetail` includes the full `messages` array. Each `SupportMessage` has a `sender` field. It shows whether the user or the support team sent the message. Status progresses from `open` through `in_progress` to `resolved` or `closed`.
 
 ### Request bodies
 
-All request body types use optional fields for update operations (PATCH) and required fields for creation (POST). The API validates request bodies and returns `400 invalid_input` for missing or malformed fields.
+All request body types use optional fields for update operations (PATCH). They use required fields for creation (POST). The API validates request bodies and returns `400 invalid_input` for missing or malformed fields.

@@ -96,8 +96,8 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
     ```json
     {
-      "error": "forbidden",
-      "message": "This API key calls paid X read routes only, such as GET /api/v1/x/tweets/search. Create a Full access key at dashboard.xquik.com/api-keys to call this route."
+      "error": "api_key_paused",
+      "message": "This API key is paused. Resume it at dashboard.xquik.com/api-keys to use it again."
     }
     ```
 
@@ -145,7 +145,7 @@ curl -X POST https://xquik.com/api/v1/styles \
   -H "x-api-key: xq_YOUR_KEY_HERE" \
   -H "Content-Type: application/json" \
   -d '{
-    "username": "xquik"
+    "username": "NASA"
   }' | jq
 ```
 
@@ -156,7 +156,7 @@ const response = await fetch("https://xquik.com/api/v1/styles", {
     "x-api-key": "xq_YOUR_KEY_HERE",
     "Content-Type": "application/json",
   },
-  body: JSON.stringify({ username: "xquik" }),
+  body: JSON.stringify({ username: "NASA" }),
 });
 
 const result = await response.json();
@@ -172,7 +172,7 @@ import requests
 response = requests.post(
     "https://xquik.com/api/v1/styles",
     headers={"x-api-key": "xq_YOUR_KEY_HERE"},
-    json={"username": "xquik"},
+    json={"username": "NASA"},
     timeout=30,
 )
 response.raise_for_status()
@@ -191,7 +191,7 @@ import (
 )
 
 func main() {
-    body, err := json.Marshal(map[string]string{"username": "xquik"})
+    body, err := json.Marshal(map[string]string{"username": "NASA"})
     if err != nil {
         panic(err)
     }
@@ -241,8 +241,8 @@ The HTTP status explains the cache action. Always inspect `fetchedAt` too.
 A `200` response does not guarantee a recent refresh. Compare `fetchedAt` with
 your freshness policy before using the samples.
 
-The route has no `force` parameter. Repeating POST while the profile is fresh
-returns the same cache without another X request.
+The route has no `force` parameter. Repeating POST on a fresh profile returns
+the same cache without another X request.
 
 ## Send a normalized X username
 
@@ -251,7 +251,7 @@ lowercases the value before lookup and storage.
 
 ```json
 {
-  "username": "xquik"
+  "username": "NASA"
 }
 ```
 
@@ -300,15 +300,15 @@ Tweet or media endpoint when your workflow requires images, videos, or GIFs.
 
 ```json
 {
-  "xUsername": "xquik",
+  "xUsername": "nasa",
   "tweetCount": 2,
-  "isOwnAccount": true,
+  "isOwnAccount": false,
   "fetchedAt": "2026-08-02T12:00:00.000Z",
   "tweets": [
     {
       "id": "1950882898740914261",
       "text": "Export tweet replies to JSON or CSV.",
-      "authorUsername": "xquik",
+      "authorUsername": "NASA",
       "createdAt": "2026-08-02T11:30:00.000Z"
     }
   ]
@@ -351,19 +351,19 @@ phrasing without authorization.
 You can cache recent public tweets from another username. The resulting
 profile belongs only to the authenticated Xquik account.
 
-This route does not expose drafts, private posts, private analytics, followers,
-following, profile visits, or direct messages.
+This route does not expose drafts, private posts, or private analytics. It also
+does not expose followers, following, profile visits, or direct messages.
 
 ## Budget a style refresh
 
 Cached `200` responses are free. A `201` refresh costs 1 credit per Tweet
 returned and stored.
 
-Use `tweetCount` to reconcile the refresh. The endpoint does not accept a limit
+Use `tweetCount` to reconcile the refresh. The endpoint accepts no limit
 parameter, date range, pagination cursor, or requested sample count.
 
-When a stale cache exists without enough available credits, Xquik returns that
-cache with `200`. It does not delete the existing writing samples.
+When a stale cache exists without enough credits, Xquik returns that cache with
+`200`. It does not delete the existing writing samples.
 
 ## Handle style cache errors
 
@@ -457,8 +457,8 @@ Authentication failed. Replace the missing or invalid credential.
 ```
 
 No cache exists, and credits cannot cover a refresh. Top up through the
-[billing page](https://dashboard.xquik.com/en/account?tab=subscription), or
-save approved tweet examples with [Save Custom Style](/api-reference/styles/save).
+[billing page](https://dashboard.xquik.com/en/account?tab=subscription). Or save
+approved tweet examples with [Save Custom Style](/api-reference/styles/save).
 
 ### 429 Rate limited
 

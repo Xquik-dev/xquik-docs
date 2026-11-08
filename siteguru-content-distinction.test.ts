@@ -56,7 +56,7 @@ const CONTENT_REQUIREMENTS: readonly ContentRequirement[] = [
     file: "api-reference/monitors/list.mdx",
     phrases: [
       "Inventory every Twitter account monitor",
-      "up to 200 account monitors in one response",
+      "up to 10,000 account monitors in one response",
       "Reconcile an account monitor inventory",
       "Assign account monitor ownership",
       "Prepare a bulk account monitor cleanup",
@@ -86,8 +86,8 @@ const CONTENT_REQUIREMENTS: readonly ContentRequirement[] = [
   {
     file: "api-reference/x-write/create-community.mdx",
     phrases: [
-      "Build a reviewable community brief",
-      "Validate the new community",
+      "x_community_creation_closed",
+      "Community creation questions",
       "Handle creation failures",
     ],
   },
@@ -203,24 +203,8 @@ const CONTENT_REQUIREMENTS: readonly ContentRequirement[] = [
     phrases: ["Confirm like removal"],
   },
   {
-    file: "alternatives/antwork.mdx",
-    phrases: ["Antwork trial evidence"],
-  },
-  {
-    file: "alternatives/black-magic.mdx",
-    phrases: ["Black Magic trial evidence"],
-  },
-  {
     file: "alternatives/hypefury.mdx",
     phrases: ["Hypefury trial evidence"],
-  },
-  {
-    file: "alternatives/postwise.mdx",
-    phrases: ["Postwise creator calendar trial", "Test the Postwise-to-Xquik handoff"],
-  },
-  {
-    file: "alternatives/postproxy.mdx",
-    phrases: ["Postproxy webhook & quota trial"],
   },
 ] as const;
 

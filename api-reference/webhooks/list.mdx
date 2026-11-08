@@ -1,7 +1,7 @@
 ---
 title: "List Twitter webhook endpoints & event filters"
 sidebarTitle: "List webhooks"
-description: "List up to 200 webhook endpoints with URLs, event filters, active states, delivery status, failure counts, and creation times. The signing secret never appears."
+description: "List up to 10,000 webhook endpoints with URLs, event filters, active states, delivery status, failure counts & creation times. The signing secret never appears."
 api: "GET /webhooks"
 keywords: ["webhook", "list", "all webhooks"]
 ---
@@ -51,8 +51,8 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
     ```json
     {
-      "error": "forbidden",
-      "message": "This API key calls paid X read routes only, such as GET /api/v1/x/tweets/search. Create a Full access key at dashboard.xquik.com/api-keys to call this route."
+      "error": "api_key_paused",
+      "message": "This API key is paused. Resume it at dashboard.xquik.com/api-keys to use it again."
     }
     ```
 
@@ -250,10 +250,10 @@ func main() {
 
 </CodeGroup>
 
-These examples build one row per webhook. They do not print the full
-response page. Split the rows by `is_active` and `delivery_status`, then store
-update, delete, test, resume, and delivery-log endpoints with each receiver.
-List responses never include the signing secret. Keep the one-time `secret` from
+These examples build one row per webhook. They do not print the full response
+page. Split the rows by `is_active` and `delivery_status`. Then store update,
+delete, test, resume, and delivery-log endpoints with each receiver. List
+responses never include the signing secret. Keep the one-time `secret` from
 [Create Webhook](/api-reference/webhooks/create) in your secret manager.
 
 ## Headers
@@ -267,7 +267,7 @@ Your API key. Session cookie authentication is also supported.
 ## Query parameters
 
 <ParamField query="limit" type="integer">
-  Maximum items per page, from 1 to 200. Default 200.
+  Maximum items per page, from 1 to 10,000. Default 200.
 </ParamField>
 <ParamField query="cursor" type="string">
   `nextCursor` from the previous page. The `after` alias also works. Offset pagination is not
@@ -280,7 +280,7 @@ Your API key. Session cookie authentication is also supported.
 
 <ResponseField name="webhooks" type="array">
 
-List of webhook objects for your account. Returns up to 200 webhooks per page.
+List of webhook objects for your account. Returns up to 10,000 webhooks per page.
 **Webhook object fields.**
 
 <ResponseField name="id" type="string">
@@ -396,8 +396,8 @@ Too many requests. Wait for the `Retry-After` header before retrying.
 
 ## Inventory handoff
 
-Use this endpoint when an ops job, CRM integration, alert worker, or agent needs
-to check which signed webhook endpoints the account has configured.
+This endpoint shows which signed webhook endpoints the account has configured.
+Use it for an ops job, CRM integration, alert worker, or agent.
 
 | Webhook inventory column | Response source                  | Reconciliation rule                             |
 | ------------------------ | -------------------------------- | ----------------------------------------------- |
@@ -422,14 +422,15 @@ to check which signed webhook endpoints the account has configured.
   <Card title="Delivery target" icon="link">
 
     Store `webhooks[].url` so configuration reviews can detect stale receiver
-    endpoints before production monitor events fail.
+    endpoints before production events fail.
 
   </Card>
 
   <Card title="Event filter" icon="funnel">
 
-    Store `webhooks[].eventTypes` and compare it with monitor event types before
-    expecting `tweet.new`, `tweet.quote`, `tweet.reply`, or `tweet.retweet`.
+    Store `webhooks[].eventTypes` and compare it with monitor event types. Do
+    this before expecting `tweet.new`, `tweet.quote`, `tweet.reply`, or
+    `tweet.retweet`.
 
   </Card>
 
@@ -459,11 +460,11 @@ to check which signed webhook endpoints the account has configured.
 
   <Card title="Change links" icon="route">
 
-    For each row, link active receivers to
-    [Update Webhook](/api-reference/webhooks/update), [Test Webhook](/api-reference/webhooks/test),
-    [Resume Webhook](/api-reference/webhooks/resume), and
-    [List Deliveries](/api-reference/webhooks/deliveries). Link stale receivers
-    to [Delete Webhook](/api-reference/webhooks/delete).
+    For each row, link active receivers to [Update Webhook](/api-reference/webhooks/update) and
+    [Test Webhook](/api-reference/webhooks/test). Also link them to
+    [Resume Webhook](/api-reference/webhooks/resume) and
+    [List Deliveries](/api-reference/webhooks/deliveries). Link stale receivers to
+    [Delete Webhook](/api-reference/webhooks/delete).
 
   </Card>
 
@@ -477,8 +478,8 @@ to check which signed webhook endpoints the account has configured.
 
   <Card title="Delivery audit" icon="activity">
 
-    Use the per-webhook deliveries endpoint to store `streamEventId`, `status`,
-    `attempts`, `lastStatusCode`, `lastError`, `createdAt`, and `deliveredAt`.
+    Store `streamEventId`, `status`, `attempts`, `lastStatusCode`, `lastError`,
+    `createdAt`, and `deliveredAt` from the per-webhook deliveries endpoint.
 
   </Card>
 
@@ -507,8 +508,16 @@ to check which signed webhook endpoints the account has configured.
 
 <Note>
 
-This endpoint accepts 2 auth methods. Send an API key in the `x-api-key` header or a session cookie from the dashboard.
+This endpoint accepts 2 auth methods. Send an API key in the `x-api-key` header. Or send a session cookie from the dashboard.
 
-**Next steps.** [Create Webhook](/api-reference/webhooks/create) &middot; [Update Webhook](/api-reference/webhooks/update) &middot; [Test Webhook](/api-reference/webhooks/test) &middot; [Resume Webhook](/api-reference/webhooks/resume) &middot; [List Deliveries](/api-reference/webhooks/deliveries) &middot; [Get Event](/api-reference/events/get) &middot; [Delete Webhook](/api-reference/webhooks/delete)
+**Next steps.**
+
+- [Create Webhook](/api-reference/webhooks/create)
+- [Update Webhook](/api-reference/webhooks/update)
+- [Test Webhook](/api-reference/webhooks/test)
+- [Resume Webhook](/api-reference/webhooks/resume)
+- [List Deliveries](/api-reference/webhooks/deliveries)
+- [Get Event](/api-reference/events/get)
+- [Delete Webhook](/api-reference/webhooks/delete)
 
 </Note>

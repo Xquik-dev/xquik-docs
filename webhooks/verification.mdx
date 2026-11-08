@@ -16,9 +16,9 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Xquik signs every webhook delivery with HMAC-SHA256 over a string built from a
-timestamp, nonce, and the raw body. Verify the signature and reject
-stale or replayed requests before processing events.
+Xquik signs every webhook delivery with HMAC-SHA256. It signs a string built
+from a timestamp, nonce, and the raw body. Verify the signature and reject stale
+or replayed requests before processing events.
 
 | Verification checkpoint | Exact source           | Reject when                                                  |
 | ----------------------- | ---------------------- | ------------------------------------------------------------ |
@@ -76,13 +76,13 @@ handler routing and logs.
 3. Your server recomputes the signature with the same secret over the raw body.
 4. Reject the request if the signature does not match in constant time.
 5. Reject the request if the timestamp is older than 5 minutes (clock-skew tolerant).
-6. Reject the request if the nonce was already seen in the last 5 minutes (replay protection).
+6. Reject the request if the nonce was already seen in the last 5 minutes. This check is replay protection.
 
 ## Receiver hardening handoff
 
-Use this handoff when you promote a webhook receiver from a signed test
-request to production monitor events. It keeps signing, replay protection,
-idempotency, and incident routing visible in one review record.
+Use this handoff when you promote a webhook receiver. This handoff covers the step from a
+signed test request to production monitor events. It keeps signing, replay
+protection, idempotency, and incident routing visible in one review record.
 
 ```json
 {
@@ -138,7 +138,8 @@ idempotency, and incident routing visible in one review record.
   <Card title="Incident fields" icon="activity">
 
     Send `status`, `attempts`, `lastStatusCode`, `lastError`, `createdAt`, and
-    `deliveredAt` from the deliveries API to your alerting or support queue.
+    `deliveredAt` from the deliveries API. Send them to your alerting or support
+    queue.
 
   </Card>
 </CardGroup>
@@ -361,7 +362,7 @@ func webhookHandler(w http.ResponseWriter, r *http.Request) {
 
 ## Idempotency
 
-Xquik retries failed webhook deliveries. Your endpoint may receive the same event multiple times. Each retry sends the first attempt's exact body. Only the signature headers change. Production monitor deliveries include `deliveryId` and `streamEventId`. Use `deliveryId` as the webhook delivery idempotency key. Use `streamEventId` when your system should process one monitor event only once across webhook retries or endpoint changes. Do not hash the raw request body when `deliveryId` is available.
+Xquik retries failed webhook deliveries. Your endpoint may receive the same event multiple times. Each retry sends the first attempt's exact body. Only the signature headers change. Production monitor deliveries include `deliveryId` and `streamEventId`. Use `deliveryId` as the webhook delivery idempotency key. Use `streamEventId` when your system should process one monitor event only once. It applies across webhook retries or endpoint changes. Do not hash the raw request body when `deliveryId` is available.
 
 `webhook.test` deliveries include `eventType`, `data`, and `timestamp`. They omit monitor idempotency fields. Use them to verify signatures and receiver reachability. Skip production event deduplication for the test request.
 
@@ -398,10 +399,10 @@ work.
 ```
 
 Keep raw request bytes only for signature verification. Store the nonce cache
-marker, delivery key, event key, join route, and processing status in the
-shared table or queue. Return `2xx` only after verification and a durable queue
-write. Move slow enrichment, exports, CRM sync, or alerting to an async worker.
-The receiver can then finish within the 10-second delivery timeout.
+marker, delivery key, event key, join route, and processing status. Keep them in
+the shared table or queue. Return `2xx` only after verification and a durable
+queue write. Move slow enrichment, exports, CRM sync, or alerting to an async
+worker. The receiver can then finish within the 10-second delivery timeout.
 
 <CodeGroup>
 
@@ -545,6 +546,6 @@ func processSignedWebhook(w http.ResponseWriter, r *http.Request) {
 
 <Warning>
 
-The in-memory examples above work for single-process servers. In production, use a persistent store such as a database or Redis to track processed delivery IDs and event IDs across restarts and multiple instances.
+The in-memory examples above work for single-process servers. In production, use a persistent store such as a database or Redis. The store tracks processed delivery IDs and event IDs across restarts and multiple instances.
 
 </Warning>

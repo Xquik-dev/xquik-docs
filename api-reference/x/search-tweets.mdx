@@ -19,6 +19,7 @@ keywords:
   ]
 ---
 
+import PostFilterParams from "/snippets/post-filter-params.mdx";
 import LlmsDirective from "/snippets/llms-directive.mdx";
 import RetweetTimestamps from "/snippets/retweet-timestamps.mdx";
 import AutomaticCoveragePagination from "/snippets/automatic-coverage-pagination.mdx";
@@ -90,8 +91,8 @@ import FieldSelectionParams from "/snippets/field-selection-params.mdx";
 
     ```json
     {
-      "error": "x_account_protected",
-      "message": "Account is protected. Choose a public account."
+      "error": "api_key_paused",
+      "message": "This API key is paused. Resume it at dashboard.xquik.com/api-keys to use it again."
     }
     ```
 
@@ -185,7 +186,7 @@ import FieldSelectionParams from "/snippets/field-selection-params.mdx";
 
 Requested counts are upper bounds for paid calls. When credits can't cover the
 full page or ID list, Xquik returns fewer results. While `has_next_page` is
-`true`, send `next_cursor` as `cursor` with the same query, filters,
+`true`, send `next_cursor` as `cursor`. Keep the same query, filters,
 `queryType` & `limit`. With 0 affordable results, it returns
 `402 insufficient_credits`.
 
@@ -193,8 +194,8 @@ full page or ID list, Xquik returns fewer results. While `has_next_page` is
 
 Search Tweets accepts keywords, hashtags,
 operators, dates, authors, media, and engagement filters. For exact lookup,
-send a Tweet ID or X status URL in `q` with no time params. To search one
-user's tweets as a plain timeline, call
+send a Tweet ID or X status URL in `q`. Send it with no time params. To
+search one user's tweets as a plain timeline, call
 [Search user tweets](/api-reference/x/user-tweets)
 (`GET /x/users/{id}/tweets`). Date params limit results to that window, as in
 `q=from:username&sinceTime=2026-05-01&untilTime=2026-05-02`.
@@ -202,7 +203,7 @@ Cursor requests return an empty final page for exact IDs.
 
 <Callout icon="coins" color="#5c3327">
 
-**1 credit per tweet returned** · [All plans](https://xquik.com/#pricing) from $0.00012/credit
+**1 credit per tweet returned** · [All plans](https://xquik.com) from $0.00012/credit
 
 </Callout>
 
@@ -341,7 +342,7 @@ several authors are unaffected.
   </Card>
   <Card title="Tweet keys" icon="key-round">
 
-    Store `tweets[].id` as the stable tweet key for deduplication, CRM notes, queues, and follow-up lookups.
+    Store `tweets[].id` as the stable tweet key. Use it for deduplication, CRM notes, queues, and follow-up lookups.
 
   </Card>
   <Card title="Search context" icon="message-square-text">
@@ -380,17 +381,59 @@ several authors are unaffected.
   </Card>
 </CardGroup>
 
-Tweet search costs 1 credit per tweet returned. Retry `429` with the `Retry-After` header. Retry `502` after a short backoff. Change the query after `424 search_unavailable`.
+Tweet search costs 1 credit per tweet returned. With `topic`, each kept post costs 2 credits. A dropped post costs nothing. Retry `429` with the `Retry-After` header. Retry `502` after a short backoff. Change the query after `424 search_unavailable`.
+
+## Keep only posts about a topic
+
+A word like rust or jaguar matches many meanings. Send `topic` to name the one you want.
+AI-powered analysis asks `Is this post about <topic>?` of each post the search reads.
+Posts scoring 0.5 or more come back, each with its `topicScore`.
+The check reads the post text & photos X doesn't mark sensitive.
+
+```bash
+curl -G "https://xquik.com/api/v1/x/tweets/search" \
+  -H "x-api-key: $XQUIK_API_KEY" \
+  --data-urlencode "q=rust lang:en -filter:replies" \
+  --data-urlencode "topic=the Rust programming language" \
+  --data-urlencode "limit=30"
+```
+
+```json
+{
+  "tweets": [
+    {
+      "id": "2118059163251323266",
+      "text": "Rust is just a cool language",
+      "topicScore": 0.91
+    }
+  ],
+  "has_next_page": true,
+  "next_cursor": "DAADDAABCgABF...",
+  "topicFilter": {
+    "topic": "the Rust programming language",
+    "question": "Is this post about the Rust programming language?",
+    "cutoff": 0.5,
+    "checked": 30,
+    "kept": 14,
+    "unchecked": []
+  }
+}
+```
+
+- Each kept post costs 2 credits, the AI analysis price, instead of 1. A post the filter drops costs nothing.
+- `limit` counts checked posts. Only kept posts come back.
+- `unchecked` lists posts the check couldn't answer. They cost nothing & stay out.
+- Follow `next_cursor` with the same `topic` to check the next posts.
 
 ## Matched text ranges
 
 Each row says where its `text` matches the search, in `textHighlights`. Use the
-ranges to bold the matched words or to cut a snippet around them.
+ranges to bold the matched words or cut a snippet around them.
 
 - `startIndex` is the first code point of a match. `endIndex` is the first one after it.
 - Offsets count code points of the row's `text`, as `displayTextRange` does.
 - JavaScript counts some characters, such as most emoji, as 2 units. Split the text by code point first.
-- The list is empty when X marks nothing, such as for a `from:` search without words.
+- The list is empty when X marks nothing. One case is a `from:` search without words.
 - X marks matches only in a post's first 280 characters. Later matches in a long post get no range.
 
 ```javascript
@@ -467,11 +510,23 @@ operators. Keep the same filters on every cursor request.
 
 ### Search-only operators
 
-These query parameters apply only to `GET /x/tweets/search` because they map to
-search operators before the request runs. Use `advancedQuery` only when you
-already have trusted raw X search operator syntax to append.
+These query parameters apply only to `GET /x/tweets/search`. That is because
+they map to search operators before the request runs. Use `advancedQuery` only
+when you have trusted raw X search operator syntax to append.
 
 <TweetSearchOnlyFilterParams />
+
+<ParamField query="textOnlyTerms" type="string">
+
+Keep a post only when 1 of these words is in its text.
+Links, cards and quoted posts count as text. The author's name and
+username don't count. Quote a phrase to match it whole.
+
+</ParamField>
+
+### Keep posts by topic or photo
+
+<PostFilterParams />
 
 ### Choose fields
 
@@ -672,6 +727,6 @@ fix the search. The normalized v1 contract also returns 424 `x_api_unavailable`.
 
 <Note>
 
-**Next steps.** [Tweet Search Export Workflow](/guides/tweet-scraper-csv-export) when you need saved CSV, JSON, or XLSX files, [Get Tweet](/api-reference/x/get-tweet) to fetch full details for a specific tweet, or [Get User](/api-reference/x/twitter-profile-lookup) to look up an author profile.
+**Next steps.** [Tweet Search Export Workflow](/guides/tweet-scraper-csv-export) when you need saved CSV, JSON, or XLSX files. [Get Tweet](/api-reference/x/get-tweet) to fetch full details for a specific tweet. [Get User](/api-reference/x/twitter-profile-lookup) to look up an author profile.
 
 </Note>

@@ -95,6 +95,17 @@ import FieldSelectionParams from "/snippets/field-selection-params.mdx";
 
   </Tab>
 
+  <Tab title="403" id="response-x-get-article-403">
+
+    ```json
+    {
+      "error": "api_key_paused",
+      "message": "This API key is paused. Resume it at dashboard.xquik.com/api-keys to use it again."
+    }
+    ```
+
+  </Tab>
+
   <Tab title="404" id="response-x-get-article-404">
 
     ```json
@@ -158,7 +169,9 @@ import FieldSelectionParams from "/snippets/field-selection-params.mdx";
 
 <Callout icon="coins" color="#5c3327">
 
-**5 credits per call** · [All plans](https://xquik.com/#pricing) from $0.00012/credit · Direct [MPP](/mpp/machine-payments-protocol) at USD 0.00075 per call
+**5 credits per call** · [All plans](https://xquik.com) from $0.00012/credit
+
+Direct [MPP](/mpp/machine-payments-protocol) at USD 0.00075 per call
 
 </Callout>
 
@@ -260,24 +273,23 @@ print(json.dumps(handoff))
 
 The examples build article rows, not raw lookup dumps.
 Use `GET /api/v1/x/articles/{tweetId}` when a workflow needs one long-form post
-body plus article metadata. Store `tweet_id`,
-`article_title`, `preview_text`, `author_id`, `author_username`, `author_name`,
-`author_profile_picture`, `created_at`, `cover_image_url`, `body_text`, and
-`body_markdown` with the record you pass on. Store `block_count`, `block_types`, `formatted_blocks`,
-and `media_urls` when your archive, article index, or agent handoff needs
-block-level completeness and formatting checks.
+body plus article metadata. Store `tweet_id`, `article_title`, `preview_text`, `author_id`,
+`author_username`, `author_name`, `author_profile_picture`, `created_at`, `cover_image_url`,
+`body_text`, and `body_markdown`. Keep these fields with the record you pass on. Your
+archive, article index, or agent handoff may need block-level completeness and formatting checks. If
+so, store `block_count`, `block_types`, `formatted_blocks`, and `media_urls`.
 
 ## Find candidate articles
 
-Use this endpoint after you have the numeric wrapper tweet ID for an X Article.
-When a workflow starts from a mixed set of tweets, search first, store candidate
-tweet IDs, then try the article lookup once per candidate.
+This endpoint needs the numeric wrapper tweet ID of an X Article.
+When a workflow starts from a mixed set of tweets, search first. Then store
+candidate tweet IDs and try the article lookup once per candidate.
 
 <CardGroup cols={2}>
 
   <Card title="Search first" icon="search">
 
-    Use [`Search tweets`](/api-reference/x/search-tweets) to find candidate
+    [`Search tweets`](/api-reference/x/search-tweets) finds candidate
     wrapper tweets by author, keyword, URL, or visible tweet text.
 
   </Card>
@@ -289,14 +301,14 @@ tweet IDs, then try the article lookup once per candidate.
   </Card>
   <Card title="Fallback route" icon="git-branch">
 
-    If the response is `article_not_found`, store the terminal result and switch
+    If you get `article_not_found`, store the terminal result and switch
     to [`Get tweet`](/api-reference/x/get-tweet) or
     [`Get tweet thread`](/api-reference/x/tweet-thread).
 
   </Card>
   <Card title="Saved export" icon="file-spreadsheet">
 
-    Use `article_extractor` when the workflow needs an extraction job, estimate,
+    Use `article_extractor` for an extraction job, estimate,
     or CSV, JSON, or XLSX export.
 
   </Card>
@@ -317,9 +329,10 @@ tweet IDs, then try the article lookup once per candidate.
 
 ## Direct article handoff
 
-Use `GET /api/v1/x/articles/{tweetId}` when you have the numeric tweet ID for an
-X Article wrapper tweet and need the article body. Use the final status ID from
-an X Article URL. A normal tweet ID can be valid and still return
+Use `GET /api/v1/x/articles/{tweetId}` when you need the article body and have
+its tweet ID. That ID is the numeric tweet ID of an
+X Article wrapper tweet. Use the final status ID from
+an X Article URL. A normal tweet ID can be valid. It can still return
 `404 article_not_found` when it is not an X Article.
 
 <CardGroup cols={2}>
@@ -332,7 +345,7 @@ an X Article URL. A normal tweet ID can be valid and still return
   </Card>
   <Card title="Body blocks" icon="list-tree">
 
-    Store `article.contents[]` when you need headings, lists, quotes, media,
+    Store `article.contents[]` for headings, lists, quotes, media,
     dividers, code blocks, and inline styles.
 
   </Card>
@@ -355,7 +368,7 @@ an X Article URL. A normal tweet ID can be valid and still return
   </Card>
   <Card title="Saved exports" icon="file-spreadsheet">
 
-    Use `article_extractor` when you need a saved extraction job or CSV, JSON,
+    Use `article_extractor` for a saved extraction job or CSV, JSON,
     or XLSX export.
 
   </Card>
@@ -364,8 +377,9 @@ an X Article URL. A normal tweet ID can be valid and still return
 ## Store an X article archive
 
 Keep the wrapper Tweet ID, article fields, structured content blocks,
-author, cover image, and collection time. Keep `article.contents[]` when the
-archive must reconstruct headings, lists, quotes, media, dividers, or code.
+and author. Keep the cover image and collection time. Keep
+`article.contents[]` when the archive must reconstruct headings, lists,
+quotes, media, dividers, or code.
 
 | Article archive column | Response source                   | Archive rule                                                |
 | ---------------------- | --------------------------------- | ----------------------------------------------------------- |
@@ -391,8 +405,8 @@ archive must reconstruct headings, lists, quotes, media, dividers, or code.
 | Code          | Code text           | Language and formatting metadata   |
 | Divider       | No body text        | Block position in the article      |
 
-Direct article reads cost 5 credits per successful call. For MPP callers, Xquik
-bills this endpoint as a fixed charge at USD 0.00075 per call.
+Direct article reads cost 5 credits per successful call. For MPP callers,
+this endpoint bills a fixed charge of USD 0.00075 per call.
 
 ## Path parameters
 
@@ -409,8 +423,8 @@ A post without an Article returns `article_not_found`.
 
   <Card title="X article body" icon="file-text">
 
-    Use `GET /x/articles/{tweetId}` for the title, body blocks, cover image,
-    metrics, and author fields of one X Article.
+    Use `GET /x/articles/{tweetId}` for one X Article. It returns the title,
+    body blocks, cover image, metrics, and author fields.
 
   </Card>
   <Card title="Single tweet" icon="message-square">
@@ -434,7 +448,7 @@ A post without an Article returns `article_not_found`.
   <Card title="Saved exports" icon="file-spreadsheet">
 
     Use [`Create extraction`](/api-reference/extractions/create) with
-    `toolType=article_extractor` when you need a saved job or CSV, JSON, or XLSX
+    `toolType=article_extractor` for a saved job or CSV, JSON, or XLSX
     export.
 
   </Card>
@@ -518,6 +532,7 @@ The article data.
     <ResponseField name="quoteCount" type="number">Quote tweet count.</ResponseField>
     <ResponseField name="bookmarkCount" type="number">Accounts that bookmarked the Article's post. 0 or more.</ResponseField>
     <ResponseField name="viewCount" type="number">View count.</ResponseField>
+    <ResponseField name="unknownCounts" type="string[]">Each count X left out of the Article's post, which reads 0.</ResponseField>
 
 </ResponseField>
 <ResponseField name="author" type="object">

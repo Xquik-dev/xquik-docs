@@ -107,10 +107,9 @@ request then sends it as `x-api-key`. See
 
 ## Auth methods by endpoint
 
-The cards below list the auth method each endpoint accepts. Most
-routes accept an API key or dashboard session cookie. Routes that manage
-credentials, saved-card charges, or X account sign-ins accept only the
-dashboard session.
+The cards below list the auth method each endpoint accepts. Most routes accept
+an API key or dashboard session cookie. Routes that manage credentials,
+saved-card charges, or X account sign-ins accept only dashboard sessions.
 
 <CardGroup cols={2}>
 
@@ -121,7 +120,7 @@ dashboard session.
   </Card>
   <Card title="Session cookie only" icon="shield">
 
-    `POST /api-keys`, `GET /api-keys`, `PATCH /api-keys/{id}`, `DELETE /api-keys/{id}`, `POST /api-keys/bulk-revoke`, and `POST /credits/quick-topup` require a dashboard session cookie.
+    `POST /api-keys`, `GET /api-keys`, `PATCH /api-keys`, `PATCH /api-keys/{id}`, `DELETE /api-keys/{id}`, `POST /api-keys/bulk-revoke`, and `POST /credits/quick-topup` require a dashboard session cookie.
 
     X account sign-in and removal need it too. These are `POST /x/accounts`, `GET /x/account-connection-attempts/{id}`, `POST /x/account-connection-challenges/{id}/submit`, `POST /x/accounts/{id}/reauth`, `POST /x/accounts/bulk-retry`, and `DELETE /x/accounts/{id}`.
 
@@ -130,7 +129,7 @@ dashboard session.
   </Card>
   <Card title="Account and billing" icon="user-cog">
 
-    `PATCH /account`, `PUT /account/x-identity`, `GET /credits`, `POST /credits/topup`, and `POST /subscribe` accept either `x-api-key` or a dashboard session cookie. For an account with a plan, `POST /subscribe` returns the dashboard billing page, where the user signs in.
+    `PATCH /account`, `PUT /account/x-identity`, `GET /credits`, `POST /credits/topup`, and `POST /subscribe` accept either `x-api-key` or a dashboard session cookie. For an account with a plan, `POST /subscribe` returns the dashboard billing page. The user signs in there.
 
   </Card>
   <Card title="Events and webhooks" icon="radio">
@@ -157,10 +156,11 @@ dashboard session.
 
 <Info>
 
-API key management, saved-card top-ups, and X account sign-in and removal
-require a same-origin dashboard session. API keys and OAuth bearer tokens get
-`403 session_required` there. A leaked key reads and acts on its account's
-data, but it never reaches credentials, saved cards, or X passwords.
+Some actions require a same-origin dashboard session. They are API key
+management, saved-card top-ups, and X account sign-in and removal. API keys and
+OAuth bearer tokens get `403 session_required` there. A leaked key reads and
+acts on its account's data. But it never reaches credentials, saved cards, or X
+passwords.
 
 </Info>
 
@@ -173,8 +173,8 @@ See [OAuth 2.1](/oauth/overview) for current client compatibility and setup.
 
 ## Accountless guest keys
 
-After the user confirms USD 10 to 250, `POST /api/v1/guest-wallets` returns
-a one-use hosted checkout, a guest key, and a status URL without charging.
+After the user confirms USD 10 to 250, `POST /api/v1/guest-wallets` makes no
+charge. It returns a one-use hosted checkout, a guest key, and a status URL.
 
 The guest key stays inactive for paid reads until Xquik verifies payment. It can authenticate `GET /api/v1/guest-wallets/status` while pending. Once active, it can call exactly the [eligible paid-read routes](/guides/guest-wallets#eligible-paid-read-routes).
 
@@ -260,10 +260,69 @@ The creation response returns the full key (`fullKey`) once. Store it in a secre
 
 ### Limit what a key can call
 
-Create a key with `scope` set to `paid_reads` when a workload only reads X data.
-It calls paid X read routes only. Other routes answer it with `403 forbidden`.
+Give each key only the scopes its workload needs.
+Pick them in the key's settings on the [API keys page](https://dashboard.xquik.com/en/api-keys).
+The API takes them as `scopes` when you create or update a key.
+
+| Scope      | What the key can call                                                       |
+| ---------- | --------------------------------------------------------------------------- |
+| `read`     | Paid X reads, like tweet search, profiles & tweets. Every key holds it.     |
+| `write`    | Posts, likes, reposts, follows, DMs, media, profile edits & communities.    |
+| `monitors` | Monitors, keyword & post monitors, webhooks & events.                       |
+| `exports`  | Extractions, draws & their exports.                                         |
+| `billing`  | Your credit balance & top-up status. Read only.                             |
+| `full`     | Every route an API key can use, including the routes no other scope covers. |
+
+A key without `full` holds `read` plus any of `write`, `monitors`, `exports` & `billing`.
+`scope` still works. `paid_reads` saves a read only key, and `full` saves Full access.
 Set `expiresInDays` from 1 to 365 so the key stops working on its own.
-[Update API key](/api-reference/api-keys/update) changes the name or scope later.
+[Update API key](/api-reference/api-keys/update) changes the name or scopes later.
+
+### Restrict a key to your IPs
+
+Give a key an IP allowlist so only your servers can use it.
+List up to 20 IPs or CIDR ranges, like `203.0.113.4` or `198.51.100.0/24`.
+Both IPv4 & IPv6 work.
+Edit the list in the key's settings on the [API keys page](https://dashboard.xquik.com/en/api-keys).
+The API takes it as `allowedIps` when you create or update a key.
+Calls from any other IP get `403 ip_not_allowed`.
+An empty list allows any IP, so keys without a list work as before.
+Xquik saves each range in its standard form, so `198.51.100.7/24` becomes `198.51.100.0/24`.
+The API keys page shows the IP that last called each key.
+Search an IP there to find the keys that list it.
+The search also finds keys that IP used in the last 30 days.
+
+### Pause a key
+
+Pause a key on the [API keys page](https://dashboard.xquik.com/en/api-keys) to stop it for a while.
+Select several keys to pause or resume them together.
+Pausing never deletes the key. The key keeps its settings.
+Resume works at once, so the next request goes through.
+You can't pause or resume a revoked or expired key.
+[Update API key](/api-reference/api-keys/update) pauses or resumes 1 key with `paused`.
+[Pause API keys](/api-reference/api-keys/bulk-pause) pauses or resumes up to 10,000 keys in 1 request.
+
+### Cap a key's monthly credits
+
+Set `monthlyBudgetCredits` when you create or update a key. It caps what calls
+with the key spend each UTC calendar month. A key without a budget can spend
+your whole balance.
+
+- At 80%, Xquik sends the account owner 1 warning email per key each month.
+- Calls running at once can't take the key past its budget.
+- A call that doesn't fit what's left gets `403 api_key_budget_reached` and costs nothing.
+- A refused call never runs.
+- A read with a `limit` needs that many results' price left.
+- A media download needs the price of every post it names.
+- A read without a `limit` returns only what fits. An extraction, a draw and a style refresh do the same.
+- A write needs its price plus 20 credits left. It charges only what it uses.
+- A started call bills what it delivered, even past a lowered budget.
+- The budget applies to REST, MCP and Apify Actor calls that use the key.
+- The key works again when the next UTC month starts.
+- Raise or remove the budget to unblock the key sooner.
+
+The budget never changes what a call costs. `monthlySpentCredits` on each key
+shows its spend this month.
 
 ### Revoke a key
 
@@ -275,7 +334,8 @@ curl -X DELETE https://dashboard.xquik.com/api/v1/api-keys/123 \
 ```
 
 Xquik deactivates revoked keys immediately. You cannot reactivate them.
-[Revoke API keys](/api-reference/api-keys/bulk-revoke) revokes up to 100 keys in 1 request.
+To stop a key for a while, pause it instead.
+[Revoke API keys](/api-reference/api-keys/bulk-revoke) revokes up to 10,000 keys in 1 request.
 
 ## Error response
 
@@ -290,6 +350,51 @@ An invalid or missing API key returns this error.
 **Status.** `401 Unauthorized`
 
 Replace the credential before retrying.
+
+A paused key returns this error.
+
+```json
+{
+  "error": "api_key_paused",
+  "message": "This API key is paused. Resume it at dashboard.xquik.com/api-keys to use it again."
+}
+```
+
+**Status.** `403 Forbidden`
+
+REST routes, webhook management routes & the MCP server all send it.
+Resume the key, then retry. Keys you never pause work as before.
+
+A call outside the key's scopes returns this error.
+
+```json
+{
+  "error": "insufficient_scope",
+  "message": "This API key lacks the monitors scope. Add it at dashboard.xquik.com/api-keys.",
+  "requiredScope": "monitors"
+}
+```
+
+**Status.** `403 Forbidden`
+
+`requiredScope` names the scope to add. It is `write`, `monitors`, `exports`, `billing` or `full`.
+Add it on the [API keys page](https://dashboard.xquik.com/en/api-keys), then retry.
+REST & MCP refuse the same calls. Full access keys work as before.
+
+A call from an IP outside the key's allowlist returns this error.
+
+```json
+{
+  "error": "ip_not_allowed",
+  "message": "This API key only accepts calls from its IP allowlist, and 198.51.100.7 is not on it. Add 198.51.100.7 to the key at dashboard.xquik.com/api-keys, or call from a listed IP."
+}
+```
+
+**Status.** `403 Forbidden`
+
+The message names the IP that made the call.
+Add that IP to the key's allowlist, or call from a listed IP.
+Every call with the key checks the list, REST & MCP included.
 
 ## Security best practices
 
@@ -337,7 +442,7 @@ Apply these API security controls to every environment.
     .env.production
     ```
 
-    If you commit a key by accident, revoke it immediately from your dashboard and generate a new one. Treat the exposed key as compromised even if you force-push to remove it from history.
+    If you commit a key by accident, revoke it immediately from your dashboard. Then generate a new one. Treat the exposed key as compromised. A force-push that removes it from history doesn't change that.
 
   </Accordion>
   <Accordion title="Rotate keys on a schedule">

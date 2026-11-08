@@ -57,6 +57,7 @@ const TWEET_FIELDS = [
   "noteTweet",
   "place",
   "limitedActions",
+  "liveEventContext",
   "postCta",
   "possiblySensitive",
   "previousCounts",

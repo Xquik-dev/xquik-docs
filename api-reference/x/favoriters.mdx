@@ -85,8 +85,8 @@ import FieldSelectionParams from "/snippets/field-selection-params.mdx";
 
     ```json
     {
-      "error": "forbidden",
-      "message": "This API key calls paid X read routes only, such as GET /api/v1/x/tweets/search. Create a Full access key at dashboard.xquik.com/api-keys to call this route."
+      "error": "api_key_paused",
+      "message": "This API key is paused. Resume it at dashboard.xquik.com/api-keys to use it again."
     }
     ```
 
@@ -97,7 +97,7 @@ import FieldSelectionParams from "/snippets/field-selection-params.mdx";
     ```json
     {
       "error": "favoriters_unavailable",
-      "message": "Users who liked this post are unavailable. X shows likers only to the post author. Use retweeters or replies instead."
+      "message": "Users who liked this post are unavailable. X shows likers only to the post author. GET /api/v1/x/tweets/1234567890/retweeters lists who retweeted it."
     }
     ```
 
@@ -142,11 +142,11 @@ import FieldSelectionParams from "/snippets/field-selection-params.mdx";
 {/* GENERATED RESPONSE EXAMPLES END */}
 <LlmsDirective />
 
-Requested result counts are upper bounds for paid authenticated calls. When remaining credits cannot cover the full page or ID list, Xquik returns fewer results. If zero paid results are affordable, it returns `402 insufficient_credits`.
+Requested result counts are upper bounds for paid authenticated calls. Remaining credits may not cover the full page or ID list. If so, Xquik returns fewer results. If zero paid results are affordable, it returns `402 insufficient_credits`.
 
 <Callout icon="coins" color="#5c3327">
 
-**1 credit per result returned** · [All plans](https://xquik.com/#pricing) from $0.00012/credit
+**1 credit per result returned** · [All plans](https://xquik.com) from $0.00012/credit
 
 </Callout>
 
@@ -160,9 +160,9 @@ route returns `503`. The route is `GET /api/v1/x/tweets/{id}/favoriters`.
 <Warning>
 
 X does not expose liker identities for every post. When a post reports likes
-but no liker identities are available, the endpoint returns `424
-  favoriters_unavailable`. Do not interpret this error as zero likes or proof
-that a specific user did not participate.
+without available liker identities, the endpoint returns `424
+  favoriters_unavailable`. Do not interpret this error as zero likes. Do not
+interpret it as proof that a specific user did not participate.
 
 </Warning>
 
@@ -242,14 +242,15 @@ print(json.dumps({"checkpoint": checkpoint}))
 
 The Node.js and Python snippets write JSON Lines liker rows plus a separate
 checkpoint. They do not write raw response pages. Store each mapped row and the latest
-`next_cursor`. An import, giveaway verifier, CRM sync, or agent job can then resume
-from the last completed page without duplicate rows.
+`next_cursor`. An import, giveaway verifier, CRM sync, or agent job can then resume.
+It can resume from the last completed page without duplicate rows.
 
 ## Direct tweet liker handoff
 
 Use `GET /api/v1/x/tweets/{id}/favoriters` when a workflow needs one row per
-visible account that liked a post. Use these rows for giveaway checks, CRM
-imports, audience reviews, or follow-up jobs. Store `source_tweet_id`,
+visible account. Each row is an account that liked a post. Use these rows
+for giveaway checks, CRM imports, audience reviews, or follow-up jobs. Store
+`source_tweet_id`,
 `liker_id`, `username`, `display_name`, `follower_count`, `following_count`,
 `verified`, `verified_type`, `profile_image_url`, and `next_cursor`.
 
@@ -293,7 +294,7 @@ imports, audience reviews, or follow-up jobs. Store `source_tweet_id`,
   </Card>
   <Card title="Next page" icon="arrow-right">
 
-    Store `has_next_page` and `next_cursor`, then pass `next_cursor` back as `cursor`
+    Store `has_next_page` and `next_cursor`. Then pass `next_cursor` back as `cursor`
     only when `has_next_page` is true.
 
   </Card>
@@ -400,7 +401,7 @@ Profiles per page. Accepts `20-200`. Defaults to `200`.
   <Card title="Saved exports" icon="file-spreadsheet">
 
     Use [`Create extraction`](/api-reference/extractions/create) with
-    `toolType=favoriters` when you need a saved job or CSV, JSON, or XLSX
+    `toolType=favoriters` for a saved job or CSV, JSON, or XLSX
     export.
 
   </Card>

@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
@@ -27,6 +27,38 @@ const docsConfigSchema = z.looseObject({
 });
 
 type DocsConfig = z.infer<typeof docsConfigSchema>;
+
+const RETIRED_COMPARISON_PAGES = [
+  "antwork",
+  "audiense",
+  "black-magic",
+  "brandwatch",
+  "data365",
+  "getxapi",
+  "make",
+  "meltwater",
+  "n8n",
+  "outstand",
+  "phantombuster",
+  "pipedream",
+  "post-bridge",
+  "postproxy",
+  "postwise",
+  "pulsar",
+  "scrapebadger",
+  "snitchfeed",
+  "social-fetch",
+  "socialcrawl",
+  "sprinklr",
+  "talkwalker",
+  "taplio",
+  "trypost",
+  "tweetstream",
+  "twexapi",
+  "twitterapis",
+  "xanguard",
+  "zapier",
+] as const;
 
 const X_API_GROUPS = [
   "Users",
@@ -168,6 +200,25 @@ describe("navigation default state", (): void => {
       source: "/agents",
       destination: "/mcp/agent-handoff",
     });
+  });
+
+  it("sends each retired comparison page to a live page in 1 hop", (): void => {
+    expect.assertions(2);
+
+    const { redirects } = docsConfig();
+    const sources = new Set(redirects.map(({ source }): string => source));
+    expect(
+      RETIRED_COMPARISON_PAGES.filter((slug): boolean => !sources.has(`/alternatives/${slug}`)),
+    ).toStrictEqual([]);
+    const findings = redirects
+      .filter(({ source }): boolean => /^\/alternatives\/[a-z0-9-]+$/u.test(source))
+      .flatMap(({ source, destination }): readonly string[] => [
+        ...(existsSync(`${source.slice(1)}.mdx`) ? [`${source} still has a page`] : []),
+        ...(existsSync(`${destination.slice(1)}.mdx`) ? [] : [`${source} lands on a missing page`]),
+        ...(sources.has(destination) ? [`${source} lands on another redirect`] : []),
+      ]);
+
+    expect(findings).toStrictEqual([]);
   });
 
   it("preserves precise SEO routes and their historical redirects", (): void => {

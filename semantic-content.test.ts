@@ -408,15 +408,11 @@ const REQUIRED_OPERATIONAL_CONTENT = [
   {
     file: "api-reference/x-write/create-community.mdx",
     snippets: [
-      "Create a Twitter community with the X community API",
-      "## How to create a community on Twitter with Xquik",
+      "Why you can't create a Twitter community by API",
+      "## Why you can't create a community on Twitter",
       "This route does not add rules, members,",
-      "## Confirm the community admin account",
-      "## Plan community rules and membership",
-      "The request has no website, app, rules, or invitation field.",
+      "`422 x_community_creation_closed`",
       "OAuth bearer authentication is also supported.",
-      "| Community creation record | Request or response source | Completion rule |",
-      "| Community ID | Response `communityId` | Store it after success. |",
     ],
   },
   {
@@ -506,7 +502,7 @@ const REQUIRED_OPERATIONAL_CONTENT = [
     file: "api-reference/x-write/update-avatar.mdx",
     snippets: [
       "| Profile avatar update column | Request or response source | Review rule |",
-      "| Uploaded file | Request `file` | Accept JPEG or PNG up to 15 MiB. |",
+      "| Uploaded file | Request `file` | Accept JPEG or PNG up to 95 MiB. |",
       "Twitter profile picture API to update avatar images",
       "This route updates one connected account's avatar.",
       "A request accepts a JPEG or PNG file.",
@@ -519,7 +515,7 @@ const REQUIRED_OPERATIONAL_CONTENT = [
     file: "api-reference/x-write/update-banner.mdx",
     snippets: [
       "| Profile banner update column | Request or response source | Review rule |",
-      "| Uploaded file | Request `file` | Accept JPEG or PNG up to 15 MiB. |",
+      "| Uploaded file | Request `file` | Accept JPEG or PNG up to 95 MiB. |",
       "Twitter profile banner API to update header images",
       "## Prepare Twitter profile banner dimensions",
       "1500 × 500 pixels",
