@@ -146,7 +146,7 @@ const REQUIRED_OPERATIONAL_CONTENT = [
   {
     file: "api-reference/x-write/upload-media.mdx",
     snippets: [
-      "Twitter media upload API for tweets, replies & DMs",
+      "Upload media for tweets & DMs, X (Twitter) API docs",
       "## Use the Twitter API upload media workflow",
       "The route accepts one local file",
       "Each request uses one connected",
@@ -410,7 +410,7 @@ const REQUIRED_OPERATIONAL_CONTENT = [
   {
     file: "api-reference/x-write/create-community.mdx",
     snippets: [
-      "Why you can't create a Twitter community by API",
+      "Community creation is closed, X (Twitter) API docs",
       "## Why you can't create a community on Twitter",
       "This route does not add rules, members,",
       "`422 x_community_creation_closed`",
@@ -420,7 +420,7 @@ const REQUIRED_OPERATIONAL_CONTENT = [
   {
     file: "api-reference/x-write/delete-community.mdx",
     snippets: [
-      "How to delete a community on Twitter via API",
+      "Delete an owned community, X (Twitter) API docs",
       "## How to delete a Twitter community through REST",
       "## Archive records before you delete a Twitter community",
       "Xquik has no restore route. Plan for permanent removal.",
@@ -444,7 +444,7 @@ const REQUIRED_OPERATIONAL_CONTENT = [
   {
     file: "api-reference/x-write/join-community.mdx",
     snippets: [
-      "How to join a community on Twitter via API",
+      "Join a community by ID, X (Twitter) API docs",
       "## Understand open, restricted, and invited membership",
       "## Find Twitter communities before joining",
       "X warns that some Communities never appear in search results.",
@@ -482,7 +482,7 @@ const REQUIRED_OPERATIONAL_CONTENT = [
   {
     file: "api-reference/x-write/leave-community.mdx",
     snippets: [
-      "How to leave a community on Twitter via API",
+      "Leave a community by ID, X (Twitter) API docs",
       "## Archive community posts before leaving",
       "## Leave a Twitter community step by step",
       "## Verify the Twitter community departure",
@@ -505,7 +505,7 @@ const REQUIRED_OPERATIONAL_CONTENT = [
     snippets: [
       "| Profile avatar update column | Request or response source | Review rule |",
       "| Uploaded file | Request `file` | Accept JPEG or PNG up to 95 MiB. |",
-      "Twitter profile picture API to update avatar images",
+      "Update a profile picture, X (Twitter) API docs",
       "This route updates one connected account's avatar.",
       "A request accepts a JPEG or PNG file.",
       "## Verify the updated Twitter profile image",
@@ -518,7 +518,7 @@ const REQUIRED_OPERATIONAL_CONTENT = [
     snippets: [
       "| Profile banner update column | Request or response source | Review rule |",
       "| Uploaded file | Request `file` | Accept JPEG or PNG up to 95 MiB. |",
-      "Twitter profile banner API to update header images",
+      "Update a profile banner, X (Twitter) API docs",
       "## Prepare Twitter profile banner dimensions",
       "1500 × 500 pixels",
       "1500 × 500 source file",
@@ -668,7 +668,7 @@ const REQUIRED_COMMUNITY_TIMELINE_CONTENT = [
 ] as const;
 
 const REQUIRED_QUICK_TOPUP_CONTENT = [
-  'title: "Twitter API billing & instant X API credit top-up"',
+  'title: "Quick top-up by saved payment, X (Twitter) API docs"',
   "X API credits",
   "Twitter API billing",
 ] as const;

@@ -244,15 +244,15 @@ describe("SEO metadata", (): void => {
   });
 
   it.each([
-    ["api-reference/overview.mdx", "Xquik API docs"],
-    ["sdks/python.mdx", "Twitter API Python SDK"],
-    ["sdks/typescript.mdx", "Twitter API TypeScript SDK"],
-    ["sdks/go.mdx", "Twitter API Go SDK"],
-    ["sdks/ruby.mdx", "Twitter API Ruby SDK"],
+    ["api-reference/overview.mdx", "Xquik X (Twitter) API docs"],
+    ["sdks/python.mdx", "X (Twitter) API for Python"],
+    ["sdks/typescript.mdx", "TypeScript X (Twitter) API SDK"],
+    ["sdks/go.mdx", "Golang X (Twitter) API SDK"],
+    ["sdks/ruby.mdx", "Ruby X (Twitter) API SDK"],
     ["sdks/csharp-x-api-sdk.mdx", "Twitter API C# SDK"],
     ["sdks/java.mdx", "Twitter API Java SDK"],
-    ["sdks/kotlin.mdx", "Twitter API Kotlin SDK"],
-    ["sdks/php.mdx", "Twitter API PHP SDK"],
+    ["sdks/kotlin.mdx", "Kotlin X (Twitter) API SDK"],
+    ["sdks/php.mdx", "PHP X (Twitter) API SDK"],
     ["sdks/cli.mdx", "Twitter CLI & X CLI"],
     ["mcp/overview.mdx", "Twitter MCP server & X MCP server"],
     ["guides/billing.mdx", "Twitter API pricing"],

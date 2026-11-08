@@ -42,7 +42,7 @@ describe("list tweet drafts documentation", (): void => {
 
     expect(
       [
-        'title: "List Xquik tweet drafts with cursor-based pagination"',
+        'title: "List tweet drafts with cursors, X (Twitter) API docs"',
         '"list tweet drafts"',
         '"tweet draft API"',
         "## Paginate through every draft",

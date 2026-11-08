@@ -64,7 +64,7 @@ describe("get tweet style documentation", (): void => {
     const frontmatter = source.slice(0, source.indexOf("---", 4) + 3);
 
     expect({
-      focusedTitle: frontmatter.includes("Get cached tweet style samples with the Xquik API"),
+      focusedTitle: frontmatter.includes("Get a cached writing style, X (Twitter) API docs"),
       keywordsPresent: [
         "cached tweet style",
         "tweet writing samples",

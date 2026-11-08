@@ -88,7 +88,7 @@ describe("tweet style performance documentation", (): void => {
     const frontmatter = source.slice(0, source.indexOf("---", 4) + 3);
 
     expect({
-      focusedTitle: frontmatter.includes("Tweet analytics API for likes, replies & reposts"),
+      focusedTitle: frontmatter.includes("Tweet performance analytics, X (Twitter) API docs"),
       keywordsPresent: [
         "twitter analytics",
         "x analytics",

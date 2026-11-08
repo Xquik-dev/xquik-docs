@@ -30,7 +30,7 @@ describe("connected X accounts list documentation", (): void => {
     const frontmatter = source.slice(0, source.indexOf("---", 4) + 3);
 
     expect({
-      focusedTitle: frontmatter.includes("Connected X accounts API, health & write readiness"),
+      focusedTitle: frontmatter.includes("List connected accounts, X (Twitter) API docs"),
       keywordsPresent: [
         "Twitter account API",
         "Twitter API account",

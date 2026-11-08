@@ -16,7 +16,7 @@ const NORMALIZED_RADAR_PAGE = RADAR_PAGE.replaceAll(/\s+/gu, " ");
 const NORMALIZED_TYPES_GUIDE = TYPES_GUIDE.replaceAll(/\s+/gu, " ");
 
 const REQUIRED_RADAR_PAGE_COPY = [
-  "Social media monitoring API for trending topics",
+  "Social media monitoring API, X (Twitter) API docs",
   "## What is a social media monitoring API?",
   "## Can Radar track brand mentions and sentiment?",
   "`items[].source` and `items[].sourceId`",

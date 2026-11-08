@@ -61,7 +61,7 @@ describe("delete tweet draft documentation", (): void => {
 
     expect(
       [
-        'title: "Delete saved tweet drafts by ID with the Xquik API"',
+        'title: "Delete a saved tweet draft, X (Twitter) API docs"',
         '"tweet draft"',
         '"delete tweet draft"',
         "## Handle 204 no content",

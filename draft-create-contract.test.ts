@@ -42,7 +42,7 @@ describe("create tweet draft documentation", (): void => {
 
     expect(
       [
-        'title: "Create a tweet draft for review with the Xquik API"',
+        'title: "Create a tweet draft, X (Twitter) API docs"',
         '"tweet draft"',
         '"create tweet draft"',
         "## Choose the tweet draft fields",
