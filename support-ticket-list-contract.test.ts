@@ -64,7 +64,7 @@ describe("support ticket list documentation", (): void => {
     expect.assertions(1);
 
     expect({
-      documentedLimit: page.includes("returns up to 200 tickets."),
+      documentedLimit: page.includes("returns up to 10,000 tickets."),
       documentedOrder: normalizedPage.includes("It sorts the newest `updatedAt` value first."),
     }).toStrictEqual({ documentedLimit: true, documentedOrder: true });
   });

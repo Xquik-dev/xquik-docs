@@ -69,7 +69,7 @@ const REQUIRED_CUSTOM_CSS_MOBILE_VIEWPORT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_README_SNIPPETS = [
-  "# Twitter API documentation & X API docs by Xquik",
+  "# Twitter API Documentation by Xquik",
   "tweet search",
   "user lookup",
   "follower exports",
@@ -79,7 +79,7 @@ const REQUIRED_README_SNIPPETS = [
   "1-second tweet monitors",
   "signed webhooks",
   "SDK clients",
-  "X automation",
+  "X (Twitter) automation",
   "[Quickstart](https://docs.xquik.com/x-api-quickstart)",
   "[API reference](https://docs.xquik.com/api-reference)",
   "Browse every OpenAPI-backed operation",
@@ -90,7 +90,7 @@ const REQUIRED_README_SNIPPETS = [
   "[Tweet replies export](https://docs.xquik.com/guides/tweet-replies-export)",
   "Export replies to CSV, JSON, or XLSX",
   "[Follower export](https://docs.xquik.com/guides/follower-export-crm)",
-  "Export X followers to CRM or warehouse",
+  "Export X (Twitter) followers to CRM or warehouse",
   "[Direct message workflow](https://docs.xquik.com/guides/direct-message-workflow)",
   "Send DMs and store returned message IDs",
   "[Prefect](https://docs.xquik.com/guides/prefect)",
@@ -99,7 +99,7 @@ const REQUIRED_README_SNIPPETS = [
   "[Webhooks](https://docs.xquik.com/webhooks/overview)",
   "[Apify Actors](https://docs.xquik.com/alternatives/apify)",
   "Search tweets with `from:`, `since:`, `until:`, filters, and cursor pagination.",
-  "focused X data jobs on Apify",
+  "focused X (Twitter) data jobs on Apify",
   "Apify dataset workflows",
   "[llms.txt](https://docs.xquik.com/llms.txt)",
   "## Use with AI coding agents",
@@ -370,7 +370,7 @@ const FORBIDDEN_TYPESCRIPT_SDK_RAW_SEARCH_SNIPPETS = [
   "Write `page.tweets` as JSON Lines to `xquik-tweet-search.jsonl`",
   "process.stdout.write(JSON.stringify(tweets, null, 2));",
   "results_limit",
-  "Maps to REST `limit`. Use it for a bounded request from 1 to 200. Omit it for cursor loops.",
+  "Maps to REST `limit`. Use it for a bounded request from 1 to 10,000. Omit it for cursor loops.",
 ] as const;
 
 const REQUIRED_GO_SDK_WORKFLOW_SNIPPETS = [
@@ -493,7 +493,7 @@ const REQUIRED_GO_SDK_WORKFLOW_SNIPPETS = [
 const FORBIDDEN_GO_SDK_WEAK_SEARCH_SNIPPETS = [
   'fmt.Printf("%+v\\n", tweets.HasNextPage)',
   "ResultsLimit",
-  "Go field `Limit` maps to REST `limit`. Use it for a bounded request from 1 to 200. Omit it for cursor loops.",
+  "Go field `Limit` maps to REST `limit`. Use it for a bounded request from 1 to 10,000. Omit it for cursor loops.",
 ] as const;
 
 const REQUIRED_PYTHON_SDK_WORKFLOW_SNIPPETS = [
@@ -626,7 +626,7 @@ const FORBIDDEN_PYTHON_SDK_RAW_SEARCH_SNIPPETS = [
   "Write `page.tweets` to CSV for analysts",
   "print(tweets.to_json())",
   "results_limit",
-  "Python argument `limit` maps to REST `limit`. Use it for a bounded request from 1 to 200. Omit it for cursor loops.",
+  "Python argument `limit` maps to REST `limit`. Use it for a bounded request from 1 to 10,000. Omit it for cursor loops.",
 ] as const;
 
 const REQUIRED_RUBY_SDK_WORKFLOW_SNIPPETS = [
@@ -767,7 +767,7 @@ const FORBIDDEN_RUBY_SDK_WEAK_SEARCH_SNIPPETS = [
   "`tweet.to_json`",
   "`tweet.deep_to_h`",
   "results_limit",
-  "Ruby keyword `limit` maps to REST `limit`. Use it for a bounded request from 1 to 200. Omit it for cursor loops.",
+  "Ruby keyword `limit` maps to REST `limit`. Use it for a bounded request from 1 to 10,000. Omit it for cursor loops.",
 ] as const;
 
 const REQUIRED_CLI_SDK_WORKFLOW_SNIPPETS = [
@@ -895,7 +895,7 @@ const FORBIDDEN_CLI_SDK_WORKFLOW_SNIPPETS = [
   "Write one JSON object per line for downstream jobs",
   "projected records to CSV for analysts",
   "produce XLSX from those rows",
-  "Use `--limit` for a bounded request from 1 to 200. Omit it when passing `--cursor` in page loops.",
+  "Use `--limit` for a bounded request from 1 to 10,000. Omit it when passing `--cursor` in page loops.",
 ] as const;
 
 const REQUIRED_CSHARP_SDK_WORKFLOW_SNIPPETS = [
@@ -1043,7 +1043,7 @@ const FORBIDDEN_CSHARP_SDK_WEAK_SEARCH_SNIPPETS = [
   "projected rows into CSV for analysts",
   "results_limit",
   "xquik-tweet-replies",
-  "C# property `Limit` maps to REST `limit`. Use it for a bounded request from 1 to 200. Omit it for cursor loops.",
+  "C# property `Limit` maps to REST `limit`. Use it for a bounded request from 1 to 10,000. Omit it for cursor loops.",
 ] as const;
 
 const REQUIRED_PHP_SDK_WORKFLOW_SNIPPETS = [
@@ -1187,7 +1187,7 @@ const FORBIDDEN_PHP_SDK_WEAK_SEARCH_SNIPPETS = [
   "Write `$page->tweets` as JSON Lines to `xquik-tweet-search.jsonl`",
   "'id' => $tweet->id",
   "results_limit",
-  "PHP argument `limit` maps to REST `limit`. Use it for a bounded request from 1 to 200. Omit it for cursor loops.",
+  "PHP argument `limit` maps to REST `limit`. Use it for a bounded request from 1 to 10,000. Omit it for cursor loops.",
 ] as const;
 
 const REQUIRED_JAVA_SDK_WORKFLOW_SNIPPETS = [
@@ -1345,7 +1345,7 @@ const FORBIDDEN_JAVA_SDK_WEAK_SEARCH_SNIPPETS = [
   "transform the same projected records into CSV for analysts",
   "results_limit",
   "xquik-tweet-replies",
-  "Java builder method `.limit()` maps to REST `limit`. Use it for a bounded request from 1 to 200. Omit it for cursor loops.",
+  "Java builder method `.limit()` maps to REST `limit`. Use it for a bounded request from 1 to 10,000. Omit it for cursor loops.",
 ] as const;
 
 const REQUIRED_KOTLIN_SDK_WORKFLOW_SNIPPETS = [
@@ -1503,11 +1503,11 @@ const FORBIDDEN_KOTLIN_SDK_WEAK_SEARCH_SNIPPETS = [
   "transform the projected records into CSV for analysts",
   "results_limit",
   "xquik-tweet-replies",
-  "Kotlin builder method `.limit()` maps to REST `limit`. Use it for a bounded request from 1 to 200. Omit it for cursor loops.",
+  "Kotlin builder method `.limit()` maps to REST `limit`. Use it for a bounded request from 1 to 10,000. Omit it for cursor loops.",
 ] as const;
 
 const FORBIDDEN_TWEET_SEARCH_CURSOR_LIMIT_SNIPPETS = [
-  "Use it for the page size from 1 to 200",
+  "Use it for the page size from 1 to 10,000",
   "Use it for the maximum tweets to return for the page",
   "`q`, `limit`, and optional `cursor`",
   "with `q`, `limit`, and optional `cursor`",
@@ -5799,7 +5799,7 @@ const REQUIRED_TWEET_SEARCH_EXPORT_SNIPPETS = [
   "GET /x/tweets/search",
   "exact lookup from one stored Tweet ID or X status URL.",
   "CSV, JSON, or XLSX",
-  "CSV, JSON, and XLSX exports support up to 100,000 rows.",
+  "CSV, JSON, and XLSX exports include every row.",
   "## Filter fields",
   "tweet_search_extractor accepts structured filter fields beside searchQuery.",
   "Poll by tweet_search_extraction_id",
@@ -6380,10 +6380,10 @@ const REQUIRED_EXTRACTION_WORKFLOW_SNIPPETS = [
   "`job`, `results`, `hasMore`, `nextCursor`",
   "Use `limit` up to 1,000 and pass `nextCursor` as `cursor`",
   "`xUserId`, `xUsername`, `tweetId`, `tweetText`, `createdAt`",
-  "The export limit does not cap paginated JSON.",
-  "Xquik caps file exports at 100,000 rows and PDF exports at 10,000 rows.",
+  "File exports and paginated JSON both reach every row.",
+  "A PDF above 10,000 rows comes as a ZIP of PDF parts.",
   "### Durable JSON Lines handoff",
-  "Some queues, warehouses, or agents need replayable rows without the export row cap. For those, use JSON Lines.",
+  "Some queues, warehouses, or agents need replayable rows. For those, use JSON Lines.",
   '"page_cursor": "990100"',
   '"next_cursor": "990200"',
   '"handoff_format": "jsonl"',
@@ -6449,10 +6449,10 @@ const REQUIRED_RESPONSE_FORMATS_EXPORTS_SNIPPETS = [
   "Pass `nextCursor` back",
   "as `cursor`",
   "Use `limit` up to `1000`. The default is `100`.",
-  "File exports do not paginate.",
-  "Xquik caps file exports at 100,000 rows and PDF",
-  "exports at 10,000 rows.",
-  "The file endpoint returns the first 100,000 rows ordered by result ID.",
+  "File exports include every row in 1 download.",
+  "A PDF above 10,000 rows comes as",
+  "a ZIP of PDF parts.",
+  "The file endpoint returns every row ordered by result ID.",
   "## Format map",
   '<Card title="CSV" icon="table">',
   "`text/csv; charset=utf-8`",
@@ -6569,6 +6569,7 @@ const REQUIRED_EXTRACTION_CREATE_TOOL_TYPE_SNIPPETS = [
   "`mention_extractor` extracts tweets mentioning an account.",
   "`post_extractor` extracts posts from an account.",
   "`user_likes` extracts liked tweets that X makes visible.",
+  "`user_affiliates` extracts the accounts an organization lists as its",
   "`user_media` extracts media posts from a user.",
   "`verified_follower_explorer` extracts verified followers of an account.",
   '<Card title="Community target" icon="users">',
@@ -6687,7 +6688,7 @@ const REQUIRED_EXTRACTION_EXPORT_RESPONSE_SNIPPETS = [
   "Store the extraction ID and server filename with the local path.",
   '<Card title="Analyst XLSX" icon="file-spreadsheet">',
   '<Card title="Report formats" icon="file-text">',
-  "For exports above 100,000 rows, use",
+  "To process rows as they arrive, use",
   "[Extraction Workflow](/guides/extraction-workflow#durable-json-lines-handoff)",
   "Returns a file download. The response includes a `Content-Disposition` header with the filename.",
   "<CardGroup cols={2}>",
@@ -6705,7 +6706,7 @@ const REQUIRED_EXTRACTION_EXPORT_RESPONSE_SNIPPETS = [
   "`format=txt` returns `text/plain; charset=utf-8` with filenames like",
   '<Card title="XLSX" icon="file-spreadsheet">',
   "`application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`",
-  "Exports stop at 100,000 rows (10,000 for PDF).",
+  "Exports include every row, ordered by result ID.",
 ] as const;
 
 const REQUIRED_DRAW_HISTORY_SNIPPETS = [
@@ -6811,7 +6812,7 @@ const REQUIRED_DRAW_EXPORT_RESPONSE_SNIPPETS = [
   "## Download a giveaway winner CSV",
   "Never parse a successful export as JSON. The `200` body contains file bytes.",
   "## Choose a Twitter giveaway export format",
-  "PDF entry exports include up to 10,000 rows. Winner exports contain selected winners.",
+  "Entry exports include every row. Winner exports contain selected winners.",
   "## Understand winner export columns",
   "The winner export does not include the winning reply ID.",
   "## Understand giveaway entry export columns",
@@ -6845,7 +6846,7 @@ const REQUIRED_DRAW_EXPORT_RESPONSE_SNIPPETS = [
   "Entry exports use the same suffix pattern with `draw-entries-*` filenames.",
   "**Winner export columns.** Position, Username, Text, Backup",
   "**Entry export columns.** Username, Text, Passed Filter, Language",
-  "Entry exports stop at 100,000 rows (10,000 for PDF).",
+  "Entry exports include every row. A PDF above 10,000 rows comes as a ZIP of PDF parts.",
   "### 400 Invalid parameters",
   '"error": "invalid_input"',
   "## Handle giveaway export responses",
@@ -8037,10 +8038,10 @@ const REQUIRED_ARCHITECTURE_LIMITATION_SNIPPETS = [
   "Bookmarks and bookmark folders require a connected X account.",
   "[bookmarks](/api-reference/x/bookmarks)",
   "[bookmark folders](/api-reference/x/bookmark-folders)",
-  '<Card title="Export caps" icon="download">',
-  "Extraction exports stop at 100,000 rows.",
-  "PDF exports stop at",
-  "10,000 rows.",
+  '<Card title="Exports" icon="download">',
+  "Extraction exports include every row.",
+  "A PDF above 10,000 rows comes as a",
+  "ZIP of PDF parts.",
   '<Card title="Webhook retries" icon="rotate-ccw">',
   "Xquik retries each failed delivery for up to 7 days. Then the delivery shows `exhausted`. Only you can pause or delete a webhook. Events expire 30 days after Xquik creates them.",
   '<Card title="Monitor slots" icon="activity">',
@@ -9162,7 +9163,7 @@ const REQUIRED_KEYWORD_MONITOR_LIST_API_HANDOFF_SNIPPETS = [
   "and `deliveries_endpoint_pattern`",
   "## Inventory handoff",
   "Use `GET /monitors/keywords` after create, update, pause, or delete operations",
-  "up to 200",
+  "up to 10,000",
   "keyword monitors ordered by creation time",
   "`total` count for the returned",
   '<Card title="Active burn" icon="activity">',
@@ -9748,7 +9749,7 @@ const REQUIRED_ACCOUNT_MONITOR_LIST_API_HANDOFF_SNIPPETS = [
   "## Inventory handoff",
   "Use `GET /monitors` after create, update, pause, or delete operations",
   "your account monitor inventory.",
-  "up to 200 monitors ordered",
+  "up to 10,000 monitors ordered",
   "`total` count for the returned set.",
   '<Card title="Tracked accounts" icon="users">',
   "Store each monitor's `id`, `username`, and `xUserId`",

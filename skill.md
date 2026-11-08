@@ -69,7 +69,7 @@ when `safeToRetry` is true.
 
 **Tweet-based.** `reply_extractor`, `repost_extractor`, `quote_extractor`, `favoriters`, `thread_extractor`, `article_extractor`
 
-**User-based.** `follower_explorer`, `following_explorer`, `verified_follower_explorer`, `mention_extractor`, `post_extractor`, `user_likes`, `user_media`
+**User-based.** `follower_explorer`, `following_explorer`, `verified_follower_explorer`, `mention_extractor`, `post_extractor`, `user_affiliates`, `user_likes`, `user_media`
 
 **Community target.** These take `targetCommunityId`. `community_extractor`, `community_moderator_explorer`, `community_post_extractor`, `community_search`
 
