@@ -20,7 +20,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <Warning>
 
-Connect X accounts at [dashboard.xquik.com/account](https://dashboard.xquik.com/account). This route serves only a signed-in dashboard session. That way, X passwords never pass through an API key. API keys and OAuth tokens get `403 session_required`.
+This takes a dashboard session, or a key with the **Connect X accounts** permission. Turn it on at [dashboard.xquik.com/api-keys](https://dashboard.xquik.com/api-keys). Full access doesn't include it. A key without it gets `403 x_account_connect_permission_required`. OAuth tokens and MCP tools get `403 session_required`. With a key, your backend receives the user's X password and 2FA secret. Read [your duties](/guides/connect-x-accounts-for-your-users#your-duties) first.
 
 </Warning>
 
@@ -95,11 +95,12 @@ const data = await response.json();
 
 ## Headers
 
-| Header         | Type     | Required | Description                                                                                                            |
-| -------------- | -------- | -------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `Cookie`       | `string` | Yes      | Your signed-in dashboard session cookie, `__Host-xquik_session`. API keys and OAuth tokens get `403 session_required`. |
-| `Origin`       | `string` | Yes      | Must be `https://dashboard.xquik.com`, sent with `Sec-Fetch-Site` set to `same-origin`. The dashboard sends both.      |
-| `Content-Type` | `string` | Yes      | Must be `application/json`.                                                                                            |
+| Header         | Type     | Required       | Description                                                                                                       |
+| -------------- | -------- | -------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `x-api-key`    | `string` | Or `Cookie`    | An API key holding the Connect X accounts permission.                                                             |
+| `Cookie`       | `string` | Or `x-api-key` | Your signed-in dashboard session cookie, `__Host-xquik_session`.                                                  |
+| `Origin`       | `string` | With `Cookie`  | Must be `https://dashboard.xquik.com`, sent with `Sec-Fetch-Site` set to `same-origin`. The dashboard sends both. |
+| `Content-Type` | `string` | Yes            | Must be `application/json`.                                                                                       |
 
 </section>
 
@@ -107,12 +108,13 @@ const data = await response.json();
 
 ## Body
 
-| Body parameter | Type     | Required | Description                                                                                                               |
-| -------------- | -------- | -------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `username`     | `string` | Yes      | X (Twitter) username to connect. Xquik strips the `@` prefix if included.                                                 |
-| `email`        | `string` | Yes      | Email address associated with the X account.                                                                              |
-| `password`     | `string` | Yes      | Password for the X account. Xquik encrypts it at rest on receipt.                                                         |
-| `totp_secret`  | `string` | Yes      | Authenticator App TOTP secret required for a durable connection. This is the base32-encoded secret, not the 6-digit code. |
+| Body parameter          | Type     | Required | Description                                                                                                               |
+| ----------------------- | -------- | -------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `username`              | `string` | Yes      | X (Twitter) username to connect. Xquik strips the `@` prefix if included.                                                 |
+| `email`                 | `string` | Yes      | Email address associated with the X account.                                                                              |
+| `password`              | `string` | Yes      | Password for the X account. Xquik encrypts it at rest on receipt.                                                         |
+| `totp_secret`           | `string` | Yes      | Authenticator App TOTP secret required for a durable connection. This is the base32-encoded secret, not the 6-digit code. |
+| `connection_attempt_id` | `string` | No       | Your own attempt ID, `xatt_` and 32 lowercase hex characters. Read the result with it if the response never arrives.      |
 
 </section>
 
@@ -271,7 +273,7 @@ Missing or invalid API key.
 
 ### 409 Duplicate
 
-The specified X account is already connected to your Xquik account.
+Xquik already has this X account connected. The answer never says on which Xquik account.
 
 ### 429 Rate limit exceeded
 
@@ -279,7 +281,7 @@ The specified X account is already connected to your Xquik account.
 
 {"\n"}
 
-You reached the connection safety limit. The `Retry-After: 900` header gives the seconds to wait before retrying. See the [rate limits guide](/guides/rate-limits) for details.
+You sent too many failed logins in 15 minutes. The limit counts this caller or this X account. Wait the `Retry-After` seconds, then try once. Each account a caller connects raises its limit. See the [rate limits guide](/guides/rate-limits) for details.
 
 ### 429 Login cooldown
 
@@ -349,7 +351,7 @@ The X connection service is temporarily unavailable. Retry after a short delay.
 
 - **400** `{ "error": "invalid_input", "message": "Invalid input. Check the request body." }`
 - **401** `{ "error": "unauthenticated", "message": "Authentication required. Provide a valid API key or bearer token." }`
-- **403** `{ "error": "session_required", "message": "API keys & OAuth tokens cannot use this route. Sign in at dashboard.xquik.com/account instead." }`
+- **403** `{ "error": "api_key_paused", "message": "This API key is paused. Resume it at dashboard.xquik.com/api-keys to use it again." }`
 - **409** `{ "error": "account_already_connected", "message": "This X account is already connected." }`
 - **422** `{ "error": "login_failed", "message": "Login failed. Check credentials and try again." }`
 - **429** `{ "error": "rate_limit_exceeded", "message": "Too many requests. Retry later." }`

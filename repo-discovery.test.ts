@@ -2651,7 +2651,7 @@ const REQUIRED_TWITTER_RATE_LIMIT_GUIDE_SNIPPETS = [
   'title: "Fix X (Twitter) rate limit exceeded & 429 errors"',
   "Standard API keys for one account share the same buckets.",
   "| Follow or remove follower | `POST /x/users/{id}/follow` and `POST /x/users/{id}/remove-follower` | 20 actions per minute and 400 per day, shared |",
-  "| Connect X account | `POST /x/accounts` | 10 attempts per 15 minutes |",
+  "| Connect or reconnect X account | `POST /x/accounts` and `POST /x/accounts/{id}/reauth`",
   "The window starts with your first request. It does not follow wall-clock seconds.",
   "## Xquik limits versus official X API limits",
   "| `502 x_api_rate_limited` | The read service was throttled upstream. |",
