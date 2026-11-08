@@ -1,0 +1,162 @@
+---
+title: "Create X account connect link, X (Twitter) API docs"
+sidebarTitle: Create connect link
+description: "Create a link where a person connects their X (Twitter) account on a page Xquik hosts. Your backend never receives their password or 2FA secret. Free."
+endpoint: "POST /x/account-connection-links"
+keywords: ["x accounts", "connect link", "hosted connect", "multiple twitter accounts"]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+<LlmsDirective />
+
+`POST https://xquik.com/api/v1/x/account-connection-links`
+
+<Callout icon="circle-check" color="#16a34a">
+
+**Free.** This endpoint does not consume credits.
+
+</Callout>
+
+<Warning>
+
+Treat `url` like a password until the person uses it. It appears only in this response.
+Send it only to the person connecting, and keep it out of your logs.
+
+</Warning>
+
+The person opens `url` and enters their X details on a page Xquik hosts. They need no Xquik signup.
+The account then belongs to your Xquik account. Open the link in a pop-up or a new tab. The page can't load in a frame.
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://xquik.com/api/v1/x/account-connection-links \
+  -H "x-api-key: $XQUIK_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "reference": "crm-user-7", "returnUrl": "https://app.example.com/connected" }' | jq
+```
+
+```javascript Node.js
+const response = await fetch("https://xquik.com/api/v1/x/account-connection-links", {
+  body: JSON.stringify({
+    reference: "crm-user-7",
+    returnUrl: "https://app.example.com/connected",
+  }),
+  headers: {
+    "Content-Type": "application/json",
+    "x-api-key": process.env.XQUIK_API_KEY,
+  },
+  method: "POST",
+});
+const link = await response.json();
+```
+
+</CodeGroup>
+
+<section>
+
+## Headers
+
+| Header         | Type     | Required       | Description                                                      |
+| -------------- | -------- | -------------- | ---------------------------------------------------------------- |
+| `x-api-key`    | `string` | Or `Cookie`    | A Full access API key.                                           |
+| `Cookie`       | `string` | Or `x-api-key` | Your signed-in dashboard session cookie, `__Host-xquik_session`. |
+| `Content-Type` | `string` | With a body    | `application/json`                                               |
+
+</section>
+
+<section>
+
+## Body
+
+| Body parameter | Type     | Required | Description                                                                                                          |
+| -------------- | -------- | -------- | -------------------------------------------------------------------------------------------------------------------- |
+| `reference`    | `string` | No       | Your own ID for this person, up to 256 characters. It comes back when you read the link.                             |
+| `returnUrl`    | `string` | No       | A public `https` URL with no port, up to 2,048 characters. The page offers it as a button once the account connects. |
+| `accountId`    | `string` | No       | The ID of 1 of your X accounts. The link then reconnects that account, and refuses a sign-in for any other.          |
+
+Xquik never redirects by itself, and never adds the token to `returnUrl`.
+
+</section>
+
+<section>
+
+## Response
+
+### 201 Created
+
+The response holds every field [Get connect link status](/api-reference/x-accounts/get-connection-link) returns, plus `url`.
+
+| Field       | Type     | Description                                             |
+| ----------- | -------- | ------------------------------------------------------- |
+| `url`       | `string` | The page to open. It holds the token, so it works once. |
+| `id`        | `string` | The link's ID. Save it to read the result.              |
+| `status`    | `string` | Always `pending` here.                                  |
+| `expiresAt` | `string` | ISO 8601 time, 30 minutes from now.                     |
+
+```json
+{
+  "object": "x_account_connection_link",
+  "id": "xlink_AAAAAAAAAAAAAAAA",
+  "purpose": "connect",
+  "status": "pending",
+  "reference": "crm-user-7",
+  "returnUrl": "https://app.example.com/connected",
+  "accountId": null,
+  "xUserId": null,
+  "xUsername": null,
+  "health": null,
+  "failure": null,
+  "createdAt": "2026-11-08T12:00:00.000Z",
+  "expiresAt": "2026-11-08T12:30:00.000Z",
+  "completedAt": null,
+  "url": "https://xquik.com/connect-x#token=xclt_YOUR_LINK_TOKEN"
+}
+```
+
+### 400 Invalid input
+
+`{ "error": "invalid_input", "message": "Set returnUrl to a public https URL." }`
+
+{"\n"}
+
+### 401 Unauthenticated
+
+`{ "error": "unauthenticated", "message": "Missing or invalid API key" }`
+
+### 403 Forbidden
+
+The key isn't Full access. OAuth tokens and MCP tools get `403 session_required`, since a link works like a password.
+
+### 404 Not found
+
+`accountId` isn't one of your X accounts.
+
+### 429 Rate limited
+
+`{ "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 1 }`
+
+<Note>
+
+**Related.** [Connect your users' X accounts](/guides/connect-x-accounts-for-your-users) compares this with the direct API.
+
+</Note>
+
+</section>
+
+{/* GENERATED RESPONSE EXAMPLES START */}
+
+<section>
+
+## Response examples
+
+- **400** `{ "error": "invalid_input", "message": "Invalid input. Check the request body." }`
+- **401** `{ "error": "unauthenticated", "message": "Authentication required. Provide a valid API key or bearer token." }`
+- **403** `{ "error": "api_key_paused", "message": "This API key is paused. Resume it at dashboard.xquik.com/api-keys to use it again." }`
+- **404** `{ "error": "account_not_found", "message": "X account not found." }`
+- **429** `{ "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 60 }`
+
+</section>
+
+{/* GENERATED RESPONSE EXAMPLES END */}
