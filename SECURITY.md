@@ -63,7 +63,7 @@ We will not pursue legal action against researchers who meet these conditions.
 
 ## Rewards
 
-Rewards can be monetary and depend on the bug's impact. Xquik decides each reward, and not every report earns one. The [bug bounty and vulnerability disclosure policy](https://xquik.com/en/vulnerability-disclosure) lists the scope, test rules and reward rules.
+Rewards can be monetary and depend on the bug's impact. Xquik decides each reward, and not every report earns one. The [bug bounty and vulnerability disclosure policy](https://xquik.com/en/vulnerability-disclosure) lists the scope and test rules. It also lists the reward rules.
 
 ## Credit
 
