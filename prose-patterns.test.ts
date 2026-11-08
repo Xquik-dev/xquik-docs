@@ -352,14 +352,98 @@ function isSentenceCase(text: string): boolean {
   return words.length === 0 || (matches[0] === true && share >= SENTENCE_CASE_SHARE);
 }
 
-function pageFindings(source: string): readonly PageFinding[] {
+const CHICAGO_TITLE_PAGES: ReadonlySet<string> = new Set<string>([
+  "guides/read-twitter-replies-without-account.mdx",
+  "guides/see-twitter-likes.mdx",
+  "guides/see-who-liked-my-tweet.mdx",
+  "guides/see-who-retweeted-a-tweet.mdx",
+  "guides/twitter-advanced-search.mdx",
+  "guides/twitter-archive-search.mdx",
+  "guides/twitter-media-viewer.mdx",
+  "guides/twitter-thread-unroll.mdx",
+]);
+
+const CHICAGO_LOWERCASE_WORDS: ReadonlySet<string> = new Set<string>([
+  "a",
+  "about",
+  "across",
+  "after",
+  "against",
+  "along",
+  "among",
+  "an",
+  "and",
+  "around",
+  "as",
+  "at",
+  "before",
+  "behind",
+  "below",
+  "between",
+  "beyond",
+  "but",
+  "by",
+  "down",
+  "during",
+  "for",
+  "from",
+  "in",
+  "inside",
+  "into",
+  "like",
+  "near",
+  "nor",
+  "of",
+  "off",
+  "on",
+  "onto",
+  "or",
+  "out",
+  "outside",
+  "over",
+  "past",
+  "per",
+  "since",
+  "the",
+  "through",
+  "to",
+  "toward",
+  "under",
+  "until",
+  "up",
+  "upon",
+  "via",
+  "with",
+  "within",
+  "without",
+]);
+
+const TITLE_WORD = /[\p{L}\p{N}][\p{L}\p{N}'-]*/gu;
+
+function isChicagoTitleCase(text: string): boolean {
+  const words = text.match(TITLE_WORD) ?? [];
+  const lastIndex = words.length - 1;
+  return words.every((word, index): boolean =>
+    index !== 0 && index !== lastIndex && CHICAGO_LOWERCASE_WORDS.has(word.toLowerCase())
+      ? word === word.toLowerCase()
+      : /^[\p{Lu}\p{N}]/u.test(word),
+  );
+}
+
+function pageFindings(
+  source: string,
+  isTitleCased: (text: string) => boolean = isSentenceCase,
+): readonly PageFinding[] {
   const { fields, rawLines, prose } = pageProse(source);
-  const fieldFindings = fields.flatMap((field): PageFinding[] => [
-    ...patternMatches(field.value, field.line),
-    ...(field.key !== "description" && !isSentenceCase(field.value)
-      ? [{ line: field.line, rule: "Headings", text: field.rawLine }]
-      : []),
-  ]);
+  const fieldFindings = fields.flatMap((field): PageFinding[] => {
+    const isCased = field.key === "title" ? isTitleCased : isSentenceCase;
+    return [
+      ...patternMatches(field.value, field.line),
+      ...(field.key !== "description" && !isCased(field.value)
+        ? [{ line: field.line, rule: "Headings", text: field.rawLine }]
+        : []),
+    ];
+  });
   const headingFindings = prose.split("\n").flatMap((text, index): PageFinding[] => {
     const heading = headingText(text);
     return heading === undefined || isSentenceCase(heading)
@@ -370,7 +454,10 @@ function pageFindings(source: string): readonly PageFinding[] {
 }
 
 const FINDINGS: readonly Finding[] = trackedPages().flatMap((file): Finding[] =>
-  pageFindings(readFileSync(file, "utf8")).map((finding): Finding => ({ ...finding, file })),
+  pageFindings(
+    readFileSync(file, "utf8"),
+    CHICAGO_TITLE_PAGES.has(file) ? isChicagoTitleCase : isSentenceCase,
+  ).map((finding): Finding => ({ ...finding, file })),
 );
 
 function report(rule: string): readonly string[] {
@@ -459,7 +546,42 @@ describe("Prose patterns", (): void => {
     expect(report(rule)).toStrictEqual([]);
   });
 
-  it("writes titles and headings in sentence case", (): void => {
+  it.each([
+    {
+      name: "a long preposition in lowercase",
+      source: 'title: "Read Twitter Replies on X without an Account"',
+      rules: [],
+    },
+    {
+      name: "a sentence case title",
+      source: 'title: "How to see who liked my tweet"',
+      rules: ["Headings"],
+    },
+    {
+      name: "a capitalized small word",
+      source: 'title: "Twitter Media Viewer For Any Public X Account"',
+      rules: ["Headings"],
+    },
+    {
+      name: "a lowercase last word",
+      source: 'title: "What to Search for"',
+      rules: ["Headings"],
+    },
+    {
+      name: "a title case sidebar label",
+      source: 'sidebarTitle: "Read Replies Without An Account"',
+      rules: ["Headings"],
+    },
+  ])("holds a Chicago title page to $name", ({ source, rules }): void => {
+    expect.assertions(1);
+
+    const page = `---\n${source}\n---\n`;
+    const found = pageFindings(page, isChicagoTitleCase).map((finding): string => finding.rule);
+
+    expect(found).toStrictEqual(rules);
+  });
+
+  it("writes headings in sentence case and each title in its page's case", (): void => {
     expect.assertions(1);
 
     expect(report("Headings")).toStrictEqual([]);
