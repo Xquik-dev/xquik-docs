@@ -24,9 +24,13 @@ credentials get `docs`, `readSavedResult`, and 1 tool for each eligible
 operation. Guest keys get `docs`, `readSavedResult`, and 1 tool for each
 eligible GET route.
 
+{"\n"}
+
 Native names, schemas, and contracts come from OpenAPI. `compose` and
 `estimateExtraction` are read-only. Clients read each JSON Schema from
 `tools/list`. The server embeds no model prompt, routing, sample count, or endpoint preference.
+
+{"\n"}
 
 Use `https://xquik.com/mcp` for Code Mode. Choose native mode for one tool per operation. Binary downloads, credential lifecycle, checkout, top-up and subscription operations remain REST-only.
 
@@ -38,7 +42,11 @@ Use `https://xquik.com/mcp` for Code Mode. Choose native mode for one tool per o
 
 Search canonical public documentation. `docs` is read-only and uses no credits.
 
+{"\n"}
+
 **Input.** Pass a non-empty `query` string of up to 500 characters.
+
+{"\n"}
 
 **Output.** `structuredContent.results` lists each matching passage with its `id`, `url`, `title`, and `text`. The text content shows the same passages as `<result>` blocks within 24,000 characters.
 
@@ -50,6 +58,8 @@ Search canonical public documentation. `docs` is read-only and uses no credits.
 
 Return the signed-in account's stable id. `whoami` takes no arguments, makes no API request, and uses no credits.
 
+{"\n"}
+
 **Output.** `{ "id": "user:<id>" }`. The `id` stays the same across token refresh, reconnection, and permission changes. It never moves to another account. Use it to tell connected accounts apart. ChatGPT reads it as the app's profile tool.
 
 </section>
@@ -60,7 +70,11 @@ Return the signed-in account's stable id. `whoami` takes no arguments, makes no 
 
 Native mode reads a saved oversized answer in pages. Pages make no API requests and use no credits.
 
+{"\n"}
+
 **Input.** Pass `result_id` from the oversized answer and optional `offset`, which starts at 0.
+
+{"\n"}
 
 **Output.** Each page returns `characters`, `next_offset`, and `text` within 24,000 characters.
 Pass `next_offset` as `offset` until it is `null`, then join each `text` in order.
@@ -74,13 +88,21 @@ A page never splits a character.
 
 Search the authenticated API catalog. `search` makes no network calls and uses no credits. Full credentials search every catalog route. Guest keys search the eligible paid-read routes.
 
+{"\n"}
+
 **Input.**
+
+{"\n"}
 
 Pass required `code` as an async arrow function of up to 10,000 characters.
 Read `spec.paths`. Return matching paths, methods, and relevant contract fields.
 Inspect inputs and response fields separately when an operation is large.
 
+{"\n"}
+
 **Sandbox API.**
+
+{"\n"}
 
 Inputs resolve inline. Response `$ref` values point into `spec.components.schemas`.
 The catalog includes only response schemas reachable from your allowed operations.
@@ -116,19 +138,33 @@ async () => spec.components.schemas.PaginatedTweets.properties;
 
 Execute API calls allowed by the authenticated credential. Full account keys and OAuth tokens keep their existing account capabilities. Guest keys can execute only the eligible GET reads. The server injects authentication and required idempotency headers.
 
+{"\n"}
+
 For full credentials, `execute` carries `destructiveHint: true` and `openWorldHint: true`. As a result, MCP clients such as Claude ask before each call. Guest keys see it as read-only. Native tools carry the hints of their operation, so reads run without a prompt.
+
+{"\n"}
 
 **Input.**
 
+{"\n"}
+
 Pass `code` as an async arrow function of up to 10,000 characters. `xquik` is global and the function's first argument.
+
+{"\n"}
 
 Pass optional `result_id` to load a saved result into `xquik.result`.
 Without it, `xquik.result` is `null`.
 
+{"\n"}
+
 Pass the function itself, not a promise or its result.
 Place API calls inside its body. Non-functions fail before any API request starts.
 
+{"\n"}
+
 `path` works with or without the `/api/v1` prefix, as in `/x/users/nasa/follow`.
+
+{"\n"}
 
 **Sandbox API.**
 
@@ -156,6 +192,8 @@ declare const xquik: {
 
 **Response contract.**
 
+{"\n"}
+
 `xquik.request()` returns `success`, `status`, `result`, `errors`, and `messages`.
 `status` contains the HTTP status. `result` contains the endpoint body.
 A rejected request includes `error.status` when available. Existing string-path
@@ -164,9 +202,15 @@ calls still return the body for compatibility. Hosted MCP injects a unique
 writes. Retry only when `safe_to_retry` is true. Results use snake_case with Unix
 timestamps. CamelCase reads work, including `favoriteCount` for `like_count`. Errors stay structured. Pagination uses `has_more` and `next_cursor`.
 
+{"\n"}
+
 Compact extraction results retain `like_count`, `retweet_count`, `reply_count`, `quote_count`, `view_count`, and `bookmark_count`. They omit profile images and nested enrichment.
 
+{"\n"}
+
 MCP keeps every safe field that X supplies. Optional fields stay absent. See [Read Data Richness](/guides/tweet-profile-api-fields) for the REST field map.
+
+{"\n"}
 
 Missing response-field reads return `undefined` and produce `warnings`.
 Each warning maps a missing field to available response keys.
@@ -174,15 +218,25 @@ Optional-field fallbacks remain valid. Warnings contain field names, never respo
 With warnings, text and structured output both contain `{ result, warnings }`.
 The combined output follows the existing 24,000-character limit.
 
+{"\n"}
+
 List and search responses use `has_more` and `next_cursor`. They do so even when REST shows `has_next_page` or `hasMore`. Pass `next_cursor` unchanged as `cursor` for X reads, draws, extractions, and events. Never replace an extraction cursor with `offset`. Use `after` for `/api/v1/radar` and `afterCursor` for drafts.
 
+{"\n"}
+
 Hosted MCP keeps each requested `limit`. REST enforces documented bounds.
+
+{"\n"}
 
 Omit `mode` for tweet search, replies, followers, following, and verified
 followers. Those operations use automatic maximum coverage. Pass
 `next_cursor` back unchanged. Use `mode=standard` only for legacy pagination.
 
+{"\n"}
+
 Keep paging while `has_more` is true and the cursor advances. That includes empty pages, filtered or not. Stop when you reach the requested total or `has_more` becomes false. Treat a missing or repeated `next_cursor` while `has_more` is true as stalled pagination. Return the partial count plus a stop reason.
+
+{"\n"}
 
 For advanced nested-reply diagnostics, call
 `/api/v1/x/tweets/<tweet_id>/replies?mode=complete&limit=25000`.
@@ -193,9 +247,15 @@ MCP returns that documented body instead of a tool error.
 Inspect `coveragePercentage`, `recommendedFallback`, and X-dependent coverage
 limits.
 
+{"\n"}
+
 Errors use `error.type`, `error.code`, and `error.message`. They add fields such as `error.retryable` or `error.retry_after` when available. Invalid routes stay blocked without suggesting or calling a different operation. Find the exact method and path in `spec.paths` before retrying. Dependency failures use HTTP `424` in this contract. Fix validation errors before retrying. Respect `retry_after` on `429`.
 
+{"\n"}
+
 Write and media results follow the same contract. Read `tweet_id`, `write_action_id`, `charged_credits`, `media_id`, `media_url`, and `message_id` from `response.result`.
+
+{"\n"}
 
 Both `search` and `execute` return compact JSON within 24,000 characters. Whitespace inside strings stays unchanged. Native API tools apply the same limit to successful & failed responses.
 The limit bounds tool output, not catalog access or available results. Large schema selections can exceed it. Oversized output returns a shortened copy, never an error. `result` stays valid JSON. Lists keep whole items from the start. Each cut says `--- TRUNCATED ---`. Examples are `--- TRUNCATED --- 11 more items` and `--- TRUNCATED --- 5,000 chars`. A `truncated` object sits beside `result`. Its `characters` gives the whole answer's size. Its `next` says what to do for the rest. A saved answer adds `result_id` & `download_url`. That link downloads the whole result as a CSV file. An answer too large to keep returns `characters`, `next` & any saved `reads`. An ordinary result containing an `error` field is not a tool failure.
@@ -208,6 +268,8 @@ Cursor-based reads may return fewer rows than requested to fit each MCP response
 Continue with `next_cursor` while `has_more` is true.
 Deferred rows remain available through that cursor, with their fields intact.
 Only rows delivered in each page incur result charges.
+
+{"\n"}
 
 Each API response within `execute` must fit within 2 MiB.
 A single larger row returns HTTP 413 `response_item_too_large` before result billing.
@@ -250,9 +312,15 @@ Verify completed writes before retrying them.
 
 The [MCP operation boundary](/mcp/overview#mcp-operation-boundary) lists excluded operations. Guest wallet credential routes and file downloads use REST. Guest keys expose only [eligible paid-read routes](/guides/guest-wallets#eligible-paid-read-routes).
 
+{"\n"}
+
 A `402` creates no checkout. Its MCP answer keeps `error`, `message`, `balance`, and `required`. It also keeps `credits_renew_at` when a plan renews, and `dashboard` as a full link. It leaves out `payment_options`, `next_step` and the top-up fields. Report the balance and send the user to the `dashboard` link to add credits.
 
+{"\n"}
+
 **Examples.**
+
+{"\n"}
 
 Each page holds complete `execute` calls.
 

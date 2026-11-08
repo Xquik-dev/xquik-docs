@@ -10,8 +10,6 @@ interface PageStructureFinding {
 
 const SKIPPED_DIRECTORIES = new Set<string>([".git", "node_modules"] as const);
 
-// MDX drops the line break between the children of a JSX element, and Mintlify renders each
-// paragraph as an inline span, so 2 paragraphs inside a section reach text readers glued.
 const PARAGRAPH_SEPARATOR = '{"\\n"}';
 const NOT_PARAGRAPH = /^(?:#|\||- |\* |\+ |\d+\. |```|~~~|<|>|\{|!\[|---\s*$)/u;
 const COMPONENT_OPEN = /^<(?<name>[A-Z][\w.]*)\b[^>]*(?<!\/)>/u;
