@@ -59,16 +59,6 @@ const RETIRED_COMPARISON_PAGES = [
   "zapier",
 ] as const;
 
-const API_DROPDOWNS = [
-  "Start & account",
-  "X tweets",
-  "X users",
-  "X communities & data",
-  "X write",
-  "Automation",
-  "Content",
-] as const;
-
 const PRIORITY_API_ROUTES = [
   "/api-reference/account/subscription-checkout",
   "/api-reference/draws/twitter-giveaway-history",
@@ -115,18 +105,16 @@ describe("navigation default state", (): void => {
     expect(bannerContent).not.toContain("trademarks of X Corp.");
   });
 
-  it("keeps every API section in its own dropdown with pages", (): void => {
+  it("shows every API page in the sidebar without a dropdown", (): void => {
     expect.assertions(2);
 
-    const dropdowns = findTab(docsConfig(), "API reference").dropdowns ?? [];
-    const emptySections = dropdowns
-      .filter((section): boolean => (section.groups ?? []).length === 0)
-      .map((section): string => section.dropdown ?? "(unnamed)");
+    const apiTab = findTab(docsConfig(), "API reference");
+    const emptyGroups = (apiTab.groups ?? [])
+      .filter((group): boolean => (group.pages ?? []).length === 0)
+      .map((group): string => group.group ?? "(unnamed)");
 
-    expect(dropdowns.map((section): string | undefined => section.dropdown)).toStrictEqual([
-      ...API_DROPDOWNS,
-    ]);
-    expect(emptySections).toStrictEqual([]);
+    expect(apiTab.dropdowns).toBeUndefined();
+    expect(emptyGroups).toStrictEqual([]);
   });
 
   it("keeps MDX API snippets pointed at the public API origin", (): void => {
