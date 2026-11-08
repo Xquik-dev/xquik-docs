@@ -20,8 +20,8 @@ When reporting, include as much of the following as you can.
 
 ## Response targets
 
-- **Acknowledgement.** We respond within 24 hours.
-- **Initial triage and severity assignment.** We complete both within 72 hours.
+- **Acknowledgement.** We respond within 3 business days.
+- **Initial triage and severity assignment.** We complete both within 14 days.
 - **Fix or mitigation timeline.** We share it after triage. Critical issues take priority.
 - **Progress updates.** We send one at least every 14 days during remediation.
 
@@ -60,6 +60,10 @@ We will not pursue legal action against researchers who meet these conditions.
 - Make a good-faith effort to comply with this policy.
 - Avoid privacy violations, destruction of data, or interruption of service.
 - Give us reasonable time to investigate and remediate before any public disclosure.
+
+## Rewards
+
+Rewards can be monetary and depend on the bug's impact. Xquik decides each reward, and not every report earns one. The [bug bounty and vulnerability disclosure policy](https://xquik.com/en/vulnerability-disclosure) lists the scope, test rules and reward rules.
 
 ## Credit
 
