@@ -93,7 +93,7 @@ const REQUIRED_PROMPTS_BY_FILE = {
     "Scrape X (Twitter) community members",
     "What is the best way to extract data from an X (Twitter) community?",
     "How do I scrape members from an X community?",
-    "X (Twitter) community API",
+    "Twitter community API",
   ],
   "api-reference/x/community-tweets.mdx": ["Export community tweets"],
   "guides/guest-wallets.mdx": [

@@ -60,7 +60,7 @@ describe("set X identity documentation", (): void => {
         "It also does not prove that the handle belongs to you.",
       ),
       noUserIdConversion: normalizedPage.includes(
-        "This route does not convert a Twitter ID to a username.",
+        "This route does not convert an X (Twitter) ID to a username.",
       ),
     }).toStrictEqual({
       noConnection: true,
