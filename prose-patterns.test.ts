@@ -353,6 +353,7 @@ function isSentenceCase(text: string): boolean {
 }
 
 const CHICAGO_TITLE_PAGES: ReadonlySet<string> = new Set<string>([
+  "api-reference/monitors/create-or-update.mdx",
   "guides/read-twitter-replies-without-account.mdx",
   "guides/see-twitter-likes.mdx",
   "guides/see-who-liked-my-tweet.mdx",
