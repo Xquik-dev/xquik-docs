@@ -1,0 +1,179 @@
+---
+title: "Manage Multiple X (Twitter) Accounts for Your Users by API"
+sidebarTitle: "Connect users' X accounts"
+description: "Connect your users' X (Twitter) accounts from your own product, with a hosted link or the API. They need no Xquik signup. Connecting is free."
+keywords:
+  [
+    "manage multiple twitter accounts",
+    "multiple twitter accounts",
+    "connect X account API",
+    "connect link",
+    "twitter api",
+    "X account management API",
+  ]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+<LlmsDirective />
+
+Your users connect their X (Twitter) accounts while staying in your product.
+They need no Xquik signup, and each account belongs to your Xquik account.
+Connecting is free.
+
+|                            | Connect link       | Direct API                                         |
+| -------------------------- | ------------------ | -------------------------------------------------- |
+| Who collects the password  | A page Xquik hosts | Your own form                                      |
+| What your backend receives | The result only    | The X password & 2FA secret                        |
+| Key you need               | Full access        | Full access, plus **Connect X accounts**           |
+| Best for                   | Most products      | Products that must keep every step in their own UI |
+
+Start with a connect link. Choose the direct API only if your product must own the form.
+
+<section>
+
+## Use a Connect Link
+
+Create a link from your backend.
+
+```bash
+curl -X POST https://xquik.com/api/v1/x/account-connection-links \
+  -H "x-api-key: $XQUIK_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "reference": "crm-user-7", "returnUrl": "https://app.example.com/connected" }'
+```
+
+Open the answer's `url` in a pop-up or a new tab, since the page can't load in a frame.
+The person enters their X username, email, password & Authenticator App 2FA secret there.
+The page names your Xquik account, and asks for any code X emails them.
+
+Then [read the link](/api-reference/x-accounts/get-connection-link) with its `id`.
+Once `status` reads `connected`, you get `accountId`, `xUserId`, `xUsername`, `health` & your `reference`.
+
+### What a Link Protects
+
+- A link works for 30 minutes and connects 1 account. Only its hash is stored.
+- 5 refused logins end a link, so it can't be used to guess passwords.
+- The page takes the token out of the address bar, and sends no cookies.
+- It offers your `returnUrl` as a button. It never redirects by itself.
+- Send `accountId` to make a reconnect link. It refuses a sign-in for any other X account.
+
+Treat `url` like a password until it's used. Keep it out of logs & analytics, and [revoke it](/api-reference/x-accounts/revoke-connection-link) if you send it to the wrong person.
+
+</section>
+
+## Use the Direct API
+
+<Warning>
+
+With this path, your backend receives each user's X password and 2FA secret.
+[Your duties](#your-duties) lists what that makes you responsible for.
+
+</Warning>
+
+<section>
+
+### Turn on the Permission
+
+Open [dashboard.xquik.com/api-keys](https://dashboard.xquik.com/api-keys) and edit a key.
+Turn on **Connect X accounts**. It starts off on every key.
+Full access doesn't include it, and only a signed-in dashboard session can change it.
+
+A key without it gets `403 x_account_connect_permission_required`.
+OAuth tokens and MCP tools always get `403 session_required`, so X passwords never reach a model.
+
+</section>
+
+<section>
+
+### Connect an Account
+
+Generate a `connection_attempt_id` first, so you can read the result even if the response never arrives.
+
+```bash
+curl -X POST https://xquik.com/api/v1/x/accounts \
+  -H "x-api-key: $XQUIK_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d @- <<'JSON'
+{
+  "username": "your_x_username",
+  "email": "account@example.com",
+  "password": "<ACCOUNT_PASSWORD>",
+  "totp_secret": "<TOTP_SECRET>",
+  "connection_attempt_id": "xatt_0123456789abcdef0123456789abcdef"
+}
+JSON
+```
+
+`totp_secret` is the long Authenticator App key, not a 6-digit code.
+[Connect X account](/api-reference/x-accounts/connect) explains how a user finds it.
+
+</section>
+
+<section>
+
+### Handle Each Answer
+
+| Answer                           | What it means                   | What to do                                                                                                        |
+| -------------------------------- | ------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `201`                            | The account connected.          | Save `id`. Pass it or `xUsername` as `account` on later calls.                                                    |
+| `202` with `pending`             | The sign-in is still running.   | Wait for `Retry-After`, then read [the attempt](/api-reference/x-accounts/connection-attempt). Don't start again. |
+| `202` with `requires_email_code` | X sent the user an email code.  | Ask for it, then send it to [submit](/api-reference/x-accounts/submit-challenge).                                 |
+| `422`                            | X refused the login.            | Show `message` and ask the user to check their details.                                                           |
+| `409`                            | Xquik already has this account. | Tell the user to disconnect it where they first connected it.                                                     |
+| `429`                            | The login has to wait.          | Wait for `Retry-After`, then try once.                                                                            |
+
+A successful attempt read gives `accountId` too.
+
+</section>
+
+<section>
+
+### Reconnect, Retry & Disconnect
+
+When a password changes or `health` reads `needsReauth`, call [reconnect](/api-reference/x-accounts/reauth) with the new password.
+It answers like a connect, and it refuses a sign-in that belongs to another X account.
+
+[Bulk retry](/api-reference/x-accounts/bulk-retry) clears passing failures, so you never send a password for those.
+[Disconnect](/api-reference/x-accounts/disconnect) removes an account and its stored session.
+
+Account activity records each connect, reconnect & disconnect with the key's ID.
+
+</section>
+
+<section>
+
+### Your Duties
+
+Your product collects X passwords, so these become your job.
+
+- Tell users you collect their password and send it to Xquik.
+- Send it only over HTTPS, and only from your backend.
+- Keep request bodies out of your logs, traces, error reports & analytics.
+- Never store the password or 2FA secret once Xquik answers.
+- Keep this key in a secret store, and set its allowed IPs.
+- Use a separate key for connecting, and pause it when you don't need it.
+
+Xquik encrypts credentials at rest and never returns them.
+
+</section>
+
+<section>
+
+## Act as Each Account
+
+Send `account` on each write and DM call to pick which connected account acts.
+[List X accounts](/api-reference/x-accounts/list) gives each account's `status` and `health`.
+
+</section>
+
+<section>
+
+## Limits
+
+These hold on both paths. Failed logins slow a caller down. Each account you connect lifts that limit, so onboarding many users isn't capped.
+A caller with no connected accounts gets 10 failed logins per 15 minutes.
+One X account gets 5 refused logins per 15 minutes, across all callers.
+A `429` always says how long to wait.
+
+</section>

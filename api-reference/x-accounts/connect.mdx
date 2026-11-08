@@ -20,7 +20,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <Warning>
 
-Connect X accounts at [dashboard.xquik.com/account](https://dashboard.xquik.com/account). This route serves only a signed-in dashboard session. That way, X passwords never pass through an API key. API keys and OAuth tokens get `403 session_required`.
+This route takes a signed-in dashboard session, or an API key holding the **Connect X accounts** permission. Turn it on at [dashboard.xquik.com/api-keys](https://dashboard.xquik.com/api-keys). Full access doesn't include it. A key without it gets `403 x_account_connect_permission_required`. OAuth tokens and MCP tools get `403 session_required`. With a key, your backend receives the user's X password and 2FA secret. Read [your duties](/guides/connect-x-accounts-for-your-users#your-duties) first.
 
 </Warning>
 
@@ -95,11 +95,12 @@ const data = await response.json();
 
 ## Headers
 
-| Header         | Type     | Required | Description                                                                                                            |
-| -------------- | -------- | -------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `Cookie`       | `string` | Yes      | Your signed-in dashboard session cookie, `__Host-xquik_session`. API keys and OAuth tokens get `403 session_required`. |
-| `Origin`       | `string` | Yes      | Must be `https://dashboard.xquik.com`, sent with `Sec-Fetch-Site` set to `same-origin`. The dashboard sends both.      |
-| `Content-Type` | `string` | Yes      | Must be `application/json`.                                                                                            |
+| Header         | Type     | Required       | Description                                                                                                       |
+| -------------- | -------- | -------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `x-api-key`    | `string` | Or `Cookie`    | An API key holding the Connect X accounts permission.                                                             |
+| `Cookie`       | `string` | Or `x-api-key` | Your signed-in dashboard session cookie, `__Host-xquik_session`.                                                  |
+| `Origin`       | `string` | With `Cookie`  | Must be `https://dashboard.xquik.com`, sent with `Sec-Fetch-Site` set to `same-origin`. The dashboard sends both. |
+| `Content-Type` | `string` | Yes            | Must be `application/json`.                                                                                       |
 
 </section>
 
@@ -271,7 +272,7 @@ Missing or invalid API key.
 
 ### 409 Duplicate
 
-The specified X account is already connected to your Xquik account.
+Xquik already has this X account connected. The answer never says on which Xquik account.
 
 ### 429 Rate limit exceeded
 
@@ -279,7 +280,7 @@ The specified X account is already connected to your Xquik account.
 
 {"\n"}
 
-You reached the connection safety limit. The `Retry-After: 900` header gives the seconds to wait before retrying. See the [rate limits guide](/guides/rate-limits) for details.
+You sent too many failed logins in 15 minutes, for this caller or this X account. Wait the `Retry-After` seconds, then try once. Each account a caller connects raises its limit. See the [rate limits guide](/guides/rate-limits) for details.
 
 ### 429 Login cooldown
 
