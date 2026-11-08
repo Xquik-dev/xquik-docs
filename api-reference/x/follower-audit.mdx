@@ -1,0 +1,201 @@
+---
+title: "Twitter fake follower checker API for X accounts"
+sidebarTitle: "Follower audit"
+description: "Audit the newest followers of an X (Twitter) account. Get each follower's class, a quality score, signal counts & arrival bands. 1 credit per follower."
+api: "GET /x/users/{id}/follower-audit"
+keywords:
+  [
+    "Twitter fake follower checker API",
+    "X fake follower checker",
+    "follower audit API",
+    "fake followers API",
+    "bot follower detection",
+    "influencer vetting",
+  ]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+import AudienceCommunityApiLinks from "/snippets/x-audience-community-api-links.mdx";
+import FieldSelectionParams from "/snippets/field-selection-params.mdx";
+
+<LlmsDirective />
+
+<Callout icon="coins" color="#5c3327">
+
+**1 credit per follower read**, plus 1 for the engagement
+
+A user X doesn't know is free · [All plans](https://xquik.com) from $0.00012/credit
+
+</Callout>
+
+<CodeGroup>
+
+```bash cURL
+curl "https://xquik.com/api/v1/x/users/nasa/follower-audit?limit=500" \
+  -H "x-api-key: xq_your_api_key_here" | jq
+```
+
+```javascript Node.js
+const response = await fetch(
+  "https://xquik.com/api/v1/x/users/nasa/follower-audit?limit=500",
+  { headers: { "x-api-key": "xq_your_api_key_here" } },
+);
+const body = await response.json();
+if (!response.ok) throw new Error(JSON.stringify(body));
+
+const { audit } = body;
+console.log(`Grade ${audit.quality.grade}, ${audit.coverage.read} followers read`);
+```
+
+```python Python
+import requests
+
+response = requests.get(
+    "https://xquik.com/api/v1/x/users/nasa/follower-audit",
+    params={"limit": 500},
+    headers={"x-api-key": "xq_your_api_key_here"},
+)
+body = response.json()
+if not response.ok:
+    raise RuntimeError(body)
+
+audit = body["audit"]
+print(f'Grade {audit["quality"]["grade"]}, {audit["coverage"]["read"]} followers read')
+```
+
+</CodeGroup>
+
+## Check an account's followers
+
+Use `GET /x/users/{id}/follower-audit` before you pay for a shoutout or a partnership. Name the account by user ID,
+username, or profile URL.
+
+The audit reads the account's newest followers first. It gives each follower 1 class, a score & the signals behind it.
+Then it adds a quality score, class counts & arrival bands. It also lists join cohorts, languages, places & top
+followers. The account's own engagement comes from its recent posts.
+
+Signals come from public profiles, so a real person can match them. Older followers may differ from the newest ones.
+
+A read stops at your `limit` or at what your balance pays for. A very long read returns the followers it finished.
+`coverage` says how many it read out of the account's total.
+
+## Path parameters
+
+<ParamField path="id" type="string" required>
+
+User ID, username with or without `@`, or URL-encoded profile URL, such as `x.com/nasa`. See
+[path IDs](/api-reference/overview#path-ids).
+
+</ParamField>
+
+## Query parameters
+
+<ParamField query="limit" type="integer" default="200">
+
+Followers to read, newest first, from `1` up. Left out, a read takes up to 200. A low balance reads fewer. `pageSize`,
+`count`, `max_results`, `maxItems`, `max_items` & `per_page` are accepted aliases.
+
+</ParamField>
+
+<FieldSelectionParams />
+
+## Headers
+
+<ParamField header="x-api-key" type="string">
+
+Full account key. Sessions and OAuth also work.
+
+</ParamField>
+
+## Response
+
+### 200 OK
+
+<ResponseField name="audit" type="object | null">
+
+<ResponseField name="account" type="object">
+  The audited account's counts & engagement, in the shape [user insights](/api-reference/x/user-engagement-insights)
+  returns.
+</ResponseField>
+<ResponseField name="coverage" type="object">
+  `read` followers out of the account's `total`, & the `percent` that makes.
+</ResponseField>
+<ResponseField name="quality" type="object">
+  A `score` from 0 to 100 & a `grade` from `A` to `F`. A higher score means more followers look real.
+</ResponseField>
+<ResponseField name="classes" type="object[]">
+  How many followers fall in each `class`, with their `count` & `percent`.
+</ResponseField>
+<ResponseField name="signals" type="object[]">
+  Each signal's `id`, its matching followers & the `points` it adds.
+</ResponseField>
+<ResponseField name="arrivalBands" type="object[]">
+  The likely fake share in each slice of the newest-first list.
+</ResponseField>
+<ResponseField name="cohorts" type="object[]">
+  Followers who joined X in the same UTC week, & how many look fake.
+</ResponseField>
+<ResponseField name="languages" type="object[]">
+  Follower counts by profile language.
+</ResponseField>
+<ResponseField name="places" type="object[]">
+  Follower counts by profile location.
+</ResponseField>
+<ResponseField name="verified" type="object">
+  How many followers are verified, & the `percent` that makes.
+</ResponseField>
+<ResponseField name="followers" type="object[]">
+  Every follower read, newest first. Each has its `class`, `score`, `signals`, counts & join date.
+</ResponseField>
+<ResponseField name="topFollowers" type="object[]">
+  Up to 10 followers with the most followers of their own.
+</ResponseField>
+
+</ResponseField>
+
+### Follower classes
+
+| Class        | Meaning                                         |
+| ------------ | ----------------------------------------------- |
+| `likelyReal` | Looks like a real, active account               |
+| `inactive`   | Looks real but posts little                     |
+| `tooNew`     | Joined too recently to judge                    |
+| `likelyFake` | Matches enough fake signals to look fake        |
+| `automated`  | X labels it automated, & `owner` names who runs it |
+
+### 400 Invalid input
+
+```json
+{ "error": "invalid_user_id" }
+```
+
+Send a user ID, a username, or a profile URL.
+
+### 402 Payment required
+
+Your balance pays for no follower. Top up, then try again.
+
+### 403 Protected follower list
+
+X keeps a protected account's follower list private. Xquik charges nothing.
+
+### 404 User not found
+
+```json
+{ "error": "user_not_found", "message": "X user not found. Check the username." }
+```
+
+A user X doesn't know is free.
+
+### 503 Busy
+
+Retry after the `Retry-After` header.
+
+<Note>
+
+**Related.** [Followers](/api-reference/x/followers) · [User insights](/api-reference/x/user-engagement-insights) ·
+[Verified followers](/api-reference/x/verified-followers)
+
+</Note>
+
+<AudienceCommunityApiLinks />
