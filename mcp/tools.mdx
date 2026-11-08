@@ -176,7 +176,7 @@ Errors use `error.type`, `error.code`, and `error.message`. They add fields such
 Write and media results follow the same contract. Read `tweet_id`, `write_action_id`, `charged_credits`, `media_id`, `media_url`, and `message_id` from `response.result`.
 
 Both `search` and `execute` return compact JSON within 24,000 characters. Whitespace inside strings stays unchanged. Native API tools apply the same limit to successful & failed responses.
-The limit bounds tool output, not catalog access or available results. Large schema selections can exceed it. Oversized output returns its first page, never an error. The page carries `characters`, `next_offset`, `next` & the page's `text`, which may cut JSON short. `next` says what to do for the rest. A saved answer adds `result_id` & a resource link. An answer too large to keep returns `characters`, `next` & any saved `reads`. An ordinary result containing an `error` field is not a tool failure.
+The limit bounds tool output, not catalog access or available results. Large schema selections can exceed it. Oversized output returns a shortened copy, never an error. `result` stays valid JSON. Lists keep whole items from the start. Each cut says `--- TRUNCATED ---`. Examples are `--- TRUNCATED --- 11 more items` and `--- TRUNCATED --- 5,000 chars`. A `truncated` object sits beside `result`. Its `characters` gives the whole answer's size. Its `next` says what to do for the rest. A saved answer adds `result_id` & `download_url`. That link downloads the whole result as a CSV file. An answer too large to keep returns `characters`, `next` & any saved `reads`. An ordinary result containing an `error` field is not a tool failure.
 Output errors do not undo completed API actions or charges.
 Use REST, SDKs, or extraction exports to store every row.
 
@@ -195,11 +195,12 @@ The separate 24,000-character tool output limit still applies.
 
 ### Recover oversized results
 
-When saving succeeds, the first page of an oversized API result includes `result_id`. The page also includes a resource link.
+When saving succeeds, the `truncated` object of an oversized API result includes `result_id` & `download_url`.
 Its `next` names only tools your catalog lists. Use 1 of these retrieval methods.
 
 - In Code Mode, pass `result_id` to `execute`, then project or page `xquik.result`.
-- In native mode, pass `result_id` & `next_offset` to [`readSavedResult`](#readsavedresult) for each next page.
+- In native mode, pass `result_id` with `offset` 0 to [`readSavedResult`](#readsavedresult), then each `next_offset`.
+- Open `download_url` signed in to the same account. It downloads the whole result as a CSV file.
 - Read `xquik://results/{result_id}` through MCP `resources/read`.
 
 Resources return complete `{ result, warnings? }` JSON.
@@ -213,7 +214,7 @@ Missing or unavailable results return an error.
 ```json
 {
   "code": "async () => xquik.result.tweets.slice(0, 10).map(({ id }) => id)",
-  "result_id": "<result_id from the first page>"
+  "result_id": "<result_id from truncated>"
 }
 ```
 

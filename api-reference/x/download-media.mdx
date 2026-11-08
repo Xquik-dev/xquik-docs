@@ -41,7 +41,7 @@ import ConnectedAccountApiLinks from "/snippets/x-connected-account-api-links.md
           "tweetId": "1234567890",
           "mediaType": "photo",
           "mediaUrl": "https://media.xquik.com/tweet_1234567890/0.jpg",
-          "fileSize": "2097152"
+          "posterUrl": null
         }
       ]
     }
@@ -375,6 +375,42 @@ Array of tweet URLs or IDs for bulk download. Maximum 50 string items. The route
 
 </ParamField>
 
+<ParamField body="imageShows" type="string">
+
+Save only posts whose photos show this. Send `charts`, `screenshots`, `product_photos`, `memes`, `people` or your own words, such as `a rocket`. AI-powered analysis checks photos X doesn't mark sensitive & keeps scores of 0.5 or more. Each kept post costs 2 credits. Each kept post also pays the save price. The answer adds `imageFilter`.
+
+</ParamField>
+
+## Save only chart posts
+
+Send `imageShows` with the posts, & only the posts whose photos show it get saved.
+
+```bash
+curl -X POST "https://xquik.com/api/v1/x/media/download" \
+  -H "x-api-key: $XQUIK_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"imageShows": "charts", "tweetIds": ["2118113888486986103", "2118072490119626919", "2117971091146625465"]}'
+```
+
+```json
+{
+  "galleryUrl": "https://xquik.com/gallery/def456",
+  "imageFilter": {
+    "imageShows": "charts",
+    "question": "Does a picture attached to this post show a chart or graph that plots data, such as a line, bar, pie or candlestick chart? Judge the pictures in tweet.images.",
+    "cutoff": 0.5,
+    "checked": 3,
+    "kept": 2,
+    "unchecked": []
+  },
+  "totalMedia": 2,
+  "totalTweets": 2
+}
+```
+
+- `imageFilter.unchecked` lists posts without a safe photo & posts X can't find. They cost nothing.
+- When no photo shows it, nothing is saved & nothing is billed. A single download answers with empty `items`. A bulk download answers with `totalTweets` 0.
+
 ## Media download handoff
 
 Your agent may need a saved gallery for tweet images, videos, or GIFs. If so, use this endpoint.
@@ -509,6 +545,11 @@ Counts processed tweets with media.
 <ResponseField name="totalMedia" type="number">
 
 Counts downloaded images, videos, and GIFs.
+
+</ResponseField>
+<ResponseField name="imageFilter" type="object">
+
+States the question, the 0.5 cutoff & the checked & kept counts. It also lists posts left unchecked. Sent only with `imageShows`.
 
 </ResponseField>
 
