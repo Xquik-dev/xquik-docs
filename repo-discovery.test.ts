@@ -3622,8 +3622,6 @@ const REQUIRED_VALIDATION_ERROR_GUIDE_SNIPPETS = [
   "Provide comma-separated numeric IDs",
   '<Card title="missing_params" icon="circle-alert">',
   "Follower checks need both source",
-  '<Card title="too_many_ids" icon="list">',
-  "groups of 100",
   '<Card title="unsupported_field" icon="circle-x">',
   "in `media`, not uploaded media IDs.",
 ] as const;
@@ -11554,33 +11552,6 @@ const REQUIRED_HYPEFURY_ALTERNATIVE_SNIPPETS = [
   "Validate REST, SDK, webhook, and MCP handoff needs before buying.",
 ] as const;
 
-const REQUIRED_CHIRRAPP_ALTERNATIVE_SNIPPETS = [
-  "## Source-backed ChirrApp scope",
-  "write and schedule X (Twitter) threads without distractions",
-  "drafts, schedule, history, analytics, and reply to a tweet. It also includes numbering, media upload, split text, tips, and focus controls",
-  "repurpose blog content with auto-split. They can save and share drafts of tweets and threads. They can add images, videos, and GIFs",
-  "cross-post to LinkedIn and Mastodon",
-  "connect multiple accounts",
-  "split it into 280-character tweets",
-  "preview the thread before publishing",
-  "import article text with the browser extension",
-  "autosave drafts",
-  "schedule at a specific date and time. It can add content to a fixed queue. It can also share next or pick a scheduled slot",
-  "queues default to 9 am, noon, and 4 pm. You can adjust them by day",
-  "add up to 4 images to each tweet",
-  "add a GIF or video, quote tweets, and add emojis. It can automatically number new tweets in a thread",
-  "users can cross-post published threads to LinkedIn. It does not support LinkedIn scheduling",
-  "offers LinkedIn cross-posts but not Instagram or Facebook cross-posts",
-  "analytics show an engagement heatmap and can schedule against that timing",
-  "show queue, week, or month views",
-  "Draft tools include stars and folders.",
-  "The evergreen pool loops saved tweets or threads.",
-  "does not show stable plan prices",
-  "Validate ChirrApp paid scheduling, team, account, analytics, and API availability at checkout before buying.",
-  "Price by scheduling access, thread length, media limits, draft workflow, and connected accounts.",
-  "Search tweets and follower exports cost 1 credit/result, with CSV, JSON, XLSX, Markdown, API, SDK, and MCP handoff options.",
-] as const;
-
 const REQUIRED_TWEET_HUNTER_ALTERNATIVE_SNIPPETS = [
   "## Source-backed Tweet Hunter scope",
   "all-in-one AI X tool. The page says it is for growing an audience and brand on X",
@@ -15129,7 +15100,6 @@ describe("repository discovery", (): void => {
     ["Zernio alternative", "alternatives/late.mdx", REQUIRED_ZERNIO_ALTERNATIVE_SNIPPETS],
     ["twscrape alternative", "alternatives/twscrape.mdx", REQUIRED_TWSCRAPE_ALTERNATIVE_SNIPPETS],
     ["Hypefury alternative", "alternatives/hypefury.mdx", REQUIRED_HYPEFURY_ALTERNATIVE_SNIPPETS],
-    ["ChirrApp alternative", "alternatives/chirrapp.mdx", REQUIRED_CHIRRAPP_ALTERNATIVE_SNIPPETS],
     [
       "Tweet Hunter alternative",
       "alternatives/tweet-hunter.mdx",

@@ -2813,7 +2813,7 @@ paths:
                 username:
                   type: string
                   maxLength: 19
-                  pattern: '^(@?[A-Za-z0-9_]{1,15}|[0-9]{1,19})$'
+                  pattern: &monitor-username-pattern '^(@?[A-Za-z0-9_]{1,15}|[0-9]{1,19})$'
                   description:
                     X username to monitor, with or without @, or the account's
                     numeric user ID. A number is a user ID. The monitor shows
@@ -3424,6 +3424,120 @@ paths:
         '429':
           $ref: '#/components/responses/RateLimitExceeded'
 
+  /monitors/username/{username}:
+    put:
+      operationId: upsertMonitorByUsername
+      summary: Create or update a monitor by username
+      description:
+        Creates the monitor if it does not exist, or updates it if it does. Send
+        the same call twice & you still have 1 monitor. A new monitor answers
+        201 & an update answers 200. Both carry `created`, so you know which one
+        ran. Creating needs the credits of the first hour, then costs 30 credits
+        an hour. A stopped monitor turns back on & counts as created. Updating
+        is free & replaces the event types. It changes the name only when you
+        send one.
+      tags: [Monitors]
+      security: [{ apiKey: [] }, { oauthBearer: [] }]
+      parameters:
+        - name: username
+          in: path
+          required: true
+          description:
+            The account's X username, with or without @, or its numeric user ID.
+            A number is a user ID, so this call matches the account even after a
+            rename.
+          schema:
+            type: string
+            maxLength: 19
+            pattern: *monitor-username-pattern
+            example: elonmusk
+      requestBody:
+        required: true
+        description: Event types to monitor, plus an optional label.
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [eventTypes]
+              properties:
+                eventTypes: *event-types
+                name:
+                  type: [string, 'null']
+                  minLength: 1
+                  maxLength: 80
+                  description:
+                    Your label for the monitor. Its events carry it as
+                    monitorName. Leave it out to keep the current label, or send
+                    null to remove it.
+                  example: Launch watch
+            example:
+              eventTypes:
+                - 'tweet.new'
+                - 'tweet.reply'
+              name: 'Launch watch'
+      responses:
+        '200':
+          description: Running monitor updated
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Monitor'
+                  - type: object
+                    required: [created]
+                    properties:
+                      created:
+                        type: boolean
+                        description:
+                          False, since this call updated a running monitor.
+                        example: false
+              example:
+                created: false
+                id: '42'
+                username: elonmusk
+                xUserId: '1234567890'
+                name: Launch watch
+                eventTypes: [tweet.new, tweet.reply]
+                isActive: true
+                createdAt: '2025-01-15T12:00:00Z'
+                nextBillingAt: '2025-01-15T13:00:00Z'
+        '201':
+          description: Monitor created or turned back on
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Monitor'
+                  - type: object
+                    required: [created]
+                    properties:
+                      created:
+                        type: boolean
+                        description:
+                          True, since this call created the monitor or turned it
+                          back on.
+                        example: true
+              example:
+                created: true
+                id: '42'
+                username: elonmusk
+                xUserId: '1234567890'
+                name: Launch watch
+                eventTypes: [tweet.new, tweet.reply]
+                isActive: true
+                createdAt: '2025-01-15T12:00:00Z'
+                nextBillingAt: '2025-01-15T12:00:00Z'
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
+        '403': { $ref: '#/components/responses/MonitorsKeyForbidden' }
+        '404':
+          $ref: '#/components/responses/UserNotFound'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
   /monitors/{id}:
     get:
       operationId: getMonitor
@@ -5363,11 +5477,11 @@ paths:
             type: string
             maxLength: 13086
           description:
-            1 to 100 posts, separated by commas. Each is a tweet ID or a tweet
-            URL, such as x.com/nasa/status/20. Xquik reads a post named twice
-            once. It skips any other entry & lists it under `skipped` with why.
-            A batch without 1 post gets 400 `invalid_tweet_id`. A longer URL
-            fails at the edge before Xquik reads it.
+            Posts, separated by commas. Each is a tweet ID or a tweet URL, such
+            as x.com/nasa/status/20. Xquik reads a post named twice once. It
+            skips any other entry & lists it under `skipped` with why. A batch
+            without 1 post gets 400 `invalid_tweet_id`. A longer URL fails at
+            the edge before Xquik reads it.
         - $ref: '#/components/parameters/Fields'
         - $ref: '#/components/parameters/Omit'
       responses:
@@ -7260,9 +7374,8 @@ paths:
     get:
       operationId: getBatchUsers
       description:
-        Returns public profiles for up to 100 user IDs, usernames or profile
-        links. Send ids or usernames, not both. Each returned profile costs 1
-        credit.
+        Returns public profiles for user IDs, usernames or profile links. Send
+        ids or usernames, not both. Each returned profile costs 1 credit.
       summary: Look up multiple users by IDs or usernames in 1 call
       tags:
         - Users
@@ -7274,11 +7387,10 @@ paths:
             type: string
             maxLength: 13081
           description:
-            Comma-separated numeric user IDs (1-100 values). Xquik reads any
-            other entry as a username, with or without @, so IDs and usernames
-            can mix. Xquik ignores duplicates and keeps the first-seen order,
-            IDs before usernames. A longer URL fails at the edge before Xquik
-            reads it.
+            Comma-separated numeric user IDs. Xquik reads any other entry as a
+            username, with or without @, so IDs and usernames can mix. Xquik
+            ignores duplicates and keeps the first-seen order, IDs before
+            usernames. A longer URL fails at the edge before Xquik reads it.
         - name: usernames
           in: query
           schema:
@@ -7287,9 +7399,8 @@ paths:
           example: 'nasa,@OpenAI,x.com/verge'
           description:
             Comma-separated X usernames, with or without @, or profile links
-            such as x.com/nasa (1-100 values), in place of ids. A name in
-            another case is the same account. A longer URL fails at the edge
-            before Xquik reads it.
+            such as x.com/nasa, in place of ids. A name in another case is the
+            same account. A longer URL fails at the edge before Xquik reads it.
         - $ref: '#/components/parameters/UserMinFollowers'
         - $ref: '#/components/parameters/UserMaxFollowers'
         - $ref: '#/components/parameters/UserMinFollowing'
@@ -7350,10 +7461,10 @@ paths:
     get:
       operationId: getBatchUserTweets
       description:
-        Returns the newest posts of up to 20 users, named by user ID, username
-        or profile link, in the order named. Send ids or usernames, not both.
-        Each post costs 1 credit. A user in unavailable_ids or unprocessed_ids
-        costs nothing.
+        Returns the newest posts of users named by user ID, username or profile
+        link, in the order named. Send ids or usernames, not both. Each post
+        costs 1 credit. A user in unavailable_ids or unprocessed_ids costs
+        nothing.
       summary: List the newest tweets of multiple users in 1 call
       tags:
         - Users
@@ -7365,11 +7476,11 @@ paths:
             type: string
             maxLength: 13074
           description:
-            Comma-separated numeric user IDs (1-20 values). Xquik reads any
-            other entry as a username, with or without @, so IDs and usernames
-            can mix. Xquik ignores duplicates and keeps the first-seen order,
-            IDs before usernames. A longer URL fails at the edge before Xquik
-            reads it.
+            Comma-separated numeric IDs of the users to read posts from. Xquik
+            reads any other entry as a username, with or without @, so IDs and
+            usernames can mix. Xquik ignores duplicates and keeps the first-seen
+            order, IDs before usernames. A longer URL fails at the edge before
+            Xquik reads it.
         - name: usernames
           in: query
           schema:
@@ -7378,19 +7489,19 @@ paths:
           example: 'nasa,@OpenAI,x.com/verge'
           description:
             Comma-separated X usernames, with or without @, or profile links
-            such as x.com/nasa (1-20 values), in place of ids. A name in another
-            case is the same account. A number is a user ID. A longer URL fails
-            at the edge before Xquik reads it.
+            such as x.com/nasa, in place of ids. A name in another case is the
+            same account. A number is a user ID. A longer URL fails at the edge
+            before Xquik reads it.
         - name: pageSize
           in: query
           description: >
-            Posts per user (1-20, default 20). A low credit balance can return
+            Posts per user (1-300, default 20). A low credit balance can return
             fewer. Its aliases are limit, count, max_results, maxItems,
             max_items & per_page.
           schema:
             type: integer
             minimum: 1
-            maximum: 20
+            maximum: 300
             default: 20
         - $ref: '#/components/parameters/Fields'
         - $ref: '#/components/parameters/Omit'
@@ -8046,13 +8157,15 @@ paths:
                   example: 'https://x.com/elonmusk/status/1234567890'
                 tweetIds:
                   type: array
+                  maxItems: 13107200
                   items:
                     type: string
                     maxLength: 2048
-                  maxItems: 50
                   description:
-                    Up to 50 tweet URLs or IDs. An item that names no post gets
-                    400 `invalid_tweet_id`, which says which item.
+                    Tweet URLs or IDs. An item that names no post gets 400
+                    `invalid_tweet_id`, which says which item. Posts Xquik had
+                    no time to read come back in `unprocessedTweetIds`, with no
+                    charge. Send them again.
                   example: ['1234567890', '1234567891']
                 imageShows:
                   type: string
@@ -8080,7 +8193,7 @@ paths:
                 value:
                   tweetUrl: 'https://x.com/elonmusk/status/1234567890'
               bulk:
-                summary: 'Up to 50 posts'
+                summary: 'Many posts'
                 value:
                   tweetIds:
                     - '1234567890'
@@ -8097,7 +8210,8 @@ paths:
           description:
             'Media download result. A single download returns tweetId,
             galleryUrl, cacheHit & the saved files in items. A bulk download
-            returns galleryUrl, totalTweets & totalMedia. With imageShows, the
+            returns galleryUrl, totalTweets & totalMedia, plus
+            unprocessedTweetIds when time ran out first. With imageShows, the
             answer adds imageFilter, & when no photo shows it, items is empty or
             totalTweets is 0 with no galleryUrl.'
           content:
@@ -8242,6 +8356,14 @@ paths:
                     example: 5
                   imageFilter:
                     $ref: '#/components/schemas/ImageFilterSummary'
+                  unprocessedTweetIds:
+                    type: array
+                    description:
+                      Posts Xquik had no time to read, at no charge. Send them
+                      again.
+                    items:
+                      type: string
+                    example: ['1234567892']
               example:
                 tweetId: '1234567890'
                 galleryUrl: 'https://xquik.com/gallery/abc123'
@@ -10333,9 +10455,10 @@ paths:
       operationId: getTweetFavoriters
       summary: List visible users who liked a tweet
       description: >
-        Returns the likers your X account sees. Without your own connected X
-        account, it answers 424 `account_required`. X shows likers only to the
-        post author.
+        Returns who liked a post. X shows likers only to the post author. Xquik
+        reads them through your connected X account that wrote the post. Without
+        a connected account, it answers 424 `account_required`. If none of your
+        accounts wrote the post, it answers 424 `favoriters_unavailable`.
       tags:
         - Tweets
       security: [{ apiKey: [] }, { oauthBearer: [] }]
@@ -22774,9 +22897,7 @@ components:
                 - support_media_rate_limit
                 - support_request_rate_limit
                 - telegram_unavailable
-                - too_many_ids
                 - too_many_streams
-                - too_many_tweets
                 - topup_in_progress
                 - unknown_field
                 - unsupported_media_combination
