@@ -1305,15 +1305,10 @@ paths:
             example: csv
         - name: limit
           in: query
-          description: Most rows to return. PDF stops at 10,000 rows.
-          schema:
-            {
-              type: integer,
-              minimum: 1,
-              maximum: 100000,
-              default: 100,
-              example: 50,
-            }
+          description: >-
+            Most rows to return, with no upper limit. A PDF above 10,000 rows
+            comes as a ZIP of PDF parts.
+          schema: { type: integer, minimum: 1, default: 100, example: 50 }
         - name: category
           in: query
           description: >-
@@ -3842,6 +3837,20 @@ paths:
                   locationContains: 'Houston'
                   usernameContains: 'space'
                   resultsLimit: 500
+              topicFilter: &extraction-topicFilter-example
+                summary: 'Posts about a topic'
+                value:
+                  toolType: 'tweet_search_extractor'
+                  searchQuery: 'rust'
+                  topic: 'the Rust programming language'
+                  resultsLimit: 100
+              imageFilter: &extraction-imageFilter-example
+                summary: 'Posts whose photos show a chart'
+                value:
+                  toolType: 'post_extractor'
+                  targetUsername: 'NASA'
+                  imageShows: 'charts'
+                  resultsLimit: 100
               following: &extraction-following-example
                 summary: 'Accounts a user follows'
                 value:
@@ -4219,6 +4228,8 @@ paths:
               $ref: '#/components/schemas/ExtractionRequest'
             examples:
               followers: *extraction-followers-example
+              topicFilter: *extraction-topicFilter-example
+              imageFilter: *extraction-imageFilter-example
               following: *extraction-following-example
               verifiedFollowers: *extraction-verifiedFollowers-example
               relations: *extraction-relations-example
@@ -4427,7 +4438,9 @@ paths:
         - name: format
           in: query
           required: true
-          description: Export file format
+          description: >-
+            Export file format. Every format includes every row. A PDF above
+            10,000 rows comes as a ZIP of PDF parts.
           schema:
             type: string
             enum: [csv, json, md, md-document, pdf, txt, xlsx]
@@ -4700,21 +4713,21 @@ paths:
                   example: en
                 requiredHashtags:
                   type: array
-                  maxItems: 25
+                  maxItems: 12500
                   items:
                     type: string
                     maxLength: 100
                   example: ['#giveaway']
                 requiredKeywords:
                   type: array
-                  maxItems: 25
+                  maxItems: 2500000
                   items:
                     type: string
                     maxLength: 100
                   example: ['entered']
                 requiredMentions:
                   type: array
-                  maxItems: 25
+                  maxItems: 12500
                   items:
                     type: string
                     maxLength: 100
@@ -4904,8 +4917,8 @@ paths:
           in: query
           required: true
           description: >-
-            Export output format. PDF entry exports include up to 10,000 rows.
-            Other entry formats include up to 100,000 rows.
+            Export output format. Every format includes every row. A PDF above
+            10,000 rows comes as a ZIP of PDF parts.
           schema:
             type: string
             enum: [csv, json, md, md-document, pdf, txt, xlsx]
@@ -6624,6 +6637,8 @@ paths:
         - $ref: '#/components/parameters/AdvancedQuery'
         - $ref: '#/components/parameters/Fields'
         - $ref: '#/components/parameters/Omit'
+        - $ref: '#/components/parameters/PostTopic'
+        - $ref: '#/components/parameters/ImageShows'
       responses:
         '200':
           description: Search results
@@ -6633,6 +6648,8 @@ paths:
                 oneOf:
                   - $ref: '#/components/schemas/PaginatedTweets'
                   - $ref: '#/components/schemas/TweetSearchCoverageResponse'
+                  - $ref: '#/components/schemas/TopicFilteredTweets'
+                  - $ref: '#/components/schemas/ImageFilteredTweets'
               example:
                 tweets: *example-launch-tweets
                 has_next_page: true
@@ -6731,7 +6748,7 @@ paths:
       responses:
         '200':
           description: Top tweets
-          content:
+          content: &paginated-tweets-content
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedTweets'
@@ -8037,6 +8054,18 @@ paths:
                     Up to 50 tweet URLs or IDs. An item that names no post gets
                     400 `invalid_tweet_id`, which says which item.
                   example: ['1234567890', '1234567891']
+                imageShows:
+                  type: string
+                  maxLength: 200
+                  example: charts
+                  description: >-
+                    Save only posts whose photos show this. Send charts,
+                    screenshots, product_photos, memes or people, or describe it
+                    in words, such as a rocket. AI-powered analysis checks posts
+                    with photos X doesn't mark sensitive & keeps scores of 0.5
+                    or more. Each post saved costs 2 credits, the AI analysis
+                    price, on top of its save price, & a post the filter drops
+                    costs nothing. imageFilter states the cutoff & counts.
             examples:
               url:
                 summary: '1 post by URL'
@@ -8056,12 +8085,21 @@ paths:
                   tweetIds:
                     - '1234567890'
                     - 'https://x.com/elonmusk/status/1234567891'
+              charts:
+                summary: 'Only posts whose photos show charts'
+                value:
+                  imageShows: charts
+                  tweetIds:
+                    - '1234567890'
+                    - '1234567891'
       responses:
         '200':
           description:
             'Media download result. A single download returns tweetId,
             galleryUrl, cacheHit & the saved files in items. A bulk download
-            returns galleryUrl, totalTweets & totalMedia.'
+            returns galleryUrl, totalTweets & totalMedia. With imageShows, the
+            answer adds imageFilter, & when no photo shows it, items is empty or
+            totalTweets is 0 with no galleryUrl.'
           content:
             application/json:
               schema:
@@ -8074,10 +8112,9 @@ paths:
                   cacheHit: *boolean-example-false
                   items:
                     type: array
-                    minItems: 1
                     description:
                       The post's files saved to your gallery. Single downloads
-                      only.
+                      only. Empty when imageShows kept no photo.
                     example: &saved-media-items-example
                       - id: '42'
                         tweetId: '1234567890'
@@ -8203,6 +8240,8 @@ paths:
                     type: integer
                     minimum: 0
                     example: 5
+                  imageFilter:
+                    $ref: '#/components/schemas/ImageFilterSummary'
               example:
                 tweetId: '1234567890'
                 galleryUrl: 'https://xquik.com/gallery/abc123'
@@ -10426,13 +10465,22 @@ paths:
         - $ref: '#/components/parameters/RetweetsOfTweetId'
         - $ref: '#/components/parameters/Fields'
         - $ref: '#/components/parameters/Omit'
+        - $ref: '#/components/parameters/PostTopic'
+        - $ref: '#/components/parameters/ImageShows'
       responses:
         '200':
           description: User tweets list
-          content: &paginated-tweets-content
+          content: &filtered-tweets-content
             application/json:
               schema:
-                $ref: '#/components/schemas/PaginatedTweets'
+                oneOf:
+                  - $ref: '#/components/schemas/PaginatedTweets'
+                  - $ref: '#/components/schemas/TopicFilteredTweets'
+                  - $ref: '#/components/schemas/ImageFilteredTweets'
+              example:
+                tweets: *example-launch-tweets
+                has_next_page: true
+                next_cursor: 'DAACCgACGRElMJcAAA'
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401':
@@ -10530,10 +10578,12 @@ paths:
         - $ref: '#/components/parameters/RetweetsOfTweetId'
         - $ref: '#/components/parameters/Fields'
         - $ref: '#/components/parameters/Omit'
+        - $ref: '#/components/parameters/PostTopic'
+        - $ref: '#/components/parameters/ImageShows'
       responses:
         '200':
           description: User timeline with replies
-          content: *paginated-tweets-content
+          content: *filtered-tweets-content
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401':
@@ -10643,11 +10693,53 @@ paths:
       tags:
         - Users
       security: [{ apiKey: [] }, { oauthBearer: [] }, {}]
-      parameters: *tweet-row-page-parameters
+      parameters:
+        - $ref: '#/components/parameters/CollectionCursor'
+        - $ref: '#/components/parameters/ResultPageSize'
+        - $ref: '#/components/parameters/FromUser'
+        - $ref: '#/components/parameters/ToUser'
+        - $ref: '#/components/parameters/Mentioning'
+        - $ref: '#/components/parameters/Language'
+        - $ref: '#/components/parameters/SinceDate'
+        - $ref: '#/components/parameters/UntilDate'
+        - $ref: '#/components/parameters/MediaType'
+        - $ref: '#/components/parameters/MinLikes'
+        - $ref: '#/components/parameters/MinRetweets'
+        - $ref: '#/components/parameters/MinReplies'
+        - $ref: '#/components/parameters/MinQuotes'
+        - $ref: '#/components/parameters/MinViews'
+        - $ref: '#/components/parameters/MinBookmarks'
+        - $ref: '#/components/parameters/MaxFaves'
+        - $ref: '#/components/parameters/MaxRetweets'
+        - $ref: '#/components/parameters/MaxReplies'
+        - $ref: '#/components/parameters/MaxQuotes'
+        - $ref: '#/components/parameters/BlueVerifiedOnly'
+        - $ref: '#/components/parameters/SinceId'
+        - $ref: '#/components/parameters/MaxId'
+        - $ref: '#/components/parameters/WithinTime'
+        - $ref: '#/components/parameters/NativeRetweets'
+        - $ref: '#/components/parameters/VerifiedOnly'
+        - $ref: '#/components/parameters/Replies'
+        - $ref: '#/components/parameters/Retweets'
+        - $ref: '#/components/parameters/Quotes'
+        - $ref: '#/components/parameters/ExactPhrase'
+        - $ref: '#/components/parameters/ExcludeWords'
+        - $ref: '#/components/parameters/AnyWords'
+        - $ref: '#/components/parameters/Hashtags'
+        - $ref: '#/components/parameters/Cashtags'
+        - $ref: '#/components/parameters/Url'
+        - $ref: '#/components/parameters/ConversationId'
+        - $ref: '#/components/parameters/InReplyToTweetId'
+        - $ref: '#/components/parameters/QuotesOfTweetId'
+        - $ref: '#/components/parameters/RetweetsOfTweetId'
+        - $ref: '#/components/parameters/Fields'
+        - $ref: '#/components/parameters/Omit'
+        - $ref: '#/components/parameters/PostTopic'
+        - $ref: '#/components/parameters/ImageShows'
       responses:
         '200':
           description: List of media tweets
-          content: *paginated-tweets-content
+          content: *filtered-tweets-content
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401':
@@ -14472,6 +14564,144 @@ paths:
         '424':
           $ref: '#/components/responses/XApiError'
 
+  /x/users/{id}/follower-audit:
+    get:
+      operationId: getUserFollowerAudit
+      description: >
+        Reads the newest followers of a public account & returns a follower
+        audit. It gives each follower 1 class with its score & signals, then
+        adds coverage, a quality score, signal counts, arrival bands, join
+        cohorts, countries, top followers & the account's engagement. Each
+        follower read costs 1 credit, and the engagement adds 1 credit. Signals
+        come from public profiles, so a real person can match. Older followers
+        may differ from the newest ones.
+      summary: Audit a user's newest followers
+      tags:
+        - Users
+      security: [{ apiKey: [] }, { oauthBearer: [] }, {}]
+      parameters:
+        - $ref: '#/components/parameters/UserPathId'
+        - name: limit
+          in: query
+          description: >
+            Most followers to read, newest first. Left out, a read takes up to
+            200 and a low balance reads fewer. A very long read returns what it
+            finished, & coverage shows how many. Its aliases are pageSize,
+            count, max_results, maxItems, max_items & per_page.
+          schema:
+            type: integer
+            minimum: 1
+            default: 200
+        - $ref: '#/components/parameters/Fields'
+        - $ref: '#/components/parameters/Omit'
+      responses:
+        '200':
+          description: Follower audit
+          content:
+            application/json:
+              example:
+                audit:
+                  account:
+                    userId: '11348282'
+                    userName: NASA
+                    followers: 92376187
+                    following: 180
+                    posts: 73919
+                    accountAgeDays: 6449
+                    postsPrivate: false
+                    sample:
+                      posts: 20
+                      oldestAt: '2026-10-28T13:15:28.000Z'
+                      newestAt: '2026-11-02T22:12:05.000Z'
+                    averages:
+                      likes: 3684.2
+                      replies: 142.7
+                      reposts: 459.8
+                      quotes: 45
+                      bookmarks: 209.7
+                      views: 785247.8
+                      engagements: 4331.7
+                    medianViews: 512330
+                    engagementRate: 0.0047
+                    engagementPerView: 0.55
+                    postsPerDay: 3.8
+                    topPostId: '1852301447063109847'
+                  coverage: { percent: 0.0002, read: 200, total: 92376187 }
+                  quality: { grade: B, score: 71 }
+                  classes:
+                    - { class: likelyReal, count: 122, percent: 61 }
+                    - { class: inactive, count: 41, percent: 20.5 }
+                    - { class: likelyFake, count: 29, percent: 14.5 }
+                    - { class: tooNew, count: 8, percent: 4 }
+                  signals:
+                    - { count: 36, id: defaultPicture, percent: 18, points: 2 }
+                    - { count: 58, id: noBio, percent: 29, points: 1 }
+                  arrivalBands:
+                    - { count: 13, from: 1, percent: 13, read: 100, to: 100 }
+                    - { count: 16, from: 101, percent: 16, read: 100, to: 200 }
+                  cohorts:
+                    - count: 7
+                      likelyFake: 6
+                      percent: 3.5
+                      weekStartMs: 1761523200000
+                  languages:
+                    - { count: 141, percent: 70.5, value: en }
+                  places:
+                    - { count: 22, percent: 11, value: United States }
+                  verified: { count: 9, percent: 4.5 }
+                  followers:
+                    - id: '1852412278803021824'
+                      userName: orbit_watcher
+                      name: Orbit Watcher
+                      class: likelyReal
+                      score: 1
+                      signals: [noBanner]
+                      followers: 312
+                      following: 410
+                      likes: 2840
+                      posts: 1290
+                      position: 1
+                      joinedAtMs: 1561939200000
+                      pictureUrl: https://pbs.twimg.com/profile_images/1/photo.jpg
+                  topFollowers:
+                    - id: '1852412278803021824'
+                      userName: orbit_watcher
+                      name: Orbit Watcher
+                      class: likelyReal
+                      score: 1
+                      signals: [noBanner]
+                      followers: 312
+                      following: 410
+                      likes: 2840
+                      posts: 1290
+                      position: 1
+                      joinedAtMs: 1561939200000
+                      pictureUrl: https://pbs.twimg.com/profile_images/1/photo.jpg
+              schema:
+                type: object
+                required: [audit]
+                properties:
+                  audit:
+                    $ref: '#/components/schemas/FollowerAudit'
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '401':
+          $ref: '#/components/responses/AnonymousGuestAuthenticationRequired'
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
+        '403':
+          $ref: '#/components/responses/ProtectedFollowerList'
+        '404':
+          $ref: '#/components/responses/UserNotFound'
+        '424':
+          $ref: '#/components/responses/XApiError'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+        '502':
+          $ref: '#/components/responses/XApiError'
+        '503':
+          $ref: '#/components/responses/ReadBusy'
+
   /x/users/{id}/insights:
     get:
       operationId: getUserInsights
@@ -16838,6 +17068,37 @@ components:
         Fields to drop from each row, comma-separated. It takes the same names
         as fields. With fields, it drops from the kept fields. A longer URL
         fails at the edge before Xquik reads it.
+    PostTopic:
+      name: topic
+      in: query
+      required: false
+      schema:
+        type: string
+        maxLength: 200
+        example: the Rust programming language
+      description: >-
+        Keep only posts about this topic. AI-powered analysis asks "Is this post
+        about <topic>?" of each post & keeps scores of 0.5 or more. It reads
+        post text & safe photos. Each kept post costs 2 credits, the AI analysis
+        price, instead of the read price, & a post the filter drops costs
+        nothing. limit counts checked posts, & only kept posts come back.
+        topicFilter states the cutoff & counts.
+    ImageShows:
+      name: imageShows
+      in: query
+      required: false
+      schema:
+        type: string
+        maxLength: 200
+        example: charts
+      description: >-
+        Keep only posts whose photos show this. Send charts, screenshots,
+        product_photos, memes or people, or describe it in words, such as a
+        rocket. AI-powered analysis checks posts with photos X doesn't mark
+        sensitive & keeps scores of 0.5 or more. Other posts stay out at no
+        charge. Each kept post costs 2 credits, the AI analysis price, instead
+        of the read price, & a post the filter drops costs nothing. imageFilter
+        states the cutoff & counts.
 
   headers:
     SignInRetryAfter:
@@ -20291,6 +20552,141 @@ components:
               items:
                 $ref: '#/components/schemas/TweetSearchCoverageStrategy'
             uniqueTweets: *bounded-result-count
+    TopicFilteredTweets:
+      description: >-
+        Posts kept by the topic filter. Each kept post carries its topicScore.
+        Follow next_cursor to check the next posts.
+      allOf:
+        - $ref: '#/components/schemas/PaginatedTweets'
+        - type: object
+          required: [topicFilter]
+          properties:
+            tweets:
+              type: array
+              items:
+                allOf:
+                  - $ref: '#/components/schemas/SearchTweet'
+                  - type: object
+                    required: [topicScore]
+                    properties:
+                      topicScore:
+                        type: number
+                        minimum: 0.5
+                        maximum: 1
+                        description: How likely the post is about the topic.
+            topicFilter:
+              $ref: '#/components/schemas/TopicFilterSummary'
+    ImageFilteredTweets:
+      description: >-
+        Posts kept by the image filter. Each kept post carries its imageScore.
+        Follow next_cursor to check the next posts.
+      allOf:
+        - $ref: '#/components/schemas/PaginatedTweets'
+        - type: object
+          required: [imageFilter]
+          properties:
+            tweets:
+              type: array
+              items:
+                allOf:
+                  - $ref: '#/components/schemas/SearchTweet'
+                  - type: object
+                    required: [imageScore]
+                    properties:
+                      imageScore:
+                        type: number
+                        minimum: 0.5
+                        maximum: 1
+                        description:
+                          How likely a photo shows what you asked for.
+            imageFilter:
+              $ref: '#/components/schemas/ImageFilterSummary'
+    TopicFilterSummary:
+      description: What the topic filter asked & how many posts it kept.
+      type: object
+      required: [topic, question, cutoff, checked, kept, unchecked]
+      properties:
+        topic:
+          type: string
+          description: The topic you sent.
+        question:
+          type: string
+          description: The question asked of each post.
+        cutoff:
+          type: number
+          const: 0.5
+          description: The lowest topicScore a kept post has.
+        checked:
+          type: integer
+          minimum: 0
+          description: Posts checked. Only kept posts are billed.
+        kept:
+          type: integer
+          minimum: 0
+          description:
+            Posts about the topic, all returned & billed at 2 credits each.
+        unchecked:
+          type: array
+          description:
+            Posts the check couldn't answer. They aren't billed or returned.
+          items:
+            type: object
+            required: [id, reason]
+            properties:
+              id:
+                type: string
+              reason:
+                type: string
+    ImageFilterSummary:
+      description: What the image filter asked & how many posts it kept.
+      type: object
+      required: [imageShows, question, cutoff, checked, kept, unchecked]
+      example:
+        imageShows: charts
+        question: >-
+          Does a picture attached to this post show a chart or graph that plots
+          data, such as a line, bar, pie or candlestick chart? Judge the
+          pictures in tweet.images.
+        cutoff: 0.5
+        checked: 16
+        kept: 4
+        unchecked:
+          - id: '1234567890'
+            reason: no_safe_photos
+      properties:
+        imageShows:
+          type: string
+          description: What you asked the photos to show.
+        question:
+          type: string
+          description: The question asked of each post's photos.
+        cutoff:
+          type: number
+          const: 0.5
+          description: The lowest imageScore a kept post has.
+        checked:
+          type: integer
+          minimum: 0
+          description:
+            Posts whose photos were checked. Only kept posts are billed.
+        kept:
+          type: integer
+          minimum: 0
+          description:
+            Posts whose photos show it, all returned & billed at 2 credits each.
+        unchecked:
+          type: array
+          description:
+            Posts without a safe photo & posts the check couldn't answer. They
+            aren't billed or returned.
+          items:
+            type: object
+            required: [id, reason]
+            properties:
+              id:
+                type: string
+              reason:
+                type: string
     TweetSearchCoverageResponse:
       description: Terminal Tweet search coverage response with diagnostics.
       allOf:
@@ -22773,6 +23169,27 @@ components:
             Add each user's full profile to follower_explorer,
             following_explorer, verified_follower_explorer, people_search &
             repost_extractor rows. Jobs take longer.
+        topic:
+          type: string
+          maxLength: 200
+          description: >-
+            Keep only the posts about this topic, such as "the Rust programming
+            language". Each post the job reads is checked, only matching posts
+            are stored, & each stored post costs 2 credits instead of its read
+            price. A post the filter drops costs nothing. resultsLimit caps the
+            posts read & checked. Works with tools that return posts. Send topic
+            or imageShows, not both.
+        imageShows:
+          type: string
+          maxLength: 200
+          description: >-
+            Keep only the posts whose photos show this. Use charts, screenshots,
+            product_photos, memes or people, or describe it in your own words.
+            Each post with a safe photo is checked, & each stored post costs 2
+            credits instead of its read price. Posts without a safe photo aren't
+            checked, billed or stored, & a post the filter drops costs nothing.
+            resultsLimit caps the posts read. Works with tools that return
+            posts. Send topic or imageShows, not both.
         collectionStrategy:
           type: string
           enum: [auto, complete, direct, search, thread]
@@ -24497,6 +24914,10 @@ components:
           type: integer
           minimum: 0
           description: Result limit after affordability checks.
+        topicFilter:
+          $ref: '#/components/schemas/TopicFilterSummary'
+        imageFilter:
+          $ref: '#/components/schemas/ImageFilterSummary'
         completionReason:
           type: string
           enum:
@@ -25915,6 +26336,155 @@ components:
           description: Views.
           example: 1291231
 
+    FollowerAudit:
+      description: >
+        Report on the followers read. Classes rest on public profile signals, so
+        they say what a profile looks like, never who runs it.
+      type: object
+      required:
+        - account
+        - arrivalBands
+        - classes
+        - cohorts
+        - coverage
+        - followers
+        - languages
+        - places
+        - quality
+        - signals
+        - topFollowers
+        - verified
+      properties:
+        account:
+          $ref: '#/components/schemas/UserInsights'
+        coverage:
+          type: object
+          required: [percent, read, total]
+          properties:
+            percent: { type: number }
+            read: { type: integer, minimum: 0, maximum: 9007199254740991 }
+            total: { type: integer, minimum: 0, maximum: 9007199254740991 }
+        quality:
+          type: object
+          required: [grade, score]
+          properties:
+            grade: { type: string, enum: [A, B, C, D, F] }
+            score: { type: integer, minimum: 0, maximum: 100 }
+        classes:
+          type: array
+          items:
+            type: object
+            required: [class, count, percent]
+            properties:
+              class:
+                $ref: '#/components/schemas/FollowerClass'
+              count: { type: integer, minimum: 0, maximum: 9007199254740991 }
+              percent: { type: number }
+        signals:
+          type: array
+          items:
+            type: object
+            required: [count, id, percent, points]
+            properties:
+              count: { type: integer, minimum: 0, maximum: 9007199254740991 }
+              id: { type: string }
+              percent: { type: number }
+              points: { type: integer, minimum: 0, maximum: 9007199254740991 }
+        arrivalBands:
+          type: array
+          description: Likely fake share by position in the newest-first list.
+          items:
+            type: object
+            required: [count, from, percent, read, to]
+            properties:
+              count: { type: integer, minimum: 0, maximum: 9007199254740991 }
+              from: { type: integer, minimum: 0, maximum: 9007199254740991 }
+              percent: { type: number }
+              read: { type: integer, minimum: 0, maximum: 9007199254740991 }
+              to: { type: integer, minimum: 0, maximum: 9007199254740991 }
+        cohorts:
+          type: array
+          description: Followers who joined X in the same UTC week.
+          items:
+            type: object
+            required: [count, likelyFake, percent, weekStartMs]
+            properties:
+              count: { type: integer, minimum: 0, maximum: 9007199254740991 }
+              likelyFake:
+                { type: integer, minimum: 0, maximum: 9007199254740991 }
+              percent: { type: number }
+              weekStartMs:
+                { type: integer, minimum: 0, maximum: 9007199254740991 }
+        languages:
+          type: array
+          items:
+            $ref: '#/components/schemas/FollowerValueCount'
+        places:
+          type: array
+          items:
+            $ref: '#/components/schemas/FollowerValueCount'
+        verified:
+          type: object
+          required: [count, percent]
+          properties:
+            count: { type: integer, minimum: 0, maximum: 9007199254740991 }
+            percent: { type: number }
+        followers:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditedFollower'
+        topFollowers:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditedFollower'
+    FollowerClass:
+      description: What 1 follower looks like from its public profile.
+      type: string
+      enum: [automated, inactive, likelyFake, likelyReal, tooNew]
+    FollowerValueCount:
+      description:
+        How many followers share 1 value, such as a language or place.
+      type: object
+      required: [count, percent, value]
+      properties:
+        count: { type: integer, minimum: 0, maximum: 9007199254740991 }
+        percent: { type: number }
+        value: { type: string }
+    AuditedFollower:
+      description: 1 follower the audit read, with its class, score & signals.
+      type: object
+      required:
+        - class
+        - followers
+        - following
+        - id
+        - likes
+        - name
+        - position
+        - posts
+        - score
+        - signals
+        - userName
+      properties:
+        class:
+          $ref: '#/components/schemas/FollowerClass'
+        followers: { type: integer, minimum: 0, maximum: 9007199254740991 }
+        following: { type: integer, minimum: 0, maximum: 9007199254740991 }
+        id: { type: string }
+        joinedAtMs: { type: integer, minimum: 0, maximum: 9007199254740991 }
+        likes: { type: integer, minimum: 0, maximum: 9007199254740991 }
+        name: { type: string }
+        owner:
+          type: string
+          description: Account that runs an automated follower, when X names it.
+        pictureUrl: { type: string }
+        position: { type: integer, minimum: 0, maximum: 9007199254740991 }
+        posts: { type: integer, minimum: 0, maximum: 9007199254740991 }
+        score: { type: integer, minimum: 0, maximum: 9007199254740991 }
+        signals:
+          type: array
+          items: { type: string }
+        userName: { type: string }
     UserInsights:
       description: >
         Engagement insights of 1 profile. Engagements are likes, replies,

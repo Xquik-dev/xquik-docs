@@ -233,12 +233,47 @@ func main() {
 
 Use `tweetIds` for bulk downloads. If `tweetIds` holds at least 1 string value, the route uses bulk mode. In bulk mode it ignores single-tweet fields. Otherwise, use `tweetInput`, `tweetId`, or `tweetUrl` for a single tweet.
 
-| Body parameter | Type       | Required | Description                                                                                                                                       |
-| -------------- | ---------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `tweetInput`   | `string`   | No       | Tweet URL or numeric tweet ID for a single download. Accepts `x.com` and `twitter.com` URL formats.                                               |
-| `tweetId`      | `string`   | No       | Numeric tweet ID alias for `tweetInput`. Use it when `tweetInput` is absent.                                                                      |
-| `tweetUrl`     | `string`   | No       | Tweet URL alias for `tweetInput`. Use it when both earlier fields are absent.                                                                     |
-| `tweetIds`     | `string[]` | No       | Array of tweet URLs or IDs for bulk download. Maximum 50 string items. The route skips invalid IDs. It fails only when no valid tweet IDs remain. |
+| Body parameter | Type       | Required | Description                                                                                                                                                                                                                                                                                                                                        |
+| -------------- | ---------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tweetInput`   | `string`   | No       | Tweet URL or numeric tweet ID for a single download. Accepts `x.com` and `twitter.com` URL formats.                                                                                                                                                                                                                                                |
+| `tweetId`      | `string`   | No       | Numeric tweet ID alias for `tweetInput`. Use it when `tweetInput` is absent.                                                                                                                                                                                                                                                                       |
+| `tweetUrl`     | `string`   | No       | Tweet URL alias for `tweetInput`. Use it when both earlier fields are absent.                                                                                                                                                                                                                                                                      |
+| `tweetIds`     | `string[]` | No       | Array of tweet URLs or IDs for bulk download. Maximum 50 string items. The route skips invalid IDs. It fails only when no valid tweet IDs remain.                                                                                                                                                                                                  |
+| `imageShows`   | `string`   | No       | Save only posts whose photos show this. Send `charts`, `screenshots`, `product_photos`, `memes`, `people` or your own words, such as `a rocket`. AI-powered analysis checks photos X doesn't mark sensitive & keeps scores of 0.5 or more. Each kept post costs 2 credits. Each kept post also pays the save price. The answer adds `imageFilter`. |
+
+</section>
+
+<section>
+
+## Save only chart posts
+
+Send `imageShows` with the posts, & only the posts whose photos show it get saved.
+
+```bash
+curl -X POST "https://xquik.com/api/v1/x/media/download" \
+  -H "x-api-key: $XQUIK_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"imageShows": "charts", "tweetIds": ["2118113888486986103", "2118072490119626919", "2117971091146625465"]}'
+```
+
+```json
+{
+  "galleryUrl": "https://xquik.com/gallery/def456",
+  "imageFilter": {
+    "imageShows": "charts",
+    "question": "Does a picture attached to this post show a chart or graph that plots data, such as a line, bar, pie or candlestick chart? Judge the pictures in tweet.images.",
+    "cutoff": 0.5,
+    "checked": 3,
+    "kept": 2,
+    "unchecked": []
+  },
+  "totalMedia": 2,
+  "totalTweets": 2
+}
+```
+
+- `imageFilter.unchecked` lists posts without a safe photo & posts X can't find. They cost nothing.
+- When no photo shows it, nothing is saved & nothing is billed. A single download answers with empty `items`. A bulk download answers with `totalTweets` 0.
 
 </section>
 
@@ -359,11 +394,12 @@ Fresh downloads cost 1 credit per tweet processed with media. Cached single down
 
 ### 200 OK (bulk)
 
-| Field         | Type     | Description                                                  |
-| ------------- | -------- | ------------------------------------------------------------ |
-| `galleryUrl`  | `string` | Links the combined gallery containing media from all tweets. |
-| `totalTweets` | `number` | Counts processed tweets with media.                          |
-| `totalMedia`  | `number` | Counts downloaded images, videos, and GIFs.                  |
+| Field         | Type     | Description                                                                                                                       |
+| ------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `galleryUrl`  | `string` | Links the combined gallery containing media from all tweets.                                                                      |
+| `totalTweets` | `number` | Counts processed tweets with media.                                                                                               |
+| `totalMedia`  | `number` | Counts downloaded images, videos, and GIFs.                                                                                       |
+| `imageFilter` | `object` | States the question, the 0.5 cutoff & the checked & kept counts. It also lists posts left unchecked. Sent only with `imageShows`. |
 
 ```json
 {

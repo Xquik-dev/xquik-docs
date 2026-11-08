@@ -19,6 +19,7 @@ keywords:
   ]
 ---
 
+import PostFilterParams from "/snippets/post-filter-params.mdx";
 import LlmsDirective from "/snippets/llms-directive.mdx";
 import RetweetTimestamps from "/snippets/retweet-timestamps.mdx";
 import AutomaticCoveragePagination from "/snippets/automatic-coverage-pagination.mdx";
@@ -238,7 +239,49 @@ several authors are unaffected.
   </Card>
 </CardGroup>
 
-Tweet search costs 1 credit per tweet returned. Retry `429` with the `Retry-After` header. Retry `502` after a short backoff. Change the query after `424 search_unavailable`.
+Tweet search costs 1 credit per tweet returned. With `topic`, each kept post costs 2 credits. A dropped post costs nothing. Retry `429` with the `Retry-After` header. Retry `502` after a short backoff. Change the query after `424 search_unavailable`.
+
+## Keep only posts about a topic
+
+A word like rust or jaguar matches many meanings. Send `topic` to name the one you want.
+AI-powered analysis asks `Is this post about <topic>?` of each post the search reads.
+Posts scoring 0.5 or more come back, each with its `topicScore`.
+The check reads the post text & photos X doesn't mark sensitive.
+
+```bash
+curl -G "https://xquik.com/api/v1/x/tweets/search" \
+  -H "x-api-key: $XQUIK_API_KEY" \
+  --data-urlencode "q=rust lang:en -filter:replies" \
+  --data-urlencode "topic=the Rust programming language" \
+  --data-urlencode "limit=30"
+```
+
+```json
+{
+  "tweets": [
+    {
+      "id": "2118059163251323266",
+      "text": "Rust is just a cool language",
+      "topicScore": 0.91
+    }
+  ],
+  "has_next_page": true,
+  "next_cursor": "DAADDAABCgABF...",
+  "topicFilter": {
+    "topic": "the Rust programming language",
+    "question": "Is this post about the Rust programming language?",
+    "cutoff": 0.5,
+    "checked": 30,
+    "kept": 14,
+    "unchecked": []
+  }
+}
+```
+
+- Each kept post costs 2 credits, the AI analysis price, instead of 1. A post the filter drops costs nothing.
+- `limit` counts checked posts. Only kept posts come back.
+- `unchecked` lists posts the check couldn't answer. They cost nothing & stay out.
+- Follow `next_cursor` with the same `topic` to check the next posts.
 
 </section>
 
@@ -297,6 +340,10 @@ when you have trusted raw X search operator syntax to append.
 | Query parameter | Type     | Required | Description                                                                                                                                                                       |
 | --------------- | -------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `textOnlyTerms` | `string` | No       | Keep a post only when 1 of these words is in its text. Links, cards and quoted posts count as text. The author's name and username don't count. Quote a phrase to match it whole. |
+
+### Keep posts by topic or photo
+
+<PostFilterParams />
 
 ### Choose fields
 
