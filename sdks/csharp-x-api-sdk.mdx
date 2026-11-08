@@ -113,7 +113,11 @@ foreach (SearchTweet tweet in page.Tweets)
 
 Use this workflow when a .NET worker needs every reply on a public tweet. It writes them to a durable file for moderation review or customer support triage. The file can also feed an analyst export or a warehouse loader.
 
+{"\n"}
+
 `client.Extractions.EstimateCost` and `client.Extractions.Run` map to the extraction workflow. For tweet replies, use `ExtractionEstimateCostParamsToolType.ReplyExtractor` and `ExtractionRunParamsToolType.ReplyExtractor`. `reply_extractor` requires `TargetTweetID`. `client.Extractions.Retrieve` returns `Results`, `HasMore`, and `NextCursor` for pagination. `client.Extractions.ExportResults` returns an `HttpResponse`. Read CSV and JSON as strings, and copy XLSX from the response stream.
+
+{"\n"}
 
 Reuse the follower export loop above. Change only the required target, tool type, and output names.
 
@@ -154,6 +158,8 @@ await File.WriteAllTextAsync("xquik-replies.csv", await csvResponse.ReadAsString
 ```
 
 Keep the same `estimate.Allowed` credit branch from the follower export workflow before calling `Run`. Store `job.ID` on the queue job, ticket, or warehouse batch before polling. With it, another worker can resume with `client.Extractions.Retrieve`. Keep `page.NextCursor` as the checkpoint when you stream replies to JSON Lines. Pass it back as `Cursor` on the next `ExtractionRetrieveParams` call.
+
+{"\n"}
 
 Repeat the export with `new ExtractionExportResultsParams { Format = Format.Json }` and `File.WriteAllTextAsync("xquik-replies.json", await jsonResponse.ReadAsString())`. For XLSX, use `new ExtractionExportResultsParams { Format = Format.Xlsx }`, `File.Create("xquik-replies.xlsx")`, and stream-copy the response body. Use `xquik-replies.jsonl` for queue replay or warehouse loads and `xquik-replies.json` for app ingestion. Use `xquik-replies.csv` for CRM import and `xquik-replies.xlsx` for analyst handoff. The cost is 1 credit per reply extracted or returned.
 

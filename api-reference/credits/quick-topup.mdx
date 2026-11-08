@@ -29,14 +29,20 @@ Add API credits from the Xquik dashboard with a saved payment method.
 Use quick top-up after the dashboard confirms an amount from USD 10 through 500. This route requires a same-origin Xquik session. External integrations
 must use the [hosted top-up endpoint](/api-reference/credits/topup).
 
+{"\n"}
+
 Read `outcome` before handling any other response field. `charged` means the
 credits and new balance are ready. `requires_action` means the client must
 complete payment authentication. `declined` means the saved method failed.
 `no_payment_method` means the account has no reusable payment method.
 
+{"\n"}
+
 Never print or store `clientSecret`. Pass it directly to the payment
 confirmation flow. Log only the outcome, added credits, and resulting balance
 after a successful charge.
+
+{"\n"}
 
 Quick top-up differs from standard checkout status. The status route polls a
 hosted checkout session by `session_id`. This route returns its own immediate
@@ -102,6 +108,8 @@ if (result.outcome === "charged") {
 | `chargedMinorUnits` | `integer` | No       | The charge you showed the payer, in the currency's smallest unit. Send `2231` for EUR 22.31 or `1580` for JPY 1,580. If the charge differs, Xquik charges nothing. It answers 409 `price_changed` with the new charge. Leave it out to pay the current charge.                                                                                                                                             |
 
 At USD 0.00015 per credit, a USD 25 quick top-up adds 166,666 credits. Xquik rounds down to whole credits.
+
+{"\n"}
 
 Only `charged` grants credits. Complete `requires_action` with `clientSecret`.
 Use hosted checkout for `declined` or `no_payment_method`.
@@ -182,6 +190,8 @@ The saved method failed. Open hosted checkout so the user can choose another.
 
 `{ "error": "invalid_input", "message": "Maximum quick top-up is $500" }`
 
+{"\n"}
+
 Xquik charges nothing. The `message` names the field to fix.
 
 - `dollars` is missing, below USD 10, above USD 500 or has over 2 decimals.
@@ -196,7 +206,11 @@ Missing or expired dashboard session. This route does not accept API keys.
 
 Xquik charged nothing for this request.
 
+{"\n"}
+
 `{ "error": "price_changed", "message": "The price changed. Resend with this chargedCurrency & chargedMinorUnits to pay.", "chargedCurrency": "USD", "chargedMinorUnits": 2500 }`
+
+{"\n"}
 
 `price_changed` means the charge differs from the one you sent. Show the payer the new charge. To pay it, resend with `currency` set to `chargedCurrency` and the new `chargedMinorUnits`.
 
@@ -206,6 +220,8 @@ Xquik charged nothing for this request.
 | `chargedMinorUnits` | `integer` | Amount Xquik would charge now, in the currency's smallest unit. |
 
 `idempotency_conflict` means an `Idempotency-Key` came back with another amount or currency. Send a new key to buy again.
+
+{"\n"}
 
 `topup_in_progress` means another top-up for this account is still running. Check your balance before you try again.
 

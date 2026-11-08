@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { readPageFamily } from "./scripts/lib/page-family.ts";
+import { withoutParagraphSeparators } from "./scripts/lib/paragraph-separator.ts";
 import { z } from "zod";
 
 import { stripGeneratedResponseExamples } from "./scripts/lib/generated-response-examples";
@@ -12082,7 +12083,7 @@ function collectSnippetFindings(
 }
 
 function normalizeEvidence(value: string): string {
-  return value
+  return withoutParagraphSeparators(value)
     .replace(/\s+/gu, " ")
     .replace(/["']/gu, "'")
     .replace(/>\s+/gu, ">")

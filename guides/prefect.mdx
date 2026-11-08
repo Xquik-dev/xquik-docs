@@ -80,7 +80,11 @@ python -m pip install \
 
 You can install `prefect-xquik` 0.1.8 or earlier releases from PyPI. Use the tested `v0.1.7` source pin with Prefect 3. It also uses the canonical Xquik API base URL. Tag `v0.1.8` only changes package maintenance. It also requires newer Prefect releases.
 
+{"\n"}
+
 The explicit `importlib-metadata` pin fixes Prefect's clean Python 3.12 CLI import. Prefect documents the upstream issue in [#22011](https://github.com/PrefectHQ/prefect/issues/22011) and [#22137](https://github.com/PrefectHQ/prefect/issues/22137).
+
+{"\n"}
 
 Use the tested pins above for production. Use a separate sandbox for compatibility checks.
 
@@ -100,6 +104,8 @@ prefect block register -m prefect_xquik
 ```
 
 PowerShell users should activate `.venv-prefect-compat\Scripts\Activate.ps1` instead. Run `pip install -U prefect` only inside this sandbox. Run `prefect server start` before registering the block.
+
+{"\n"}
 
 Keep the tested pins above for this integration. Treat Prefect and the collection as separate Python packages.
 
@@ -125,6 +131,8 @@ credentials.save("xquik", overwrite=True)
 
 Prefect blocks store typed configuration across flows and deployments. The API key uses Pydantic `SecretStr`. Prefect hides its value in normal block rendering.
 
+{"\n"}
+
 Never place API keys in deployment YAML, flow parameters, logs, or repositories. Limit block access to deployments that require Xquik reads.
 
 </section>
@@ -135,9 +143,15 @@ Never place API keys in deployment YAML, flow parameters, logs, or repositories.
 
 Prefect runs ordinary Python functions. The `@flow` decorator creates a tracked flow run. The `@task` decorator creates task state with optional retries. Configure retries per task or through a nonzero global default.
 
+{"\n"}
+
 The `from prefect import flow, task` statement imports both decorators.
 
+{"\n"}
+
 A dynamic workflow can branch from returned tweets, profiles, or trends. Prefect does not require YAML files for Python flows. Use Python code for branches, loops, and task dependencies.
+
+{"\n"}
 
 Store the local profile name or server URL in environment variables. Store Xquik keys in `XquikCredentials` for deployed flows.
 
@@ -335,6 +349,8 @@ if __name__ == "__main__":
 
 The scheduled flow derives the previous hour on every run. Pass explicit boundaries for backfills.
 
+{"\n"}
+
 Use a work-pool deployment for Docker, Kubernetes, or serverless workers.
 
 ```bash
@@ -390,6 +406,8 @@ async def collect_tweet_pages(query: str) -> list[dict[str, Any]]:
 ```
 
 Do not decode cursors. Treat them as opaque strings. Store each cursor after storing its page. Resume from that checkpoint after a worker restart.
+
+{"\n"}
 
 Use the same pattern with `search_users` and `get_user_tweets`. Keep `query`, `query_type`, `limit`, replies, and timestamps unchanged.
 
@@ -536,9 +554,15 @@ async def acquire_xquik_read_slot() -> None:
 
 Await this helper before `search_tweets`, `get_tweet`, and `search_users`. Also await it before `get_user`, `get_user_tweets`, and `get_trends`.
 
+{"\n"}
+
 Use a separate Prefect concurrency limit for in-flight task runs. Concurrency limits only cap active work. They do not set request frequency. Keep retry policies aligned with [Xquik rate-limit guidance](/guides/rate-limits).
 
+{"\n"}
+
 Read endpoints share a 500 per 1s user bucket. Treat this as one shared capacity limit.
+
+{"\n"}
 
 Use one limit across tweet search, profile lookup, timelines, and trends. Make every task use that same account limit. Slow low-priority refreshes before delaying interactive reads.
 
@@ -550,7 +574,11 @@ Use one limit across tweet search, profile lookup, timelines, and trends. Make e
 
 Use `search_users` when a name or topic can match multiple accounts. Use `get_user` when you already know the username or user ID.
 
+{"\n"}
+
 `get_user_tweets` retrieves one account's recent timeline. Set `include_replies=True` for conversations. Set `include_parent_tweet=True` when reply context matters.
+
+{"\n"}
 
 Normalize profiles into stable fields.
 
@@ -572,7 +600,11 @@ Normalize tweets separately. Keep `id`, `text`, `author`, `createdAt`, metrics, 
 
 `get_trends(credentials, woeid=1, count=30)` returns worldwide trends. Pass another valid WOEID for a region.
 
+{"\n"}
+
 Store each trend's `name`, `rank`, `query`, and `description` when present. Store response `woeid` and `count` with the alert batch.
+
+{"\n"}
 
 Trends are discovery signals, not verified facts. Validate important topics through tweet search before alerting customers.
 
@@ -615,6 +647,8 @@ Do not pass raw dictionaries directly into alerts or generators. Define compact 
 ## Prefect collection or direct Xquik API
 
 Choose `prefect-xquik` for its 6 supported reads. It provides blocks, async calls, validation, and task metadata.
+
+{"\n"}
 
 Use direct REST, a generated SDK, or MCP for these jobs.
 
