@@ -14564,6 +14564,144 @@ paths:
         '424':
           $ref: '#/components/responses/XApiError'
 
+  /x/users/{id}/follower-audit:
+    get:
+      operationId: getUserFollowerAudit
+      description: >
+        Reads the newest followers of a public account & returns a follower
+        audit. It gives each follower 1 class with its score & signals, then
+        adds coverage, a quality score, signal counts, arrival bands, join
+        cohorts, countries, top followers & the account's engagement. Each
+        follower read costs 1 credit, and the engagement adds 1 credit. Signals
+        come from public profiles, so a real person can match. Older followers
+        may differ from the newest ones.
+      summary: Audit a user's newest followers
+      tags:
+        - Users
+      security: [{ apiKey: [] }, { oauthBearer: [] }, {}]
+      parameters:
+        - $ref: '#/components/parameters/UserPathId'
+        - name: limit
+          in: query
+          description: >
+            Most followers to read, newest first. Left out, a read takes up to
+            200 and a low balance reads fewer. A very long read returns what it
+            finished, & coverage shows how many. Its aliases are pageSize,
+            count, max_results, maxItems, max_items & per_page.
+          schema:
+            type: integer
+            minimum: 1
+            default: 200
+        - $ref: '#/components/parameters/Fields'
+        - $ref: '#/components/parameters/Omit'
+      responses:
+        '200':
+          description: Follower audit
+          content:
+            application/json:
+              example:
+                audit:
+                  account:
+                    userId: '11348282'
+                    userName: NASA
+                    followers: 92376187
+                    following: 180
+                    posts: 73919
+                    accountAgeDays: 6449
+                    postsPrivate: false
+                    sample:
+                      posts: 20
+                      oldestAt: '2026-10-28T13:15:28.000Z'
+                      newestAt: '2026-11-02T22:12:05.000Z'
+                    averages:
+                      likes: 3684.2
+                      replies: 142.7
+                      reposts: 459.8
+                      quotes: 45
+                      bookmarks: 209.7
+                      views: 785247.8
+                      engagements: 4331.7
+                    medianViews: 512330
+                    engagementRate: 0.0047
+                    engagementPerView: 0.55
+                    postsPerDay: 3.8
+                    topPostId: '1852301447063109847'
+                  coverage: { percent: 0.0002, read: 200, total: 92376187 }
+                  quality: { grade: B, score: 71 }
+                  classes:
+                    - { class: likelyReal, count: 122, percent: 61 }
+                    - { class: inactive, count: 41, percent: 20.5 }
+                    - { class: likelyFake, count: 29, percent: 14.5 }
+                    - { class: tooNew, count: 8, percent: 4 }
+                  signals:
+                    - { count: 36, id: defaultPicture, percent: 18, points: 2 }
+                    - { count: 58, id: noBio, percent: 29, points: 1 }
+                  arrivalBands:
+                    - { count: 13, from: 1, percent: 13, read: 100, to: 100 }
+                    - { count: 16, from: 101, percent: 16, read: 100, to: 200 }
+                  cohorts:
+                    - count: 7
+                      likelyFake: 6
+                      percent: 3.5
+                      weekStartMs: 1761523200000
+                  languages:
+                    - { count: 141, percent: 70.5, value: en }
+                  places:
+                    - { count: 22, percent: 11, value: United States }
+                  verified: { count: 9, percent: 4.5 }
+                  followers:
+                    - id: '1852412278803021824'
+                      userName: orbit_watcher
+                      name: Orbit Watcher
+                      class: likelyReal
+                      score: 1
+                      signals: [noBanner]
+                      followers: 312
+                      following: 410
+                      likes: 2840
+                      posts: 1290
+                      position: 1
+                      joinedAtMs: 1561939200000
+                      pictureUrl: https://pbs.twimg.com/profile_images/1/photo.jpg
+                  topFollowers:
+                    - id: '1852412278803021824'
+                      userName: orbit_watcher
+                      name: Orbit Watcher
+                      class: likelyReal
+                      score: 1
+                      signals: [noBanner]
+                      followers: 312
+                      following: 410
+                      likes: 2840
+                      posts: 1290
+                      position: 1
+                      joinedAtMs: 1561939200000
+                      pictureUrl: https://pbs.twimg.com/profile_images/1/photo.jpg
+              schema:
+                type: object
+                required: [audit]
+                properties:
+                  audit:
+                    $ref: '#/components/schemas/FollowerAudit'
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '401':
+          $ref: '#/components/responses/AnonymousGuestAuthenticationRequired'
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
+        '403':
+          $ref: '#/components/responses/ProtectedFollowerList'
+        '404':
+          $ref: '#/components/responses/UserNotFound'
+        '424':
+          $ref: '#/components/responses/XApiError'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+        '502':
+          $ref: '#/components/responses/XApiError'
+        '503':
+          $ref: '#/components/responses/ReadBusy'
+
   /x/users/{id}/insights:
     get:
       operationId: getUserInsights
@@ -26198,6 +26336,155 @@ components:
           description: Views.
           example: 1291231
 
+    FollowerAudit:
+      description: >
+        Report on the followers read. Classes rest on public profile signals, so
+        they say what a profile looks like, never who runs it.
+      type: object
+      required:
+        - account
+        - arrivalBands
+        - classes
+        - cohorts
+        - coverage
+        - followers
+        - languages
+        - places
+        - quality
+        - signals
+        - topFollowers
+        - verified
+      properties:
+        account:
+          $ref: '#/components/schemas/UserInsights'
+        coverage:
+          type: object
+          required: [percent, read, total]
+          properties:
+            percent: { type: number }
+            read: { type: integer, minimum: 0, maximum: 9007199254740991 }
+            total: { type: integer, minimum: 0, maximum: 9007199254740991 }
+        quality:
+          type: object
+          required: [grade, score]
+          properties:
+            grade: { type: string, enum: [A, B, C, D, F] }
+            score: { type: integer, minimum: 0, maximum: 100 }
+        classes:
+          type: array
+          items:
+            type: object
+            required: [class, count, percent]
+            properties:
+              class:
+                $ref: '#/components/schemas/FollowerClass'
+              count: { type: integer, minimum: 0, maximum: 9007199254740991 }
+              percent: { type: number }
+        signals:
+          type: array
+          items:
+            type: object
+            required: [count, id, percent, points]
+            properties:
+              count: { type: integer, minimum: 0, maximum: 9007199254740991 }
+              id: { type: string }
+              percent: { type: number }
+              points: { type: integer, minimum: 0, maximum: 9007199254740991 }
+        arrivalBands:
+          type: array
+          description: Likely fake share by position in the newest-first list.
+          items:
+            type: object
+            required: [count, from, percent, read, to]
+            properties:
+              count: { type: integer, minimum: 0, maximum: 9007199254740991 }
+              from: { type: integer, minimum: 0, maximum: 9007199254740991 }
+              percent: { type: number }
+              read: { type: integer, minimum: 0, maximum: 9007199254740991 }
+              to: { type: integer, minimum: 0, maximum: 9007199254740991 }
+        cohorts:
+          type: array
+          description: Followers who joined X in the same UTC week.
+          items:
+            type: object
+            required: [count, likelyFake, percent, weekStartMs]
+            properties:
+              count: { type: integer, minimum: 0, maximum: 9007199254740991 }
+              likelyFake:
+                { type: integer, minimum: 0, maximum: 9007199254740991 }
+              percent: { type: number }
+              weekStartMs:
+                { type: integer, minimum: 0, maximum: 9007199254740991 }
+        languages:
+          type: array
+          items:
+            $ref: '#/components/schemas/FollowerValueCount'
+        places:
+          type: array
+          items:
+            $ref: '#/components/schemas/FollowerValueCount'
+        verified:
+          type: object
+          required: [count, percent]
+          properties:
+            count: { type: integer, minimum: 0, maximum: 9007199254740991 }
+            percent: { type: number }
+        followers:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditedFollower'
+        topFollowers:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditedFollower'
+    FollowerClass:
+      description: What 1 follower looks like from its public profile.
+      type: string
+      enum: [automated, inactive, likelyFake, likelyReal, tooNew]
+    FollowerValueCount:
+      description:
+        How many followers share 1 value, such as a language or place.
+      type: object
+      required: [count, percent, value]
+      properties:
+        count: { type: integer, minimum: 0, maximum: 9007199254740991 }
+        percent: { type: number }
+        value: { type: string }
+    AuditedFollower:
+      description: 1 follower the audit read, with its class, score & signals.
+      type: object
+      required:
+        - class
+        - followers
+        - following
+        - id
+        - likes
+        - name
+        - position
+        - posts
+        - score
+        - signals
+        - userName
+      properties:
+        class:
+          $ref: '#/components/schemas/FollowerClass'
+        followers: { type: integer, minimum: 0, maximum: 9007199254740991 }
+        following: { type: integer, minimum: 0, maximum: 9007199254740991 }
+        id: { type: string }
+        joinedAtMs: { type: integer, minimum: 0, maximum: 9007199254740991 }
+        likes: { type: integer, minimum: 0, maximum: 9007199254740991 }
+        name: { type: string }
+        owner:
+          type: string
+          description: Account that runs an automated follower, when X names it.
+        pictureUrl: { type: string }
+        position: { type: integer, minimum: 0, maximum: 9007199254740991 }
+        posts: { type: integer, minimum: 0, maximum: 9007199254740991 }
+        score: { type: integer, minimum: 0, maximum: 9007199254740991 }
+        signals:
+          type: array
+          items: { type: string }
+        userName: { type: string }
     UserInsights:
       description: >
         Engagement insights of 1 profile. Engagements are likes, replies,
