@@ -1,7 +1,7 @@
 ---
 title: "Twitter media downloader API for photos & video"
 sidebarTitle: "Download media"
-description: "Download images, videos, and animated GIFs from 1-50 tweets. Returns one gallery URL plus cache or bulk counts. Fresh tweets cost 1 credit. Cache hits are free."
+description: "Download images, videos, and animated GIFs from 1 tweet or many. Returns one gallery URL plus cache or bulk counts. Fresh tweets cost 1 credit. Cache hits are free."
 endpoint: "POST /x/media/download"
 keywords:
   [
@@ -26,8 +26,8 @@ import ConnectedAccountApiLinks from "/snippets/x-connected-account-api-links.md
 
 `POST https://xquik.com/api/v1/x/media/download`
 
-Send 1-50 tweet IDs or URLs.
-The route downloads media from one tweet or a batch of 50.
+Send 1 tweet ID or URL, or a list of them.
+The route downloads media from one tweet or a batch.
 Each response contains a gallery of photos, videos, and GIFs.
 
 <Callout icon="coins" color="#5c3327">
@@ -38,7 +38,7 @@ Each response contains a gallery of photos, videos, and GIFs.
 
 </Callout>
 
-This endpoint creates a saved media gallery from 1-50 tweet URLs or IDs.
+This endpoint creates a saved media gallery from tweet URLs or IDs.
 The response gives a `galleryUrl` plus cache or bulk counts. It does not return
 per-file downloads, file metadata, or an uploaded `mediaId`.
 
@@ -86,7 +86,7 @@ process.stdout.write(`${JSON.stringify(singleRow)}\n`);
 
 const bulkTweetIds = ["1893456789012345678", "1893456789012345999"];
 
-// Bulk (up to 50 tweets)
+// Bulk
 const bulk = await fetch("https://xquik.com/api/v1/x/media/download", {
   method: "POST",
   headers: {
@@ -102,6 +102,7 @@ const bulkRow = {
   gallery_url: bulkResult.galleryUrl,
   successful_tweet_count: bulkResult.totalTweets,
   media_item_count: bulkResult.totalMedia,
+  unprocessed_tweet_ids: bulkResult.unprocessedTweetIds ?? [],
 };
 process.stdout.write(`${JSON.stringify(bulkRow)}\n`);
 ```
@@ -130,7 +131,7 @@ print(json.dumps(single_row))
 
 bulk_tweet_ids = ["1893456789012345678", "1893456789012345999"]
 
-# Bulk (up to 50 tweets)
+# Bulk
 bulk = requests.post(
     "https://xquik.com/api/v1/x/media/download",
     headers={"x-api-key": "xq_YOUR_KEY_HERE"},
@@ -143,6 +144,7 @@ bulk_row = {
     "gallery_url": bulk_result["galleryUrl"],
     "successful_tweet_count": bulk_result["totalTweets"],
     "media_item_count": bulk_result["totalMedia"],
+    "unprocessed_tweet_ids": bulk_result.get("unprocessedTweetIds", []),
 }
 print(json.dumps(bulk_row))
 ```
@@ -238,7 +240,7 @@ Use `tweetIds` for bulk downloads. If `tweetIds` holds at least 1 string value, 
 | `tweetInput`   | `string`   | No       | Tweet URL or numeric tweet ID for a single download. Accepts `x.com` and `twitter.com` URL formats.                                                                                                                                                                                                                                                |
 | `tweetId`      | `string`   | No       | Numeric tweet ID alias for `tweetInput`. Use it when `tweetInput` is absent.                                                                                                                                                                                                                                                                       |
 | `tweetUrl`     | `string`   | No       | Tweet URL alias for `tweetInput`. Use it when both earlier fields are absent.                                                                                                                                                                                                                                                                      |
-| `tweetIds`     | `string[]` | No       | Array of tweet URLs or IDs for bulk download. Maximum 50 string items. The route skips invalid IDs. It fails only when no valid tweet IDs remain.                                                                                                                                                                                                  |
+| `tweetIds`     | `string[]` | No       | Array of tweet URLs or IDs for bulk download. Send any number. The route skips invalid IDs. It fails only when no valid tweet IDs remain.                                                                                                                                                                                                          |
 | `imageShows`   | `string`   | No       | Save only posts whose photos show this. Send `charts`, `screenshots`, `product_photos`, `memes`, `people` or your own words, such as `a rocket`. AI-powered analysis checks photos X doesn't mark sensitive & keeps scores of 0.5 or more. Each kept post costs 2 credits. Each kept post also pays the save price. The answer adds `imageFilter`. |
 
 </section>
@@ -308,9 +310,9 @@ URL.
     Send `tweetIds` for bulk. When it contains at least 1 string, bulk mode ignores `tweetInput`, `tweetId`, and `tweetUrl`.
 
   </Card>
-  <Card title="Batch limit" icon="list-ordered">
+  <Card title="Posts left over" icon="list-ordered">
 
-    Keep `tweetIds` at 50 items or fewer. Split larger backfills into multiple requests.
+    A long `tweetIds` list saves what fits in the call's time. Send the posts in `unprocessedTweetIds` again. They cost nothing.
 
   </Card>
   <Card title="Write handoff" icon="send">
@@ -329,17 +331,18 @@ URL.
 Keep one manifest row per single or bulk request. A gallery URL represents the
 download result. A gallery URL is neither an uploaded media ID nor a direct asset URL.
 
-| Manifest column          | Response or request source       | Reconciliation rule                                          |
-| ------------------------ | -------------------------------- | ------------------------------------------------------------ |
-| `input_mode`             | Presence of non-empty `tweetIds` | Store `single` or `bulk`.                                    |
-| `requested_tweet_ids`    | Normalized request inputs        | Keep every valid ID submitted to the download route.         |
-| `tweet_id`               | Single response `tweetId`        | Store the resolved Tweet ID for single mode.                 |
-| `gallery_url`            | Response `galleryUrl`            | Use as the shareable downloaded-media result.                |
-| `cache_hit`              | Single response `cacheHit`       | Record whether the single download used free cached media.   |
-| `successful_tweet_count` | Bulk response `totalTweets`      | Count only successful tweets that contained media.           |
-| `media_item_count`       | Bulk response `totalMedia`       | Reconcile the number of downloaded images, videos, and GIFs. |
-| `requested_at`           | Integration timestamp            | Audit when the download request started.                     |
-| `completed_at`           | Integration timestamp            | Record when your integration stores the gallery.             |
+| Manifest column          | Response or request source          | Reconciliation rule                                          |
+| ------------------------ | ----------------------------------- | ------------------------------------------------------------ |
+| `input_mode`             | Presence of non-empty `tweetIds`    | Store `single` or `bulk`.                                    |
+| `requested_tweet_ids`    | Normalized request inputs           | Keep every valid ID submitted to the download route.         |
+| `tweet_id`               | Single response `tweetId`           | Store the resolved Tweet ID for single mode.                 |
+| `gallery_url`            | Response `galleryUrl`               | Use as the shareable downloaded-media result.                |
+| `cache_hit`              | Single response `cacheHit`          | Record whether the single download used free cached media.   |
+| `successful_tweet_count` | Bulk response `totalTweets`         | Count only successful tweets that contained media.           |
+| `media_item_count`       | Bulk response `totalMedia`          | Reconcile the number of downloaded images, videos, and GIFs. |
+| `unprocessed_tweet_ids`  | Bulk response `unprocessedTweetIds` | Send these posts again. They cost nothing.                   |
+| `requested_at`           | Integration timestamp               | Audit when the download request started.                     |
+| `completed_at`           | Integration timestamp               | Record when your integration stores the gallery.             |
 
 Use these outcomes when reconciling a download request.
 
@@ -348,7 +351,7 @@ Use these outcomes when reconciling a download request.
 - If `totalTweets` is below the valid input count, review skipped Tweet IDs.
 - A `400 no_media` response means the source tweet has no downloadable media.
 - Keep rejected inputs while processing valid Tweet IDs.
-- Split more than 50 inputs into groups of 50 or fewer.
+- Send `unprocessedTweetIds` again until the answer has none.
 
 Fresh downloads cost 1 credit per tweet processed with media. Cached single downloads return `cacheHit: true` and are free. Bulk responses do not return `freshCount`. Store the request IDs with `totalTweets` and `totalMedia` for reconciliation.
 
@@ -394,12 +397,13 @@ Fresh downloads cost 1 credit per tweet processed with media. Cached single down
 
 ### 200 OK (bulk)
 
-| Field         | Type     | Description                                                                                                                       |
-| ------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `galleryUrl`  | `string` | Links the combined gallery containing media from all tweets.                                                                      |
-| `totalTweets` | `number` | Counts processed tweets with media.                                                                                               |
-| `totalMedia`  | `number` | Counts downloaded images, videos, and GIFs.                                                                                       |
-| `imageFilter` | `object` | States the question, the 0.5 cutoff & the checked & kept counts. It also lists posts left unchecked. Sent only with `imageShows`. |
+| Field                 | Type       | Description                                                                                                                       |
+| --------------------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `galleryUrl`          | `string`   | Links the combined gallery containing media from all tweets.                                                                      |
+| `totalTweets`         | `number`   | Counts processed tweets with media.                                                                                               |
+| `totalMedia`          | `number`   | Counts downloaded images, videos, and GIFs.                                                                                       |
+| `unprocessedTweetIds` | `string[]` | Lists posts Xquik had no time to read, at no charge. Send them again. Sent only when time ran out.                                |
+| `imageFilter`         | `object`   | States the question, the 0.5 cutoff & the checked & kept counts. It also lists posts left unchecked. Sent only with `imageShows`. |
 
 ```json
 {
@@ -424,14 +428,6 @@ Missing, malformed, or non-JSON request body. Malformed JSON can also return `in
 {"\n"}
 
 Xquik could not resolve the provided tweet ID or URL to a valid ID.
-
-### 400 Too many tweets
-
-`{ "error": "too_many_tweets", "message": "Max 50 tweets per request" }`
-
-{"\n"}
-
-The `tweetIds` array exceeds the 50-item limit. Split into multiple requests.
 
 ### 400 No media
 
@@ -501,7 +497,7 @@ per-file downloads or resolution controls.
 
 ### Can I download media from many tweets?
 
-Yes. Send 1-50 tweet IDs through `tweetIds`.
+Yes. Send the tweet IDs through `tweetIds`.
 The response returns one gallery with tweet and media counts.
 
 <Info>

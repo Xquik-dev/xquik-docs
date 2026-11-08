@@ -1,7 +1,7 @@
 ---
 title: "Twitter batch tweet lookup API & post details"
 sidebarTitle: "Get tweets (batch)"
-description: "Retrieve up to 100 tweets by ID in one request with full text, authors, media, reply and quote context, engagement metrics, and URLs. 1 credit per tweet."
+description: "Retrieve many tweets by ID in one request with full text, authors, media, reply and quote context, engagement metrics, and URLs. 1 credit per tweet."
 endpoint: "GET /x/tweets"
 keywords: ["batch", "tweets", "bulk", "multiple", "x api"]
 ---
@@ -21,7 +21,7 @@ import FieldSelectionParams from "/snippets/field-selection-params.mdx";
 
 ## When to use batch lookup
 
-Use this route to look up as many as 100 tweet IDs at once. It charges only for returned tweets. Use list-tweets when reading a list feed instead.
+Use this route to look up many tweet IDs at once. It charges only for returned tweets. Use list-tweets when reading a list feed instead.
 
 <Note>
 
@@ -145,7 +145,7 @@ Store `requested_ids`, `tweet_id`, `text`, `author_id`, `author_username`,
 `author_name`, `author_followers`, `author_verified`,
 `author_profile_picture`, `created_at`, and `conversation_id`. Also store engagement counts,
 media URLs, `has_next_page`, and `next_cursor`. Join returned tweets by
-`tweet_id`. Do not rely on response order. Send at most 100 IDs per request. Batch requests
+`tweet_id`. Do not rely on response order. Send as many IDs as fit in 1 URL. Batch requests
 always return `has_next_page: false` and `next_cursor: ""`. Zero affordable
 results return `402 insufficient_credits`.
 
@@ -175,7 +175,7 @@ Tweet ID because unavailable or unaffordable IDs can be absent.
 
 | Input or result condition | Handling                                                                 |
 | ------------------------- | ------------------------------------------------------------------------ |
-| More than 100 Tweet IDs   | Split the IDs into batches of 100 or fewer.                              |
+| A URL too long to send    | Split the IDs into more requests.                                        |
 | Duplicate Tweet IDs       | Deduplicate before sending. Keep source references separately.           |
 | Returned Tweet ID         | Store the normalized row under the matching request ID.                  |
 | Missing Tweet ID          | Keep a missing row for targeted retry or review.                         |
@@ -188,9 +188,9 @@ Tweet ID because unavailable or unaffordable IDs can be absent.
 
 ## Query parameters
 
-| Query parameter | Type     | Required | Description                                                                                                                                |
-| --------------- | -------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `ids`           | `string` | Yes      | 1 to 100 tweets, separated by commas. Each is a tweet ID or a tweet URL, such as `x.com/nasa/status/20`. A tweet named twice is read once. |
+| Query parameter | Type     | Required | Description                                                                                                                       |
+| --------------- | -------- | -------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `ids`           | `string` | Yes      | Tweets, separated by commas. Each is a tweet ID or a tweet URL, such as `x.com/nasa/status/20`. A tweet named twice is read once. |
 
 ### Choose fields
 
@@ -290,13 +290,9 @@ Tweet ID because unavailable or unaffordable IDs can be absent.
 
 `{ "error": "missing_ids", "message": "ids parameter required" }`
 
-### 400 Too many IDs
-
-`{ "error": "too_many_ids", "message": "Max 100 IDs per request" }`
-
 ### 400 Invalid tweet ID
 
-`{ "error": "invalid_tweet_id", "message": "Send ids as 1 to 100 tweet IDs or tweet links, separated by commas." }`
+`{ "error": "invalid_tweet_id", "message": "Send ids as tweet IDs or tweet links, separated by commas." }`
 
 {"\n"}
 
