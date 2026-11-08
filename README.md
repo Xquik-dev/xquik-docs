@@ -145,7 +145,7 @@ Install Bun, rustup, OSV-Scanner, Gitleaks & ShellCheck.
 Use the pinned npm version in `package.json`.
 
 ```bash
-bunx --bun npm@12.2.0 ci --ignore-scripts
+bunx --bun npm@12.2.2 ci --ignore-scripts
 bun run check:all
 ```
 
@@ -157,7 +157,7 @@ The parity & features catalog tests need that checkout too.
 Without it, they skip & say so.
 A test that can't find its file fails & says to update the checkout.
 
-Run `bunx --bun mint@4.2.1035 dev` when you need a visual preview.
+Run `bunx --bun mint@4.3.5 dev` when you need a visual preview.
 
 ## Deployment
 
