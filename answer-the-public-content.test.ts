@@ -3,6 +3,8 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
+import { withoutParagraphSeparators } from "./scripts/lib/paragraph-separator.ts";
+
 const PROJECT_ROOT = process.cwd();
 const MINIMUM_ANSWER_WORDS = 75;
 const MAXIMUM_SENTENCE_WORDS = 14;
@@ -141,7 +143,7 @@ function findConcreteTerms(value: string): readonly string[] {
 }
 
 function findLongSentences(value: string): readonly string[] {
-  const prose = value
+  const prose = withoutParagraphSeparators(value)
     .replace(/`[^`]*`/gu, "term")
     .replace(/\[([^\]]+)\]\([^)]*\)/gu, "$1")
     .replace(/\s+/gu, " ")

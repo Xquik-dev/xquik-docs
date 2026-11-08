@@ -3,6 +3,8 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
+import { PARAGRAPH_SEPARATOR } from "./scripts/lib/paragraph-separator.ts";
+
 interface PageStructureFinding {
   readonly file: string;
   readonly issue: string;
@@ -10,7 +12,6 @@ interface PageStructureFinding {
 
 const SKIPPED_DIRECTORIES = new Set<string>([".git", "node_modules"] as const);
 
-const PARAGRAPH_SEPARATOR = '{"\\n"}';
 const NOT_PARAGRAPH = /^(?:#|\||- |\* |\+ |\d+\. |```|~~~|<|>|\{|!\[|---\s*$)/u;
 const COMPONENT_OPEN = /^<(?<name>[A-Z][\w.]*)\b[^>]*(?<!\/)>/u;
 const COMPONENT_CLOSE = /^<\/[A-Z][\w.]*>\s*$/u;
