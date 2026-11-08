@@ -74,7 +74,7 @@ describe("analyze tweet writing style documentation", (): void => {
     const frontmatter = source.slice(0, source.indexOf("---", 4) + 3);
 
     expect({
-      focusedTitle: frontmatter.includes("Tweet writing style API for cached X profile samples"),
+      focusedTitle: frontmatter.includes("Analyze a tweet writing style, X (Twitter) API docs"),
       keywordsPresent: [
         "tweet writing",
         "Twitter writing style",

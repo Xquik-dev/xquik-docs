@@ -38,7 +38,7 @@ describe("set X identity documentation", (): void => {
 
     expect(
       [
-        'title: "Set a Twitter handle as your X identity for analysis"',
+        'title: "Set your X identity handle, X (Twitter) API docs"',
         '"twitter handle"',
         '"X username"',
         "## Understand handle, display name, and user ID",

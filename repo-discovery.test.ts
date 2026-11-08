@@ -2646,7 +2646,7 @@ const FORBIDDEN_RATE_LIMIT_TROUBLESHOOTING_SNIPPETS = [
 ] as const;
 
 const REQUIRED_TWITTER_RATE_LIMIT_GUIDE_SNIPPETS = [
-  'title: "Twitter API rate limits, 429 errors & retry-after"',
+  'title: "Fix X (Twitter) rate limit exceeded & 429 errors"',
   "Standard API keys for one account share the same buckets.",
   "| Follow or remove follower | `POST /x/users/{id}/follow` and `POST /x/users/{id}/remove-follower` | 20 actions per minute and 400 per day, shared |",
   "| Connect X account | `POST /x/accounts` | 10 attempts per 15 minutes |",
@@ -2961,7 +2961,7 @@ const FORBIDDEN_CREATE_TWEET_API_SNIPPETS = [
 ] as const;
 
 const REQUIRED_DELETE_TWEET_API_SNIPPETS = [
-  'title: "Twitter API delete tweet to remove owned posts by ID"',
+  'title: "Delete a tweet you own by ID, X (Twitter) API docs"',
   '"Twitter API delete tweet"',
   "Use this route to remove 1 owned post by ID.",
   "It accepts 1 Tweet ID per request.",
@@ -3002,7 +3002,7 @@ const FORBIDDEN_DELETE_TWEET_API_SNIPPETS = [
 ] as const;
 
 const REQUIRED_LIKE_TWEET_API_SNIPPETS = [
-  'title: "Twitter like API to like a tweet by ID with status"',
+  'title: "Like a tweet by tweet ID, X (Twitter) API docs"',
   '"Twitter Like API"',
   '"Twitter API like Tweet"',
   "Each request likes 1 tweet by ID.",
@@ -3053,7 +3053,7 @@ const FORBIDDEN_LIKE_TWEET_API_SNIPPETS = [
 ] as const;
 
 const REQUIRED_UNLIKE_TWEET_API_SNIPPETS = [
-  'title: "Remove Twitter likes API to unlike a tweet by ID"',
+  'title: "Unlike a tweet by tweet ID, X (Twitter) API docs"',
   '"remove Twitter likes"',
   '"how to remove a like on Twitter"',
   "Each request unlikes 1 tweet by ID.",
@@ -3098,7 +3098,7 @@ const FORBIDDEN_UNLIKE_TWEET_API_SNIPPETS = [
 ] as const;
 
 const REQUIRED_RETWEET_TWEET_API_SNIPPETS = [
-  'title: "Twitter retweet API to repost one tweet by ID"',
+  'title: "Retweet a tweet by ID, X (Twitter) API docs"',
   '"Twitter retweet API"',
   '"Twitter API retweet"',
   "Each request reposts 1 tweet by ID.",
@@ -3143,7 +3143,7 @@ const FORBIDDEN_RETWEET_TWEET_API_SNIPPETS = [
 ] as const;
 
 const REQUIRED_UNRETWEET_TWEET_API_SNIPPETS = [
-  'title: "How to undo a retweet with the Twitter API"',
+  'title: "Undo a retweet by tweet ID, X (Twitter) API docs"',
   '"how to undo a retweet on Twitter"',
   '"Twitter undo retweet"',
   '"Twitter API undo retweet"',
@@ -3179,7 +3179,7 @@ const FORBIDDEN_UNRETWEET_TWEET_API_SNIPPETS = [
 ] as const;
 
 const REQUIRED_FOLLOW_TWITTER_API_SNIPPETS = [
-  'title: "Twitter follow API to follow one X user by ID"',
+  'title: "Follow a user by user ID, X (Twitter) API docs"',
   '"Twitter API follow"',
   '"Twitter API follow user"',
   '"Twitter Follow API"',
@@ -3215,7 +3215,7 @@ const FORBIDDEN_FOLLOW_TWITTER_API_SNIPPETS = [
 ] as const;
 
 const REQUIRED_UNFOLLOW_TWITTER_API_SNIPPETS = [
-  'title: "Twitter unfollow API to unfollow one X user by ID"',
+  'title: "Unfollow a user by user ID, X (Twitter) API docs"',
   '"Twitter unfollow API"',
   '"Twitter API unfollow"',
   '"how to unfollow someone on Twitter"',
@@ -3255,7 +3255,7 @@ const FORBIDDEN_UNFOLLOW_TWITTER_API_SNIPPETS = [
 ] as const;
 
 const REQUIRED_REMOVE_FOLLOWER_API_SNIPPETS = [
-  'title: "How do you remove a Twitter follower? Xquik API"',
+  'title: "Remove a follower by user ID, X (Twitter) API docs"',
   '"how do you remove a Twitter follower"',
   '"how to remove followers on Twitter"',
   '"how do you remove a follower from Twitter"',
@@ -3316,7 +3316,7 @@ const FORBIDDEN_PUBLIC_DM_REPLY_FIELD_EXAMPLES = [
 ] as const;
 
 const REQUIRED_WRITE_ACTION_STATUS_API_SNIPPETS = [
-  'title: "Twitter API errors & X write action status"',
+  'title: "Write action status & errors, X (Twitter) API docs"',
   '"Twitter API error handling"',
   "Every X write returns a stored `x_write_action` record.",
   "Trust `terminal`, `safeToRetry`, and `nextAction`.",
@@ -3378,7 +3378,7 @@ const FORBIDDEN_WRITE_ACTION_STATUS_API_SNIPPETS = [
 ] as const;
 
 const REQUIRED_X_ACCOUNTS_LIST_API_SNIPPETS = [
-  'title: "Connected X accounts API, health & write readiness"',
+  'title: "List connected accounts, X (Twitter) API docs"',
   'description: "Page through connected X accounts, inspect login health, and select the correct Xquik connection before Tweets, replies, DMs, likes, follows, or profile writes."',
   "Check `accounts[].health` before every write.",
   "Pass `nextCursor` unchanged as `cursor` while `hasMore` is true.",
@@ -4056,7 +4056,7 @@ const REQUIRED_TWEET_REPLIES_EXPORT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_TWEET_REPLIES_API_HANDOFF_SNIPPETS = [
-  'title: "Twitter API get replies to a tweet & author fields"',
+  'title: "Get replies to a tweet, X (Twitter) API docs"',
   "Get replies by tweet ID for analysis, support, moderation, giveaways, and agents.",
   "`GET /api/v1/x/tweets/{id}/replies`",
   "# First page of replies",
@@ -4156,7 +4156,7 @@ const FORBIDDEN_TWEET_REPLIES_API_RAW_OUTPUT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_TWEET_QUOTES_API_HANDOFF_SNIPPETS = [
-  'title: "View quote tweets with Twitter API & author fields"',
+  'title: "Quote tweets of a tweet, X (Twitter) API docs"',
   "## Quote tweet questions",
   "### What are quote tweets?",
   "### How does a Twitter API view quote tweets?",
@@ -4238,7 +4238,7 @@ const FORBIDDEN_TWEET_QUOTES_API_RAW_OUTPUT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_GET_TWEET_API_HANDOFF_SNIPPETS = [
-  'title: "Tweet lookup API, post details & engagement counts"',
+  'title: "Tweet lookup with engagement, X (Twitter) API docs"',
   "`GET /x/tweets/{id}`",
   "`GET /api/v1/x/tweets/{id}`",
   "tweet lookup API",
@@ -4500,7 +4500,7 @@ const FORBIDDEN_TRENDS_API_RAW_OUTPUT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_GET_ARTICLE_API_HANDOFF_SNIPPETS = [
-  'title: "X article API for long-form tweet & post content"',
+  'title: "Get a long-form article, X (Twitter) API docs"',
   "Retrieve one long-form X Article by tweet ID",
   "`GET /x/articles/{tweetId}`",
   "`GET /api/v1/x/articles/{tweetId}`",
@@ -4581,7 +4581,7 @@ const FORBIDDEN_GET_ARTICLE_API_RAW_OUTPUT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_TWEET_THREAD_API_HANDOFF_SNIPPETS = [
-  'title: "Tweet thread API, conversation export & authors"',
+  'title: "Tweet thread & conversation, X (Twitter) API docs"',
   "`GET /x/tweets/{id}/thread`",
   "`GET /api/v1/x/tweets/{id}/thread`",
   "tweet thread API",
@@ -4646,7 +4646,7 @@ const FORBIDDEN_TWEET_THREAD_API_RAW_OUTPUT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_RETWEETERS_API_HANDOFF_SNIPPETS = [
-  'title: "See who retweeted my tweet with Twitter API"',
+  'title: "See who retweeted a tweet, X (Twitter) API docs"',
   "`GET /x/tweets/{id}/retweeters`",
   "`GET /api/v1/x/tweets/{id}/retweeters`",
   "tweet retweeters API",
@@ -4701,7 +4701,7 @@ const FORBIDDEN_RETWEETERS_API_RAW_OUTPUT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_FAVORITERS_API_HANDOFF_SNIPPETS = [
-  'title: "How to see who liked my tweet with Twitter API"',
+  'title: "See who liked a tweet, X (Twitter) API docs"',
   "`GET /x/tweets/{id}/favoriters`",
   "`GET /api/v1/x/tweets/{id}/favoriters`",
   "## Tweet liker questions",
@@ -4916,7 +4916,7 @@ const FORBIDDEN_COMMUNITY_TWEETS_API_RAW_OUTPUT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_COMMUNITY_SEARCH_API_HANDOFF_SNIPPETS = [
-  'title: "Twitter community search API & keyword tweet results"',
+  'title: "Community search by keyword, X (Twitter) API docs"',
   "Twitter community search filters posts in one known Community, or across",
   "every Community. Run a Twitter search in community posts with a query.",
   "## Twitter community search questions",
@@ -4998,7 +4998,7 @@ const FORBIDDEN_COMMUNITY_SEARCH_API_RAW_OUTPUT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_FOLLOWERS_API_HANDOFF_SNIPPETS = [
-  'title: "Twitter followers API, profile export & cursors"',
+  'title: "Export a user\'s followers, X (Twitter) API docs"',
   "Get an X account's followers by username or user ID",
   "Follower Export API",
   "X followers API",
@@ -5195,7 +5195,7 @@ const FORBIDDEN_CHECK_FOLLOWER_RAW_OUTPUT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_LIST_FOLLOWERS_API_HANDOFF_SNIPPETS = [
-  'title: "Twitter list followers API & profile export"',
+  'title: "Export a list\'s followers, X (Twitter) API docs"',
   "This API returns one List's follower IDs",
   "## Twitter list followers questions",
   "### What is a Twitter list follower?",
@@ -5295,7 +5295,7 @@ const FORBIDDEN_LIST_MEMBERS_API_RAW_OUTPUT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_LIST_TWEETS_API_HANDOFF_SNIPPETS = [
-  'title: "Twitter list tweets API & timeline export guide"',
+  'title: "Get a list\'s tweet timeline, X (Twitter) API docs"',
   "This route retrieves tweets from one curated X List",
   "## Twitter list tweets questions",
   "### What does the Twitter lists API return?",
@@ -5473,7 +5473,7 @@ const FORBIDDEN_BATCH_USERS_API_RAW_OUTPUT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_BOOKMARK_FOLDERS_API_HANDOFF_SNIPPETS = [
-  'title: "Twitter bookmark folders API & saved tweet export"',
+  'title: "List bookmark folders, X (Twitter) API docs"',
   "## Direct bookmark folder handoff",
   "`GET /x/bookmarks/folders`",
   "saved-tweet workflow, CRM enrichment job,",
@@ -5553,7 +5553,7 @@ const FORBIDDEN_SEARCH_USERS_API_RAW_OUTPUT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_USER_MENTIONS_API_HANDOFF_SNIPPETS = [
-  'title: "Twitter mentions timeline API & profile alerts"',
+  'title: "A user\'s mentions timeline, X (Twitter) API docs"',
   "This route returns tweets that mention one X account.",
   "brand mentions, support inboxes, lead routing, and agent handoffs",
   "`GET /api/v1/x/users/{id}/mentions`",
@@ -5996,7 +5996,7 @@ const FORBIDDEN_HIGH_VALUE_ROW_HANDOFF_RAW_RESPONSE_SNIPPETS = [
 ] as const;
 
 const REQUIRED_BOOKMARKS_API_HANDOFF_SNIPPETS = [
-  'title: "Export Twitter bookmarks with Twitter bookmarks API"',
+  'title: "Export saved tweet bookmarks, X (Twitter) API docs"',
   "## Bookmarks handoff",
   "`GET /x/bookmarks`",
   "reading list, CRM, research queue, or agent",
@@ -6132,7 +6132,7 @@ const FORBIDDEN_TIMELINE_API_RAW_SNIPPETS = [
 ] as const;
 
 const REQUIRED_USER_TWEETS_API_HANDOFF_SNIPPETS = [
-  'title: "Search user tweets, profile timeline & cursors"',
+  'title: "A user\'s tweet timeline, X (Twitter) API docs"',
   "This route returns the public profile timeline for one Twitter or X",
   "account. The route is",
   "Protected accounts return HTTP 403 with `x_account_protected`.",
@@ -6712,7 +6712,7 @@ const REQUIRED_EXTRACTION_EXPORT_RESPONSE_SNIPPETS = [
 ] as const;
 
 const REQUIRED_DRAW_HISTORY_SNIPPETS = [
-  'title: "Twitter giveaway history API & past draw results"',
+  'title: "Giveaway history & past draws, X (Twitter) API docs"',
   '"Twitter giveaway history"',
   "This endpoint returns draw summaries.",
   "It does not return winner objects or",
@@ -6757,7 +6757,7 @@ const FORBIDDEN_DRAW_HISTORY_SNIPPETS = [
 ] as const;
 
 const REQUIRED_DRAW_DETAIL_SNIPPETS = [
-  'title: "Twitter giveaway winner API & draw verification"',
+  'title: "Giveaway draw & winner details, X (Twitter) API docs"',
   '"Twitter giveaway winner API"',
   "This endpoint does not return create-time eligibility rules or exclusion",
   "## Verify one Twitter giveaway draw",
@@ -6804,7 +6804,7 @@ const FORBIDDEN_DRAW_DETAIL_SNIPPETS = [
 ] as const;
 
 const REQUIRED_DRAW_EXPORT_RESPONSE_SNIPPETS = [
-  'title: "Twitter giveaway CSV export API & winner lists"',
+  'title: "Export giveaway winners as CSV, X (Twitter) API docs"',
   'sidebarTitle: "Export draw"',
   'description: "Export selected Twitter giveaway winners or inspected reply entries as CSV, XLSX, JSON, Markdown, PDF, or text. Keep all columns, order, and filenames."',
   'keywords: [ "Twitter giveaway CSV", "giveaway winner export", "Twitter giveaway winner list", "X giveaway results export", "contest entries export", "download giveaway winners", "giveaway audit file", ]',
@@ -7060,7 +7060,7 @@ const FORBIDDEN_MEDIA_UPLOAD_WORKFLOW_SNIPPETS = [
 ] as const;
 
 const REQUIRED_UPLOAD_MEDIA_API_HANDOFF_SNIPPETS = [
-  'title: "Twitter media upload API for tweets, replies & DMs"',
+  'title: "Upload media for tweets & DMs, X (Twitter) API docs"',
   "twitter media upload api",
   "twitter api media upload",
   "twitter api upload media",
@@ -7108,7 +7108,7 @@ const FORBIDDEN_UPLOAD_MEDIA_API_HANDOFF_SNIPPETS = [
 ] as const;
 
 const REQUIRED_DOWNLOAD_MEDIA_API_HANDOFF_SNIPPETS = [
-  'title: "Twitter media downloader API for photos & video"',
+  'title: "Download tweet photos & video, X (Twitter) API docs"',
   "Download media",
   "Send 1 tweet ID or URL, or a list of them.",
   "download Twitter media",
@@ -8187,7 +8187,7 @@ const FORBIDDEN_DIRECT_MESSAGE_WORKFLOW_SNIPPETS = [
 ] as const;
 
 const REQUIRED_DM_HISTORY_API_SNIPPETS = [
-  'title: "Twitter DM API for message history & CRM sync"',
+  'title: "Direct message history, X (Twitter) API docs"',
   "Get DM history",
   "GET /x/dm/{userId}/history",
   "Read Twitter DMs between a connected account and one user.",
@@ -8298,7 +8298,7 @@ const FORBIDDEN_DM_HISTORY_LOG_SNIPPETS = [
 ] as const;
 
 const REQUIRED_SEND_DM_API_SNIPPETS = [
-  'title: "Twitter DM API to send direct messages with media"',
+  'title: "Send a DM with text & media, X (Twitter) API docs"',
   'sidebarTitle: "Send DM"',
   'description: "Send text or one media attachment as a direct message from a connected X account.',
   "Twitter DM API",
@@ -9437,7 +9437,7 @@ const FORBIDDEN_KEYWORD_MONITOR_DELETE_RAW_OUTPUT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_ACCOUNT_MONITOR_API_HANDOFF_SNIPPETS = [
-  'title: "Twitter account monitor API & real-time webhooks"',
+  'title: "Create an account monitor, X (Twitter) API docs"',
   'keywords: [ "Twitter monitor", "monitor Twitter account", "tweet monitor", "Twitter account monitor API", "Twitter webhook", "Twitter webhook alerts", "real-time Twitter alerts", "monitor tweets", "profile change alerts", ]',
   "monitor tweets",
   "signed webhooks",

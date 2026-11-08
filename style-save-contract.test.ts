@@ -85,7 +85,7 @@ describe("save custom tweet style documentation", (): void => {
     const frontmatter = source.slice(0, source.indexOf("---", 4) + 3);
 
     expect({
-      focusedTitle: frontmatter.includes("Save tweet writing samples for a reusable X style"),
+      focusedTitle: frontmatter.includes("Save a custom writing style, X (Twitter) API docs"),
       keywordsPresent: [
         "tweet writing",
         "save tweet style",

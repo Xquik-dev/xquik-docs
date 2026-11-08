@@ -68,7 +68,7 @@ describe("compare tweet writing profiles documentation", (): void => {
     const frontmatter = source.slice(0, source.indexOf("---", 4) + 3);
 
     expect({
-      focusedTitle: frontmatter.includes("Compare 2 cached tweet writing profiles with Xquik"),
+      focusedTitle: frontmatter.includes("Compare 2 tweet writing styles, X (Twitter) API docs"),
       keywordsPresent: [
         "tweet writing",
         "compare tweet styles",

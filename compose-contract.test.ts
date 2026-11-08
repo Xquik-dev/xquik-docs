@@ -37,7 +37,7 @@ const REQUIRED_PAGE_COPY = [
 ] as const;
 
 const FOCUSED_COMPOSER_COPY = [
-  'title: "Tweet composer API with X algorithm guidance"',
+  'title: "Plan & check a tweet draft, X (Twitter) API docs"',
   '"tweet composer"',
   '"how to write a good tweet"',
   "OAuth bearer token using `Bearer YOUR_TOKEN`.",

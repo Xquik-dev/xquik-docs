@@ -74,7 +74,7 @@ describe("support ticket list documentation", (): void => {
 
     expect(
       [
-        'title: "Support ticket API to list Xquik tickets & status"',
+        'title: "List support tickets, X (Twitter) API docs"',
         '"support ticket API"',
         '"list support tickets"',
         '"support ticket status"',
