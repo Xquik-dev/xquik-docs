@@ -27,7 +27,9 @@ const docsConfigSchema = z.looseObject({
 
 type DocsConfig = z.infer<typeof docsConfigSchema>;
 
+const MAIN_SITE_PAGE = /^https:\/\/xquik\.com\/en\/[a-z0-9/-]+$/u;
 const RETIRED_COMPARISON_PAGES = [
+  "chirrapp",
   "antwork",
   "audiense",
   "black-magic",
@@ -181,7 +183,9 @@ describe("navigation default state", (): void => {
       .filter(({ source }): boolean => /^\/alternatives\/[a-z0-9-]+$/u.test(source))
       .flatMap(({ source, destination }): readonly string[] => [
         ...(existsSync(`${source.slice(1)}.mdx`) ? [`${source} still has a page`] : []),
-        ...(existsSync(`${destination.slice(1)}.mdx`) ? [] : [`${source} lands on a missing page`]),
+        ...(MAIN_SITE_PAGE.test(destination) || existsSync(`${destination.slice(1)}.mdx`)
+          ? []
+          : [`${source} lands on a missing page`]),
         ...(sources.has(destination) ? [`${source} lands on another redirect`] : []),
       ]);
 
