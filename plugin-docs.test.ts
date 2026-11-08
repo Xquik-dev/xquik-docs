@@ -320,7 +320,7 @@ describe("Plugin docs", (): void => {
       '<Card title="/xstatus" icon="terminal">',
       "Show Xquik account, subscription, and usage status. Run it in an active Hermes CLI or gateway session.",
       '<Card title="/xtrends" icon="trending-up">',
-      "Show current X trends from the plugin command registry.",
+      "Show current X (Twitter) trends from the plugin command registry.",
       '<Card title="Public reads" icon="search">',
       "Tweet search, tweet lookup, user lookup, timelines, articles, and trends.",
       '<Card title="Actions" icon="trending-up">',
