@@ -3620,8 +3620,6 @@ const REQUIRED_VALIDATION_ERROR_GUIDE_SNIPPETS = [
   "Provide comma-separated numeric IDs",
   '<Card title="missing_params" icon="circle-alert">',
   "Follower checks need both source",
-  '<Card title="too_many_ids" icon="list">',
-  "groups of 100",
   '<Card title="unsupported_field" icon="circle-x">',
   "in `media`, not uploaded media IDs.",
 ] as const;
