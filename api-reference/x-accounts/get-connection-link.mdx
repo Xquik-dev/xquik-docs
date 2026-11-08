@@ -1,0 +1,128 @@
+---
+title: "Get X account connect link, X (Twitter) API docs"
+sidebarTitle: Get connect link status
+description: "Read what happened on an X (Twitter) connect link. Get status, health, xUserId, xUsername & your own reference once the person finishes. Free to read."
+endpoint: "GET /x/account-connection-links/{id}"
+keywords: ["x accounts", "connect link", "connection status"]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+<LlmsDirective />
+
+`GET https://xquik.com/api/v1/x/account-connection-links/{id}`
+
+<Callout icon="circle-check" color="#16a34a">
+
+**Free.** This endpoint does not consume credits.
+
+</Callout>
+
+Read this when the person comes back, or every few seconds until then.
+There's no webhook for this yet, since webhooks carry monitor events today.
+
+<CodeGroup>
+
+```bash cURL
+curl https://xquik.com/api/v1/x/account-connection-links/xlink_AAAAAAAAAAAAAAAA \
+  -H "x-api-key: $XQUIK_API_KEY" | jq
+```
+
+</CodeGroup>
+
+<section>
+
+## Headers
+
+| Header      | Type     | Required       | Description                                                      |
+| ----------- | -------- | -------------- | ---------------------------------------------------------------- |
+| `x-api-key` | `string` | Or `Cookie`    | A Full access API key.                                           |
+| `Cookie`    | `string` | Or `x-api-key` | Your signed-in dashboard session cookie, `__Host-xquik_session`. |
+
+</section>
+
+<section>
+
+## Path
+
+| Path parameter | Type     | Required | Description                            |
+| -------------- | -------- | -------- | -------------------------------------- |
+| `id`           | `string` | Yes      | The `id` the create response gave you. |
+
+</section>
+
+<section>
+
+## Response
+
+### 200 OK
+
+| Field         | Type             | Description                                                 |
+| ------------- | ---------------- | ----------------------------------------------------------- |
+| `object`      | `string`         | Always `x_account_connection_link`.                         |
+| `id`          | `string`         | The link's ID.                                              |
+| `purpose`     | `string`         | `connect` or `reconnect`.                                   |
+| `status`      | `string`         | See the table below.                                        |
+| `reference`   | `string \| null` | Your own ID for this person.                                |
+| `returnUrl`   | `string \| null` | The URL you gave.                                           |
+| `accountId`   | `string \| null` | The connected account. Pass it as `account` on later calls. |
+| `xUserId`     | `string \| null` | The X user ID.                                              |
+| `xUsername`   | `string \| null` | The X username.                                             |
+| `health`      | `string \| null` | The account's health.                                       |
+| `failure`     | `string \| null` | Why the last login didn't finish.                           |
+| `createdAt`   | `string`         | ISO 8601 time.                                              |
+| `expiresAt`   | `string`         | ISO 8601 time.                                              |
+| `completedAt` | `string \| null` | ISO 8601 time the account connected.                        |
+
+The token never appears here, because Xquik stores only its hash.
+
+| `status`              | What it means                                        |
+| --------------------- | ---------------------------------------------------- |
+| `pending`             | Nobody finished signing in yet.                      |
+| `connecting`          | A sign-in is running.                                |
+| `requires_email_code` | The person is entering a code X emailed them.        |
+| `connected`           | The account connected. The link can't be used again. |
+| `failed`              | X refused 5 logins. Create a new link.               |
+| `expired`             | The link ran out of time. Create a new link.         |
+| `revoked`             | You revoked it.                                      |
+
+```json
+{
+  "object": "x_account_connection_link",
+  "id": "xlink_AAAAAAAAAAAAAAAA",
+  "purpose": "connect",
+  "status": "connected",
+  "reference": "crm-user-7",
+  "returnUrl": "https://app.example.com/connected",
+  "accountId": "42",
+  "xUserId": "9876543210",
+  "xUsername": "your_x_username",
+  "health": "healthy",
+  "failure": null,
+  "createdAt": "2026-11-08T12:00:00.000Z",
+  "expiresAt": "2026-11-08T12:30:00.000Z",
+  "completedAt": "2026-11-08T12:04:10.000Z"
+}
+```
+
+### 400 Invalid input
+
+`id` isn't a connect link ID. Use the `id` the create response gave you.
+
+### 401 Unauthenticated
+
+`{ "error": "unauthenticated", "message": "Missing or invalid API key" }`
+
+### 403 Forbidden
+
+The key isn't Full access. OAuth tokens and MCP tools get `403 session_required`, since a link works like a password.
+
+### 404 Not found
+
+The link doesn't exist, or belongs to another Xquik account.
+
+### 429 Rate limited
+
+`{ "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 1 }`
+
+</section>
