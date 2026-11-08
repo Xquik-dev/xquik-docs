@@ -67,15 +67,9 @@ describe("public security guidance", (): void => {
     );
     expect(securityPage).toContain("Progress updates at least every 14 days");
     expect(securityPage).toContain("Acknowledgement within 3 business days");
-    expect(securityPage).toContain(
-      "Rewards can be monetary and depend on the bug's impact.",
-    );
-    expect(securityPage).toContain(
-      "https://xquik.com/en/vulnerability-disclosure",
-    );
-    expect(securityText).toContain(
-      "Policy: https://xquik.com/en/vulnerability-disclosure\n",
-    );
+    expect(securityPage).toContain("Rewards can be monetary and depend on the bug's impact.");
+    expect(securityPage).toContain("https://xquik.com/en/vulnerability-disclosure");
+    expect(securityText).toContain("Policy: https://xquik.com/en/vulnerability-disclosure\n");
     expect(
       readFileSync(
         "gridinsoft-uda1iefj0dc1wig4yb4c3afl2m35st1ox7rufm0q4ljla00rmzazwhuyjvlgnzp2.txt",
