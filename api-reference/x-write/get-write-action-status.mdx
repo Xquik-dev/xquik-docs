@@ -2,7 +2,7 @@
 title: "Twitter API errors & X write action status"
 sidebarTitle: Get write action status
 description: "Handle Twitter API errors by polling tweet, reply, DM, follow, like, repost, media, profile, and community writes. Check results, billing, and safe retries."
-api: "GET /x/write-actions/{id}"
+endpoint: "GET /x/write-actions/{id}"
 keywords:
   [
     "Twitter API errors",
@@ -21,114 +21,15 @@ keywords:
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
 
-{/* GENERATED RESPONSE EXAMPLES START */}
-
-<Panel>
-
-<Tabs defaultTabIndex={0} sync={false}>
-
-  <Tab title="200" id="response-x-write-get-write-action-status-200">
-
-    ```json
-    {
-      "object": "x_write_action",
-      "id": "12345",
-      "writeActionId": "12345",
-      "action": "like",
-      "status": "success",
-      "terminal": true,
-      "retryable": false,
-      "safeToRetry": false,
-      "statusUrl": "/api/v1/x/write-actions/12345",
-      "pollAfterMs": null
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="202" id="response-x-write-get-write-action-status-202">
-
-    ```json
-    {
-      "object": "x_write_action",
-      "id": "12346",
-      "writeActionId": "12346",
-      "action": "create_tweet",
-      "status": "dispatching",
-      "terminal": false,
-      "retryable": false,
-      "safeToRetry": false,
-      "statusUrl": "/api/v1/x/write-actions/12346",
-      "pollAfterMs": 2000
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="400" id="response-x-write-get-write-action-status-400">
-
-    ```json
-    {
-      "error": "invalid_input",
-      "message": "Invalid input. Check the request body."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="401" id="response-x-write-get-write-action-status-401">
-
-    ```json
-    {
-      "error": "unauthenticated",
-      "message": "Authentication required. Provide a valid API key or bearer token."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="403" id="response-x-write-get-write-action-status-403">
-
-    ```json
-    {
-      "error": "api_key_paused",
-      "message": "This API key is paused. Resume it at dashboard.xquik.com/api-keys to use it again."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="404" id="response-x-write-get-write-action-status-404">
-
-    ```json
-    {
-      "error": "not_found",
-      "message": "Resource not found."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="429" id="response-x-write-get-write-action-status-429">
-
-    ```json
-    {
-      "error": "rate_limit_exceeded",
-      "message": "Too many requests. Try again later.",
-      "retryAfter": 60
-    }
-    ```
-
-  </Tab>
-</Tabs>
-
-</Panel>
-{/* GENERATED RESPONSE EXAMPLES END */}
 <LlmsDirective />
+
+`GET https://xquik.com/api/v1/x/write-actions/{id}`
 
 Every X write returns a stored `x_write_action` record.
 Store its `id` or `writeActionId`.
 Poll `statusUrl` whenever `terminal` is `false`.
+
+<section>
 
 ## Handle Twitter API errors
 
@@ -147,6 +48,10 @@ from an HTTP status or error name alone.
 
 </Note>
 
+</section>
+
+<section>
+
 ## Agent algorithm
 
 1. Generate one unique `Idempotency-Key` for the intended write.
@@ -163,6 +68,10 @@ action, target, and payload. The replay returns the first answer again.
 It keeps the first status, body, and `Retry-After`, and adds `idempotent: true`.
 While the first request runs, the replay returns `202` and the action.
 A replay sends nothing to X and charges nothing.
+
+</section>
+
+<section>
 
 ## Lifecycle
 
@@ -182,6 +91,10 @@ A post X never published fails as `x_post_not_sent`. You pay nothing, and `safeT
 
 Active actions return `202`, `Location`, and `Retry-After`. Terminal actions
 return `200` from this endpoint.
+
+</section>
+
+<section>
 
 ## Request
 
@@ -227,27 +140,30 @@ else:
 
 </CodeGroup>
 
+</section>
+
+<section>
+
 ## Headers
 
-<ParamField header="x-api-key" type="string">
+| Header          | Type     | Required | Description                                            |
+| --------------- | -------- | -------- | ------------------------------------------------------ |
+| `x-api-key`     | `string` | No       | Send your Xquik API key in this header.                |
+| `Authorization` | `string` | No       | Send an OAuth 2.1 bearer token instead of `x-api-key`. |
 
-Send your Xquik API key in this header.
+</section>
 
-</ParamField>
-
-<ParamField header="Authorization" type="string">
-
-Send an OAuth 2.1 bearer token instead of `x-api-key`.
-
-</ParamField>
+<section>
 
 ## Path parameters
 
-<ParamField path="id" type="string" required>
+| Path parameter | Type     | Required | Description                               |
+| -------------- | -------- | -------- | ----------------------------------------- |
+| `id`           | `string` | Yes      | Action ID returned by the original write. |
 
-Action ID returned by the original write.
+</section>
 
-</ParamField>
+<section>
 
 ## Response
 
@@ -282,135 +198,51 @@ Action ID returned by the original write.
   </Tab>
 </Tabs>
 
-<ResponseField name="object" type="string">
-  Always `x_write_action`.
-</ResponseField>
-<ResponseField name="id" type="string">
-  Durable action ID.
-</ResponseField>
-<ResponseField name="writeActionId" type="string">
-  This field aliases `id`.
-</ResponseField>
-<ResponseField name="action" type="string">
-  Exact write operation.
-</ResponseField>
-<ResponseField name="status" type="string">
-  Current lifecycle status.
-</ResponseField>
-<ResponseField name="terminal" type="boolean">
-  This field is `true` when polling can stop.
-</ResponseField>
-<ResponseField name="retryable" type="boolean">
-  This field is `true` when a later attempt could succeed.
-</ResponseField>
-<ResponseField name="safeToRetry" type="boolean">
-  This field is `true` when a new attempt is safe.
-</ResponseField>
-<ResponseField name="statusUrl" type="string">
-  Relative polling URL.
-</ResponseField>
-<ResponseField name="pollAfterMs" type="number | null">
-  Recommended polling delay.
-</ResponseField>
-<ResponseField name="charged" type="boolean">
-  `true` after billing settles as charged.
-</ResponseField>
-<ResponseField name="chargedCredits" type="string">
-  Settled credits charged.
-</ResponseField>
-<ResponseField name="billing" type="object">
-  Planned and settled billing state.
-</ResponseField>
-<ResponseField name="request" type="object">
-  Stable hash and exact sanitized payload.
-</ResponseField>
-<ResponseField name="account" type="object">
-  Connected account selected for this write.
-</ResponseField>
-<ResponseField name="target" type="object | null">
-  Target type and ID.
-</ResponseField>
-<ResponseField name="targetId" type="string | null">
-  Target ID alias.
-</ResponseField>
-<ResponseField name="result" type="object | null">
-  Confirmed result or desired state.
-</ResponseField>
-<ResponseField name="nextAction" type="object | null">
-  Required poll, retry, or verification step.
-</ResponseField>
-<ResponseField name="requestHash" type="string">
-  Stable request fingerprint.
-</ResponseField>
-<ResponseField name="requestId" type="string">
-  Correlation ID echoed in `X-Request-Id`.
-</ResponseField>
-<ResponseField name="idempotent" type="boolean">
-  `true` when this response answers a retry with the same `Idempotency-Key`.
-</ResponseField>
-<ResponseField name="error" type="string">
-  Machine-readable error code.
-</ResponseField>
-<ResponseField name="message" type="string">
-  Actionable status or error message.
-</ResponseField>
-<ResponseField name="sendDispatched" type="boolean">
-  This field is `true` after dispatch.
-</ResponseField>
-<ResponseField name="sendDispatchedAt" type="string">
-  ISO 8601 dispatch time.
-</ResponseField>
-<ResponseField name="createdAt" type="string">
-  ISO 8601 creation time.
-</ResponseField>
-<ResponseField name="updatedAt" type="string">
-  ISO 8601 latest update time.
-</ResponseField>
-<ResponseField name="completedAt" type="string">
-  ISO 8601 terminal time.
-</ResponseField>
-<ResponseField name="expiresAt" type="string">
-  Nonterminal resolution deadline.
-</ResponseField>
-<ResponseField name="confirmedAt" type="string">
-  ISO 8601 confirmation time.
-</ResponseField>
-<ResponseField name="confirmationCheckedAt" type="string">
-  ISO 8601 latest confirmation check.
-</ResponseField>
-<ResponseField name="confirmationAttempts" type="number">
-  Confirmation attempt count.
-</ResponseField>
-<ResponseField name="tweetId" type="string">
-  Confirmed tweet ID when available.
-</ResponseField>
-<ResponseField name="messageId" type="string">
-  Confirmed direct message ID when available.
-</ResponseField>
-<ResponseField name="mediaId" type="string">
-  Confirmed media ID when available.
-</ResponseField>
-<ResponseField name="mediaUrl" type="string">
-  Public media URL when available.
-</ResponseField>
-<ResponseField name="communityId" type="string">
-  Confirmed community ID when available.
-</ResponseField>
-<ResponseField name="communityName" type="string">
-  Confirmed community name when available.
-</ResponseField>
-<ResponseField name="resultId" type="string">
-  Result ID alias.
-</ResponseField>
-<ResponseField name="media" type="object">
-  Media details when used.
-</ResponseField>
-<ResponseField name="details" type="object">
-  Structured recovery context.
-</ResponseField>
-<ResponseField name="success" type="boolean">
-  This field is `true` when status equals `success`.
-</ResponseField>
+| Field                   | Type             | Description                                                                |
+| ----------------------- | ---------------- | -------------------------------------------------------------------------- |
+| `object`                | `string`         | Always `x_write_action`.                                                   |
+| `id`                    | `string`         | Durable action ID.                                                         |
+| `writeActionId`         | `string`         | This field aliases `id`.                                                   |
+| `action`                | `string`         | Exact write operation.                                                     |
+| `status`                | `string`         | Current lifecycle status.                                                  |
+| `terminal`              | `boolean`        | This field is `true` when polling can stop.                                |
+| `retryable`             | `boolean`        | This field is `true` when a later attempt could succeed.                   |
+| `safeToRetry`           | `boolean`        | This field is `true` when a new attempt is safe.                           |
+| `statusUrl`             | `string`         | Relative polling URL.                                                      |
+| `pollAfterMs`           | `number \| null` | Recommended polling delay.                                                 |
+| `charged`               | `boolean`        | `true` after billing settles as charged.                                   |
+| `chargedCredits`        | `string`         | Settled credits charged.                                                   |
+| `billing`               | `object`         | Planned and settled billing state.                                         |
+| `request`               | `object`         | Stable hash and exact sanitized payload.                                   |
+| `account`               | `object`         | Connected account selected for this write.                                 |
+| `target`                | `object \| null` | Target type and ID.                                                        |
+| `targetId`              | `string \| null` | Target ID alias.                                                           |
+| `result`                | `object \| null` | Confirmed result or desired state.                                         |
+| `nextAction`            | `object \| null` | Required poll, retry, or verification step.                                |
+| `requestHash`           | `string`         | Stable request fingerprint.                                                |
+| `requestId`             | `string`         | Correlation ID echoed in `X-Request-Id`.                                   |
+| `idempotent`            | `boolean`        | `true` when this response answers a retry with the same `Idempotency-Key`. |
+| `error`                 | `string`         | Machine-readable error code.                                               |
+| `message`               | `string`         | Actionable status or error message.                                        |
+| `sendDispatched`        | `boolean`        | This field is `true` after dispatch.                                       |
+| `sendDispatchedAt`      | `string`         | ISO 8601 dispatch time.                                                    |
+| `createdAt`             | `string`         | ISO 8601 creation time.                                                    |
+| `updatedAt`             | `string`         | ISO 8601 latest update time.                                               |
+| `completedAt`           | `string`         | ISO 8601 terminal time.                                                    |
+| `expiresAt`             | `string`         | Nonterminal resolution deadline.                                           |
+| `confirmedAt`           | `string`         | ISO 8601 confirmation time.                                                |
+| `confirmationCheckedAt` | `string`         | ISO 8601 latest confirmation check.                                        |
+| `confirmationAttempts`  | `number`         | Confirmation attempt count.                                                |
+| `tweetId`               | `string`         | Confirmed tweet ID when available.                                         |
+| `messageId`             | `string`         | Confirmed direct message ID when available.                                |
+| `mediaId`               | `string`         | Confirmed media ID when available.                                         |
+| `mediaUrl`              | `string`         | Public media URL when available.                                           |
+| `communityId`           | `string`         | Confirmed community ID when available.                                     |
+| `communityName`         | `string`         | Confirmed community name when available.                                   |
+| `resultId`              | `string`         | Result ID alias.                                                           |
+| `media`                 | `object`         | Media details when used.                                                   |
+| `details`               | `object`         | Structured recovery context.                                               |
+| `success`               | `boolean`        | This field is `true` when status equals `success`.                         |
 
 ```json
 {
@@ -447,6 +279,10 @@ Action ID returned by the original write.
 }
 ```
 
+</section>
+
+<section>
+
 ## Retry rules
 
 - With `retryable: false` and `safeToRetry: false`, do not retry.
@@ -455,3 +291,55 @@ Action ID returned by the original write.
 - With `terminal: false`, keep polling, even when the original HTTP response was an error.
 
 Xquik keeps idempotency replay protection for at least 90 days.
+
+</section>
+
+{/* GENERATED RESPONSE EXAMPLES START */}
+
+<section>
+
+## Response examples
+
+### 200 example
+
+```json
+{
+  "object": "x_write_action",
+  "id": "12345",
+  "writeActionId": "12345",
+  "action": "like",
+  "status": "success",
+  "terminal": true,
+  "retryable": false,
+  "safeToRetry": false,
+  "statusUrl": "/api/v1/x/write-actions/12345",
+  "pollAfterMs": null
+}
+```
+
+### 202 example
+
+```json
+{
+  "object": "x_write_action",
+  "id": "12346",
+  "writeActionId": "12346",
+  "action": "create_tweet",
+  "status": "dispatching",
+  "terminal": false,
+  "retryable": false,
+  "safeToRetry": false,
+  "statusUrl": "/api/v1/x/write-actions/12346",
+  "pollAfterMs": 2000
+}
+```
+
+- **400** `{ "error": "invalid_input", "message": "Invalid input. Check the request body." }`
+- **401** `{ "error": "unauthenticated", "message": "Authentication required. Provide a valid API key or bearer token." }`
+- **403** `{ "error": "api_key_paused", "message": "This API key is paused. Resume it at dashboard.xquik.com/api-keys to use it again." }`
+- **404** `{ "error": "not_found", "message": "Resource not found." }`
+- **429** `{ "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 60 }`
+
+</section>
+
+{/* GENERATED RESPONSE EXAMPLES END */}

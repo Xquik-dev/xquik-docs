@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
+import { collapseTableSpacing } from "./scripts/lib/documented-fields.ts";
 import { z } from "zod";
 
 const openApiCursorContract = z.looseObject({
@@ -39,11 +40,11 @@ describe("platform cursor contract", (): void => {
     expect(stalePlatformUrls).toStrictEqual([]);
     expect(staleSdkParameters).toStrictEqual([]);
     expect(openApi.components.parameters.After.name).toBe("cursor");
-    expect(readFileSync("api-reference/radar/list.mdx", "utf8")).toContain(
-      '<ParamField query="after" type="string">',
+    expect(collapseTableSpacing(readFileSync("api-reference/radar/list.mdx", "utf8"))).toContain(
+      "after` | `string` |",
     );
-    expect(readFileSync("api-reference/drafts/list.mdx", "utf8")).toContain(
-      '<ParamField query="afterCursor" type="string">',
+    expect(collapseTableSpacing(readFileSync("api-reference/drafts/list.mdx", "utf8"))).toContain(
+      "afterCursor` | `string` |",
     );
   });
 });

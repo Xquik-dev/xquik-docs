@@ -2,79 +2,15 @@
 title: "Stream monitor events live over server-sent events"
 sidebarTitle: "Stream events"
 description: "Get each monitor event over 1 open HTTP connection as Xquik stores it. Reconnect with Last-Event-ID to replay what you missed. Streaming costs no credits."
-api: "GET /events/stream"
+endpoint: "GET /events/stream"
 keywords: ["events", "stream", "server-sent events", "SSE", "Last-Event-ID", "real-time"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
 
-{/* GENERATED RESPONSE EXAMPLES START */}
-
-<Panel>
-
-<Tabs defaultTabIndex={0} sync={false}>
-
-  <Tab title="200" id="response-events-stream-200">
-
-    ```text
-    id: 42
-    event: tweet.new
-    data: {"id":"42","type":"tweet.new","monitorId":"7","monitorType":"account","occurredAt":"2025-01-15T12:00:00.000Z","data":{}}
-
-    event: post.metrics
-    data: {"monitorId":"9","checkedAt":"2025-01-15T12:00:30.000Z","isActive":true,"pausedReason":null,"metrics":{"bookmarks":{"current":1962,"gain":40},"likes":{"current":17096,"gain":310},"quotes":{"current":416,"gain":6},"replies":{"current":584,"gain":12},"retweets":{"current":901,"gain":25},"views":{"current":5135396,"gain":96400}}}
-    ```
-
-  </Tab>
-
-  <Tab title="400" id="response-events-stream-400">
-
-    ```json
-    {
-      "error": "invalid_input",
-      "message": "Invalid input. Check the request body."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="401" id="response-events-stream-401">
-
-    ```json
-    {
-      "error": "unauthenticated",
-      "message": "Authentication required. Provide a valid API key or bearer token."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="403" id="response-events-stream-403">
-
-    ```json
-    {
-      "error": "api_key_paused",
-      "message": "This API key is paused. Resume it at dashboard.xquik.com/api-keys to use it again."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="429" id="response-events-stream-429">
-
-    ```json
-    {
-      "error": "too_many_streams",
-      "message": "Close a stream first. Keep up to 200 open per account."
-    }
-    ```
-
-  </Tab>
-</Tabs>
-
-</Panel>
-{/* GENERATED RESPONSE EXAMPLES END */}
 <LlmsDirective />
+
+`GET https://xquik.com/api/v1/events/stream`
 
 <Callout icon="circle-check" color="#16a34a">
 
@@ -85,6 +21,8 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 Open 1 connection and read your monitor events as they arrive. You need no
 public endpoint and no signature check. Use it beside webhooks or instead of
 them.
+
+<section>
 
 ## How the stream works
 
@@ -158,7 +96,6 @@ import requests
 
 last_event_id = None
 
-
 def read_stream():
     global last_event_id
     headers = {"x-api-key": "xq_YOUR_KEY_HERE"}
@@ -183,7 +120,6 @@ def read_stream():
                 name, _, value = line.partition(": ")
                 fields[name] = value
 
-
 # The stream ends after 30 minutes. Reconnect with the last ID.
 while True:
     try:
@@ -199,37 +135,31 @@ These examples print 1 line per event. They keep the last event ID for the next 
 Store that ID if your process restarts.
 With it, the first connection after a restart replays what it missed.
 
+</section>
+
+<section>
+
 ## Headers
 
-<ParamField header="x-api-key" type="string" required>
+| Header          | Type     | Required | Description                                                                                                                             |
+| --------------- | -------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `x-api-key`     | `string` | Yes      | Your API key.                                                                                                                           |
+| `Last-Event-ID` | `string` | No       | The last event ID your client got. The stream first sends every event after it. SSE libraries send it on their own when they reconnect. |
 
-Your API key.
+</section>
 
-</ParamField>
-
-<ParamField header="Last-Event-ID" type="string">
-
-The last event ID your client got. The stream first sends every event after
-it. SSE libraries send it on their own when they reconnect.
-
-</ParamField>
+<section>
 
 ## Query parameters
 
-<ParamField query="include" type="string">
+| Query parameter | Type      | Required | Description                                                                                                                                                                                                                                         |
+| --------------- | --------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `include`       | `string`  | No       | Set to `post_metrics` to also get each post monitor's saved numbers as they change. Any other value is refused.                                                                                                                                     |
+| `lookBack`      | `boolean` | No       | Set to `true` to resume 30 seconds before `Last-Event-ID`. Events saved late then still arrive. Events you already have can arrive again, so skip IDs you've seen. An ID the stream can't find starts 5 minutes back, not 30 days. Default `false`. |
 
-Set to `post_metrics` to also get each post monitor's saved numbers as they
-change. Any other value is refused.
+</section>
 
-</ParamField>
-
-<ParamField query="lookBack" type="boolean" default="false">
-
-Set to `true` to resume 30 seconds before `Last-Event-ID`. Events saved late
-then still arrive. Events you already have can arrive again, so skip IDs you've
-seen. An ID the stream can't find starts 5 minutes back, not 30 days.
-
-</ParamField>
+<section>
 
 ## Response
 
@@ -250,20 +180,9 @@ A `text/event-stream` body. Each event's `data` line holds the event object that
 
 ### 401 Unauthenticated
 
-```json
-{ "error": "unauthenticated" }
-```
-
 Missing or invalid API key. Check the `x-api-key` header value.
 
 ### 429 Too many streams or requests
-
-```json
-{
-  "error": "too_many_streams",
-  "message": "Close a stream first. Keep up to 200 open per account."
-}
-```
 
 `too_many_streams` means the account has 200 streams open. Close 1, then
 connect again. `rate_limit_exceeded` means too many requests. Wait for the
@@ -274,3 +193,20 @@ connect again. `rate_limit_exceeded` means too many requests. Wait for the
 **Related.** [List Events](/api-reference/events/list) &middot; [Get Event](/api-reference/events/get) &middot; [Webhooks overview](/webhooks/overview)
 
 </Note>
+
+</section>
+
+{/* GENERATED RESPONSE EXAMPLES START */}
+
+<section>
+
+## Response examples
+
+- **400** `{ "error": "invalid_input", "message": "Invalid input. Check the request body." }`
+- **401** `{ "error": "unauthenticated", "message": "Authentication required. Provide a valid API key or bearer token." }`
+- **403** `{ "error": "api_key_paused", "message": "This API key is paused. Resume it at dashboard.xquik.com/api-keys to use it again." }`
+- **429** `{ "error": "too_many_streams", "message": "Close a stream first. Keep up to 200 open per account." }`
+
+</section>
+
+{/* GENERATED RESPONSE EXAMPLES END */}

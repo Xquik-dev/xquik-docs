@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 import { docsContract, productCheck, productOperation } from "./product-contract.test.helpers.ts";
+import { hasDocumentedField } from "./scripts/lib/documented-fields.ts";
 
 const source = readFileSync(new URL("api-reference/styles/get.mdx", import.meta.url), "utf8");
 
@@ -24,10 +25,10 @@ describe("get tweet style documentation", (): void => {
 
     expect({
       nestedFields: ["id", "text", "authorUsername", "createdAt"].every((field) =>
-        source.includes(`<ResponseField name="${field}"`),
+        hasDocumentedField(source, "response", field),
       ),
       topLevelFields: ["xUsername", "tweetCount", "isOwnAccount", "fetchedAt", "tweets"].every(
-        (field) => source.includes(`<ResponseField name="${field}"`),
+        (field) => hasDocumentedField(source, "response", field),
       ),
       unsafeNumberCastDenied: source.includes("Do not cast them to `number`."),
     }).toStrictEqual({

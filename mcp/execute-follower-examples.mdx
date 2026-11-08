@@ -1,0 +1,127 @@
+---
+title: "MCP execute examples for followers & extractions"
+sidebarTitle: "Follower examples"
+description: "Copy MCP execute examples that summarize followers with guarded pagination and run a resumable extraction handoff through the Xquik API sandbox for your agents."
+keywords: ["MCP tools", "MCP execute", "code execution", "agent examples"]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+<LlmsDirective />
+
+Run these inside the [`execute` tool](/mcp/tools#execute). Each example is one sandbox call.
+
+<section>
+
+## Examples
+
+> Summarize up to 100 followers with guarded pagination (credits required)
+
+```javascript
+async () => {
+  const target = 100;
+  const sourceUser = "username";
+  const seenIds = new Set();
+  const seenCursors = new Set();
+  const sampleProfiles = [];
+  let verifiedCount = 0;
+  let cursor;
+  let hasMore = true;
+  let nextCursor = "";
+  let stopReason = "page_cap";
+
+  for (let pageNumber = 0; pageNumber < 10 && seenIds.size < target && hasMore; pageNumber += 1) {
+    const { result: page } = await xquik.request({
+      path: `/api/v1/x/users/${sourceUser}/followers`,
+      query: {
+        pageSize: String(Math.max(20, Math.min(200, target - seenIds.size))),
+        ...(cursor ? { cursor } : {}),
+      },
+    });
+
+    for (const user of page.users) {
+      if (seenIds.has(user.id) || seenIds.size >= target) continue;
+      seenIds.add(user.id);
+      if (user.verified === true) verifiedCount += 1;
+      if (sampleProfiles.length < 25) {
+        sampleProfiles.push({
+          user_id: user.id,
+          username: user.username,
+          name: user.name ?? null,
+          followers: user.followers ?? null,
+          verified: user.verified ?? null,
+          profile_picture: user.profile_picture ?? null,
+        });
+      }
+    }
+
+    hasMore = Boolean(page.has_more);
+    nextCursor = page.next_cursor ?? "";
+    if (!hasMore) {
+      stopReason = "exhausted";
+      break;
+    }
+    if (!nextCursor || nextCursor === cursor || seenCursors.has(nextCursor)) {
+      stopReason = "cursor_stalled";
+      break;
+    }
+    seenCursors.add(nextCursor);
+    cursor = nextCursor;
+  }
+
+  return {
+    source: "xquik_mcp",
+    job: "follower_export",
+    source_user: sourceUser,
+    rows_seen: seenIds.size,
+    verified_count: verifiedCount,
+    sample_profiles: sampleProfiles,
+    has_more: hasMore,
+    next_cursor: nextCursor,
+    stop_reason: seenIds.size >= target ? "requested_total" : stopReason,
+  };
+};
+```
+
+> Run an extraction with a resumable handoff (credits required)
+
+```javascript
+async () => {
+  const body = {
+    toolType: "tweet_search_extractor",
+    searchQuery: "launch announcement",
+    resultsLimit: 500,
+  };
+
+  // Add optional filters only when the user requests them.
+
+  const { result: job } = await xquik.request({
+    path: "/api/v1/extractions",
+    method: "POST",
+    body,
+  });
+
+  return {
+    source: "xquik_mcp",
+    job: "tweet_search_extraction",
+    extraction_id: job.id,
+    tool_type: job.tool_type,
+    status: job.status,
+    query: body.searchQuery,
+    results_limit: body.resultsLimit,
+    poll: `/api/v1/extractions/${job.id}`,
+    export_after_complete: `/api/v1/extractions/${job.id}/export?format=json`,
+  };
+};
+```
+
+</section>
+
+<section>
+
+## Next steps
+
+- [MCP tools](/mcp/tools)
+- [MCP overview](/mcp/overview)
+
+</section>

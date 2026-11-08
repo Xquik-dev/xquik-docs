@@ -1,0 +1,162 @@
+---
+title: "Twitter API C# media tweets & DM attachments"
+sidebarTitle: "Media tweets"
+description: "Upload media with the Xquik C# SDK, post tweets with photos or video, and send DM attachments from a connected X (Twitter) account in your own apps and bots."
+keywords: ["C# SDK", "C# media upload", "media tweets", "DM attachments", "X write API"]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+import SdkMediaRoutes from "/snippets/sdk-media-routes.mdx";
+
+<LlmsDirective />
+
+This guide builds on the [C# SDK setup](/sdks/csharp-x-api-sdk), which covers install and authentication.
+
+<section>
+
+## Workflow to post media tweets and DM attachments
+
+Use this workflow to post a media tweet or reply. It can also DM an uploaded local file. `client.X.Tweets.Create` maps to `POST /x/tweets`. Pass public media URLs through `Media`. Send up to 4 image URLs or exactly 1 MP4 video URL. The video can be up to 100 MB. Do not mix video with other media. For replies, set `ReplyToTweetID` to the parent tweet ID. `client.X.Media.Upload` maps to `POST /x/media`. Use `media.MediaID` only for the one-item `MediaIds` handoff on `client.X.Dm.Send`.
+
+```csharp
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Net;
+using System.Text.Json;
+using System.Threading.Tasks;
+using XTwitterScraper;
+using XTwitterScraper.Core;
+using XTwitterScraper.Models.X.Dm;
+using XTwitterScraper.Models.X.Media;
+using XTwitterScraper.Models.X.Tweets;
+
+XTwitterScraperClient client = new();
+string parentTweetID = "1893704267862470862";
+
+using HttpResponse<TweetCreateResponse> tweetResponse =
+    await client.X.Tweets.WithRawResponse.Create(
+        new TweetCreateParams
+        {
+            Account = "@username",
+            Text = "Shipping the weekly X API video.",
+            Media = new[] { "https://static.example.com/reports/x-api-export.mp4" },
+        }
+    );
+
+Dictionary<string, object?> tweetHandoff = await CreateTweetHandoff(
+    tweetResponse,
+    new Dictionary<string, object?>
+    {
+        ["account"] = "@username",
+        ["media_url"] = "https://static.example.com/reports/x-api-export.mp4",
+    }
+);
+
+using HttpResponse<TweetCreateResponse> replyResponse =
+    await client.X.Tweets.WithRawResponse.Create(
+        new TweetCreateParams
+        {
+            Account = "@username",
+            Text = "Here is the chart behind the update.",
+            Media = new[] { "https://static.example.com/reports/reply-chart.png" },
+            ReplyToTweetID = parentTweetID,
+        }
+    );
+
+Dictionary<string, object?> replyHandoff = await CreateTweetHandoff(
+    replyResponse,
+    new Dictionary<string, object?>
+    {
+        ["account"] = "@username",
+        ["reply_to_tweet_id"] = parentTweetID,
+        ["media_url"] = "https://static.example.com/reports/reply-chart.png",
+    }
+);
+
+await using FileStream localFile = File.OpenRead("handoff.png");
+MediaUploadResponse media = await client.X.Media.Upload(
+    new MediaUploadParams
+    {
+        Account = "@username",
+        File = localFile,
+    }
+);
+
+DmSendResponse dm = await client.X.Dm.Send(
+    "44196397",
+    new DmSendParams
+    {
+        Account = "@username",
+        Text = "Here is the requested asset.",
+        MediaIds = new[] { media.MediaID },
+    }
+);
+
+Dictionary<string, object?> dmHandoff = new()
+{
+    ["message_id"] = dm.MessageID,
+    ["media_id"] = media.MediaID,
+    ["user_id"] = "44196397",
+    ["account"] = "@username",
+};
+
+await Console.Out.WriteLineAsync(JsonSerializer.Serialize(tweetHandoff));
+await Console.Out.WriteLineAsync(JsonSerializer.Serialize(replyHandoff));
+await Console.Out.WriteLineAsync(JsonSerializer.Serialize(dmHandoff));
+
+static async Task<Dictionary<string, object?>> CreateTweetHandoff(
+    HttpResponse<TweetCreateResponse> response,
+    Dictionary<string, object?> row
+)
+{
+    string body = await response.ReadAsString();
+    using JsonDocument document = JsonDocument.Parse(body);
+    JsonElement payload = document.RootElement;
+
+    JsonElement billing = payload.GetProperty("billing");
+    JsonElement result = payload.GetProperty("result");
+    bool terminal = payload.GetProperty("terminal").GetBoolean();
+
+    row["status"] = payload.GetProperty("status").GetString();
+    row["terminal"] = terminal;
+    row["safe_to_retry"] = payload.GetProperty("safeToRetry").GetBoolean();
+    row["write_action_id"] = payload.GetProperty("id").GetString();
+    row["request_hash"] = payload.GetProperty("request").GetProperty("hash").GetString();
+    row["tweet_id"] = result.ValueKind == JsonValueKind.Object
+        ? result.GetProperty("id").GetString()
+        : null;
+    row["charged"] = billing.GetProperty("charged").GetBoolean();
+    row["charged_credits"] = billing.GetProperty("chargedCredits").GetString();
+    row["poll"] = terminal ? null : payload.GetProperty("statusUrl").GetString();
+    if (row["tweet_id"] is null && payload.TryGetProperty("tweetId", out JsonElement tweetId))
+    {
+        row["tweet_id"] = tweetId.GetString();
+    }
+    return row;
+}
+```
+
+Use `client.X.Tweets.WithRawResponse.Create` to capture the durable write action. Send a unique `Idempotency-Key`. Store `id`, `request.hash`, `billing`, `result`, and `statusUrl`. Poll while `terminal` is false. Retry only when `safeToRetry` is true, using a new key.
+
+Keep DM body text in private systems. Shared logs and handoffs should store `message_id`, optional `media_id`, `account`, `user_id`, and lifecycle status. Leave `ReplyToMessageID` unset because the REST endpoint rejects DM reply threading.
+
+`client.X.Dm.DeleteMessage` [deletes a DM](/api-reference/x-write/delete-dm).
+
+Use public media URLs with `client.X.Tweets.Create`. Do not pass uploaded `media.MediaID` values to tweet creation.
+
+### REST routes
+
+<SdkMediaRoutes />
+
+</section>
+
+<section>
+
+## Next steps
+
+- [C# SDK setup](/sdks/csharp-x-api-sdk)
+- [Tweet search](/sdks/csharp-tweet-search)
+- [Follower export](/sdks/csharp-follower-export)
+
+</section>

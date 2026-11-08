@@ -1,0 +1,135 @@
+---
+title: "Twitter API PHP media tweets & DM attachments"
+sidebarTitle: "Media tweets"
+description: "Upload media with the Xquik PHP SDK, post tweets with photos or video, and send DM attachments from a connected X (Twitter) account in your own apps and bots."
+keywords: ["PHP SDK", "PHP media upload", "media tweets", "DM attachments", "X write API"]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+import SdkMediaRoutes from "/snippets/sdk-media-routes.mdx";
+
+<LlmsDirective />
+
+This guide builds on the [PHP SDK setup](/sdks/php), which covers install and authentication.
+
+<section>
+
+## Workflow to post media tweets and DM attachments
+
+Use this workflow when a PHP app needs to publish a media tweet. Use it too when the app replies with media. It also covers a direct message with an uploaded local file. `POST /x/tweets` accepts public media URLs through `media`. Send up to 4 image URLs or exactly 1 MP4 video URL. The video can be up to 100 MB. Do not mix video with other media. For replies, set `replyToTweetID` to the parent tweet ID. `$client->x->media->upload()` maps to `POST /x/media`. Use its `$media->mediaID` only for the one-item `mediaIDs` array on `$client->x->dm->send()`.
+
+Use `$client->x->tweets->raw->create()` to capture the durable write action. Send a unique `Idempotency-Key`. Store `id`, `request.hash`, `billing`, `result`, and `statusUrl`. Poll while `terminal` is false. Retry only when `safeToRetry` is true, using a new key.
+
+```php
+<?php
+
+use XTwitterScraper\Client;
+use XTwitterScraper\Core\FileParam;
+
+/**
+ * @param array<string,mixed> $payload
+ *
+ * @return array<string,mixed>
+ */
+function createTweetHandoff(Client $client, array $payload): array
+{
+  $response = $client->x->tweets->raw->create(params: $payload);
+  $action = json_decode(
+    (string) $response->getBody(),
+    true,
+    flags: JSON_THROW_ON_ERROR,
+  );
+  $result = $action['result'] ?? [];
+
+  return [
+    'status' => $action['status'],
+    'terminal' => $action['terminal'],
+    'safe_to_retry' => $action['safeToRetry'],
+    'write_action_id' => $action['id'],
+    'request_hash' => $action['request']['hash'],
+    'tweet_id' => $result['id'] ?? $action['tweetId'] ?? null,
+    'charged' => $action['billing']['charged'],
+    'charged_credits' => $action['billing']['chargedCredits'],
+    'poll' => $action['terminal'] ? null : $action['statusUrl'],
+  ];
+}
+
+$client = new Client(
+  apiKey: getenv('X_TWITTER_SCRAPER_API_KEY') ?: ''
+);
+
+$tweetHandoff = createTweetHandoff($client, [
+  'account' => '@username',
+  'text' => 'Shipping the weekly X API video.',
+  'media' => ['https://static.example.com/reports/x-api-export.mp4'],
+]);
+
+$replyHandoff = createTweetHandoff($client, [
+  'account' => '@username',
+  'text' => 'Here is the chart behind the update.',
+  'media' => ['https://static.example.com/reports/reply-chart.png'],
+  'replyToTweetID' => $tweetHandoff['tweet_id'] ?? '1893704267862470862',
+]);
+
+$localFile = fopen('handoff.png', 'rb');
+
+if (false === $localFile) {
+  throw new RuntimeException('Could not open handoff.png');
+}
+
+try {
+  $media = $client->x->media->upload(
+    account: '@username',
+    file: FileParam::fromResource($localFile),
+  );
+} finally {
+  fclose($localFile);
+}
+
+$dm = $client->x->dm->send(
+  '44196397',
+  account: '@username',
+  text: 'Here is the requested asset.',
+  mediaIDs: [$media->mediaID],
+);
+
+$dmHandoff = [
+  'message_id' => $dm->messageID,
+  'media_id' => $media->mediaID,
+  'user_id' => '44196397',
+  'account' => '@username',
+  'status' => 'sent',
+];
+
+fwrite(
+  STDOUT,
+  json_encode(
+    [
+      'tweet_handoff' => $tweetHandoff,
+      'reply_handoff' => $replyHandoff,
+      'dm_handoff' => $dmHandoff,
+    ],
+    JSON_THROW_ON_ERROR
+  ) . PHP_EOL
+);
+```
+
+Store `write_action_id` and `charged_credits`. Before retrying a pending tweet or reply, poll [Get Write Action Status](/api-reference/x-write/get-write-action-status). Store `tweet_id` on the CMS, queue job, or agent state after confirmed writes. Store `$dm->messageID`, `$media->mediaID`, `account`, `user_id`, and send status. Put them on the support ticket or CRM note. Keep DM body text in private systems. Shared logs, public artifacts, queue status, and agent handoffs should omit full DM bodies. They should store `message_id`, optional `media_id`, `account`, `user_id`, and send status. Leave generated `replyToMessageID` unset even if SDK params expose it. The REST endpoint rejects DM reply threading. Text-only tweet and reply writes cost 30 credits. Tweet media adds 2 credits per started MB across attached files. Uploading media costs 10 credits. Sending the DM costs 10 credits. Do not pass uploaded `$media->mediaID` values to `$client->x->tweets->create()`. That method uses `media` with public media URLs.
+
+`$client->x->dm->deleteMessage()` [deletes a DM](/api-reference/x-write/delete-dm).
+
+### REST routes
+
+<SdkMediaRoutes />
+
+</section>
+
+<section>
+
+## Next steps
+
+- [PHP SDK setup](/sdks/php)
+- [Tweet search](/sdks/php-tweet-search)
+- [Follower export](/sdks/php-follower-export)
+
+</section>

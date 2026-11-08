@@ -2,7 +2,7 @@
 title: "List Xquik tweet drafts with cursor-based pagination"
 sidebarTitle: "List drafts"
 description: "List Xquik tweet drafts with exact text, optional topic and goal, timestamps, stable cursor pagination, authentication, and clear 400, 401, or 429 recovery."
-api: "GET /drafts"
+endpoint: "GET /drafts"
 keywords:
   [
     "list tweet drafts",
@@ -15,72 +15,11 @@ keywords:
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
 
-{/* GENERATED RESPONSE EXAMPLES START */}
-
-<Panel>
-
-<Tabs defaultTabIndex={0} sync={false}>
-
-  <Tab title="200" id="response-drafts-list-200">
-
-    ```json
-    {
-      "drafts": [],
-      "hasMore": false
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="400" id="response-drafts-list-400">
-
-    ```json
-    {
-      "error": "invalid_input",
-      "message": "Invalid input. Check the request body."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="401" id="response-drafts-list-401">
-
-    ```json
-    {
-      "error": "unauthenticated",
-      "message": "Authentication required. Provide a valid API key or bearer token."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="403" id="response-drafts-list-403">
-
-    ```json
-    {
-      "error": "api_key_paused",
-      "message": "This API key is paused. Resume it at dashboard.xquik.com/api-keys to use it again."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="429" id="response-drafts-list-429">
-
-    ```json
-    {
-      "error": "rate_limit_exceeded",
-      "message": "Too many requests. Try again later.",
-      "retryAfter": 60
-    }
-    ```
-
-  </Tab>
-</Tabs>
-
-</Panel>
-{/* GENERATED RESPONSE EXAMPLES END */}
 <LlmsDirective />
+
+`GET https://xquik.com/api/v1/drafts`
+
+<section>
 
 ## List saved tweet drafts
 
@@ -178,6 +117,10 @@ func main() {
 
 </CodeGroup>
 
+</section>
+
+<section>
+
 ## Understand the tweet draft list
 
 The response contains one `drafts` array and pagination fields. An empty array
@@ -192,6 +135,10 @@ scheduled posts, native X drafts, and another account's drafts.
 
 Each draft contains one saved text string. It contains no thread order, media
 attachment, reply target, or public tweet ID.
+
+</section>
+
+<section>
 
 ## Paginate through every draft
 
@@ -220,6 +167,10 @@ Do not paginate with timestamps or guessed draft IDs. Those values cannot
 replace the returned cursor. A cursor from another account also cannot select
 that account's drafts.
 
+</section>
+
+<section>
+
 ## Read the draft inventory fields
 
 The API omits optional fields that you did not supply during draft creation.
@@ -239,6 +190,10 @@ Check for `topic` and `goal` before reading them.
 The `text` field can contain up to 25,000 characters. The optional `topic`
 field can contain up to 500 characters. A `goal` can be `engagement`,
 `followers`, `authority`, or `conversation`.
+
+</section>
+
+<section>
 
 ## Build a tweet draft review queue
 
@@ -262,6 +217,10 @@ runs where other clients create or delete drafts.
 Use [Get Draft](/api-reference/drafts/get) before you delete drafts. Use
 [Create Tweet](/api-reference/x-write/create-tweet) only after content approval.
 
+</section>
+
+<section>
+
 ## Keep native X drafts separate
 
 Native X drafts appear under Unsent posts inside the compose interface. Native
@@ -282,6 +241,10 @@ not mirror the native X draft collection.
 Do not send a public tweet ID as `afterCursor`. Public tweet IDs and draft
 cursors identify different resources.
 
+</section>
+
+<section>
+
 ## Recover from draft list errors
 
 | Status | Error                 | Cause                                | Fix                                       |
@@ -295,6 +258,10 @@ An empty `drafts` array is not a `404`. It is a valid `200` response.
 
 Never retry `401` without replacing the credential. Retry `429` only after the
 server's delay. Keep the last successful cursor before retrying a page.
+
+</section>
+
+<section>
 
 ## Tweet draft list questions
 
@@ -330,65 +297,47 @@ No. Deleted drafts are absent. Xquik provides no deleted-draft restore route.
 
 No. This authenticated list request is free and consumes no Xquik credits.
 
+</section>
+
+<section>
+
 ## Query parameters
 
-<ParamField query="limit" type="number">
+| Query parameter | Type     | Required | Description                                                                                                           |
+| --------------- | -------- | -------- | --------------------------------------------------------------------------------------------------------------------- |
+| `limit`         | `number` | No       | Results per page. Default `50`, maximum `10000`.                                                                      |
+| `afterCursor`   | `string` | No       | Opaque cursor from `nextCursor`. Pass it unchanged to fetch the next page. An edited or unknown cursor returns `400`. |
 
-Results per page. Default `50`, maximum `10000`.
+</section>
 
-</ParamField>
-
-<ParamField query="afterCursor" type="string">
-
-Opaque cursor from `nextCursor`. Pass it unchanged to fetch the next page. An edited or unknown cursor returns `400`.
-
-</ParamField>
+<section>
 
 ## Headers
 
-<ParamField header="x-api-key" type="string">
+| Header          | Type     | Required | Description                                                                                                 |
+| --------------- | -------- | -------- | ----------------------------------------------------------------------------------------------------------- |
+| `x-api-key`     | `string` | No       | Your Xquik API key. Generate one from the [dashboard](https://dashboard.xquik.com/en/account?tab=api-keys). |
+| `Authorization` | `string` | No       | An OAuth bearer token formatted as `Bearer YOUR_TOKEN`. Send this header or `x-api-key`, not both.          |
 
-Your Xquik API key. Generate one from the [dashboard](https://dashboard.xquik.com/en/account?tab=api-keys).
+</section>
 
-</ParamField>
-
-<ParamField header="Authorization" type="string">
-
-An OAuth bearer token formatted as `Bearer YOUR_TOKEN`. Send this header or `x-api-key`, not both.
-
-</ParamField>
+<section>
 
 ## Response
 
 ### 200 OK
 
-<ResponseField name="drafts" type="object[]">
-  Draft objects ordered by creation time, newest first.
-</ResponseField>
-<ResponseField name="drafts[].id" type="string">
-  Unique Xquik draft ID.
-</ResponseField>
-<ResponseField name="drafts[].text" type="string">
-  Exact saved tweet text.
-</ResponseField>
-<ResponseField name="drafts[].topic" type="string">
-  Optional draft topic. Omitted when unset.
-</ResponseField>
-<ResponseField name="drafts[].goal" type="string">
-  Optional composition goal. Omitted when unset.
-</ResponseField>
-<ResponseField name="drafts[].createdAt" type="string">
-  ISO 8601 creation timestamp.
-</ResponseField>
-<ResponseField name="drafts[].updatedAt" type="string">
-  ISO 8601 update timestamp.
-</ResponseField>
-<ResponseField name="hasMore" type="boolean">
-  Whether another page exists.
-</ResponseField>
-<ResponseField name="nextCursor" type="string">
-  Opaque next-page cursor. Present only when `hasMore` is `true`.
-</ResponseField>
+| Field                | Type       | Description                                                     |
+| -------------------- | ---------- | --------------------------------------------------------------- |
+| `drafts`             | `object[]` | Draft objects ordered by creation time, newest first.           |
+| `drafts[].id`        | `string`   | Unique Xquik draft ID.                                          |
+| `drafts[].text`      | `string`   | Exact saved tweet text.                                         |
+| `drafts[].topic`     | `string`   | Optional draft topic. Omitted when unset.                       |
+| `drafts[].goal`      | `string`   | Optional composition goal. Omitted when unset.                  |
+| `drafts[].createdAt` | `string`   | ISO 8601 creation timestamp.                                    |
+| `drafts[].updatedAt` | `string`   | ISO 8601 update timestamp.                                      |
+| `hasMore`            | `boolean`  | Whether another page exists.                                    |
+| `nextCursor`         | `string`   | Opaque next-page cursor. Present only when `hasMore` is `true`. |
 
 ```json
 {
@@ -416,36 +365,18 @@ An OAuth bearer token formatted as `Bearer YOUR_TOKEN`. Send this header or `x-a
 
 ### 400 Invalid cursor
 
-```json
-{
-  "error": "invalid_input",
-  "message": "Cursor invalid. Use nextCursor from the previous page, or omit it to start over."
-}
-```
+`{ "error": "invalid_input", "message": "Cursor invalid. Use nextCursor from the previous page, or omit it to start over." }`
 
 The `afterCursor` value is not a `nextCursor` from this route. Send the last
 `nextCursor` received, or omit `afterCursor` to start from the first page.
 
 ### 401 Unauthenticated
 
-```json
-{
-  "error": "unauthenticated",
-  "message": "Authentication required. Provide a valid API key or bearer token."
-}
-```
-
 Authentication is missing or invalid. Replace the credential before retrying.
 
 ### 429 Rate limited
 
-```json
-{
-  "error": "rate_limit_exceeded",
-  "message": "Too many requests. Try again later.",
-  "retryAfter": 1
-}
-```
+`{ "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 1 }`
 
 Too many requests reached the route. Wait for `Retry-After` before retrying.
 
@@ -458,3 +389,20 @@ Too many requests reached the route. Wait for `Retry-After` before retrying.
 - [Delete Draft](/api-reference/drafts/delete) to remove it.
 
 </Note>
+
+</section>
+
+{/* GENERATED RESPONSE EXAMPLES START */}
+
+<section>
+
+## Response examples
+
+- **400** `{ "error": "invalid_input", "message": "Invalid input. Check the request body." }`
+- **401** `{ "error": "unauthenticated", "message": "Authentication required. Provide a valid API key or bearer token." }`
+- **403** `{ "error": "api_key_paused", "message": "This API key is paused. Resume it at dashboard.xquik.com/api-keys to use it again." }`
+- **429** `{ "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 60 }`
+
+</section>
+
+{/* GENERATED RESPONSE EXAMPLES END */}

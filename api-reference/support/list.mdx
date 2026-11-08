@@ -2,7 +2,7 @@
 title: "Support ticket API to list Xquik tickets & status"
 sidebarTitle: "List tickets"
 description: "List up to 10,000 Xquik support tickets in recent-update order. Review each ticket ID, subject, status, message count, creation time & latest update timestamp."
-api: "GET /support/tickets"
+endpoint: "GET /support/tickets"
 keywords:
   [
     "support ticket API",
@@ -16,80 +16,11 @@ keywords:
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
 
-{/* GENERATED RESPONSE EXAMPLES START */}
-
-<Panel>
-
-<Tabs defaultTabIndex={0} sync={false}>
-
-  <Tab title="200" id="response-support-list-200">
-
-    ```json
-    {
-      "tickets": [
-        {
-          "publicId": "tkt_a1b2c3d4e5f6a1b2c3d4e5f6",
-          "subject": "Cannot connect X account",
-          "status": "open",
-          "messageCount": 2,
-          "createdAt": "2025-01-15T12:00:00Z"
-        }
-      ],
-      "hasMore": false
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="400" id="response-support-list-400">
-
-    ```json
-    {
-      "error": "invalid_input",
-      "message": "Invalid input. Check the request body."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="401" id="response-support-list-401">
-
-    ```json
-    {
-      "error": "unauthenticated",
-      "message": "Authentication required. Provide a valid API key or bearer token."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="403" id="response-support-list-403">
-
-    ```json
-    {
-      "error": "api_key_paused",
-      "message": "This API key is paused. Resume it at dashboard.xquik.com/api-keys to use it again."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="429" id="response-support-list-429">
-
-    ```json
-    {
-      "error": "rate_limit_exceeded",
-      "message": "Too many requests. Try again later.",
-      "retryAfter": 60
-    }
-    ```
-
-  </Tab>
-</Tabs>
-
-</Panel>
-{/* GENERATED RESPONSE EXAMPLES END */}
 <LlmsDirective />
+
+`GET https://xquik.com/api/v1/support/tickets`
+
+<section>
 
 ## List support tickets for Xquik workflows
 
@@ -177,6 +108,10 @@ func main() {
 
 </CodeGroup>
 
+</section>
+
+<section>
+
 ## Read the support ticket list
 
 Use the list as a support queue. Store ticket IDs and timestamps before
@@ -198,6 +133,10 @@ search or status query parameter.
 Filter the returned array locally. Match `publicId`, `subject`, or `status`
 without sending another list request.
 
+</section>
+
+<section>
+
 ## Interpret support ticket status
 
 The support ticket API returns 4 status values. Listing tickets never changes
@@ -212,6 +151,10 @@ any status.
 
 Users can set `open`, `resolved`, or `closed` through the update route. Support
 sets `in_progress`. Do not invent another state in client code.
+
+</section>
+
+<section>
 
 ## Build a support ticket review queue
 
@@ -229,6 +172,10 @@ state changes. Both routes keep the existing ticket ID.
 
 Do not create a duplicate ticket for every retry. Reuse the original
 `publicId` while the subject describes the same problem.
+
+</section>
+
+<section>
 
 ## Triage X API and Twitter scraper problems
 
@@ -248,6 +195,10 @@ before making a product decision.
 
 For a `429` response, wait for `Retry-After`. Reuse the last successful
 list during that pause.
+
+</section>
+
+<section>
 
 ## Support ticket API questions
 
@@ -280,62 +231,47 @@ Start with the first changed ticket. Results already use descending
 
 No. Listing support tickets is free for authenticated accounts.
 
+</section>
+
+<section>
+
 ## Headers
 
-<ParamField header="x-api-key" type="string">
+| Header          | Type     | Required | Description                                                                                                 |
+| --------------- | -------- | -------- | ----------------------------------------------------------------------------------------------------------- |
+| `x-api-key`     | `string` | No       | Your Xquik API key. Generate one from the [dashboard](https://dashboard.xquik.com/en/account?tab=api-keys). |
+| `Authorization` | `string` | No       | An OAuth bearer token formatted as `Bearer YOUR_TOKEN`. Send this header or `x-api-key`, not both.          |
 
-Your Xquik API key. Generate one from the [dashboard](https://dashboard.xquik.com/en/account?tab=api-keys).
+</section>
 
-</ParamField>
-
-<ParamField header="Authorization" type="string">
-
-An OAuth bearer token formatted as `Bearer YOUR_TOKEN`. Send this header or `x-api-key`, not both.
-
-</ParamField>
+<section>
 
 ## Query parameters
 
-<ParamField query="limit" type="integer">
-  Maximum items per page, from 1 to 10,000. Default 200.
-</ParamField>
-<ParamField query="cursor" type="string">
-  `nextCursor` from the previous page. The `after` alias also works. Offset pagination is not
-  supported.
-</ParamField>
+| Query parameter | Type      | Required | Description                                                                                            |
+| --------------- | --------- | -------- | ------------------------------------------------------------------------------------------------------ |
+| `limit`         | `integer` | No       | Maximum items per page, from 1 to 10,000. Default 200.                                                 |
+| `cursor`        | `string`  | No       | `nextCursor` from the previous page. The `after` alias also works. Offset pagination is not supported. |
+
+</section>
+
+<section>
 
 ## Response
 
 ### 200 OK
 
-<ResponseField name="tickets" type="object[]">
-  Array of ticket objects.
-</ResponseField>
-<ResponseField name="tickets[].publicId" type="string">
-  Unique ticket public ID.
-</ResponseField>
-<ResponseField name="tickets[].subject" type="string">
-  Ticket subject.
-</ResponseField>
-<ResponseField name="tickets[].status" type="string">
-  The current status is `open`, `in_progress`, `resolved`, or `closed`.
-</ResponseField>
-<ResponseField name="tickets[].messageCount" type="number">
-  Total number of messages in the ticket.
-</ResponseField>
-<ResponseField name="tickets[].createdAt" type="string">
-  ISO 8601 creation timestamp.
-</ResponseField>
-<ResponseField name="tickets[].updatedAt" type="string">
-  ISO 8601 last update timestamp.
-</ResponseField>
-
-<ResponseField name="hasMore" type="boolean">
-  Whether more rows follow this page.
-</ResponseField>
-<ResponseField name="nextCursor" type="string">
-  Pass it as `cursor` for the next page. Present when `hasMore` is `true`.
-</ResponseField>
+| Field                    | Type       | Description                                                              |
+| ------------------------ | ---------- | ------------------------------------------------------------------------ |
+| `tickets`                | `object[]` | Array of ticket objects.                                                 |
+| `tickets[].publicId`     | `string`   | Unique ticket public ID.                                                 |
+| `tickets[].subject`      | `string`   | Ticket subject.                                                          |
+| `tickets[].status`       | `string`   | The current status is `open`, `in_progress`, `resolved`, or `closed`.    |
+| `tickets[].messageCount` | `number`   | Total number of messages in the ticket.                                  |
+| `tickets[].createdAt`    | `string`   | ISO 8601 creation timestamp.                                             |
+| `tickets[].updatedAt`    | `string`   | ISO 8601 last update timestamp.                                          |
+| `hasMore`                | `boolean`  | Whether more rows follow this page.                                      |
+| `nextCursor`             | `string`   | Pass it as `cursor` for the next page. Present when `hasMore` is `true`. |
 
 ```json
 {
@@ -355,35 +291,17 @@ An OAuth bearer token formatted as `Bearer YOUR_TOKEN`. Send this header or `x-a
 
 ### 400 Invalid cursor
 
-```json
-{
-  "error": "invalid_input",
-  "message": "Cursor invalid. Use nextCursor from the previous page, or omit it to start over."
-}
-```
+`{ "error": "invalid_input", "message": "Cursor invalid. Use nextCursor from the previous page, or omit it to start over." }`
 
 The `cursor` is not one this list returned. Send the `nextCursor` of the previous page, or omit it.
 
 ### 401 Unauthenticated
 
-```json
-{
-  "error": "unauthenticated",
-  "message": "Authentication required. Provide a valid API key or bearer token."
-}
-```
-
 Missing or invalid API key.
 
 ### 429 Rate limited
 
-```json
-{
-  "error": "rate_limit_exceeded",
-  "message": "Too many requests. Try again later.",
-  "retryAfter": 1
-}
-```
+`{ "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 1 }`
 
 Wait for the `Retry-After` value before listing tickets again.
 
@@ -395,3 +313,20 @@ Wait for the `Retry-After` value before listing tickets again.
 - [Get Ticket](/api-reference/support/get) to fetch details and message history for a specific ticket.
 
 </Note>
+
+</section>
+
+{/* GENERATED RESPONSE EXAMPLES START */}
+
+<section>
+
+## Response examples
+
+- **400** `{ "error": "invalid_input", "message": "Invalid input. Check the request body." }`
+- **401** `{ "error": "unauthenticated", "message": "Authentication required. Provide a valid API key or bearer token." }`
+- **403** `{ "error": "api_key_paused", "message": "This API key is paused. Resume it at dashboard.xquik.com/api-keys to use it again." }`
+- **429** `{ "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 60 }`
+
+</section>
+
+{/* GENERATED RESPONSE EXAMPLES END */}

@@ -28,6 +28,8 @@ Use PHP 8.1+ named parameters and typed exceptions in Laravel or Symfony workers
 | Search tweets    | `$client->x->tweets->search()` | `$page->nextCursor` |
 | Export followers | `$client->extractions->run()`  | `$job->id`          |
 
+<section>
+
 ## Install
 
 ```bash
@@ -36,11 +38,19 @@ composer require xquik/x-twitter-scraper
 
 If your project needs the GitHub source, add the repository in `composer.json`. The [source repository](https://github.com/Xquik-dev/x-twitter-scraper-php) shows the entry.
 
+</section>
+
+<section>
+
 ## Authenticate
 
 ```bash
 export X_TWITTER_SCRAPER_API_KEY="xq_YOUR_KEY_HERE"
 ```
+
+</section>
+
+<section>
 
 ## Basic example
 
@@ -72,256 +82,21 @@ foreach ($page->tweets as $tweet) {
 }
 ```
 
-## Tweet search workflow to JSON Lines, CSV, or XLSX
+</section>
 
-Use this workflow when PHP code needs tweet search results in a durable file. That code can be a worker, Laravel command, Symfony console command, or cron job. The file can feed a queue, warehouse loader, or analyst CSV export. It can also feed an XLSX workbook or a CRM enrichment step.
+<section>
 
-`$client->x->tweets->search()` calls `GET /x/tweets/search`. The generated parameter model is `TweetSearchParams`. The service method exposes the same request controls as named arguments. They are `q`, `limit`, `cursor`, `sinceTime`, `untilTime`, and `queryType`.
+## PHP SDK workflows
 
-```php
-<?php
+| Workflow                                     | What it does                                                         |
+| -------------------------------------------- | -------------------------------------------------------------------- |
+| [Tweet search](/sdks/php-tweet-search)       | Search tweets, follow cursors & save JSON Lines, CSV, or XLSX files. |
+| [Follower export](/sdks/php-follower-export) | Run a follower extraction & save CSV, JSON, or XLSX files.           |
+| [Media tweets](/sdks/php-media-tweets)       | Upload media, post media tweets & send DM attachments.               |
 
-use XTwitterScraper\Client;
-use XTwitterScraper\PaginatedTweets;
-use XTwitterScraper\SearchTweet;
-use XTwitterScraper\X\Tweets\TweetSearchParams\QueryType;
+</section>
 
-$client = new Client(
-  apiKey: getenv('X_TWITTER_SCRAPER_API_KEY') ?: ''
-);
-
-$query = 'from:username webhook OR SDK';
-$cursor = null;
-$pageIndex = 0;
-$headers = [
-  'source',
-  'query',
-  'tweet_id',
-  'text',
-  'author_id',
-  'author_username',
-  'author_name',
-  'created_at',
-  'like_count',
-  'reply_count',
-  'retweet_count',
-  'quote_count',
-  'view_count',
-  'bookmark_count',
-  'is_note_tweet',
-  'page_index',
-  'page_cursor',
-  'next_cursor',
-  'has_next_page',
-];
-$jsonlHandle = fopen('xquik-tweet-search.jsonl', 'wb');
-$csvHandle = fopen('xquik-tweet-search.csv', 'wb');
-
-if (false === $jsonlHandle || false === $csvHandle) {
-  throw new RuntimeException('Could not open tweet search handoff files');
-}
-
-try {
-  fputcsv($csvHandle, $headers);
-
-  do {
-    $pageCursor = $cursor;
-
-    /** @var PaginatedTweets $page */
-    $page = $client->x->tweets->search(
-      q: $query,
-      cursor: $cursor,
-      queryType: QueryType::LATEST,
-    );
-
-    foreach ($page->tweets as $tweet) {
-      /** @var SearchTweet $tweet */
-      $row = [
-        'source' => 'xquik.php.search',
-        'query' => $query,
-        'tweet_id' => $tweet->id,
-        'text' => $tweet->text,
-        'author_id' => $tweet->author?->id,
-        'author_username' => $tweet->author?->username,
-        'author_name' => $tweet->author?->name,
-        'created_at' => $tweet->createdAt,
-        'like_count' => $tweet->likeCount ?? 0,
-        'reply_count' => $tweet->replyCount ?? 0,
-        'retweet_count' => $tweet->retweetCount ?? 0,
-        'quote_count' => $tweet->quoteCount ?? 0,
-        'view_count' => $tweet->viewCount ?? 0,
-        'bookmark_count' => $tweet->bookmarkCount ?? 0,
-        'is_note_tweet' => $tweet->isNoteTweet ?? false,
-        'page_index' => $pageIndex,
-        'page_cursor' => $pageCursor,
-        'next_cursor' => '' === $page->nextCursor ? null : $page->nextCursor,
-        'has_next_page' => $page->hasNextPage,
-      ];
-      $csvRow = [];
-      foreach ($headers as $header) {
-        $csvRow[] = $row[$header];
-      }
-
-      fputcsv($csvHandle, $csvRow);
-      fwrite(
-        $jsonlHandle,
-        json_encode($row, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR) . PHP_EOL
-      );
-    }
-
-    $cursor = $page->hasNextPage ? $page->nextCursor : null;
-    $pageIndex++;
-  } while (null !== $cursor && '' !== $cursor);
-} finally {
-  fclose($jsonlHandle);
-  fclose($csvHandle);
-}
-```
-
-### Request mapping
-
-<CardGroup cols={2}>
-
-  <Card title="q" icon="search">
-
-    PHP argument `q` maps to REST `q`. It takes an X search query. Examples are `from:username`, a keyword, hashtag, or boolean operator query.
-
-  </Card>
-  <Card title="limit" icon="list">
-
-    PHP argument `limit` maps to REST `limit`. Use it as a 1 to 200 upper bound for a bounded pull. If `$page->hasNextPage` is true, keep the same `q`, filters, `queryType`, and `limit`. That applies when you continue with `$page->nextCursor`.
-
-  </Card>
-  <Card title="cursor" icon="arrow-right">
-
-    PHP argument `cursor` maps to REST `cursor`. Pass the opaque cursor from `$page->nextCursor` to request the next page.
-
-  </Card>
-  <Card title="sinceTime" icon="clock">
-
-    PHP argument `sinceTime` maps to REST `sinceTime`. Use the inclusive ISO bound on every page.
-
-  </Card>
-  <Card title="untilTime" icon="clock">
-
-    PHP argument `untilTime` maps to REST `untilTime`. Use the exclusive ISO bound on every page.
-
-  </Card>
-  <Card title="queryType" icon="sliders-horizontal">
-
-    PHP argument `queryType` maps to REST `queryType`. Use `QueryType::LATEST` for chronological search or `QueryType::TOP` for engagement-ranked search.
-
-  </Card>
-</CardGroup>
-
-### Returned data & handoff
-
-`$client->x->tweets->search()` returns `PaginatedTweets`. Use `$page->tweets` for the tweet array. `$page->hasNextPage` tells you whether another page exists. Use `$page->nextCursor` as the checkpoint for the next request. For bounded pulls that return fewer tweets than `limit`, pass `$page->nextCursor` back as `cursor`. Send the same query, filters, `queryType`, and `limit` with it.
-
-Each `SearchTweet` includes typed properties such as `$id`, `$text`, `$author`, and `$createdAt`. It also includes `$likeCount`, `$replyCount`, `$retweetCount`, `$quoteCount`, `$bookmarkCount`, `$viewCount`, and `$isNoteTweet` when available. Project `$page->tweets` into JSON Lines and CSV rows. Each row holds `tweet_id`, `author_username`, engagement counts, `page_index`, `page_cursor`, `next_cursor`, and `has_next_page`. Workers can then resume. Or they can load the same records into XLSX, CRM, warehouse, or agent workflows.
-
-Tweet search costs 1 credit per tweet returned. If credits cannot cover a bounded `limit` request, the API can return fewer tweets. If credits cover 0 results, it returns `402 insufficient_credits`. The SDK retries connection errors, timeouts, 408, 409, 429, and 5xx responses by default. The default is 2 retries. For explicit `limit` pulls, resume with the same query, filters, `queryType`, and `limit`. Only `cursor` changes.
-
-## Follower export workflow to CSV, JSON, or XLSX
-
-Use this workflow when PHP code needs an owned follower list. That code can be a worker, Laravel command, Symfony console command, or cron job. The list can feed CRM import, warehouse loading, or account scoring. It can also feed an analyst CSV, XLSX delivery, or a resumable JSON handoff.
-
-`$client->extractions->estimateCost()` maps to `POST /extractions/estimate`. `$client->extractions->run()` maps to `POST /extractions`. `$client->extractions->retrieve()` maps to `GET /extractions/{id}`. `$client->extractions->exportResults()` maps to `GET /extractions/{id}/export`. For follower exports, `follower_explorer` requires `targetUsername`.
-
-<Info>
-
-`$client->extractions->run()` returns the queued `202 Accepted` receipt from `POST /extractions`. PHP exposes REST `id`, `toolType`, and `status: "running"` as `$job->id`, `$job->toolType`, and `$job->status`. Store `$job->id` immediately, then poll `$client->extractions->retrieve()` before reading pages or calling `$client->extractions->exportResults()`. Credit reservation happens after the job starts. Available credits may have changed since `estimateCost`. If so, the run can fetch only the affordable count before export. Or it can mark the job `failed` with `insufficient_credits`.
-
-</Info>
-
-```php
-<?php
-
-use XTwitterScraper\Client;
-use XTwitterScraper\Extractions\ExtractionEstimateCostParams\ToolType as EstimateToolType;
-use XTwitterScraper\Extractions\ExtractionExportResultsParams\Format as ExportFormat;
-use XTwitterScraper\Extractions\ExtractionRunParams\ToolType as RunToolType;
-
-$client = new Client(
-  apiKey: getenv('X_TWITTER_SCRAPER_API_KEY') ?: ''
-);
-
-$targetUsername = 'username';
-$estimate = $client->extractions->estimateCost(
-  toolType: EstimateToolType::FOLLOWER_EXPLORER,
-  targetUsername: $targetUsername,
-);
-
-if (!$estimate->allowed) {
-  throw new RuntimeException("Follower export requires {$estimate->creditsRequired} credits.");
-}
-
-$job = $client->extractions->run(
-  toolType: RunToolType::FOLLOWER_EXPLORER,
-  targetUsername: $targetUsername,
-);
-
-$completed = false;
-
-for ($attempt = 0; $attempt < 120; $attempt++) {
-  $statusPage = $client->extractions->retrieve($job->id, limit: 1);
-  $status = $statusPage->job['status'] ?? null;
-
-  if ('completed' === $status) {
-    $completed = true;
-    break;
-  }
-
-  if ('failed' === $status) {
-    throw new RuntimeException('Follower export failed.');
-  }
-
-  sleep(10);
-}
-
-if (!$completed) {
-  throw new RuntimeException('Follower export did not complete before timeout.');
-}
-
-$cursor = null;
-$handle = fopen('xquik-followers.jsonl', 'wb');
-
-if (false === $handle) {
-  throw new RuntimeException('Could not open xquik-followers.jsonl');
-}
-
-try {
-  do {
-    $page = $client->extractions->retrieve($job->id, cursor: $cursor, limit: 1000);
-
-    foreach ($page->results as $user) {
-      fwrite(
-        $handle,
-        json_encode($user, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR) . PHP_EOL
-      );
-    }
-
-    $cursor = $page->hasMore ? $page->nextCursor : null;
-  } while (null !== $cursor && '' !== $cursor);
-} finally {
-  fclose($handle);
-}
-
-file_put_contents(
-  'xquik-followers.csv',
-  $client->extractions->exportResults($job->id, format: ExportFormat::CSV),
-);
-file_put_contents(
-  'xquik-followers.json',
-  $client->extractions->exportResults($job->id, format: ExportFormat::JSON),
-);
-file_put_contents(
-  'xquik-followers.xlsx',
-  $client->extractions->exportResults($job->id, format: ExportFormat::XLSX),
-);
-```
-
-Store `$job->id`, `$targetUsername`, `$estimate->estimatedResults`, and `$estimate->source` before polling. With them, another queue worker can resume without rerunning the extraction. `$client->extractions->retrieve()` returns `$page->results`, `$page->hasMore`, and `$page->nextCursor`. Pass `$page->nextCursor` back as `cursor` to page through large follower lists. Map exported `User ID` or row `xUserId` as the CRM unique key. Use `xquik-followers.jsonl` for queue replay or warehouse loads, and `xquik-followers.json` for app ingestion. Use `xquik-followers.csv` for CRM import and `xquik-followers.xlsx` for analyst handoff. The cost is 1 credit per follower extracted or returned. Exports cost no credits after the extraction job exists.
+<section>
 
 ## Tweet replies workflow to CSV, JSON, or XLSX
 
@@ -366,109 +141,9 @@ file_put_contents(
 
 The cost is 1 credit per reply extracted or returned. Store `$job->id` on the queue job, ticket, or warehouse batch before polling. With that ID, another worker can resume by calling `$client->extractions->retrieve()`. Keep `$page->nextCursor` as the checkpoint. Pass it back as `cursor` when you stream replies to JSON Lines. Use `xquik-replies.jsonl` for queue replay or warehouse loads, and `xquik-replies.json` for app ingestion. Use `xquik-replies.csv` for CRM import and `xquik-replies.xlsx` for analyst handoff.
 
-## Workflow to post media tweets and DM attachments
+</section>
 
-Use this workflow when a PHP app needs to publish a media tweet. Use it too when the app replies with media. It also covers a direct message with an uploaded local file. `POST /x/tweets` accepts public media URLs through `media`. Send up to 4 image URLs or exactly 1 MP4 video URL. The video can be up to 100 MB. Do not mix video with other media. For replies, set `replyToTweetID` to the parent tweet ID. `$client->x->media->upload()` maps to `POST /x/media`. Use its `$media->mediaID` only for the one-item `mediaIDs` array on `$client->x->dm->send()`.
-
-Use `$client->x->tweets->raw->create()` to capture the durable write action. Send a unique `Idempotency-Key`. Store `id`, `request.hash`, `billing`, `result`, and `statusUrl`. Poll while `terminal` is false. Retry only when `safeToRetry` is true, using a new key.
-
-```php
-<?php
-
-use XTwitterScraper\Client;
-use XTwitterScraper\Core\FileParam;
-
-/**
- * @param array<string,mixed> $payload
- *
- * @return array<string,mixed>
- */
-function createTweetHandoff(Client $client, array $payload): array
-{
-  $response = $client->x->tweets->raw->create(params: $payload);
-  $action = json_decode(
-    (string) $response->getBody(),
-    true,
-    flags: JSON_THROW_ON_ERROR,
-  );
-  $result = $action['result'] ?? [];
-
-  return [
-    'status' => $action['status'],
-    'terminal' => $action['terminal'],
-    'safe_to_retry' => $action['safeToRetry'],
-    'write_action_id' => $action['id'],
-    'request_hash' => $action['request']['hash'],
-    'tweet_id' => $result['id'] ?? $action['tweetId'] ?? null,
-    'charged' => $action['billing']['charged'],
-    'charged_credits' => $action['billing']['chargedCredits'],
-    'poll' => $action['terminal'] ? null : $action['statusUrl'],
-  ];
-}
-
-$client = new Client(
-  apiKey: getenv('X_TWITTER_SCRAPER_API_KEY') ?: ''
-);
-
-$tweetHandoff = createTweetHandoff($client, [
-  'account' => '@username',
-  'text' => 'Shipping the weekly X API video.',
-  'media' => ['https://static.example.com/reports/x-api-export.mp4'],
-]);
-
-$replyHandoff = createTweetHandoff($client, [
-  'account' => '@username',
-  'text' => 'Here is the chart behind the update.',
-  'media' => ['https://static.example.com/reports/reply-chart.png'],
-  'replyToTweetID' => $tweetHandoff['tweet_id'] ?? '1893704267862470862',
-]);
-
-$localFile = fopen('handoff.png', 'rb');
-
-if (false === $localFile) {
-  throw new RuntimeException('Could not open handoff.png');
-}
-
-try {
-  $media = $client->x->media->upload(
-    account: '@username',
-    file: FileParam::fromResource($localFile),
-  );
-} finally {
-  fclose($localFile);
-}
-
-$dm = $client->x->dm->send(
-  '44196397',
-  account: '@username',
-  text: 'Here is the requested asset.',
-  mediaIDs: [$media->mediaID],
-);
-
-$dmHandoff = [
-  'message_id' => $dm->messageID,
-  'media_id' => $media->mediaID,
-  'user_id' => '44196397',
-  'account' => '@username',
-  'status' => 'sent',
-];
-
-fwrite(
-  STDOUT,
-  json_encode(
-    [
-      'tweet_handoff' => $tweetHandoff,
-      'reply_handoff' => $replyHandoff,
-      'dm_handoff' => $dmHandoff,
-    ],
-    JSON_THROW_ON_ERROR
-  ) . PHP_EOL
-);
-```
-
-Store `write_action_id` and `charged_credits`. Before retrying a pending tweet or reply, poll [Get Write Action Status](/api-reference/x-write/get-write-action-status). Store `tweet_id` on the CMS, queue job, or agent state after confirmed writes. Store `$dm->messageID`, `$media->mediaID`, `account`, `user_id`, and send status. Put them on the support ticket or CRM note. Keep DM body text in private systems. Shared logs, public artifacts, queue status, and agent handoffs should omit full DM bodies. They should store `message_id`, optional `media_id`, `account`, `user_id`, and send status. Leave generated `replyToMessageID` unset even if SDK params expose it. The REST endpoint rejects DM reply threading. Text-only tweet and reply writes cost 30 credits. Tweet media adds 2 credits per started MB across attached files. Uploading media costs 10 credits. Sending the DM costs 10 credits. Do not pass uploaded `$media->mediaID` values to `$client->x->tweets->create()`. That method uses `media` with public media URLs.
-
-`$client->x->dm->deleteMessage()` [deletes a DM](/api-reference/x-write/delete-dm).
+<section>
 
 ## Error handling
 
@@ -528,6 +203,10 @@ try {
 }
 ```
 
+</section>
+
+<section>
+
 ## Pagination
 
 Paginated responses expose fields such as `hasNextPage`. Pass the endpoint's cursor fields when requesting more pages.
@@ -542,6 +221,10 @@ if ($page->hasNextPage) {
 }
 ```
 
+</section>
+
+<section>
+
 ## Webhooks & references
 
 - [Search Tweets](/api-reference/x/search-tweets)
@@ -553,3 +236,5 @@ if ($page->hasNextPage) {
 - [Verify HMAC Signatures](/webhooks/verification)
 - [REST API Overview](/api-reference/overview)
 - [Source Repository](https://github.com/Xquik-dev/x-twitter-scraper-php)
+
+</section>

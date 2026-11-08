@@ -2,83 +2,15 @@
 title: "Twitter webhook API to create a signed endpoint"
 sidebarTitle: "Create webhook"
 description: "Register an HTTPS endpoint for signed tweet and profile change events from account and keyword monitors. Choose event types. Xquik returns the secret once."
-api: "POST /webhooks"
+endpoint: "POST /webhooks"
 keywords: ["webhook", "create", "register", "endpoint", "monitor events"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
 
-{/* GENERATED RESPONSE EXAMPLES START */}
-
-<Panel>
-
-<Tabs defaultTabIndex={0} sync={false}>
-
-  <Tab title="201" id="response-webhooks-create-201">
-
-    ```json
-    {
-      "id": "42",
-      "url": "https://example.com/webhook",
-      "secret": "abababababababababababababababababababababababababababababababab",
-      "eventTypes": [
-        "tweet.new"
-      ],
-      "createdAt": "2025-01-15T12:00:00Z"
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="400" id="response-webhooks-create-400">
-
-    ```json
-    {
-      "error": "invalid_input",
-      "message": "Invalid input. Check the request body."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="401" id="response-webhooks-create-401">
-
-    ```json
-    {
-      "error": "unauthenticated",
-      "message": "Authentication required. Provide a valid API key or bearer token."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="403" id="response-webhooks-create-403">
-
-    ```json
-    {
-      "error": "api_key_paused",
-      "message": "This API key is paused. Resume it at dashboard.xquik.com/api-keys to use it again."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="429" id="response-webhooks-create-429">
-
-    ```json
-    {
-      "error": "rate_limit_exceeded",
-      "message": "Too many requests. Try again later.",
-      "retryAfter": 60
-    }
-    ```
-
-  </Tab>
-</Tabs>
-
-</Panel>
-{/* GENERATED RESPONSE EXAMPLES END */}
 <LlmsDirective />
+
+`POST https://xquik.com/api/v1/webhooks`
 
 <Callout icon="circle-check" color="#16a34a">
 
@@ -176,46 +108,29 @@ func main() {
 
 </CodeGroup>
 
+<section>
+
 ## Headers
 
-<ParamField header="x-api-key" type="string" required>
+| Header         | Type     | Required | Description                                                    |
+| -------------- | -------- | -------- | -------------------------------------------------------------- |
+| `x-api-key`    | `string` | Yes      | Your API key. Session cookie authentication is also supported. |
+| `Content-Type` | `string` | Yes      | Must be `application/json`.                                    |
 
-Your API key. Session cookie authentication is also supported.
+</section>
 
-</ParamField>
-
-<ParamField header="Content-Type" type="string" required>
-
-Must be `application/json`.
-
-</ParamField>
+<section>
 
 ## Body
 
-<ParamField body="url" type="string" required>
+| Body parameter | Type       | Required | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| -------------- | ---------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `url`          | `string`   | Yes      | HTTPS endpoint URL where Xquik delivers events. Xquik rejects HTTP URLs. It also rejects URLs resolving to private or internal IP addresses. These are localhost, 10.x.x.x, 172.16-31.x.x, 192.168.x.x, and 169.254.x.x.<br />A Discord channel webhook URL, such as `https://discord.com/api/webhooks/...`, gets alerts as Discord messages.<br />A Slack incoming webhook URL, such as `https://hooks.slack.com/services/...`, gets alerts as Slack messages.<br />- The events of 1 post come as 1 alert. An example title is "New post with media".<br />- Alerts that wait together come as 1 message.<br />- A busy channel gets 5 quick messages, then 1 every 30 seconds.<br />- Each event keeps its own delivery. With it, retries and resume work as for any webhook. |
+| `eventTypes`   | `string[]` | Yes      | Array of event types to subscribe to. At least 1 required. Use any valid account monitor event type listed below. Keyword monitors emit only `tweet.*` event types. Account monitors can emit both `tweet.*` and `profile.*` event types. [Post monitors](/api-reference/monitors/create-post) emit only `post.*` event types.                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 
-HTTPS endpoint URL where Xquik delivers events. Xquik rejects HTTP URLs. It also rejects URLs resolving to private or internal IP addresses. These are localhost, 10.x.x.x, 172.16-31.x.x, 192.168.x.x, and 169.254.x.x.
+</section>
 
-A Discord channel webhook URL, such as `https://discord.com/api/webhooks/...`, gets alerts as Discord messages.
-
-A Slack incoming webhook URL, such as `https://hooks.slack.com/services/...`, gets alerts as Slack messages.
-
-- The events of 1 post come as 1 alert. An example title is "New post with media".
-- Alerts that wait together come as 1 message.
-- A busy channel gets 5 quick messages, then 1 every 30 seconds.
-- Each event keeps its own delivery. With it, retries and resume work as for any webhook.
-
-</ParamField>
-
-<ParamField body="eventTypes" type="string[]" required>
-
-Array of event types to subscribe to. At least 1 required. Use any valid
-account monitor event type listed below. Keyword monitors emit only `tweet.*`
-event types. Account monitors can emit both `tweet.*` and `profile.*` event
-types. [Post monitors](/api-reference/monitors/create-post) emit only `post.*`
-event types.
-
-</ParamField>
+<section>
 
 ## Valid event types
 
@@ -270,6 +185,10 @@ Only the [Test Webhook](/api-reference/webhooks/test) endpoint sends `webhook.te
 
 </Note>
 
+</section>
+
+<section>
+
 ## Integration handoff
 
 Use this endpoint after you create a monitor. For an account monitor, call [`POST /monitors`](/api-reference/monitors/create). For a keyword monitor, call [`POST /monitors/keywords`](/api-reference/monitors/create-keyword). The webhook stores the HTTPS endpoint and event-type filter. Active monitors produce the events. Monitor billing includes webhook delivery.
@@ -323,41 +242,22 @@ or endpoints.
 
 Test the endpoint with [`POST /webhooks/{id}/test`](/api-reference/webhooks/test) before routing production events. Return a `2xx` response within 10 seconds. Process slow Slack, CRM, warehouse, or queue work afterward. Use [Signature Verification](/webhooks/verification) to validate the raw request body before processing.
 
+</section>
+
+<section>
+
 ## Response
 
 ### 201 Created
 
-<ResponseField name="id" type="string">
-
-Unique webhook identifier.
-
-</ResponseField>
-<ResponseField name="url" type="string">
-
-The registered delivery endpoint.
-
-</ResponseField>
-<ResponseField name="eventTypes" type="string[]">
-
-Event types this webhook subscribes to.
-
-</ResponseField>
-<ResponseField name="secret" type="string">
-
-HMAC signing secret (64-character hex string). Xquik returns it only at creation. Store it in a secret manager.
-
-</ResponseField>
-<ResponseField name="createdAt" type="string">
-
-ISO 8601 creation timestamp.
-
-</ResponseField>
-
-<ResponseField name="ignoredFields" type="string[]">
-
-Fields the request sent that this route does not read, in the order sent. They changed nothing. Omitted when the request sent only `url` and `eventTypes`.
-
-</ResponseField>
+| Field           | Type       | Description                                                                                                                                                |
+| --------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`            | `string`   | Unique webhook identifier.                                                                                                                                 |
+| `url`           | `string`   | The registered delivery endpoint.                                                                                                                          |
+| `eventTypes`    | `string[]` | Event types this webhook subscribes to.                                                                                                                    |
+| `secret`        | `string`   | HMAC signing secret (64-character hex string). Xquik returns it only at creation. Store it in a secret manager.                                            |
+| `createdAt`     | `string`   | ISO 8601 creation timestamp.                                                                                                                               |
+| `ignoredFields` | `string[]` | Fields the request sent that this route does not read, in the order sent. They changed nothing. Omitted when the request sent only `url` and `eventTypes`. |
 
 ```json
 {
@@ -377,29 +277,17 @@ The API returns `secret` once. Store it in a secret manager. You need it to [ver
 
 ### 401 Unauthenticated
 
-```json
-{ "error": "unauthenticated", "message": "Missing or invalid API key" }
-```
+`{ "error": "unauthenticated", "message": "Missing or invalid API key" }`
 
 Missing or invalid API key or session cookie.
 
 ### 400 Invalid input
 
-```json
-{ "error": "invalid_input", "message": "Invalid URL or event types" }
-```
+`{ "error": "invalid_input", "message": "Invalid URL or event types" }`
 
 Invalid URL (must be HTTPS) or empty `eventTypes` array.
 
 ### 429 Rate limited
-
-```json
-{
-  "error": "rate_limit_exceeded",
-  "message": "Too many requests. Try again later.",
-  "retryAfter": 60
-}
-```
 
 Too many requests. Wait for the `Retry-After` header before retrying.
 
@@ -410,3 +298,20 @@ This endpoint accepts 2 auth methods. Send an API key in the `x-api-key` header.
 **Next steps.** [List Webhooks](/api-reference/webhooks/list) &middot; [Signature Verification](/webhooks/verification) &middot; [Webhooks Overview](/webhooks/overview)
 
 </Note>
+
+</section>
+
+{/* GENERATED RESPONSE EXAMPLES START */}
+
+<section>
+
+## Response examples
+
+- **400** `{ "error": "invalid_input", "message": "Invalid input. Check the request body." }`
+- **401** `{ "error": "unauthenticated", "message": "Authentication required. Provide a valid API key or bearer token." }`
+- **403** `{ "error": "api_key_paused", "message": "This API key is paused. Resume it at dashboard.xquik.com/api-keys to use it again." }`
+- **429** `{ "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 60 }`
+
+</section>
+
+{/* GENERATED RESPONSE EXAMPLES END */}

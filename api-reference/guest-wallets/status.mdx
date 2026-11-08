@@ -2,73 +2,15 @@
 title: "Guest wallet API status & payment activation"
 sidebarTitle: Get guest wallet status
 description: "Check a guest API key's activation, credit balance, hosted payment status, and access to tweet, profile, follower, and reply reads. Status checks are free."
-api: "GET /guest-wallets/status"
+endpoint: "GET /guest-wallets/status"
 keywords: ["guest wallet", "status", "payment verification", "paid_reads", "balance"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
 
-{/* GENERATED RESPONSE EXAMPLES START */}
-
-<Panel>
-
-<Tabs defaultTabIndex={0} sync={false}>
-
-  <Tab title="200" id="response-guest-wallets-status-200">
-
-    ```json
-    {
-      "balance": "66666",
-      "latest_purchase": {
-        "amount": {
-          "amount_minor": 1000,
-          "currency": "usd"
-        },
-        "checkout_url": null,
-        "credits": "66666",
-        "expires_at": "2026-07-13T13:00:00.000Z",
-        "purchase_id": "gp_example"
-      },
-      "poll_after_seconds": null,
-      "scope": "paid_reads",
-      "status": "active",
-      "top_up": {
-        "method": "POST",
-        "path": "/api/v1/guest-wallets/topups"
-      },
-      "usable": true,
-      "wallet_id": "gw_example"
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="401" id="response-guest-wallets-status-401">
-
-    ```json
-    {
-      "error": "unauthenticated",
-      "message": "Authentication required. Provide a valid API key or bearer token."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="429" id="response-guest-wallets-status-429">
-
-    ```json
-    {
-      "error": "rate_limited",
-      "message": "Try again later."
-    }
-    ```
-
-  </Tab>
-</Tabs>
-
-</Panel>
-{/* GENERATED RESPONSE EXAMPLES END */}
 <LlmsDirective />
+
+`GET https://xquik.com/api/v1/guest-wallets/status`
 
 Poll this endpoint after the user completes hosted checkout. While the wallet is pending, the guest key can authenticate this status route. It cannot call paid read routes until Xquik verifies payment.
 
@@ -83,41 +25,34 @@ curl https://xquik.com/api/v1/guest-wallets/status \
 
 Wait at least `poll_after_seconds` before polling again. Continue while it is non-null, then stop. Use `usable` to decide whether paid reads can run. An active wallet can remain usable while a top-up is pending.
 
+<section>
+
 ## Headers
 
-<ParamField header="Authorization" type="string" required>
+| Header          | Type     | Required | Description                                            |
+| --------------- | -------- | -------- | ------------------------------------------------------ |
+| `Authorization` | `string` | Yes      | Send the guest key as `Bearer xq_your_guest_key_here`. |
 
-Send the guest key as `Bearer xq_your_guest_key_here`.
+</section>
 
-</ParamField>
+<section>
 
 ## Response
 
-<ResponseField name="balance" type="string">
-  Available guest wallet credits.
-</ResponseField>
-<ResponseField name="scope" type="string">
-  Always `paid_reads`.
-</ResponseField>
-<ResponseField name="status" type="string">
-  Combined wallet and pending-checkout state. It is `active`, `pending`, `expired`, `failed`,
-  `frozen`, or `closed`. A pending top-up can coexist with `usable: true`.
-</ResponseField>
-<ResponseField name="usable" type="boolean">
-  Whether the key can call eligible paid read routes.
-</ResponseField>
-<ResponseField name="poll_after_seconds" type="integer | null">
-  `2` while payment is pending. Otherwise `null`.
-</ResponseField>
-<ResponseField name="latest_purchase" type="object | null">
-  Latest amount, credits, expiry, purchase ID, checkout URL while pending, and purchase status.
-</ResponseField>
-<ResponseField name="top_up" type="object | null">
-  Direct REST top-up action when the wallet is usable and has no pending checkout.
-</ResponseField>
-<ResponseField name="wallet_id" type="string">
-  Guest wallet ID.
-</ResponseField>
+| Field                | Type              | Description                                                                                                                                                          |
+| -------------------- | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `balance`            | `string`          | Available guest wallet credits.                                                                                                                                      |
+| `scope`              | `string`          | Always `paid_reads`.                                                                                                                                                 |
+| `status`             | `string`          | Combined wallet and pending-checkout state. It is `active`, `pending`, `expired`, `failed`, `frozen`, or `closed`. A pending top-up can coexist with `usable: true`. |
+| `usable`             | `boolean`         | Whether the key can call eligible paid read routes.                                                                                                                  |
+| `poll_after_seconds` | `integer \| null` | `2` while payment is pending. Otherwise `null`.                                                                                                                      |
+| `latest_purchase`    | `object \| null`  | Latest amount, credits, expiry, purchase ID, checkout URL while pending, and purchase status.                                                                        |
+| `top_up`             | `object \| null`  | Direct REST top-up action when the wallet is usable and has no pending checkout.                                                                                     |
+| `wallet_id`          | `string`          | Guest wallet ID.                                                                                                                                                     |
+
+</section>
+
+<section>
 
 ## Interpret the result
 
@@ -182,3 +117,45 @@ The response sends `Cache-Control: no-store, private` and never returns the gues
 **Related.** [Guest wallet guide](/guides/guest-wallets) · [Create guest wallet](/api-reference/guest-wallets/create) · [Top up guest wallet](/api-reference/guest-wallets/topup)
 
 </Note>
+
+</section>
+
+{/* GENERATED RESPONSE EXAMPLES START */}
+
+<section>
+
+## Response examples
+
+### 200 example
+
+```json
+{
+  "balance": "66666",
+  "latest_purchase": {
+    "amount": {
+      "amount_minor": 1000,
+      "currency": "usd"
+    },
+    "checkout_url": null,
+    "credits": "66666",
+    "expires_at": "2026-07-13T13:00:00.000Z",
+    "purchase_id": "gp_example"
+  },
+  "poll_after_seconds": null,
+  "scope": "paid_reads",
+  "status": "active",
+  "top_up": {
+    "method": "POST",
+    "path": "/api/v1/guest-wallets/topups"
+  },
+  "usable": true,
+  "wallet_id": "gw_example"
+}
+```
+
+- **401** `{ "error": "unauthenticated", "message": "Authentication required. Provide a valid API key or bearer token." }`
+- **429** `{ "error": "rate_limited", "message": "Try again later." }`
+
+</section>
+
+{/* GENERATED RESPONSE EXAMPLES END */}

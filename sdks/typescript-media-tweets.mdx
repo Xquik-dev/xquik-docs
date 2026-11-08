@@ -1,0 +1,161 @@
+---
+title: "Twitter API TypeScript media tweets & DM attachments"
+sidebarTitle: "Media tweets"
+description: "Upload media with the Xquik TypeScript SDK, post tweets with photos or video, and send DM attachments from a connected X (Twitter) account in your own apps."
+keywords:
+  ["TypeScript SDK", "TypeScript media upload", "media tweets", "DM attachments", "X write API"]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+import SdkMediaRoutes from "/snippets/sdk-media-routes.mdx";
+
+<LlmsDirective />
+
+This guide builds on the [TypeScript SDK setup](/sdks/typescript), which covers install and authentication.
+
+<section>
+
+## Workflow to post media tweets and DM attachments
+
+Use this workflow when a TypeScript worker, support queue, or agent service sends media. It can post a media-backed tweet or reply with media. It can also send one uploaded media item in a DM.
+
+Tweet and reply media posts use public media URLs directly on `client.x.tweets.create`. Send up to 4 image URLs or exactly 1 MP4 video URL. The video can be up to 100 MB. Do not mix video with other media. Do not upload first when the media URL is already public.
+
+```ts
+interface TweetWriteAction {
+  id: string;
+  status: string;
+  terminal: boolean;
+  safeToRetry: boolean;
+  statusUrl: string;
+  request: { hash: string | null };
+  billing: { charged: boolean; chargedCredits: string };
+  result: { id?: string } | null;
+  tweetId?: string;
+}
+
+function createTweetHandoff(
+  action: TweetWriteAction,
+  base: {
+    account: string;
+    media: string[];
+    reply_to_tweet_id?: string;
+  },
+) {
+  const thread = base.reply_to_tweet_id ? { reply_to_tweet_id: base.reply_to_tweet_id } : {};
+
+  return {
+    status: action.status,
+    terminal: action.terminal,
+    safe_to_retry: action.safeToRetry,
+    write_action_id: action.id,
+    request_hash: action.request.hash,
+    tweet_id: action.result?.id ?? action.tweetId ?? null,
+    charged: action.billing.charged,
+    charged_credits: action.billing.chargedCredits,
+    poll: action.terminal ? null : action.statusUrl,
+    ...base,
+    ...thread,
+  };
+}
+```
+
+Capture the durable write action from the raw response. Send a unique `Idempotency-Key`. Store `id`, `request.hash`, `billing`, `result`, and `statusUrl`. Poll while `terminal` is false. Retry only when `safeToRetry` is true, using a new key.
+
+```ts
+const tweet = (await client.x.tweets.create({
+  account: "@username",
+  text: "New demo video is live.",
+  media: ["https://example.com/product-demo.mp4"],
+})) as TweetWriteAction;
+
+const tweetHandoff = createTweetHandoff(tweet, {
+  account: "@username",
+  media: ["https://example.com/product-demo.mp4"],
+});
+
+process.stdout.write(`${JSON.stringify(tweetHandoff)}\n`);
+```
+
+To post an image reply, add `reply_to_tweet_id`.
+
+```ts
+const reply = (await client.x.tweets.create({
+  account: "@username",
+  text: "Here is the requested screenshot.",
+  reply_to_tweet_id: "1893704267862470862",
+  media: ["https://example.com/export-preview.png"],
+})) as TweetCreateResult;
+
+const replyHandoff = createTweetHandoff(reply, {
+  account: "@username",
+  reply_to_tweet_id: "1893704267862470862",
+  media: ["https://example.com/export-preview.png"],
+});
+
+process.stdout.write(`${JSON.stringify(replyHandoff)}\n`);
+```
+
+For DM attachments, upload the local file first. Then pass the returned `media.mediaId` as the only `media_ids` item.
+
+```ts
+import fs from "node:fs";
+
+const media = await client.x.media.upload({
+  account: "@username",
+  file: fs.createReadStream("./handoff.png"),
+});
+
+const dm = await client.x.dm.send("44196397", {
+  account: "@username",
+  text: "Here is the asset.",
+  media_ids: [media.mediaId],
+});
+
+const dmHandoff = {
+  status: "sent",
+  message_id: dm.messageId,
+  media_id: media.mediaId,
+  account: "@username",
+  user_id: "44196397",
+};
+
+process.stdout.write(`${JSON.stringify(dmHandoff)}\n`);
+```
+
+`client.x.tweets.create` returns `tweet.tweetId` for confirmed posts. While confirmation is still running, it returns the pending write fields above. `client.x.media.upload` returns `media.mediaId` for DM attachments. `client.x.dm.send` returns `dm.messageId` for support tickets, CRM records, queue jobs, or agent memory.
+
+Keep DM body text in private systems. Shared logs, public artifacts, queue status, and agent handoffs should omit full DM bodies. They should store `message_id`, optional `media_id`, `account`, `user_id`, and send status. Leave `reply_to_message_id` unset even if generated SDK types expose it. The REST endpoint rejects DM reply threading.
+
+`client.x.dm.deleteMessage` [deletes a DM](/api-reference/x-write/delete-dm).
+
+Text-only tweet and reply writes cost 30 credits. Tweet media adds 2 credits per started MB across attached files. Uploading media costs 10 credits. Sending the DM costs 10 credits. Do not pass uploaded `media.mediaId` values to `client.x.tweets.create`. That method uses `media` with public media URLs.
+
+These endpoints are useful next.
+
+- [Search Tweets](/api-reference/x/search-tweets)
+- [Create Extraction](/api-reference/extractions/create)
+- [Get Extraction](/api-reference/extractions/twitter-extraction-results)
+- [Export Extraction](/api-reference/extractions/export)
+- [Get User](/api-reference/x/twitter-profile-lookup)
+- [Create Tweet](/api-reference/x-write/create-tweet)
+- [Upload Media](/api-reference/x-write/upload-media)
+- [Send Direct Message](/api-reference/x-write/send-dm)
+- [Create Monitor](/api-reference/monitors/create)
+- [Create Webhook](/api-reference/webhooks/create)
+
+### REST routes
+
+<SdkMediaRoutes />
+
+</section>
+
+<section>
+
+## Next steps
+
+- [TypeScript SDK setup](/sdks/typescript)
+- [Tweet search](/sdks/typescript-tweet-search)
+- [Follower export](/sdks/typescript-follower-export)
+
+</section>

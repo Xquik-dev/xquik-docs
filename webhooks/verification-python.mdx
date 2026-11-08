@@ -1,0 +1,79 @@
+---
+title: "Verify X (Twitter) webhook signatures in Python"
+sidebarTitle: "Verify in Python"
+description: "Verify Xquik webhook signatures in Python with hmac and hashlib. Reject bad deliveries before your receiver trusts the body of any X (Twitter) monitor event."
+keywords:
+  ["webhook signature verification", "Python webhook", "Twitter webhook", "HMAC verification"]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+<LlmsDirective />
+
+This handler verifies each delivery before it trusts the body. See [signature verification](/webhooks/verification) for the headers and each check.
+
+<section>
+
+## Python implementation
+
+```python
+import hmac
+import hashlib
+import time
+from flask import Flask, request
+
+app = Flask(__name__)
+FIVE_MINUTES_MS = 5 * 60 * 1000
+_seen_nonces: dict[str, int] = {}
+
+def verify_webhook(req, secret: str) -> bool:
+    timestamp = req.headers.get("X-Xquik-Timestamp", "")
+    nonce = req.headers.get("X-Xquik-Nonce", "")
+    signature = req.headers.get("X-Xquik-Signature", "")
+    raw_body = req.get_data()
+
+    if not (timestamp and nonce and signature):
+        return False
+
+    try:
+        ts = int(timestamp)
+    except ValueError:
+        return False
+    now_ms = int(time.time() * 1000)
+    if abs(now_ms - ts) > FIVE_MINUTES_MS:
+        return False
+
+    signing_string = f"{timestamp}.{nonce}.".encode() + raw_body
+    expected = "sha256=" + hmac.new(
+        secret.encode(), signing_string, hashlib.sha256
+    ).hexdigest()
+    if not hmac.compare_digest(expected, signature):
+        return False
+
+    expired = [n for n, exp in _seen_nonces.items() if exp <= now_ms]
+    for n in expired:
+        _seen_nonces.pop(n, None)
+    if nonce in _seen_nonces:
+        return False
+    _seen_nonces[nonce] = now_ms + FIVE_MINUTES_MS
+    return True
+
+@app.route("/webhook", methods=["POST"])
+def webhook():
+    if not verify_webhook(request, WEBHOOK_SECRET):
+        return "Invalid signature", 401
+    event = request.get_json()
+    # Process event...
+    return "OK", 200
+```
+
+</section>
+
+<section>
+
+## Next steps
+
+- [Signature verification](/webhooks/verification)
+- [Webhook idempotency](/webhooks/idempotency)
+
+</section>

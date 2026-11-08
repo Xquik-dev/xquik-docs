@@ -1,0 +1,110 @@
+---
+title: "Twitter API TypeScript follower export to CSV & XLSX"
+sidebarTitle: "Follower export"
+description: "Export X (Twitter) followers with the Xquik TypeScript SDK. Estimate the job, run the extraction, and save CSV, JSON, or XLSX files for your team and your CRM."
+keywords:
+  ["TypeScript SDK", "TypeScript follower export", "follower export", "CSV export", "XLSX export"]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+<LlmsDirective />
+
+This guide builds on the [TypeScript SDK setup](/sdks/typescript), which covers install and authentication.
+
+<section>
+
+## Follower export workflow to CSV, JSON, or XLSX
+
+Use this workflow when a worker needs an owned follower list. It fits Node.js, Bun, and queue workers. Use the list for CRM import, warehouse loading, account scoring, or analyst CSV. You can also deliver it as an XLSX workbook or a resumable JSON handoff. The workflow calls `POST /extractions/estimate` through `client.extractions.estimateCost`. It creates the job with `client.extractions.run`. It reads saved rows with `client.extractions.retrieve`. It downloads files with `client.extractions.exportResults`.
+
+<Info>
+
+`client.extractions.run` returns the queued `202 Accepted` receipt from `POST /extractions`. The receipt holds `id`, `toolType`, and `status: "running"`. Store `job.id` immediately, then poll `client.extractions.retrieve` before reading pages or calling `client.extractions.exportResults`. Credit reservation happens after the job starts. If available credits changed since `estimateCost`, the API has 2 options. It can set `resultsLimit` to the affordable count before fetching rows. Or it can mark the job `failed` with `insufficient_credits`.
+
+</Info>
+
+```ts
+import { open, writeFile } from "node:fs/promises";
+import XTwitterScraper from "x-twitter-scraper";
+
+const client = new XTwitterScraper();
+const targetUsername = "username";
+const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
+
+const estimate = await client.extractions.estimateCost({
+  toolType: "follower_explorer",
+  targetUsername,
+});
+
+if (!estimate.allowed) {
+  throw new Error("Insufficient credits for follower export.");
+}
+
+const job = await client.extractions.run({
+  toolType: "follower_explorer",
+  targetUsername,
+});
+
+while (true) {
+  const statusPage = await client.extractions.retrieve(job.id, { limit: 1 });
+  const status = statusPage.job["status"];
+
+  if (status === "completed") {
+    break;
+  }
+
+  if (status === "failed") {
+    throw new Error("Follower export failed.");
+  }
+
+  await sleep(10000);
+}
+
+let cursor: string | undefined;
+const jsonl = await open("xquik-followers.jsonl", "w");
+
+try {
+  while (true) {
+    const page = await client.extractions.retrieve(job.id, {
+      limit: 1000,
+      cursor,
+    });
+
+    for (const row of page.results) {
+      await jsonl.write(`${JSON.stringify(row)}\n`);
+    }
+
+    if (!page.hasMore || !page.nextCursor) {
+      break;
+    }
+
+    cursor = page.nextCursor;
+  }
+} finally {
+  await jsonl.close();
+}
+
+const csv = await client.extractions.exportResults(job.id, { format: "csv" });
+await writeFile("xquik-followers.csv", Buffer.from(await csv.arrayBuffer()));
+
+const json = await client.extractions.exportResults(job.id, { format: "json" });
+await writeFile("xquik-followers.json", Buffer.from(await json.arrayBuffer()));
+
+const xlsx = await client.extractions.exportResults(job.id, { format: "xlsx" });
+await writeFile("xquik-followers.xlsx", Buffer.from(await xlsx.arrayBuffer()));
+```
+
+`follower_explorer` requires `targetUsername`. Store `job.id`, `targetUsername`, `estimate.estimatedResults`, and `estimate.source` before polling. With them, a queue retry, worker restart, or agent handoff can resume that export. `client.extractions.retrieve` returns `results`, `hasMore`, and `nextCursor`. Pass `nextCursor` back as `cursor` when you need stored JSON pages before exporting files. Use `xquik-followers.jsonl` for queue replay or warehouse loads, and `xquik-followers.json` for app ingestion. Use `xquik-followers.csv` for CRM import and `xquik-followers.xlsx` for analyst handoff. Map exported `User ID` or row `xUserId` as the CRM unique key. The cost is 1 credit per follower extracted or returned. Exports cost no credits after the extraction job exists.
+
+</section>
+
+<section>
+
+## Next steps
+
+- [TypeScript SDK setup](/sdks/typescript)
+- [Tweet search](/sdks/typescript-tweet-search)
+- [Media tweets](/sdks/typescript-media-tweets)
+
+</section>

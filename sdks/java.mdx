@@ -36,6 +36,8 @@ profile rows to analytics or CRM systems.
 | Export CSV, JSON, or XLSX          | `client.extractions().exportResults`           | Record the job ID, format, and file destination. |
 | Create a tweet                     | `client.x().tweets().withRawResponse().create` | Store the write action ID and terminal state.    |
 
+<section>
+
 ## Install
 
 <Note>
@@ -62,6 +64,10 @@ Before restoring Maven Central install snippets, verify that Maven Central serve
 curl -f https://repo1.maven.org/maven2/com/x_twitter_scraper/api/x-twitter-scraper-java/maven-metadata.xml
 ```
 
+</section>
+
+<section>
+
 ## Authenticate
 
 ```bash
@@ -69,6 +75,10 @@ export X_TWITTER_SCRAPER_API_KEY="xq_YOUR_KEY_HERE"
 ```
 
 `XTwitterScraperOkHttpClient.fromEnv()` reads `X_TWITTER_SCRAPER_API_KEY`, `X_TWITTER_SCRAPER_BEARER_TOKEN`, and `X_TWITTER_SCRAPER_BASE_URL`.
+
+</section>
+
+<section>
 
 ## Basic example
 
@@ -105,322 +115,21 @@ for (SearchTweet tweet : page.tweets()) {
 }
 ```
 
-## Tweet search workflow to JSON Lines, CSV, or XLSX
+</section>
 
-Export tweet search from Java services, Spring Batch, scheduled workers, or queues. Save files for data lakes, CRM enrichment, CSV, XLSX, or downstream processing.
+<section>
 
-`client.x().tweets().search` calls `GET /x/tweets/search`. Build `TweetSearchParams` with the REST query parameters `.q()`, `.limit()`, `.cursor()`, `.sinceTime()`, `.untilTime()`, and `.queryType()`.
+## Java SDK workflows
 
-```java
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.x_twitter_scraper.api.client.XTwitterScraperClient;
-import com.x_twitter_scraper.api.client.okhttp.XTwitterScraperOkHttpClient;
-import com.x_twitter_scraper.api.models.PaginatedTweets;
-import com.x_twitter_scraper.api.models.SearchTweet;
-import com.x_twitter_scraper.api.models.x.tweets.TweetSearchParams;
-import com.x_twitter_scraper.api.models.x.tweets.TweetSearchParams.QueryType;
-import java.io.BufferedWriter;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+| Workflow                                      | What it does                                                         |
+| --------------------------------------------- | -------------------------------------------------------------------- |
+| [Tweet search](/sdks/java-tweet-search)       | Search tweets, follow cursors & save JSON Lines, CSV, or XLSX files. |
+| [Follower export](/sdks/java-follower-export) | Run a follower extraction & save CSV, JSON, or XLSX files.           |
+| [Media tweets](/sdks/java-media-tweets)       | Upload media, post media tweets & send DM attachments.               |
 
-XTwitterScraperClient client = XTwitterScraperOkHttpClient.fromEnv();
-ObjectMapper objectMapper = new ObjectMapper();
+</section>
 
-String query = "from:username webhook OR SDK";
-String cursor = null;
-int pageIndex = 0;
-List<String> headers = Arrays.asList(
-    "source",
-    "query",
-    "tweet_id",
-    "text",
-    "author_id",
-    "author_username",
-    "author_name",
-    "created_at",
-    "like_count",
-    "reply_count",
-    "retweet_count",
-    "quote_count",
-    "view_count",
-    "bookmark_count",
-    "is_note_tweet",
-    "page_index",
-    "page_cursor",
-    "next_cursor",
-    "has_next_page"
-);
-
-try (
-    BufferedWriter jsonlWriter = Files.newBufferedWriter(
-        Paths.get("xquik-tweet-search.jsonl"),
-        StandardCharsets.UTF_8
-    );
-    BufferedWriter csvWriter = Files.newBufferedWriter(
-        Paths.get("xquik-tweet-search.csv"),
-        StandardCharsets.UTF_8
-    )
-) {
-    writeCsvRow(csvWriter, headers);
-
-    do {
-        String pageCursor = cursor;
-        TweetSearchParams.Builder builder = TweetSearchParams.builder()
-            .q(query)
-            .queryType(QueryType.LATEST);
-
-        if (cursor != null && !cursor.isEmpty()) {
-            builder.cursor(cursor);
-        }
-
-        PaginatedTweets page = client.x().tweets().search(builder.build());
-
-        for (SearchTweet tweet : page.tweets()) {
-            Map<String, Object> row = new LinkedHashMap<>();
-            row.put("source", "xquik.java.search");
-            row.put("query", query);
-            row.put("tweet_id", tweet.id());
-            row.put("text", tweet.text());
-            row.put("author_id", tweet.author().map(SearchTweet.Author::id).orElse(null));
-            row.put("author_username", tweet.author().map(SearchTweet.Author::username).orElse(null));
-            row.put("author_name", tweet.author().map(SearchTweet.Author::name).orElse(null));
-            row.put("created_at", tweet.createdAt().orElse(null));
-            row.put("like_count", tweet.likeCount().orElse(0L));
-            row.put("reply_count", tweet.replyCount().orElse(0L));
-            row.put("retweet_count", tweet.retweetCount().orElse(0L));
-            row.put("quote_count", tweet.quoteCount().orElse(0L));
-            row.put("view_count", tweet.viewCount().orElse(0L));
-            row.put("bookmark_count", tweet.bookmarkCount().orElse(0L));
-            row.put("is_note_tweet", tweet.isNoteTweet().orElse(false));
-            row.put("page_index", pageIndex);
-            row.put("page_cursor", pageCursor);
-            row.put("next_cursor", page.hasNextPage() ? page.nextCursor() : null);
-            row.put("has_next_page", page.hasNextPage());
-
-            List<Object> csvRow = new ArrayList<>();
-            for (String header : headers) {
-                csvRow.add(row.get(header));
-            }
-
-            jsonlWriter.write(objectMapper.writeValueAsString(row));
-            jsonlWriter.newLine();
-            writeCsvRow(csvWriter, csvRow);
-        }
-
-        pageIndex++;
-        cursor = page.hasNextPage() ? page.nextCursor() : null;
-    } while (cursor != null && !cursor.isEmpty());
-}
-
-static void writeCsvRow(BufferedWriter writer, List<?> values) throws IOException {
-    for (int index = 0; index < values.size(); index++) {
-        if (index > 0) {
-            writer.write(",");
-        }
-
-        Object value = values.get(index);
-        String cell = value == null ? "" : String.valueOf(value);
-        writer.write("\"" + cell.replace("\"", "\"\"") + "\"");
-    }
-
-    writer.newLine();
-}
-```
-
-### Request mapping
-
-<CardGroup cols={2}>
-
-  <Card title=".q()" icon="search">
-
-    Java builder method `.q()` maps to REST `q`. Use it for an X search query. Examples are `from:username`, a keyword, hashtag, or boolean operator query.
-
-  </Card>
-  <Card title=".limit()" icon="list">
-
-    Java builder method `.limit()` maps to REST `limit`. Use it as a 1 to 200 upper bound for a bounded pull. If `page.hasNextPage()` is true, keep the same `.q()`, filters, `.queryType()`, and `.limit()`. Do so when you continue with `page.nextCursor()`.
-
-  </Card>
-  <Card title=".cursor()" icon="arrow-right">
-
-    Java builder method `.cursor()` maps to REST `cursor`. Pass the opaque cursor from `page.nextCursor()` to request the next page.
-
-  </Card>
-  <Card title=".sinceTime()" icon="clock">
-
-    Java builder method `.sinceTime()` maps to REST `sinceTime`. Use it as the ISO 8601 lower bound for tweet creation time.
-
-  </Card>
-  <Card title=".untilTime()" icon="clock">
-
-    Java builder method `.untilTime()` maps to REST `untilTime`. Use it as the ISO 8601 upper bound for tweet creation time.
-
-  </Card>
-  <Card title=".queryType()" icon="sliders-horizontal">
-
-    Java builder method `.queryType()` maps to REST `queryType`. Use `QueryType.LATEST` for chronological search or `QueryType.TOP` for engagement-ranked search.
-
-  </Card>
-</CardGroup>
-
-### Returned data & handoff
-
-`client.x().tweets().search` returns `PaginatedTweets`. Use `page.tweets()` for the tweet list. Use `page.hasNextPage()` to decide whether another page exists. Use `page.nextCursor()` as the checkpoint for the next request. For bounded pulls that return fewer tweets than the requested `.limit()`, resume from `page.nextCursor()`. To do that, pass `page.nextCursor()` back as `.cursor()`. Send the same query, filters, `QueryType`, and `.limit()` with that cursor.
-
-Each `SearchTweet` includes generated accessors such as `id()`, `text()`, `author()`, and `createdAt()`. Others are `likeCount()`, `replyCount()`, `retweetCount()`, `quoteCount()`, `viewCount()`, and `bookmarkCount()`. It also includes `isNoteTweet()` when available. Project `page.tweets()` into JSON Lines and CSV rows with `tweet_id`, `author_username`, and engagement counts. Rows also carry `page_index`, `page_cursor`, `next_cursor`, and `has_next_page`. Workers can then resume. They can also load the same records into XLSX, CRM, warehouse, or agent workflows.
-
-Tweet search costs 1 credit per tweet returned. Remaining credits may not cover a bounded `.limit()` request. If so, the API can return fewer tweets. If 0 paid results are affordable, it returns `402 insufficient_credits`. The SDK supports `withOptions()` for retry and request settings. For explicit `.limit()` pulls, resume with the same query, filters, `QueryType`, and `.limit()`. Only `.cursor()` changes.
-
-## Follower export workflow to CSV, JSON, or XLSX
-
-Export followers for CRM, warehouses, account scoring, CSV, XLSX, or resumable JSON.
-
-`client.extractions().estimateCost` maps to `POST /extractions/estimate`, and `client.extractions().run` maps to `POST /extractions`. `client.extractions().retrieve` maps to `GET /extractions/{id}`, and `client.extractions().exportResults` maps to `GET /extractions/{id}/export`. For follower exports, `follower_explorer` requires `targetUsername`.
-
-<Info>
-
-`client.extractions().run` returns the queued `202 Accepted` receipt from `POST /extractions`. Java exposes REST `id`, `toolType`, and `status: "running"` as `job.id()`, `job.toolType()`, and `job._status()`. Store `job.id()` immediately, then poll `client.extractions().retrieve` before reading pages or calling `client.extractions().exportResults`. Credit reservation happens after the job starts. Available credits can change after `estimateCost`. If they did, the run can fetch only the affordable count before export. In that case it can instead mark the job `failed` with `insufficient_credits`.
-
-</Info>
-
-```java
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.x_twitter_scraper.api.client.XTwitterScraperClient;
-import com.x_twitter_scraper.api.client.okhttp.XTwitterScraperOkHttpClient;
-import com.x_twitter_scraper.api.core.JsonValue;
-import com.x_twitter_scraper.api.core.http.HttpResponse;
-import com.x_twitter_scraper.api.models.extractions.ExtractionEstimateCostParams;
-import com.x_twitter_scraper.api.models.extractions.ExtractionEstimateCostResponse;
-import com.x_twitter_scraper.api.models.extractions.ExtractionExportResultsParams;
-import com.x_twitter_scraper.api.models.extractions.ExtractionRetrieveParams;
-import com.x_twitter_scraper.api.models.extractions.ExtractionRetrieveResponse;
-import com.x_twitter_scraper.api.models.extractions.ExtractionRunParams;
-import com.x_twitter_scraper.api.models.extractions.ExtractionRunResponse;
-import java.io.BufferedWriter;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
-
-XTwitterScraperClient client = XTwitterScraperOkHttpClient.fromEnv();
-ObjectMapper objectMapper = new ObjectMapper();
-String targetUsername = "username";
-
-ExtractionEstimateCostResponse estimate = client.extractions().estimateCost(
-    ExtractionEstimateCostParams.builder()
-        .toolType(ExtractionEstimateCostParams.ToolType.FOLLOWER_EXPLORER)
-        .targetUsername(targetUsername)
-        .build()
-);
-
-if (!estimate.allowed()) {
-    throw new IllegalStateException(
-        "Follower export requires " + estimate.creditsRequired() + " credits."
-    );
-}
-
-ExtractionRunResponse job = client.extractions().run(
-    ExtractionRunParams.builder()
-        .toolType(ExtractionRunParams.ToolType.FOLLOWER_EXPLORER)
-        .targetUsername(targetUsername)
-        .build()
-);
-
-boolean completed = false;
-for (int attempt = 0; attempt < 120; attempt++) {
-    ExtractionRetrieveResponse statusPage = client.extractions().retrieve(job.id());
-    JsonValue statusValue = statusPage.job()._additionalProperties().get("status");
-    String status = statusValue == null ? "unknown" : statusValue.asString().orElse("unknown");
-
-    if ("completed".equals(status)) {
-        completed = true;
-        break;
-    }
-
-    if ("failed".equals(status)) {
-        throw new IllegalStateException("Follower export failed.");
-    }
-
-    Thread.sleep(10_000L);
-}
-
-if (!completed) {
-    throw new IllegalStateException("Follower export did not complete before timeout.");
-}
-
-String cursor = null;
-try (BufferedWriter writer = Files.newBufferedWriter(
-    Paths.get("xquik-followers.jsonl"),
-    StandardCharsets.UTF_8
-)) {
-    do {
-        ExtractionRetrieveParams.Builder pageParams = ExtractionRetrieveParams.builder()
-            .id(job.id())
-            .limit(1000L);
-
-        if (cursor != null && !cursor.isEmpty()) {
-            pageParams.cursor(cursor);
-        }
-
-        ExtractionRetrieveResponse page = client.extractions().retrieve(pageParams.build());
-
-        for (ExtractionRetrieveResponse.Result row : page.results()) {
-            writer.write(objectMapper.writeValueAsString(row._additionalProperties()));
-            writer.newLine();
-        }
-
-        cursor = page.hasMore() ? page.nextCursor().orElse(null) : null;
-    } while (cursor != null && !cursor.isEmpty());
-}
-
-try (HttpResponse export = client.extractions().exportResults(
-    ExtractionExportResultsParams.builder()
-        .id(job.id())
-        .format(ExtractionExportResultsParams.Format.CSV)
-        .build()
-)) {
-    Files.copy(
-        export.body(),
-        Paths.get("xquik-followers.csv"),
-        StandardCopyOption.REPLACE_EXISTING
-    );
-}
-
-try (HttpResponse export = client.extractions().exportResults(
-    ExtractionExportResultsParams.builder()
-        .id(job.id())
-        .format(ExtractionExportResultsParams.Format.JSON)
-        .build()
-)) {
-    Files.copy(
-        export.body(),
-        Paths.get("xquik-followers.json"),
-        StandardCopyOption.REPLACE_EXISTING
-    );
-}
-
-try (HttpResponse export = client.extractions().exportResults(
-    ExtractionExportResultsParams.builder()
-        .id(job.id())
-        .format(ExtractionExportResultsParams.Format.XLSX)
-        .build()
-)) {
-    Files.copy(
-        export.body(),
-        Paths.get("xquik-followers.xlsx"),
-        StandardCopyOption.REPLACE_EXISTING
-    );
-}
-```
-
-Store `job.id()`, `targetUsername`, `estimate.estimatedResults()`, and `estimate.source()` before polling so retries can resume the extraction. `client.extractions().retrieve` returns `results()`, `hasMore()`, and `nextCursor()`. Pass `nextCursor()` back as `cursor` to page through large follower lists. Map exported `User ID` or row `xUserId` as the CRM unique key. Use `xquik-followers.jsonl` for queue replay or warehouse loads and `xquik-followers.json` for app ingestion. Use `xquik-followers.csv` for CRM import and `xquik-followers.xlsx` for analyst handoff. The cost is 1 credit per follower extracted or returned. Exports are free after the extraction job exists.
+<section>
 
 ## Tweet replies workflow to CSV, JSON, or XLSX
 
@@ -479,129 +188,9 @@ try (HttpResponse export = client.extractions().exportResults(
 
 Repeat the export with `ExtractionExportResultsParams.Format.JSON` to write `Paths.get("xquik-replies.json")` and `ExtractionExportResultsParams.Format.XLSX` to write `Paths.get("xquik-replies.xlsx")`. Use `xquik-replies.jsonl` for queue replay or warehouse loads and `xquik-replies.json` for app ingestion. Use `xquik-replies.csv` for CRM import and `xquik-replies.xlsx` for analyst handoff.
 
-## Workflow to post media tweets and DM attachments
+</section>
 
-Use this workflow to post a media tweet or reply. It can also DM an uploaded local file. `client.x().tweets().create` maps to `POST /x/tweets`. Pass public media URLs through `.addMedia()` or `.media()`. Send up to 4 image URLs or exactly 1 MP4 video URL. The video can be up to 100 MB. Do not mix video with other media. For replies, set `.replyToTweetId()` to the parent tweet ID. `client.x().media().upload` maps to `POST /x/media`. Use `media.mediaId()` only for the one-item DM `.addMediaId()` handoff.
-
-```java
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.x_twitter_scraper.api.client.XTwitterScraperClient;
-import com.x_twitter_scraper.api.client.okhttp.XTwitterScraperOkHttpClient;
-import com.x_twitter_scraper.api.core.http.HttpResponseFor;
-import com.x_twitter_scraper.api.models.x.dm.DmSendParams;
-import com.x_twitter_scraper.api.models.x.dm.DmSendResponse;
-import com.x_twitter_scraper.api.models.x.media.MediaUploadParams;
-import com.x_twitter_scraper.api.models.x.media.MediaUploadResponse;
-import com.x_twitter_scraper.api.models.x.tweets.TweetCreateParams;
-import com.x_twitter_scraper.api.models.x.tweets.TweetCreateResponse;
-import java.nio.file.Paths;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-
-XTwitterScraperClient client = XTwitterScraperOkHttpClient.fromEnv();
-ObjectMapper objectMapper = new ObjectMapper();
-
-static Map<String, Object> createTweetHandoff(
-    Map<String, Object> payload,
-    Map<String, Object> base
-) {
-    Map<String, Object> handoff = new LinkedHashMap<>();
-    Map<String, Object> billing = (Map<String, Object>) payload.get("billing");
-    Map<String, Object> request = (Map<String, Object>) payload.get("request");
-    Map<String, Object> result = (Map<String, Object>) payload.get("result");
-    boolean terminal = Boolean.TRUE.equals(payload.get("terminal"));
-
-    handoff.put("status", payload.get("status"));
-    handoff.put("terminal", terminal);
-    handoff.put("safe_to_retry", payload.get("safeToRetry"));
-    handoff.put("write_action_id", payload.get("id"));
-    handoff.put("request_hash", request.get("hash"));
-    handoff.put("tweet_id", result == null ? payload.get("tweetId") : result.get("id"));
-    handoff.put("charged", billing.get("charged"));
-    handoff.put("charged_credits", billing.get("chargedCredits"));
-    handoff.put("poll", terminal ? null : payload.get("statusUrl"));
-
-    handoff.putAll(base);
-    return handoff;
-}
-
-Map<String, Object> tweetPayload;
-try (HttpResponseFor<TweetCreateResponse> response = client.x().tweets().withRawResponse().create(
-    TweetCreateParams.builder()
-        .account("@username")
-        .text("Shipping the weekly X API video.")
-        .addMedia("https://static.example.com/reports/x-api-export.mp4")
-        .build()
-)) {
-    tweetPayload = objectMapper.readValue(
-        response.body(),
-        new TypeReference<Map<String, Object>>() {}
-    );
-}
-
-Map<String, Object> tweetBase = new LinkedHashMap<>();
-tweetBase.put("account", "@username");
-tweetBase.put("media", List.of("https://static.example.com/reports/x-api-export.mp4"));
-Map<String, Object> tweetHandoff = createTweetHandoff(tweetPayload, tweetBase);
-
-Map<String, Object> replyPayload;
-try (HttpResponseFor<TweetCreateResponse> response = client.x().tweets().withRawResponse().create(
-    TweetCreateParams.builder()
-        .account("@username")
-        .text("Here is the chart behind the update.")
-        .addMedia("https://static.example.com/reports/reply-chart.png")
-        .replyToTweetId("1893704267862470862")
-        .build()
-)) {
-    replyPayload = objectMapper.readValue(
-        response.body(),
-        new TypeReference<Map<String, Object>>() {}
-    );
-}
-
-Map<String, Object> replyBase = new LinkedHashMap<>();
-replyBase.put("account", "@username");
-replyBase.put("reply_to_tweet_id", "1893704267862470862");
-replyBase.put("media", List.of("https://static.example.com/reports/reply-chart.png"));
-Map<String, Object> replyHandoff = createTweetHandoff(replyPayload, replyBase);
-
-MediaUploadResponse media = client.x().media().upload(
-    MediaUploadParams.builder()
-        .account("@username")
-        .file(Paths.get("handoff.png"))
-        .build()
-);
-
-DmSendResponse dm = client.x().dm().send(
-    "44196397",
-    DmSendParams.builder()
-        .account("@username")
-        .text("Here is the requested asset.")
-        .addMediaId(media.mediaId())
-        .build()
-);
-
-Map<String, Object> dmHandoff = new LinkedHashMap<>();
-dmHandoff.put("status", "sent");
-dmHandoff.put("message_id", dm.messageId());
-dmHandoff.put("media_id", media.mediaId());
-dmHandoff.put("account", "@username");
-dmHandoff.put("user_id", "44196397");
-
-System.out.println(objectMapper.writeValueAsString(tweetHandoff));
-System.out.println(objectMapper.writeValueAsString(replyHandoff));
-System.out.println(objectMapper.writeValueAsString(dmHandoff));
-```
-
-Use `client.x().tweets().withRawResponse().create(...)` to capture the durable write action. Send a unique `Idempotency-Key`. Store `id`, `request.hash`, `billing`, `result`, and `statusUrl`. Poll while `terminal` is false. Retry only when `safeToRetry` is true, using a new key.
-
-Keep DM body text in private systems. Shared logs and handoffs should store `message_id`, optional `media_id`, `account`, `user_id`, and lifecycle status. Leave `replyToMessageId` unset because the REST endpoint rejects DM reply threading.
-
-`client.x().dm().deleteMessage` [deletes a DM](/api-reference/x-write/delete-dm).
-
-Use public media URLs with `client.x().tweets().create`. Do not pass uploaded `media.mediaId()` values to tweet creation.
+<section>
 
 ## Error handling
 
@@ -648,6 +237,10 @@ The Java SDK throws unchecked exceptions.
 
 Connection and I/O failures use `XTwitterScraperIoException`. All SDK exceptions inherit from `XTwitterScraperException`.
 
+</section>
+
+<section>
+
 ## Pagination
 
 Paginated responses expose generated fields such as `hasNextPage`. Use the endpoint cursor fields documented in the API reference when requesting more pages.
@@ -657,6 +250,10 @@ if (tweets.hasNextPage()) {
     System.err.println("More results are available");
 }
 ```
+
+</section>
+
+<section>
 
 ## Webhooks & references
 
@@ -670,3 +267,5 @@ if (tweets.hasNextPage()) {
 - [Verify HMAC Signatures](/webhooks/verification)
 - [REST API Overview](/api-reference/overview)
 - [Source Repository](https://github.com/Xquik-dev/x-twitter-scraper-java)
+
+</section>

@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import { docsSecurity } from "./product-contract.test.helpers.ts";
+import { hasDocumentedField } from "./scripts/lib/documented-fields.ts";
 
 const PROJECT_ROOT = dirname(fileURLToPath(import.meta.url));
 const page = readFileSync(join(PROJECT_ROOT, "api-reference/drafts/list.mdx"), "utf8");
@@ -21,10 +22,10 @@ describe("list tweet drafts documentation", (): void => {
 
     expect({
       canonicalDraftFields: ["id", "text", "topic", "goal", "createdAt", "updatedAt"].every(
-        (field) => page.includes(`<ResponseField name="drafts[].${field}"`),
+        (field) => hasDocumentedField(page, "response", `drafts[].${field}`),
       ),
       paginationFields: ["drafts", "hasMore", "nextCursor"].every((field) =>
-        page.includes(`<ResponseField name="${field}"`),
+        hasDocumentedField(page, "response", field),
       ),
       unsupportedFieldsDenied: normalizedPage.includes(
         "Each draft contains one saved text string. It contains no thread order, media attachment, reply target, or public tweet ID.",

@@ -39,6 +39,7 @@ function flattenNavigationPages(item: NavigationItem): readonly string[] {
 
   return [
     ...(item.anchors ?? []),
+    ...(item.dropdowns ?? []),
     ...(item.groups ?? []),
     ...(item.pages ?? []),
     ...(item.tabs ?? []),

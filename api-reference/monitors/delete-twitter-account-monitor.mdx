@@ -2,7 +2,7 @@
 title: "Delete Twitter account monitor & stop monitoring"
 sidebarTitle: "Delete account monitor"
 description: "Stop one Xquik account monitor and future checks. Xquik removes stored events in batches. Poll the status URL until it returns 404. The X account stays as is."
-api: "DELETE /monitors/{id}"
+endpoint: "DELETE /monitors/{id}"
 keywords:
   [
     "delete twitter account monitor",
@@ -15,84 +15,9 @@ keywords:
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
 
-{/* GENERATED RESPONSE EXAMPLES START */}
-
-<Panel>
-
-<Tabs defaultTabIndex={0} sync={false}>
-
-  <Tab title="202" id="response-monitors-delete-twitter-account-monitor-202">
-
-    ```json
-    {
-      "deletionStatus": "deleting",
-      "statusUrl": "/api/v1/monitors/42",
-      "success": true
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="400" id="response-monitors-delete-twitter-account-monitor-400">
-
-    ```json
-    {
-      "error": "invalid_input",
-      "message": "Invalid input. Check the request body."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="401" id="response-monitors-delete-twitter-account-monitor-401">
-
-    ```json
-    {
-      "error": "unauthenticated",
-      "message": "Authentication required. Provide a valid API key or bearer token."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="403" id="response-monitors-delete-twitter-account-monitor-403">
-
-    ```json
-    {
-      "error": "api_key_paused",
-      "message": "This API key is paused. Resume it at dashboard.xquik.com/api-keys to use it again."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="404" id="response-monitors-delete-twitter-account-monitor-404">
-
-    ```json
-    {
-      "error": "not_found",
-      "message": "Resource not found."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="429" id="response-monitors-delete-twitter-account-monitor-429">
-
-    ```json
-    {
-      "error": "rate_limit_exceeded",
-      "message": "Too many requests. Try again later.",
-      "retryAfter": 60
-    }
-    ```
-
-  </Tab>
-</Tabs>
-
-</Panel>
-{/* GENERATED RESPONSE EXAMPLES END */}
 <LlmsDirective />
+
+`DELETE https://xquik.com/api/v1/monitors/{id}`
 
 This endpoint stops one account monitor immediately. It then removes stored
 events and linked webhook deliveries in batches. The tracked X account
@@ -242,6 +167,8 @@ The examples store a deletion receipt. Poll `verify_endpoint` while it returns
 `200`. Deletion finishes when it returns `404`. Respect `Retry-After` between
 requests.
 
+<section>
+
 ## Before you delete an account monitor
 
 Delete only when the account monitor should never run again. Confirm the
@@ -253,35 +180,39 @@ final monitor identity in your own system.
 Use keyword monitor deletion only for a keyword monitor. Keep other account and
 keyword monitors when their checks must continue.
 
+</section>
+
+<section>
+
 ## Path parameters
 
-<ParamField path="id" type="string" required>
+| Path parameter | Type     | Required | Description            |
+| -------------- | -------- | -------- | ---------------------- |
+| `id`           | `string` | Yes      | The unique monitor ID. |
 
-The unique monitor ID.
+</section>
 
-</ParamField>
+<section>
 
 ## Headers
 
-<ParamField header="x-api-key" type="string" required>
+| Header      | Type     | Required | Description                                                                                                                                              |
+| ----------- | -------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `x-api-key` | `string` | Yes      | Your API key. Session cookie authentication is also supported. Generate a key from the [dashboard](https://dashboard.xquik.com/en/account?tab=api-keys). |
 
-Your API key. Session cookie authentication is also supported. Generate a key from the [dashboard](https://dashboard.xquik.com/en/account?tab=api-keys).
+</section>
 
-</ParamField>
+<section>
 
 ## Response
 
 ### 202 Accepted
 
-<ResponseField name="deletionStatus" type="string">
-  Returns `deleting` while cleanup runs.
-</ResponseField>
-<ResponseField name="statusUrl" type="string">
-  Poll this URL until it returns `404`.
-</ResponseField>
-<ResponseField name="success" type="boolean">
-  Always `true` when deletion starts.
-</ResponseField>
+| Field            | Type      | Description                            |
+| ---------------- | --------- | -------------------------------------- |
+| `deletionStatus` | `string`  | Returns `deleting` while cleanup runs. |
+| `statusUrl`      | `string`  | Poll this URL until it returns `404`.  |
+| `success`        | `boolean` | Always `true` when deletion starts.    |
 
 ```json
 {
@@ -296,39 +227,29 @@ after the stated interval.
 
 ### 400 Invalid ID
 
-```json
-{ "error": "invalid_id", "message": "Invalid ID format." }
-```
+`{ "error": "invalid_id", "message": "Invalid ID format." }`
 
 The provided monitor ID is not a valid format.
 
 ### 401 Unauthenticated
 
-```json
-{ "error": "unauthenticated", "message": "Missing or invalid API key" }
-```
+`{ "error": "unauthenticated", "message": "Missing or invalid API key" }`
 
 Missing or invalid API key.
 
 ### 404 Not found
 
-```json
-{ "error": "not_found", "message": "Monitor not found" }
-```
+`{ "error": "not_found", "message": "Monitor not found" }`
 
 No monitor exists with this ID, or it belongs to a different account.
 
 ### 429 Rate limited
 
-```json
-{
-  "error": "rate_limit_exceeded",
-  "message": "Too many requests. Try again later.",
-  "retryAfter": 60
-}
-```
-
 Too many requests. Follow the `Retry-After` interval before another request.
+
+</section>
+
+<section>
 
 ## Does this delete the X account or its tweets?
 
@@ -340,6 +261,10 @@ profile details.
 The tracked X account remains unchanged. Its public activity remains available
 through the applicable X API endpoints. Xquik removes only its saved monitor and
 related monitor records.
+
+</section>
+
+<section>
 
 ## Should I pause or delete account monitoring?
 
@@ -357,6 +282,10 @@ monitor and its stored history. A replacement monitor receives another ID.
 | Update filters | Only future tweet or profile coverage changes.      | Replaces `eventTypes`.         |
 | Delete         | The monitor and its history are no longer required. | Permanently removes both.      |
 
+</section>
+
+<section>
+
 ## What does monitor deletion remove?
 
 Deleting the monitor removes its settings and stored tweet events. It also
@@ -366,6 +295,10 @@ These records depend on the deleted monitor.
 Webhook endpoints remain configured. Existing endpoints can serve another
 monitor with matching event subscriptions. Other account monitors and keyword
 monitors remain active.
+
+</section>
+
+<section>
 
 ## How do I verify monitor deletion?
 
@@ -377,6 +310,10 @@ monitors remain active.
 
 A network timeout does not prove deletion. Confirm the monitor state
 before another deletion request. Wait for `Retry-After` after a `429` response.
+
+</section>
+
+<section>
 
 ## Deletion handoff
 
@@ -392,6 +329,10 @@ only need to pause alerts. That keeps the monitor available.
 | Stored events                  | `GET /events?monitorId={id}`             | Save required tweet and profile events first.   |
 | Delivery history               | `GET /webhooks/{id}/deliveries`          | Keep required delivery evidence first.          |
 | Temporary stop                 | `PATCH /monitors/{id}`                   | Use `isActive: false` instead of deletion.      |
+
+</section>
+
+<section>
 
 ## Plan retention before monitor deletion
 
@@ -409,6 +350,10 @@ Store these records in your approved system. Never place API keys in exports.
 Deletion does not create an archive. Xquik cannot return deleted monitor events
 through the events endpoints later. Finish retention checks before approval.
 
+</section>
+
+<section>
+
 ## Select the exact Twitter account monitor
 
 Never select a monitor from a display label alone. Read the account monitor and
@@ -424,6 +369,10 @@ query. Never send a keyword monitor ID to this account monitor endpoint.
 
 The route deletes by Xquik monitor ID. It does not delete by X username. One
 account name then cannot select several monitor records.
+
+</section>
+
+<section>
 
 ## Keep tweet and profile events
 
@@ -446,6 +395,10 @@ reconcile rows after the monitor record disappears.
 Validate the export before deletion. Compare exported IDs with the final list
 response. Retry incomplete pages before approving monitor removal.
 
+</section>
+
+<section>
+
 ## Keep webhook delivery evidence
 
 List configured endpoints through [List Webhooks](/api-reference/webhooks/list).
@@ -463,6 +416,10 @@ and retries still waiting.
 Deleting the monitor removes linked delivery attempts. It does not remove the
 webhook endpoint. Reuse that endpoint when another monitor emits matching event
 types. Test the endpoint before depending on new alerts.
+
+</section>
+
+<section>
 
 ## Handle every delete response
 
@@ -482,6 +439,10 @@ proceeding.
 A `429` response means the rate limit blocked the request. Read
 `Retry-After`, wait for that interval, and check the monitor again.
 
+</section>
+
+<section>
+
 ## Resolve an unknown delete result
 
 A client timeout does not prove failure. The server may have completed the
@@ -496,6 +457,10 @@ the monitor still exists.
 
 Repeated deletion leaves the final state unchanged. The first accepted request
 returns `202`. Later requests return `404` after cleanup finishes.
+
+</section>
+
+<section>
 
 ## Recreate monitoring after deletion
 
@@ -514,6 +479,10 @@ Update dependent jobs with the new monitor ID. Replace stored event filters,
 verification links, and support references. The deleted ID will continue
 returning `404`.
 
+</section>
+
+<section>
+
 ## Account monitor deletion checklist
 
 1. Confirm the monitor ID, X username, and X user ID.
@@ -529,6 +498,10 @@ returning `404`.
 Pause with `isActive: false` when monitoring may resume. Delete only after the
 retention, approval, and verification steps finish.
 
+</section>
+
+<section>
+
 ## Related account monitor operations
 
 Use [List Monitors](/api-reference/monitors/list) to find and verify account
@@ -541,3 +514,21 @@ and [List Deliveries](/api-reference/webhooks/deliveries) for delivery evidence.
 
 Use [Create Monitor](/api-reference/monitors/create) when a replacement account
 monitor is required. Store the new ID before restoring dependent workflows.
+
+</section>
+
+{/* GENERATED RESPONSE EXAMPLES START */}
+
+<section>
+
+## Response examples
+
+- **400** `{ "error": "invalid_input", "message": "Invalid input. Check the request body." }`
+- **401** `{ "error": "unauthenticated", "message": "Authentication required. Provide a valid API key or bearer token." }`
+- **403** `{ "error": "api_key_paused", "message": "This API key is paused. Resume it at dashboard.xquik.com/api-keys to use it again." }`
+- **404** `{ "error": "not_found", "message": "Resource not found." }`
+- **429** `{ "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 60 }`
+
+</section>
+
+{/* GENERATED RESPONSE EXAMPLES END */}

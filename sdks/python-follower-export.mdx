@@ -1,0 +1,98 @@
+---
+title: "Twitter API Python follower export to CSV & XLSX"
+sidebarTitle: "Follower export"
+description: "Export X (Twitter) followers with the Xquik Python SDK. Estimate the job, run the extraction, and save CSV, JSON, or XLSX files for your team and your CRM."
+keywords: ["Python SDK", "Python follower export", "follower export", "CSV export", "XLSX export"]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+<LlmsDirective />
+
+This guide builds on the [Python SDK setup](/sdks/python), which covers install and authentication.
+
+<section>
+
+## Follower export workflow to CSV, JSON, or XLSX
+
+Use this workflow when Python code needs an owned follower list. It fits a script, notebook, worker, or agent tool. Use the list for a CRM import, warehouse load, or analyst CSV file. You can also deliver it as an XLSX workbook or resumable JSON handoff. The workflow calls `POST /extractions/estimate` through `client.extractions.estimate_cost`. It creates the job with `client.extractions.run`. It reads saved rows with `client.extractions.retrieve`. It downloads files with `client.extractions.export_results`.
+
+<Info>
+
+`client.extractions.run` returns the queued `202 Accepted` receipt from `POST /extractions`. Python exposes REST `id`, `toolType`, and `status: "running"` as `job.id`, `job.tool_type`, and `job.status`. Store `job.id` immediately, then poll `client.extractions.retrieve` before reading pages or calling `client.extractions.export_results`. Credit reservation happens after the job starts. If available credits changed since `estimate_cost`, the run has 2 outcomes. It can fetch only the affordable count before export. Or it can mark the job `failed` with `insufficient_credits`.
+
+</Info>
+
+```python
+import json
+import time
+from pathlib import Path
+
+from x_twitter_scraper import XTwitterScraper
+
+client = XTwitterScraper()
+target_username = "username"
+
+estimate = client.extractions.estimate_cost(
+    tool_type="follower_explorer",
+    target_username=target_username,
+)
+
+if not estimate.allowed:
+    raise RuntimeError("Insufficient credits for follower export.")
+
+job = client.extractions.run(
+    tool_type="follower_explorer",
+    target_username=target_username,
+)
+
+while True:
+    status_page = client.extractions.retrieve(job.id, limit=1)
+    status = status_page.job.get("status")
+
+    if status == "completed":
+        break
+
+    if status == "failed":
+        raise RuntimeError("Follower export failed.")
+
+    time.sleep(10)
+
+cursor = None
+
+with Path("xquik-followers.jsonl").open("w", encoding="utf-8") as jsonl_file:
+    while True:
+        page = client.extractions.retrieve(job.id, limit=1000, cursor=cursor)
+
+        for row in page.results:
+            jsonl_file.write(json.dumps(row, ensure_ascii=False) + "\n")
+
+        if not page.has_more or not page.next_cursor:
+            break
+
+        cursor = page.next_cursor
+
+client.extractions.export_results(job.id, format="csv").write_to_file(
+    Path("xquik-followers.csv"),
+)
+client.extractions.export_results(job.id, format="json").write_to_file(
+    Path("xquik-followers.json"),
+)
+client.extractions.export_results(job.id, format="xlsx").write_to_file(
+    Path("xquik-followers.xlsx"),
+)
+```
+
+`follower_explorer` requires `target_username`. Store `job.id`, `target_username`, `estimate.estimated_results`, and `estimate.source` before polling. With them, a notebook restart, queue retry, or worker restart can resume that export. `client.extractions.retrieve` returns `results`, `has_more`, and `next_cursor`. Pass `next_cursor` back as `cursor` when you need stored JSON pages before exporting files. Use `xquik-followers.jsonl` for queue replay or warehouse loads, and `xquik-followers.json` for app ingestion. Use `xquik-followers.csv` for CRM import and `xquik-followers.xlsx` for analyst handoff. Map exported `User ID` or row `xUserId` as the CRM unique key. The cost is 1 credit per follower extracted or returned. Exports cost no credits after the extraction job exists.
+
+</section>
+
+<section>
+
+## Next steps
+
+- [Python SDK setup](/sdks/python)
+- [Tweet search](/sdks/python-tweet-search)
+- [Media tweets](/sdks/python-media-tweets)
+
+</section>

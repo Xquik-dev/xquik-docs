@@ -2,7 +2,7 @@
 title: "Create a tweet draft for review with the Xquik API"
 sidebarTitle: "Create draft"
 description: "Save one Xquik tweet draft with text, optional topic and goal, 25,000-character validation, API authentication, and clear 400, 401 or 429 recovery steps."
-api: "POST /drafts"
+endpoint: "POST /drafts"
 keywords:
   [
     "tweet draft",
@@ -15,76 +15,11 @@ keywords:
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
 
-{/* GENERATED RESPONSE EXAMPLES START */}
-
-<Panel>
-
-<Tabs defaultTabIndex={0} sync={false}>
-
-  <Tab title="201" id="response-drafts-create-201">
-
-    ```json
-    {
-      "id": "42",
-      "text": "AI is the future of productivity",
-      "topic": "AI trends",
-      "goal": "engagement",
-      "createdAt": "2025-01-15T12:00:00Z",
-      "updatedAt": "2025-01-16T09:30:00Z"
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="400" id="response-drafts-create-400">
-
-    ```json
-    {
-      "error": "invalid_input",
-      "message": "Invalid input. Check the request body."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="401" id="response-drafts-create-401">
-
-    ```json
-    {
-      "error": "unauthenticated",
-      "message": "Authentication required. Provide a valid API key or bearer token."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="403" id="response-drafts-create-403">
-
-    ```json
-    {
-      "error": "api_key_paused",
-      "message": "This API key is paused. Resume it at dashboard.xquik.com/api-keys to use it again."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="429" id="response-drafts-create-429">
-
-    ```json
-    {
-      "error": "rate_limit_exceeded",
-      "message": "Too many requests. Try again later.",
-      "retryAfter": 60
-    }
-    ```
-
-  </Tab>
-</Tabs>
-
-</Panel>
-{/* GENERATED RESPONSE EXAMPLES END */}
 <LlmsDirective />
+
+`POST https://xquik.com/api/v1/drafts`
+
+<section>
 
 ## Save a tweet draft before publishing
 
@@ -207,6 +142,10 @@ func main() {
 
 </CodeGroup>
 
+</section>
+
+<section>
+
 ## Choose the tweet draft fields
 
 Send a JSON object with 1 required field and 2 optional fields.
@@ -232,6 +171,10 @@ text returns `400 invalid_input`. Xquik never silently truncates draft text.
 The 25,000-character storage limit is not a publishing guarantee. Confirm the
 connected account's X posting rules before a separate write request.
 
+</section>
+
+<section>
+
 ## Read the created draft
 
 A successful request returns `201 Created` and one draft object.
@@ -250,6 +193,10 @@ expect those keys to contain `null`.
 
 The response contains no thread order, media attachment, reply target, or
 schedule. It also contains no publishing status or public tweet ID.
+
+</section>
+
+<section>
 
 ## Build a tweet draft review workflow
 
@@ -275,6 +222,10 @@ again. After a lost response, list and reconcile drafts before retrying.
 Use [List Drafts](/api-reference/drafts/list) to reconcile duplicate records.
 Use [Get Draft](/api-reference/drafts/get) before publishing or deleting one.
 
+</section>
+
+<section>
+
 ## Keep Xquik and native X drafts separate
 
 Native X drafts appear under Unsent posts in the X compose interface. Native
@@ -296,6 +247,10 @@ does not mirror native draft features or publish automatically.
 Keep thread items, media IDs, reply targets, and scheduling instructions in
 your publishing workflow. Do not assume the draft response contains them.
 
+</section>
+
+<section>
+
 ## Recover from draft creation errors
 
 | Status | Error                 | Cause                                              | Fix                                      |
@@ -310,6 +265,10 @@ replacing the credential.
 
 After `429`, keep the submitted text. Retry only after the server's delay.
 Reconcile the list when the original request may have succeeded.
+
+</section>
+
+<section>
 
 ## Tweet draft creation questions
 
@@ -346,72 +305,47 @@ record when safe.
 
 No. This authenticated draft creation request is free.
 
+</section>
+
+<section>
+
 ## Headers
 
-<ParamField header="x-api-key" type="string">
+| Header          | Type     | Required | Description                                                                                                 |
+| --------------- | -------- | -------- | ----------------------------------------------------------------------------------------------------------- |
+| `x-api-key`     | `string` | No       | Your Xquik API key. Generate one from the [dashboard](https://dashboard.xquik.com/en/account?tab=api-keys). |
+| `Authorization` | `string` | No       | An OAuth bearer token formatted as `Bearer YOUR_TOKEN`. Send this header or `x-api-key`, not both.          |
+| `Content-Type`  | `string` | Yes      | Must be `application/json`.                                                                                 |
 
-Your Xquik API key. Generate one from the [dashboard](https://dashboard.xquik.com/en/account?tab=api-keys).
+</section>
 
-</ParamField>
-
-<ParamField header="Authorization" type="string">
-
-An OAuth bearer token formatted as `Bearer YOUR_TOKEN`. Send this header or `x-api-key`, not both.
-
-</ParamField>
-
-<ParamField header="Content-Type" type="string" required>
-
-Must be `application/json`.
-
-</ParamField>
+<section>
 
 ## Body
 
-<ParamField body="text" type="string" required>
+| Body parameter | Type     | Required | Description                                                                                                                    |
+| -------------- | -------- | -------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `text`         | `string` | Yes      | Exact draft text. Send 1 to 25,000 characters. Oversized text returns `400`.                                                   |
+| `topic`        | `string` | No       | Optional composition topic. The API silently truncates values longer than 500 characters.                                      |
+| `goal`         | `string` | No       | Optional. Use `engagement`, `followers`, `authority`, or `conversation`. Any other value returns `400` that names the 4 goals. |
 
-Exact draft text. Send 1 to 25,000 characters. Oversized text returns `400`.
+</section>
 
-</ParamField>
-
-<ParamField body="topic" type="string">
-
-Optional composition topic. The API silently truncates values longer than 500 characters.
-
-</ParamField>
-
-<ParamField body="goal" type="string">
-
-Optional. Use `engagement`, `followers`, `authority`, or `conversation`. Any other value returns `400` that names the 4 goals.
-
-</ParamField>
+<section>
 
 ## Response
 
 ### 201 Created
 
-<ResponseField name="id" type="string">
-  Unique Xquik draft ID.
-</ResponseField>
-<ResponseField name="text" type="string">
-  Exact accepted tweet text.
-</ResponseField>
-<ResponseField name="topic" type="string">
-  Optional accepted topic. Omitted when unset.
-</ResponseField>
-<ResponseField name="goal" type="string">
-  Optional accepted goal. Omitted when unset.
-</ResponseField>
-<ResponseField name="createdAt" type="string">
-  ISO 8601 creation timestamp.
-</ResponseField>
-<ResponseField name="updatedAt" type="string">
-  ISO 8601 update timestamp.
-</ResponseField>
-<ResponseField name="ignoredFields" type="string[]">
-  Fields the request sent that this route does not read, in the order sent. They changed nothing.
-  Omitted when the route read every field.
-</ResponseField>
+| Field           | Type       | Description                                                                                                                              |
+| --------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`            | `string`   | Unique Xquik draft ID.                                                                                                                   |
+| `text`          | `string`   | Exact accepted tweet text.                                                                                                               |
+| `topic`         | `string`   | Optional accepted topic. Omitted when unset.                                                                                             |
+| `goal`          | `string`   | Optional accepted goal. Omitted when unset.                                                                                              |
+| `createdAt`     | `string`   | ISO 8601 creation timestamp.                                                                                                             |
+| `updatedAt`     | `string`   | ISO 8601 update timestamp.                                                                                                               |
+| `ignoredFields` | `string[]` | Fields the request sent that this route does not read, in the order sent. They changed nothing. Omitted when the route read every field. |
 
 ```json
 {
@@ -426,41 +360,17 @@ Optional. Use `engagement`, `followers`, `authority`, or `conversation`. Any oth
 
 ### 400 Invalid input
 
-```json
-{ "error": "invalid_input", "message": "Invalid input. Check the request body." }
-```
-
 The `text` field is missing, empty, non-string, or longer than 25,000 characters.
 
-```json
-{
-  "error": "invalid_input",
-  "message": "Set goal to engagement, followers, authority, or conversation."
-}
-```
+`{ "error": "invalid_input", "message": "Set goal to engagement, followers, authority, or conversation." }`
 
 The `goal` field holds a value outside the 4 goals.
 
 ### 401 Unauthenticated
 
-```json
-{
-  "error": "unauthenticated",
-  "message": "Authentication required. Provide a valid API key or bearer token."
-}
-```
-
 Authentication is missing or invalid. Replace the credential before retrying.
 
 ### 429 Rate limited
-
-```json
-{
-  "error": "rate_limit_exceeded",
-  "message": "Too many requests. Try again later.",
-  "retryAfter": 60
-}
-```
 
 Too many requests reached the route. Wait for `Retry-After` before retrying.
 
@@ -473,3 +383,20 @@ Too many requests reached the route. Wait for `Retry-After` before retrying.
 - [Delete Draft](/api-reference/drafts/delete) to remove it.
 
 </Note>
+
+</section>
+
+{/* GENERATED RESPONSE EXAMPLES START */}
+
+<section>
+
+## Response examples
+
+- **400** `{ "error": "invalid_input", "message": "Invalid input. Check the request body." }`
+- **401** `{ "error": "unauthenticated", "message": "Authentication required. Provide a valid API key or bearer token." }`
+- **403** `{ "error": "api_key_paused", "message": "This API key is paused. Resume it at dashboard.xquik.com/api-keys to use it again." }`
+- **429** `{ "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 60 }`
+
+</section>
+
+{/* GENERATED RESPONSE EXAMPLES END */}

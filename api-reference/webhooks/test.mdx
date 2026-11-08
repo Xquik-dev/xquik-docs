@@ -2,89 +2,15 @@
 title: "Twitter webhook test & signed delivery check"
 sidebarTitle: "Test webhook"
 description: "Send a signed test event to a webhook URL. Verify HTTPS reachability, response status, and signature handling. The test changes no webhook state and is free."
-api: "POST /webhooks/{id}/test"
+endpoint: "POST /webhooks/{id}/test"
 keywords: ["webhook", "test", "verify", "endpoint", "health check"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
 
-{/* GENERATED RESPONSE EXAMPLES START */}
-
-<Panel>
-
-<Tabs defaultTabIndex={0} sync={false}>
-
-  <Tab title="200" id="response-webhooks-test-200">
-
-    ```json
-    {
-      "success": true,
-      "statusCode": 200
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="400" id="response-webhooks-test-400">
-
-    ```json
-    {
-      "error": "invalid_input",
-      "message": "Invalid input. Check the request body."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="401" id="response-webhooks-test-401">
-
-    ```json
-    {
-      "error": "unauthenticated",
-      "message": "Authentication required. Provide a valid API key or bearer token."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="403" id="response-webhooks-test-403">
-
-    ```json
-    {
-      "error": "api_key_paused",
-      "message": "This API key is paused. Resume it at dashboard.xquik.com/api-keys to use it again."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="404" id="response-webhooks-test-404">
-
-    ```json
-    {
-      "error": "not_found",
-      "message": "Resource not found."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="429" id="response-webhooks-test-429">
-
-    ```json
-    {
-      "error": "rate_limit_exceeded",
-      "message": "Too many requests. Try again later.",
-      "retryAfter": 60
-    }
-    ```
-
-  </Tab>
-</Tabs>
-
-</Panel>
-{/* GENERATED RESPONSE EXAMPLES END */}
 <LlmsDirective />
+
+`POST https://xquik.com/api/v1/webhooks/{id}/test`
 
 <Callout icon="circle-check" color="#16a34a">
 
@@ -188,21 +114,27 @@ These snippets build a small deployment-check record. Store `accepted`,
 `status_code`, and `error` with the webhook ID. Do not print the full
 test response.
 
+<section>
+
 ## Path parameters
 
-<ParamField path="id" type="string" required>
+| Path parameter | Type     | Required | Description             |
+| -------------- | -------- | -------- | ----------------------- |
+| `id`           | `string` | Yes      | The webhook ID to test. |
 
-The webhook ID to test.
+</section>
 
-</ParamField>
+<section>
 
 ## Headers
 
-<ParamField header="x-api-key" type="string" required>
+| Header      | Type     | Required | Description                                                             |
+| ----------- | -------- | -------- | ----------------------------------------------------------------------- |
+| `x-api-key` | `string` | Yes      | Your API key. This endpoint also accepts session cookie authentication. |
 
-Your API key. This endpoint also accepts session cookie authentication.
+</section>
 
-</ParamField>
+<section>
 
 ## What happens
 
@@ -240,20 +172,18 @@ headers out of deployment logs.
 not include `deliveryId` or `streamEventId`. Use them for reachability and
 signature checks. They cannot test receiver idempotency.
 
+</section>
+
+<section>
+
 ## Response
 
 ### 200 OK (success)
 
-<ResponseField name="success" type="boolean">
-
-`true` when your endpoint responded with a 2xx status code.
-
-</ResponseField>
-<ResponseField name="statusCode" type="number">
-
-The HTTP status code returned by your endpoint.
-
-</ResponseField>
+| Field        | Type      | Description                                                 |
+| ------------ | --------- | ----------------------------------------------------------- |
+| `success`    | `boolean` | `true` when your endpoint responded with a 2xx status code. |
+| `statusCode` | `number`  | The HTTP status code returned by your endpoint.             |
 
 ```json
 {
@@ -264,21 +194,11 @@ The HTTP status code returned by your endpoint.
 
 ### 200 OK (delivery failed)
 
-<ResponseField name="success" type="boolean">
-
-`false` when your endpoint returned a non-2xx status or was unreachable.
-
-</ResponseField>
-<ResponseField name="statusCode" type="number">
-
-The HTTP status code returned by your endpoint, or `0` if unreachable.
-
-</ResponseField>
-<ResponseField name="error" type="string">
-
-Error description (for example `"HTTP 500"` or a network error message).
-
-</ResponseField>
+| Field        | Type      | Description                                                              |
+| ------------ | --------- | ------------------------------------------------------------------------ |
+| `success`    | `boolean` | `false` when your endpoint returned a non-2xx status or was unreachable. |
+| `statusCode` | `number`  | The HTTP status code returned by your endpoint, or `0` if unreachable.   |
+| `error`      | `string`  | Error description (for example `"HTTP 500"` or a network error message). |
 
 ```json
 {
@@ -290,39 +210,29 @@ Error description (for example `"HTTP 500"` or a network error message).
 
 ### 400 Invalid request
 
-```json
-{ "error": "invalid_id", "message": "Invalid webhook ID format" }
-```
+`{ "error": "invalid_id", "message": "Invalid webhook ID format" }`
 
 The provided webhook ID is not a valid format.
 
 ### 401 Unauthenticated
 
-```json
-{ "error": "unauthenticated", "message": "Missing or invalid API key" }
-```
+`{ "error": "unauthenticated", "message": "Missing or invalid API key" }`
 
 Missing or invalid API key or session cookie.
 
 ### 404 Not found
 
-```json
-{ "error": "not_found", "message": "Webhook not found" }
-```
+`{ "error": "not_found", "message": "Webhook not found" }`
 
 No webhook exists with this ID, or it belongs to a different account.
 
 ### 429 Rate limited
 
-```json
-{
-  "error": "rate_limit_exceeded",
-  "message": "Too many requests. Try again later.",
-  "retryAfter": 60
-}
-```
-
 Too many requests. Wait for the `Retry-After` header before retrying.
+
+</section>
+
+<section>
 
 ## Test result handoff
 
@@ -409,3 +319,21 @@ This endpoint accepts 2 auth methods. Send an API key in the `x-api-key` header.
 **Related.** [List Webhooks](/api-reference/webhooks/list) &middot; [Resume Webhook](/api-reference/webhooks/resume) &middot; [List Deliveries](/api-reference/webhooks/deliveries) &middot; [Get Event](/api-reference/events/get) &middot; [Webhook Verification](/webhooks/verification)
 
 </Note>
+
+</section>
+
+{/* GENERATED RESPONSE EXAMPLES START */}
+
+<section>
+
+## Response examples
+
+- **400** `{ "error": "invalid_input", "message": "Invalid input. Check the request body." }`
+- **401** `{ "error": "unauthenticated", "message": "Authentication required. Provide a valid API key or bearer token." }`
+- **403** `{ "error": "api_key_paused", "message": "This API key is paused. Resume it at dashboard.xquik.com/api-keys to use it again." }`
+- **404** `{ "error": "not_found", "message": "Resource not found." }`
+- **429** `{ "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 60 }`
+
+</section>
+
+{/* GENERATED RESPONSE EXAMPLES END */}

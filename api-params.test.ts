@@ -2,6 +2,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
 
 import { describe, expect, it } from "vitest";
+import { documentedFields } from "./scripts/lib/documented-fields.ts";
 import {
   operationAt,
   parseOpenApi,
@@ -13,7 +14,7 @@ import {
 
 const PROJECT_ROOT = process.cwd();
 const API_REFERENCE_DIR = join(PROJECT_ROOT, "api-reference");
-const FRONTMATTER_API_PATTERN = /^api:\s*"([A-Z]+) ([^"]+)"/mu;
+const FRONTMATTER_API_PATTERN = /^endpoint:\s*"([A-Z]+) ([^"]+)"/mu;
 const MDX_IMPORT_PATTERN = /^import\s+\w+\s+from\s+"(\/[^"\n]+\.mdx)";$/gmu;
 
 interface ApiDoc {
@@ -62,6 +63,21 @@ function listApiReferenceFiles(dir: string): readonly string[] {
   return files.sort();
 }
 
+const SHARED_PARAMETER_PAGES = [
+  "api-reference/extractions/parameters",
+  "api-reference/x/tweet-analysis-parameters",
+  "api-reference/x/tweet-filters",
+  "api-reference/x/user-filters",
+] as const;
+
+function withLinkedParameters(source: string): string {
+  const linked = SHARED_PARAMETER_PAGES.filter((page): boolean => source.includes(`](/${page}`));
+  return [
+    source,
+    ...linked.map((page): string => readFileSync(join(PROJECT_ROOT, `${page}.mdx`), "utf8")),
+  ].join("\n");
+}
+
 function readApiDocs(): readonly ApiDoc[] {
   return listApiReferenceFiles(API_REFERENCE_DIR).flatMap((file) => {
     const source = readFileSync(join(PROJECT_ROOT, file), "utf8");
@@ -74,7 +90,7 @@ function readApiDocs(): readonly ApiDoc[] {
         file,
         method: match[1].toLowerCase(),
         path: match[2],
-        source: expandMdxImports(source),
+        source: withLinkedParameters(expandMdxImports(source)),
       },
     ];
   });
@@ -93,15 +109,13 @@ function expandMdxImports(source: string, importedFiles = new Set<string>()): st
   return [source, ...imports].join("\n");
 }
 
-function documentedFields(
+function documentedOperationFields(
   source: string,
   kind: "body" | "path" | "query",
 ): readonly DocumentedField[] {
-  const pattern = new RegExp(`<ParamField\\s+${kind}="([^"]+)"([^>]*)>`, "gu");
-  return [...source.matchAll(pattern)].map((match): DocumentedField => ({
-    name: match[1] ?? "",
-    required: /\srequired(?:\s|>|$)/u.test(match[2] ?? ""),
-  }));
+  return documentedFields(source)
+    .filter((field): boolean => field.kind === kind && !/[.[]/u.test(field.name))
+    .map(({ name, required }): DocumentedField => ({ name, required }));
 }
 
 function operationKey(apiDoc: ApiDoc): string {
@@ -214,7 +228,7 @@ function collectFieldFindings(spec: OpenApiDocument): readonly FieldFinding[] {
 
     const bodyFields = requestBodyFields(spec, operation);
     for (const kind of ["path", "query", "body"] as const) {
-      const docs = documentedFields(apiDoc.source, kind);
+      const docs = documentedOperationFields(apiDoc.source, kind);
       const fields: readonly DocumentedField[] =
         kind === "body"
           ? bodyFields.properties.map((name): DocumentedField => ({
@@ -300,7 +314,7 @@ function collectDocumentedRequestBodyFieldFindings(
       });
     }
 
-    const docsFields = documentedFields(apiDoc.source, "body");
+    const docsFields = documentedOperationFields(apiDoc.source, "body");
     if (!docsFields.some((field): boolean => field.name === expected.field)) {
       findings.push({
         field: expected.field,

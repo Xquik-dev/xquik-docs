@@ -2,135 +2,15 @@
 title: "Create guest wallet for pay-per-request X API"
 sidebarTitle: "Create guest wallet"
 description: "Create a USD 10-250 hosted checkout and accountless API key for tweet, profile, follower, reply, timeline, community, and list reads. The call charges nothing."
-api: "POST /guest-wallets"
+endpoint: "POST /guest-wallets"
 keywords: ["guest wallet", "accountless", "hosted checkout", "paid_reads", "API key"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
 
-{/* GENERATED RESPONSE EXAMPLES START */}
-
-<Panel>
-
-<Tabs defaultTabIndex={0} sync={false}>
-
-  <Tab title="201" id="response-guest-wallets-create-201">
-
-    ```json
-    {
-      "account_required": false,
-      "amount": {
-        "amount_minor": 1000,
-        "currency": "usd"
-      },
-      "api_key": "xq_example_returned_once",
-      "authorization": {
-        "header": "Authorization",
-        "scheme": "Bearer"
-      },
-      "checkout_url": "https://checkout.example/guest/example",
-      "credential_notice": "Store api_key and the Idempotency-Key securely before sharing checkout_url. No email recovery is available.",
-      "credits": "66666",
-      "expires_at": "2026-07-13T13:00:00.000Z",
-      "instructions": "Give checkout_url to the user. They must complete payment on the hosted checkout page. Never submit payment for them. After payment, poll status_url every poll_after_seconds until latest_purchase.status is no longer pending.",
-      "poll_after_seconds": 2
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="400" id="response-guest-wallets-create-400">
-
-    ```json
-    {
-      "error": "invalid_input",
-      "message": "Invalid input. Check the request body."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="409" id="response-guest-wallets-create-409">
-
-    ```json
-    {
-      "error": "idempotency_conflict",
-      "message": "Reuse this Idempotency-Key only with the original request."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="410" id="response-guest-wallets-create-410">
-
-    ```json
-    {
-      "error": "checkout_unavailable",
-      "message": "Checkout unavailable. Retry with a new Idempotency-Key."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="413" id="response-guest-wallets-create-413">
-
-    ```json
-    {
-      "error": "body_too_large",
-      "message": "Request body is too large."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="415" id="response-guest-wallets-create-415">
-
-    ```json
-    {
-      "error": "unsupported_media_type",
-      "message": "Send a Content-Type header of application/json."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="423" id="response-guest-wallets-create-423">
-
-    ```json
-    {
-      "error": "guest_wallet_unavailable",
-      "message": "Guest wallet unavailable. Create a new wallet or contact support."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="429" id="response-guest-wallets-create-429">
-
-    ```json
-    {
-      "error": "rate_limited",
-      "message": "Try again later."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="503" id="response-guest-wallets-create-503">
-
-    ```json
-    {
-      "error": "guest_wallets_unavailable",
-      "message": "Guest wallet checkout is temporarily unavailable."
-    }
-    ```
-
-  </Tab>
-</Tabs>
-
-</Panel>
-{/* GENERATED RESPONSE EXAMPLES END */}
 <LlmsDirective />
+
+`POST https://xquik.com/api/v1/guest-wallets`
 
 Create a prepaid read wallet without an account, email address, or dashboard. This endpoint creates a one-use hosted checkout after the user confirms a USD amount. It does not charge the user.
 
@@ -179,81 +59,49 @@ Store both `api_key` and the original `Idempotency-Key` as secrets. An exact rep
 
 Give only `checkout_url` to the user. After payment, poll `status_url` every `poll_after_seconds` with the guest key. Stop when `latest_purchase.status` is no longer `pending`. Do not call paid reads until `usable` is `true`.
 
+<section>
+
 ## Headers
 
-<ParamField header="Content-Type" type="string" required>
+| Header            | Type     | Required | Description                                                                                                                                           |
+| ----------------- | -------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Content-Type`    | `string` | Yes      | Must be `application/json`.                                                                                                                           |
+| `Idempotency-Key` | `string` | Yes      | A cryptographically random UUID v4. Reuse it only for an exact retry of the same amount. Store it as a secret because it can recover the initial key. |
 
-Must be `application/json`.
+</section>
 
-</ParamField>
-
-<ParamField header="Idempotency-Key" type="string" required>
-
-A cryptographically random UUID v4. Reuse it only for an exact retry of the same amount. Store it as a secret because it can recover the initial key.
-
-</ParamField>
+<section>
 
 ## Body
 
-<ParamField body="amount_minor" type="integer" required>
+| Body parameter | Type      | Required | Description                                                        |
+| -------------- | --------- | -------- | ------------------------------------------------------------------ |
+| `amount_minor` | `integer` | Yes      | Confirmed USD amount in cents. Minimum `1000` and maximum `25000`. |
+| `currency`     | `string`  | Yes      | Must be `usd`.                                                     |
 
-Confirmed USD amount in cents. Minimum `1000` and maximum `25000`.
+</section>
 
-</ParamField>
-
-<ParamField body="currency" type="string" required>
-
-Must be `usd`.
-
-</ParamField>
+<section>
 
 ## Response
 
-<ResponseField name="account_required" type="boolean">
-  Always `false`.
-</ResponseField>
-<ResponseField name="amount" type="object">
-  Confirmed amount in minor units and `usd` currency.
-</ResponseField>
-<ResponseField name="checkout_url" type="string">
-  One-use hosted checkout URL for the user to open.
-</ResponseField>
-<ResponseField name="api_key" type="string">
-  Guest key returned on initial creation and exact idempotent replay. Store it as a secret.
-</ResponseField>
-<ResponseField name="authorization" type="object">
-  Required Bearer header and scheme.
-</ResponseField>
-<ResponseField name="credential_notice" type="string">
-  One-time credential storage guidance.
-</ResponseField>
-<ResponseField name="status_url" type="string">
-  API URL to poll with the guest key.
-</ResponseField>
-<ResponseField name="poll_after_seconds" type="integer">
-  Minimum polling delay. Always `2` for a pending purchase.
-</ResponseField>
-<ResponseField name="requires_user_interaction" type="boolean">
-  Always `true`.
-</ResponseField>
-<ResponseField name="instructions" type="string">
-  Required user interaction and polling guidance.
-</ResponseField>
-<ResponseField name="purchase_id" type="string">
-  Guest purchase ID.
-</ResponseField>
-<ResponseField name="status" type="string">
-  Initial purchase status. Normally `pending`.
-</ResponseField>
-<ResponseField name="expires_at" type="string">
-  Pending checkout expiry. New checkouts expire after 60 minutes.
-</ResponseField>
-<ResponseField name="credits" type="string">
-  Credits to grant after verified payment.
-</ResponseField>
-<ResponseField name="wallet_id" type="string">
-  Guest wallet ID.
-</ResponseField>
+| Field                       | Type      | Description                                                                               |
+| --------------------------- | --------- | ----------------------------------------------------------------------------------------- |
+| `account_required`          | `boolean` | Always `false`.                                                                           |
+| `amount`                    | `object`  | Confirmed amount in minor units and `usd` currency.                                       |
+| `checkout_url`              | `string`  | One-use hosted checkout URL for the user to open.                                         |
+| `api_key`                   | `string`  | Guest key returned on initial creation and exact idempotent replay. Store it as a secret. |
+| `authorization`             | `object`  | Required Bearer header and scheme.                                                        |
+| `credential_notice`         | `string`  | One-time credential storage guidance.                                                     |
+| `status_url`                | `string`  | API URL to poll with the guest key.                                                       |
+| `poll_after_seconds`        | `integer` | Minimum polling delay. Always `2` for a pending purchase.                                 |
+| `requires_user_interaction` | `boolean` | Always `true`.                                                                            |
+| `instructions`              | `string`  | Required user interaction and polling guidance.                                           |
+| `purchase_id`               | `string`  | Guest purchase ID.                                                                        |
+| `status`                    | `string`  | Initial purchase status. Normally `pending`.                                              |
+| `expires_at`                | `string`  | Pending checkout expiry. New checkouts expire after 60 minutes.                           |
+| `credits`                   | `string`  | Credits to grant after verified payment.                                                  |
+| `wallet_id`                 | `string`  | Guest wallet ID.                                                                          |
 
 <Tabs>
 
@@ -329,3 +177,47 @@ The response sends `Cache-Control: no-store, private`. An exact replay also send
 **Related.** [Guest wallet guide](/guides/guest-wallets) · [Get guest wallet status](/api-reference/guest-wallets/status) · [Top up guest wallet](/api-reference/guest-wallets/topup)
 
 </Note>
+
+</section>
+
+{/* GENERATED RESPONSE EXAMPLES START */}
+
+<section>
+
+## Response examples
+
+### 201 example
+
+```json
+{
+  "account_required": false,
+  "amount": {
+    "amount_minor": 1000,
+    "currency": "usd"
+  },
+  "api_key": "xq_example_returned_once",
+  "authorization": {
+    "header": "Authorization",
+    "scheme": "Bearer"
+  },
+  "checkout_url": "https://checkout.example/guest/example",
+  "credential_notice": "Store api_key and the Idempotency-Key securely before sharing checkout_url. No email recovery is available.",
+  "credits": "66666",
+  "expires_at": "2026-07-13T13:00:00.000Z",
+  "instructions": "Give checkout_url to the user. They must complete payment on the hosted checkout page. Never submit payment for them. After payment, poll status_url every poll_after_seconds until latest_purchase.status is no longer pending.",
+  "poll_after_seconds": 2
+}
+```
+
+- **400** `{ "error": "invalid_input", "message": "Invalid input. Check the request body." }`
+- **409** `{ "error": "idempotency_conflict", "message": "Reuse this Idempotency-Key only with the original request." }`
+- **410** `{ "error": "checkout_unavailable", "message": "Checkout unavailable. Retry with a new Idempotency-Key." }`
+- **413** `{ "error": "body_too_large", "message": "Request body is too large." }`
+- **415** `{ "error": "unsupported_media_type", "message": "Send a Content-Type header of application/json." }`
+- **423** `{ "error": "guest_wallet_unavailable", "message": "Guest wallet unavailable. Create a new wallet or contact support." }`
+- **429** `{ "error": "rate_limited", "message": "Try again later." }`
+- **503** `{ "error": "guest_wallets_unavailable", "message": "Guest wallet checkout is temporarily unavailable." }`
+
+</section>
+
+{/* GENERATED RESPONSE EXAMPLES END */}

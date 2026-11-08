@@ -2,7 +2,7 @@
 title: "X API key management to list active Xquik keys"
 sidebarTitle: "List API keys"
 description: "List Xquik API keys for X API authentication. Review each key ID, name, safe prefix, active state, creation time & last use before rotation or revocation."
-api: "GET /api-keys"
+endpoint: "GET /api-keys"
 keywords:
   [
     "X API key",
@@ -16,72 +16,11 @@ keywords:
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
 
-{/* GENERATED RESPONSE EXAMPLES START */}
-
-<Panel>
-
-<Tabs defaultTabIndex={0} sync={false}>
-
-  <Tab title="200" id="response-api-keys-list-200">
-
-    ```json
-    {
-      "keys": [],
-      "hasMore": false
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="400" id="response-api-keys-list-400">
-
-    ```json
-    {
-      "error": "invalid_input",
-      "message": "Invalid input. Check the request body."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="401" id="response-api-keys-list-401">
-
-    ```json
-    {
-      "error": "unauthenticated",
-      "message": "Authentication required. Provide a valid API key or bearer token."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="403" id="response-api-keys-list-403">
-
-    ```json
-    {
-      "error": "session_required",
-      "message": "API keys & OAuth tokens cannot use this route. Sign in at dashboard.xquik.com/account instead."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="429" id="response-api-keys-list-429">
-
-    ```json
-    {
-      "error": "rate_limit_exceeded",
-      "message": "Too many requests. Try again later.",
-      "retryAfter": 60
-    }
-    ```
-
-  </Tab>
-</Tabs>
-
-</Panel>
-{/* GENERATED RESPONSE EXAMPLES END */}
 <LlmsDirective />
+
+`GET https://xquik.com/api/v1/api-keys`
+
+<section>
 
 ## Audit Xquik API keys before X automation
 
@@ -194,6 +133,10 @@ func main() {
 
 </CodeGroup>
 
+</section>
+
+<section>
+
 ## Read the API key inventory
 
 Treat the response as an account credential inventory. Never treat it as a
@@ -227,6 +170,10 @@ get `403 api_key_budget_reached`. Raise or remove the budget with
 Check scheduled jobs before revoking a quiet key. A monthly follower export
 can remain valid without recent requests. Confirm the owner and workload first.
 
+</section>
+
+<section>
+
 ## Distinguish Xquik keys from official X credentials
 
 An Xquik API key starts with `xq_`. It authenticates requests to Xquik routes.
@@ -244,6 +191,10 @@ when integrating directly with the X developer platform.
 
 Use [Xquik authentication](/api-reference/authentication) for Xquik request
 headers. Use this list endpoint only for Xquik credential inventory.
+
+</section>
+
+<section>
 
 ## Rotate an Xquik API key
 
@@ -267,6 +218,10 @@ A key works only while `isActive` is `true` and `expiresAt` is missing or ahead.
 Set `expiresInDays` when you [create a key](/api-reference/api-keys/create) so a
 forgotten key expires. Give a workload that only reads X data a `paid_reads`
 key.
+
+</section>
+
+<section>
 
 ## Common X API key questions
 
@@ -295,106 +250,53 @@ the intended workload before revocation.
 No. It lists Xquik keys for Xquik endpoints. Manage official X developer
 credentials in the X developer console.
 
+</section>
+
+<section>
+
 ## Headers
 
-<ParamField header="Cookie" type="string" required>
-  Your signed-in dashboard session cookie, `__Host-xquik_session`. API keys and OAuth tokens get
-  `403 session_required`.
-</ParamField>
+| Header   | Type     | Required | Description                                                                                                            |
+| -------- | -------- | -------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `Cookie` | `string` | Yes      | Your signed-in dashboard session cookie, `__Host-xquik_session`. API keys and OAuth tokens get `403 session_required`. |
+
+</section>
+
+<section>
 
 ## Query parameters
 
-<ParamField query="limit" type="integer">
-  Maximum items per page, from 1 to 10,000. Default 200.
-</ParamField>
-<ParamField query="cursor" type="string">
-  `nextCursor` from the previous page. The `after` alias also works. Offset pagination is not
-  supported.
-</ParamField>
+| Query parameter | Type      | Required | Description                                                                                            |
+| --------------- | --------- | -------- | ------------------------------------------------------------------------------------------------------ |
+| `limit`         | `integer` | No       | Maximum items per page, from 1 to 10,000. Default 200.                                                 |
+| `cursor`        | `string`  | No       | `nextCursor` from the previous page. The `after` alias also works. Offset pagination is not supported. |
+
+</section>
+
+<section>
 
 ## Response
 
 ### 200 OK
 
-<ResponseField name="keys" type="array">
-
-Array of API key objects.
-**Key object fields.**
-
-<ResponseField name="id" type="string">
-
-      Unique identifier for the API key.
-
-    </ResponseField>
-    <ResponseField name="name" type="string">
-
-      Display name of the key.
-
-    </ResponseField>
-    <ResponseField name="prefix" type="string">
-
-      First 8 characters of the key including the `xq_` prefix (for example `"xq_a1b2"`).
-
-    </ResponseField>
-    <ResponseField name="isActive" type="boolean">
-
-      Whether the key is active. A revoked key is `false`. An expired key stays `true`, so check `expiresAt` too.
-
-    </ResponseField>
-    <ResponseField name="scope" type="string">
-
-      `full` calls every route an API key can use. `paid_reads` calls paid X read routes only. Other routes answer it with `403 insufficient_scope`.
-
-    </ResponseField>
-    <ResponseField name="scopes" type="string[]">
-
-      The scopes the key holds, such as `["read", "monitors"]`. A Full access key holds `full`.
-
-    </ResponseField>
-    <ResponseField name="allowedIps" type="string[]">
-
-      IPs & CIDR ranges that may use the key. An empty list allows any IP.
-
-    </ResponseField>
-    <ResponseField name="createdAt" type="string">
-
-      ISO 8601 creation timestamp.
-
-    </ResponseField>
-    <ResponseField name="expiresAt" type="string">
-
-      ISO 8601 time the key stops working. Omitted when the key never expires.
-
-    </ResponseField>
-    <ResponseField name="lastUsedAt" type="string">
-
-      ISO 8601 timestamp of the last API call made with this key. Xquik refreshes it at most once a minute. Omitted if never used.
-
-    </ResponseField>
-    <ResponseField name="pausedAt" type="string">
-
-      ISO 8601 time you paused the key. Omitted while the key works. A paused key gets `403 api_key_paused`.
-
-    </ResponseField>
-    <ResponseField name="monthlyBudgetCredits" type="integer">
-
-      Credits the key can spend each UTC calendar month. Omitted when the key has no budget.
-
-    </ResponseField>
-    <ResponseField name="monthlySpentCredits" type="integer">
-
-      Credits charged for calls with the key this UTC calendar month. `0` when it has no calls yet.
-
-    </ResponseField>
-
-</ResponseField>
-
-<ResponseField name="hasMore" type="boolean">
-  Whether more rows follow this page.
-</ResponseField>
-<ResponseField name="nextCursor" type="string">
-  Pass it as `cursor` for the next page. Present when `hasMore` is `true`.
-</ResponseField>
+| Field                         | Type       | Description                                                                                                                                    |
+| ----------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `keys`                        | `array`    | Array of API key objects.                                                                                                                      |
+| `keys[].id`                   | `string`   | Unique identifier for the API key.                                                                                                             |
+| `keys[].name`                 | `string`   | Display name of the key.                                                                                                                       |
+| `keys[].prefix`               | `string`   | First 8 characters of the key including the `xq_` prefix (for example `"xq_a1b2"`).                                                            |
+| `keys[].isActive`             | `boolean`  | Whether the key is active. A revoked key is `false`. An expired key stays `true`, so check `expiresAt` too.                                    |
+| `keys[].scope`                | `string`   | `full` calls every route an API key can use. `paid_reads` calls paid X read routes only. Other routes answer it with `403 insufficient_scope`. |
+| `keys[].scopes`               | `string[]` | The scopes the key holds, such as `["read", "monitors"]`. A Full access key holds `full`.                                                      |
+| `keys[].allowedIps`           | `string[]` | IPs & CIDR ranges that may use the key. An empty list allows any IP.                                                                           |
+| `keys[].createdAt`            | `string`   | ISO 8601 creation timestamp.                                                                                                                   |
+| `keys[].expiresAt`            | `string`   | ISO 8601 time the key stops working. Omitted when the key never expires.                                                                       |
+| `keys[].lastUsedAt`           | `string`   | ISO 8601 timestamp of the last API call made with this key. Xquik refreshes it at most once a minute. Omitted if never used.                   |
+| `keys[].pausedAt`             | `string`   | ISO 8601 time you paused the key. Omitted while the key works. A paused key gets `403 api_key_paused`.                                         |
+| `keys[].monthlyBudgetCredits` | `integer`  | Credits the key can spend each UTC calendar month. Omitted when the key has no budget.                                                         |
+| `keys[].monthlySpentCredits`  | `integer`  | Credits charged for calls with the key this UTC calendar month. `0` when it has no calls yet.                                                  |
+| `hasMore`                     | `boolean`  | Whether more rows follow this page.                                                                                                            |
+| `nextCursor`                  | `string`   | Pass it as `cursor` for the next page. Present when `hasMore` is `true`.                                                                       |
 
 ```json
 {
@@ -432,32 +334,17 @@ Array of API key objects.
 
 ### 400 Invalid cursor
 
-```json
-{
-  "error": "invalid_input",
-  "message": "Cursor invalid. Use nextCursor from the previous page, or omit it to start over."
-}
-```
+`{ "error": "invalid_input", "message": "Cursor invalid. Use nextCursor from the previous page, or omit it to start over." }`
 
 The `cursor` is not one this list returned. Send the `nextCursor` of the previous page, or omit it.
 
 ### 401 Unauthenticated
 
-```json
-{ "error": "unauthenticated" }
-```
-
 Missing, expired, or invalid dashboard session cookie.
 
 ### 429 Rate limited
 
-```json
-{
-  "error": "rate_limit_exceeded",
-  "message": "Too many requests. Try again later.",
-  "retryAfter": 1
-}
-```
+`{ "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 1 }`
 
 Too many requests. Wait for the `Retry-After` header before retrying.
 
@@ -469,3 +356,20 @@ bearer tokens cannot list account keys.
 **Related.** [Create API Key](/api-reference/api-keys/create) &middot; [Update API Key](/api-reference/api-keys/update) &middot; [Revoke API Key](/api-reference/api-keys/revoke)
 
 </Note>
+
+</section>
+
+{/* GENERATED RESPONSE EXAMPLES START */}
+
+<section>
+
+## Response examples
+
+- **400** `{ "error": "invalid_input", "message": "Invalid input. Check the request body." }`
+- **401** `{ "error": "unauthenticated", "message": "Authentication required. Provide a valid API key or bearer token." }`
+- **403** `{ "error": "session_required", "message": "API keys & OAuth tokens cannot use this route. Sign in at dashboard.xquik.com/account instead." }`
+- **429** `{ "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 60 }`
+
+</section>
+
+{/* GENERATED RESPONSE EXAMPLES END */}

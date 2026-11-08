@@ -2,7 +2,7 @@
 title: "X job locations API to find places & location IDs"
 sidebarTitle: "Job locations"
 description: "Find the places X job search knows by name, such as New York, US. Each place returns the location ID that job search takes. 1 credit per place returned."
-api: "GET /x/jobs/locations"
+endpoint: "GET /x/jobs/locations"
 keywords:
   [
     "X job locations",
@@ -17,121 +17,9 @@ keywords:
 import LlmsDirective from "/snippets/llms-directive.mdx";
 import FieldSelectionParams from "/snippets/field-selection-params.mdx";
 
-{/* GENERATED RESPONSE EXAMPLES START */}
-
-<Panel>
-
-<Tabs defaultTabIndex={0} sync={false}>
-
-  <Tab title="200" id="response-x-job-locations-200">
-
-    ```json
-    {
-      "locations": [
-        {
-          "id": "1720462281849397612",
-          "name": "New York, US"
-        }
-      ],
-      "count": 2
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="400" id="response-x-job-locations-400">
-
-    ```json
-    {
-      "error": "missing_query",
-      "message": "Search query required. Use q."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="401" id="response-x-job-locations-401">
-
-    ```json
-    {
-      "error": "unauthenticated",
-      "message": "Authentication required."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="402" id="response-x-job-locations-402">
-
-    ```json
-    {
-      "error": "insufficient_credits",
-      "message": "Insufficient credits. Top up or subscribe to continue."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="403" id="response-x-job-locations-403">
-
-    ```json
-    {
-      "error": "api_key_paused",
-      "message": "This API key is paused. Resume it at dashboard.xquik.com/api-keys to use it again."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="424" id="response-x-job-locations-424">
-
-    ```json
-    {
-      "error": "x_api_unavailable",
-      "message": "X data source temporarily unavailable. Try again later."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="429" id="response-x-job-locations-429">
-
-    ```json
-    {
-      "error": "rate_limit_exceeded",
-      "message": "Too many requests. Try again later.",
-      "retryAfter": 60
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="502" id="response-x-job-locations-502">
-
-    ```json
-    {
-      "error": "x_api_unavailable",
-      "message": "X data source temporarily unavailable. Try again later."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="503" id="response-x-job-locations-503">
-
-    ```json
-    {
-      "error": "x_api_unavailable",
-      "message": "Xquik is busy right now. Retry shortly."
-    }
-    ```
-
-  </Tab>
-</Tabs>
-
-</Panel>
-{/* GENERATED RESPONSE EXAMPLES END */}
 <LlmsDirective />
+
+`GET https://xquik.com/api/v1/x/jobs/locations`
 
 Find the places X job search knows by name. Pass a place name or its start, such as `new york`. Each match returns its name and the location ID that [job search](/api-reference/x/search-jobs) takes.
 
@@ -171,6 +59,8 @@ first_location_id = locations[0]["id"] if locations else None
 
 </CodeGroup>
 
+<section>
+
 ## Search jobs in an exact place
 
 A free-text `location` works for most searches. A location ID pins 1 exact place instead. `New York City, NY` and `West New York, NJ` then stay apart.
@@ -181,60 +71,54 @@ A free-text `location` works for most searches. A location ID pins 1 exact place
 
 Store the ID with the place name. The same ID works in later searches.
 
+</section>
+
+<section>
+
 ## Control the cost
 
 Each returned place costs 1 credit. A broad name such as `york` can match many places. Send `limit` to keep only the best matches. No match returns an empty list and costs nothing.
 
+</section>
+
+<section>
+
 ## Query parameters
 
-<ParamField query="q" type="string" required>
-
-Place name or its start, such as `new york`. Also read as `query`.
-
-</ParamField>
-
-<ParamField query="limit" type="integer">
-
-Most places to return. Without it, every match returns. Also read as `pageSize`, `count`, `max_results`, `maxItems`, `max_items` or `per_page`.
-
-</ParamField>
+| Query parameter | Type      | Required | Description                                                                                                                                     |
+| --------------- | --------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `q`             | `string`  | Yes      | Place name or its start, such as `new york`. Also read as `query`.                                                                              |
+| `limit`         | `integer` | No       | Most places to return. Without it, every match returns. Also read as `pageSize`, `count`, `max_results`, `maxItems`, `max_items` or `per_page`. |
 
 ### Choose fields
 
 <FieldSelectionParams />
 
+</section>
+
+<section>
+
 ## Headers
 
-<ParamField header="x-api-key" type="string">
+| Header          | Type     | Required | Description                                       |
+| --------------- | -------- | -------- | ------------------------------------------------- |
+| `x-api-key`     | `string` | No       | Full account key. Sessions and OAuth also work.   |
+| `Authorization` | `string` | No       | `Bearer xq_your_guest_key_here` for `paid_reads`. |
 
-Full account key. Sessions and OAuth also work.
+</section>
 
-</ParamField>
-
-<ParamField header="Authorization" type="string">
-
-`Bearer xq_your_guest_key_here` for `paid_reads`.
-
-</ParamField>
+<section>
 
 ## Response
 
 ### 200 OK
 
-<ResponseField name="locations" type="object[]">
-
-Matching places, best match first.
-**Location object fields.**
-
-<ResponseField name="id" type="string">
-  Location ID, which the job search `locationId` takes.
-</ResponseField>
-<ResponseField name="name" type="string">
-  Place name with its region or country code.
-</ResponseField>
-
-</ResponseField>
-<ResponseField name="count" type="number">Places returned, each charged 1 credit.</ResponseField>
+| Field              | Type       | Description                                           |
+| ------------------ | ---------- | ----------------------------------------------------- |
+| `locations`        | `object[]` | Matching places, best match first.                    |
+| `locations[].id`   | `string`   | Location ID, which the job search `locationId` takes. |
+| `locations[].name` | `string`   | Place name with its region or country code.           |
+| `count`            | `number`   | Places returned, each charged 1 credit.               |
 
 ```json
 {
@@ -248,19 +132,11 @@ Matching places, best match first.
 
 ### 400 Missing query
 
-```json
-{ "error": "missing_query" }
-```
-
 Send a place name in `q`.
 
 ### 401 Unauthenticated
 
 Anonymous requests get `WWW-Authenticate: Bearer` and a guest wallet checkout action. This is not a Payment challenge.
-
-```json
-{ "error": "unauthenticated" }
-```
 
 ### 402 Payment required
 
@@ -269,25 +145,13 @@ No checkout starts automatically. Confirm any payment action.
 
 ### 502 X API unavailable
 
-```json
-{ "error": "x_api_unavailable" }
-```
-
 The read service returned an error. Retry after a short delay.
 
 ### 429 Rate limit exceeded
 
-```json
-{ "error": "rate_limit_exceeded", "retryAfter": 60 }
-```
-
 You exceeded your tier rate limit. Wait for the `Retry-After` header before retrying.
 
 ### 424 Dependency failed
-
-```json
-{ "error": "x_api_unavailable" }
-```
 
 The normalized v1 response contract can return 424 when the read service is unavailable.
 
@@ -296,3 +160,24 @@ The normalized v1 response contract can return 424 when the read service is unav
 **Next steps.** [Search job listings](/api-reference/x/search-jobs) with the location ID. [Get 1 job listing](/api-reference/x/get-job) for its full description.
 
 </Note>
+
+</section>
+
+{/* GENERATED RESPONSE EXAMPLES START */}
+
+<section>
+
+## Response examples
+
+- **400** `{ "error": "missing_query", "message": "Search query required. Use q." }`
+- **401** `{ "error": "unauthenticated", "message": "Authentication required." }`
+- **402** `{ "error": "insufficient_credits", "message": "Insufficient credits. Top up or subscribe to continue." }`
+- **403** `{ "error": "api_key_paused", "message": "This API key is paused. Resume it at dashboard.xquik.com/api-keys to use it again." }`
+- **424** `{ "error": "x_api_unavailable", "message": "X data source temporarily unavailable. Try again later." }`
+- **429** `{ "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 60 }`
+- **502** `{ "error": "x_api_unavailable", "message": "X data source temporarily unavailable. Try again later." }`
+- **503** `{ "error": "x_api_unavailable", "message": "Xquik is busy right now. Retry shortly." }`
+
+</section>
+
+{/* GENERATED RESPONSE EXAMPLES END */}

@@ -1,0 +1,127 @@
+---
+title: "Twitter API PHP follower export to CSV & XLSX"
+sidebarTitle: "Follower export"
+description: "Export X (Twitter) followers with the Xquik PHP SDK. Estimate the job, run the extraction, and save CSV, JSON, or XLSX files for your team and your CRM tools."
+keywords: ["PHP SDK", "PHP follower export", "follower export", "CSV export", "XLSX export"]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+<LlmsDirective />
+
+This guide builds on the [PHP SDK setup](/sdks/php), which covers install and authentication.
+
+<section>
+
+## Follower export workflow to CSV, JSON, or XLSX
+
+Use this workflow when PHP code needs an owned follower list. That code can be a worker, Laravel command, Symfony console command, or cron job. The list can feed CRM import, warehouse loading, or account scoring. It can also feed an analyst CSV, XLSX delivery, or a resumable JSON handoff.
+
+`$client->extractions->estimateCost()` maps to `POST /extractions/estimate`. `$client->extractions->run()` maps to `POST /extractions`. `$client->extractions->retrieve()` maps to `GET /extractions/{id}`. `$client->extractions->exportResults()` maps to `GET /extractions/{id}/export`. For follower exports, `follower_explorer` requires `targetUsername`.
+
+<Info>
+
+`$client->extractions->run()` returns the queued `202 Accepted` receipt from `POST /extractions`. PHP exposes REST `id`, `toolType`, and `status: "running"` as `$job->id`, `$job->toolType`, and `$job->status`. Store `$job->id` immediately, then poll `$client->extractions->retrieve()` before reading pages or calling `$client->extractions->exportResults()`. Credit reservation happens after the job starts. Available credits may have changed since `estimateCost`. If so, the run can fetch only the affordable count before export. Or it can mark the job `failed` with `insufficient_credits`.
+
+</Info>
+
+```php
+<?php
+
+use XTwitterScraper\Client;
+use XTwitterScraper\Extractions\ExtractionEstimateCostParams\ToolType as EstimateToolType;
+use XTwitterScraper\Extractions\ExtractionExportResultsParams\Format as ExportFormat;
+use XTwitterScraper\Extractions\ExtractionRunParams\ToolType as RunToolType;
+
+$client = new Client(
+  apiKey: getenv('X_TWITTER_SCRAPER_API_KEY') ?: ''
+);
+
+$targetUsername = 'username';
+$estimate = $client->extractions->estimateCost(
+  toolType: EstimateToolType::FOLLOWER_EXPLORER,
+  targetUsername: $targetUsername,
+);
+
+if (!$estimate->allowed) {
+  throw new RuntimeException("Follower export requires {$estimate->creditsRequired} credits.");
+}
+
+$job = $client->extractions->run(
+  toolType: RunToolType::FOLLOWER_EXPLORER,
+  targetUsername: $targetUsername,
+);
+
+$completed = false;
+
+for ($attempt = 0; $attempt < 120; $attempt++) {
+  $statusPage = $client->extractions->retrieve($job->id, limit: 1);
+  $status = $statusPage->job['status'] ?? null;
+
+  if ('completed' === $status) {
+    $completed = true;
+    break;
+  }
+
+  if ('failed' === $status) {
+    throw new RuntimeException('Follower export failed.');
+  }
+
+  sleep(10);
+}
+
+if (!$completed) {
+  throw new RuntimeException('Follower export did not complete before timeout.');
+}
+
+$cursor = null;
+$handle = fopen('xquik-followers.jsonl', 'wb');
+
+if (false === $handle) {
+  throw new RuntimeException('Could not open xquik-followers.jsonl');
+}
+
+try {
+  do {
+    $page = $client->extractions->retrieve($job->id, cursor: $cursor, limit: 1000);
+
+    foreach ($page->results as $user) {
+      fwrite(
+        $handle,
+        json_encode($user, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR) . PHP_EOL
+      );
+    }
+
+    $cursor = $page->hasMore ? $page->nextCursor : null;
+  } while (null !== $cursor && '' !== $cursor);
+} finally {
+  fclose($handle);
+}
+
+file_put_contents(
+  'xquik-followers.csv',
+  $client->extractions->exportResults($job->id, format: ExportFormat::CSV),
+);
+file_put_contents(
+  'xquik-followers.json',
+  $client->extractions->exportResults($job->id, format: ExportFormat::JSON),
+);
+file_put_contents(
+  'xquik-followers.xlsx',
+  $client->extractions->exportResults($job->id, format: ExportFormat::XLSX),
+);
+```
+
+Store `$job->id`, `$targetUsername`, `$estimate->estimatedResults`, and `$estimate->source` before polling. With them, another queue worker can resume without rerunning the extraction. `$client->extractions->retrieve()` returns `$page->results`, `$page->hasMore`, and `$page->nextCursor`. Pass `$page->nextCursor` back as `cursor` to page through large follower lists. Map exported `User ID` or row `xUserId` as the CRM unique key. Use `xquik-followers.jsonl` for queue replay or warehouse loads, and `xquik-followers.json` for app ingestion. Use `xquik-followers.csv` for CRM import and `xquik-followers.xlsx` for analyst handoff. The cost is 1 credit per follower extracted or returned. Exports cost no credits after the extraction job exists.
+
+</section>
+
+<section>
+
+## Next steps
+
+- [PHP SDK setup](/sdks/php)
+- [Tweet search](/sdks/php-tweet-search)
+- [Media tweets](/sdks/php-media-tweets)
+
+</section>

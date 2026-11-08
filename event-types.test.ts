@@ -3,6 +3,7 @@ import { join, relative } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
+import { readPageFamily } from "./scripts/lib/page-family.ts";
 const PROJECT_ROOT = process.cwd();
 const DOC_EXTENSIONS = new Set([".md", ".mdx", ".txt"]);
 const EXCLUDED_DIRS = new Set([".git", "node_modules"]);
@@ -188,7 +189,7 @@ function collectUnsupportedEventTypeFindings(
       continue;
     }
 
-    const source = readFileSync(join(PROJECT_ROOT, file), "utf8");
+    const source = readPageFamily(file);
     for (const match of source.matchAll(EVENT_TYPE_TOKEN_PATTERN)) {
       const eventType = match[0];
       if (!allowedEventTypes.has(eventType)) {
@@ -209,7 +210,7 @@ function missingEventTypeMentions(
   file: string,
   requiredEventTypes: readonly string[],
 ): readonly string[] {
-  const source = readFileSync(join(PROJECT_ROOT, file), "utf8");
+  const source = readPageFamily(file);
   const documentedEventTypes = new Set(eventTypesInSource(source));
   return requiredEventTypes.filter((eventType): boolean => !documentedEventTypes.has(eventType));
 }

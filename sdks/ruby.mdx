@@ -28,6 +28,8 @@ Use this page when Ruby code must search tweets. That code can be a Ruby app, Ra
 | Search tweets    | `client.x.tweets.search` | `next_cursor` |
 | Export followers | `client.extractions.run` | `job.id`      |
 
+<section>
+
 ## Install
 
 ```bash
@@ -40,11 +42,19 @@ Or add it to your Gemfile.
 gem "x-twitter-scraper", "~> 0.9.1"
 ```
 
+</section>
+
+<section>
+
 ## Authenticate
 
 ```bash
 export X_TWITTER_SCRAPER_API_KEY="xq_YOUR_KEY_HERE"
 ```
+
+</section>
+
+<section>
 
 ## Basic example
 
@@ -75,224 +85,21 @@ page.tweets.each do |tweet|
 end
 ```
 
-## Tweet search workflow to CSV, JSON Lines, or XLSX
+</section>
 
-Search with `client.x.tweets.search`, `GET /x/tweets/search`, and generated `XTwitterScraper::X::TweetSearchParams`. Save CSV and JSON Lines for Ruby workers, Rails, Sidekiq, agents, warehouses, and replay.
+<section>
 
-```ruby
-require "csv"
-require "json"
-require "x_twitter_scraper"
+## Ruby SDK workflows
 
-client = XTwitterScraper::Client.new(
-  api_key: ENV["X_TWITTER_SCRAPER_API_KEY"]
-)
+| Workflow                                      | What it does                                                         |
+| --------------------------------------------- | -------------------------------------------------------------------- |
+| [Tweet search](/sdks/ruby-tweet-search)       | Search tweets, follow cursors & save JSON Lines, CSV, or XLSX files. |
+| [Follower export](/sdks/ruby-follower-export) | Run a follower extraction & save CSV, JSON, or XLSX files.           |
+| [Media tweets](/sdks/ruby-media-tweets)       | Upload media, post media tweets & send DM attachments.               |
 
-query = "from:username webhook OR SDK"
-cursor = nil
-page_index = 0
+</section>
 
-headers = [
-  "source",
-  "query",
-  "tweet_id",
-  "text",
-  "author_id",
-  "author_username",
-  "author_name",
-  "created_at",
-  "like_count",
-  "reply_count",
-  "retweet_count",
-  "quote_count",
-  "view_count",
-  "bookmark_count",
-  "is_note_tweet",
-  "page_index",
-  "page_cursor",
-  "next_cursor",
-  "has_next_page"
-]
-
-CSV.open("xquik-tweet-search.csv", "w", write_headers: true, headers: headers) do |csv|
-  File.open("xquik-tweet-search.jsonl", "w") do |jsonl|
-    loop do
-      page_cursor = cursor
-      page = client.x.tweets.search(
-        q: query,
-        query_type: :Latest,
-        cursor: cursor
-      )
-
-      page.tweets.each do |tweet|
-        row = {
-          "source" => "xquik.ruby.search",
-          "query" => query,
-          "tweet_id" => tweet.id,
-          "text" => tweet.text,
-          "author_id" => tweet.author&.id,
-          "author_username" => tweet.author&.username,
-          "author_name" => tweet.author&.name,
-          "created_at" => tweet.created_at,
-          "like_count" => tweet.like_count || 0,
-          "reply_count" => tweet.reply_count || 0,
-          "retweet_count" => tweet.retweet_count || 0,
-          "quote_count" => tweet.quote_count || 0,
-          "view_count" => tweet.view_count || 0,
-          "bookmark_count" => tweet.bookmark_count || 0,
-          "is_note_tweet" => tweet.is_note_tweet || false,
-          "page_index" => page_index,
-          "page_cursor" => page_cursor,
-          "next_cursor" => page.next_cursor == "" ? nil : page.next_cursor,
-          "has_next_page" => page.has_next_page
-        }
-
-        csv << headers.map { |header| row.fetch(header) }
-        jsonl.puts(JSON.generate(row))
-      end
-
-      break unless page.has_next_page && page.next_cursor != ""
-
-      cursor = page.next_cursor
-      page_index += 1
-    end
-  end
-end
-```
-
-The generated params map directly to the REST endpoint.
-
-<CardGroup cols={2}>
-
-  <Card title="q" icon="search">
-
-    Ruby keyword `q` maps to REST `q`. Use it for the required X search query with keywords, handles, hashtags, or operators.
-
-  </Card>
-  <Card title="limit" icon="list">
-
-    Ruby keyword `limit` maps to REST `limit`. Use it as a 1 to 200 upper bound for a bounded pull. If `page.has_next_page` is true, keep the same `q`, filters, `query_type`, and `limit`. That applies when you continue with `page.next_cursor`.
-
-  </Card>
-  <Card title="cursor" icon="arrow-right">
-
-    Ruby keyword `cursor` maps to REST `cursor`. Pass the opaque cursor from `page.next_cursor` to request the next page.
-
-  </Card>
-  <Card title="since_time" icon="clock">
-
-    Ruby keyword `since_time` maps to REST `sinceTime`. Use it as the ISO 8601 lower time bound.
-
-  </Card>
-  <Card title="until_time" icon="clock">
-
-    Ruby keyword `until_time` maps to REST `untilTime`. Use it as the ISO 8601 upper time bound.
-
-  </Card>
-  <Card title="query_type" icon="sliders-horizontal">
-
-    Ruby keyword `query_type` maps to REST `queryType`. Use `:Latest` for chronological results or `:Top` for engagement-ranked results.
-
-  </Card>
-</CardGroup>
-
-## Returned data & handoff
-
-`client.x.tweets.search` returns `XTwitterScraper::PaginatedTweets`.
-
-<CardGroup cols={2}>
-
-  <Card title="page.tweets" icon="message-square-text">
-
-    JSON field `tweets`. Contains `SearchTweet` records with `id`, `text`, optional `author`, and `created_at`. Records also carry `like_count`, `reply_count`, `retweet_count`, `quote_count`, `bookmark_count`, `view_count`, and `is_note_tweet` when available.
-
-  </Card>
-  <Card title="page.has_next_page" icon="circle-check">
-
-    Ruby field `page.has_next_page`. JSON field `has_next_page`. Tells your worker whether another page exists.
-
-  </Card>
-  <Card title="page.next_cursor" icon="arrow-right">
-
-    JSON field `next_cursor`. Store it only when `page.has_next_page` is true. For bounded pulls that return fewer tweets than `limit`, pass it back as `cursor`. Send the same query, filters, `query_type`, and `limit` with it.
-
-  </Card>
-</CardGroup>
-
-Project `page.tweets` into CSV rows for analysts. Project them into JSON Lines rows for queues and data lakes. Store `tweet_id`, `author_username`, engagement counts, `page_index`, `page_cursor`, `next_cursor`, and `has_next_page` in `xquik-tweet-search.jsonl`. Workers can then resume. Or they can load the same records into XLSX, CRM, warehouse, or agent workflows. For explicit `limit` pulls, resume with the same query, filters, `query_type`, and `limit`. Only `cursor` changes.
-
-## Follower export workflow to CSV, JSON, or XLSX
-
-Use this workflow when Ruby code needs an owned follower list. That code can be a Ruby app, Rails job, Sidekiq worker, or agent tool. The list can feed a CRM import, warehouse load, or analyst CSV file. It can also feed an XLSX workbook or resumable JSON handoff. The workflow calls `POST /extractions/estimate` through `client.extractions.estimate_cost`. It creates the job with `client.extractions.run`. It reads saved rows with `client.extractions.retrieve`. It downloads files with `client.extractions.export_results`.
-
-<Info>
-
-`client.extractions.run` returns the queued `202 Accepted` receipt from `POST /extractions`. Ruby exposes REST `id`, `toolType`, and `status: "running"` as `job.id`, `job.tool_type`, and `job.status`. Store `job.id` immediately, then poll `client.extractions.retrieve` before reading pages or calling `client.extractions.export_results`. Credit reservation happens after the job starts. Available credits may have changed since `estimate_cost`. If so, the run can fetch only the affordable count before export. Or it can mark the job `failed` with `insufficient_credits`.
-
-</Info>
-
-```ruby
-require "json"
-require "x_twitter_scraper"
-
-client = XTwitterScraper::Client.new(
-  api_key: ENV["X_TWITTER_SCRAPER_API_KEY"]
-)
-target_username = "username"
-
-estimate = client.extractions.estimate_cost(
-  tool_type: :follower_explorer,
-  target_username: target_username
-)
-
-raise "Insufficient credits for follower export." unless estimate.allowed
-
-job = client.extractions.run(
-  tool_type: :follower_explorer,
-  target_username: target_username
-)
-
-loop do
-  status_page = client.extractions.retrieve(job.id, limit: 1)
-  status = status_page.job[:status] || status_page.job["status"]
-
-  break if status == "completed"
-
-  raise "Follower export failed." if status == "failed"
-
-  sleep 10
-end
-
-cursor = nil
-
-File.open("xquik-followers.jsonl", "w") do |jsonl|
-  loop do
-    page = client.extractions.retrieve(job.id, limit: 1000, cursor: cursor)
-
-    page.results.each do |row|
-      jsonl.puts(JSON.generate(row))
-    end
-
-    break unless page.has_more && page.next_cursor.to_s != ""
-
-    cursor = page.next_cursor
-  end
-end
-
-csv_response = client.extractions.export_results(job.id, format_: :csv)
-csv_response.rewind
-File.binwrite("xquik-followers.csv", csv_response.read)
-
-json_response = client.extractions.export_results(job.id, format_: :json)
-json_response.rewind
-File.binwrite("xquik-followers.json", json_response.read)
-
-xlsx_response = client.extractions.export_results(job.id, format_: :xlsx)
-xlsx_response.rewind
-File.binwrite("xquik-followers.xlsx", xlsx_response.read)
-```
-
-`follower_explorer` requires `target_username`. Store `job.id`, `target_username`, `estimate.estimated_results`, and `estimate.source` before polling. That lets a Sidekiq retry, Rails job retry, or worker restart resume that job. `client.extractions.retrieve` returns `results`, `has_more`, and `next_cursor`. Pass `next_cursor` back as `cursor` when you need stored JSON pages before exporting files. Map exported `User ID` or row `xUserId` as the CRM unique key. Use `xquik-followers.jsonl` for queue replay or warehouse loads, and `xquik-followers.json` for app ingestion. Use `xquik-followers.csv` for CRM import and `xquik-followers.xlsx` for analyst handoff. The cost is 1 credit per follower extracted or returned. Exports cost no credits after the extraction job exists.
+<section>
 
 ## Tweet replies workflow to CSV, JSON, or XLSX
 
@@ -333,103 +140,19 @@ File.binwrite("xquik-replies.xlsx", xlsx_response.read)
 
 `reply_extractor` requires `target_tweet_id`. `client.extractions.retrieve` returns `results`, `has_more`, and `next_cursor`. The shared pagination loop passes `next_cursor` back as `cursor`. Use `xquik-replies.jsonl` for queue replay or warehouse loads, and `xquik-replies.json` for app ingestion. Use `xquik-replies.csv` for CRM import and `xquik-replies.xlsx` for analyst handoff. `client.extractions.export_results` supports `:csv`, `:json`, and `:xlsx` for file handoff. The cost is 1 credit per reply extracted or returned.
 
-## Workflow to post media tweets and DM attachments
+</section>
 
-Use this workflow when Ruby code needs to post a media-backed tweet. That code can be a Ruby app, Rails job, Sidekiq worker, or agent service. Use it too when the code replies with media. It also covers sending one uploaded media item in a DM.
-
-Tweet and reply media posts use public media URLs directly on `POST /x/tweets`. Send up to 4 image URLs or exactly 1 MP4 video URL. The video can be up to 100 MB. Do not mix video with other media. Do not upload first when the media URL is already public.
-
-Use `client.request` to capture the durable write action. Send a unique `Idempotency-Key`. Store `id`, `request.hash`, `billing`, `result`, and `statusUrl`. Poll while `terminal` is false. Retry only when `safeToRetry` is true, using a new key.
-
-```ruby
-def create_tweet_handoff(client, payload)
-  response = client.request(
-    method: :post,
-    path: "x/tweets",
-    body: payload
-  )
-
-  result = response.fetch(:result, {}) || {}
-  {
-    "status" => response.fetch(:status),
-    "terminal" => response.fetch(:terminal),
-    "safe_to_retry" => response.fetch(:safeToRetry),
-    "write_action_id" => response.fetch(:id),
-    "request_hash" => response.dig(:request, :hash),
-    "tweet_id" => result[:id] || response[:tweetId],
-    "charged" => response.dig(:billing, :charged),
-    "charged_credits" => response.dig(:billing, :chargedCredits),
-    "poll" => response.fetch(:terminal) ? nil : response.fetch(:statusUrl)
-  }
-end
-
-tweet_handoff = create_tweet_handoff(
-  client,
-  {
-    account: "@username",
-    text: "New demo video is live.",
-    media: ["https://example.com/product-demo.mp4"]
-  }
-)
-
-puts(JSON.generate(tweet_handoff))
-```
-
-To post an image reply, add `reply_to_tweet_id`.
-
-```ruby
-reply_handoff = create_tweet_handoff(
-  client,
-  {
-    account: "@username",
-    text: "Here is the requested screenshot.",
-    reply_to_tweet_id: "1893704267862470862",
-    media: ["https://example.com/export-preview.png"]
-  }
-)
-
-puts(JSON.generate(reply_handoff))
-```
-
-For DM attachments, upload the local file first. Then pass the returned `media.media_id` as the only `media_ids` item.
-
-```ruby
-File.open("./handoff.png", "rb") do |file|
-  media = client.x.media.upload(
-    account: "@username",
-    file: file
-  )
-
-  dm = client.x.dm.send_(
-    "44196397",
-    account: "@username",
-    text: "Here is the asset.",
-    media_ids: [media.media_id]
-  )
-
-  dm_handoff = {
-    message_id: dm.message_id,
-    media_id: media.media_id,
-    user_id: "44196397",
-    account: "@username",
-    status: "sent"
-  }
-
-  puts(JSON.generate(dm_handoff))
-end
-```
-
-Store `write_action_id` and `charged_credits`. Before retrying a pending tweet or reply, poll [Get Write Action Status](/api-reference/x-write/get-write-action-status). `client.x.tweets.create` returns `tweet.tweet_id` for confirmed-only flows. `client.x.media.upload` returns `media.media_id` for DM attachments. `client.x.dm.send_` returns `dm.message_id` for support tickets, CRM records, queue jobs, or agent memory. Keep DM body text in private systems. Shared logs, public artifacts, queue status, and agent handoffs should omit full DM bodies. They should store `message_id`, optional `media_id`, `account`, `user_id`, and send status. Leave generated `reply_to_message_id` unset even if SDK params expose it. The REST endpoint rejects DM reply threading.
-
-`client.x.dm.delete_message` [deletes a DM](/api-reference/x-write/delete-dm).
-
-Text-only tweet and reply writes cost 30 credits. Tweet media adds 2 credits per started MB across attached files. Uploading media costs 10 credits. Sending the DM costs 10 credits. Do not pass uploaded `media.media_id` values to `client.x.tweets.create`. That method uses `media` with public media URLs.
+<section>
 
 ## Cost, limits & retries
 
 Tweet search costs 1 credit per tweet returned. If credits cannot cover a bounded `limit` request, the API can return fewer tweets. If credits cover 0 results, it returns `402 insufficient_credits`. Xquik rate-limits read calls. `429` responses include `Retry-After`.
 
 The client retries connection errors, timeouts, 408, 409, 429, and 5xx responses by default. Handle `XTwitterScraper::Errors::RateLimitError` with backoff. Fix 400, 401, 403, 404, or 422 responses before retrying.
+
+</section>
+
+<section>
 
 ## Error handling
 
@@ -484,6 +207,10 @@ rescue XTwitterScraper::Errors::APIStatusError => e
 end
 ```
 
+</section>
+
+<section>
+
 ## Pagination
 
 Paginated responses expose fields such as `has_next_page`. Pass the endpoint's cursor fields when requesting more pages.
@@ -492,6 +219,10 @@ Paginated responses expose fields such as `has_next_page`. Pass the endpoint's c
 page = client.x.tweets.search(q: "xquik", limit: 20)
 puts("More results are available") if page.has_next_page
 ```
+
+</section>
+
+<section>
 
 ## Webhooks & references
 
@@ -504,3 +235,5 @@ puts("More results are available") if page.has_next_page
 - [Verify HMAC Signatures](/webhooks/verification)
 - [REST API Overview](/api-reference/overview)
 - [Source Repository](https://github.com/Xquik-dev/x-twitter-scraper-ruby)
+
+</section>

@@ -1,0 +1,103 @@
+---
+title: "Verify X (Twitter) webhook signatures in Go"
+sidebarTitle: "Go verification"
+description: "Verify Xquik webhook signatures in Go with crypto/hmac and a constant-time compare. Reject bad deliveries before your handler trusts any X (Twitter) event."
+keywords: ["webhook signature verification", "Go webhook", "Twitter webhook", "HMAC verification"]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+<LlmsDirective />
+
+This handler verifies each delivery before it trusts the body. See [signature verification](/webhooks/verification) for the headers and each check.
+
+<section>
+
+## Go implementation
+
+```go
+package main
+
+import (
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
+	"fmt"
+	"io"
+	"net/http"
+	"strconv"
+	"sync"
+	"time"
+)
+
+const fiveMinutesMs = int64(5 * 60 * 1000)
+
+var (
+	seenNonces = sync.Map{}
+)
+
+func verifyWebhook(payload []byte, headers http.Header, secret string) bool {
+	timestamp := headers.Get("X-Xquik-Timestamp")
+	nonce := headers.Get("X-Xquik-Nonce")
+	signature := headers.Get("X-Xquik-Signature")
+	if timestamp == "" || nonce == "" || signature == "" {
+		return false
+	}
+
+	ts, err := strconv.ParseInt(timestamp, 10, 64)
+	if err != nil {
+		return false
+	}
+	nowMs := time.Now().UnixMilli()
+	diff := nowMs - ts
+	if diff < 0 {
+		diff = -diff
+	}
+	if diff > fiveMinutesMs {
+		return false
+	}
+
+	signingString := fmt.Sprintf("%s.%s.%s", timestamp, nonce, string(payload))
+	mac := hmac.New(sha256.New, []byte(secret))
+	mac.Write([]byte(signingString))
+	expected := "sha256=" + hex.EncodeToString(mac.Sum(nil))
+	if !hmac.Equal([]byte(expected), []byte(signature)) {
+		return false
+	}
+
+	seenNonces.Range(func(key, value any) bool {
+		expiresAt, ok := value.(int64)
+		if ok && expiresAt <= nowMs {
+			seenNonces.Delete(key)
+		}
+		return true
+	})
+	_, replayed := seenNonces.LoadOrStore(nonce, nowMs+fiveMinutesMs)
+	return !replayed
+}
+
+func webhookHandler(w http.ResponseWriter, r *http.Request) {
+	payload, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		return
+	}
+	if !verifyWebhook(payload, r.Header, webhookSecret) {
+		http.Error(w, "Invalid signature", http.StatusUnauthorized)
+		return
+	}
+	// Process event...
+	fmt.Fprint(w, "OK")
+}
+```
+
+</section>
+
+<section>
+
+## Next steps
+
+- [Signature verification](/webhooks/verification)
+- [Webhook idempotency](/webhooks/idempotency)
+
+</section>

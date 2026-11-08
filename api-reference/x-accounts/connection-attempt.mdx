@@ -2,80 +2,15 @@
 title: "X account connection status API & login challenges"
 sidebarTitle: Get connection status
 description: "Poll a tracked X account connection until it succeeds, fails, or requests an email verification code. Wait for Retry-After between checks. Polling is free."
-api: "GET /x/account-connection-attempts/{id}"
+endpoint: "GET /x/account-connection-attempts/{id}"
 keywords: ["x accounts", "connect", "connection status", "pending"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
 
-{/* GENERATED RESPONSE EXAMPLES START */}
-
-<Panel>
-
-<Tabs defaultTabIndex={0} sync={false}>
-
-  <Tab title="200" id="response-x-accounts-connection-attempt-200">
-
-    ```json
-    {
-      "object": "x_account_connection_attempt",
-      "id": "xatt_0123456789abcdef0123456789abcdef",
-      "status": "pending",
-      "pollAfterMs": 3000
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="400" id="response-x-accounts-connection-attempt-400">
-
-    ```json
-    {
-      "error": "invalid_input",
-      "message": "Invalid input. Check the request body."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="401" id="response-x-accounts-connection-attempt-401">
-
-    ```json
-    {
-      "error": "unauthenticated",
-      "message": "Authentication required. Provide a valid API key or bearer token."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="403" id="response-x-accounts-connection-attempt-403">
-
-    ```json
-    {
-      "error": "session_required",
-      "message": "API keys & OAuth tokens cannot use this route. Sign in at dashboard.xquik.com/account instead."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="429" id="response-x-accounts-connection-attempt-429">
-
-    ```json
-    {
-      "error": "rate_limit_exceeded",
-      "message": "Too many requests. Try again later.",
-      "retryAfter": 60
-    }
-    ```
-
-  </Tab>
-</Tabs>
-
-</Panel>
-{/* GENERATED RESPONSE EXAMPLES END */}
 <LlmsDirective />
+
+`GET https://xquik.com/api/v1/x/account-connection-attempts/{id}`
 
 <Callout icon="circle-check" color="#16a34a">
 
@@ -118,20 +53,27 @@ const data = await response.json();
 
 </CodeGroup>
 
+<section>
+
 ## Headers
 
-<ParamField header="Cookie" type="string" required>
-  Your signed-in dashboard session cookie, `__Host-xquik_session`. API keys and OAuth tokens get
-  `403 session_required`.
-</ParamField>
+| Header   | Type     | Required | Description                                                                                                            |
+| -------- | -------- | -------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `Cookie` | `string` | Yes      | Your signed-in dashboard session cookie, `__Host-xquik_session`. API keys and OAuth tokens get `403 session_required`. |
+
+</section>
+
+<section>
 
 ## Path
 
-<ParamField path="id" type="string" required>
+| Path parameter | Type     | Required | Description                                                    |
+| -------------- | -------- | -------- | -------------------------------------------------------------- |
+| `id`           | `string` | Yes      | Connection attempt ID from the `202 pending` connect response. |
 
-Connection attempt ID from the `202 pending` connect response.
+</section>
 
-</ParamField>
+<section>
 
 ## Response
 
@@ -139,18 +81,12 @@ Every `200` response includes `Cache-Control: no-store`.
 
 ### 200 Pending
 
-<ResponseField name="object" type="string">
-  Always `x_account_connection_attempt`.
-</ResponseField>
-<ResponseField name="id" type="string">
-  Connection attempt ID.
-</ResponseField>
-<ResponseField name="status" type="string">
-  Always `pending`.
-</ResponseField>
-<ResponseField name="pollAfterMs" type="integer">
-  Milliseconds to wait before checking again.
-</ResponseField>
+| Field         | Type      | Description                                 |
+| ------------- | --------- | ------------------------------------------- |
+| `object`      | `string`  | Always `x_account_connection_attempt`.      |
+| `id`          | `string`  | Connection attempt ID.                      |
+| `status`      | `string`  | Always `pending`.                           |
+| `pollAfterMs` | `integer` | Milliseconds to wait before checking again. |
 
 ```json
 {
@@ -165,15 +101,11 @@ The response includes `Retry-After: 3`. Wait, then check the same attempt.
 
 ### 200 Success
 
-<ResponseField name="object" type="string">
-  Always `x_account_connection_attempt`.
-</ResponseField>
-<ResponseField name="id" type="string">
-  Connection attempt ID.
-</ResponseField>
-<ResponseField name="status" type="string">
-  Always `success`.
-</ResponseField>
+| Field    | Type     | Description                            |
+| -------- | -------- | -------------------------------------- |
+| `object` | `string` | Always `x_account_connection_attempt`. |
+| `id`     | `string` | Connection attempt ID.                 |
+| `status` | `string` | Always `success`.                      |
 
 ```json
 {
@@ -188,24 +120,14 @@ if you need its account ID.
 
 ### 200 Email code required
 
-<ResponseField name="object" type="string">
-  Always `x_account_connection_challenge`.
-</ResponseField>
-<ResponseField name="id" type="string">
-  Challenge ID, not the attempt ID.
-</ResponseField>
-<ResponseField name="status" type="string">
-  Always `requires_email_code`.
-</ResponseField>
-<ResponseField name="expiresAt" type="string">
-  ISO 8601 challenge expiration time.
-</ResponseField>
-<ResponseField name="message" type="string">
-  Human-readable next step.
-</ResponseField>
-<ResponseField name="username" type="string">
-  X username being connected.
-</ResponseField>
+| Field       | Type     | Description                              |
+| ----------- | -------- | ---------------------------------------- |
+| `object`    | `string` | Always `x_account_connection_challenge`. |
+| `id`        | `string` | Challenge ID, not the attempt ID.        |
+| `status`    | `string` | Always `requires_email_code`.            |
+| `expiresAt` | `string` | ISO 8601 challenge expiration time.      |
+| `message`   | `string` | Human-readable next step.                |
+| `username`  | `string` | X username being connected.              |
 
 ```json
 {
@@ -222,24 +144,14 @@ Submit the newest code to [Submit X Account Email Code](/api-reference/x-account
 
 ### 200 Failed
 
-<ResponseField name="object" type="string">
-  Always `x_account_connection_attempt`.
-</ResponseField>
-<ResponseField name="id" type="string">
-  Connection attempt ID.
-</ResponseField>
-<ResponseField name="status" type="string">
-  Always `failed`.
-</ResponseField>
-<ResponseField name="error" type="string">
-  Stable public error code.
-</ResponseField>
-<ResponseField name="reason" type="string">
-  More specific reason when available.
-</ResponseField>
-<ResponseField name="retryable" type="boolean">
-  Whether you can attempt another connect request.
-</ResponseField>
+| Field       | Type      | Description                                      |
+| ----------- | --------- | ------------------------------------------------ |
+| `object`    | `string`  | Always `x_account_connection_attempt`.           |
+| `id`        | `string`  | Connection attempt ID.                           |
+| `status`    | `string`  | Always `failed`.                                 |
+| `error`     | `string`  | Stable public error code.                        |
+| `reason`    | `string`  | More specific reason when available.             |
+| `retryable` | `boolean` | Whether you can attempt another connect request. |
 
 ```json
 {
@@ -255,30 +167,20 @@ Stop checking this attempt. Start a new connection only when `retryable` is `tru
 
 ### 400 Invalid input
 
-```json
-{ "error": "invalid_input", "message": "Invalid connection attempt ID. Check the path parameter." }
-```
+`{ "error": "invalid_input", "message": "Invalid connection attempt ID. Check the path parameter." }`
 
 The attempt ID is malformed, unavailable, or belongs to another account.
 Xquik does not keep attempts forever. Save the final result.
 
 ### 401 Unauthenticated
 
-```json
-{ "error": "unauthenticated", "message": "Missing or invalid API key" }
-```
+`{ "error": "unauthenticated", "message": "Missing or invalid API key" }`
 
 The API key is missing or invalid.
 
 ### 429 Rate limited
 
-```json
-{
-  "error": "rate_limit_exceeded",
-  "message": "Too many requests. Try again later.",
-  "retryAfter": 1
-}
-```
+`{ "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 1 }`
 
 Wait for `Retry-After` before checking again.
 
@@ -289,3 +191,20 @@ attempt. [Submit X Account Email Code](/api-reference/x-accounts/submit-challeng
 completes an email challenge.
 
 </Note>
+
+</section>
+
+{/* GENERATED RESPONSE EXAMPLES START */}
+
+<section>
+
+## Response examples
+
+- **400** `{ "error": "invalid_input", "message": "Invalid input. Check the request body." }`
+- **401** `{ "error": "unauthenticated", "message": "Authentication required. Provide a valid API key or bearer token." }`
+- **403** `{ "error": "session_required", "message": "API keys & OAuth tokens cannot use this route. Sign in at dashboard.xquik.com/account instead." }`
+- **429** `{ "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 60 }`
+
+</section>
+
+{/* GENERATED RESPONSE EXAMPLES END */}

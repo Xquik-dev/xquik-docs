@@ -2,7 +2,7 @@
 title: "Connected X accounts API, health & write readiness"
 sidebarTitle: "List X accounts"
 description: "Page through connected X accounts, inspect login health, and select the correct Xquik connection before Tweets, replies, DMs, likes, follows, or profile writes."
-api: "GET /x/accounts"
+endpoint: "GET /x/accounts"
 keywords:
   [
     "connected X accounts",
@@ -18,80 +18,9 @@ keywords:
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
 
-{/* GENERATED RESPONSE EXAMPLES START */}
-
-<Panel>
-
-<Tabs defaultTabIndex={0} sync={false}>
-
-  <Tab title="200" id="response-x-accounts-list-200">
-
-    ```json
-    {
-      "accounts": [
-        {
-          "id": "42",
-          "xUserId": "9876543210",
-          "xUsername": "elonmusk",
-          "status": "active",
-          "health": "healthy"
-        }
-      ],
-      "hasMore": false
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="400" id="response-x-accounts-list-400">
-
-    ```json
-    {
-      "error": "invalid_input",
-      "message": "Invalid account list cursor or limit."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="401" id="response-x-accounts-list-401">
-
-    ```json
-    {
-      "error": "unauthenticated",
-      "message": "Authentication required. Provide a valid API key or bearer token."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="403" id="response-x-accounts-list-403">
-
-    ```json
-    {
-      "error": "api_key_paused",
-      "message": "This API key is paused. Resume it at dashboard.xquik.com/api-keys to use it again."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="429" id="response-x-accounts-list-429">
-
-    ```json
-    {
-      "error": "rate_limit_exceeded",
-      "message": "Too many requests. Try again later.",
-      "retryAfter": 60
-    }
-    ```
-
-  </Tab>
-</Tabs>
-
-</Panel>
-{/* GENERATED RESPONSE EXAMPLES END */}
 <LlmsDirective />
+
+`GET https://xquik.com/api/v1/x/accounts`
 
 <Callout icon="circle-check" color="#16a34a">
 
@@ -111,6 +40,8 @@ Check `accounts[].health` before every write. Use only a ready connection.
 
 </Info>
 
+<section>
+
 ## Common uses
 
 | Workflow                                   | Use the response for                   |
@@ -119,6 +50,10 @@ Check `accounts[].health` before every write. Use only a ready connection.
 | After connection or reauthentication       | Confirm username and health            |
 | Before scheduled work                      | Exclude blocked accounts               |
 | During support                             | Compare status, health, and timestamps |
+
+</section>
+
+<section>
 
 ## Scope, ordering & pagination
 
@@ -144,6 +79,10 @@ integrations.
 An account without connections receives `{"accounts": [], "hasMore": false}`
 when pagination is active.
 
+</section>
+
+<section>
+
 ## Request
 
 <CodeGroup>
@@ -163,33 +102,31 @@ const page = await response.json();
 
 </CodeGroup>
 
+</section>
+
+<section>
+
 ## Headers
 
-<ParamField header="x-api-key" type="string">
+| Header          | Type     | Required | Description                                                                                            |
+| --------------- | -------- | -------- | ------------------------------------------------------------------------------------------------------ |
+| `x-api-key`     | `string` | No       | Xquik API key. Generate one from the [dashboard](https://dashboard.xquik.com/en/account?tab=api-keys). |
+| `Authorization` | `string` | No       | OAuth bearer token using `Bearer YOUR_TOKEN`.                                                          |
 
-Xquik API key. Generate one from the [dashboard](https://dashboard.xquik.com/en/account?tab=api-keys).
+</section>
 
-</ParamField>
-
-<ParamField header="Authorization" type="string">
-
-OAuth bearer token using `Bearer YOUR_TOKEN`.
-
-</ParamField>
+<section>
 
 ## Query parameters
 
-<ParamField query="limit" type="integer" default="50">
+| Query parameter | Type      | Required | Description                                                                    |
+| --------------- | --------- | -------- | ------------------------------------------------------------------------------ |
+| `limit`         | `integer` | No       | Page size from 1 through 100. The API caps larger values at 100. Default `50`. |
+| `cursor`        | `string`  | No       | Opaque `nextCursor` from the previous page. Do not decode or change it.        |
 
-Page size from 1 through 100. The API caps larger values at 100.
+</section>
 
-</ParamField>
-
-<ParamField query="cursor" type="string">
-
-Opaque `nextCursor` from the previous page. Do not decode or change it.
-
-</ParamField>
+<section>
 
 ## Read every page
 
@@ -213,73 +150,25 @@ do {
 } while (cursor);
 ```
 
+</section>
+
+<section>
+
 ## Response
 
-<ResponseField name="accounts" type="object[]" required>
-
-Connected X accounts. Empty when no connection exists.
-
-</ResponseField>
-
-<ResponseField name="hasMore" type="boolean">
-
-`true` when another cursor page exists. Present on paginated responses.
-
-</ResponseField>
-
-<ResponseField name="nextCursor" type="string">
-
-Opaque cursor for the next page. Present only when another page exists.
-
-</ResponseField>
-
-<ResponseField name="accounts[].id" type="string" required>
-
-Xquik connection ID. Use it as `accountId` for write endpoints.
-
-</ResponseField>
-
-<ResponseField name="accounts[].xUsername" type="string" required>
-
-Connected X username without `@`.
-
-</ResponseField>
-
-<ResponseField name="accounts[].xUserId" type="string" required>
-
-Stable X user ID. This is not the Xquik connection ID.
-
-</ResponseField>
-
-<ResponseField name="accounts[].status" type="string" required>
-
-Stored connection status. Read `health` before writes.
-
-</ResponseField>
-
-<ResponseField name="accounts[].health" type="string" required>
-
-Current write readiness. See [Account health](#account-health).
-
-</ResponseField>
-
-<ResponseField name="accounts[].connectedAt" type="string">
-
-ISO 8601 time when the account last connected or reconnected. Omitted before login.
-
-</ResponseField>
-
-<ResponseField name="accounts[].createdAt" type="string" required>
-
-ISO 8601 connection creation time.
-
-</ResponseField>
-
-<ResponseField name="accounts[].updatedAt" type="string" required>
-
-ISO 8601 time when the connection last changed.
-
-</ResponseField>
+| Field                    | Type       | Required | Description                                                                         |
+| ------------------------ | ---------- | -------- | ----------------------------------------------------------------------------------- |
+| `accounts`               | `object[]` | Yes      | Connected X accounts. Empty when no connection exists.                              |
+| `hasMore`                | `boolean`  | No       | `true` when another cursor page exists. Present on paginated responses.             |
+| `nextCursor`             | `string`   | No       | Opaque cursor for the next page. Present only when another page exists.             |
+| `accounts[].id`          | `string`   | Yes      | Xquik connection ID. Use it as `accountId` for write endpoints.                     |
+| `accounts[].xUsername`   | `string`   | Yes      | Connected X username without `@`.                                                   |
+| `accounts[].xUserId`     | `string`   | Yes      | Stable X user ID. This is not the Xquik connection ID.                              |
+| `accounts[].status`      | `string`   | Yes      | Stored connection status. Read `health` before writes.                              |
+| `accounts[].health`      | `string`   | Yes      | Current write readiness. See [Account health](#account-health).                     |
+| `accounts[].connectedAt` | `string`   | No       | ISO 8601 time when the account last connected or reconnected. Omitted before login. |
+| `accounts[].createdAt`   | `string`   | Yes      | ISO 8601 connection creation time.                                                  |
+| `accounts[].updatedAt`   | `string`   | Yes      | ISO 8601 time when the connection last changed.                                     |
 
 ```json
 {
@@ -300,6 +189,10 @@ ISO 8601 time when the connection last changed.
 }
 ```
 
+</section>
+
+<section>
+
 ## Choose the correct identifier
 
 | Field       | Scope            | Use                                    |
@@ -309,6 +202,10 @@ ISO 8601 time when the connection last changed.
 | `xUsername` | Public handle    | Confirm the account the operator meant |
 
 Do not send `xUserId` where a write endpoint requires `accountId`.
+
+</section>
+
+<section>
 
 ## Account health
 
@@ -333,6 +230,10 @@ until X restores the account. `recovering` reconnects on the next use.
 Use [Bulk Retry](/api-reference/x-accounts/bulk-retry) only for eligible temporary
 failures. It cannot fix credentials, locks, or suspensions.
 
+</section>
+
+<section>
+
 ## Errors
 
 ### 400 Invalid input
@@ -354,3 +255,37 @@ Wait for `Retry-After`, then request the same page again.
 [Bulk Retry](/api-reference/x-accounts/bulk-retry).
 
 </Note>
+
+</section>
+
+{/* GENERATED RESPONSE EXAMPLES START */}
+
+<section>
+
+## Response examples
+
+### 200 example
+
+```json
+{
+  "accounts": [
+    {
+      "id": "42",
+      "xUserId": "9876543210",
+      "xUsername": "elonmusk",
+      "status": "active",
+      "health": "healthy"
+    }
+  ],
+  "hasMore": false
+}
+```
+
+- **400** `{ "error": "invalid_input", "message": "Invalid account list cursor or limit." }`
+- **401** `{ "error": "unauthenticated", "message": "Authentication required. Provide a valid API key or bearer token." }`
+- **403** `{ "error": "api_key_paused", "message": "This API key is paused. Resume it at dashboard.xquik.com/api-keys to use it again." }`
+- **429** `{ "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 60 }`
+
+</section>
+
+{/* GENERATED RESPONSE EXAMPLES END */}

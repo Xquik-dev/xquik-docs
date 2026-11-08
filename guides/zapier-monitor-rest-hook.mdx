@@ -1,0 +1,205 @@
+---
+title: "Zapier Twitter monitor event REST hook trigger"
+sidebarTitle: "Monitor event REST hook"
+description: "Build a Zapier REST Hook trigger for Xquik monitor events. Get near-real-time tweets, replies, quotes, and retweets through a verification relay you control."
+keywords: ["Zapier REST hook", "Zapier Twitter trigger", "Twitter monitor", "Zapier webhook"]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+<LlmsDirective />
+
+This guide belongs to the [Zapier Twitter integration](/guides/zapier) build.
+
+<section>
+
+## Trigger 2. Monitor event REST hook
+
+Use REST Hooks for near-real-time tweets, replies, quotes, and retweets.
+
+### Choose a secure webhook path
+
+Use a verification relay. Keep the one-time signing secret outside Zapier logs.
+
+<CardGroup cols={2}>
+
+  <Card title="Production relay" icon="shield-check">
+
+    Let the relay create the Xquik webhook. Store its secret only in the relay.
+    Verify HMAC, timestamp, nonce, delivery ID, and event ID there. Forward a
+    normalized event to `bundle.targetUrl` after verification.
+
+  </Card>
+  <Card title="Direct private prototype" icon="flask-conical">
+
+    Use direct Zapier subscription only for isolated testing. The returned
+    secret enters `bundle.subscribeData` and may enter Zapier HTTP logs. Never
+    use this path when that exposure violates your secret policy.
+
+  </Card>
+</CardGroup>
+
+### Direct prototype subscribe
+
+```javascript
+async function subscribeHook(z, bundle) {
+  const response = await xquikRequest(z, {
+    method: "POST",
+    url: `${BASE_URL}/webhooks`,
+    body: {
+      url: bundle.targetUrl,
+      eventTypes: bundle.inputData.eventTypes,
+    },
+  });
+
+  return {
+    id: response.data.id,
+    secret: response.data.secret,
+    eventTypes: response.data.eventTypes,
+  };
+}
+```
+
+Zapier stores this result in `bundle.subscribeData`. Never expose the `secret`
+through trigger output. Use this path only for isolated testing.
+
+### Unsubscribe
+
+```javascript
+async function unsubscribeHook(z, bundle) {
+  const response = await xquikRequest(z, {
+    method: "DELETE",
+    url: `${BASE_URL}/webhooks/${bundle.subscribeData.id}`,
+  });
+
+  return response.data;
+}
+```
+
+### Direct prototype perform
+
+```javascript
+const { createHmac, timingSafeEqual } = require("node:crypto");
+
+const FIVE_MINUTES_MS = 5 * 60 * 1000;
+
+function readRawHeader(headers, requestedName) {
+  const wanted = requestedName.toLowerCase();
+
+  for (const [name, value] of Object.entries(headers || {})) {
+    const normalized = name.toLowerCase().replace(/^http-/, "");
+    if (normalized === wanted) {
+      return String(value);
+    }
+  }
+
+  return "";
+}
+
+function verifyXquikWebhook(z, bundle) {
+  const rawBody = bundle.rawRequest?.content;
+  const headers = bundle.rawRequest?.headers;
+  const secret = bundle.subscribeData?.secret;
+  const timestamp = readRawHeader(headers, "x-xquik-timestamp");
+  const nonce = readRawHeader(headers, "x-xquik-nonce");
+  const signature = readRawHeader(headers, "x-xquik-signature");
+
+  if (!rawBody || !secret || !timestamp || !nonce || !signature) {
+    throw new z.errors.Error(
+      "Webhook rejected. Signing fields are missing.",
+      "XquikWebhookVerificationError",
+      400,
+    );
+  }
+
+  const timestampMs = Number(timestamp);
+  if (!Number.isFinite(timestampMs) || Math.abs(Date.now() - timestampMs) > FIVE_MINUTES_MS) {
+    throw new z.errors.Error(
+      "Webhook rejected. Timestamp is stale or invalid.",
+      "XquikWebhookVerificationError",
+      400,
+    );
+  }
+
+  const signingString = `${timestamp}.${nonce}.${rawBody}`;
+  const expected = "sha256=" + createHmac("sha256", secret).update(signingString).digest("hex");
+  const expectedBuffer = Buffer.from(expected);
+  const actualBuffer = Buffer.from(signature);
+
+  if (
+    expectedBuffer.length !== actualBuffer.length ||
+    !timingSafeEqual(expectedBuffer, actualBuffer)
+  ) {
+    throw new z.errors.Error(
+      "Webhook rejected. Signature does not match.",
+      "XquikWebhookVerificationError",
+      400,
+    );
+  }
+
+  return JSON.parse(rawBody);
+}
+
+function performMonitorEvent(z, bundle) {
+  const payload = verifyXquikWebhook(z, bundle);
+
+  return [
+    {
+      id: payload.streamEventId || payload.deliveryId || String(payload.timestamp),
+      delivery_id: payload.deliveryId || null,
+      stream_event_id: payload.streamEventId || null,
+      event_type: payload.eventType,
+      occurred_at: payload.occurredAt || payload.timestamp,
+      username: payload.username || null,
+      tweet_id: payload.data?.id || null,
+      text: payload.data?.text || null,
+      author_username: payload.data?.author?.userName || payload.username || null,
+    },
+  ];
+}
+```
+
+Verify `bundle.rawRequest.content` before using `bundle.cleanedRequest`.
+Zapier prefixes most inbound raw headers with `Http-`. Normalize that prefix.
+
+Zapier does not provide a durable 5-minute nonce store.
+Place a durable verification relay before Zapier in production.
+Verify HMAC, timestamps, and nonces there.
+Deduplicate `deliveryId` and `streamEventId` before forwarding.
+Zapier owns responses from `bundle.targetUrl`.
+
+```javascript
+async function performList(z) {
+  const response = await xquikRequest(z, {
+    method: "GET",
+    url: `${BASE_URL}/events`,
+    params: { limit: 1 },
+  });
+
+  return (response.data.events || []).slice(0, 1).map((event) => ({
+    id: event.id,
+    delivery_id: null,
+    stream_event_id: event.id,
+    event_type: event.type,
+    occurred_at: event.occurredAt,
+    username: event.username || null,
+    tweet_id: event.data?.id || null,
+    text: event.data?.text || null,
+    author_username: event.data?.author?.userName || event.username || null,
+  }));
+}
+```
+
+Testing a REST Hook calls `performList`, not the live `perform` handler.
+
+</section>
+
+<section>
+
+## Next steps
+
+- [Zapier Twitter integration](/guides/zapier)
+- [Zapier error handling](/guides/zapier-error-handling)
+- [Zapier result handoff](/guides/zapier-result-handoff)
+
+</section>

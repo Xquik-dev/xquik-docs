@@ -2,7 +2,7 @@
 title: "Update an Xquik API key's name, scope or budget"
 sidebarTitle: "Update API key"
 description: "Rename an active Xquik API key, change its scope or set its monthly credit budget. It keeps its secret & expiry, and its next request uses the change."
-api: "PATCH /api-keys/{id}"
+endpoint: "PATCH /api-keys/{id}"
 keywords:
   [
     "api key",
@@ -20,104 +20,9 @@ keywords:
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
 
-{/* GENERATED RESPONSE EXAMPLES START */}
-
-<Panel>
-
-<Tabs defaultTabIndex={0} sync={false}>
-
-  <Tab title="200" id="response-api-keys-update-200">
-
-    ```json
-    {
-      "id": "42",
-      "name": "Analytics notebook",
-      "prefix": "xq_live_exam",
-      "scope": "paid_reads",
-      "scopes": [
-        "read"
-      ],
-      "allowedIps": [],
-      "isActive": true,
-      "createdAt": "2025-01-15T12:00:00Z",
-      "monthlyBudgetCredits": 50000,
-      "monthlySpentCredits": 1200
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="400" id="response-api-keys-update-400">
-
-    ```json
-    {
-      "error": "invalid_input",
-      "message": "Invalid input. Check the request body."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="401" id="response-api-keys-update-401">
-
-    ```json
-    {
-      "error": "unauthenticated",
-      "message": "Authentication required. Provide a valid API key or bearer token."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="403" id="response-api-keys-update-403">
-
-    ```json
-    {
-      "error": "session_required",
-      "message": "API keys & OAuth tokens cannot use this route. Sign in at dashboard.xquik.com/account instead."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="404" id="response-api-keys-update-404">
-
-    ```json
-    {
-      "error": "not_found",
-      "message": "Resource not found."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="409" id="response-api-keys-update-409">
-
-    ```json
-    {
-      "error": "api_key_revoked",
-      "message": "This API key is revoked. Create a new key at dashboard.xquik.com/api-keys."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="429" id="response-api-keys-update-429">
-
-    ```json
-    {
-      "error": "rate_limit_exceeded",
-      "message": "Too many requests. Try again later.",
-      "retryAfter": 60
-    }
-    ```
-
-  </Tab>
-</Tabs>
-
-</Panel>
-{/* GENERATED RESPONSE EXAMPLES END */}
 <LlmsDirective />
+
+`PATCH https://xquik.com/api/v1/api-keys/{id}`
 
 Rename a key so its owner is clear. Narrow a key that only reads to `paid_reads`.
 Pause a key to stop it for a while, then resume it. Limit a key to your servers with `allowedIps`.
@@ -212,81 +117,46 @@ func main() {
 
 </CodeGroup>
 
+<section>
+
 ## Path parameters
 
-<ParamField path="id" type="string" required>
+| Path parameter | Type     | Required | Description                                     |
+| -------------- | -------- | -------- | ----------------------------------------------- |
+| `id`           | `string` | Yes      | The unique identifier of the API key to update. |
 
-The unique identifier of the API key to update.
+</section>
 
-</ParamField>
+<section>
 
 ## Headers
 
-<ParamField header="Cookie" type="string" required>
-  Your signed-in dashboard session cookie, `__Host-xquik_session`. API keys and OAuth tokens get
-  `403 session_required`.
-</ParamField>
+| Header         | Type     | Required | Description                                                                                                            |
+| -------------- | -------- | -------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `Cookie`       | `string` | Yes      | Your signed-in dashboard session cookie, `__Host-xquik_session`. API keys and OAuth tokens get `403 session_required`. |
+| `Origin`       | `string` | Yes      | Must be `https://dashboard.xquik.com`, sent with `Sec-Fetch-Site` set to `same-origin`. The dashboard sends both.      |
+| `Content-Type` | `string` | Yes      | Must be `application/json`.                                                                                            |
 
-<ParamField header="Origin" type="string" required>
-  Must be `https://dashboard.xquik.com`, sent with `Sec-Fetch-Site` set to `same-origin`. The
-  dashboard sends both.
-</ParamField>
+</section>
 
-<ParamField header="Content-Type" type="string" required>
-
-Must be `application/json`.
-
-</ParamField>
+<section>
 
 ## Body
 
 Send at least 1 field.
 
-<ParamField body="name" type="string">
+| Body parameter         | Type       | Required | Description                                                                                                                                                                                                                                                                                                                                                       |
+| ---------------------- | ---------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `name`                 | `string`   | No       | New display name, up to 100 characters. An empty name saves `"Default"`.                                                                                                                                                                                                                                                                                          |
+| `scope`                | `string`   | No       | `full` calls every route an API key can use. `paid_reads` calls paid X read routes only. Other routes answer it with `403 insufficient_scope`. The key's next request uses the new scope.                                                                                                                                                                         |
+| `scopes`               | `string[]` | No       | The scopes the key holds, from `full`, `read`, `write`, `monitors`, `exports` & `billing`. Every key holds `read`. `scopes` wins over `scope`. Missing keeps the key's scopes. The key's next request uses the new list.                                                                                                                                          |
+| `paused`               | `boolean`  | No       | `true` pauses the key, and `false` resumes it. A paused key gets `403 api_key_paused` on every request. Its next request after you resume goes through. Sending the current state again changes nothing. While paused, the key has `pausedAt`, the time you paused it. A revoked key answers `409 api_key_revoked`. An expired key answers `409 api_key_expired`. |
+| `allowedIps`           | `string[]` | No       | Up to 20 IPv4 or IPv6 addresses or CIDR ranges may use the key. The list replaces the saved one. Send `[]` to allow any IP again. Calls from other IPs get `403 ip_not_allowed`. The key's next request uses the new list.                                                                                                                                        |
+| `monthlyBudgetCredits` | `integer`  | No       | Credits the key can spend each UTC calendar month, from 1 to 1,000,000,000,000. `null` removes the budget, and a missing field keeps it. Raise or remove the budget, & the key's next call works again.                                                                                                                                                           |
 
-New display name, up to 100 characters. An empty name saves `"Default"`.
+</section>
 
-</ParamField>
-
-<ParamField body="scope" type="string">
-
-`full` calls every route an API key can use. `paid_reads` calls paid X read routes only. Other
-routes answer it with `403 insufficient_scope`. The key's next request uses the new scope.
-
-</ParamField>
-
-<ParamField body="scopes" type="string[]">
-
-The scopes the key holds, from `full`, `read`, `write`, `monitors`, `exports` & `billing`.
-Every key holds `read`. `scopes` wins over `scope`. Missing keeps the key's scopes.
-The key's next request uses the new list.
-
-</ParamField>
-
-<ParamField body="paused" type="boolean">
-
-`true` pauses the key, and `false` resumes it. A paused key gets `403 api_key_paused` on every
-request. Its next request after you resume goes through. Sending the current state again changes
-nothing. While paused, the key has `pausedAt`, the time you paused it. A revoked key answers
-`409 api_key_revoked`. An expired key answers `409 api_key_expired`.
-
-</ParamField>
-
-<ParamField body="allowedIps" type="string[]">
-
-Up to 20 IPv4 or IPv6 addresses or CIDR ranges may use the key. The list replaces the saved
-one. Send `[]` to allow any IP again. Calls from other IPs get `403 ip_not_allowed`. The key's next
-request uses the new list.
-
-</ParamField>
-
-<ParamField body="monthlyBudgetCredits" type="integer">
-
-Credits the key can spend each UTC calendar month, from 1 to 1,000,000,000,000. `null` removes the
-budget, and a missing field keeps it. Raise or remove the budget, & the key's next call works
-again.
-
-</ParamField>
+<section>
 
 ## Response
 
@@ -312,12 +182,7 @@ Returns the saved key with the same fields as [List API keys](/api-reference/api
 
 ### 400 Invalid input
 
-```json
-{
-  "error": "invalid_input",
-  "message": "Send name, scopes, paused, allowedIps or monthlyBudgetCredits to change."
-}
-```
+`{ "error": "invalid_input", "message": "Send name, scopes, paused, allowedIps or monthlyBudgetCredits to change." }`
 
 The body had no field to change, or `scope` was not `full` or `paid_reads`.
 A `scopes` entry that was not a scope fails too. So does a `name` longer than 100 characters.
@@ -327,29 +192,13 @@ Xquik changes nothing.
 
 ### 401 Unauthenticated
 
-```json
-{ "error": "unauthenticated" }
-```
-
 Missing, expired, or invalid dashboard session cookie.
 
 ### 404 Not found
 
-```json
-{ "error": "not_found" }
-```
-
 No active API key with this ID exists on your account. A revoked key cannot change.
 
 ### 429 Rate limited
-
-```json
-{
-  "error": "rate_limit_exceeded",
-  "message": "Too many requests. Try again later.",
-  "retryAfter": 60
-}
-```
 
 Too many requests. Wait for the `Retry-After` header before retrying.
 
@@ -361,3 +210,22 @@ change account keys.
 **Related.** [Create API Key](/api-reference/api-keys/create) &middot; [List API Keys](/api-reference/api-keys/list) &middot; [Revoke API Key](/api-reference/api-keys/revoke)
 
 </Note>
+
+</section>
+
+{/* GENERATED RESPONSE EXAMPLES START */}
+
+<section>
+
+## Response examples
+
+- **400** `{ "error": "invalid_input", "message": "Invalid input. Check the request body." }`
+- **401** `{ "error": "unauthenticated", "message": "Authentication required. Provide a valid API key or bearer token." }`
+- **403** `{ "error": "session_required", "message": "API keys & OAuth tokens cannot use this route. Sign in at dashboard.xquik.com/account instead." }`
+- **404** `{ "error": "not_found", "message": "Resource not found." }`
+- **409** `{ "error": "api_key_revoked", "message": "This API key is revoked. Create a new key at dashboard.xquik.com/api-keys." }`
+- **429** `{ "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 60 }`
+
+</section>
+
+{/* GENERATED RESPONSE EXAMPLES END */}

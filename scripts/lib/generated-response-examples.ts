@@ -12,5 +12,7 @@ export function stripGeneratedResponseExamples(source: string): string {
     throw new Error("Generated response example markers are incomplete.");
   }
 
-  return `${source.slice(0, start)}${source.slice(end + GENERATED_RESPONSE_EXAMPLES_END.length)}`;
+  const before = source.slice(0, start).trimEnd();
+  const after = source.slice(end + GENERATED_RESPONSE_EXAMPLES_END.length).trimStart();
+  return after === "" ? `${before}\n` : `${before}\n\n${after}`;
 }

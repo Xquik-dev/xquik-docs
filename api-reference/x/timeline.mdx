@@ -2,7 +2,7 @@
 title: "Twitter timeline API for home feed tweets & media"
 sidebarTitle: "Get timeline"
 description: "Get a connected X account's home feed. Paginate tweets with authors, replies, reposts, likes, views, media, and cursors. Costs 1 credit per tweet returned."
-api: "GET /x/timeline"
+endpoint: "GET /x/timeline"
 keywords:
   [
     "Twitter timeline API",
@@ -22,137 +22,9 @@ keywords:
 import LlmsDirective from "/snippets/llms-directive.mdx";
 import ConnectedAccountApiLinks from "/snippets/x-connected-account-api-links.mdx";
 
-{/* GENERATED RESPONSE EXAMPLES START */}
-
-<Panel>
-
-<Tabs defaultTabIndex={0} sync={false}>
-
-  <Tab title="200" id="response-x-timeline-200">
-
-    ```json
-    {
-      "tweets": [
-        {
-          "id": "2102761519985332442",
-          "text": "This galaxy is a little extra.\n\nMeet Messier 106, a spiral galaxy with an extra set of arms. These two additional arms are made of gas heated up by jets from the galaxy’s central black hole. The jets’ superheated shockwaves are depicted in royal blue by @chandraxray. https://t.co/421Lzs0r0c",
-          "retweetCount": 1364,
-          "replyCount": 271,
-          "likeCount": 9775
-        }
-      ],
-      "has_next_page": true,
-      "next_cursor": "DAAHCgABHTK6Vr___-sLAAIAAAATMjEwMTc3MDE4NjE1NjA1Mjk1OQgAAwAAAAIAAA",
-      "filtered_count": 0
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="400" id="response-x-timeline-400">
-
-    ```json
-    {
-      "error": "invalid_input",
-      "message": "Invalid input. Check the request body."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="401" id="response-x-timeline-401">
-
-    ```json
-    {
-      "error": "unauthenticated",
-      "message": "Authentication required. Provide a valid API key or bearer token."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="402" id="response-x-timeline-402">
-
-    ```json
-    {
-      "error": "insufficient_credits",
-      "message": "Insufficient credits. Top up or subscribe to continue."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="403" id="response-x-timeline-403">
-
-    ```json
-    {
-      "error": "api_key_paused",
-      "message": "This API key is paused. Resume it at dashboard.xquik.com/api-keys to use it again."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="410" id="response-x-timeline-410">
-
-    ```json
-    {
-      "error": "cursor_account_unavailable",
-      "message": "The X account for this cursor is unavailable. Start again without the cursor."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="424" id="response-x-timeline-424">
-
-    ```json
-    {
-      "error": "x_api_unavailable",
-      "message": "X data source temporarily unavailable. Try again later."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="429" id="response-x-timeline-429">
-
-    ```json
-    {
-      "error": "rate_limit_exceeded",
-      "message": "Too many requests. Try again later.",
-      "retryAfter": 60
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="502" id="response-x-timeline-502">
-
-    ```json
-    {
-      "error": "x_api_unavailable",
-      "message": "X data source temporarily unavailable. Try again later."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="503" id="response-x-timeline-503">
-
-    ```json
-    {
-      "error": "x_api_unavailable",
-      "message": "Xquik is busy right now. Retry shortly."
-    }
-    ```
-
-  </Tab>
-</Tabs>
-
-</Panel>
-{/* GENERATED RESPONSE EXAMPLES END */}
 <LlmsDirective />
+
+`GET https://xquik.com/api/v1/x/timeline`
 
 <Note>
 
@@ -305,6 +177,8 @@ for page_index in range(3):
 
 </CodeGroup>
 
+<section>
+
 ## Home timeline handoff
 
 Use `GET /x/timeline` for the authenticated account's home feed.
@@ -356,6 +230,10 @@ is not a complete public archive. X explains the feed model in its
 | `page_cursor`        | Request `cursor`       | Trace the page that produced each row.             |
 | `next_cursor`        | Response `next_cursor` | Resume after storing the current page.             |
 
+</section>
+
+<section>
+
 ## Twitter API timeline pagination
 
 Process one home-feed page at a time.
@@ -372,6 +250,10 @@ After a 410 `cursor_account_unavailable` response, start again without the curso
 After other 424 or 502 responses, retry the stored cursor.
 Never advance a checkpoint after a failed destination write.
 
+</section>
+
+<section>
+
 ## Route home timeline tweets
 
 | Routing rule     | Concrete match                             | Destination                             |
@@ -384,6 +266,10 @@ Never advance a checkpoint after a failed destination write.
 
 Keep each rule name beside its tweet ID. Keep the original tweet text.
 Reprocess a tweet only after its routing rule changes.
+
+</section>
+
+<section>
 
 ## Twitter timeline API questions
 
@@ -410,19 +296,20 @@ Connect an X account after `424 account_required`. Start again without the
 cursor after `410 cursor_account_unavailable`. Respect `Retry-After` after 429
 or 503. Resume from the stored cursor after other 424 or 502 responses.
 
+</section>
+
+<section>
+
 ## Query parameters
 
-<ParamField query="cursor" type="string">
+| Query parameter | Type     | Required | Description                                                                                                                                               |
+| --------------- | -------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `cursor`        | `string` | No       | Pagination cursor. Pass the `next_cursor` value from the previous response to fetch the next page. The next page comes from the same connected X account. |
+| `seenTweetIds`  | `string` | No       | Comma-separated tweet IDs to exclude from results. Ignore empty entries. Use this to skip tweets the user has already seen.                               |
 
-Pagination cursor. Pass the `next_cursor` value from the previous response to fetch the next page. The next page comes from the same connected X account.
+</section>
 
-</ParamField>
-
-<ParamField query="seenTweetIds" type="string">
-
-Comma-separated tweet IDs to exclude from results. Ignore empty entries. Use this to skip tweets the user has already seen.
-
-</ParamField>
+<section>
 
 ## Which timeline endpoint?
 
@@ -465,86 +352,70 @@ Comma-separated tweet IDs to exclude from results. Ignore empty entries. Use thi
   </Card>
 </CardGroup>
 
+</section>
+
+<section>
+
 ## Headers
 
-<ParamField header="x-api-key" type="string" required>
+| Header      | Type     | Required | Description                                                         |
+| ----------- | -------- | -------- | ------------------------------------------------------------------- |
+| `x-api-key` | `string` | Yes      | Your API key. You can also authenticate with an OAuth bearer token. |
 
-Your API key. You can also authenticate with an OAuth bearer token.
+</section>
 
-</ParamField>
+<section>
 
 ## Response
 
 ### 200 OK
 
-<ResponseField name="tweets" type="object[]">
-
-Array of timeline tweets.
-**Tweet object fields.**
-
-<ResponseField name="id" type="string">Tweet ID.</ResponseField>
-<ResponseField name="text" type="string">Contains the tweet text.</ResponseField>
-<ResponseField name="type" type="string">Returns the tweet type when available.</ResponseField>
-<ResponseField name="createdAt" type="string">Returns an ISO 8601 timestamp when available.</ResponseField>
-<ResponseField name="isNoteTweet" type="boolean">Marks long-form Note Tweets when available.</ResponseField>
-<ResponseField name="isPinned" type="boolean">Whether the author pinned this post to their profile. Omitted if unavailable.</ResponseField>
-<ResponseField name="likeCount" type="number">Counts likes when available.</ResponseField>
-<ResponseField name="retweetCount" type="number">Counts reposts when available.</ResponseField>
-<ResponseField name="replyCount" type="number">Counts replies when available.</ResponseField>
-<ResponseField name="quoteCount" type="number">Counts quote tweets when available.</ResponseField>
-<ResponseField name="viewCount" type="number">Counts views when available.</ResponseField>
-<ResponseField name="bookmarkCount" type="number">Counts bookmarks when available.</ResponseField>
-<ResponseField name="url" type="string">Links to the tweet on X when available.</ResponseField>
-<ResponseField name="lang" type="string">Identifies the tweet language when available.</ResponseField>
-<ResponseField name="isReply" type="boolean">Marks replies when available.</ResponseField>
-<ResponseField name="inReplyToId" type="string">Identifies the parent tweet for a reply.</ResponseField>
-<ResponseField name="inReplyToUserId" type="string">Identifies the replied-to user.</ResponseField>
-<ResponseField name="inReplyToUsername" type="string">Identifies the replied-to username.</ResponseField>
-<ResponseField name="conversationId" type="string">Identifies the conversation when available.</ResponseField>
-<ResponseField name="source" type="string">Identifies the posting client when available.</ResponseField>
-<ResponseField name="displayTextRange" type="number[]">Provides rendered text offsets when available.</ResponseField>
-<ResponseField name="isLimitedReply" type="boolean">Shows whether X limits replies.</ResponseField>
-<ResponseField name="isQuoteStatus" type="boolean">Marks quote tweets when available.</ResponseField>
-<ResponseField name="isRetweet" type="boolean">Whether this row is a retweet. `text` carries the original post in full.</ResponseField>
-<ResponseField name="entities" type="object">Returns parsed entities when available.</ResponseField>
-<ResponseField name="contentDisclosure" type="object">Describes paid partnerships and AI-generated media. Includes `advertising.isPaidPromotion` and `aiGenerated.hasAiGeneratedMedia` when X returns them.</ResponseField>
-<ResponseField name="author" type="object">
-
-      Returns the tweet author when available.
-      **Author object fields.**
-        <ResponseField name="id" type="string">Identifies the author.</ResponseField>
-        <ResponseField name="username" type="string">Returns the current X username.</ResponseField>
-        <ResponseField name="name" type="string">Returns the display name.</ResponseField>
-        <ResponseField name="followers" type="number">Counts the author's followers.</ResponseField>
-        <ResponseField name="verified" type="boolean">Shows whether X marks the author as verified.</ResponseField>
-        <ResponseField name="profilePicture" type="string">Returns the profile image URL when available.</ResponseField>
-        <ResponseField name="profilePictureOriginal" type="string">The same profile picture at full size, to download. Omitted if unavailable.</ResponseField>
-
-    </ResponseField>
-    <ResponseField name="media" type="object[]">
-
-      Lists attached images, GIFs, or videos when available.
-      **Media item fields.**
-        <ResponseField name="mediaUrl" type="string">Returns the direct media URL.</ResponseField>
-        <ResponseField name="videoVariants" type="object[]">Lists video renditions with bitrates, content types, and URLs.</ResponseField>
-        <ResponseField name="type" type="string">Identifies the media type.</ResponseField>
-        <ResponseField name="url" type="string">Returns the shortened URL from the tweet text.</ResponseField>
-
-    </ResponseField>
-    <ResponseField name="quoted_tweet" type="object">Embeds the quoted tweet when present.</ResponseField>
-    <ResponseField name="retweeted_tweet" type="object">Embeds the original repost when present.</ResponseField>
-
-</ResponseField>
-<ResponseField name="has_next_page" type="boolean">
-
-Shows whether more tweets remain.
-
-</ResponseField>
-<ResponseField name="next_cursor" type="string">
-
-Provides the next page cursor. Empty after the final page.
-
-</ResponseField>
+| Field                                    | Type       | Description                                                                                                                                           |
+| ---------------------------------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tweets`                                 | `object[]` | Array of timeline tweets.                                                                                                                             |
+| `tweets[].id`                            | `string`   | Tweet ID.                                                                                                                                             |
+| `tweets[].text`                          | `string`   | Contains the tweet text.                                                                                                                              |
+| `tweets[].type`                          | `string`   | Returns the tweet type when available.                                                                                                                |
+| `tweets[].createdAt`                     | `string`   | Returns an ISO 8601 timestamp when available.                                                                                                         |
+| `tweets[].isNoteTweet`                   | `boolean`  | Marks long-form Note Tweets when available.                                                                                                           |
+| `tweets[].isPinned`                      | `boolean`  | Whether the author pinned this post to their profile. Omitted if unavailable.                                                                         |
+| `tweets[].likeCount`                     | `number`   | Counts likes when available.                                                                                                                          |
+| `tweets[].retweetCount`                  | `number`   | Counts reposts when available.                                                                                                                        |
+| `tweets[].replyCount`                    | `number`   | Counts replies when available.                                                                                                                        |
+| `tweets[].quoteCount`                    | `number`   | Counts quote tweets when available.                                                                                                                   |
+| `tweets[].viewCount`                     | `number`   | Counts views when available.                                                                                                                          |
+| `tweets[].bookmarkCount`                 | `number`   | Counts bookmarks when available.                                                                                                                      |
+| `tweets[].url`                           | `string`   | Links to the tweet on X when available.                                                                                                               |
+| `tweets[].lang`                          | `string`   | Identifies the tweet language when available.                                                                                                         |
+| `tweets[].isReply`                       | `boolean`  | Marks replies when available.                                                                                                                         |
+| `tweets[].inReplyToId`                   | `string`   | Identifies the parent tweet for a reply.                                                                                                              |
+| `tweets[].inReplyToUserId`               | `string`   | Identifies the replied-to user.                                                                                                                       |
+| `tweets[].inReplyToUsername`             | `string`   | Identifies the replied-to username.                                                                                                                   |
+| `tweets[].conversationId`                | `string`   | Identifies the conversation when available.                                                                                                           |
+| `tweets[].source`                        | `string`   | Identifies the posting client when available.                                                                                                         |
+| `tweets[].displayTextRange`              | `number[]` | Provides rendered text offsets when available.                                                                                                        |
+| `tweets[].isLimitedReply`                | `boolean`  | Shows whether X limits replies.                                                                                                                       |
+| `tweets[].isQuoteStatus`                 | `boolean`  | Marks quote tweets when available.                                                                                                                    |
+| `tweets[].isRetweet`                     | `boolean`  | Whether this row is a retweet. `text` carries the original post in full.                                                                              |
+| `tweets[].entities`                      | `object`   | Returns parsed entities when available.                                                                                                               |
+| `tweets[].contentDisclosure`             | `object`   | Describes paid partnerships and AI-generated media. Includes `advertising.isPaidPromotion` and `aiGenerated.hasAiGeneratedMedia` when X returns them. |
+| `tweets[].author`                        | `object`   | Returns the tweet author when available.                                                                                                              |
+| `tweets[].author.id`                     | `string`   | Identifies the author.                                                                                                                                |
+| `tweets[].author.username`               | `string`   | Returns the current X username.                                                                                                                       |
+| `tweets[].author.name`                   | `string`   | Returns the display name.                                                                                                                             |
+| `tweets[].author.followers`              | `number`   | Counts the author's followers.                                                                                                                        |
+| `tweets[].author.verified`               | `boolean`  | Shows whether X marks the author as verified.                                                                                                         |
+| `tweets[].author.profilePicture`         | `string`   | Returns the profile image URL when available.                                                                                                         |
+| `tweets[].author.profilePictureOriginal` | `string`   | The same profile picture at full size, to download. Omitted if unavailable.                                                                           |
+| `tweets[].media`                         | `object[]` | Lists attached images, GIFs, or videos when available.                                                                                                |
+| `tweets[].media[].mediaUrl`              | `string`   | Returns the direct media URL.                                                                                                                         |
+| `tweets[].media[].videoVariants`         | `object[]` | Lists video renditions with bitrates, content types, and URLs.                                                                                        |
+| `tweets[].media[].type`                  | `string`   | Identifies the media type.                                                                                                                            |
+| `tweets[].media[].url`                   | `string`   | Returns the shortened URL from the tweet text.                                                                                                        |
+| `tweets[].quoted_tweet`                  | `object`   | Embeds the quoted tweet when present.                                                                                                                 |
+| `tweets[].retweeted_tweet`               | `object`   | Embeds the original repost when present.                                                                                                              |
+| `has_next_page`                          | `boolean`  | Shows whether more tweets remain.                                                                                                                     |
+| `next_cursor`                            | `string`   | Provides the next page cursor. Empty after the final page.                                                                                            |
 
 ```json
 {
@@ -574,57 +445,26 @@ Provides the next page cursor. Empty after the final page.
 
 ### 401 Unauthenticated
 
-```json
-{ "error": "unauthenticated" }
-```
-
 Missing or invalid API key.
 
 ### 402 Insufficient credits
 
-```json
-{ "error": "insufficient_credits" }
-```
-
 Metered access requires enough available credits. Possible error values include `no_subscription`, `subscription_inactive`, `no_credits`, and `insufficient_credits`.
 
 ### 410 Cursor account unavailable
-
-```json
-{
-  "error": "cursor_account_unavailable",
-  "message": "The X account for this cursor is unavailable. Start again without the cursor."
-}
-```
 
 The X account that returned the cursor can no longer read. Request the first
 page again without `cursor`.
 
 ### 429 Rate limit exceeded
 
-```json
-{
-  "error": "rate_limit_exceeded",
-  "message": "Too many requests. Try again later.",
-  "retryAfter": 60
-}
-```
-
 The API key, user, or plan tier is sending requests too fast. Respect the `Retry-After` header before retrying.
 
 ### 502 X API unavailable
 
-```json
-{ "error": "x_api_unavailable" }
-```
-
 The read service failed. Retry after a short delay.
 
 ### 424 Dependency failed
-
-```json
-{ "error": "x_api_unavailable" }
-```
 
 The opt-in normalized v1 contract returns `424` when the read service fails.
 Send `xquik-api-contract: 2026-04-29` to opt in. Default v1 returns `502`.
@@ -632,12 +472,7 @@ Send `xquik-api-contract: 2026-04-29` to opt in. Default v1 returns `502`.
 Without a connected X account, the route returns `424 account_required`. This
 status needs no contract header.
 
-```json
-{
-  "error": "account_required",
-  "message": "This read needs your own connected X account. Connect or restore it at dashboard.xquik.com/account, then retry."
-}
-```
+`{ "error": "account_required", "message": "This read needs your own connected X account. Connect or restore it at dashboard.xquik.com/account, then retry." }`
 
 <Note>
 
@@ -646,3 +481,25 @@ status needs no contract header.
 </Note>
 
 <ConnectedAccountApiLinks />
+
+</section>
+
+{/* GENERATED RESPONSE EXAMPLES START */}
+
+<section>
+
+## Response examples
+
+- **400** `{ "error": "invalid_input", "message": "Invalid input. Check the request body." }`
+- **401** `{ "error": "unauthenticated", "message": "Authentication required. Provide a valid API key or bearer token." }`
+- **402** `{ "error": "insufficient_credits", "message": "Insufficient credits. Top up or subscribe to continue." }`
+- **403** `{ "error": "api_key_paused", "message": "This API key is paused. Resume it at dashboard.xquik.com/api-keys to use it again." }`
+- **410** `{ "error": "cursor_account_unavailable", "message": "The X account for this cursor is unavailable. Start again without the cursor." }`
+- **424** `{ "error": "x_api_unavailable", "message": "X data source temporarily unavailable. Try again later." }`
+- **429** `{ "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 60 }`
+- **502** `{ "error": "x_api_unavailable", "message": "X data source temporarily unavailable. Try again later." }`
+- **503** `{ "error": "x_api_unavailable", "message": "Xquik is busy right now. Retry shortly." }`
+
+</section>
+
+{/* GENERATED RESPONSE EXAMPLES END */}

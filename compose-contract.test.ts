@@ -2,6 +2,8 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
+import { collapseTableSpacing } from "./scripts/lib/documented-fields.ts";
+import { readPageFamily } from "./scripts/lib/page-family.ts";
 import { stripGeneratedResponseExamples } from "./scripts/lib/generated-response-examples";
 
 const ROOT = process.cwd();
@@ -10,18 +12,20 @@ function read(relativePath: string): string {
   return readFileSync(join(ROOT, relativePath), "utf8");
 }
 
-const COMPOSE_PAGE = stripGeneratedResponseExamples(read("api-reference/compose/create.mdx"));
+const COMPOSE_PAGE = collapseTableSpacing(
+  stripGeneratedResponseExamples(read("api-reference/compose/create.mdx")),
+);
 const OPENAPI = read("openapi.yaml");
 const RELATED_GUIDES = [
   read("index.mdx"),
   read("skill.md"),
-  read("mcp/tools.mdx"),
-  read("guides/x-api-typescript-types.mdx"),
+  readPageFamily("mcp/tools.mdx"),
+  readPageFamily("guides/x-api-typescript-types.mdx"),
 ].join("\n");
 
 const REQUIRED_PAGE_COPY = [
   "Returns 10 source facts and 4 follow-up questions.",
-  '<ResponseField name="radarRecommendations" type="object[]" required>',
+  "radarRecommendations` | `object[]` | Yes |",
   "Deprecated compatibility field. Always empty.",
   "It checks that the draft contains text.",
   "Runs one deterministic input check.",
@@ -37,11 +41,11 @@ const FOCUSED_COMPOSER_COPY = [
   '"tweet composer"',
   '"how to write a good tweet"',
   "OAuth bearer token using `Bearer YOUR_TOKEN`.",
-  '<ResponseField name="contentRules[].rule" type="string" required>',
-  '<ResponseField name="engagementMultipliers[].action" type="string" required>',
-  '<ResponseField name="scorerWeights[].weight" type="null" required>',
-  '<ResponseField name="checklist[].suggestion" type="string">',
-  '<ResponseField name="passedCount" type="integer" required>',
+  "contentRules[].rule` | `string` | Yes |",
+  "engagementMultipliers[].action` | `string` | Yes |",
+  "scorerWeights[].weight` | `null` | Yes |",
+  "checklist[].suggestion` | `string` |",
+  "passedCount` | `integer` | Yes |",
   "Missing style without available credits | 200 response with `styleNote`",
   "Missing style with available credits | 400 `invalid_input`",
   "Analyze the username with `POST /api/v1/styles`",

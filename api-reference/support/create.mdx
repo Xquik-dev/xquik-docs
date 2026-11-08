@@ -2,100 +2,17 @@
 title: "Create Xquik support ticket with media API"
 sidebarTitle: "Create ticket"
 description: "Open a private support ticket with a subject, message, screenshots, or videos. Save its ticket ID for replies, status updates, and downloads. Tickets are free."
-api: "POST /support/tickets"
+endpoint: "POST /support/tickets"
 keywords: ["support", "ticket", "create", "help"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
 
-{/* GENERATED RESPONSE EXAMPLES START */}
-
-<Panel>
-
-<Tabs defaultTabIndex={0} sync={false}>
-
-  <Tab title="200" id="response-support-create-200">
-
-    ```json
-    {
-      "publicId": "tkt_a1b2c3d4e5f6a1b2c3d4e5f6",
-      "attachments": []
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="201" id="response-support-create-201">
-
-    ```json
-    {
-      "publicId": "tkt_a1b2c3d4e5f6a1b2c3d4e5f6",
-      "attachments": []
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="400" id="response-support-create-400">
-
-    ```json
-    {
-      "error": "invalid_input",
-      "message": "Invalid input. Check the request body."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="401" id="response-support-create-401">
-
-    ```json
-    {
-      "error": "unauthenticated",
-      "message": "Authentication required. Provide a valid API key or bearer token."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="403" id="response-support-create-403">
-
-    ```json
-    {
-      "error": "api_key_paused",
-      "message": "This API key is paused. Resume it at dashboard.xquik.com/api-keys to use it again."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="409" id="response-support-create-409">
-
-    ```json
-    {
-      "error": "idempotency_key_conflict",
-      "message": "Reuse this Idempotency-Key only with the original request."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="429" id="response-support-create-429">
-
-    ```json
-    {
-      "error": "rate_limit_exceeded",
-      "message": "Too many requests. Try again later.",
-      "retryAfter": 60
-    }
-    ```
-
-  </Tab>
-</Tabs>
-
-</Panel>
-{/* GENERATED RESPONSE EXAMPLES END */}
 <LlmsDirective />
+
+`POST https://xquik.com/api/v1/support/tickets`
+
+<section>
 
 ## When to open a new ticket
 
@@ -205,45 +122,29 @@ func main() {
 | Attachment state              | `attachments[].status`       | Continue only when the attachment is `ready`.            |
 | Safe replay                   | `Idempotency-Replayed: true` | Reuse the original ticket response.                      |
 
+</section>
+
+<section>
+
 ## Headers
 
-<ParamField header="x-api-key" type="string" required>
+| Header            | Type     | Required | Description                                                                                                                                                                        |
+| ----------------- | -------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `x-api-key`       | `string` | Yes      | Your API key. Session cookie authentication is also supported. Generate a key from the [dashboard](https://dashboard.xquik.com/en/account?tab=api-keys).                           |
+| `Content-Type`    | `string` | Yes      | Use `application/json` for text only. Use `multipart/form-data` for media.                                                                                                         |
+| `Idempotency-Key` | `string` | No       | Generate one random value for this submission. Reuse it only when retrying identical text and attachments. A replay returns the original ticket with `Idempotency-Replayed: true`. |
 
-Your API key. Session cookie authentication is also supported. Generate a key from the [dashboard](https://dashboard.xquik.com/en/account?tab=api-keys).
+</section>
 
-</ParamField>
-
-<ParamField header="Content-Type" type="string" required>
-
-Use `application/json` for text only. Use `multipart/form-data` for media.
-
-</ParamField>
-
-<ParamField header="Idempotency-Key" type="string">
-
-Generate one random value for this submission. Reuse it only when retrying identical text and attachments. A replay returns the original ticket with `Idempotency-Replayed: true`.
-
-</ParamField>
+<section>
 
 ## Body
 
-<ParamField body="subject" type="string" required>
-
-Ticket subject. 1-500 characters.
-
-</ParamField>
-
-<ParamField body="body" type="string" required>
-
-Initial message. 1-10,000 characters.
-
-</ParamField>
-
-<ParamField body="attachments" type="file[]">
-
-Up to 4 JPEG, PNG, GIF, WebP, MP4, MOV, or WebM files. Images can be 10 MB each. Videos can be 25 MB each. Combined media can be 30 MB.
-
-</ParamField>
+| Body parameter | Type     | Required | Description                                                                                                                             |
+| -------------- | -------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `subject`      | `string` | Yes      | Ticket subject. 1-500 characters.                                                                                                       |
+| `body`         | `string` | Yes      | Initial message. 1-10,000 characters.                                                                                                   |
+| `attachments`  | `file[]` | No       | Up to 4 JPEG, PNG, GIF, WebP, MP4, MOV, or WebM files. Images can be 10 MB each. Videos can be 25 MB each. Combined media can be 30 MB. |
 
 For a media-only ticket, omit `body` and include at least 1 attachment.
 
@@ -257,22 +158,20 @@ curl -X POST https://xquik.com/api/v1/support/tickets \
   -F "attachments=@recording.mp4" | jq
 ```
 
+</section>
+
+<section>
+
 ## Response
 
 ### 201 Created
 
-<ResponseField name="publicId" type="string">
-  Unique ticket public ID.
-</ResponseField>
-<ResponseField name="attachments" type="object[]">
-  Created media receipts.
-</ResponseField>
-<ResponseField name="attachments[].publicId" type="string">
-  Private attachment public ID.
-</ResponseField>
-<ResponseField name="attachments[].status" type="string">
-  The upload status is `ready` or `failed`.
-</ResponseField>
+| Field                    | Type       | Description                               |
+| ------------------------ | ---------- | ----------------------------------------- |
+| `publicId`               | `string`   | Unique ticket public ID.                  |
+| `attachments`            | `object[]` | Created media receipts.                   |
+| `attachments[].publicId` | `string`   | Private attachment public ID.             |
+| `attachments[].status`   | `string`   | The upload status is `ready` or `failed`. |
 
 ```json
 {
@@ -292,20 +191,9 @@ Returns the original response after a safe retry. The `Idempotency-Replayed` res
 
 ### 400 Invalid input
 
-```json
-{ "error": "invalid_input", "message": "Invalid input. Check the request body." }
-```
-
 Missing or invalid `subject` or `body` field.
 
 ### 401 Unauthenticated
-
-```json
-{
-  "error": "unauthenticated",
-  "message": "Authentication required. Provide a valid API key or bearer token."
-}
-```
 
 Missing or invalid API key.
 
@@ -315,14 +203,6 @@ The `Idempotency-Key` already belongs to different text or attachments. Generate
 
 ### 429 Rate limited
 
-```json
-{
-  "error": "rate_limit_exceeded",
-  "message": "Too many requests. Try again later.",
-  "retryAfter": 60
-}
-```
-
 Wait for the `Retry-After` value before opening another ticket.
 
 <Note>
@@ -330,3 +210,30 @@ Wait for the `Retry-After` value before opening another ticket.
 **Next steps.** [Support Media](/api-reference/support/media) explains privacy, formats, limits, status handling, and downloads.
 
 </Note>
+
+</section>
+
+{/* GENERATED RESPONSE EXAMPLES START */}
+
+<section>
+
+## Response examples
+
+### 200 example
+
+```json
+{
+  "publicId": "tkt_a1b2c3d4e5f6a1b2c3d4e5f6",
+  "attachments": []
+}
+```
+
+- **400** `{ "error": "invalid_input", "message": "Invalid input. Check the request body." }`
+- **401** `{ "error": "unauthenticated", "message": "Authentication required. Provide a valid API key or bearer token." }`
+- **403** `{ "error": "api_key_paused", "message": "This API key is paused. Resume it at dashboard.xquik.com/api-keys to use it again." }`
+- **409** `{ "error": "idempotency_key_conflict", "message": "Reuse this Idempotency-Key only with the original request." }`
+- **429** `{ "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 60 }`
+
+</section>
+
+{/* GENERATED RESPONSE EXAMPLES END */}

@@ -1,0 +1,143 @@
+---
+title: "X (Twitter) API tweet analysis parameters & budget"
+sidebarTitle: "Analysis parameters"
+description: "Set the posts, questions, baseline, and budget for X (Twitter) tweet analysis. See every body parameter for sentiment, brand, news, signal, and viral calls."
+keywords:
+  [
+    "tweet analysis",
+    "tweet analysis parameters",
+    "Twitter sentiment analysis API",
+    "tweetIds",
+    "baseline",
+  ]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+<LlmsDirective />
+
+Every tweet analysis route accepts this body. Each route adds its own questions and answers.
+
+<section>
+
+## Pick the posts to analyze
+
+Send `tweetIds`, `texts`, or a search, never more than 1. Sending none, or more
+than 1, returns `400 invalid_input`.
+
+| Source         | Send                                        | Posts analyzed                     |
+| -------------- | ------------------------------------------- | ---------------------------------- |
+| Post IDs       | `tweetIds`, up to 100 post IDs or post URLs | Each post once                     |
+| Your own texts | `texts`, up to 100 strings                  | Each text. Reads nothing from X    |
+| A search       | 1 or more of the search fields below        | Up to `limit` posts, 20 by default |
+
+A search combines every search field you send into 1 X search.
+
+| Search field              | Posts it finds                                                                     |
+| ------------------------- | ---------------------------------------------------------------------------------- |
+| `query`                   | An X search, with the operators of [Search Tweets](/api-reference/x/search-tweets) |
+| `username`                | 1 account's posts. A handle, `@handle`, or profile URL                             |
+| `listId`                  | A public List's posts. A List ID or URL                                            |
+| `quotesOf`                | The quotes of 1 post. A post ID or URL                                             |
+| `repliesTo`               | The replies in 1 post's conversation. A post ID or URL                             |
+| `sinceTime` & `untilTime` | Posts between 2 times. An ISO 8601 time or Unix seconds                            |
+
+`queryType` sets the order, `Latest` or `Top`. For more posts than 1 call
+returns, send the same search again. In that search, set `cursor` to
+`next_cursor`. Stop when `has_next_page` is `false`.
+
+```json
+{
+  "username": "NASA",
+  "sinceTime": "2026-09-25T00:00:00Z",
+  "untilTime": "2026-09-26T00:00:00Z"
+}
+```
+
+</section>
+
+<section>
+
+## Compare with an earlier answer
+
+Send the `results` of an earlier call as `baseline` to see what changed. Each
+row in the new `results` gets `monitor`. `analysisSummary.monitor` counts the
+posts per status. The comparison costs nothing extra.
+
+```json
+{
+  "query": "Sony WH-1000XM6 lang:en",
+  "baseline": [
+    { "id": "1893456789012345678", "answers": { "sentiment": "positive", "intensity": 1.2 } }
+  ]
+}
+```
+
+A baseline row needs the post's `id`, or `tweet.id`, and its `answers`. Send
+whole result rows when you have them. Their `monitor` carries the settings'
+fingerprint, so rows from other settings show as `not_comparable`.
+
+| `monitor.status`  | Meaning                                                            |
+| ----------------- | ------------------------------------------------------------------ |
+| `first_run`       | You sent no baseline                                               |
+| `new_to_baseline` | The baseline has no row for this post                              |
+| `unchanged`       | Every decision matches the baseline                                |
+| `changed`         | At least 1 decision clearly moved. `changes` lists each 1          |
+| `not_comparable`  | Other settings made the row, or it answers none of these questions |
+
+A decision counts as changed only when its answer clearly leaves the old one. So
+near ties between calls stay `unchanged`. Keep `analysis` the same between calls
+for comparable answers.
+
+</section>
+
+<section>
+
+## Budget the analysis
+
+Each analyzed post costs 2 credits. Each text in `texts` costs the same. Posts
+in `unanalyzed` cost nothing.
+
+When credits cover fewer posts than you asked for, fewer come back. The posts
+left over appear in `unanalyzed` with `insufficient_credits`. If credits cover
+no post, the call returns `402 insufficient_credits`.
+
+| `unanalyzed[].reason`  | Meaning                                  | What to do                       |
+| ---------------------- | ---------------------------------------- | -------------------------------- |
+| `post_unavailable`     | X returns no such post                   | Skip the post                    |
+| `missing_text`         | The post has no text                     | Skip the post                    |
+| `insufficient_credits` | Credits ran out                          | Add credits, then send it again  |
+| `context_limit`        | The settings leave the post no room      | Shorten the context or questions |
+| Any other reason       | The analysis failed (`status: "failed"`) | Send the post again              |
+
+</section>
+
+<section>
+
+## Body parameters
+
+| Body parameter             | Type       | Required | Description                                                                                                                                                                                                                                                                          |
+| -------------------------- | ---------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `tweetIds`                 | `string[]` | No       | Up to 100 post IDs or post URLs, such as `x.com/nasa/status/20`. A post named twice is analyzed once. Send `tweetIds`, `texts`, or a search, not more than 1.                                                                                                                        |
+| `query`                    | `string`   | No       | X search to analyze, with the operators of [Search Tweets](/api-reference/x/search-tweets). X searches up to 512 characters, counted with the other search fields. Search Tweets counts `q` the same way.                                                                            |
+| `username`                 | `string`   | No       | Analyze 1 account's posts. Send a handle, with or without `@`, or a profile URL.                                                                                                                                                                                                     |
+| `listId`                   | `string`   | No       | Analyze a public List's posts. Send its ID or URL.                                                                                                                                                                                                                                   |
+| `quotesOf`                 | `string`   | No       | Analyze the quotes of 1 post. Send its ID or URL.                                                                                                                                                                                                                                    |
+| `repliesTo`                | `string`   | No       | Analyze the replies in 1 post's conversation. Send its ID or URL.                                                                                                                                                                                                                    |
+| `sinceTime`                | `string`   | No       | Inclusive start of the search, such as `2026-09-25T00:00:00Z`. Unix seconds also work. A time without an offset is UTC.                                                                                                                                                              |
+| `untilTime`                | `string`   | No       | Exclusive end of the search. Unix seconds also work. A time without an offset is UTC.                                                                                                                                                                                                |
+| `queryType`                | `string`   | No       | Search order. Use `Latest` or `Top`. Defaults to `Latest`.                                                                                                                                                                                                                           |
+| `limit`                    | `integer`  | No       | Maximum posts to analyze from the search. Accepts `1-100`. Defaults to `20`. Credits can return fewer.                                                                                                                                                                               |
+| `cursor`                   | `string`   | No       | The `next_cursor` of the page before. Send the same search with it.                                                                                                                                                                                                                  |
+| `texts`                    | `string[]` | No       | Up to 100 texts of your own, such as drafts. Each must contain words. Reads nothing from X.                                                                                                                                                                                          |
+| `baseline`                 | `object[]` | No       | Rows of an earlier answer to compare with, such as its `results`. You can send up to 10,000 rows. Each needs the post's `id`, or `tweet.id`, and its `answers`. Each new result's `monitor` says whether the post is new, changed, or unchanged. The comparison costs nothing extra. |
+| `analysis`                 | `object`   | No       | Optional settings. Leave it out to ask the route's own questions.                                                                                                                                                                                                                    |
+| `analysis.targets`         | `object[]` | No       | Up to 100 brands, people, assets, or topics the questions are about. Each has a `name` and optional `aliases`, such as a ticker or product name.                                                                                                                                     |
+| `analysis.context`         | `string`   | No       | Background the AI reads with every post, such as your product or market.                                                                                                                                                                                                             |
+| `analysis.questions`       | `object[]` | No       | 1 to 8 questions of your own, which replace the route's questions. Each needs an `id` and a `type` of `choice`, `score`, or `probability`. Each also needs a `version` and `instructions`. A choice adds `categories`, a score adds `levels`, and a probability can add `criteria`.  |
+| `analysis.preset`          | `string`   | No       | A ready set of questions, used when `questions` is left out. Use `brand`, `complaints`, `competitors`, `purchase_intent`, `product_feedback`, `news`, `sentiment`, or `market`. `complaints`, `competitors`, `purchase_intent`, and `product_feedback` need `targets`.               |
+| `analysis.maxContextBytes` | `integer`  | No       | Bytes of post, quote, and settings the AI reads. Accepts `1-64000`. Defaults to `64000`. Xquik cuts a longer post to fit.                                                                                                                                                            |
+| `analysis.concurrency`     | `integer`  | No       | Posts analyzed at the same time. Accepts `1-16`. Defaults to `16`.                                                                                                                                                                                                                   |
+| `analysis.images`          | `boolean`  | No       | Reads up to 4 images per post with its text, at no extra cost. Defaults to `true`. Images of posts X marks sensitive stay unread. Send `false` to analyze the text alone. `contextAvailability.media` is `images` when the AI read them.                                             |
+
+</section>

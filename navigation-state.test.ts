@@ -5,7 +5,6 @@ import { z } from "zod";
 import {
   docsRedirect,
   navigationNode,
-  type NavigationItem,
   type NavigationNode,
 } from "./scripts/lib/docs-config-schema.ts";
 
@@ -60,18 +59,14 @@ const RETIRED_COMPARISON_PAGES = [
   "zapier",
 ] as const;
 
-const X_API_GROUPS = [
-  "Users",
-  "Tweets",
-  "Analysis",
-  "Relationships",
-  "Engagement",
-  "Timeline & DMs",
-  "Communities",
-  "Community Notes",
-  "Lists",
-  "Jobs",
-  "Sports",
+const API_DROPDOWNS = [
+  "Start & account",
+  "X tweets",
+  "X users",
+  "X communities & data",
+  "X write",
+  "Automation",
+  "Content",
 ] as const;
 
 const PRIORITY_API_ROUTES = [
@@ -94,10 +89,6 @@ function docsConfig(): DocsConfig {
   return docsConfigSchema.parse(JSON.parse(readFileSync("docs.json", "utf8")));
 }
 
-function objectItems(items: readonly NavigationItem[] | undefined): readonly NavigationNode[] {
-  return (items ?? []).filter((item): item is NavigationNode => typeof item !== "string");
-}
-
 function findTab(config: DocsConfig, tabName: string): NavigationNode {
   const tab = (config.navigation.tabs ?? []).find((item): boolean => item.tab === tabName);
 
@@ -106,16 +97,6 @@ function findTab(config: DocsConfig, tabName: string): NavigationNode {
   }
 
   return tab;
-}
-
-function findGroup(parent: NavigationNode, groupName: string): NavigationNode {
-  const group = (parent.groups ?? []).find((item): boolean => item.group === groupName);
-
-  if (group === undefined) {
-    throw new Error(`Missing navigation group: ${groupName}`);
-  }
-
-  return group;
 }
 
 describe("navigation default state", (): void => {
@@ -134,20 +115,18 @@ describe("navigation default state", (): void => {
     expect(bannerContent).not.toContain("trademarks of X Corp.");
   });
 
-  it("keeps every X API endpoint section complete and expanded", (): void => {
+  it("keeps every API section in its own dropdown with pages", (): void => {
     expect.assertions(2);
 
-    const apiReferenceTab = findTab(docsConfig(), "API reference");
-    const xApiGroup = findGroup(apiReferenceTab, "X API");
-    const xApiSubgroups = objectItems(xApiGroup.pages);
-    const collapsedGroups = xApiSubgroups
-      .filter((group): boolean => group.expanded !== true)
-      .map((group): string => group.group ?? "(unnamed)");
+    const dropdowns = findTab(docsConfig(), "API reference").dropdowns ?? [];
+    const emptySections = dropdowns
+      .filter((section): boolean => (section.groups ?? []).length === 0)
+      .map((section): string => section.dropdown ?? "(unnamed)");
 
-    expect(xApiSubgroups.map((group): string | undefined => group.group)).toStrictEqual([
-      ...X_API_GROUPS,
+    expect(dropdowns.map((section): string | undefined => section.dropdown)).toStrictEqual([
+      ...API_DROPDOWNS,
     ]);
-    expect(collapsedGroups).toStrictEqual([]);
+    expect(emptySections).toStrictEqual([]);
   });
 
   it("keeps MDX API snippets pointed at the public API origin", (): void => {

@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { documentedFields, leafName } from "./scripts/lib/documented-fields.ts";
 import {
   operationAt,
   parseOpenApi,
@@ -259,10 +260,22 @@ function responseFields(page: string): readonly string[] {
     ? `${pageSource}\n${WRITE_ACTION_STATUS_PAGE_SOURCE}`
     : pageSource;
   return uniqueSorted(
-    [...source.matchAll(/<ResponseField\s+name="(?<field>[^"]+)"/gu)].map(
-      (match): string => match.groups?.["field"] ?? "",
-    ),
-  ).filter((field): boolean => field.length > 0);
+    documentedFields(source)
+      .filter(({ kind }): boolean => kind === "response")
+      .map(({ name }): string => name),
+  );
+}
+
+function responseFieldsAndLeaves(page: string): readonly string[] {
+  const fields = responseFields(page);
+  return uniqueSorted([...fields, ...fields.map(leafName)]);
+}
+
+function unknownFields(page: string, allowed: readonly string[]): readonly string[] {
+  const known = new Set(allowed);
+  return responseFields(page).filter(
+    (field): boolean => !known.has(field) && !known.has(leafName(field)),
+  );
 }
 
 function fieldDifferences(
@@ -270,9 +283,13 @@ function fieldDifferences(
   actual: readonly string[],
   expected: readonly string[],
 ): readonly string[] {
+  const actualLeaves = uniqueSorted(actual.map(leafName));
+  const expectedLeaves = uniqueSorted(expected.map(leafName));
   return [
-    ...setDifference(actual, expected).map((field) => `${label} has no product field ${field}.`),
-    ...setDifference(expected, actual).map((field) => `${label} is missing ${field}.`),
+    ...setDifference(actualLeaves, expectedLeaves).map(
+      (field) => `${label} has no product field ${field}.`,
+    ),
+    ...setDifference(expectedLeaves, actualLeaves).map((field) => `${label} is missing ${field}.`),
   ];
 }
 
@@ -576,12 +593,12 @@ describe("API response field docs", (): void => {
 
     const spec = readOpenApi();
     const findings = pageContracts(spec).flatMap((contract): readonly string[] => {
-      const documented = responseFields(contract.page);
+      const documented = responseFieldsAndLeaves(contract.page);
       return [
         ...setDifference(contract.requiredFields, documented).map(
           (field): string => `${contract.page} is missing ${field}.`,
         ),
-        ...setDifference(documented, contract.allowedFields).map(
+        ...unknownFields(contract.page, contract.allowedFields).map(
           (field): string => `${contract.page} documents unknown ${field}.`,
         ),
       ];
@@ -594,9 +611,9 @@ describe("API response field docs", (): void => {
     expect.assertions(1);
 
     const draftFields = schemaPropertyNames(readOpenApi(), "DraftDetail");
-    const listFields = responseFields(DRAFTS_LIST_PAGE);
-    const createFields = responseFields(DRAFTS_CREATE_PAGE);
-    const getFields = responseFields(DRAFTS_GET_PAGE);
+    const listFields = responseFieldsAndLeaves(DRAFTS_LIST_PAGE);
+    const createFields = responseFieldsAndLeaves(DRAFTS_CREATE_PAGE);
+    const getFields = responseFieldsAndLeaves(DRAFTS_GET_PAGE);
     const listDraftFields = prefixedFields("drafts[].", draftFields);
 
     expect([
@@ -625,25 +642,25 @@ describe("API response field docs", (): void => {
     ]);
 
     expect([
-      ...setDifference(detailFields, responseFields(STYLES_ANALYZE_PAGE)).map(
+      ...setDifference(detailFields, responseFieldsAndLeaves(STYLES_ANALYZE_PAGE)).map(
         (field): string => `${STYLES_ANALYZE_PAGE} is missing ${field}.`,
       ),
-      ...setDifference(detailFields, responseFields(STYLES_SAVE_PAGE)).map(
+      ...setDifference(detailFields, responseFieldsAndLeaves(STYLES_SAVE_PAGE)).map(
         (field): string => `${STYLES_SAVE_PAGE} is missing ${field}.`,
       ),
-      ...setDifference(detailFields, responseFields(STYLES_GET_PAGE)).map(
+      ...setDifference(detailFields, responseFieldsAndLeaves(STYLES_GET_PAGE)).map(
         (field): string => `${STYLES_GET_PAGE} is missing ${field}.`,
       ),
-      ...setDifference(["styles", ...summaryFields], responseFields(STYLES_LIST_PAGE)).map(
+      ...setDifference(["styles", ...summaryFields], responseFieldsAndLeaves(STYLES_LIST_PAGE)).map(
         (field): string => `${STYLES_LIST_PAGE} is missing ${field}.`,
       ),
       ...setDifference(
         ["style1", "style2", ...detailFields],
-        responseFields(STYLES_COMPARE_PAGE),
+        responseFieldsAndLeaves(STYLES_COMPARE_PAGE),
       ).map((field): string => `${STYLES_COMPARE_PAGE} is missing ${field}.`),
       ...fieldDifferences(
         STYLES_PERFORMANCE_PAGE,
-        responseFields(STYLES_PERFORMANCE_PAGE),
+        responseFieldsAndLeaves(STYLES_PERFORMANCE_PAGE),
         performanceFields,
       ),
     ]).toStrictEqual([]);

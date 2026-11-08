@@ -29,6 +29,8 @@ import TweetReadApiLinks from "/snippets/x-tweet-read-api-links.mdx";
 
 For hashtags search, pass the exact hashtag token. Respect API rate limits and X's Terms of Service. Store Twitter profiles separately from tweet rows.
 
+<section>
+
 ## Export Twitter data
 
 Define the export as tweet rows, author rows, or both. Keep each stable Tweet ID, text, author ID, creation time, and permalink. Add replies, reposts, likes, quotes, views, bookmarks, and media when returned.
@@ -119,6 +121,10 @@ Save each page before advancing its cursor. Remove duplicate Tweet IDs. Validate
 
 Mark capped, interrupted, or credit-bounded results as partial. Route only validated rows downstream.
 
+</section>
+
+<section>
+
 ## Build a scheduled tweet export pipeline
 
 A recurring tweet scraping workflow needs an explicit search window. Store the keyword, author, language, start time, and end time for every run. Reuse those values for retries. Schedule one run through cron, Prefect, or another job runner.
@@ -130,6 +136,10 @@ Poll `GET /extractions/{id}` until the job completes or fails. Do not create a r
 Record its extraction ID, search query, filters, row count, and format. Advance the schedule checkpoint only after the file becomes durable. A failed upload must not move the next start time. This rule prevents missing tweets between recurring runs.
 
 Python pipelines can use the Python SDK for direct pages. They can also call the REST job endpoints. Keep orchestration separate from tweet row shaping. This makes retries predictable across Python, CLI, and no-code runners.
+
+</section>
+
+<section>
 
 ## Validate tweet export completeness
 
@@ -151,9 +161,17 @@ Compare the exported row count with the stored job response. Investigate a diffe
 
 Use monitors when the workflow needs real-time events. A scheduled Twitter API export creates time-bounded snapshots. It should not claim instant coverage between completed runs.
 
+</section>
+
+<section>
+
 ## When to use this workflow
 
 Use this workflow for repeatable keyword, hashtag, account, or campaign exports. Choose it when teams need an auditable file of saved tweet rows. Those rows carry author profiles, engagement counts, and media URLs. Prefer direct tweet search for small live pages. Prefer monitors for continuous account or keyword alerts.
+
+</section>
+
+<section>
 
 ## Choose the right path
 
@@ -161,17 +179,29 @@ Use extraction jobs for repeatable exports and audit trails. Use the direct API 
 
 Keep API keys outside code and logs. Store search results with tweet fields and user profiles. Respect the read rate limit before requesting another page. Import CSV exports into Google Sheets for shared analyst review.
 
+</section>
+
+<section>
+
 ## End-to-end export handoff
 
 Store one checkpoint for the search request. That checkpoint carries it through estimate, job creation, JSON pagination, and file export.
 
 Tweet search exports include base user fields, tweet fields, and engagement counts. They also include metadata when available.
 
+</section>
+
+<section>
+
 ## Step 1. Estimate tweets and credits
 
 Call POST /extractions/estimate before scraping tweets. tweet_search_extractor requires searchQuery. resultsLimit defaults to 10,000.
 
 The estimate returns allowed, estimatedResults, creditsRequired, creditsAvailable, and source. Tweet search uses resultsLimit as its source, including the default.
+
+</section>
+
+<section>
 
 ## Filter fields
 
@@ -187,15 +217,27 @@ Store the creation response as a local handoff before polling.
 
 Poll by tweet_search_extraction_id. Keep search_query, filters, and results_limit with the audit record. Do not wait for totalResults or createdAt in the create response. Those fields arrive from `GET /extractions/{id}`.
 
+</section>
+
+<section>
+
 ## Step 3. Poll job status
 
 Poll `GET /extractions/{id}` until the job completes or fails.
 
 Use the paginated response when your app wants JSON rows, not a file download.
 
+</section>
+
+<section>
+
 ## Step 4. Export CSV, JSON, or XLSX
 
 Exports are free after the extraction job exists. Use CSV for spreadsheets, JSON for app ingestion, and XLSX for analyst handoff. CSV, JSON, and XLSX exports include every row.
+
+</section>
+
+<section>
 
 ## Step 5. Hand off rows
 
@@ -204,6 +246,10 @@ For API handoff, call `GET /extractions/{id}` with limit up to 1000. Pass `nextC
 For direct API handoff, store tweets[].id, tweets[].text, and tweets[].createdAt. Also store tweets[].author.id, tweets[].author.username, has_next_page, and next_cursor.
 
 For JSON Lines, write one normalized tweet object per line to xquik-tweet-search.jsonl.
+
+</section>
+
+<section>
 
 ## Direct tweet search API
 
@@ -220,6 +266,10 @@ Use queryType=Latest for time-ordered backfills. Add a keyword, hashtag, or othe
 A bare q=from:username request returns all the account's posts & reposts. Continue while the response includes next_cursor.
 
 Use mode=standard with limit only when an old integration needs the legacy behavior. It returns a single page where has_next_page is false.
+
+</section>
+
+<section>
 
 ## Failure handling
 
@@ -239,6 +289,10 @@ Treat a failed extraction status as terminal for that job. Save its returned err
 
 Validate the downloaded file before advancing any schedule checkpoint. Reject empty files when the completed job reported rows. Reject malformed CSV, JSON, or XLSX output. Keep the previous window open until the verified file reaches its destination.
 
+</section>
+
+<section>
+
 ## Handoff checklist
 
 Hand off the exact searchQuery, structured filters, advancedQuery, language, sinceTime, untilTime, queryType, and resultsLimit. Include the extraction ID for saved jobs. Include the final cursor for direct tweet search.
@@ -252,3 +306,5 @@ Name the downstream owner and destination. State whether the receiver expects CS
 Confirm the destination accepted the file or rows before closing the window. Store the destination record count and load time. Investigate count differences before the next scheduled run. Advance the checkpoint only after this final confirmation.
 
 <TweetReadApiLinks />
+
+</section>

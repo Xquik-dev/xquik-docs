@@ -32,7 +32,7 @@ const REQUIRED_RADAR_PAGE_COPY = [
   "The contract guarantees neither cross-poll cursor lifetime nor snapshots.",
   "Deduplicate records by `items[].id`.",
   "Never use an item ID to order separate polling runs.",
-  '<ParamField header="x-api-key" type="string">',
+  "x-api-key` | `string` |",
   "include available post content, media, and engagement metrics.",
   "`html`, `json` or `rss`",
   "Older items can hold fewer fields.",

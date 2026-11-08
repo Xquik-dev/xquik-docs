@@ -2,80 +2,17 @@
 title: "Buy X API credits for tweets, followers & writes"
 sidebarTitle: "Top up credits"
 description: "Create a hosted checkout for at least USD 10 of tweet, profile, follower, monitor, webhook, export, and X write API credits. Returns one redirect URL."
-api: "POST /credits/topup"
+endpoint: "POST /credits/topup"
 keywords: ["credits", "top-up", "purchase", "billing", "checkout"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
 
-{/* GENERATED RESPONSE EXAMPLES START */}
-
-<Panel>
-
-<Tabs defaultTabIndex={0} sync={false}>
-
-  <Tab title="200" id="response-credits-topup-200">
-
-    ```json
-    {
-      "chargedCurrency": "EUR",
-      "chargedMinorUnits": 892,
-      "redirect_url": "https://xquik.com/api/v1/credits/topup/redirect?session_id=checkout_example",
-      "url": "https://xquik.com/api/v1/credits/topup/redirect?session_id=checkout_example"
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="400" id="response-credits-topup-400">
-
-    ```json
-    {
-      "error": "invalid_input",
-      "message": "Invalid input. Check the request body."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="401" id="response-credits-topup-401">
-
-    ```json
-    {
-      "error": "unauthenticated",
-      "message": "Authentication required. Provide a valid API key or bearer token."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="403" id="response-credits-topup-403">
-
-    ```json
-    {
-      "error": "api_key_paused",
-      "message": "This API key is paused. Resume it at dashboard.xquik.com/api-keys to use it again."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="429" id="response-credits-topup-429">
-
-    ```json
-    {
-      "error": "rate_limit_exceeded",
-      "message": "Too many requests. Try again later.",
-      "retryAfter": 60
-    }
-    ```
-
-  </Tab>
-</Tabs>
-
-</Panel>
-{/* GENERATED RESPONSE EXAMPLES END */}
 <LlmsDirective />
+
+`POST https://xquik.com/api/v1/credits/topup`
+
+<section>
 
 ## When to use hosted checkout
 
@@ -161,69 +98,44 @@ func main() {
 
 </CodeGroup>
 
+</section>
+
+<section>
+
 ## Headers
 
-<ParamField header="x-api-key" type="string" required>
+| Header         | Type     | Required | Description                                                    |
+| -------------- | -------- | -------- | -------------------------------------------------------------- |
+| `x-api-key`    | `string` | Yes      | Your API key. Session cookie authentication is also supported. |
+| `Content-Type` | `string` | Yes      | Must be `application/json`.                                    |
 
-Your API key. Session cookie authentication is also supported.
+</section>
 
-</ParamField>
-
-<ParamField header="Content-Type" type="string" required>
-
-Must be `application/json`.
-
-</ParamField>
+<section>
 
 ## Body
 
-<ParamField body="dollars" type="number" required>
+| Body parameter | Type     | Required | Description                                                                                                                                                                                                                                                                                                                                                                                    |
+| -------------- | -------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `dollars`      | `number` | Yes      | Amount in US dollars to top up. Minimum $10.                                                                                                                                                                                                                                                                                                                                                   |
+| `currency`     | `string` | No       | Currency to pay in. Xquik converts the dollar amount at the latest daily ECB rate. The credits always match the dollar amount. Use 1 of `USD`, `EUR`, `GBP`, `TRY`, `JPY`, `CNY`, `KRW`, `CAD`, `AUD` or `MXN`. Lowercase codes work too.<br />With rates over 3 ECB working days old, Checkout charges USD instead. It shows the USD charge before payment, and `chargedCurrency` says `USD`. |
+| `locale`       | `string` | No       | Optional checkout locale. Defaults to `en`.                                                                                                                                                                                                                                                                                                                                                    |
+| `returnPath`   | `string` | No       | Optional Xquik tool page to return to after Checkout, such as `/en/x-article-reader`. Without it, Checkout returns to the billing page.                                                                                                                                                                                                                                                        |
 
-Amount in US dollars to top up. Minimum $10.
+</section>
 
-</ParamField>
-
-<ParamField body="currency" type="string" default="USD">
-
-Currency to pay in. Xquik converts the dollar amount at the latest daily ECB rate. The credits always match the dollar amount. Use 1 of `USD`, `EUR`, `GBP`, `TRY`, `JPY`, `CNY`, `KRW`, `CAD`, `AUD` or `MXN`. Lowercase codes work too.
-
-With rates over 3 ECB working days old, Checkout charges USD instead. It shows the USD charge before payment, and `chargedCurrency` says `USD`.
-
-</ParamField>
-
-<ParamField body="locale" type="string">
-
-Optional checkout locale. Defaults to `en`.
-
-</ParamField>
-
-<ParamField body="returnPath" type="string">
-
-Optional Xquik tool page to return to after Checkout, such as `/en/x-article-reader`. Without it, Checkout returns to the billing page.
-
-</ParamField>
+<section>
 
 ## Response
 
 ### 200 OK
 
-<ResponseField name="url" type="string">
-  Stable Xquik redirect URL for the active hosted checkout session. Open it in a browser.
-
-`GET /credits/topup/redirect` redirects with `303`. The target is the payment page, or the account
-page after checkout ends.
-
-</ResponseField>
-<ResponseField name="redirect_url" type="string">
-  Same stable redirect URL in snake_case.
-</ResponseField>
-<ResponseField name="chargedCurrency" type="string">
-  Currency the checkout charges, such as `EUR`.
-</ResponseField>
-<ResponseField name="chargedMinorUnits" type="integer">
-  Amount the checkout charges before tax, in the currency's smallest unit. JPY and KRW have no
-  decimals, so 1580 JPY is ¥1,580.
-</ResponseField>
+| Field               | Type      | Description                                                                                                                                                                                                               |
+| ------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `url`               | `string`  | Stable Xquik redirect URL for the active hosted checkout session. Open it in a browser.<br />`GET /credits/topup/redirect` redirects with `303`. The target is the payment page, or the account page after checkout ends. |
+| `redirect_url`      | `string`  | Same stable redirect URL in snake_case.                                                                                                                                                                                   |
+| `chargedCurrency`   | `string`  | Currency the checkout charges, such as `EUR`.                                                                                                                                                                             |
+| `chargedMinorUnits` | `integer` | Amount the checkout charges before tax, in the currency's smallest unit. JPY and KRW have no decimals, so 1580 JPY is ¥1,580.                                                                                             |
 
 ```json
 {
@@ -236,9 +148,7 @@ page after checkout ends.
 
 ### 400 Invalid input
 
-```json
-{ "error": "invalid_input", "message": "Minimum top-up is $10" }
-```
+`{ "error": "invalid_input", "message": "Minimum top-up is $10" }`
 
 Xquik opens no checkout. The `message` names the field to fix.
 
@@ -248,21 +158,9 @@ Xquik opens no checkout. The `message` names the field to fix.
 
 ### 401 Unauthenticated
 
-```json
-{ "error": "unauthenticated" }
-```
-
 Missing or invalid API key.
 
 ### 429 Rate limited
-
-```json
-{
-  "error": "rate_limit_exceeded",
-  "message": "Too many requests. Try again later.",
-  "retryAfter": 60
-}
-```
 
 Too many requests. Wait for the `Retry-After` header before retrying.
 
@@ -271,3 +169,20 @@ Too many requests. Wait for the `Retry-After` header before retrying.
 **Related.** [Get Credits](/api-reference/credits/get) · [Get Top-Up Status](/api-reference/credits/topup-status) · [Quick Top-Up](/api-reference/credits/quick-topup) · [Billing Guide](/guides/billing)
 
 </Note>
+
+</section>
+
+{/* GENERATED RESPONSE EXAMPLES START */}
+
+<section>
+
+## Response examples
+
+- **400** `{ "error": "invalid_input", "message": "Invalid input. Check the request body." }`
+- **401** `{ "error": "unauthenticated", "message": "Authentication required. Provide a valid API key or bearer token." }`
+- **403** `{ "error": "api_key_paused", "message": "This API key is paused. Resume it at dashboard.xquik.com/api-keys to use it again." }`
+- **429** `{ "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 60 }`
+
+</section>
+
+{/* GENERATED RESPONSE EXAMPLES END */}

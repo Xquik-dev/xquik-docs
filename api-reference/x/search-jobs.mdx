@@ -2,7 +2,7 @@
 title: "X job search API for listings, salary & company"
 sidebarTitle: "Search jobs"
 description: "Search public X job listings by keyword, location, seniority, work type, and company. Each job returns its title, salary, and apply link. 1 credit per job."
-api: "GET /x/jobs/search"
+endpoint: "GET /x/jobs/search"
 keywords:
   [
     "X jobs API",
@@ -17,125 +17,9 @@ keywords:
 import LlmsDirective from "/snippets/llms-directive.mdx";
 import FieldSelectionParams from "/snippets/field-selection-params.mdx";
 
-{/* GENERATED RESPONSE EXAMPLES START */}
-
-<Panel>
-
-<Tabs defaultTabIndex={0} sync={false}>
-
-  <Tab title="200" id="response-x-search-jobs-200">
-
-    ```json
-    {
-      "jobs": [
-        {
-          "id": "1899202395210649861",
-          "title": "Engineer",
-          "url": "https://x.com/i/jobs/1899202395210649861",
-          "applyUrl": "https://xquik.com/example",
-          "location": "United States"
-        }
-      ],
-      "has_next_page": true,
-      "next_cursor": "DAACCgACGRElMJcAAA"
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="400" id="response-x-search-jobs-400">
-
-    ```json
-    {
-      "error": "invalid_job_filter",
-      "message": "Unknown locationType \"moon\". Use onsite, remote or hybrid."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="401" id="response-x-search-jobs-401">
-
-    ```json
-    {
-      "error": "unauthenticated",
-      "message": "Authentication required."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="402" id="response-x-search-jobs-402">
-
-    ```json
-    {
-      "error": "insufficient_credits",
-      "message": "Insufficient credits. Top up or subscribe to continue."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="403" id="response-x-search-jobs-403">
-
-    ```json
-    {
-      "error": "api_key_paused",
-      "message": "This API key is paused. Resume it at dashboard.xquik.com/api-keys to use it again."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="424" id="response-x-search-jobs-424">
-
-    ```json
-    {
-      "error": "x_api_unavailable",
-      "message": "X data source temporarily unavailable. Try again later."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="429" id="response-x-search-jobs-429">
-
-    ```json
-    {
-      "error": "rate_limit_exceeded",
-      "message": "Too many requests. Try again later.",
-      "retryAfter": 60
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="502" id="response-x-search-jobs-502">
-
-    ```json
-    {
-      "error": "x_api_unavailable",
-      "message": "X data source temporarily unavailable. Try again later."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="503" id="response-x-search-jobs-503">
-
-    ```json
-    {
-      "error": "x_api_unavailable",
-      "message": "Xquik is busy right now. Retry shortly."
-    }
-    ```
-
-  </Tab>
-</Tabs>
-
-</Panel>
-{/* GENERATED RESPONSE EXAMPLES END */}
 <LlmsDirective />
+
+`GET https://xquik.com/api/v1/x/jobs/search`
 
 Search the public job listings on X by keyword. Narrow them by location, work type, seniority, employment type, or company.
 
@@ -214,6 +98,8 @@ job_rows = [
 
 The Node.js and Python snippets build 1 row per job. Store the rows with the cursor before you request the next page.
 
+<section>
+
 ## Narrow a job search
 
 Start with a keyword in `q`, such as a job title or a skill. Add 1 filter at a time and check the results after each change.
@@ -229,6 +115,10 @@ The 3 list filters take comma lists. They ignore case and accept spaces, hyphens
 
 An unknown value returns `400 invalid_job_filter`. Its message names the values the filter takes.
 
+</section>
+
+<section>
+
 ## Page through job listings
 
 Each page returns `has_next_page` and `next_cursor`. Send `next_cursor` back as `cursor` with the same query and filters. Stop when `has_next_page` is `false`.
@@ -239,83 +129,50 @@ A job that closed is left out of the page and costs nothing. A page can therefor
 
 Use the job `id` as the key in your store. Overlapping searches then add no duplicates.
 
+</section>
+
+<section>
+
 ## Get the full description
 
 Search returns the listing summary. Send a job's `id` to [get 1 job listing](/api-reference/x/get-job). That listing adds the full description, work type, seniority, and team.
 
+</section>
+
+<section>
+
 ## Query parameters
 
-<ParamField query="q" type="string" required>
-
-Keyword, such as a job title or skill. Also read as `query`.
-
-</ParamField>
-
-<ParamField query="location" type="string">
-
-City, region, or country as text, such as `Berlin`.
-
-</ParamField>
-
-<ParamField query="locationId" type="string">
-
-Location ID from [job locations](/api-reference/x/job-locations). It replaces `location` when you send both.
-
-</ParamField>
-
-<ParamField query="locationType" type="string">
-
-Where the work happens. Comma list of `onsite`, `remote`, and `hybrid`.
-
-</ParamField>
-
-<ParamField query="seniority" type="string">
-
-Comma list of `intern`, `entry_level`, `junior`, `mid_level`, `senior`, `lead`, `manager`, and `executive`.
-
-</ParamField>
-
-<ParamField query="employmentType" type="string">
-
-Comma list of `full_time`, `full_time_contract`, `part_time`, and `contract_to_hire`.
-
-</ParamField>
-
-<ParamField query="company" type="string">
-
-Company name to match.
-
-</ParamField>
-
-<ParamField query="cursor" type="string">
-
-Pagination cursor from a previous response. Omit for the first page.
-
-</ParamField>
-
-<ParamField query="pageSize" type="integer">
-
-Jobs per page. Accepts `1-100`. Defaults to `20`. Also read as `limit`, `count`, `max_results`, `maxItems`, `max_items` or `per_page`.
-
-</ParamField>
+| Query parameter  | Type      | Required | Description                                                                                                                            |
+| ---------------- | --------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `q`              | `string`  | Yes      | Keyword, such as a job title or skill. Also read as `query`.                                                                           |
+| `location`       | `string`  | No       | City, region, or country as text, such as `Berlin`.                                                                                    |
+| `locationId`     | `string`  | No       | Location ID from [job locations](/api-reference/x/job-locations). It replaces `location` when you send both.                           |
+| `locationType`   | `string`  | No       | Where the work happens. Comma list of `onsite`, `remote`, and `hybrid`.                                                                |
+| `seniority`      | `string`  | No       | Comma list of `intern`, `entry_level`, `junior`, `mid_level`, `senior`, `lead`, `manager`, and `executive`.                            |
+| `employmentType` | `string`  | No       | Comma list of `full_time`, `full_time_contract`, `part_time`, and `contract_to_hire`.                                                  |
+| `company`        | `string`  | No       | Company name to match.                                                                                                                 |
+| `cursor`         | `string`  | No       | Pagination cursor from a previous response. Omit for the first page.                                                                   |
+| `pageSize`       | `integer` | No       | Jobs per page. Accepts `1-100`. Defaults to `20`. Also read as `limit`, `count`, `max_results`, `maxItems`, `max_items` or `per_page`. |
 
 ### Choose fields
 
 <FieldSelectionParams />
 
+</section>
+
+<section>
+
 ## Headers
 
-<ParamField header="x-api-key" type="string">
+| Header          | Type     | Required | Description                                       |
+| --------------- | -------- | -------- | ------------------------------------------------- |
+| `x-api-key`     | `string` | No       | Full account key. Sessions and OAuth also work.   |
+| `Authorization` | `string` | No       | `Bearer xq_your_guest_key_here` for `paid_reads`. |
 
-Full account key. Sessions and OAuth also work.
+</section>
 
-</ParamField>
-
-<ParamField header="Authorization" type="string">
-
-`Bearer xq_your_guest_key_here` for `paid_reads`.
-
-</ParamField>
+<section>
 
 ## Response
 
@@ -323,53 +180,23 @@ Full account key. Sessions and OAuth also work.
 
 X leaves out a field that a job lacks. Only `id` and `url` are always present.
 
-<ResponseField name="jobs" type="object[]">
-
-Array of matching job listings.
-**Job object fields.**
-
-<ResponseField name="id" type="string">
-  Job ID.
-</ResponseField>
-<ResponseField name="title" type="string">
-  Job title.
-</ResponseField>
-<ResponseField name="url" type="string">
-  The job page on X.
-</ResponseField>
-<ResponseField name="applyUrl" type="string">
-  Where applicants apply, off X.
-</ResponseField>
-<ResponseField name="location" type="string">
-  Location as the employer wrote it.
-</ResponseField>
-<ResponseField name="formattedSalary" type="string">
-  Salary as X shows it, such as `Starting at $225K`.
-</ResponseField>
-<ResponseField name="salaryMin" type="number">
-  Lowest salary, in `salaryCurrencyCode` per `salaryInterval`.
-</ResponseField>
-<ResponseField name="salaryMax" type="number">
-  Highest salary, in `salaryCurrencyCode` per `salaryInterval`.
-</ResponseField>
-<ResponseField name="salaryCurrencyCode" type="string">
-  ISO 4217 currency code of the salary.
-</ResponseField>
-<ResponseField name="salaryInterval" type="string">
-  The salary's pay period is `annually` or `hourly`.
-</ResponseField>
-<ResponseField name="company" type="object">
-  Company profile with `id`, `name`, and `logoUrl`. Present on jobs X imported from a job board.
-</ResponseField>
-<ResponseField name="account" type="object">
-  The X account that posted the job. It has `id`, `username`, `name`, `verified`, `verifiedType`,
-  `profilePicture`, `profilePictureOriginal`, and `profileImageShape`. A job has none when X
-  imported it from a job board. It also has none when X no longer shows the account.
-</ResponseField>
-
-</ResponseField>
-<ResponseField name="has_next_page" type="boolean">Whether more results are available.</ResponseField>
-<ResponseField name="next_cursor" type="string">Cursor for the next page.</ResponseField>
+| Field                       | Type       | Description                                                                                                                                                                                                                                                                   |
+| --------------------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `jobs`                      | `object[]` | Array of matching job listings.                                                                                                                                                                                                                                               |
+| `jobs[].id`                 | `string`   | Job ID.                                                                                                                                                                                                                                                                       |
+| `jobs[].title`              | `string`   | Job title.                                                                                                                                                                                                                                                                    |
+| `jobs[].url`                | `string`   | The job page on X.                                                                                                                                                                                                                                                            |
+| `jobs[].applyUrl`           | `string`   | Where applicants apply, off X.                                                                                                                                                                                                                                                |
+| `jobs[].location`           | `string`   | Location as the employer wrote it.                                                                                                                                                                                                                                            |
+| `jobs[].formattedSalary`    | `string`   | Salary as X shows it, such as `Starting at $225K`.                                                                                                                                                                                                                            |
+| `jobs[].salaryMin`          | `number`   | Lowest salary, in `salaryCurrencyCode` per `salaryInterval`.                                                                                                                                                                                                                  |
+| `jobs[].salaryMax`          | `number`   | Highest salary, in `salaryCurrencyCode` per `salaryInterval`.                                                                                                                                                                                                                 |
+| `jobs[].salaryCurrencyCode` | `string`   | ISO 4217 currency code of the salary.                                                                                                                                                                                                                                         |
+| `jobs[].salaryInterval`     | `string`   | The salary's pay period is `annually` or `hourly`.                                                                                                                                                                                                                            |
+| `jobs[].company`            | `object`   | Company profile with `id`, `name`, and `logoUrl`. Present on jobs X imported from a job board.                                                                                                                                                                                |
+| `jobs[].account`            | `object`   | The X account that posted the job. It has `id`, `username`, `name`, `verified`, `verifiedType`, `profilePicture`, `profilePictureOriginal`, and `profileImageShape`. A job has none when X imported it from a job board. It also has none when X no longer shows the account. |
+| `has_next_page`             | `boolean`  | Whether more results are available.                                                                                                                                                                                                                                           |
+| `next_cursor`               | `string`   | Cursor for the next page.                                                                                                                                                                                                                                                     |
 
 ```json
 {
@@ -400,31 +227,15 @@ Array of matching job listings.
 
 ### 400 Missing query, unknown filter, or invalid cursor
 
-```json
-{
-  "error": "invalid_job_filter",
-  "message": "Unknown locationType \"moon\". Use onsite, remote or hybrid."
-}
-```
-
 A request without `q` returns `missing_query`. A cursor X cannot read returns `invalid_cursor`.
 
-```json
-{
-  "error": "invalid_cursor",
-  "message": "Cursor invalid or expired. Start again without cursor, then use next_cursor."
-}
-```
+`{ "error": "invalid_cursor", "message": "Cursor invalid or expired. Start again without cursor, then use next_cursor." }`
 
 Start again without `cursor`. All 3 answers are free.
 
 ### 401 Unauthenticated
 
 Anonymous requests get `WWW-Authenticate: Bearer` and a guest wallet checkout action. This is not a Payment challenge.
-
-```json
-{ "error": "unauthenticated" }
-```
 
 ### 402 Payment required
 
@@ -433,25 +244,13 @@ No checkout starts automatically. Confirm any payment action.
 
 ### 502 X API unavailable
 
-```json
-{ "error": "x_api_unavailable" }
-```
-
 The read service returned an error. Retry after a short delay.
 
 ### 429 Rate limit exceeded
 
-```json
-{ "error": "rate_limit_exceeded", "retryAfter": 60 }
-```
-
 You exceeded your tier rate limit. Wait for the `Retry-After` header before retrying.
 
 ### 424 Dependency failed
-
-```json
-{ "error": "x_api_unavailable" }
-```
 
 The normalized v1 response contract can return 424 when the read service is unavailable.
 
@@ -460,3 +259,24 @@ The normalized v1 response contract can return 424 when the read service is unav
 **Next steps.** [Get 1 job listing](/api-reference/x/get-job) for the full description. [Search users](/api-reference/x/search-users) to find the hiring accounts.
 
 </Note>
+
+</section>
+
+{/* GENERATED RESPONSE EXAMPLES START */}
+
+<section>
+
+## Response examples
+
+- **400** `{ "error": "invalid_job_filter", "message": "Unknown locationType \"moon\". Use onsite, remote or hybrid." }`
+- **401** `{ "error": "unauthenticated", "message": "Authentication required." }`
+- **402** `{ "error": "insufficient_credits", "message": "Insufficient credits. Top up or subscribe to continue." }`
+- **403** `{ "error": "api_key_paused", "message": "This API key is paused. Resume it at dashboard.xquik.com/api-keys to use it again." }`
+- **424** `{ "error": "x_api_unavailable", "message": "X data source temporarily unavailable. Try again later." }`
+- **429** `{ "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 60 }`
+- **502** `{ "error": "x_api_unavailable", "message": "X data source temporarily unavailable. Try again later." }`
+- **503** `{ "error": "x_api_unavailable", "message": "Xquik is busy right now. Retry shortly." }`
+
+</section>
+
+{/* GENERATED RESPONSE EXAMPLES END */}

@@ -2,7 +2,7 @@
 title: "Twitter notifications API, mentions & activity feed"
 sidebarTitle: "Get notifications"
 description: "Retrieve a connected X account's notifications. Filter mentions or verified activity, store triage rows, and page older rows with next_cursor. 1 credit each."
-api: "GET /x/notifications"
+endpoint: "GET /x/notifications"
 keywords:
   [
     "Twitter notifications API",
@@ -20,124 +20,9 @@ keywords:
 import LlmsDirective from "/snippets/llms-directive.mdx";
 import ConnectedAccountApiLinks from "/snippets/x-connected-account-api-links.mdx";
 
-{/* GENERATED RESPONSE EXAMPLES START */}
-
-<Panel>
-
-<Tabs defaultTabIndex={0} sync={false}>
-
-  <Tab title="200" id="response-x-notifications-200">
-
-    ```json
-    {
-      "notifications": [
-        {
-          "id": "1234567890",
-          "type": "like",
-          "message": "elonmusk liked your tweet",
-          "timestamp": "2025-01-15T12:00:00Z"
-        }
-      ],
-      "has_next_page": true,
-      "next_cursor": "DAACCgACGRElMJcAAA"
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="400" id="response-x-notifications-400">
-
-    ```json
-    {
-      "error": "invalid_input",
-      "message": "Invalid input. Check the request body."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="401" id="response-x-notifications-401">
-
-    ```json
-    {
-      "error": "unauthenticated",
-      "message": "Authentication required. Provide a valid API key or bearer token."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="402" id="response-x-notifications-402">
-
-    ```json
-    {
-      "error": "insufficient_credits",
-      "message": "Insufficient credits. Top up or subscribe to continue."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="403" id="response-x-notifications-403">
-
-    ```json
-    {
-      "error": "api_key_paused",
-      "message": "This API key is paused. Resume it at dashboard.xquik.com/api-keys to use it again."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="424" id="response-x-notifications-424">
-
-    ```json
-    {
-      "error": "x_api_unavailable",
-      "message": "X data source temporarily unavailable. Try again later."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="429" id="response-x-notifications-429">
-
-    ```json
-    {
-      "error": "rate_limit_exceeded",
-      "message": "Too many requests. Try again later.",
-      "retryAfter": 60
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="502" id="response-x-notifications-502">
-
-    ```json
-    {
-      "error": "x_api_unavailable",
-      "message": "X data source temporarily unavailable. Try again later."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="503" id="response-x-notifications-503">
-
-    ```json
-    {
-      "error": "x_api_unavailable",
-      "message": "Xquik is busy right now. Retry shortly."
-    }
-    ```
-
-  </Tab>
-</Tabs>
-
-</Panel>
-{/* GENERATED RESPONSE EXAMPLES END */}
 <LlmsDirective />
+
+`GET https://xquik.com/api/v1/x/notifications`
 
 <Note>
 
@@ -266,6 +151,8 @@ Keep full message text in private systems. Use `notification_id`,
 `notification_type`, `created_at`, `inbox_type`, and `page_next_cursor`. Use
 them for private support dashboards, CRM queues, and agent workflows.
 
+<section>
+
 ## Notification triage handoff
 
 Use `GET /api/v1/x/notifications` when a caller
@@ -314,6 +201,10 @@ full tweet and direct-message payloads.
   </Card>
 </CardGroup>
 
+</section>
+
+<section>
+
 ## Poll Twitter notifications with the API
 
 Call `GET /x/notifications` with a connected account's Xquik API key. Omit
@@ -359,6 +250,10 @@ Activity API for real-time account events. [Its documentation lists mentions,
 replies, reposts, likes, follows, and direct
 messages.](https://docs.x.com/x-api/account-activity/introduction)
 
+</section>
+
+<section>
+
 ## Twitter notification API questions
 
 ### Why are Twitter API notifications delayed?
@@ -380,19 +275,20 @@ needs more credits. Wait for `Retry-After` after `429`. `424 account_required`
 means you have no connected X account. Resume from the saved cursor after other
 `424`, `502` or `503` responses.
 
+</section>
+
+<section>
+
 ## Query parameters
 
-<ParamField query="type" type="string">
+| Query parameter | Type     | Required | Description                                                                                              |
+| --------------- | -------- | -------- | -------------------------------------------------------------------------------------------------------- |
+| `type`          | `string` | No       | Notification filter. `All` (default), `Verified`, or `Mentions`. Unrecognized values fall back to `All`. |
+| `cursor`        | `string` | No       | Pagination cursor. Pass the `next_cursor` value from the previous response to fetch the next page.       |
 
-Notification filter. `All` (default), `Verified`, or `Mentions`. Unrecognized values fall back to `All`.
+</section>
 
-</ParamField>
-
-<ParamField query="cursor" type="string">
-
-Pagination cursor. Pass the `next_cursor` value from the previous response to fetch the next page.
-
-</ParamField>
+<section>
 
 ## Which inbox endpoint?
 
@@ -436,47 +332,33 @@ Pagination cursor. Pass the `next_cursor` value from the previous response to fe
   </Card>
 </CardGroup>
 
+</section>
+
+<section>
+
 ## Headers
 
-<ParamField header="x-api-key" type="string" required>
+| Header      | Type     | Required | Description                                                    |
+| ----------- | -------- | -------- | -------------------------------------------------------------- |
+| `x-api-key` | `string` | Yes      | Your API key. Session cookie authentication is also supported. |
 
-Your API key. Session cookie authentication is also supported.
+</section>
 
-</ParamField>
+<section>
 
 ## Response
 
 ### 200 OK
 
-<ResponseField name="notifications" type="object[]">
-
-Array of notification objects.
-**Notification object fields.**
-
-<ResponseField name="id" type="string">
-  Notification ID.
-</ResponseField>
-<ResponseField name="type" type="string">
-  Notification type (for example mention, like, retweet). Omitted if unavailable.
-</ResponseField>
-<ResponseField name="message" type="string">
-  Notification message text. Omitted if unavailable.
-</ResponseField>
-<ResponseField name="timestamp" type="string">
-  ISO 8601 timestamp. Omitted if unavailable.
-</ResponseField>
-
-</ResponseField>
-<ResponseField name="has_next_page" type="boolean">
-
-Whether more notifications are available.
-
-</ResponseField>
-<ResponseField name="next_cursor" type="string">
-
-Opaque cursor for the next page. Empty string when no more results.
-
-</ResponseField>
+| Field                       | Type       | Description                                                                     |
+| --------------------------- | ---------- | ------------------------------------------------------------------------------- |
+| `notifications`             | `object[]` | Array of notification objects.                                                  |
+| `notifications[].id`        | `string`   | Notification ID.                                                                |
+| `notifications[].type`      | `string`   | Notification type (for example mention, like, retweet). Omitted if unavailable. |
+| `notifications[].message`   | `string`   | Notification message text. Omitted if unavailable.                              |
+| `notifications[].timestamp` | `string`   | ISO 8601 timestamp. Omitted if unavailable.                                     |
+| `has_next_page`             | `boolean`  | Whether more notifications are available.                                       |
+| `next_cursor`               | `string`   | Opaque cursor for the next page. Empty string when no more results.             |
 
 <Note>
 
@@ -485,3 +367,41 @@ Opaque cursor for the next page. Empty string when no more results.
 </Note>
 
 <ConnectedAccountApiLinks />
+
+</section>
+
+{/* GENERATED RESPONSE EXAMPLES START */}
+
+<section>
+
+## Response examples
+
+### 200 example
+
+```json
+{
+  "notifications": [
+    {
+      "id": "1234567890",
+      "type": "like",
+      "message": "elonmusk liked your tweet",
+      "timestamp": "2025-01-15T12:00:00Z"
+    }
+  ],
+  "has_next_page": true,
+  "next_cursor": "DAACCgACGRElMJcAAA"
+}
+```
+
+- **400** `{ "error": "invalid_input", "message": "Invalid input. Check the request body." }`
+- **401** `{ "error": "unauthenticated", "message": "Authentication required. Provide a valid API key or bearer token." }`
+- **402** `{ "error": "insufficient_credits", "message": "Insufficient credits. Top up or subscribe to continue." }`
+- **403** `{ "error": "api_key_paused", "message": "This API key is paused. Resume it at dashboard.xquik.com/api-keys to use it again." }`
+- **424** `{ "error": "x_api_unavailable", "message": "X data source temporarily unavailable. Try again later." }`
+- **429** `{ "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 60 }`
+- **502** `{ "error": "x_api_unavailable", "message": "X data source temporarily unavailable. Try again later." }`
+- **503** `{ "error": "x_api_unavailable", "message": "Xquik is busy right now. Retry shortly." }`
+
+</section>
+
+{/* GENERATED RESPONSE EXAMPLES END */}

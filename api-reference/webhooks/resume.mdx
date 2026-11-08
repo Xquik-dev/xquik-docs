@@ -2,97 +2,15 @@
 title: "Resume Twitter webhook deliveries & retry events"
 sidebarTitle: "Resume webhook"
 description: "Resume a webhook and start sending waiting deliveries at once. Xquik sends a signed test first and resumes only after a 2xx response. The call is free."
-api: "POST /webhooks/{id}/resume"
+endpoint: "POST /webhooks/{id}/resume"
 keywords: ["webhook", "resume", "delivery failure", "needs attention", "test webhook"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
 
-{/* GENERATED RESPONSE EXAMPLES START */}
-
-<Panel>
-
-<Tabs defaultTabIndex={0} sync={false}>
-
-  <Tab title="200" id="response-webhooks-resume-200">
-
-    ```json
-    {
-      "success": true,
-      "statusCode": 200,
-      "webhook": {
-        "id": "42",
-        "url": "https://example.com/webhook",
-        "eventTypes": [
-          "tweet.new"
-        ],
-        "isActive": true,
-        "consecutiveFailures": 0
-      }
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="400" id="response-webhooks-resume-400">
-
-    ```json
-    {
-      "error": "Connection timed out"
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="401" id="response-webhooks-resume-401">
-
-    ```json
-    {
-      "error": "unauthenticated",
-      "message": "Authentication required. Provide a valid API key or bearer token."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="403" id="response-webhooks-resume-403">
-
-    ```json
-    {
-      "error": "api_key_paused",
-      "message": "This API key is paused. Resume it at dashboard.xquik.com/api-keys to use it again."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="404" id="response-webhooks-resume-404">
-
-    ```json
-    {
-      "error": "not_found",
-      "message": "Resource not found."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="429" id="response-webhooks-resume-429">
-
-    ```json
-    {
-      "error": "rate_limit_exceeded",
-      "message": "Too many requests. Try again later.",
-      "retryAfter": 60
-    }
-    ```
-
-  </Tab>
-</Tabs>
-
-</Panel>
-{/* GENERATED RESPONSE EXAMPLES END */}
 <LlmsDirective />
+
+`POST https://xquik.com/api/v1/webhooks/{id}/resume`
 
 <Callout icon="circle-check" color="#16a34a">
 
@@ -230,21 +148,27 @@ These snippets build a recovery row. Store `delivery_status`,
 `consecutive_failures`, `failure_hard_cap`, `status_code`, and the delivery-log
 endpoint beside the webhook ID.
 
+<section>
+
 ## Path parameters
 
-<ParamField path="id" type="string" required>
+| Path parameter | Type     | Required | Description                        |
+| -------------- | -------- | -------- | ---------------------------------- |
+| `id`           | `string` | Yes      | The webhook ID to test and resume. |
 
-The webhook ID to test and resume.
+</section>
 
-</ParamField>
+<section>
 
 ## Headers
 
-<ParamField header="x-api-key" type="string" required>
+| Header      | Type     | Required | Description                                                             |
+| ----------- | -------- | -------- | ----------------------------------------------------------------------- |
+| `x-api-key` | `string` | Yes      | Your API key. This endpoint also accepts session cookie authentication. |
 
-Your API key. This endpoint also accepts session cookie authentication.
+</section>
 
-</ParamField>
+<section>
 
 ## What happens
 
@@ -276,67 +200,27 @@ one-time secret from [Create Webhook](/api-reference/webhooks/create).
 | Failure count        | `webhook.consecutiveFailures` | Expect `0` after recovery.                                |
 | Delivery state       | `webhook.deliveryStatus`      | Expect `active` after recovery.                           |
 
+</section>
+
+<section>
+
 ## Response
 
 ### 200 OK
 
-<ResponseField name="success" type="boolean">
-
-`true` when the signed test request succeeded and Xquik resumed the webhook.
-
-</ResponseField>
-<ResponseField name="statusCode" type="number">
-
-HTTP status code returned by your receiver during the signed test.
-
-</ResponseField>
-<ResponseField name="webhook" type="object">
-
-Updated webhook configuration.
-**Webhook object fields.**
-
-<ResponseField name="id" type="string">
-
-      Unique webhook identifier.
-
-    </ResponseField>
-    <ResponseField name="url" type="string">
-
-      Delivery endpoint URL.
-
-    </ResponseField>
-    <ResponseField name="eventTypes" type="string[]">
-
-      Event types this webhook subscribes to.
-
-    </ResponseField>
-    <ResponseField name="isActive" type="boolean">
-
-      `true` after a successful resume.
-
-    </ResponseField>
-    <ResponseField name="consecutiveFailures" type="number">
-
-      Consecutive receiver failures. Resets to `0` after a successful resume.
-
-    </ResponseField>
-    <ResponseField name="deliveryStatus" type="string">
-
-      `active`, `paused`, or `needs_attention`.
-
-    </ResponseField>
-    <ResponseField name="failureHardCap" type="number">
-
-      Failure count that sets `needs_attention`. Delivery continues past it.
-
-    </ResponseField>
-    <ResponseField name="createdAt" type="string">
-
-      ISO 8601 creation timestamp.
-
-    </ResponseField>
-
-</ResponseField>
+| Field                         | Type       | Description                                                                  |
+| ----------------------------- | ---------- | ---------------------------------------------------------------------------- |
+| `success`                     | `boolean`  | `true` when the signed test request succeeded and Xquik resumed the webhook. |
+| `statusCode`                  | `number`   | HTTP status code returned by your receiver during the signed test.           |
+| `webhook`                     | `object`   | Updated webhook configuration.                                               |
+| `webhook.id`                  | `string`   | Unique webhook identifier.                                                   |
+| `webhook.url`                 | `string`   | Delivery endpoint URL.                                                       |
+| `webhook.eventTypes`          | `string[]` | Event types this webhook subscribes to.                                      |
+| `webhook.isActive`            | `boolean`  | `true` after a successful resume.                                            |
+| `webhook.consecutiveFailures` | `number`   | Consecutive receiver failures. Resets to `0` after a successful resume.      |
+| `webhook.deliveryStatus`      | `string`   | `active`, `paused`, or `needs_attention`.                                    |
+| `webhook.failureHardCap`      | `number`   | Failure count that sets `needs_attention`. Delivery continues past it.       |
+| `webhook.createdAt`           | `string`   | ISO 8601 creation timestamp.                                                 |
 
 ```json
 {
@@ -357,67 +241,41 @@ Updated webhook configuration.
 
 ### 400 Test failed
 
-<ResponseField name="success" type="boolean">
+| Field        | Type      | Description                                                       |
+| ------------ | --------- | ----------------------------------------------------------------- |
+| `success`    | `boolean` | `false` when the signed test did not receive a `2xx` response.    |
+| `statusCode` | `number`  | HTTP status code from the receiver, or `0` if it was unreachable. |
+| `error`      | `string`  | Delivery failure reason.                                          |
 
-`false` when the signed test did not receive a `2xx` response.
-
-</ResponseField>
-<ResponseField name="statusCode" type="number">
-
-HTTP status code from the receiver, or `0` if it was unreachable.
-
-</ResponseField>
-<ResponseField name="error" type="string">
-
-Delivery failure reason.
-
-</ResponseField>
-
-```json
-{
-  "success": false,
-  "statusCode": 500,
-  "error": "HTTP 500"
-}
-```
+`{ "success": false, "statusCode": 500, "error": "HTTP 500" }`
 
 Fix the receiver, then retry this endpoint.
 
 ### 400 Invalid request
 
-```json
-{ "error": "invalid_id", "message": "Invalid webhook ID format" }
-```
+`{ "error": "invalid_id", "message": "Invalid webhook ID format" }`
 
 The provided webhook ID is not a valid format.
 
 ### 401 Unauthenticated
 
-```json
-{ "error": "unauthenticated", "message": "Missing or invalid API key" }
-```
+`{ "error": "unauthenticated", "message": "Missing or invalid API key" }`
 
 Missing or invalid API key or session cookie.
 
 ### 404 Not found
 
-```json
-{ "error": "not_found", "message": "Webhook not found" }
-```
+`{ "error": "not_found", "message": "Webhook not found" }`
 
 No webhook exists with this ID, or it belongs to a different account.
 
 ### 429 Rate limited
 
-```json
-{
-  "error": "rate_limit_exceeded",
-  "message": "Too many requests. Try again later.",
-  "retryAfter": 60
-}
-```
-
 Too many requests. Wait for the `Retry-After` header before retrying.
+
+</section>
+
+<section>
 
 ## Recovery handoff
 
@@ -478,3 +336,21 @@ This endpoint accepts 2 auth methods. Send an API key in the `x-api-key` header.
 **Related.** [List Webhooks](/api-reference/webhooks/list) &middot; [Update Webhook](/api-reference/webhooks/update) &middot; [Test Webhook](/api-reference/webhooks/test) &middot; [List Deliveries](/api-reference/webhooks/deliveries) &middot; [Webhook Verification](/webhooks/verification)
 
 </Note>
+
+</section>
+
+{/* GENERATED RESPONSE EXAMPLES START */}
+
+<section>
+
+## Response examples
+
+- **400** `{ "error": "Connection timed out" }`
+- **401** `{ "error": "unauthenticated", "message": "Authentication required. Provide a valid API key or bearer token." }`
+- **403** `{ "error": "api_key_paused", "message": "This API key is paused. Resume it at dashboard.xquik.com/api-keys to use it again." }`
+- **404** `{ "error": "not_found", "message": "Resource not found." }`
+- **429** `{ "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 60 }`
+
+</section>
+
+{/* GENERATED RESPONSE EXAMPLES END */}

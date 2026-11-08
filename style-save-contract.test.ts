@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { hasDocumentedField } from "./scripts/lib/documented-fields.ts";
 
 const source = readFileSync(new URL("api-reference/styles/save.mdx", import.meta.url), "utf8");
 
@@ -21,14 +22,14 @@ describe("save custom tweet style documentation", (): void => {
 
     expect({
       customExampleCorrect:
-        source.includes('"xUsername": "professional voice"') &&
+        source.includes('"xUsername": "product-updates"') &&
         source.includes('"isOwnAccount": false') &&
-        source.includes('"authorUsername": "professional voice"'),
+        source.includes('"authorUsername": "product-updates"'),
       nestedFields: ["id", "text", "authorUsername", "createdAt"].every((field) =>
-        source.includes(`<ResponseField name="${field}"`),
+        hasDocumentedField(source, "response", field),
       ),
       topLevelFields: ["xUsername", "tweetCount", "isOwnAccount", "fetchedAt", "tweets"].every(
-        (field) => source.includes(`<ResponseField name="${field}"`),
+        (field) => hasDocumentedField(source, "response", field),
       ),
       xTweetIdDenied: source.includes("This is not an X Tweet ID."),
     }).toStrictEqual({

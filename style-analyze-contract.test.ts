@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
+import { hasDocumentedField } from "./scripts/lib/documented-fields.ts";
 
 const source = readFileSync(new URL("api-reference/styles/analyze.mdx", import.meta.url), "utf8");
 
@@ -56,7 +57,7 @@ describe("analyze tweet writing style documentation", (): void => {
         "The public Style Profile contract does not include cached media objects.",
       ),
       supportedTweetFields: ["id", "text", "authorUsername", "createdAt"].every((field) =>
-        source.includes(`<ResponseField name="${field}"`),
+        hasDocumentedField(source, "response", field),
       ),
       unsupportedMetadataClaims: /tone|vocabulary|engagement/iu.test(frontmatter),
     }).toStrictEqual({

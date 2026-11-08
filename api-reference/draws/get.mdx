@@ -2,7 +2,7 @@
 title: "Twitter giveaway winner API & draw verification"
 sidebarTitle: "Get draw"
 description: "Retrieve one Twitter giveaway draw by ID. Verify source tweet metrics, entry counts, ordered primary and backup winners, timestamps, and result status."
-api: "GET /draws/{id}"
+endpoint: "GET /draws/{id}"
 keywords:
   [
     "Twitter giveaway winner API",
@@ -17,89 +17,9 @@ keywords:
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
 
-{/* GENERATED RESPONSE EXAMPLES START */}
-
-<Panel>
-
-<Tabs defaultTabIndex={0} sync={false}>
-
-  <Tab title="200" id="response-draws-get-200">
-
-    ```json
-    {
-      "draw": {
-        "id": "f4bd00a2-7b4e-4e59-8e1b-72e2c9f12345",
-        "tweetUrl": "https://x.com/elonmusk/status/1234567890",
-        "tweetId": "1234567890",
-        "tweetText": "Giving away 3 Tesla Model 3s!",
-        "tweetAuthorUsername": "elonmusk"
-      },
-      "winners": []
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="400" id="response-draws-get-400">
-
-    ```json
-    {
-      "error": "invalid_input",
-      "message": "Invalid input. Check the request body."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="401" id="response-draws-get-401">
-
-    ```json
-    {
-      "error": "unauthenticated",
-      "message": "Authentication required. Provide a valid API key or bearer token."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="403" id="response-draws-get-403">
-
-    ```json
-    {
-      "error": "api_key_paused",
-      "message": "This API key is paused. Resume it at dashboard.xquik.com/api-keys to use it again."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="404" id="response-draws-get-404">
-
-    ```json
-    {
-      "error": "not_found",
-      "message": "Resource not found."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="429" id="response-draws-get-429">
-
-    ```json
-    {
-      "error": "rate_limit_exceeded",
-      "message": "Too many requests. Try again later.",
-      "retryAfter": 60
-    }
-    ```
-
-  </Tab>
-</Tabs>
-
-</Panel>
-{/* GENERATED RESPONSE EXAMPLES END */}
 <LlmsDirective />
+
+`GET https://xquik.com/api/v1/draws/{id}`
 
 Retrieve one Twitter giveaway result with its draw ID. Inspect the source tweet
 snapshot, candidate counts, timestamps, and ordered winner rows. Separate
@@ -108,6 +28,8 @@ primary winners from backup winners before publishing results.
 This endpoint does not return create-time eligibility rules or exclusion
 reasons. Keep the original `POST /draws` request when an audit needs those
 rules.
+
+<section>
 
 ## Verify one Twitter giveaway draw
 
@@ -246,6 +168,10 @@ func main() {
 
 </CodeGroup>
 
+</section>
+
+<section>
+
 ## Interpret Twitter giveaway winner rows
 
 Winner order is part of the result. Keep each 1-indexed `position`. Do not
@@ -282,6 +208,10 @@ sort by username or tweet ID.
 Do not promote a backup winner by changing the existing row. Record the
 replacement decision separately. This keeps the original draw result.
 
+</section>
+
+<section>
+
 ## Keep eligibility rules separately
 
 `GET /draws/{id}` returns the draw snapshot and winners. It does not repeat the
@@ -297,6 +227,10 @@ Store the original create request when reviews need these settings.
 Use an entry export when the review needs candidate rows. The export can show
 whether an entry passed the filters. It does not reconstruct a missing create
 request.
+
+</section>
+
+<section>
 
 ## Build a giveaway verification handoff
 
@@ -322,100 +256,57 @@ Join the draw summary, winner rows, and export location with one draw ID.
 Store winner rows separately from this summary. Keep `position` and `isBackup`
 on every row. Never infer filter rules from entry counts.
 
+</section>
+
+<section>
+
 ## Path parameters
 
-<ParamField path="id" type="string" required>
+| Path parameter | Type     | Required | Description                                                                                                                                        |
+| -------------- | -------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`           | `string` | Yes      | The draw public ID. Returned when you [create a draw](/api-reference/draws/create) or [list draws](/api-reference/draws/twitter-giveaway-history). |
 
-The draw public ID. Returned when you [create a draw](/api-reference/draws/create) or [list draws](/api-reference/draws/twitter-giveaway-history).
+</section>
 
-</ParamField>
+<section>
 
 ## Headers
 
-<ParamField header="x-api-key" type="string" required>
+| Header          | Type     | Required | Description                                                                                                      |
+| --------------- | -------- | -------- | ---------------------------------------------------------------------------------------------------------------- |
+| `x-api-key`     | `string` | Yes      | Send your Xquik API key. Generate one from the [dashboard](https://dashboard.xquik.com/en/account?tab=api-keys). |
+| `Authorization` | `string` | No       | Send `Bearer <token>` instead of `x-api-key` when using OAuth 2.1.                                               |
 
-Send your Xquik API key. Generate one from the [dashboard](https://dashboard.xquik.com/en/account?tab=api-keys).
+</section>
 
-</ParamField>
-
-<ParamField header="Authorization" type="string">
-
-Send `Bearer <token>` instead of `x-api-key` when using OAuth 2.1.
-
-</ParamField>
+<section>
 
 ## Response
 
 ### 200 OK
 
-<ResponseField name="draw" type="object">
-
-Draw details including tweet metadata.
-**Draw object fields.**
-
-<ResponseField name="id" type="string">
-  Draw public ID returned by Xquik.
-</ResponseField>
-<ResponseField name="tweetId" type="string">
-  X tweet ID.
-</ResponseField>
-<ResponseField name="tweetUrl" type="string">
-  Original tweet URL.
-</ResponseField>
-<ResponseField name="tweetText" type="string">
-  Full text content of the tweet.
-</ResponseField>
-<ResponseField name="tweetAuthorUsername" type="string">
-  Username of the tweet author.
-</ResponseField>
-<ResponseField name="tweetLikeCount" type="number">
-  Like count at time of draw.
-</ResponseField>
-<ResponseField name="tweetRetweetCount" type="number">
-  Retweet count at time of draw.
-</ResponseField>
-<ResponseField name="tweetReplyCount" type="number">
-  Reply count at time of draw.
-</ResponseField>
-<ResponseField name="tweetQuoteCount" type="number">
-  Quote tweet count at time of draw.
-</ResponseField>
-<ResponseField name="status" type="string">
-  Draw status (for example `completed`).
-</ResponseField>
-<ResponseField name="totalEntries" type="number">
-  Inspected candidate entries.
-</ResponseField>
-<ResponseField name="validEntries" type="number">
-  Entries that passed all filters.
-</ResponseField>
-<ResponseField name="createdAt" type="string">
-  ISO 8601 creation timestamp.
-</ResponseField>
-<ResponseField name="drawnAt" type="string">
-  ISO 8601 timestamp of when Xquik selected winners. Present only for completed draws.
-</ResponseField>
-
-</ResponseField>
-<ResponseField name="winners" type="array">
-
-Selected winners and backup winners ordered by position.
-**Winner object fields.**
-
-<ResponseField name="position" type="number">
-  Winner position (1-indexed).
-</ResponseField>
-<ResponseField name="authorUsername" type="string">
-  X username of the winner.
-</ResponseField>
-<ResponseField name="tweetId" type="string">
-  Tweet ID of the winning reply.
-</ResponseField>
-<ResponseField name="isBackup" type="boolean">
-  `true` if this is a backup winner.
-</ResponseField>
-
-</ResponseField>
+| Field                      | Type      | Description                                                                          |
+| -------------------------- | --------- | ------------------------------------------------------------------------------------ |
+| `draw`                     | `object`  | Draw details including tweet metadata.                                               |
+| `draw.id`                  | `string`  | Draw public ID returned by Xquik.                                                    |
+| `draw.tweetId`             | `string`  | X tweet ID.                                                                          |
+| `draw.tweetUrl`            | `string`  | Original tweet URL.                                                                  |
+| `draw.tweetText`           | `string`  | Full text content of the tweet.                                                      |
+| `draw.tweetAuthorUsername` | `string`  | Username of the tweet author.                                                        |
+| `draw.tweetLikeCount`      | `number`  | Like count at time of draw.                                                          |
+| `draw.tweetRetweetCount`   | `number`  | Retweet count at time of draw.                                                       |
+| `draw.tweetReplyCount`     | `number`  | Reply count at time of draw.                                                         |
+| `draw.tweetQuoteCount`     | `number`  | Quote tweet count at time of draw.                                                   |
+| `draw.status`              | `string`  | Draw status (for example `completed`).                                               |
+| `draw.totalEntries`        | `number`  | Inspected candidate entries.                                                         |
+| `draw.validEntries`        | `number`  | Entries that passed all filters.                                                     |
+| `draw.createdAt`           | `string`  | ISO 8601 creation timestamp.                                                         |
+| `draw.drawnAt`             | `string`  | ISO 8601 timestamp of when Xquik selected winners. Present only for completed draws. |
+| `winners`                  | `array`   | Selected winners and backup winners ordered by position.                             |
+| `winners[].position`       | `number`  | Winner position (1-indexed).                                                         |
+| `winners[].authorUsername` | `string`  | X username of the winner.                                                            |
+| `winners[].tweetId`        | `string`  | Tweet ID of the winning reply.                                                       |
+| `winners[].isBackup`       | `boolean` | `true` if this is a backup winner.                                                   |
 
 ```json
 {
@@ -460,32 +351,22 @@ Selected winners and backup winners ordered by position.
 
 ### 401 Unauthenticated
 
-```json
-{ "error": "unauthenticated" }
-```
-
 The API key or OAuth bearer token is missing or invalid. Replace it before
 retrying.
 
 ### 404 Not found
 
-```json
-{ "error": "not_found" }
-```
-
 No draw exists with this ID, or it belongs to a different account.
 
 ### 429 Rate limited
 
-```json
-{
-  "error": "rate_limit_exceeded",
-  "message": "Too many requests. Try again later.",
-  "retryAfter": 1
-}
-```
+`{ "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 1 }`
 
 Too many requests. Wait for the `Retry-After` header before retrying.
+
+</section>
+
+<section>
 
 ## Handle giveaway draw responses
 
@@ -512,6 +393,10 @@ Too many requests. Wait for the `Retry-After` header before retrying.
 
   </Card>
 </CardGroup>
+
+</section>
+
+<section>
 
 ## Twitter giveaway winner verification questions
 
@@ -552,3 +437,21 @@ credits.
 draws. [Create Draw](/api-reference/draws/create) runs a new selection.
 
 </Note>
+
+</section>
+
+{/* GENERATED RESPONSE EXAMPLES START */}
+
+<section>
+
+## Response examples
+
+- **400** `{ "error": "invalid_input", "message": "Invalid input. Check the request body." }`
+- **401** `{ "error": "unauthenticated", "message": "Authentication required. Provide a valid API key or bearer token." }`
+- **403** `{ "error": "api_key_paused", "message": "This API key is paused. Resume it at dashboard.xquik.com/api-keys to use it again." }`
+- **404** `{ "error": "not_found", "message": "Resource not found." }`
+- **429** `{ "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 60 }`
+
+</section>
+
+{/* GENERATED RESPONSE EXAMPLES END */}

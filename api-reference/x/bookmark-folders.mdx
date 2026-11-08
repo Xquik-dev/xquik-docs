@@ -2,7 +2,7 @@
 title: "Twitter bookmark folders API & saved tweet export"
 sidebarTitle: "Get bookmark folders"
 description: "List Twitter bookmark folders by ID and name. Export each folder's saved tweets with authors, replies, likes, reposts, views, media & cursor checkpoints."
-api: "GET /x/bookmarks/folders"
+endpoint: "GET /x/bookmarks/folders"
 keywords:
   [
     "Twitter bookmarks folders",
@@ -17,125 +17,9 @@ keywords:
 import LlmsDirective from "/snippets/llms-directive.mdx";
 import ConnectedAccountApiLinks from "/snippets/x-connected-account-api-links.mdx";
 
-{/* GENERATED RESPONSE EXAMPLES START */}
-
-<Panel>
-
-<Tabs defaultTabIndex={0} sync={false}>
-
-  <Tab title="200" id="response-x-bookmark-folders-200">
-
-    ```json
-    {
-      "folders": [
-        {
-          "id": "1234567890",
-          "media": {
-            "originalImageUrl": "https://pbs.twimg.com/media/cover.jpg"
-          },
-          "name": "Read Later"
-        }
-      ],
-      "has_next_page": false,
-      "next_cursor": ""
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="400" id="response-x-bookmark-folders-400">
-
-    ```json
-    {
-      "error": "invalid_input",
-      "message": "Invalid input. Check the request body."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="401" id="response-x-bookmark-folders-401">
-
-    ```json
-    {
-      "error": "unauthenticated",
-      "message": "Authentication required. Provide a valid API key or bearer token."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="402" id="response-x-bookmark-folders-402">
-
-    ```json
-    {
-      "error": "insufficient_credits",
-      "message": "Insufficient credits. Top up or subscribe to continue."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="403" id="response-x-bookmark-folders-403">
-
-    ```json
-    {
-      "error": "api_key_paused",
-      "message": "This API key is paused. Resume it at dashboard.xquik.com/api-keys to use it again."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="424" id="response-x-bookmark-folders-424">
-
-    ```json
-    {
-      "error": "x_api_unavailable",
-      "message": "X data source temporarily unavailable. Try again later."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="429" id="response-x-bookmark-folders-429">
-
-    ```json
-    {
-      "error": "rate_limit_exceeded",
-      "message": "Too many requests. Try again later.",
-      "retryAfter": 60
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="502" id="response-x-bookmark-folders-502">
-
-    ```json
-    {
-      "error": "x_api_unavailable",
-      "message": "X data source temporarily unavailable. Try again later."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="503" id="response-x-bookmark-folders-503">
-
-    ```json
-    {
-      "error": "x_api_unavailable",
-      "message": "Xquik is busy right now. Retry shortly."
-    }
-    ```
-
-  </Tab>
-</Tabs>
-
-</Panel>
-{/* GENERATED RESPONSE EXAMPLES END */}
 <LlmsDirective />
+
+`GET https://xquik.com/api/v1/x/bookmarks/folders`
 
 <Info>
 
@@ -217,6 +101,8 @@ The Node.js and Python snippets build bookmark folder rows. They do not
 print the full response. Store `folderRows` or `folder_rows`.
 Then pass `folder_id` into `GET /x/bookmarks?folderId=...`.
 
+<section>
+
 ## Direct bookmark folder handoff
 
 Use `GET /x/bookmarks/folders` for an authenticated X account. It serves a
@@ -225,6 +111,10 @@ Store `folder_id` and `folder_name` with the connected account ID.
 The route returns one folder page. `has_next_page` stays `false`, and
 `next_cursor` stays empty. Use each folder ID with
 [Bookmarks](/api-reference/x/bookmarks) to fetch its saved tweets.
+
+</section>
+
+<section>
 
 ## Twitter bookmark folder workflow
 
@@ -251,6 +141,10 @@ the folder ID beside every row to keep folder membership.
 The folder list has no next page. The bookmarked-tweet route paginates per
 folder. Store its `next_cursor`, collection time, and connected account ID.
 
+</section>
+
+<section>
+
 ## Export Twitter bookmark folders
 
 Every folder list is a snapshot for one account. Compare folder IDs
@@ -270,6 +164,10 @@ Store `account_id`, `folder_id`, and `folder_name` beside each saved tweet.
 Keep tweet, author, engagement, media, and timestamp fields. Store
 `source_cursor` beside each page. Validate IDs before exporting to a
 spreadsheet, CRM, research queue, or storage system.
+
+</section>
+
+<section>
 
 ## Twitter bookmark folder questions
 
@@ -300,52 +198,42 @@ response requires more credits. Respect retry guidance in a `429` response.
 `424 bookmark_folders_unavailable` means the account has no X Premium. Retry
 other `424`, `502` & `503` read failures later.
 
+</section>
+
+<section>
+
 ## Query parameters
 
-<ParamField query="cursor" type="string">
+| Query parameter | Type     | Required | Description                                                            |
+| --------------- | -------- | -------- | ---------------------------------------------------------------------- |
+| `cursor`        | `string` | No       | Pass `next_cursor` from the previous page. Omit it for the first page. |
 
-Pass `next_cursor` from the previous page. Omit it for the first page.
+</section>
 
-</ParamField>
+<section>
 
 ## Headers
 
-<ParamField header="x-api-key" type="string" required>
+| Header      | Type     | Required | Description                                                    |
+| ----------- | -------- | -------- | -------------------------------------------------------------- |
+| `x-api-key` | `string` | Yes      | Your API key. Session cookie authentication is also supported. |
 
-Your API key. Session cookie authentication is also supported.
+</section>
 
-</ParamField>
+<section>
 
 ## Response
 
 ### 200 OK
 
-<ResponseField name="folders" type="object[]">
-
-Array of bookmark folders.
-**Folder object fields.**
-
-<ResponseField name="id" type="string">
-  This value contains the folder ID.
-</ResponseField>
-<ResponseField name="name" type="string">
-  This value contains the folder name.
-</ResponseField>
-<ResponseField name="media" type="object">
-  Public folder cover image metadata. Omitted if unavailable.
-</ResponseField>
-
-</ResponseField>
-<ResponseField name="has_next_page" type="boolean">
-
-Always `false` for the bookmark folder route.
-
-</ResponseField>
-<ResponseField name="next_cursor" type="string">
-
-Always an empty string for the bookmark folder route.
-
-</ResponseField>
+| Field             | Type       | Description                                                 |
+| ----------------- | ---------- | ----------------------------------------------------------- |
+| `folders`         | `object[]` | Array of bookmark folders.                                  |
+| `folders[].id`    | `string`   | This value contains the folder ID.                          |
+| `folders[].name`  | `string`   | This value contains the folder name.                        |
+| `folders[].media` | `object`   | Public folder cover image metadata. Omitted if unavailable. |
+| `has_next_page`   | `boolean`  | Always `false` for the bookmark folder route.               |
+| `next_cursor`     | `string`   | Always an empty string for the bookmark folder route.       |
 
 <Note>
 
@@ -354,3 +242,42 @@ Always an empty string for the bookmark folder route.
 </Note>
 
 <ConnectedAccountApiLinks />
+
+</section>
+
+{/* GENERATED RESPONSE EXAMPLES START */}
+
+<section>
+
+## Response examples
+
+### 200 example
+
+```json
+{
+  "folders": [
+    {
+      "id": "1234567890",
+      "media": {
+        "originalImageUrl": "https://pbs.twimg.com/media/cover.jpg"
+      },
+      "name": "Read Later"
+    }
+  ],
+  "has_next_page": false,
+  "next_cursor": ""
+}
+```
+
+- **400** `{ "error": "invalid_input", "message": "Invalid input. Check the request body." }`
+- **401** `{ "error": "unauthenticated", "message": "Authentication required. Provide a valid API key or bearer token." }`
+- **402** `{ "error": "insufficient_credits", "message": "Insufficient credits. Top up or subscribe to continue." }`
+- **403** `{ "error": "api_key_paused", "message": "This API key is paused. Resume it at dashboard.xquik.com/api-keys to use it again." }`
+- **424** `{ "error": "x_api_unavailable", "message": "X data source temporarily unavailable. Try again later." }`
+- **429** `{ "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 60 }`
+- **502** `{ "error": "x_api_unavailable", "message": "X data source temporarily unavailable. Try again later." }`
+- **503** `{ "error": "x_api_unavailable", "message": "Xquik is busy right now. Retry shortly." }`
+
+</section>
+
+{/* GENERATED RESPONSE EXAMPLES END */}

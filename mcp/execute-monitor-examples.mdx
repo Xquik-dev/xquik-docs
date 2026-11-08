@@ -1,0 +1,95 @@
+---
+title: "MCP execute examples for monitors & webhooks"
+sidebarTitle: "Monitor examples"
+description: "Copy MCP execute examples that monitor an X (Twitter) user, create a webhook, and poll stored monitor events through the Xquik API sandbox for your own agents."
+keywords: ["MCP tools", "MCP execute", "code execution", "agent examples"]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+<LlmsDirective />
+
+Run these inside the [`execute` tool](/mcp/tools#execute). Each example is one sandbox call.
+
+<section>
+
+## Examples
+
+> Monitor a user + create webhook (monitor creation requires credits, webhook costs no credits)
+
+```javascript
+async () => {
+  const { result: monitor } = await xquik.request({
+    path: "/api/v1/monitors",
+    method: "POST",
+    body: { username: "elonmusk", eventTypes: ["tweet.new", "tweet.reply"] },
+  });
+  const { result: webhook } = await xquik.request({
+    path: "/api/v1/webhooks",
+    method: "POST",
+    body: { url: "https://example.com/hook", eventTypes: ["tweet.new", "tweet.reply"] },
+  });
+  const { result: test } = await xquik.request({
+    path: `/api/v1/webhooks/${webhook.id}/test`,
+    method: "POST",
+  });
+  return {
+    monitor_id: monitor.id,
+    event_types: monitor.event_types,
+    next_billing_at: monitor.next_billing_at,
+    webhook_id: webhook.id,
+    webhook_url: webhook.url,
+    save_secret_once:
+      "Store webhook.secret for X-Xquik-Signature verification; do not print it in logs.",
+    idempotency_keys: ["deliveryId", "streamEventId"],
+    delivery_status: `/api/v1/webhooks/${webhook.id}/deliveries`,
+    test,
+  };
+};
+```
+
+> Poll stored monitor events (costs no credits)
+
+```javascript
+async () => {
+  const monitor_id = "mon_123";
+  const event_type = "tweet.new";
+  const { result: page } = await xquik.request({
+    path: "/api/v1/events",
+    query: { monitorId: monitor_id, eventType: event_type },
+  });
+
+  return {
+    source: "xquik_mcp",
+    job: "monitor_event_poll",
+    monitor_id,
+    event_type,
+    rows: page.events.map((event) => ({
+      event_id: event.id,
+      type: event.type,
+      username: event.username ?? null,
+      query: event.query ?? null,
+      monitor_id: event.monitor_id,
+      monitor_type: event.monitor_type,
+      occurred_at: event.occurred_at,
+      data: event.data,
+    })),
+    has_more: page.has_more,
+    next_cursor: page.next_cursor,
+    next_query: page.next_cursor
+      ? { monitorId: monitor_id, eventType: event_type, cursor: page.next_cursor }
+      : null,
+  };
+};
+```
+
+</section>
+
+<section>
+
+## Next steps
+
+- [MCP tools](/mcp/tools)
+- [MCP overview](/mcp/overview)
+
+</section>

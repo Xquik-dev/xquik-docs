@@ -5,6 +5,7 @@ import { it } from "vitest";
 
 import { findProductRoot } from "./scripts/lib/product-root.ts";
 import { isList, isRecord } from "./scripts/lib/json-shape.ts";
+import { documentedFields, leafName } from "./scripts/lib/documented-fields.ts";
 
 type Spec = Record<string, unknown>;
 
@@ -87,10 +88,14 @@ interface DocsContract {
 }
 
 function docsContract(source: string): DocsContract {
+  const documented = documentedFields(source);
   return {
-    fields: [...source.matchAll(/<ResponseField name="([^"]+)"/gu)].map(([, name]) => name ?? ""),
-    parameters: [...source.matchAll(/<ParamField (?:path|query)="([^"]+)"([^>]*)>/gu)]
-      .map(([, name, rest]) => `${name ?? ""}${/\brequired\b/u.test(rest ?? "") ? "!" : ""}`)
+    fields: documented
+      .filter(({ kind }): boolean => kind === "response")
+      .map(({ name }): string => leafName(name)),
+    parameters: documented
+      .filter(({ kind }): boolean => kind === "path" || kind === "query")
+      .map(({ name, required }): string => `${name}${required ? "!" : ""}`)
       .toSorted(),
   };
 }

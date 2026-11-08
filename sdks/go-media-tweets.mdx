@@ -1,0 +1,187 @@
+---
+title: "Twitter API Go media tweets & DM attachments"
+sidebarTitle: "Media tweets"
+description: "Upload media with the Xquik Go SDK, post tweets with photos or video, and send DM attachments from a connected X (Twitter) account in your own apps and bots."
+keywords: ["Go SDK", "Go media upload", "media tweets", "DM attachments", "X write API"]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+import SdkMediaRoutes from "/snippets/sdk-media-routes.mdx";
+
+<LlmsDirective />
+
+This guide builds on the [Go SDK setup](/sdks/go), which covers install and authentication.
+
+<section>
+
+## Workflow to post media tweets and DM attachments
+
+Use this workflow to post a media tweet or reply. It can also DM 1 uploaded media item.
+
+Tweet and reply media posts use public media URLs directly on `client.X.Tweets.New`. Send up to 4 image URLs or exactly 1 MP4 video URL. The video can be up to 100 MB. Do not mix video with other media. Do not upload first when the media URL is already public.
+
+```go
+type writeActionBilling struct {
+	Charged        bool   `json:"charged"`
+	ChargedCredits string `json:"chargedCredits"`
+}
+
+type writeActionRequest struct {
+	Hash *string `json:"hash"`
+}
+
+type writeActionResult struct {
+	ID string `json:"id"`
+}
+
+type tweetCreatePayload struct {
+	ID          string             `json:"id"`
+	Status      string             `json:"status"`
+	Terminal    bool               `json:"terminal"`
+	SafeToRetry bool               `json:"safeToRetry"`
+	StatusURL   string             `json:"statusUrl"`
+	Request     writeActionRequest `json:"request"`
+	Billing     writeActionBilling `json:"billing"`
+	Result      *writeActionResult `json:"result"`
+	TweetID     string             `json:"tweetId"`
+}
+
+func createTweetHandoff(action tweetCreatePayload, base map[string]any) map[string]any {
+	var resultID any
+	if action.Result != nil {
+		resultID = action.Result.ID
+	} else if action.TweetID != "" {
+		resultID = action.TweetID
+	}
+	poll := any(nil)
+	if !action.Terminal {
+		poll = action.StatusURL
+	}
+	handoff := map[string]any{
+		"status":          action.Status,
+		"terminal":        action.Terminal,
+		"safe_to_retry":   action.SafeToRetry,
+		"write_action_id": action.ID,
+		"request_hash":    action.Request.Hash,
+		"tweet_id":        resultID,
+		"charged":         action.Billing.Charged,
+		"charged_credits": action.Billing.ChargedCredits,
+		"poll":            poll,
+	}
+
+	for key, value := range base {
+		handoff[key] = value
+	}
+
+	return handoff
+}
+```
+
+Use `option.WithResponseBodyInto` to capture the durable write action. Send a unique `Idempotency-Key`. Store `id`, `request.hash`, `billing`, `result`, and `statusUrl`. Poll while `terminal` is false. Retry only when `safeToRetry` is true, using a new key.
+
+```go
+ctx := context.Background()
+var tweetPayload tweetCreatePayload
+_, err := client.X.Tweets.New(ctx, xtwitterscraper.XTweetNewParams{
+	Account: "@username",
+	Text:    xtwitterscraper.String("New demo video is live."),
+	Media:   []string{"https://example.com/product-demo.mp4"},
+}, option.WithResponseBodyInto(&tweetPayload))
+if err != nil {
+	panic(err)
+}
+
+tweetHandoff := createTweetHandoff(tweetPayload, map[string]any{
+	"account": "@username",
+	"media":   []string{"https://example.com/product-demo.mp4"},
+})
+if err := json.NewEncoder(os.Stdout).Encode(tweetHandoff); err != nil {
+	panic(err)
+}
+```
+
+To post an image reply, add `ReplyToTweetID`.
+
+```go
+var replyPayload tweetCreatePayload
+_, err := client.X.Tweets.New(ctx, xtwitterscraper.XTweetNewParams{
+	Account:        "@username",
+	Text:           xtwitterscraper.String("Here is the requested screenshot."),
+	ReplyToTweetID: xtwitterscraper.String("1893704267862470862"),
+	Media:          []string{"https://example.com/export-preview.png"},
+}, option.WithResponseBodyInto(&replyPayload))
+if err != nil {
+	panic(err)
+}
+
+replyHandoff := createTweetHandoff(replyPayload, map[string]any{
+	"account":           "@username",
+	"reply_to_tweet_id": "1893704267862470862",
+	"media":             []string{"https://example.com/export-preview.png"},
+})
+if err := json.NewEncoder(os.Stdout).Encode(replyHandoff); err != nil {
+	panic(err)
+}
+```
+
+For DM attachments, upload the local file first. Then pass the returned `media.MediaID` as the only `MediaIDs` item.
+
+```go
+file, err := os.Open("./handoff.png")
+if err != nil {
+	panic(err)
+}
+defer file.Close()
+
+media, err := client.X.Media.Upload(context.Background(), xtwitterscraper.XMediaUploadParams{
+	Account: "@username",
+	File:    file,
+})
+if err != nil {
+	panic(err)
+}
+
+dm, err := client.X.Dm.Send(context.Background(), "44196397", xtwitterscraper.XDmSendParams{
+	Account:  "@username",
+	Text:     "Here is the asset.",
+	MediaIDs: []string{media.MediaID},
+})
+if err != nil {
+	panic(err)
+}
+
+dmHandoff := map[string]any{
+	"status":     "sent",
+	"message_id": dm.MessageID,
+	"media_id":   media.MediaID,
+	"account":    "@username",
+	"user_id":    "44196397",
+}
+if err := json.NewEncoder(os.Stdout).Encode(dmHandoff); err != nil {
+	panic(err)
+}
+```
+
+`client.X.Tweets.New` returns `TweetID` for confirmed posts. Raw create responses can also include the pending write fields above. That happens when confirmation is still running. `client.X.Media.Upload` returns `media.MediaID` for DM attachments. `client.X.Dm.Send` returns `dm.MessageID` for support tickets, CRM records, queue jobs, or agent memory.
+
+Keep DM body text in private systems. Shared logs, public artifacts, queue status, and agent handoffs should omit full DM bodies. They should store `message_id`, optional `media_id`, `account`, `user_id`, and send status instead. Leave `ReplyToMessageID` unset even if generated SDK params expose it. The REST endpoint rejects DM reply threading.
+
+`client.X.Dm.DeleteMessage` [deletes a DM](/api-reference/x-write/delete-dm).
+
+Text-only tweet and reply writes cost 30 credits. Tweet media adds 2 credits per started MB across attached files. Uploading media costs 10 credits. Sending the DM costs 10 credits. Do not pass uploaded `MediaID` values to `client.X.Tweets.New`. That method uses `Media` with public media URLs.
+
+### REST routes
+
+<SdkMediaRoutes />
+
+</section>
+
+<section>
+
+## Next steps
+
+- [Go SDK setup](/sdks/go)
+- [Tweet search](/sdks/go-tweet-search)
+- [Follower export](/sdks/go-follower-export)
+
+</section>

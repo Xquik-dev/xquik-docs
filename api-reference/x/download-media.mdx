@@ -2,7 +2,7 @@
 title: "Twitter media downloader API for photos & video"
 sidebarTitle: "Download media"
 description: "Download images, videos, and animated GIFs from 1-50 tweets. Returns one gallery URL plus cache or bulk counts. Fresh tweets cost 1 credit. Cache hits are free."
-api: "POST /x/media/download"
+endpoint: "POST /x/media/download"
 keywords:
   [
     "Twitter media downloader API",
@@ -22,126 +22,9 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 import TweetReadApiLinks from "/snippets/x-tweet-read-api-links.mdx";
 import ConnectedAccountApiLinks from "/snippets/x-connected-account-api-links.mdx";
 
-{/* GENERATED RESPONSE EXAMPLES START */}
-
-<Panel>
-
-<Tabs defaultTabIndex={0} sync={false}>
-
-  <Tab title="200" id="response-x-download-media-200">
-
-    ```json
-    {
-      "tweetId": "1234567890",
-      "galleryUrl": "https://xquik.com/gallery/abc123",
-      "cacheHit": false,
-      "items": [
-        {
-          "id": "42",
-          "tweetId": "1234567890",
-          "mediaType": "photo",
-          "mediaUrl": "https://media.xquik.com/tweet_1234567890/0.jpg",
-          "posterUrl": null
-        }
-      ]
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="400" id="response-x-download-media-400">
-
-    ```json
-    {
-      "error": "invalid_input",
-      "message": "Invalid input. Check the request body."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="401" id="response-x-download-media-401">
-
-    ```json
-    {
-      "error": "unauthenticated",
-      "message": "Authentication required. Provide a valid API key or bearer token."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="402" id="response-x-download-media-402">
-
-    ```json
-    {
-      "error": "insufficient_credits",
-      "message": "Insufficient credits. Top up or subscribe to continue."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="403" id="response-x-download-media-403">
-
-    ```json
-    {
-      "error": "api_key_paused",
-      "message": "This API key is paused. Resume it at dashboard.xquik.com/api-keys to use it again."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="404" id="response-x-download-media-404">
-
-    ```json
-    {
-      "error": "tweet_not_found",
-      "message": "Tweet not found."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="424" id="response-x-download-media-424">
-
-    ```json
-    {
-      "error": "x_api_unavailable",
-      "message": "X data source temporarily unavailable. Try again later."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="429" id="response-x-download-media-429">
-
-    ```json
-    {
-      "error": "rate_limit_exceeded",
-      "message": "Too many requests. Try again later.",
-      "retryAfter": 60
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="502" id="response-x-download-media-502">
-
-    ```json
-    {
-      "error": "x_api_unavailable",
-      "message": "X data source temporarily unavailable. Try again later."
-    }
-    ```
-
-  </Tab>
-</Tabs>
-
-</Panel>
-{/* GENERATED RESPONSE EXAMPLES END */}
 <LlmsDirective />
+
+`POST https://xquik.com/api/v1/x/media/download`
 
 Send 1-50 tweet IDs or URLs.
 The route downloads media from one tweet or a batch of 50.
@@ -333,53 +216,34 @@ func main() {
 
 </CodeGroup>
 
+<section>
+
 ## Headers
 
-<ParamField header="x-api-key" type="string" required>
+| Header         | Type     | Required | Description                                                         |
+| -------------- | -------- | -------- | ------------------------------------------------------------------- |
+| `x-api-key`    | `string` | Yes      | Your API key. You can also authenticate with an OAuth bearer token. |
+| `Content-Type` | `string` | Yes      | Must be `application/json`.                                         |
 
-Your API key. You can also authenticate with an OAuth bearer token.
+</section>
 
-</ParamField>
-
-<ParamField header="Content-Type" type="string" required>
-
-Must be `application/json`.
-
-</ParamField>
+<section>
 
 ## Body
 
 Use `tweetIds` for bulk downloads. If `tweetIds` holds at least 1 string value, the route uses bulk mode. In bulk mode it ignores single-tweet fields. Otherwise, use `tweetInput`, `tweetId`, or `tweetUrl` for a single tweet.
 
-<ParamField body="tweetInput" type="string">
+| Body parameter | Type       | Required | Description                                                                                                                                                                                                                                                                                                                                        |
+| -------------- | ---------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tweetInput`   | `string`   | No       | Tweet URL or numeric tweet ID for a single download. Accepts `x.com` and `twitter.com` URL formats.                                                                                                                                                                                                                                                |
+| `tweetId`      | `string`   | No       | Numeric tweet ID alias for `tweetInput`. Use it when `tweetInput` is absent.                                                                                                                                                                                                                                                                       |
+| `tweetUrl`     | `string`   | No       | Tweet URL alias for `tweetInput`. Use it when both earlier fields are absent.                                                                                                                                                                                                                                                                      |
+| `tweetIds`     | `string[]` | No       | Array of tweet URLs or IDs for bulk download. Maximum 50 string items. The route skips invalid IDs. It fails only when no valid tweet IDs remain.                                                                                                                                                                                                  |
+| `imageShows`   | `string`   | No       | Save only posts whose photos show this. Send `charts`, `screenshots`, `product_photos`, `memes`, `people` or your own words, such as `a rocket`. AI-powered analysis checks photos X doesn't mark sensitive & keeps scores of 0.5 or more. Each kept post costs 2 credits. Each kept post also pays the save price. The answer adds `imageFilter`. |
 
-Tweet URL or numeric tweet ID for a single download. Accepts `x.com` and `twitter.com` URL formats.
+</section>
 
-</ParamField>
-
-<ParamField body="tweetId" type="string">
-
-Numeric tweet ID alias for `tweetInput`. Use it when `tweetInput` is absent.
-
-</ParamField>
-
-<ParamField body="tweetUrl" type="string">
-
-Tweet URL alias for `tweetInput`. Use it when both earlier fields are absent.
-
-</ParamField>
-
-<ParamField body="tweetIds" type="string[]">
-
-Array of tweet URLs or IDs for bulk download. Maximum 50 string items. The route skips invalid IDs. It fails only when no valid tweet IDs remain.
-
-</ParamField>
-
-<ParamField body="imageShows" type="string">
-
-Save only posts whose photos show this. Send `charts`, `screenshots`, `product_photos`, `memes`, `people` or your own words, such as `a rocket`. AI-powered analysis checks photos X doesn't mark sensitive & keeps scores of 0.5 or more. Each kept post costs 2 credits. Each kept post also pays the save price. The answer adds `imageFilter`.
-
-</ParamField>
+<section>
 
 ## Save only chart posts
 
@@ -410,6 +274,10 @@ curl -X POST "https://xquik.com/api/v1/x/media/download" \
 
 - `imageFilter.unchecked` lists posts without a safe photo & posts X can't find. They cost nothing.
 - When no photo shows it, nothing is saved & nothing is billed. A single download answers with empty `items`. A bulk download answers with `totalTweets` 0.
+
+</section>
+
+<section>
 
 ## Media download handoff
 
@@ -452,6 +320,10 @@ URL.
   </Card>
 </CardGroup>
 
+</section>
+
+<section>
+
 ## Store a tweet media download manifest
 
 Keep one manifest row per single or bulk request. A gallery URL represents the
@@ -480,30 +352,20 @@ Use these outcomes when reconciling a download request.
 
 Fresh downloads cost 1 credit per tweet processed with media. Cached single downloads return `cacheHit: true` and are free. Bulk responses do not return `freshCount`. Store the request IDs with `totalTweets` and `totalMedia` for reconciliation.
 
+</section>
+
+<section>
+
 ## Response
 
 ### 200 OK (single)
 
-<ResponseField name="tweetId" type="string">
-
-Identifies the resolved tweet.
-
-</ResponseField>
-<ResponseField name="galleryUrl" type="string">
-
-Links the shareable gallery containing all downloaded media.
-
-</ResponseField>
-<ResponseField name="cacheHit" type="boolean">
-
-Shows whether the cache supplied the media. Cached requests consume no credits.
-
-</ResponseField>
-<ResponseField name="items" type="object[]">
-
-The post's files saved to your gallery, at least 1. Each file has its gallery `id` and the `tweetId` it came from. Its `mediaType` is `photo`, `video` or `animated_gif`. `mediaUrl` points to the saved copy. `fileSize` gives its size in bytes, as a string. `createdAt` is when it joined your gallery. Each file also carries the post's `authorUsername`, `authorDisplayName`, `authorAvatar` and `tweetText`. It also holds the post's `likes`, `retweets` and `views` from when it was saved.
-
-</ResponseField>
+| Field        | Type       | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| ------------ | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tweetId`    | `string`   | Identifies the resolved tweet.                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `galleryUrl` | `string`   | Links the shareable gallery containing all downloaded media.                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `cacheHit`   | `boolean`  | Shows whether the cache supplied the media. Cached requests consume no credits.                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `items`      | `object[]` | The post's files saved to your gallery, at least 1. Each file has its gallery `id` and the `tweetId` it came from. Its `mediaType` is `photo`, `video` or `animated_gif`. `mediaUrl` points to the saved copy. `fileSize` gives its size in bytes, as a string. `createdAt` is when it joined your gallery. Each file also carries the post's `authorUsername`, `authorDisplayName`, `authorAvatar` and `tweetText`. It also holds the post's `likes`, `retweets` and `views` from when it was saved. |
 
 ```json
 {
@@ -532,26 +394,12 @@ The post's files saved to your gallery, at least 1. Each file has its gallery `i
 
 ### 200 OK (bulk)
 
-<ResponseField name="galleryUrl" type="string">
-
-Links the combined gallery containing media from all tweets.
-
-</ResponseField>
-<ResponseField name="totalTweets" type="number">
-
-Counts processed tweets with media.
-
-</ResponseField>
-<ResponseField name="totalMedia" type="number">
-
-Counts downloaded images, videos, and GIFs.
-
-</ResponseField>
-<ResponseField name="imageFilter" type="object">
-
-States the question, the 0.5 cutoff & the checked & kept counts. It also lists posts left unchecked. Sent only with `imageShows`.
-
-</ResponseField>
+| Field         | Type     | Description                                                                                                                       |
+| ------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `galleryUrl`  | `string` | Links the combined gallery containing media from all tweets.                                                                      |
+| `totalTweets` | `number` | Counts processed tweets with media.                                                                                               |
+| `totalMedia`  | `number` | Counts downloaded images, videos, and GIFs.                                                                                       |
+| `imageFilter` | `object` | States the question, the 0.5 cutoff & the checked & kept counts. It also lists posts left unchecked. Sent only with `imageShows`. |
 
 ```json
 {
@@ -563,91 +411,60 @@ States the question, the 0.5 cutoff & the checked & kept counts. It also lists p
 
 ### 400 Invalid input
 
-```json
-{ "error": "invalid_input", "message": "Invalid request body" }
-```
+`{ "error": "invalid_input", "message": "Invalid request body" }`
 
 Missing, malformed, or non-JSON request body. Malformed JSON can also return `invalid_json`.
 
 ### 400 Invalid tweet ID
 
-```json
-{ "error": "invalid_tweet_id", "message": "Tweet ID is empty or invalid" }
-```
+`{ "error": "invalid_tweet_id", "message": "Tweet ID is empty or invalid" }`
 
 Xquik could not resolve the provided tweet ID or URL to a valid ID.
 
 ### 400 Too many tweets
 
-```json
-{ "error": "too_many_tweets", "message": "Max 50 tweets per request" }
-```
+`{ "error": "too_many_tweets", "message": "Max 50 tweets per request" }`
 
 The `tweetIds` array exceeds the 50-item limit. Split into multiple requests.
 
 ### 400 No media
 
-```json
-{ "error": "no_media", "message": "Tweet has no downloadable media" }
-```
+`{ "error": "no_media", "message": "Tweet has no downloadable media" }`
 
 The tweet does not contain any images, videos, or GIFs.
 
 ### 401 Unauthenticated
 
-```json
-{ "error": "unauthenticated", "message": "Missing or invalid API key" }
-```
+`{ "error": "unauthenticated", "message": "Missing or invalid API key" }`
 
 Supply a valid API key or OAuth bearer token.
 
 ### 402 Insufficient credits
 
-```json
-{
-  "error": "insufficient_credits",
-  "message": "Insufficient credits. Top up or subscribe to continue."
-}
-```
-
 The available balance cannot cover the download. Top up or subscribe from the [dashboard billing page](https://dashboard.xquik.com/en/account?tab=subscription).
 
 ### 404 Tweet not found
 
-```json
-{ "error": "tweet_not_found", "message": "Tweet not found" }
-```
+`{ "error": "tweet_not_found", "message": "Tweet not found" }`
 
 The tweet ID is valid. Xquik cannot fetch that tweet, or it no longer exists.
 
 ### 429 Rate limit exceeded
 
-```json
-{
-  "error": "rate_limit_exceeded",
-  "message": "Too many requests. Try again later.",
-  "retryAfter": 60
-}
-```
-
 The API key, user, or plan tier is sending requests too fast. Respect the `Retry-After` header before retrying.
 
 ### 502 X API unavailable
-
-```json
-{ "error": "x_api_unavailable" }
-```
 
 The read service failed. Retry after a short delay.
 
 ### 424 Dependency failed
 
-```json
-{ "error": "x_api_unavailable" }
-```
-
 The opt-in normalized contract returns 424 when the read service fails.
 Send `xquik-api-contract: 2026-04-29` to opt in. Default v1 returns 502.
+
+</section>
+
+<section>
 
 ## Twitter media downloader questions
 
@@ -691,3 +508,24 @@ This endpoint accepts an API key or OAuth bearer token. Keep either credential s
 
 <TweetReadApiLinks />
 <ConnectedAccountApiLinks />
+
+</section>
+
+{/* GENERATED RESPONSE EXAMPLES START */}
+
+<section>
+
+## Response examples
+
+- **400** `{ "error": "invalid_input", "message": "Invalid input. Check the request body." }`
+- **401** `{ "error": "unauthenticated", "message": "Authentication required. Provide a valid API key or bearer token." }`
+- **402** `{ "error": "insufficient_credits", "message": "Insufficient credits. Top up or subscribe to continue." }`
+- **403** `{ "error": "api_key_paused", "message": "This API key is paused. Resume it at dashboard.xquik.com/api-keys to use it again." }`
+- **404** `{ "error": "tweet_not_found", "message": "Tweet not found." }`
+- **424** `{ "error": "x_api_unavailable", "message": "X data source temporarily unavailable. Try again later." }`
+- **429** `{ "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 60 }`
+- **502** `{ "error": "x_api_unavailable", "message": "X data source temporarily unavailable. Try again later." }`
+
+</section>
+
+{/* GENERATED RESPONSE EXAMPLES END */}

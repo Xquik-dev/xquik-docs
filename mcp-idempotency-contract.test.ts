@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
+import { readPageFamily } from "./scripts/lib/page-family.ts";
 
 function read(path: string): string {
   return readFileSync(path, "utf8");
@@ -11,7 +12,7 @@ describe("hosted MCP idempotency contract", () => {
     expect.assertions(12);
 
     const overview = read("mcp/overview.mdx");
-    const tools = read("mcp/tools.mdx");
+    const tools = readPageFamily("mcp/tools.mdx");
     const handoff = read("mcp/agent-handoff.mdx");
     const skill = read("skill.md");
 

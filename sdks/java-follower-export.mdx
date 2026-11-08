@@ -1,0 +1,170 @@
+---
+title: "Twitter API Java follower export to CSV & XLSX"
+sidebarTitle: "Follower export"
+description: "Export X (Twitter) followers with the Xquik Java SDK. Estimate the job, run the extraction, and save CSV, JSON, or XLSX files for your team and your CRM tools."
+keywords: ["Java SDK", "Java follower export", "follower export", "CSV export", "XLSX export"]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+<LlmsDirective />
+
+This guide builds on the [Java SDK setup](/sdks/java), which covers install and authentication.
+
+<section>
+
+## Follower export workflow to CSV, JSON, or XLSX
+
+Export followers for CRM, warehouses, account scoring, CSV, XLSX, or resumable JSON.
+
+`client.extractions().estimateCost` maps to `POST /extractions/estimate`, and `client.extractions().run` maps to `POST /extractions`. `client.extractions().retrieve` maps to `GET /extractions/{id}`, and `client.extractions().exportResults` maps to `GET /extractions/{id}/export`. For follower exports, `follower_explorer` requires `targetUsername`.
+
+<Info>
+
+`client.extractions().run` returns the queued `202 Accepted` receipt from `POST /extractions`. Java exposes REST `id`, `toolType`, and `status: "running"` as `job.id()`, `job.toolType()`, and `job._status()`. Store `job.id()` immediately, then poll `client.extractions().retrieve` before reading pages or calling `client.extractions().exportResults`. Credit reservation happens after the job starts. Available credits can change after `estimateCost`. If they did, the run can fetch only the affordable count before export. In that case it can instead mark the job `failed` with `insufficient_credits`.
+
+</Info>
+
+```java
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.x_twitter_scraper.api.client.XTwitterScraperClient;
+import com.x_twitter_scraper.api.client.okhttp.XTwitterScraperOkHttpClient;
+import com.x_twitter_scraper.api.core.JsonValue;
+import com.x_twitter_scraper.api.core.http.HttpResponse;
+import com.x_twitter_scraper.api.models.extractions.ExtractionEstimateCostParams;
+import com.x_twitter_scraper.api.models.extractions.ExtractionEstimateCostResponse;
+import com.x_twitter_scraper.api.models.extractions.ExtractionExportResultsParams;
+import com.x_twitter_scraper.api.models.extractions.ExtractionRetrieveParams;
+import com.x_twitter_scraper.api.models.extractions.ExtractionRetrieveResponse;
+import com.x_twitter_scraper.api.models.extractions.ExtractionRunParams;
+import com.x_twitter_scraper.api.models.extractions.ExtractionRunResponse;
+import java.io.BufferedWriter;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+
+XTwitterScraperClient client = XTwitterScraperOkHttpClient.fromEnv();
+ObjectMapper objectMapper = new ObjectMapper();
+String targetUsername = "username";
+
+ExtractionEstimateCostResponse estimate = client.extractions().estimateCost(
+    ExtractionEstimateCostParams.builder()
+        .toolType(ExtractionEstimateCostParams.ToolType.FOLLOWER_EXPLORER)
+        .targetUsername(targetUsername)
+        .build()
+);
+
+if (!estimate.allowed()) {
+    throw new IllegalStateException(
+        "Follower export requires " + estimate.creditsRequired() + " credits."
+    );
+}
+
+ExtractionRunResponse job = client.extractions().run(
+    ExtractionRunParams.builder()
+        .toolType(ExtractionRunParams.ToolType.FOLLOWER_EXPLORER)
+        .targetUsername(targetUsername)
+        .build()
+);
+
+boolean completed = false;
+for (int attempt = 0; attempt < 120; attempt++) {
+    ExtractionRetrieveResponse statusPage = client.extractions().retrieve(job.id());
+    JsonValue statusValue = statusPage.job()._additionalProperties().get("status");
+    String status = statusValue == null ? "unknown" : statusValue.asString().orElse("unknown");
+
+    if ("completed".equals(status)) {
+        completed = true;
+        break;
+    }
+
+    if ("failed".equals(status)) {
+        throw new IllegalStateException("Follower export failed.");
+    }
+
+    Thread.sleep(10_000L);
+}
+
+if (!completed) {
+    throw new IllegalStateException("Follower export did not complete before timeout.");
+}
+
+String cursor = null;
+try (BufferedWriter writer = Files.newBufferedWriter(
+    Paths.get("xquik-followers.jsonl"),
+    StandardCharsets.UTF_8
+)) {
+    do {
+        ExtractionRetrieveParams.Builder pageParams = ExtractionRetrieveParams.builder()
+            .id(job.id())
+            .limit(1000L);
+
+        if (cursor != null && !cursor.isEmpty()) {
+            pageParams.cursor(cursor);
+        }
+
+        ExtractionRetrieveResponse page = client.extractions().retrieve(pageParams.build());
+
+        for (ExtractionRetrieveResponse.Result row : page.results()) {
+            writer.write(objectMapper.writeValueAsString(row._additionalProperties()));
+            writer.newLine();
+        }
+
+        cursor = page.hasMore() ? page.nextCursor().orElse(null) : null;
+    } while (cursor != null && !cursor.isEmpty());
+}
+
+try (HttpResponse export = client.extractions().exportResults(
+    ExtractionExportResultsParams.builder()
+        .id(job.id())
+        .format(ExtractionExportResultsParams.Format.CSV)
+        .build()
+)) {
+    Files.copy(
+        export.body(),
+        Paths.get("xquik-followers.csv"),
+        StandardCopyOption.REPLACE_EXISTING
+    );
+}
+
+try (HttpResponse export = client.extractions().exportResults(
+    ExtractionExportResultsParams.builder()
+        .id(job.id())
+        .format(ExtractionExportResultsParams.Format.JSON)
+        .build()
+)) {
+    Files.copy(
+        export.body(),
+        Paths.get("xquik-followers.json"),
+        StandardCopyOption.REPLACE_EXISTING
+    );
+}
+
+try (HttpResponse export = client.extractions().exportResults(
+    ExtractionExportResultsParams.builder()
+        .id(job.id())
+        .format(ExtractionExportResultsParams.Format.XLSX)
+        .build()
+)) {
+    Files.copy(
+        export.body(),
+        Paths.get("xquik-followers.xlsx"),
+        StandardCopyOption.REPLACE_EXISTING
+    );
+}
+```
+
+Store `job.id()`, `targetUsername`, `estimate.estimatedResults()`, and `estimate.source()` before polling so retries can resume the extraction. `client.extractions().retrieve` returns `results()`, `hasMore()`, and `nextCursor()`. Pass `nextCursor()` back as `cursor` to page through large follower lists. Map exported `User ID` or row `xUserId` as the CRM unique key. Use `xquik-followers.jsonl` for queue replay or warehouse loads and `xquik-followers.json` for app ingestion. Use `xquik-followers.csv` for CRM import and `xquik-followers.xlsx` for analyst handoff. The cost is 1 credit per follower extracted or returned. Exports are free after the extraction job exists.
+
+</section>
+
+<section>
+
+## Next steps
+
+- [Java SDK setup](/sdks/java)
+- [Tweet search](/sdks/java-tweet-search)
+- [Media tweets](/sdks/java-media-tweets)
+
+</section>

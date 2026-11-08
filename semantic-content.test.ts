@@ -1,5 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+
+import { readPageFamily } from "./scripts/lib/page-family.ts";
 import { z } from "zod";
 
 const REQUIRED_OPERATIONAL_CONTENT = [
@@ -898,7 +900,7 @@ describe("webhook replay verification order", (): void => {
   it("claims nonces only after signature authentication", (): void => {
     expect.assertions(3);
 
-    const source = readFileSync("webhooks/verification.mdx", "utf8");
+    const source = readPageFamily("webhooks/verification.mdx");
 
     expect(source.indexOf("seenNonces.set(nonce")).toBeGreaterThan(
       source.indexOf("if (!timingSafeEqual"),

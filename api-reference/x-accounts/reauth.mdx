@@ -2,114 +2,15 @@
 title: "X account reauthentication API & login recovery"
 sidebarTitle: Reauthenticate X account
 description: "Restore a connected X account with its current password. Xquik reuses the saved Authenticator App TOTP secret unless you send a replacement. The call is free."
-api: "POST /x/accounts/{id}/reauth"
+endpoint: "POST /x/accounts/{id}/reauth"
 keywords: ["x accounts", "re-authenticate", "reauth", "session expired", "2fa"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
 
-{/* GENERATED RESPONSE EXAMPLES START */}
-
-<Panel>
-
-<Tabs defaultTabIndex={0} sync={false}>
-
-  <Tab title="200" id="response-x-accounts-reauth-200">
-
-    ```json
-    {
-      "id": "42",
-      "xUserId": "9876543210",
-      "xUsername": "elonmusk",
-      "status": "active",
-      "health": "healthy",
-      "createdAt": "2025-01-15T12:00:00Z"
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="400" id="response-x-accounts-reauth-400">
-
-    ```json
-    {
-      "error": "invalid_input",
-      "message": "Invalid input. Check the request body."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="401" id="response-x-accounts-reauth-401">
-
-    ```json
-    {
-      "error": "unauthenticated",
-      "message": "Authentication required. Provide a valid API key or bearer token."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="403" id="response-x-accounts-reauth-403">
-
-    ```json
-    {
-      "error": "session_required",
-      "message": "API keys & OAuth tokens cannot use this route. Sign in at dashboard.xquik.com/account instead."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="404" id="response-x-accounts-reauth-404">
-
-    ```json
-    {
-      "error": "account_not_found",
-      "message": "X account not found."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="422" id="response-x-accounts-reauth-422">
-
-    ```json
-    {
-      "error": "login_failed",
-      "message": "Login failed. Check credentials and try again."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="429" id="response-x-accounts-reauth-429">
-
-    ```json
-    {
-      "error": "login_cooldown",
-      "message": "Login is temporarily paused. Try again when the countdown ends."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="503" id="response-x-accounts-reauth-503">
-
-    ```json
-    {
-      "error": "service_unavailable",
-      "message": "Service temporarily unavailable. Try again later."
-    }
-    ```
-
-  </Tab>
-</Tabs>
-
-</Panel>
-{/* GENERATED RESPONSE EXAMPLES END */}
 <LlmsDirective />
+
+`POST https://xquik.com/api/v1/x/accounts/{id}/reauth`
 
 <Callout icon="circle-check" color="#16a34a">
 
@@ -193,52 +94,41 @@ curl -X POST https://dashboard.xquik.com/api/v1/x/accounts/3/reauth \
 | Account state             | Response `status`             | Require `active` before write actions.                 |
 | Login health              | Response `health`             | Require `healthy` before durable actions.              |
 
+<section>
+
 ## Path parameters
 
-<ParamField path="id" type="string" required>
+| Path parameter | Type     | Required | Description            |
+| -------------- | -------- | -------- | ---------------------- |
+| `id`           | `string` | Yes      | The unique account ID. |
 
-The unique account ID.
+</section>
 
-</ParamField>
+<section>
 
 ## Headers
 
-<ParamField header="Cookie" type="string" required>
-  Your signed-in dashboard session cookie, `__Host-xquik_session`. API keys and OAuth tokens get
-  `403 session_required`.
-</ParamField>
+| Header         | Type     | Required | Description                                                                                                            |
+| -------------- | -------- | -------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `Cookie`       | `string` | Yes      | Your signed-in dashboard session cookie, `__Host-xquik_session`. API keys and OAuth tokens get `403 session_required`. |
+| `Origin`       | `string` | Yes      | Must be `https://dashboard.xquik.com`, sent with `Sec-Fetch-Site` set to `same-origin`. The dashboard sends both.      |
+| `Content-Type` | `string` | Yes      | Must be `application/json`.                                                                                            |
 
-<ParamField header="Origin" type="string" required>
-  Must be `https://dashboard.xquik.com`, sent with `Sec-Fetch-Site` set to `same-origin`. The
-  dashboard sends both.
-</ParamField>
+</section>
 
-<ParamField header="Content-Type" type="string" required>
-
-Must be `application/json`.
-
-</ParamField>
+<section>
 
 ## Body
 
-<ParamField body="password" type="string" required>
+| Body parameter | Type     | Required | Description                                                                                                              |
+| -------------- | -------- | -------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `password`     | `string` | Yes      | Current password for the X account.                                                                                      |
+| `totp_secret`  | `string` | No       | Replacement Authenticator App TOTP secret. Omit it to reuse the saved key. Send the base32 secret, not the 6-digit code. |
+| `email`        | `string` | No       | Email for the X account. Updates the stored email during re-authentication.                                              |
 
-Current password for the X account.
+</section>
 
-</ParamField>
-
-<ParamField body="totp_secret" type="string">
-
-Replacement Authenticator App TOTP secret. Omit it to reuse the saved key.
-Send the base32 secret, not the 6-digit code.
-
-</ParamField>
-
-<ParamField body="email" type="string">
-
-Email for the X account. Updates the stored email during re-authentication.
-
-</ParamField>
+<section>
 
 ## 2FA re-authentication
 
@@ -288,16 +178,23 @@ See [2FA secret key setup](/api-reference/x-accounts/connect#2fa-secret-key-setu
 
 </Note>
 
+</section>
+
+<section>
+
 ## Response
 
 ### 200 OK
 
-<ResponseField name="id" type="string">Account ID.</ResponseField>
-<ResponseField name="xUsername" type="string">X username.</ResponseField>
-<ResponseField name="xUserId" type="string">X user ID.</ResponseField>
-<ResponseField name="status" type="string">Account status (for example `active`).</ResponseField>
-<ResponseField name="health" type="string">Derived login and cookie health. One of `healthy`, `locked`, `needsReauth`, `recovering`, `suspended`, `temporaryIssue`. See [Account health](/api-reference/x-accounts/list#account-health) for meanings.</ResponseField>
-<ResponseField name="createdAt" type="string">ISO 8601 creation timestamp.</ResponseField>
+| Field       | Type     | Description                                                                                                                                                                                                |
+| ----------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`        | `string` | Account ID.                                                                                                                                                                                                |
+| `xUsername` | `string` | X username.                                                                                                                                                                                                |
+| `xUserId`   | `string` | X user ID.                                                                                                                                                                                                 |
+| `status`    | `string` | Account status (for example `active`).                                                                                                                                                                     |
+| `health`    | `string` | Derived login and cookie health. One of `healthy`, `locked`, `needsReauth`, `recovering`, `suspended`, `temporaryIssue`. See [Account health](/api-reference/x-accounts/list#account-health) for meanings. |
+| `createdAt` | `string` | ISO 8601 creation timestamp.                                                                                                                                                                               |
+
 ```json
 {
   "id": "3",
@@ -311,81 +208,47 @@ See [2FA secret key setup](/api-reference/x-accounts/connect#2fa-secret-key-setu
 
 ### 400 Invalid input
 
-```json
-{ "error": "invalid_input", "message": "Missing required password field" }
-```
+`{ "error": "invalid_input", "message": "Missing required password field" }`
 
 Missing `password` field or invalid format.
 
-```json
-{ "error": "invalid_id", "message": "Invalid account ID format" }
-```
+`{ "error": "invalid_id", "message": "Invalid account ID format" }`
 
 The provided account ID is not a valid format.
 
 ### 401 Unauthenticated
 
-```json
-{ "error": "unauthenticated", "message": "Missing or invalid API key" }
-```
+`{ "error": "unauthenticated", "message": "Missing or invalid API key" }`
 
 Missing or invalid API key.
 
 ### 404 Not found
 
-```json
-{ "error": "account_not_found", "message": "X account not found." }
-```
-
 No account exists with this ID, or it belongs to a different Xquik account.
 
 ### 429 Login cooldown
 
-```json
-{
-  "error": "login_cooldown",
-  "message": "Login is temporarily paused",
-  "reason": "automated",
-  "retryAfterMs": 3600000
-}
-```
+`{ "error": "login_cooldown", "message": "Login is temporarily paused", "reason": "automated", "retryAfterMs": 3600000 }`
 
 A prior login attempt triggered a cooldown (for example, X flagged the session). Wait for `retryAfterMs` before retrying. The response includes a `Retry-After` header in seconds.
 
 ### 429 Rate limited
 
-```json
-{
-  "error": "rate_limit_exceeded",
-  "message": "Too many requests. Try again later.",
-  "retryAfter": 60
-}
-```
+`{ "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 60 }`
 
 Wait for the `Retry-After` value before starting another re-authentication request.
 
 ### 422 Login failed
 
-```json
-{ "error": "login_failed", "message": "Login failed. Check credentials and try again." }
-```
-
 X rejected the submitted password or TOTP secret. Retry with the current password and the saved Authenticator App secret key. Use the key, not a 6-digit code.
 
-```json
-{
-  "error": "passkey_required",
-  "message": "X asked this account to sign in with a passkey. Delete the passkey in X's security settings, keep Authentication app 2FA, then try again."
-}
-```
+`{ "error": "passkey_required", "message": "X asked this account to sign in with a passkey. Delete the passkey in X's security settings, keep Authentication app 2FA, then try again." }`
 
 X showed this account a passkey sign-in, which Xquik can't complete. Open X **Settings and Privacy > Security and Account Access > Security > Passkey**. Delete the passkey but keep Authenticator App 2FA on, then re-authenticate.
 
 ### 503 Service unavailable
 
-```json
-{ "error": "service_unavailable", "message": "Service temporarily unavailable. Try again." }
-```
+`{ "error": "service_unavailable", "message": "Service temporarily unavailable. Try again." }`
 
 The X re-authentication service is temporarily unavailable. Retry after a short delay.
 
@@ -397,3 +260,23 @@ The X re-authentication service is temporarily unavailable. Retry after a short 
 - [Connect X Account](/api-reference/x-accounts/connect) if you need to add a new account instead.
 
 </Note>
+
+</section>
+
+{/* GENERATED RESPONSE EXAMPLES START */}
+
+<section>
+
+## Response examples
+
+- **400** `{ "error": "invalid_input", "message": "Invalid input. Check the request body." }`
+- **401** `{ "error": "unauthenticated", "message": "Authentication required. Provide a valid API key or bearer token." }`
+- **403** `{ "error": "session_required", "message": "API keys & OAuth tokens cannot use this route. Sign in at dashboard.xquik.com/account instead." }`
+- **404** `{ "error": "account_not_found", "message": "X account not found." }`
+- **422** `{ "error": "login_failed", "message": "Login failed. Check credentials and try again." }`
+- **429** `{ "error": "login_cooldown", "message": "Login is temporarily paused. Try again when the countdown ends." }`
+- **503** `{ "error": "service_unavailable", "message": "Service temporarily unavailable. Try again later." }`
+
+</section>
+
+{/* GENERATED RESPONSE EXAMPLES END */}

@@ -29,6 +29,8 @@ or replayed requests before processing events.
 | Delivery                | `deliveryId`           | The receiver already queued this delivery.                   |
 | Monitor event           | `streamEventId`        | The receiver already processed this monitor event.           |
 
+<section>
+
 ## Headers sent with every delivery
 
 Read these headers from each webhook `POST` before parsing the JSON body. Trust
@@ -69,6 +71,10 @@ handler routing and logs.
   </Card>
 </CardGroup>
 
+</section>
+
+<section>
+
 ## How it works
 
 1. Xquik computes the signing string `<timestamp>.<nonce>.<rawBody>`.
@@ -77,6 +83,10 @@ handler routing and logs.
 4. Reject the request if the signature does not match in constant time.
 5. Reject the request if the timestamp is older than 5 minutes (clock-skew tolerant).
 6. Reject the request if the nonce was already seen in the last 5 minutes. This check is replay protection.
+
+</section>
+
+<section>
 
 ## Receiver hardening handoff
 
@@ -144,6 +154,10 @@ protection, idempotency, and incident routing visible in one review record.
   </Card>
 </CardGroup>
 
+</section>
+
+<section>
+
 ## Implementation
 
 <CodeGroup>
@@ -205,134 +219,13 @@ app.post("/webhook", express.raw({ type: "application/json" }), (req, res) => {
 });
 ```
 
-```python Python
-import hmac
-import hashlib
-import time
-from flask import Flask, request
-
-app = Flask(__name__)
-FIVE_MINUTES_MS = 5 * 60 * 1000
-_seen_nonces: dict[str, int] = {}
-
-def verify_webhook(req, secret: str) -> bool:
-    timestamp = req.headers.get("X-Xquik-Timestamp", "")
-    nonce = req.headers.get("X-Xquik-Nonce", "")
-    signature = req.headers.get("X-Xquik-Signature", "")
-    raw_body = req.get_data()
-
-    if not (timestamp and nonce and signature):
-        return False
-
-    try:
-        ts = int(timestamp)
-    except ValueError:
-        return False
-    now_ms = int(time.time() * 1000)
-    if abs(now_ms - ts) > FIVE_MINUTES_MS:
-        return False
-
-    signing_string = f"{timestamp}.{nonce}.".encode() + raw_body
-    expected = "sha256=" + hmac.new(
-        secret.encode(), signing_string, hashlib.sha256
-    ).hexdigest()
-    if not hmac.compare_digest(expected, signature):
-        return False
-
-    expired = [n for n, exp in _seen_nonces.items() if exp <= now_ms]
-    for n in expired:
-        _seen_nonces.pop(n, None)
-    if nonce in _seen_nonces:
-        return False
-    _seen_nonces[nonce] = now_ms + FIVE_MINUTES_MS
-    return True
-
-@app.route("/webhook", methods=["POST"])
-def webhook():
-    if not verify_webhook(request, WEBHOOK_SECRET):
-        return "Invalid signature", 401
-    event = request.get_json()
-    # Process event...
-    return "OK", 200
-```
-
-```go Go
-package main
-
-import (
-	"crypto/hmac"
-	"crypto/sha256"
-	"encoding/hex"
-	"fmt"
-	"io"
-	"net/http"
-	"strconv"
-	"sync"
-	"time"
-)
-
-const fiveMinutesMs = int64(5 * 60 * 1000)
-
-var (
-	seenNonces = sync.Map{}
-)
-
-func verifyWebhook(payload []byte, headers http.Header, secret string) bool {
-	timestamp := headers.Get("X-Xquik-Timestamp")
-	nonce := headers.Get("X-Xquik-Nonce")
-	signature := headers.Get("X-Xquik-Signature")
-	if timestamp == "" || nonce == "" || signature == "" {
-		return false
-	}
-
-	ts, err := strconv.ParseInt(timestamp, 10, 64)
-	if err != nil {
-		return false
-	}
-	nowMs := time.Now().UnixMilli()
-	diff := nowMs - ts
-	if diff < 0 {
-		diff = -diff
-	}
-	if diff > fiveMinutesMs {
-		return false
-	}
-
-	signingString := fmt.Sprintf("%s.%s.%s", timestamp, nonce, string(payload))
-	mac := hmac.New(sha256.New, []byte(secret))
-	mac.Write([]byte(signingString))
-	expected := "sha256=" + hex.EncodeToString(mac.Sum(nil))
-	if !hmac.Equal([]byte(expected), []byte(signature)) {
-		return false
-	}
-
-	seenNonces.Range(func(key, value any) bool {
-		expiresAt, ok := value.(int64)
-		if ok && expiresAt <= nowMs {
-			seenNonces.Delete(key)
-		}
-		return true
-	})
-	_, replayed := seenNonces.LoadOrStore(nonce, nowMs+fiveMinutesMs)
-	return !replayed
-}
-
-func webhookHandler(w http.ResponseWriter, r *http.Request) {
-	payload, err := io.ReadAll(r.Body)
-	if err != nil {
-		http.Error(w, "Bad request", http.StatusBadRequest)
-		return
-	}
-	if !verifyWebhook(payload, r.Header, webhookSecret) {
-		http.Error(w, "Invalid signature", http.StatusUnauthorized)
-		return
-	}
-	// Process event...
-	fmt.Fprint(w, "OK")
-}
-```
-
 </CodeGroup>
+
+The same check is ready in [Python webhook verification](/webhooks/verification-python) and [Go webhook verification](/webhooks/verification-go).
+
+</section>
+
+<section>
 
 ## Security checklist
 
@@ -360,192 +253,12 @@ func webhookHandler(w http.ResponseWriter, r *http.Request) {
   </Accordion>
 </AccordionGroup>
 
+</section>
+
+<section>
+
 ## Idempotency
 
-Xquik retries failed webhook deliveries. Your endpoint may receive the same event multiple times. Each retry sends the first attempt's exact body. Only the signature headers change. Production monitor deliveries include `deliveryId` and `streamEventId`. Use `deliveryId` as the webhook delivery idempotency key. Use `streamEventId` when your system should process one monitor event only once. It applies across webhook retries or endpoint changes. Do not hash the raw request body when `deliveryId` is available.
+Xquik retries failed webhook deliveries. Your endpoint may receive the same event more than once. See [webhook idempotency](/webhooks/idempotency) for the dedupe patterns.
 
-`webhook.test` deliveries include `eventType`, `data`, and `timestamp`. They omit monitor idempotency fields. Use them to verify signatures and receiver reachability. Skip production event deduplication for the test request.
-
-### Production store contract
-
-Use a persistent store before acknowledging production events. Scope nonce,
-delivery, and event keys by webhook ID. Retries for one endpoint then never block
-another endpoint. Duplicate `deliveryId` or `streamEventId` checks should
-return `2xx` after verification. The receiver has already accepted the
-work.
-
-```json
-{
-  "record_type": "webhook_receiver_store_contract",
-  "webhook_id": "15",
-  "nonce_key": "webhook:15:nonce_hash",
-  "nonce_ttl_seconds": 300,
-  "delivery_key": "webhook:15:delivery:502",
-  "event_key": "event:9002",
-  "duplicate_delivery_status": 200,
-  "duplicate_event_status": 200,
-  "event_join": "GET /api/v1/events/9002",
-  "ack_after": "signature_verified_and_queue_row_written",
-  "ack_status": 202,
-  "slow_work": "async_worker",
-  "delivery_log": "GET /api/v1/webhooks/15/deliveries",
-  "shared_storage_excludes": [
-    "endpoint_signing_values",
-    "raw_request_body",
-    "raw_signature",
-    "full_headers"
-  ]
-}
-```
-
-Keep raw request bytes only for signature verification. Store the nonce cache
-marker, delivery key, event key, join route, and processing status. Keep them in
-the shared table or queue. Return `2xx` only after verification and a durable
-queue write. Move slow enrichment, exports, CRM sync, or alerting to an async
-worker. The receiver can then finish within the 10-second delivery timeout.
-
-<CodeGroup>
-
-```javascript Node.js
-const processedDeliveries = new Set();
-const processedEvents = new Set();
-
-app.post("/webhook", express.raw({ type: "application/json" }), (req, res) => {
-  const payload = req.body.toString();
-
-  if (!verifyWebhook(req, WEBHOOK_SECRET)) {
-    return res.status(401).send("Invalid signature");
-  }
-
-  const event = JSON.parse(payload);
-
-  if (event.eventType === "webhook.test") {
-    return res.status(200).send("Test accepted");
-  }
-
-  if (typeof event.deliveryId !== "string" || typeof event.streamEventId !== "string") {
-    return res.status(400).send("Missing idempotency fields");
-  }
-
-  if (processedDeliveries.has(event.deliveryId)) {
-    return res.status(200).send("Delivery already processed");
-  }
-
-  processedDeliveries.add(event.deliveryId);
-
-  if (processedEvents.has(event.streamEventId)) {
-    return res.status(200).send("Event already processed");
-  }
-
-  processedEvents.add(event.streamEventId);
-  handleEvent(event);
-
-  res.status(200).send("OK");
-});
-```
-
-```python Python
-processed_deliveries = set()
-processed_events = set()
-
-@app.route("/webhook", methods=["POST"])
-def webhook():
-    payload = request.get_data()
-
-    if not verify_webhook(request, WEBHOOK_SECRET):
-        return "Invalid signature", 401
-
-    event = request.get_json()
-
-    if event.get("eventType") == "webhook.test":
-        return "Test accepted", 200
-
-    delivery_id = event.get("deliveryId")
-    stream_event_id = event.get("streamEventId")
-    if not isinstance(delivery_id, str) or not isinstance(stream_event_id, str):
-        return "Missing idempotency fields", 400
-
-    if delivery_id in processed_deliveries:
-        return "Delivery already processed", 200
-
-    processed_deliveries.add(delivery_id)
-
-    if stream_event_id in processed_events:
-        return "Event already processed", 200
-
-    processed_events.add(stream_event_id)
-
-    handle_event(event)
-
-    return "OK", 200
-```
-
-```go Go
-type WebhookEvent struct {
-	Data          map[string]any `json:"data"`
-	DeliveryID    string         `json:"deliveryId"`
-	EventType     string         `json:"eventType"`
-	StreamEventID string         `json:"streamEventId"`
-}
-
-var (
-	processedDeliveries sync.Map
-	processedEvents     sync.Map
-)
-
-func processSignedWebhook(w http.ResponseWriter, r *http.Request) {
-	payload, err := io.ReadAll(r.Body)
-	if err != nil {
-		http.Error(w, "Bad request", http.StatusBadRequest)
-		return
-	}
-
-	if !verifyWebhook(payload, r.Header, webhookSecret) {
-		http.Error(w, "Invalid signature", http.StatusUnauthorized)
-		return
-	}
-
-	var event WebhookEvent
-	if err := json.Unmarshal(payload, &event); err != nil {
-		http.Error(w, "Bad request", http.StatusBadRequest)
-		return
-	}
-
-	if event.EventType == "webhook.test" {
-		fmt.Fprint(w, "Test accepted")
-		return
-	}
-
-	if event.DeliveryID == "" || event.StreamEventID == "" {
-		http.Error(w, "Missing idempotency fields", http.StatusBadRequest)
-		return
-	}
-
-	if _, replayed := processedDeliveries.LoadOrStore(
-		event.DeliveryID,
-		true,
-	); replayed {
-		fmt.Fprint(w, "Delivery already processed")
-		return
-	}
-
-	if _, seen := processedEvents.LoadOrStore(
-		event.StreamEventID,
-		true,
-	); seen {
-		fmt.Fprint(w, "Event already processed")
-		return
-	}
-
-	handleEvent(event)
-	fmt.Fprint(w, "OK")
-}
-```
-
-</CodeGroup>
-
-<Warning>
-
-The in-memory examples above work for single-process servers. In production, use a persistent store such as a database or Redis. The store tracks processed delivery IDs and event IDs across restarts and multiple instances.
-
-</Warning>
+</section>

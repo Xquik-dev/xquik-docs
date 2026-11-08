@@ -2,7 +2,7 @@
 title: "X API subscription checkout & billing page"
 sidebarTitle: "Subscription checkout"
 description: "Create a confirmed Xquik API subscription checkout, or get the dashboard billing page. Route new, active & payment-issue accounts without charging the account."
-api: "POST /subscribe"
+endpoint: "POST /subscribe"
 keywords:
   [
     "X API subscription checkout",
@@ -14,74 +14,9 @@ keywords:
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
 
-{/* GENERATED RESPONSE EXAMPLES START */}
-
-<Panel>
-
-<Tabs defaultTabIndex={0} sync={false}>
-
-  <Tab title="200" id="response-account-subscription-checkout-200">
-
-    ```json
-    {
-      "chargedCurrency": "EUR",
-      "url": "https://xquik.com/billing/session",
-      "status": "checkout_created",
-      "message": "Billing session created"
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="400" id="response-account-subscription-checkout-400">
-
-    ```json
-    {
-      "error": "invalid_input",
-      "message": "Invalid input. Check the request body."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="401" id="response-account-subscription-checkout-401">
-
-    ```json
-    {
-      "error": "unauthenticated",
-      "message": "Authentication required. Provide a valid API key or bearer token."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="403" id="response-account-subscription-checkout-403">
-
-    ```json
-    {
-      "error": "api_key_paused",
-      "message": "This API key is paused. Resume it at dashboard.xquik.com/api-keys to use it again."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="429" id="response-account-subscription-checkout-429">
-
-    ```json
-    {
-      "error": "rate_limit_exceeded",
-      "message": "Too many requests. Try again later.",
-      "retryAfter": 60
-    }
-    ```
-
-  </Tab>
-</Tabs>
-
-</Panel>
-{/* GENERATED RESPONSE EXAMPLES END */}
 <LlmsDirective />
+
+`POST https://xquik.com/api/v1/subscribe`
 
 <Callout icon="circle-check" color="#16a34a">
 
@@ -158,6 +93,8 @@ func main() {
 
 </CodeGroup>
 
+<section>
+
 ## Create an X API subscription checkout
 
 Call `POST /subscribe` after an authenticated user confirms a billing action.
@@ -178,6 +115,10 @@ This endpoint does not quote current Twitter API pricing or X API pricing.
 Review the [live Xquik pricing](https://xquik.com) before checkout.
 The home page lists the current tiers and credits.
 
+</section>
+
+<section>
+
 ## Choose a subscription tier
 
 Send `tier` only when the user selected a specific Xquik plan.
@@ -192,6 +133,10 @@ Send `tier` only when the user selected a specific Xquik plan.
 The field pre-selects a tier. It does not activate that tier by itself.
 Send only the documented enum values.
 
+</section>
+
+<section>
+
 ## Pay in the user's currency
 
 Send `currency` to charge in the user's currency. The default is `USD`.
@@ -204,6 +149,10 @@ Each renewal charges the same amount before tax.
 An account that already pays in USD gets a USD checkout.
 With rates over 3 ECB working days old, the checkout charges USD.
 Read `chargedCurrency` to see the currency the checkout charges.
+
+</section>
+
+<section>
 
 ## Complete a safe billing handoff
 
@@ -220,6 +169,10 @@ tweet search, follower exports, writes, or monitor work.
 Subscriptions are not the only funding path. A funded pay-as-you-go account can
 continue eligible work while `plan` is `inactive`.
 
+</section>
+
+<section>
+
 ## Handle checkout retries
 
 The service can reuse a matching open checkout. Use the latest returned
@@ -228,46 +181,41 @@ URL. A different tier or currency can replace an older open checkout.
 Do not call this endpoint from a timer or an automatic retry loop.
 For `429`, wait for `Retry-After`. For `401`, replace the credential first.
 
+</section>
+
+<section>
+
 ## Headers
 
-<ParamField header="x-api-key" type="string" required>
+| Header      | Type     | Required | Description                                                                                                                                              |
+| ----------- | -------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `x-api-key` | `string` | Yes      | Your API key. Session cookie authentication is also supported. Generate a key from the [dashboard](https://dashboard.xquik.com/en/account?tab=api-keys). |
 
-Your API key. Session cookie authentication is also supported. Generate a key from the [dashboard](https://dashboard.xquik.com/en/account?tab=api-keys).
+</section>
 
-</ParamField>
+<section>
 
 ## Body
 
-<ParamField body="tier" type="string">
+| Body parameter | Type     | Required | Description                                                                                                   |
+| -------------- | -------- | -------- | ------------------------------------------------------------------------------------------------------------- |
+| `tier`         | `string` | No       | Pre-select `starter`, `pro`, or `business`. Omit the body when the user should choose on the hosted checkout. |
+| `currency`     | `string` | No       | Currency to pay in, such as `EUR`. Lowercase codes work too. Default `USD`.                                   |
 
-Pre-select `starter`, `pro`, or `business`. Omit the body when the user should
-choose on the hosted checkout.
+</section>
 
-</ParamField>
-
-<ParamField body="currency" type="string" default="USD">
-
-Currency to pay in, such as `EUR`. Lowercase codes work too.
-
-</ParamField>
+<section>
 
 ## Response
 
 ### 200 OK
 
-<ResponseField name="url" type="string">
-  Checkout URL for new subscribers, or the dashboard billing page for existing subscribers. Send the
-  user to this URL.
-</ResponseField>
-<ResponseField name="message" type="string">
-  Human-readable message describing the action taken.
-</ResponseField>
-<ResponseField name="status" type="string">
-  The status is `already_subscribed`, `checkout_created`, or `payment_issue`.
-</ResponseField>
-<ResponseField name="chargedCurrency" type="string">
-  Currency the checkout charges. Only a `checkout_created` answer has it.
-</ResponseField>
+| Field             | Type     | Description                                                                                                          |
+| ----------------- | -------- | -------------------------------------------------------------------------------------------------------------------- |
+| `url`             | `string` | Checkout URL for new subscribers, or the dashboard billing page for existing subscribers. Send the user to this URL. |
+| `message`         | `string` | Human-readable message describing the action taken.                                                                  |
+| `status`          | `string` | The status is `already_subscribed`, `checkout_created`, or `payment_issue`.                                          |
+| `chargedCurrency` | `string` | Currency the checkout charges. Only a `checkout_created` answer has it.                                              |
 
 ```json
 {
@@ -280,32 +228,17 @@ Currency to pay in, such as `EUR`. Lowercase codes work too.
 
 ### 400 Invalid input
 
-```json
-{
-  "error": "invalid_input",
-  "message": "currency must be 1 of USD, EUR, GBP, TRY, JPY, CNY, KRW, CAD, AUD, MXN"
-}
-```
+`{ "error": "invalid_input", "message": "currency must be 1 of USD, EUR, GBP, TRY, JPY, CNY, KRW, CAD, AUD, MXN" }`
 
 Send a listed currency code, or omit `currency` to pay in USD.
 
 ### 401 Unauthenticated
 
-```json
-{ "error": "unauthenticated", "message": "Missing or invalid API key" }
-```
+`{ "error": "unauthenticated", "message": "Missing or invalid API key" }`
 
 Missing or invalid API key.
 
 ### 429 Rate limited
-
-```json
-{
-  "error": "rate_limit_exceeded",
-  "message": "Too many requests. Try again later.",
-  "retryAfter": 60
-}
-```
 
 Too many requests. Wait for the `Retry-After` header before retrying.
 
@@ -314,3 +247,20 @@ Too many requests. Wait for the `Retry-After` header before retrying.
 **Related.** [Get Account](/api-reference/account/get) to check current subscription status and usage.
 
 </Note>
+
+</section>
+
+{/* GENERATED RESPONSE EXAMPLES START */}
+
+<section>
+
+## Response examples
+
+- **400** `{ "error": "invalid_input", "message": "Invalid input. Check the request body." }`
+- **401** `{ "error": "unauthenticated", "message": "Authentication required. Provide a valid API key or bearer token." }`
+- **403** `{ "error": "api_key_paused", "message": "This API key is paused. Resume it at dashboard.xquik.com/api-keys to use it again." }`
+- **429** `{ "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 60 }`
+
+</section>
+
+{/* GENERATED RESPONSE EXAMPLES END */}

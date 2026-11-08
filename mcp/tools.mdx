@@ -15,6 +15,8 @@ Xquik API MCP supports 2 explicit tool modes. Code Mode uses `docs`, `search`, `
 Modern clients negotiate MCP `2026-07-28` through `server/discover`. Current SDKs add required request metadata and headers.
 See [MCP 2026-07-28](/mcp/overview#mcp-2026-07-28).
 
+<section>
+
 ## Native OpenAPI tools
 
 Connect to `https://xquik.com/mcp?codemode=false` for ordinary MCP tools. Full
@@ -28,6 +30,10 @@ Native names, schemas, and contracts come from OpenAPI. `compose` and
 
 Use `https://xquik.com/mcp` for Code Mode. Choose native mode for one tool per operation. Binary downloads, credential lifecycle, checkout, top-up and subscription operations remain REST-only.
 
+</section>
+
+<section>
+
 ## `docs`
 
 Search canonical public documentation. `docs` is read-only and uses no credits.
@@ -36,11 +42,19 @@ Search canonical public documentation. `docs` is read-only and uses no credits.
 
 **Output.** `structuredContent.results` lists each matching passage with its `id`, `url`, `title`, and `text`. The text content shows the same passages as `<result>` blocks within 24,000 characters.
 
+</section>
+
+<section>
+
 ## `whoami`
 
 Return the signed-in account's stable id. `whoami` takes no arguments, makes no API request, and uses no credits.
 
 **Output.** `{ "id": "user:<id>" }`. The `id` stays the same across token refresh, reconnection, and permission changes. It never moves to another account. Use it to tell connected accounts apart. ChatGPT reads it as the app's profile tool.
+
+</section>
+
+<section>
 
 ## `readSavedResult`
 
@@ -51,6 +65,10 @@ Native mode reads a saved oversized answer in pages. Pages make no API requests 
 **Output.** Each page returns `characters`, `next_offset`, and `text` within 24,000 characters.
 Pass `next_offset` as `offset` until it is `null`, then join each `text` in order.
 A page never splits a character.
+
+</section>
+
+<section>
 
 ## `search`
 
@@ -89,6 +107,10 @@ For example, `#/components/schemas/PaginatedTweets` identifies the shared pagina
 ```javascript
 async () => spec.components.schemas.PaginatedTweets.properties;
 ```
+
+</section>
+
+<section>
 
 ## `execute`
 
@@ -232,421 +254,18 @@ A `402` creates no checkout. Its MCP answer keeps `error`, `message`, `balance`,
 
 **Examples.**
 
-> Summarize up to 100 tweets with guarded pagination (credits required)
+Each page holds complete `execute` calls.
 
-Use `q` for keywords and X search operators.
-For a single stored link, pass a plain Tweet ID or X status URL.
+| Task                      | Page                                                |
+| ------------------------- | --------------------------------------------------- |
+| Tweet search and replies  | [Tweet examples](/mcp/execute-tweet-examples)       |
+| Followers and extractions | [Follower examples](/mcp/execute-follower-examples) |
+| Posting and media         | [Media examples](/mcp/execute-media-examples)       |
+| Monitors and events       | [Monitor examples](/mcp/execute-monitor-examples)   |
 
-```javascript
-async () => {
-  const target = 100;
-  const query = "from:username giveaway";
-  const seenIds = new Set();
-  const seenCursors = new Set();
-  const sampleTweets = [];
-  let cursor;
-  let hasMore = true;
-  let nextCursor = "";
-  let stopReason = "page_cap";
+</section>
 
-  for (let pageNumber = 0; pageNumber < 10 && seenIds.size < target && hasMore; pageNumber += 1) {
-    const { result: page } = await xquik.request({
-      path: "/api/v1/x/tweets/search",
-      query: {
-        q: query,
-        limit: String(Math.min(200, target - seenIds.size)),
-        ...(cursor ? { cursor } : {}),
-      },
-    });
-
-    for (const tweet of page.tweets) {
-      if (seenIds.has(tweet.id) || seenIds.size >= target) continue;
-      seenIds.add(tweet.id);
-      if (sampleTweets.length < 20) {
-        sampleTweets.push({
-          tweet_id: tweet.id,
-          text_excerpt: tweet.text?.slice(0, 120) ?? null,
-          author_id: tweet.author?.id ?? null,
-          author_username: tweet.author?.username ?? null,
-          created: tweet["created"] ?? null,
-          like_count: tweet.like_count ?? null,
-          view_count: tweet.view_count ?? null,
-        });
-      }
-    }
-
-    hasMore = Boolean(page.has_more);
-    nextCursor = page.next_cursor ?? "";
-    if (!hasMore) {
-      stopReason = "exhausted";
-      break;
-    }
-    if (!nextCursor || nextCursor === cursor || seenCursors.has(nextCursor)) {
-      stopReason = "cursor_stalled";
-      break;
-    }
-    seenCursors.add(nextCursor);
-    cursor = nextCursor;
-  }
-
-  return {
-    source: "xquik_mcp",
-    job: "tweet_search",
-    query,
-    rows_seen: seenIds.size,
-    sample_tweets: sampleTweets,
-    has_more: hasMore,
-    next_cursor: nextCursor,
-    stop_reason: seenIds.size >= target ? "requested_total" : stopReason,
-  };
-};
-```
-
-> Summarize up to 100 followers with guarded pagination (credits required)
-
-```javascript
-async () => {
-  const target = 100;
-  const sourceUser = "username";
-  const seenIds = new Set();
-  const seenCursors = new Set();
-  const sampleProfiles = [];
-  let verifiedCount = 0;
-  let cursor;
-  let hasMore = true;
-  let nextCursor = "";
-  let stopReason = "page_cap";
-
-  for (let pageNumber = 0; pageNumber < 10 && seenIds.size < target && hasMore; pageNumber += 1) {
-    const { result: page } = await xquik.request({
-      path: `/api/v1/x/users/${sourceUser}/followers`,
-      query: {
-        pageSize: String(Math.max(20, Math.min(200, target - seenIds.size))),
-        ...(cursor ? { cursor } : {}),
-      },
-    });
-
-    for (const user of page.users) {
-      if (seenIds.has(user.id) || seenIds.size >= target) continue;
-      seenIds.add(user.id);
-      if (user.verified === true) verifiedCount += 1;
-      if (sampleProfiles.length < 25) {
-        sampleProfiles.push({
-          user_id: user.id,
-          username: user.username,
-          name: user.name ?? null,
-          followers: user.followers ?? null,
-          verified: user.verified ?? null,
-          profile_picture: user.profile_picture ?? null,
-        });
-      }
-    }
-
-    hasMore = Boolean(page.has_more);
-    nextCursor = page.next_cursor ?? "";
-    if (!hasMore) {
-      stopReason = "exhausted";
-      break;
-    }
-    if (!nextCursor || nextCursor === cursor || seenCursors.has(nextCursor)) {
-      stopReason = "cursor_stalled";
-      break;
-    }
-    seenCursors.add(nextCursor);
-    cursor = nextCursor;
-  }
-
-  return {
-    source: "xquik_mcp",
-    job: "follower_export",
-    source_user: sourceUser,
-    rows_seen: seenIds.size,
-    verified_count: verifiedCount,
-    sample_profiles: sampleProfiles,
-    has_more: hasMore,
-    next_cursor: nextCursor,
-    stop_reason: seenIds.size >= target ? "requested_total" : stopReason,
-  };
-};
-```
-
-> Scrape tweet replies to CSV, JSON, or XLSX (credits required)
-
-```javascript
-async () => {
-  const body = {
-    toolType: "reply_extractor",
-    targetTweetId: "1893704267862470862",
-    resultsLimit: 500,
-  };
-
-  const { result: extraction } = await xquik.request({
-    path: "/api/v1/extractions",
-    method: "POST",
-    body,
-  });
-
-  return {
-    source: "xquik_mcp",
-    job: "reply_extraction",
-    extraction_id: extraction.id,
-    status: extraction.status,
-    target_tweet_id: body.targetTweetId,
-    results_limit: body.resultsLimit,
-    poll: `/api/v1/extractions/${extraction.id}`,
-    export_csv: `/api/v1/extractions/${extraction.id}/export?format=csv`,
-    export_json: `/api/v1/extractions/${extraction.id}/export?format=json`,
-    export_xlsx: `/api/v1/extractions/${extraction.id}/export?format=xlsx`,
-  };
-};
-```
-
-> Post a tweet or reply with public media URLs (credits required)
-
-Hosted MCP injects the required `Idempotency-Key`. Direct REST callers must
-supply it themselves.
-
-```javascript
-async () => {
-  const body = {
-    account: "myxhandle",
-    text: "Launch media is ready",
-    reply_to_tweet_id: "1893456789012345678",
-    media: ["https://example.com/product-demo.mp4"],
-  };
-
-  const { result } = await xquik.request({
-    path: "/api/v1/x/tweets",
-    method: "POST",
-    body,
-  });
-
-  return {
-    source: "xquik_mcp",
-    job: "tweet_write",
-    status: result.status,
-    terminal: result.terminal,
-    safe_to_retry: result.safe_to_retry,
-    write_action_id: result.id,
-    request_hash: result.request.hash,
-    tweet_id: result.result?.id ?? result.tweet_id ?? null,
-    poll: result.terminal ? null : result.status_url,
-    account: body.account,
-    reply_to_tweet_id: body.reply_to_tweet_id,
-    media: body.media,
-    charged: result.billing.charged,
-    charged_credits: result.billing.charged_credits,
-  };
-};
-```
-
-> Upload media for a DM (credits required)
-
-```javascript
-async () => {
-  const account = "myxhandle";
-  const user_id = "44196397";
-  const source_url = "https://example.com/image.png";
-
-  const { result: media } = await xquik.request({
-    path: "/api/v1/x/media",
-    method: "POST",
-    body: {
-      account,
-      url: source_url,
-    },
-  });
-
-  const { result: dm } = await xquik.request({
-    path: `/api/v1/x/dm/${user_id}`,
-    method: "POST",
-    body: {
-      account,
-      text: "Here is the asset",
-      media_ids: [media.media_id],
-    },
-  });
-
-  return {
-    source: "xquik_mcp",
-    job: "dm_media",
-    status: "sent",
-    user_id,
-    account,
-    source_url,
-    media_id: media.media_id,
-    media_url: media.media_url,
-    message_id: dm.message_id,
-  };
-};
-```
-
-Store `message_id` with the uploaded `media_id`. Keep full DM bodies out of
-shared MCP outputs. Return IDs, status, media references, and source filenames
-instead. Leave `reply_to_message_id` unset because the DM send endpoint rejects
-reply threading.
-
-> Download media and get gallery link (credits required)
-
-```javascript
-async () => {
-  const tweet_input = "1234567890";
-  const { result: download } = await xquik.request({
-    path: "/api/v1/x/media/download",
-    method: "POST",
-    body: { tweetInput: tweet_input },
-  });
-
-  return {
-    source: "xquik_mcp",
-    job: "media_download",
-    mode: "single",
-    tweet_input,
-    tweet_id: download.tweet_id,
-    gallery_url: download.gallery_url,
-    cache_hit: download.cache_hit,
-    note: "Store gallery_url as the saved media gallery. It is not an uploaded media_id for DMs.",
-  };
-};
-```
-
-> Bulk download combines search and download.
-
-```javascript
-async () => {
-  const query = "from:berktavsan has:videos";
-  const { result: search } = await xquik.request({
-    path: "/api/v1/x/tweets/search",
-    query: { q: query },
-  });
-  if (!search.tweets?.length) {
-    return {
-      source: "xquik_mcp",
-      job: "bulk_media_download",
-      status: "empty",
-      query,
-    };
-  }
-
-  const tweetIds = search.tweets.map((t) => t.id).slice(0, 50);
-  const { result: download } = await xquik.request({
-    path: "/api/v1/x/media/download",
-    method: "POST",
-    body: { tweetIds },
-  });
-
-  return {
-    source: "xquik_mcp",
-    job: "bulk_media_download",
-    status: "ready",
-    query,
-    tweet_ids: tweetIds,
-    gallery_url: download.gallery_url,
-    total_tweets: download.total_tweets,
-    total_media: download.total_media,
-  };
-};
-```
-
-> Monitor a user + create webhook (monitor creation requires credits, webhook costs no credits)
-
-```javascript
-async () => {
-  const { result: monitor } = await xquik.request({
-    path: "/api/v1/monitors",
-    method: "POST",
-    body: { username: "elonmusk", eventTypes: ["tweet.new", "tweet.reply"] },
-  });
-  const { result: webhook } = await xquik.request({
-    path: "/api/v1/webhooks",
-    method: "POST",
-    body: { url: "https://example.com/hook", eventTypes: ["tweet.new", "tweet.reply"] },
-  });
-  const { result: test } = await xquik.request({
-    path: `/api/v1/webhooks/${webhook.id}/test`,
-    method: "POST",
-  });
-  return {
-    monitor_id: monitor.id,
-    event_types: monitor.event_types,
-    next_billing_at: monitor.next_billing_at,
-    webhook_id: webhook.id,
-    webhook_url: webhook.url,
-    save_secret_once:
-      "Store webhook.secret for X-Xquik-Signature verification; do not print it in logs.",
-    idempotency_keys: ["deliveryId", "streamEventId"],
-    delivery_status: `/api/v1/webhooks/${webhook.id}/deliveries`,
-    test,
-  };
-};
-```
-
-> Poll stored monitor events (costs no credits)
-
-```javascript
-async () => {
-  const monitor_id = "mon_123";
-  const event_type = "tweet.new";
-  const { result: page } = await xquik.request({
-    path: "/api/v1/events",
-    query: { monitorId: monitor_id, eventType: event_type },
-  });
-
-  return {
-    source: "xquik_mcp",
-    job: "monitor_event_poll",
-    monitor_id,
-    event_type,
-    rows: page.events.map((event) => ({
-      event_id: event.id,
-      type: event.type,
-      username: event.username ?? null,
-      query: event.query ?? null,
-      monitor_id: event.monitor_id,
-      monitor_type: event.monitor_type,
-      occurred_at: event.occurred_at,
-      data: event.data,
-    })),
-    has_more: page.has_more,
-    next_cursor: page.next_cursor,
-    next_query: page.next_cursor
-      ? { monitorId: monitor_id, eventType: event_type, cursor: page.next_cursor }
-      : null,
-  };
-};
-```
-
-> Run an extraction with a resumable handoff (credits required)
-
-```javascript
-async () => {
-  const body = {
-    toolType: "tweet_search_extractor",
-    searchQuery: "launch announcement",
-    resultsLimit: 500,
-  };
-
-  // Add optional filters only when the user requests them.
-
-  const { result: job } = await xquik.request({
-    path: "/api/v1/extractions",
-    method: "POST",
-    body,
-  });
-
-  return {
-    source: "xquik_mcp",
-    job: "tweet_search_extraction",
-    extraction_id: job.id,
-    tool_type: job.tool_type,
-    status: job.status,
-    query: body.searchQuery,
-    results_limit: body.resultsLimit,
-    poll: `/api/v1/extractions/${job.id}`,
-    export_after_complete: `/api/v1/extractions/${job.id}/export?format=json`,
-  };
-};
-```
+<section>
 
 ## Agent handoff patterns
 
@@ -743,6 +362,10 @@ async () => {
 };
 ```
 
+</section>
+
+<section>
+
 ## API endpoints
 
 The full MCP catalog groups its operations into 10 categories.
@@ -782,6 +405,10 @@ The full MCP catalog groups its operations into 10 categories.
 </CardGroup>
 
 A guest `paid_reads` key limits `search` and `execute` to the eligible `twitter` GET operations. The `docs` tool remains available. Use the [guest paid-read route inventory](/guides/guest-wallets#eligible-paid-read-routes) as the public route list.
+
+</section>
+
+<section>
 
 ## Cost summary
 
@@ -825,6 +452,10 @@ Never combine unmetered and metered endpoints in a single `Promise.all`. A 402 e
 
 </Warning>
 
+</section>
+
+<section>
+
 ## Error handling
 
 - **402 / `no_subscription` / `subscription_inactive`.** Report the billing state. Existing available credits can still fund metered calls. Send the user to the `dashboard` link to choose a plan.
@@ -840,3 +471,5 @@ Xquik API request GET /api/v1/x/tweets/search returned HTTP 400 Bad Request with
 ```
 
 MCP has no subscription, checkout, top-up or guest wallet tool. No MCP call moves money.
+
+</section>

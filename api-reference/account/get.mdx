@@ -2,89 +2,15 @@
 title: "Xquik account details & subscription status"
 sidebarTitle: "Get account"
 description: "Retrieve subscription state, API credit balance, monitor usage and billing, automatic top-up settings, and the connected X username for an Xquik account."
-api: "GET /account"
+endpoint: "GET /account"
 keywords: ["account", "subscription", "credits", "monitor billing", "usage"]
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
 
-{/* GENERATED RESPONSE EXAMPLES START */}
-
-<Panel>
-
-<Tabs defaultTabIndex={0} sync={false}>
-
-  <Tab title="200" id="response-account-get-200">
-
-    ```json
-    {
-      "plan": "active",
-      "subscription": {
-        "status": "active",
-        "tier": "pro",
-        "currentPeriodStart": "2026-09-01T00:00:00.000Z",
-        "currentPeriodEnd": "2026-10-01T00:00:00.000Z"
-      },
-      "monitorsUsed": 3,
-      "monitorsAllowed": 9007199254740991,
-      "monitorBilling": {
-        "activeDailyEstimate": "2160",
-        "activeHourlyBurn": "90",
-        "creditsPerActiveMonitorDay": "720",
-        "creditsPerActiveMonitorHour": "30",
-        "eventsIncluded": true
-      },
-      "creditInfo": {
-        "balance": "50000",
-        "lifetimePurchased": "140000",
-        "lifetimeUsed": "90000",
-        "autoTopupEnabled": false,
-        "autoTopupStopped": false
-      },
-      "xUsername": "elonmusk"
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="401" id="response-account-get-401">
-
-    ```json
-    {
-      "error": "unauthenticated",
-      "message": "Authentication required. Provide a valid API key or bearer token."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="403" id="response-account-get-403">
-
-    ```json
-    {
-      "error": "api_key_paused",
-      "message": "This API key is paused. Resume it at dashboard.xquik.com/api-keys to use it again."
-    }
-    ```
-
-  </Tab>
-
-  <Tab title="429" id="response-account-get-429">
-
-    ```json
-    {
-      "error": "rate_limit_exceeded",
-      "message": "Too many requests. Try again later.",
-      "retryAfter": 60
-    }
-    ```
-
-  </Tab>
-</Tabs>
-
-</Panel>
-{/* GENERATED RESPONSE EXAMPLES END */}
 <LlmsDirective />
+
+`GET https://xquik.com/api/v1/account`
 
 <Callout icon="circle-check" color="#16a34a">
 
@@ -151,6 +77,8 @@ func main() {
 
 </CodeGroup>
 
+<section>
+
 ## Run an API account preflight
 
 Call `GET /account` before a long tweet search, follower export, scheduled write,
@@ -176,6 +104,10 @@ Do not use `monitorsAllowed` as a capacity limit. The field is deprecated and
 always reports the maximum safe integer. Use `monitorsUsed` and the monitor
 billing fields for cost checks.
 
+</section>
+
+<section>
+
 ## Store an account billing snapshot
 
 Store a timestamped account snapshot before a worker starts billable work.
@@ -193,149 +125,51 @@ Never convert credit strings to an unsafe JavaScript number.
 | Automatic top-up state | `creditInfo.autoTopupEnabled`        | Send low-balance alerts to a person or let automatic top-up handle them.       |
 | Linked X username      | `xUsername`                          | Confirm which X account write actions will use.                                |
 
+</section>
+
+<section>
+
 ## Headers
 
-<ParamField header="x-api-key" type="string" required>
+| Header      | Type     | Required | Description                                                             |
+| ----------- | -------- | -------- | ----------------------------------------------------------------------- |
+| `x-api-key` | `string` | Yes      | Your API key. Generate one from the [API Keys page](https://xquik.com). |
 
-Your API key. Generate one from the [API Keys page](https://xquik.com).
+</section>
 
-</ParamField>
+<section>
 
 ## Response
 
 ### 200 OK
 
-<ResponseField name="plan" type="string">
-
-Subscription status. `"active"` or `"inactive"`.
-
-</ResponseField>
-<ResponseField name="subscription" type="object">
-
-Subscription state, without billing provider IDs.
-**Subscription object fields.**
-
-<ResponseField name="status" type="string">
-
-      `none`, `active`, `past_due`, `canceling` or `incomplete`.
-
-    </ResponseField>
-    <ResponseField name="tier" type="string">
-
-      `starter`, `pro` or `business`. Omitted without a subscription.
-
-    </ResponseField>
-    <ResponseField name="currentPeriodStart" type="string">
-
-      Start of the current billing period, ISO 8601.
-
-    </ResponseField>
-    <ResponseField name="currentPeriodEnd" type="string">
-
-      Renewal date, or the end date when canceling. ISO 8601.
-
-    </ResponseField>
-
-</ResponseField>
-<ResponseField name="monitorsAllowed" type="number">
-
-Deprecated. Monitor slots are unlimited, so this is always `9007199254740991`.
-
-</ResponseField>
-<ResponseField name="monitorsUsed" type="number">
-
-Number of active account monitors and keyword monitors.
-
-</ResponseField>
-<ResponseField name="monitorBilling" type="object">
-
-Active monitor billing details.
-**Monitor billing object fields.**
-
-<ResponseField name="activeDailyEstimate" type="string">
-
-      Estimated daily credits for active monitors.
-
-    </ResponseField>
-    <ResponseField name="activeHourlyBurn" type="string">
-
-      Credits charged each hour for active monitors.
-
-    </ResponseField>
-    <ResponseField name="creditsPerActiveMonitorDay" type="string">
-
-      Daily credit estimate for 1 active monitor.
-
-    </ResponseField>
-    <ResponseField name="creditsPerActiveMonitorHour" type="string">
-
-      Hourly credits charged for 1 active monitor.
-
-    </ResponseField>
-    <ResponseField name="eventsIncluded" type="boolean">
-
-      Whether monitor billing includes webhook and event deliveries.
-
-    </ResponseField>
-    <ResponseField name="instantCheckIntervalSeconds" type="number">
-
-      Active monitor check interval in seconds.
-
-    </ResponseField>
-    <ResponseField name="unlimitedSlots" type="boolean">
-
-      Whether monitor slot count is unlimited.
-
-    </ResponseField>
-
-</ResponseField>
-<ResponseField name="creditInfo" type="object">
-
-Credit balance details. Omitted if no credit balance row exists yet.
-**Credit info object fields.**
-
-<ResponseField name="balance" type="string">
-
-      Current credit balance (Bigint string to preserve precision above Number.MAX_SAFE_INTEGER).
-
-    </ResponseField>
-    <ResponseField name="lifetimePurchased" type="string">
-
-      Total credits purchased across all time (Bigint string).
-
-    </ResponseField>
-    <ResponseField name="lifetimeUsed" type="string">
-
-      Total credits consumed across all time (Bigint string).
-
-    </ResponseField>
-    <ResponseField name="autoTopupEnabled" type="boolean">
-
-      Whether automatic credit top-up is enabled.
-
-    </ResponseField>
-    <ResponseField name="autoTopupStopped" type="boolean">
-
-      Whether declined charges stopped automatic top-up while it is enabled. It stops after 3 declines in a row on one card. A paid top-up or a paid plan renewal clears it. So does the next automatic top-up on a new card.
-
-    </ResponseField>
-    <ResponseField name="autoTopupAmountDollars" type="number">
-
-      Dollar amount charged when automatic top-up runs.
-
-    </ResponseField>
-    <ResponseField name="autoTopupThreshold" type="string">
-
-      Credit balance threshold that triggers automatic top-up when enabled (Bigint string).
-
-    </ResponseField>
-
-</ResponseField>
-<ResponseField name="xUsername" type="string">
-
-Linked X username. Omitted when no X account is connected.
-
-</ResponseField>
+| Field                                        | Type      | Description                                                                                                                                                                                                             |
+| -------------------------------------------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `plan`                                       | `string`  | Subscription status. `"active"` or `"inactive"`.                                                                                                                                                                        |
+| `subscription`                               | `object`  | Subscription state, without billing provider IDs.                                                                                                                                                                       |
+| `subscription.status`                        | `string`  | `none`, `active`, `past_due`, `canceling` or `incomplete`.                                                                                                                                                              |
+| `subscription.tier`                          | `string`  | `starter`, `pro` or `business`. Omitted without a subscription.                                                                                                                                                         |
+| `subscription.currentPeriodStart`            | `string`  | Start of the current billing period, ISO 8601.                                                                                                                                                                          |
+| `subscription.currentPeriodEnd`              | `string`  | Renewal date, or the end date when canceling. ISO 8601.                                                                                                                                                                 |
+| `monitorsAllowed`                            | `number`  | Deprecated. Monitor slots are unlimited, so this is always `9007199254740991`.                                                                                                                                          |
+| `monitorsUsed`                               | `number`  | Number of active account monitors and keyword monitors.                                                                                                                                                                 |
+| `monitorBilling`                             | `object`  | Active monitor billing details.                                                                                                                                                                                         |
+| `monitorBilling.activeDailyEstimate`         | `string`  | Estimated daily credits for active monitors.                                                                                                                                                                            |
+| `monitorBilling.activeHourlyBurn`            | `string`  | Credits charged each hour for active monitors.                                                                                                                                                                          |
+| `monitorBilling.creditsPerActiveMonitorDay`  | `string`  | Daily credit estimate for 1 active monitor.                                                                                                                                                                             |
+| `monitorBilling.creditsPerActiveMonitorHour` | `string`  | Hourly credits charged for 1 active monitor.                                                                                                                                                                            |
+| `monitorBilling.eventsIncluded`              | `boolean` | Whether monitor billing includes webhook and event deliveries.                                                                                                                                                          |
+| `monitorBilling.instantCheckIntervalSeconds` | `number`  | Active monitor check interval in seconds.                                                                                                                                                                               |
+| `monitorBilling.unlimitedSlots`              | `boolean` | Whether monitor slot count is unlimited.                                                                                                                                                                                |
+| `creditInfo`                                 | `object`  | Credit balance details. Omitted if no credit balance row exists yet.                                                                                                                                                    |
+| `creditInfo.balance`                         | `string`  | Current credit balance (Bigint string to preserve precision above Number.MAX_SAFE_INTEGER).                                                                                                                             |
+| `creditInfo.lifetimePurchased`               | `string`  | Total credits purchased across all time (Bigint string).                                                                                                                                                                |
+| `creditInfo.lifetimeUsed`                    | `string`  | Total credits consumed across all time (Bigint string).                                                                                                                                                                 |
+| `creditInfo.autoTopupEnabled`                | `boolean` | Whether automatic credit top-up is enabled.                                                                                                                                                                             |
+| `creditInfo.autoTopupStopped`                | `boolean` | Whether declined charges stopped automatic top-up while it is enabled. It stops after 3 declines in a row on one card. A paid top-up or a paid plan renewal clears it. So does the next automatic top-up on a new card. |
+| `creditInfo.autoTopupAmountDollars`          | `number`  | Dollar amount charged when automatic top-up runs.                                                                                                                                                                       |
+| `creditInfo.autoTopupThreshold`              | `string`  | Credit balance threshold that triggers automatic top-up when enabled (Bigint string).                                                                                                                                   |
+| `xUsername`                                  | `string`  | Linked X username. Omitted when no X account is connected.                                                                                                                                                              |
 
 ```json
 {
@@ -372,23 +206,17 @@ Linked X username. Omitted when no X account is connected.
 
 ### 401 Unauthenticated
 
-```json
-{ "error": "unauthenticated" }
-```
-
 Missing or invalid API key. Check the `x-api-key` header value.
 
 ### 429 Rate limited
 
-```json
-{
-  "error": "rate_limit_exceeded",
-  "message": "Too many requests. Try again later.",
-  "retryAfter": 1
-}
-```
+`{ "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 1 }`
 
 Too many requests. Wait for the `Retry-After` header before retrying.
+
+</section>
+
+<section>
 
 ## Credit balance
 
@@ -401,3 +229,19 @@ or call. Writes bill per action. Active monitors bill 30 credits per hour.
 **Related.** [Authentication](/api-reference/authentication) &middot; [Billing & Usage](/guides/billing)
 
 </Note>
+
+</section>
+
+{/* GENERATED RESPONSE EXAMPLES START */}
+
+<section>
+
+## Response examples
+
+- **401** `{ "error": "unauthenticated", "message": "Authentication required. Provide a valid API key or bearer token." }`
+- **403** `{ "error": "api_key_paused", "message": "This API key is paused. Resume it at dashboard.xquik.com/api-keys to use it again." }`
+- **429** `{ "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 60 }`
+
+</section>
+
+{/* GENERATED RESPONSE EXAMPLES END */}
