@@ -5587,7 +5587,8 @@ paths:
         - $ref: '#/components/parameters/WritePrefer'
       requestBody:
         required: true
-        description: Account and tweet content. Requires text, media, or both.
+        description:
+          Account and tweet content. Requires text, `media` or `media_ids`.
         content:
           application/json:
             schema:
@@ -5602,7 +5603,7 @@ paths:
                 text:
                   type: string
                   maxLength: 100000
-                  description: Tweet text (optional when media is provided)
+                  description: Tweet text. Optional with `media` or `media_ids`.
                   example: 'Just launched our new feature!'
                 reply_to_tweet_id:
                   type: string
@@ -5634,6 +5635,20 @@ paths:
                     video up to 100 MB. Media adds 2 credits per started MB
                     across all files.
                   example: ['https://example.com/video.mp4']
+                media_ids:
+                  type: array
+                  items:
+                    type: string
+                    maxLength: 19
+                    pattern: '^[0-9]{1,19}$'
+                  minItems: 1
+                  maxItems: 4
+                  description: >-
+                    Media IDs from `POST /x/media`, uploaded with this account.
+                    IDs last 24 hours. Send up to 4 image IDs or exactly 1 video
+                    ID. Send `media` or `media_ids`, not both. Media adds 2
+                    credits per started MB across all files.
+                  example: ['2104371968258560001']
             examples:
               post:
                 summary: 'A post with a video'
@@ -5642,6 +5657,13 @@ paths:
                   text: 'Just launched our new feature!'
                   media:
                     - 'https://example.com/video.mp4'
+              uploaded:
+                summary: 'A post with an uploaded video'
+                value:
+                  account: '@elonmusk'
+                  text: 'Just launched our new feature!'
+                  media_ids:
+                    - '2104371968258560001'
               reply:
                 summary: 'A reply'
                 value:
@@ -23148,6 +23170,7 @@ components:
                 - login_cooldown
                 - login_failed
                 - media_download_failed
+                - media_not_uploaded
                 - media_too_large
                 - media_unavailable
                 - missing_params
