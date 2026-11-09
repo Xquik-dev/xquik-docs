@@ -363,7 +363,7 @@ Return `2xx` for duplicate `deliveryId` or `streamEventId` after signature verif
 
 ### 5. Post media tweets or replies
 
-Use this when an agent or app needs to post a tweet or reply. It applies to public image URLs or exactly 1 public MP4 video URL. The video can be up to 100 MB. Pass those URLs directly in the `media` array on `POST /x/tweets`. Do not call `POST /x/media` first for tweet posts when the media is already public. `POST /x/tweets` rejects `media_ids` with `400 unsupported_field`.
+Use this when an agent or app needs to post a tweet or reply. It applies to public image URLs or exactly 1 public MP4 video URL. The video can be up to 100 MB. Pass those URLs directly in the `media` array on `POST /x/tweets`. Do not call `POST /x/media` first for tweet posts when the media is already public. For a local file, upload it first. Then send its `mediaId` in `media_ids`.
 
 ```bash
 curl -X POST https://xquik.com/api/v1/x/tweets \
@@ -377,7 +377,7 @@ curl -X POST https://xquik.com/api/v1/x/tweets \
   }' | jq
 ```
 
-The response is a durable action record. Store `id`, `status`, `billing`, `result`, `request.hash`, and `statusUrl`. Poll while `terminal` is false. Retry only when `safeToRetry` is true, using a new `Idempotency-Key`. Store media URLs with the action record. Text-only tweet or reply writes cost 30 credits. Attached media adds 2 credits per started MB across all files. Use `POST /x/media` only when you need a one-item `media_ids` array for [`POST /x/dm/{userId}`](/api-reference/x-write/send-dm).
+The response is a durable action record. Store `id`, `status`, `billing`, `result`, `request.hash`, and `statusUrl`. Poll while `terminal` is false. Retry only when `safeToRetry` is true, using a new `Idempotency-Key`. Store media URLs with the action record. Text-only tweet or reply writes cost 30 credits. Attached media adds 2 credits per started MB across all files. Use `POST /x/media` for local files, then pass its `mediaId` in `media_ids`. [DMs](/api-reference/x-write/send-dm) take exactly 1 media ID.
 
 ### 6. Send direct messages with returned IDs
 
@@ -440,7 +440,7 @@ Choose a path, then open its examples, SDK guidance, and error recovery.
   </Card>
   <Card title="Media tweets and DMs" icon="image" href="/guides/media-upload-workflow">
 
-    Use public URLs in tweet `media`. Upload only when DMs need one `media_ids` item.
+    Use public URLs in tweet `media`, or upload files for tweet and DM `media_ids`.
 
   </Card>
   <Card title="Direct messages" icon="send" href="/guides/direct-message-workflow">

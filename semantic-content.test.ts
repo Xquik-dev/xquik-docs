@@ -151,6 +151,7 @@ const REQUIRED_OPERATIONAL_CONTENT = [
       "The route accepts one local file",
       "Each request uses one connected",
       "| Output | Next request | Rule |",
+      "| `mediaId` | Tweet or reply `media_ids` | Send up to 4 image IDs or 1 video ID within 24 hours. |",
       "| `mediaId` | DM `media_ids` | Send exactly 1 media ID. |",
       "Xquik handles the chunked upload and media category.",
       "OAuth bearer authentication is also supported.",
