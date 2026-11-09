@@ -1,7 +1,7 @@
 ---
 title: "Upload media for tweets & DMs, X (Twitter) API docs"
 sidebarTitle: "Upload media"
-description: "Upload images, GIFs, and MP4 videos from a connected X account. Get mediaUrl for tweets and replies or mediaId for one direct message attachment. 10 credits."
+description: "Upload images, GIFs, and MP4 videos from a connected X account. Attach the mediaId to tweets, replies, or 1 direct message within 24 hours. 10 credits."
 endpoint: "POST /x/media"
 keywords:
   [
@@ -117,9 +117,10 @@ Send one request, then poll its lifecycle.
 
 {"\n"}
 
-For multiple images, call once per file. Collect up to 4 `mediaUrl` values.
-Send them together in Create Tweet. DMs accept exactly 1 media ID. Schedulers
-store `mediaUrl` until send time. This endpoint does not schedule tweets.
+For multiple images, call once per file. Collect up to 4 `mediaId` values.
+Send them together in Create Tweet `media_ids`. DMs accept exactly 1 media ID.
+Media IDs expire 24 hours after upload. Schedulers that post later store
+`mediaUrl` until send time. This endpoint does not schedule tweets.
 
 </section>
 
@@ -127,14 +128,15 @@ store `mediaUrl` until send time. This endpoint does not schedule tweets.
 
 ## Store the X (Twitter) API media upload receipt
 
-| Output     | Next request           | Rule                                               |
-| ---------- | ---------------------- | -------------------------------------------------- |
-| `mediaUrl` | Tweet or reply `media` | Send up to 4 image URLs or 1 MP4 URL up to 100 MB. |
-| `mediaId`  | DM `media_ids`         | Send exactly 1 media ID.                           |
+| Output     | Next request               | Rule                                                  |
+| ---------- | -------------------------- | ----------------------------------------------------- |
+| `mediaUrl` | Tweet or reply `media`     | Send up to 4 image URLs or 1 MP4 URL up to 100 MB.    |
+| `mediaId`  | Tweet or reply `media_ids` | Send up to 4 image IDs or 1 video ID within 24 hours. |
+| `mediaId`  | DM `media_ids`             | Send exactly 1 media ID.                              |
 
 Store the account, success, source reference, and idempotency key with each
 receipt. For replies, add `reply_to_tweet_id` in Create Tweet.
-Never send `media_ids` to Create Tweet. Use public `mediaUrl` values.
+Send `mediaUrl` values in `media` or `mediaId` values in `media_ids`, never both.
 Tweet and reply writes cost 30 credits, plus media surcharges.
 DM writes cost 10 credits.
 
