@@ -147,10 +147,11 @@ const REQUIRED_OPERATIONAL_CONTENT = [
     file: "api-reference/x-write/upload-media.mdx",
     snippets: [
       "Upload media for tweets & DMs, X (Twitter) API docs",
-      "## Use the Twitter API upload media workflow",
+      "## Use the X (Twitter) API upload media workflow",
       "The route accepts one local file",
       "Each request uses one connected",
       "| Output | Next request | Rule |",
+      "| `mediaId` | Tweet or reply `media_ids` | Send up to 4 image IDs or 1 video ID within 24 hours. |",
       "| `mediaId` | DM `media_ids` | Send exactly 1 media ID. |",
       "Xquik handles the chunked upload and media category.",
       "OAuth bearer authentication is also supported.",
@@ -421,8 +422,8 @@ const REQUIRED_OPERATIONAL_CONTENT = [
     file: "api-reference/x-write/delete-community.mdx",
     snippets: [
       "Delete an owned community, X (Twitter) API docs",
-      "## How to delete a Twitter community through REST",
-      "## Archive records before you delete a Twitter community",
+      "## How to delete an X (Twitter) community through REST",
+      "## Archive records before you delete an X (Twitter) community",
       "Xquik has no restore route. Plan for permanent removal.",
       "An unavailable community confirms removal.",
       "Send its exact `community_name` to confirm the target.",
@@ -446,11 +447,11 @@ const REQUIRED_OPERATIONAL_CONTENT = [
     snippets: [
       "Join a community by ID, X (Twitter) API docs",
       "## Understand open, restricted, and invited membership",
-      "## Find Twitter communities before joining",
+      "## Find X (Twitter) communities before joining",
       "X warns that some Communities never appear in search results.",
       "## Compare manual and API community joining",
       "Use the join button for manual membership.",
-      "Each Twitter Community covers one shared topic.",
+      "Each X (Twitter) Community covers one shared topic.",
       "Anyone with the direct Community URL can see its member list.",
       "Community posts are not private group messages.",
       "### Is community notes the same as X communities?",
@@ -464,9 +465,9 @@ const REQUIRED_OPERATIONAL_CONTENT = [
       "## Plan post-join reading and publishing",
       "Joining adds one connected account to one Community.",
       "Approve separate Create Tweet actions for members posting after joining.",
-      "## Join a Twitter community step by step",
+      "## Join an X (Twitter) community step by step",
       "Anyone on X with the direct Community URL can see the Community's member list.",
-      "### How do I find active Twitter communities by interest?",
+      "### How do I find active X (Twitter) communities by interest?",
       "### How should a brand participate after joining?",
       "For an invite-only Community, X still requires an invitation.",
       "Confirm you are logged in to your account on X.",
@@ -484,8 +485,8 @@ const REQUIRED_OPERATIONAL_CONTENT = [
     snippets: [
       "Leave a community by ID, X (Twitter) API docs",
       "## Archive community posts before leaving",
-      "## Leave a Twitter community step by step",
-      "## Verify the Twitter community departure",
+      "## Leave an X (Twitter) community step by step",
+      "## Verify the X (Twitter) community departure",
       "### Can this API cancel a pending join request?",
       "### Is a Twitter group chat the same as a community?",
       "### Is community notes the same as X communities?",
@@ -653,7 +654,7 @@ const REQUIRED_OVERVIEW_KEYWORDS = [
 ] as const;
 
 const REQUIRED_CHANGELOG_CONTENT = [
-  'title: "Xquik changelog for Twitter API & scraper updates"',
+  'title: "Xquik changelog for X (Twitter) API & scraper news"',
   "Xquik documentation updates",
   "Xquik changelog",
   "API keys",
@@ -664,7 +665,7 @@ const REQUIRED_CHANGELOG_CONTENT = [
 
 const REQUIRED_COMMUNITY_TIMELINE_CONTENT = [
   "community timeline export",
-  "Twitter community scraping guide",
+  "X (Twitter) community scraping guide",
 ] as const;
 
 const REQUIRED_QUICK_TOPUP_CONTENT = [
