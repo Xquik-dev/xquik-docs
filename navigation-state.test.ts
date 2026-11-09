@@ -145,6 +145,19 @@ describe("navigation default state", (): void => {
     expect(groups.slice(-ACCOUNT_GROUPS.length).sort()).toStrictEqual([...ACCOUNT_GROUPS]);
   });
 
+  it("opens the tweets group with search and its filters", (): void => {
+    expect.assertions(1);
+
+    const tweets = (findTab(docsConfig(), "API reference").groups ?? []).find(
+      (group): boolean => group.group === "Tweets",
+    );
+
+    expect((tweets?.pages ?? []).slice(0, 2)).toStrictEqual([
+      "api-reference/x/search-tweets",
+      "api-reference/x/tweet-filters",
+    ]);
+  });
+
   it("opens the guides with getting started, the MCP server and webhooks", (): void => {
     expect.assertions(1);
 
