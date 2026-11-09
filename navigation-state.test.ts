@@ -77,6 +77,16 @@ const PRIORITY_API_ROUTES = [
   "/api-reference/x/retweeters",
 ] as const;
 
+const ACCOUNT_GROUPS = [
+  "API keys",
+  "Account",
+  "Activity",
+  "Credits",
+  "Guest wallets",
+  "Support",
+  "X accounts",
+] as const;
+
 function docsConfig(): DocsConfig {
   return docsConfigSchema.parse(JSON.parse(readFileSync("docs.json", "utf8")));
 }
@@ -89,6 +99,12 @@ function findTab(config: DocsConfig, tabName: string): NavigationNode {
   }
 
   return tab;
+}
+
+function groupNames(tabName: string): string[] {
+  return (findTab(docsConfig(), tabName).groups ?? []).map(
+    (group): string => group.group ?? "(unnamed)",
+  );
 }
 
 describe("navigation default state", (): void => {
@@ -117,6 +133,26 @@ describe("navigation default state", (): void => {
 
     expect(apiTab.dropdowns).toBeUndefined();
     expect(emptyGroups).toStrictEqual([]);
+  });
+
+  it("lists what Xquik reads and writes before account management", (): void => {
+    expect.assertions(3);
+
+    const groups = groupNames("API reference");
+
+    expect(groups.slice(0, 2)).toStrictEqual(["Overview", "Tweets"]);
+    expect(groups.indexOf("X write")).toBeLessThan(groups.indexOf("Monitors"));
+    expect(groups.slice(-ACCOUNT_GROUPS.length).sort()).toStrictEqual([...ACCOUNT_GROUPS]);
+  });
+
+  it("opens the guides with getting started, the MCP server and webhooks", (): void => {
+    expect.assertions(1);
+
+    expect(groupNames("Guides").slice(0, 3)).toStrictEqual([
+      "Getting started",
+      "MCP server",
+      "Webhooks",
+    ]);
   });
 
   it("keeps MDX API snippets pointed at the public API origin", (): void => {
