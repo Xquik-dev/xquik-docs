@@ -265,8 +265,10 @@ tags:
   - name: Webhooks
     description: Webhook endpoint management and delivery
   - name: X Accounts
-    description:
-      Connected X accounts. Sign-in & removal need a dashboard session.
+    description: >-
+      Connected X accounts. To connect, reconnect, retry or disconnect one, use
+      a dashboard session or an API key holding `connectsXAccounts`. MCP tools
+      never take X passwords.
   - name: X Write
     description: >-
       Linked X accounts can post, like, repost, follow, bookmark, block, mute &
@@ -1541,6 +1543,13 @@ paths:
                     monitors, exports & billing add their routes. scopes wins
                     over scope. Missing scopes & scope saves full.
                   example: [read, monitors]
+                connectsXAccounts:
+                  type: boolean
+                  default: false
+                  description:
+                    Lets this key connect, reconnect, retry & remove X accounts.
+                    Full access doesn't include it. Missing saves false.
+                  example: false
                 expiresInDays:
                   type: [integer, 'null']
                   minimum: 1
@@ -1573,6 +1582,7 @@ paths:
               name: My API Key
               scope: paid_reads
               scopes: [read]
+              connectsXAccounts: false
               expiresInDays: 30
               allowedIps: ['203.0.113.4']
               monthlyBudgetCredits: 50000
@@ -1619,6 +1629,8 @@ paths:
                     items: *api-key-scope-name
                     description: What the key can call.
                     example: [read]
+                  connectsXAccounts:
+                    $ref: '#/components/schemas/ApiKey/properties/connectsXAccounts'
                   allowedIps:
                     type: array
                     items:
@@ -1651,6 +1663,7 @@ paths:
                 prefix: xq_live_exam
                 scope: paid_reads
                 scopes: [read]
+                connectsXAccounts: false
                 allowedIps: ['203.0.113.4']
                 isActive: true
                 createdAt: '2025-01-15T12:00:00Z'
@@ -1761,6 +1774,7 @@ paths:
                         prefix: xq_live_exam
                         scope: paid_reads
                         scopes: [read]
+                        connectsXAccounts: false
                         allowedIps: []
                         isActive: true
                         createdAt: '2025-01-15T12:00:00Z'
@@ -1878,6 +1892,13 @@ paths:
                     monitors, exports & billing add their routes. scopes wins
                     over scope. Missing keeps the key's scopes.
                   example: [read, monitors]
+                connectsXAccounts:
+                  type: boolean
+                  description:
+                    Turns on or off connecting, reconnecting, retrying &
+                    removing X accounts with this key. Only a dashboard session
+                    can change it. Missing keeps the current value.
+                  example: true
                 allowedIps:
                   type: array
                   maxItems: 20
@@ -1907,6 +1928,7 @@ paths:
               name: Analytics notebook
               scope: paid_reads
               scopes: [read]
+              connectsXAccounts: false
               allowedIps: ['203.0.113.4']
               paused: true
               monthlyBudgetCredits: 50000
@@ -1923,6 +1945,7 @@ paths:
                 prefix: xq_live_exam
                 scope: paid_reads
                 scopes: [read]
+                connectsXAccounts: false
                 allowedIps: []
                 isActive: true
                 createdAt: '2025-01-15T12:00:00Z'
@@ -5564,7 +5587,8 @@ paths:
         - $ref: '#/components/parameters/WritePrefer'
       requestBody:
         required: true
-        description: Account and tweet content. Requires text, media, or both.
+        description:
+          Account and tweet content. Requires text, `media` or `media_ids`.
         content:
           application/json:
             schema:
@@ -5579,7 +5603,7 @@ paths:
                 text:
                   type: string
                   maxLength: 100000
-                  description: Tweet text (optional when media is provided)
+                  description: Tweet text. Optional with `media` or `media_ids`.
                   example: 'Just launched our new feature!'
                 reply_to_tweet_id:
                   type: string
@@ -5611,6 +5635,20 @@ paths:
                     video up to 100 MB. Media adds 2 credits per started MB
                     across all files.
                   example: ['https://example.com/video.mp4']
+                media_ids:
+                  type: array
+                  items:
+                    type: string
+                    maxLength: 19
+                    pattern: '^[0-9]{1,19}$'
+                  minItems: 1
+                  maxItems: 4
+                  description: >-
+                    Media IDs from `POST /x/media`, uploaded with this account.
+                    IDs last 24 hours. Send up to 4 image IDs or exactly 1 video
+                    ID. Send `media` or `media_ids`, not both. Media adds 2
+                    credits per started MB across all files.
+                  example: ['2104371968258560001']
             examples:
               post:
                 summary: 'A post with a video'
@@ -5619,6 +5657,13 @@ paths:
                   text: 'Just launched our new feature!'
                   media:
                     - 'https://example.com/video.mp4'
+              uploaded:
+                summary: 'A post with an uploaded video'
+                value:
+                  account: '@elonmusk'
+                  text: 'Just launched our new feature!'
+                  media_ids:
+                    - '2104371968258560001'
               reply:
                 summary: 'A reply'
                 value:
@@ -5724,6 +5769,9 @@ paths:
             currency: &tempo-usd '0x20c000000000000000000000b9537d11c60e8b50'
             intent: charge
             method: tempo
+        price: { amount: '0.000150', currency: USD, mode: fixed }
+        protocols:
+          - mpp: { currency: *tempo-usd, intent: charge, method: tempo }
       parameters:
         - name: woeid
           in: query
@@ -6899,6 +6947,9 @@ paths:
             currency: *tempo-usd
             intent: charge
             method: tempo
+        price: { amount: '0.000750', currency: USD, mode: fixed }
+        protocols:
+          - mpp: { currency: *tempo-usd, intent: charge, method: tempo }
       parameters:
         - name: tweetId
           in: path
@@ -7194,6 +7245,9 @@ paths:
             currency: *tempo-usd
             intent: charge
             method: tempo
+        price: { amount: '0.000150', currency: USD, mode: fixed }
+        protocols:
+          - mpp: { currency: *tempo-usd, intent: charge, method: tempo }
       parameters:
         - $ref: '#/components/parameters/TweetPathId'
         - $ref: '#/components/parameters/Fields'
@@ -7711,6 +7765,9 @@ paths:
             currency: *tempo-usd
             intent: charge
             method: tempo
+        price: { amount: '0.000150', currency: USD, mode: fixed }
+        protocols:
+          - mpp: { currency: *tempo-usd, intent: charge, method: tempo }
       parameters:
         - $ref: '#/components/parameters/UserPathId'
         - $ref: '#/components/parameters/Fields'
@@ -7897,6 +7954,9 @@ paths:
             currency: *tempo-usd
             intent: charge
             method: tempo
+        price: { amount: '0.000150', currency: USD, mode: fixed }
+        protocols:
+          - mpp: { currency: *tempo-usd, intent: charge, method: tempo }
       parameters:
         - name: source
           in: query
@@ -8773,13 +8833,18 @@ paths:
     post:
       operationId: connectXAccount
       x-mcp-exclusion-reason:
-        &x-login-browser-auth X account sign-in & removal require browser auth.
-      description:
-        Starts an X account connection flow. Needs a dashboard session, so X
-        credentials never pass through an API key.
+        &x-account-sign-in X account sign-in carries passwords, & MCP tools
+        never receive them.
+      description: >-
+        Connects an X account. Takes a dashboard session, or an API key holding
+        `connectsXAccounts`. With a key, your backend receives the user's X
+        password & 2FA secret, so it answers for keeping them out of its own
+        logs & stores. Xquik encrypts them at rest & never returns them. Failed
+        logins slow a caller down, & accounts it connects lift that limit, so
+        onboarding many users isn't capped.
       summary: Connect X account
       tags: [X Accounts]
-      security: [{ cookieSession: [] }]
+      security: [{ cookieSession: [] }, { apiKey: [] }]
       requestBody:
         required: true
         description: >-
@@ -8813,11 +8878,21 @@ paths:
                   description: >-
                     Your Authenticator App TOTP secret.
                   example: '<TOTP_SECRET>'
+                connection_attempt_id:
+                  type: string
+                  maxLength: 37
+                  pattern: '^xatt_[0-9a-f]{32}$'
+                  description:
+                    An ID you generate to read this attempt's status, even if
+                    the response never reaches you. Leave it out to get one in a
+                    pending response.
+                  example: 'xatt_0123456789abcdef0123456789abcdef'
             example:
               username: 'your_x_username'
               email: 'account@example.invalid'
               password: '<ACCOUNT_PASSWORD>'
               totp_secret: '<TOTP_SECRET>'
+              connection_attempt_id: 'xatt_0123456789abcdef0123456789abcdef'
       responses:
         '201':
           description: X account connected after verification
@@ -8865,7 +8940,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '403':
-          $ref: '#/components/responses/SessionRequired'
+          $ref: '#/components/responses/XAccountSignInRefused'
         '409':
           $ref: '#/components/responses/ConnectAlreadyConnected'
         '422':
@@ -8877,16 +8952,179 @@ paths:
         '503':
           $ref: '#/components/responses/ConnectServiceUnavailable'
 
+  /x/account-connection-links:
+    post:
+      operationId: createXAccountConnectionLink
+      x-mcp-exclusion-reason:
+        &x-connect-link-token A connect link works like a password until it's
+        used, so it stays out of model context.
+      summary: Create X account connect link
+      description: >-
+        Creates a link to a page Xquik hosts, where a person connects an X
+        account with no Xquik signup. Your backend never receives their password
+        or 2FA secret, and the account belongs to you. Send `accountId` to
+        reconnect 1 of your accounts instead. Connecting is free. Takes a Full
+        access API key or a dashboard session. The link works for 30 minutes, &
+        the response is the only place its token appears.
+      tags: [X Accounts]
+      security: [{ apiKey: [] }, { cookieSession: [] }]
+      requestBody:
+        required: false
+        description: What to attach to the link. Every field is optional.
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                reference:
+                  type: string
+                  maxLength: 256
+                  description:
+                    Your own ID for this person. It comes back when you read the
+                    link.
+                  example: 'crm-user-7'
+                returnUrl:
+                  type: string
+                  format: uri
+                  maxLength: 2048
+                  description:
+                    A public https URL the page offers as a button once the
+                    account connects. Xquik never redirects by itself, & never
+                    adds the token.
+                  example: 'https://app.example.com/connected'
+                accountId:
+                  type: string
+                  maxLength: 25
+                  description:
+                    The ID of 1 of your X accounts. The link then reconnects
+                    that account.
+                  example: '42'
+            example:
+              reference: 'crm-user-7'
+              returnUrl: 'https://app.example.com/connected'
+              accountId: '42'
+      responses:
+        '201':
+          description:
+            Link created. Open `url` in a pop-up or a new tab, since the page
+            can't load in a frame.
+          headers:
+            Cache-Control:
+              description: Prevents caching of the link.
+              schema: *no-store-header
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/XAccountConnectionLink'
+                  - type: object
+                    required: [url]
+                    properties:
+                      url:
+                        type: string
+                        format: uri
+                        description:
+                          The page to open. Its fragment holds the token, so
+                          treat it as a secret & keep it out of logs.
+                        example: https://xquik.com/connect-x#token=CONNECT_LINK_TOKEN
+              example:
+                object: 'x_account_connection_link'
+                id: 'xlink_AAAAAAAAAAAAAAAA'
+                purpose: 'connect'
+                status: 'pending'
+                reference: 'crm-user-7'
+                returnUrl: 'https://app.example.com/connected'
+                accountId: null
+                xUserId: null
+                xUsername: null
+                health: null
+                failure: null
+                createdAt: '2026-11-08T12:00:00Z'
+                expiresAt: '2026-11-08T12:30:00Z'
+                completedAt: null
+                url: https://xquik.com/connect-x#token=CONNECT_LINK_TOKEN
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/ReadKeyForbidden'
+        '404':
+          $ref: '#/components/responses/ReauthAccountNotFound'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+
+  /x/account-connection-links/{id}:
+    get:
+      operationId: getXAccountConnectionLink
+      x-mcp-exclusion-reason: *x-connect-link-token
+      summary: Get X account connect link status
+      description: >-
+        Reads what happened on a link. `status` reads `connected` once the
+        person finishes, with `xUserId`, `xUsername` & `health`. It never holds
+        the token. Takes a Full access API key or a dashboard session.
+      tags: [X Accounts]
+      security: [{ apiKey: [] }, { cookieSession: [] }]
+      parameters:
+        - $ref: '#/components/parameters/ConnectionLinkId'
+      responses:
+        '200':
+          description: The link's current state.
+          headers:
+            Cache-Control:
+              description: Prevents caching of the link's state.
+              schema: *no-store-header
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/XAccountConnectionLink'
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/ReadKeyForbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+    delete:
+      operationId: revokeXAccountConnectionLink
+      x-mcp-exclusion-reason: *x-connect-link-token
+      summary: Revoke X account connect link
+      description: >-
+        Stops a link working. An account it already connected stays connected.
+        Takes a Full access API key or a dashboard session.
+      tags: [X Accounts]
+      security: [{ apiKey: [] }, { cookieSession: [] }]
+      parameters:
+        - $ref: '#/components/parameters/ConnectionLinkId'
+      responses:
+        '200':
+          $ref: '#/components/responses/Success'
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/ReadKeyForbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+
   /x/account-connection-attempts/{id}:
     get:
       operationId: getXAccountConnectionAttempt
-      x-mcp-exclusion-reason: *x-login-browser-auth
-      description:
-        Returns progress for an X account connection attempt. Needs a dashboard
-        session.
+      x-mcp-exclusion-reason: *x-account-sign-in
+      description: >-
+        Returns progress for an X account connection attempt. An ID this account
+        never started reads as `pending`, the same as one still registering.
+        Takes a dashboard session, or an API key holding `connectsXAccounts`.
       summary: Get X account connection status
       tags: [X Accounts]
-      security: [{ cookieSession: [] }]
+      security: [{ cookieSession: [] }, { apiKey: [] }]
       parameters:
         - $ref: '#/components/parameters/ConnectionAttemptId'
       responses:
@@ -8932,20 +9170,20 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '403':
-          $ref: '#/components/responses/SessionRequired'
+          $ref: '#/components/responses/XAccountSignInRefused'
         '429':
           $ref: '#/components/responses/RateLimitExceeded'
 
   /x/account-connection-challenges/{id}/submit:
     post:
       operationId: submitXAccountConnectionChallenge
-      x-mcp-exclusion-reason: *x-login-browser-auth
-      description:
-        Submits the email code requested during X account connection. Needs a
-        dashboard session.
+      x-mcp-exclusion-reason: *x-account-sign-in
+      description: >-
+        Submits the email code X asked for during a connect or reconnect. Takes
+        a dashboard session, or an API key holding `connectsXAccounts`.
       summary: Submit X account email verification code
       tags: [X Accounts]
-      security: [{ cookieSession: [] }]
+      security: [{ cookieSession: [] }, { apiKey: [] }]
       parameters:
         - $ref: '#/components/parameters/ConnectionChallengeId'
       requestBody:
@@ -8968,7 +9206,7 @@ paths:
               email_code: '<EMAIL_VERIFICATION_CODE>'
       responses:
         '201':
-          description: X account connected
+          description: X account connected or reconnected
           content:
             application/json:
               schema:
@@ -8984,7 +9222,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '403':
-          $ref: '#/components/responses/SessionRequired'
+          $ref: '#/components/responses/XAccountSignInRefused'
         '404':
           $ref: '#/components/responses/NotFound'
         '409':
@@ -9038,13 +9276,15 @@ paths:
           $ref: '#/components/responses/RateLimitExceeded'
     delete:
       operationId: disconnectXAccount
-      x-mcp-exclusion-reason: *x-login-browser-auth
-      description:
-        Disconnects 1 X account and removes stored session access. Needs a
-        dashboard session, since only a new sign-in restores the account.
+      x-mcp-exclusion-reason: *x-account-sign-in
+      description: >-
+        Disconnects 1 X account and removes stored session access. Only a new
+        sign-in restores the account. Takes a dashboard session, or an API key
+        holding `connectsXAccounts`. Account activity records it with the key's
+        ID.
       summary: Disconnect X account
       tags: [X Accounts]
-      security: [{ cookieSession: [] }]
+      security: [{ cookieSession: [] }, { apiKey: [] }]
       parameters: *resource-id-parameters
       responses:
         '200':
@@ -9054,7 +9294,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '403':
-          $ref: '#/components/responses/SessionRequired'
+          $ref: '#/components/responses/XAccountSignInRefused'
         '404':
           $ref: '#/components/responses/NotFound'
         '429':
@@ -9063,13 +9303,15 @@ paths:
   /x/accounts/{id}/reauth:
     post:
       operationId: reauthXAccount
-      x-mcp-exclusion-reason: *x-login-browser-auth
-      description:
-        Starts re-authentication for an existing X account connection. Needs a
-        dashboard session, so X credentials never pass through an API key.
+      x-mcp-exclusion-reason: *x-account-sign-in
+      description: >-
+        Signs an existing X account in again. Takes a dashboard session, or an
+        API key holding `connectsXAccounts`. With a key, your backend receives
+        the new X password, & a sign-in still running after 75 seconds answers
+        202 with a status URL to read.
       summary: Re-authenticate X account
       tags: [X Accounts]
-      security: [{ cookieSession: [] }]
+      security: [{ cookieSession: [] }, { apiKey: [] }]
       parameters: *resource-id-parameters
       requestBody:
         required: true
@@ -9098,10 +9340,20 @@ paths:
                   description:
                     Email for the X account. It replaces the stored email.
                   example: 'account@example.invalid'
+                connection_attempt_id:
+                  type: string
+                  maxLength: 37
+                  pattern: '^xatt_[0-9a-f]{32}$'
+                  description:
+                    An ID you generate to read this reconnect's status, even if
+                    the response never reaches you. Leave it out to get one in a
+                    pending response.
+                  example: 'xatt_0123456789abcdef0123456789abcdef'
             example:
               password: '<ACCOUNT_PASSWORD>'
               totp_secret: '<TOTP_SECRET>'
               email: 'account@example.invalid'
+              connection_attempt_id: 'xatt_0123456789abcdef0123456789abcdef'
       responses:
         '200':
           description: Re-authenticated
@@ -9109,32 +9361,65 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SanitizedXAccount'
+        '202':
+          description: Sign-in continues or needs an email code
+          headers:
+            Cache-Control:
+              description: Prevents caching of a pending reconnect.
+              schema: *no-store-header
+            Location:
+              description: Status URL of a pending reconnect.
+              schema:
+                type: string
+                example: '/api/v1/x/account-connection-attempts/xatt_0123456789abcdef0123456789abcdef'
+            Retry-After:
+              description: Seconds before the next poll of a pending reconnect.
+              schema:
+                type: integer
+                minimum: 0
+                example: 3
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/XAccountConnectionContinuation'
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '403':
-          $ref: '#/components/responses/SessionRequired'
+          $ref: '#/components/responses/XAccountSignInRefused'
         '404':
           $ref: '#/components/responses/ReauthAccountNotFound'
+        '409':
+          description:
+            The sign-in belongs to another X account, so the stored login stays.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: x_account_mismatch
+                message:
+                  This sign-in belongs to a different X account. Connect it as a
+                  new account instead.
         '422':
           $ref: '#/components/responses/ConnectLoginFailed'
         '429':
-          $ref: '#/components/responses/ConnectLoginCooldown'
+          $ref: '#/components/responses/ConnectRateLimitExceeded'
         '503':
           $ref: '#/components/responses/ConnectServiceUnavailable'
 
   /x/accounts/bulk-retry:
     post:
       operationId: bulkRetryXAccounts
-      x-mcp-exclusion-reason: *x-login-browser-auth
+      x-mcp-exclusion-reason: *x-account-sign-in
       summary: Bulk retry temporarily failed X accounts
       description: >
         Marks each connected account that failed for a passing reason as ready
-        to use again. Name accounts in accountIds to retry only those. Needs a
-        dashboard session.
+        to use again. Name accounts in accountIds to retry only those. Takes a
+        dashboard session, or an API key holding `connectsXAccounts`.
       tags: [X Accounts]
-      security: [{ cookieSession: [] }]
+      security: [{ cookieSession: [] }, { apiKey: [] }]
       requestBody:
         required: false
         description:
@@ -9186,7 +9471,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '403':
-          $ref: '#/components/responses/SessionRequired'
+          $ref: '#/components/responses/XAccountSignInRefused'
         '429':
           $ref: '#/components/responses/RateLimitExceeded'
 
@@ -9207,6 +9492,9 @@ paths:
             currency: *tempo-usd
             intent: charge
             method: tempo
+        price: { amount: '0.000150', currency: USD, mode: fixed }
+        protocols:
+          - mpp: { currency: *tempo-usd, intent: charge, method: tempo }
       parameters:
         - name: woeid
           in: query
@@ -11600,6 +11888,9 @@ paths:
             currency: *tempo-usd
             intent: charge
             method: tempo
+        price: { amount: '0.000150', currency: USD, mode: fixed }
+        protocols:
+          - mpp: { currency: *tempo-usd, intent: charge, method: tempo }
       parameters:
         - $ref: '#/components/parameters/CommunityPathId'
         - $ref: '#/components/parameters/Fields'
@@ -11661,6 +11952,9 @@ paths:
             currency: *tempo-usd
             intent: charge
             method: tempo
+        price: { amount: '0.000150', currency: USD, mode: fixed }
+        protocols:
+          - mpp: { currency: *tempo-usd, intent: charge, method: tempo }
       parameters:
         - $ref: '#/components/parameters/CommunityPathId'
         - $ref: '#/components/parameters/Fields'
@@ -12678,6 +12972,9 @@ paths:
             currency: *tempo-usd
             intent: charge
             method: tempo
+        price: { amount: '0.000150', currency: USD, mode: fixed }
+        protocols:
+          - mpp: { currency: *tempo-usd, intent: charge, method: tempo }
       parameters:
         - $ref: '#/components/parameters/ListPathId'
         - $ref: '#/components/parameters/Fields'
@@ -12950,6 +13247,9 @@ paths:
             currency: *tempo-usd
             intent: charge
             method: tempo
+        price: { amount: '0.000150', currency: USD, mode: fixed }
+        protocols:
+          - mpp: { currency: *tempo-usd, intent: charge, method: tempo }
       parameters:
         - $ref: '#/components/parameters/BroadcastPathId'
         - $ref: '#/components/parameters/Fields'
@@ -13379,6 +13679,9 @@ paths:
             currency: *tempo-usd
             intent: charge
             method: tempo
+        price: { amount: '0.000150', currency: USD, mode: fixed }
+        protocols:
+          - mpp: { currency: *tempo-usd, intent: charge, method: tempo }
       parameters:
         - $ref: '#/components/parameters/SpacePathId'
         - $ref: '#/components/parameters/Fields'
@@ -13449,6 +13752,9 @@ paths:
             currency: *tempo-usd
             intent: charge
             method: tempo
+        price: { amount: '0.000150', currency: USD, mode: fixed }
+        protocols:
+          - mpp: { currency: *tempo-usd, intent: charge, method: tempo }
       parameters:
         - $ref: '#/components/parameters/SpacePathId'
         - $ref: '#/components/parameters/Fields'
@@ -13554,6 +13860,9 @@ paths:
             currency: *tempo-usd
             intent: charge
             method: tempo
+        price: { amount: '0.000150', currency: USD, mode: fixed }
+        protocols:
+          - mpp: { currency: *tempo-usd, intent: charge, method: tempo }
       parameters:
         - $ref: '#/components/parameters/SportsLeague'
         - name: from
@@ -13627,6 +13936,9 @@ paths:
             currency: *tempo-usd
             intent: charge
             method: tempo
+        price: { amount: '0.000150', currency: USD, mode: fixed }
+        protocols:
+          - mpp: { currency: *tempo-usd, intent: charge, method: tempo }
       parameters:
         - $ref: '#/components/parameters/SportsLeague'
         - $ref: '#/components/parameters/SportsGameId'
@@ -13673,6 +13985,9 @@ paths:
             currency: *tempo-usd
             intent: charge
             method: tempo
+        price: { amount: '0.000150', currency: USD, mode: fixed }
+        protocols:
+          - mpp: { currency: *tempo-usd, intent: charge, method: tempo }
       parameters:
         - $ref: '#/components/parameters/SportsLeague'
         - $ref: '#/components/parameters/SportsGameId'
@@ -13720,6 +14035,9 @@ paths:
             currency: *tempo-usd
             intent: charge
             method: tempo
+        price: { amount: '0.000150', currency: USD, mode: fixed }
+        protocols:
+          - mpp: { currency: *tempo-usd, intent: charge, method: tempo }
       parameters:
         - $ref: '#/components/parameters/SportsLeague'
         - $ref: '#/components/parameters/SportsGameId'
@@ -13767,6 +14085,9 @@ paths:
             currency: *tempo-usd
             intent: charge
             method: tempo
+        price: { amount: '0.000150', currency: USD, mode: fixed }
+        protocols:
+          - mpp: { currency: *tempo-usd, intent: charge, method: tempo }
       parameters:
         - $ref: '#/components/parameters/SportsLeague'
         - $ref: '#/components/parameters/SportsGameId'
@@ -13813,6 +14134,9 @@ paths:
             currency: *tempo-usd
             intent: charge
             method: tempo
+        price: { amount: '0.000150', currency: USD, mode: fixed }
+        protocols:
+          - mpp: { currency: *tempo-usd, intent: charge, method: tempo }
       parameters:
         - $ref: '#/components/parameters/NflLeague'
         - $ref: '#/components/parameters/SportsGameId'
@@ -13860,6 +14184,9 @@ paths:
             currency: *tempo-usd
             intent: charge
             method: tempo
+        price: { amount: '0.000150', currency: USD, mode: fixed }
+        protocols:
+          - mpp: { currency: *tempo-usd, intent: charge, method: tempo }
       parameters:
         - $ref: '#/components/parameters/NflLeague'
         - $ref: '#/components/parameters/SportsGameId'
@@ -14096,8 +14423,8 @@ paths:
             minimum: 1
           description: >
             Complete mode defaults to 25,000 combined direct & nested replies.
-            Set another total with limit. Automatic pages accept 1-300, standard
-            pages 1-100.
+            Set another total with limit. Automatic pages accept 1-10,000,
+            standard pages 1-100.
         - $ref: '#/components/parameters/AutomaticTweetPageSize'
         - name: scope
           in: query
@@ -14550,6 +14877,9 @@ paths:
             currency: *tempo-usd
             intent: charge
             method: tempo
+        price: { amount: '0.000150', currency: USD, mode: fixed }
+        protocols:
+          - mpp: { currency: *tempo-usd, intent: charge, method: tempo }
       parameters:
         - $ref: '#/components/parameters/TweetPathId'
         - name: language
@@ -15169,6 +15499,9 @@ paths:
             currency: *tempo-usd
             intent: charge
             method: tempo
+        price: { amount: '0.000150', currency: USD, mode: fixed }
+        protocols:
+          - mpp: { currency: *tempo-usd, intent: charge, method: tempo }
       parameters:
         - $ref: '#/components/parameters/TweetPathId'
         - name: theme
@@ -16440,6 +16773,16 @@ components:
         maxLength: 20
         pattern: '^xch_[A-Za-z0-9_-]{16}$'
         example: 'xch_AbCdEfGhIjKlMnOp'
+    ConnectionLinkId:
+      name: id
+      in: path
+      required: true
+      description: Connect link ID returned when you created the link.
+      schema:
+        type: string
+        pattern: '^xlink_[A-Za-z0-9_-]{16}$'
+        maxLength: 22
+        example: 'xlink_AAAAAAAAAAAAAAAA'
     ConnectionAttemptId:
       name: id
       in: path
@@ -16540,14 +16883,14 @@ components:
       name: pageSize
       in: query
       description: >
-        Automatic pages accept 1-300 Tweets, standard pages 1-100. Default 20.
-        Follow next_cursor for more pages. Its aliases are limit, count,
+        Automatic pages accept 1-10,000 Tweets, standard pages 1-100. Default
+        20. Follow next_cursor for more pages. Its aliases are limit, count,
         max_results, maxItems, max_items & per_page. Every page size returns the
         same complete results.
       schema:
         type: integer
         minimum: 1
-        maximum: 300
+        maximum: 10000
         default: 20
     TweetSinceTime:
       name: sinceTime
@@ -17322,6 +17665,37 @@ components:
           schema:
             $ref: '#/components/schemas/Error'
           example: *session-required-example
+    XAccountSignInRefused:
+      description: >-
+        An API key without `connectsXAccounts` gets
+        `x_account_connect_permission_required`, and Full access doesn't include
+        it. Turn it on in a dashboard session at dashboard.xquik.com/api-keys.
+        An OAuth token or MCP tool gets `session_required`, whatever key is
+        behind it. A paused API key gets `api_key_paused`, so resume it on the
+        dashboard.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            apiKeyPaused:
+              summary: The API key is paused
+              value:
+                error: api_key_paused
+                message:
+                  This API key is paused. Resume it at
+                  dashboard.xquik.com/api-keys to use it again.
+            permissionRequired:
+              summary: The API key lacks the connect permission
+              value:
+                error: x_account_connect_permission_required
+                message:
+                  This API key can't connect X accounts. Turn on Connect X
+                  accounts for it at dashboard.xquik.com/api-keys.
+                requiredPermission: connectsXAccounts
+            sessionRequired:
+              summary: An OAuth token or MCP tool called this route
+              value: *session-required-example
     IdempotencyConflict:
       description: Idempotency-Key was reused with another request.
       content:
@@ -18562,32 +18936,13 @@ components:
             error: 'login_failed'
             message: 'Login failed. Check credentials and try again.'
             retryAfterMs: 300000
-    ConnectLoginCooldown:
-      description: >
-        A login attempt triggered a cooldown. The response has `retryAfterMs` &
-        a `Retry-After` header in seconds. The error code is `login_cooldown`,
-        with `reason`, or `login_rate_limited` when X limited the login.
-      headers:
-        Retry-After:
-          description: Cooldown duration in seconds.
-          required: true
-          schema: *positive-integer
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-          example:
-            error: 'login_cooldown'
-            message:
-              'Login is temporarily paused. Try again when the countdown ends.'
-            reason: 'temporary_issue'
-            retryAfterMs: 60000
     ConnectRateLimitExceeded:
       description: >
-        Too many requests. `rate_limit_exceeded` includes `retryAfter` and
-        `Retry-After`. `login_cooldown` also includes `reason` and
-        `retryAfterMs`. `login_rate_limited`, when X limited the login, includes
-        `retryAfterMs`.
+        Too many requests. `rate_limit_exceeded`, from too many failed logins in
+        15 minutes for this caller or this X account, includes `retryAfter` and
+        `Retry-After`. Accounts a caller connects raise its limit.
+        `login_cooldown` also includes `reason` and `retryAfterMs`.
+        `login_rate_limited`, when X limited the login, includes `retryAfterMs`.
       headers:
         Retry-After:
           description: Required wait in seconds.
@@ -22781,6 +23136,8 @@ components:
               enum: &public-error-codes
                 - internal_error
                 - account_already_connected
+                - x_account_connect_permission_required
+                - x_account_mismatch
                 - account_needs_reauth
                 - account_not_found
                 - account_required
@@ -22813,6 +23170,7 @@ components:
                 - login_cooldown
                 - login_failed
                 - media_download_failed
+                - media_not_uploaded
                 - media_too_large
                 - media_unavailable
                 - missing_params
@@ -23790,6 +24148,7 @@ components:
           scope,
           scopes,
           allowedIps,
+          connectsXAccounts,
           isActive,
           createdAt,
           monthlySpentCredits,
@@ -23818,6 +24177,12 @@ components:
             The scopes the key holds, such as read & monitors. A Full access key
             holds full.
           example: [read]
+        connectsXAccounts:
+          type: boolean
+          description:
+            Whether this key can connect, reconnect, retry & remove X accounts.
+            Full access doesn't include it.
+          example: false
         allowedIps:
           type: array
           items:
@@ -32674,10 +33039,103 @@ components:
         id:
           type: string
           example: 'xatt_0123456789abcdef0123456789abcdef'
+        accountId:
+          type: string
+          description: The connected account's ID.
+          example: '42'
         status:
           type: string
           const: success
           example: 'success'
+
+    XAccountConnectionLink:
+      description: A link where a person connects an X account on Xquik's page.
+      type: object
+      additionalProperties: false
+      required:
+        [
+          object,
+          id,
+          purpose,
+          status,
+          reference,
+          returnUrl,
+          accountId,
+          xUserId,
+          xUsername,
+          health,
+          failure,
+          createdAt,
+          expiresAt,
+          completedAt,
+        ]
+      properties:
+        object:
+          type: string
+          const: x_account_connection_link
+          example: 'x_account_connection_link'
+        id:
+          type: string
+          example: 'xlink_AAAAAAAAAAAAAAAA'
+        purpose:
+          type: string
+          enum: [connect, reconnect]
+          example: 'connect'
+        status:
+          type: string
+          enum:
+            [
+              pending,
+              connecting,
+              requires_email_code,
+              connected,
+              failed,
+              expired,
+              revoked,
+            ]
+          description:
+            '`failed` means 5 logins were refused, so make a new link.'
+          example: 'connected'
+        reference:
+          type: [string, 'null']
+          example: 'crm-user-7'
+        returnUrl:
+          type: [string, 'null']
+          format: uri
+          example: 'https://app.example.com/connected'
+        accountId:
+          type: [string, 'null']
+          example: '42'
+        xUserId:
+          type: [string, 'null']
+          example: '9876543210'
+        xUsername:
+          type: [string, 'null']
+          example: 'elonmusk'
+        health:
+          type: [string, 'null']
+          example: 'healthy'
+        failure:
+          type: [string, 'null']
+          description: Why the last login didn't finish.
+          example: 'login_failed'
+        createdAt:
+          type: string
+          format: date-time
+          example: '2026-11-08T12:00:00Z'
+        expiresAt:
+          type: string
+          format: date-time
+          example: '2026-11-08T12:30:00Z'
+        completedAt:
+          type: [string, 'null']
+          format: date-time
+          example: '2026-11-08T12:02:00Z'
+        url:
+          type: string
+          format: uri
+          description: Present only in the response that creates the link.
+          example: https://xquik.com/connect-x#token=CONNECT_LINK_TOKEN
 
     XAccountConnectionAttemptFailed:
       description: The connection reached a final failure.

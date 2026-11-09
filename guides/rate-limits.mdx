@@ -1,7 +1,7 @@
 ---
 title: "Fix X (Twitter) rate limit exceeded & 429 errors"
 sidebarTitle: "Rate limits"
-description: "Understand Xquik Twitter API rate limits, recover from 429 errors, honor Retry-After, pace tweet and follower requests, and safely resume cursor exports."
+description: "Understand Xquik X (Twitter) API rate limits, recover from 429 errors, and honor Retry-After. Pace tweet and follower requests, and resume cursor exports."
 keywords:
   [
     "Twitter API rate limits",
@@ -20,7 +20,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-Xquik applies fixed-window Twitter API rate limits per Xquik account.
+Xquik applies fixed-window X (Twitter) API rate limits per Xquik account.
 These limits protect tweet reads, Xquik resources, and connected X accounts.
 Standard API keys for one account share the same buckets.
 Separate read, change, and X action buckets reset independently.
@@ -34,16 +34,16 @@ X actions per minute. After `429`, wait for `Retry-After` before retrying.
 
 <section>
 
-## Twitter API rate limits at a glance
+## X (Twitter) API rate limits at a glance
 
-| Rate-limit signal              | Meaning                                                 | Client action                                                                        |
-| ------------------------------ | ------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| 500 reads per second           | `GET`, `HEAD`, and `OPTIONS` share one account bucket.  | Pace tweet, profile, follower, reply, and event reads below 500 requests per second. |
-| 6,000 changes per minute       | Other methods on Xquik resources share one bucket.      | Queue monitor, webhook, key, and extraction changes below 6,000 requests per minute. |
-| 120 X actions per minute       | Actions through a connected X account share one bucket. | Queue posts, likes, follows, and DMs below 120 requests per minute.                  |
-| `429 Too Many Requests`        | An Xquik tier or action limit blocked the request.      | Read the error code before choosing a retry delay.                                   |
-| `Retry-After` header           | The response supplies a wait in seconds.                | Pause that bucket for the supplied duration.                                         |
-| `retryAfter` or `retryAfterMs` | The JSON body supplies a retry duration.                | Use the documented unit before resuming work.                                        |
+| Rate-limit signal                  | Meaning                                                 | Client action                                                                        |
+| ---------------------------------- | ------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| 500 reads per second               | `GET`, `HEAD`, and `OPTIONS` share one account bucket.  | Pace tweet, profile, follower, reply, and event reads below 500 requests per second. |
+| 6,000 changes per minute           | Other methods on Xquik resources share one bucket.      | Queue monitor, webhook, key, and extraction changes below 6,000 requests per minute. |
+| 120 X (Twitter) actions per minute | Actions through a connected X account share one bucket. | Queue posts, likes, follows, and DMs below 120 requests per minute.                  |
+| `429 Too Many Requests`            | An Xquik tier or action limit blocked the request.      | Read the error code before choosing a retry delay.                                   |
+| `Retry-After` header               | The response supplies a wait in seconds.                | Pause that bucket for the supplied duration.                                         |
+| `retryAfter` or `retryAfterMs`     | The JSON body supplies a retry duration.                | Use the documented unit before resuming work.                                        |
 
 <CardGroup cols={3}>
 
@@ -67,17 +67,17 @@ X actions per minute. After `429`, wait for `Retry-After` before retrying.
 The listed request count succeeds inside each window. The next request receives
 `429 rate_limit_exceeded`. Its message names the limit and the wait.
 A read burst does not count against changes. A change burst does not count
-against X actions.
+against X (Twitter) actions.
 
-### Action-specific Twitter API limits
+### Action-specific X (Twitter) API limits
 
 Some actions add a narrower bucket. That bucket applies beside the method tier.
 
-| Action                    | Route                                                                | Additional limit                              | Recovery                                                              |
-| ------------------------- | -------------------------------------------------------------------- | --------------------------------------------- | --------------------------------------------------------------------- |
-| Follow or remove follower | `POST /x/users/{id}/follow` and `POST /x/users/{id}/remove-follower` | 20 actions per minute and 400 per day, shared | Track both counts. Wait for `Retry-After` after `429`.                |
-| Connect X account         | `POST /x/accounts`                                                   | 10 attempts per 15 minutes                    | Wait the returned remaining seconds. The maximum wait is 900 seconds. |
-| Login cooldown            | Account connection and reauthentication                              | Dynamic cooldown from the login attempt       | Use `retryAfterMs` or `Retry-After`.                                  |
+| Action                         | Route                                                                | Additional limit                                                                         | Recovery                                                              |
+| ------------------------------ | -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| Follow or remove follower      | `POST /x/users/{id}/follow` and `POST /x/users/{id}/remove-follower` | 20 actions per minute and 400 per day, shared                                            | Track both counts. Wait for `Retry-After` after `429`.                |
+| Connect or reconnect X account | `POST /x/accounts` and `POST /x/accounts/{id}/reauth`                | 10 failed logins per 15 minutes, raised by each account you connect, and 5 per X account | Wait the returned remaining seconds. The maximum wait is 900 seconds. |
+| Login cooldown                 | Account connection and reauthentication                              | Dynamic cooldown from the login attempt                                                  | Use `retryAfterMs` or `Retry-After`.                                  |
 
 The follow bucket protects connected X accounts from rapid automation.
 It also covers follower removal. Reaching 400 actions blocks more attempts.
@@ -192,12 +192,12 @@ The phrase "Twitter API limits" can describe 2 separate systems.
 Xquik enforces the account buckets documented above. X also enforces upstream
 limits for connected accounts and service access.
 
-| Limit owner        | Typical scope                                      | Client-visible signal                           |
-| ------------------ | -------------------------------------------------- | ----------------------------------------------- |
-| Xquik              | Account plus HTTP method tier                      | `429 rate_limit_exceeded` and `Retry-After`     |
-| Xquik action guard | Follow, follower removal, connection, or login     | `429` with an action-specific error or cooldown |
-| X write service    | Connected X account and write action               | `x_rate_limited` or `x_daily_limit`             |
-| X read service     | Upstream tweet, profile, follower, or reply access | Default v1 can return `502 x_api_rate_limited`  |
+| Limit owner              | Typical scope                                      | Client-visible signal                           |
+| ------------------------ | -------------------------------------------------- | ----------------------------------------------- |
+| Xquik                    | Account plus HTTP method tier                      | `429 rate_limit_exceeded` and `Retry-After`     |
+| Xquik action guard       | Follow, follower removal, connection, or login     | `429` with an action-specific error or cooldown |
+| X write service          | Connected X account and write action               | `x_rate_limited` or `x_daily_limit`             |
+| X (Twitter) read service | Upstream tweet, profile, follower, or reply access | Default v1 can return `502 x_api_rate_limited`  |
 
 Official X API rate limits vary by endpoint and authentication context.
 They can apply per app, user token, or endpoint.
@@ -206,7 +206,7 @@ for the current official tables.
 
 {"\n"}
 
-Do not copy official X limits into an Xquik client limiter.
+Do not copy official X (Twitter) limits into an Xquik client limiter.
 Use the Xquik values on this page. Handle upstream codes separately.
 
 </section>
@@ -409,7 +409,7 @@ fixed-window limits. Configure one coordinator per Xquik account.
 
 <section>
 
-## Reduce Twitter API requests
+## Reduce X (Twitter) API requests
 
 The limit counts requests, not returned tweets or followers.
 Use each endpoint's largest suitable page size.
@@ -482,7 +482,7 @@ Keep those alerts separate.
 
 <section>
 
-## Twitter API rate-limit questions
+## X (Twitter) API rate-limit questions
 
 ### What does API rate limit exceeded mean?
 
@@ -490,7 +490,7 @@ The client sent more requests than one active window allows.
 Xquik returns `429 rate_limit_exceeded` for its own exhausted bucket.
 Wait for `Retry-After`, then retry the same idempotent read.
 
-### How long does a Twitter API rate limit last?
+### How long does an X (Twitter) API rate limit last?
 
 Xquik read windows last 1 second. Write and delete windows last 60 seconds.
 Connection safety windows last 15 minutes. Login cooldowns use dynamic waits.
@@ -525,7 +525,7 @@ First inspect `error`, `statusUrl`, `terminal`, and `safeToRetry`.
 Poll an active durable action instead of resending it.
 Use a new idempotency key only when `safeToRetry` is `true`.
 
-### How do I avoid Twitter API rate limits?
+### How do I avoid X (Twitter) API rate limits?
 
 Use larger pages, cursor checkpoints, batch routes, caches, and signed webhooks.
 Share one limiter across workers. Keep separate queues for each method bucket.

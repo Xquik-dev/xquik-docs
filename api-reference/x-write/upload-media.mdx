@@ -1,7 +1,7 @@
 ---
 title: "Upload media for tweets & DMs, X (Twitter) API docs"
 sidebarTitle: "Upload media"
-description: "Upload images, GIFs, and MP4 videos from a connected X account. Get mediaUrl for tweets and replies or mediaId for one direct message attachment. 10 credits."
+description: "Upload images, GIFs, and MP4 videos from a connected X account. Attach the mediaId to tweets, replies, or 1 direct message within 24 hours. 10 credits."
 endpoint: "POST /x/media"
 keywords:
   [
@@ -41,7 +41,7 @@ Skip this endpoint when a tweet already has public HTTPS media URLs. Call
 
 <section>
 
-## Use the Twitter API upload media workflow
+## Use the X (Twitter) API upload media workflow
 
 Send `multipart/form-data` for a file. Send `application/json` for a hosted
 URL. Authenticate with an API key or OAuth bearer token. Add one
@@ -117,24 +117,26 @@ Send one request, then poll its lifecycle.
 
 {"\n"}
 
-For multiple images, call once per file. Collect up to 4 `mediaUrl` values.
-Send them together in Create Tweet. DMs accept exactly 1 media ID. Schedulers
-store `mediaUrl` until send time. This endpoint does not schedule tweets.
+For multiple images, call once per file. Collect up to 4 `mediaId` values.
+Send them together in Create Tweet `media_ids`. DMs accept exactly 1 media ID.
+Media IDs expire 24 hours after upload. Schedulers that post later store
+`mediaUrl` until send time. This endpoint does not schedule tweets.
 
 </section>
 
 <section>
 
-## Store the Twitter API media upload receipt
+## Store the X (Twitter) API media upload receipt
 
-| Output     | Next request           | Rule                                               |
-| ---------- | ---------------------- | -------------------------------------------------- |
-| `mediaUrl` | Tweet or reply `media` | Send up to 4 image URLs or 1 MP4 URL up to 100 MB. |
-| `mediaId`  | DM `media_ids`         | Send exactly 1 media ID.                           |
+| Output     | Next request               | Rule                                                  |
+| ---------- | -------------------------- | ----------------------------------------------------- |
+| `mediaUrl` | Tweet or reply `media`     | Send up to 4 image URLs or 1 MP4 URL up to 100 MB.    |
+| `mediaId`  | Tweet or reply `media_ids` | Send up to 4 image IDs or 1 video ID within 24 hours. |
+| `mediaId`  | DM `media_ids`             | Send exactly 1 media ID.                              |
 
 Store the account, success, source reference, and idempotency key with each
 receipt. For replies, add `reply_to_tweet_id` in Create Tweet.
-Never send `media_ids` to Create Tweet. Use public `mediaUrl` values.
+Send `mediaUrl` values in `media` or `mediaId` values in `media_ids`, never both.
 Tweet and reply writes cost 30 credits, plus media surcharges.
 DM writes cost 10 credits.
 
@@ -142,7 +144,7 @@ DM writes cost 10 credits.
 
 <section>
 
-## Fix Twitter media upload API errors
+## Fix X (Twitter) media upload API errors
 
 Fix invalid fields or content types after 400. Replace credentials after 401.
 Add credits after 402. Reconnect the X account after 403. Connect a missing
@@ -171,7 +173,7 @@ or 503.
 
 | Body parameter  | Type      | Required | Description                                                                                                             |
 | --------------- | --------- | -------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `account`       | `string`  | Yes      | A connected X username or account ID. The account performs the upload.                                                  |
+| `account`       | `string`  | Yes      | A connected X (Twitter) username or account ID. The account performs the upload.                                        |
 | `file`          | `binary`  | No       | Required without `url`. Accepts AVIF, GIF, JPEG, PNG, WebP, or MP4.                                                     |
 | `url`           | `string`  | No       | Required without `file`. Provide a public HTTPS URL. AI agents and MCP clients can send URLs instead of binary uploads. |
 | `is_long_video` | `boolean` | No       | Multipart MP4 uploads only. Set `true` when the video exceeds 140 seconds. Defaults to `false`.                         |

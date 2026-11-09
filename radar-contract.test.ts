@@ -39,7 +39,7 @@ const REQUIRED_RADAR_PAGE_COPY = [
   "`und` means the source did not identify a language.",
   "`estimatedUpvotes` and `estimatedDownvotes` as estimates",
   "Radar returns no comment bodies.",
-  "`xHandle` | Founder X username without `@`",
+  "`xHandle` | Founder X (Twitter) username without `@`",
   "`metadata.rank` is the revenue rank reported by the source",
   "The top-level `imageUrl` contains the startup logo",
   '"source": "github"',

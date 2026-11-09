@@ -98,9 +98,9 @@ const CONTENT_REQUIREMENTS: readonly ContentRequirement[] = [
       "Join communities in controlled batches",
       "Verify visible membership",
       "Recover from join failures",
-      "Find Twitter communities before joining",
+      "Find X (Twitter) communities before joining",
       "Explain community post visibility",
-      "How to join a Twitter community with Xquik?",
+      "How to join an X (Twitter) community with Xquik?",
     ],
   },
   {
@@ -108,8 +108,8 @@ const CONTENT_REQUIREMENTS: readonly ContentRequirement[] = [
     phrases: [
       "Archive the unfiltered community feed",
       "Feed decision",
-      "Are Twitter community posts public or private?",
-      "Where can I find analytics for X community posts?",
+      "Are X (Twitter) community posts public or private?",
+      "Where can I find analytics for X (Twitter) community posts?",
       "Can this API schedule or moderate community posts?",
       "Audit a cursor-based community feed",
       "Keep community tweet authors and media",
@@ -157,7 +157,7 @@ const CONTENT_REQUIREMENTS: readonly ContentRequirement[] = [
   {
     file: "api-reference/x-write/delete-community.mdx",
     phrases: [
-      "How to delete a Twitter community through REST",
+      "How to delete an X (Twitter) community through REST",
       "route removes the community, not the connected X account.",
       "Use [Leave Community](/api-reference/x-write/leave-community) to remove one",
     ],
@@ -166,8 +166,8 @@ const CONTENT_REQUIREMENTS: readonly ContentRequirement[] = [
     file: "api-reference/x-write/leave-community.mdx",
     phrases: [
       "Archive community posts before leaving",
-      "Verify the Twitter community departure",
-      "Leave a Twitter community on PC or phone",
+      "Verify the X (Twitter) community departure",
+      "Leave an X (Twitter) community on PC or phone",
       "Recover from leave community failures",
     ],
   },
@@ -181,7 +181,7 @@ const CONTENT_REQUIREMENTS: readonly ContentRequirement[] = [
   },
   {
     file: "api-reference/x-write/follow.mdx",
-    phrases: ["Verify the Twitter follow API result"],
+    phrases: ["Verify the X (Twitter) follow API result"],
   },
   {
     file: "api-reference/x/followers-you-know.mdx",
