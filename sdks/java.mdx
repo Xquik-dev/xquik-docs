@@ -66,7 +66,13 @@ Or add the Maven dependency.
 export X_TWITTER_SCRAPER_API_KEY="xq_YOUR_KEY_HERE"
 ```
 
-`XTwitterScraperOkHttpClient.fromEnv()` reads `X_TWITTER_SCRAPER_API_KEY`, `X_TWITTER_SCRAPER_BEARER_TOKEN`, and `X_TWITTER_SCRAPER_BASE_URL`.
+Build the client from the environment.
+
+```java
+XTwitterScraperClient client = XTwitterScraperOkHttpClient.fromEnv();
+```
+
+It reads `X_TWITTER_SCRAPER_API_KEY`, `X_TWITTER_SCRAPER_BEARER_TOKEN`, and `X_TWITTER_SCRAPER_BASE_URL`.
 
 </section>
 
@@ -159,7 +165,14 @@ if (cursor != null && !cursor.isEmpty()) {
 ExtractionRetrieveResponse page = client.extractions().retrieve(pageParams.build());
 ```
 
-Store `job.id()` before polling. With it, a queue retry can resume with `client.extractions().retrieve(job.id())`. The retry can also repeat `client.extractions().exportResults(...)` after completion. Stream `page.results()` to `Paths.get("xquik-replies.jsonl")`. Keep `page.nextCursor()` as the checkpoint while streaming replies to JSON Lines. Pass it back as `cursor` on the next `ExtractionRetrieveParams.Builder pageParams`.
+Store `job.id()` before polling. With it, a queue retry can resume the read and, after completion, repeat the export.
+
+```java
+client.extractions().retrieve(job.id())
+client.extractions().exportResults(...)
+```
+
+Stream `page.results()` to `Paths.get("xquik-replies.jsonl")`. Keep `page.nextCursor()` as the checkpoint while streaming replies to JSON Lines. Pass it back as `cursor` on the next page request, which the code above builds with the `ExtractionRetrieveParams` builder.
 
 {"\n"}
 
@@ -184,7 +197,14 @@ try (HttpResponse export = client.extractions().exportResults(
 }
 ```
 
-Repeat the export with `ExtractionExportResultsParams.Format.JSON` to write `Paths.get("xquik-replies.json")` and `ExtractionExportResultsParams.Format.XLSX` to write `Paths.get("xquik-replies.xlsx")`. Use `xquik-replies.jsonl` for queue replay or warehouse loads and `xquik-replies.json` for app ingestion. Use `xquik-replies.csv` for CRM import and `xquik-replies.xlsx` for analyst handoff.
+Repeat the export with each format to write `Paths.get("xquik-replies.json")` and `Paths.get("xquik-replies.xlsx")`.
+
+```java
+ExtractionExportResultsParams.Format.JSON
+ExtractionExportResultsParams.Format.XLSX
+```
+
+Use `xquik-replies.jsonl` for queue replay or warehouse loads and `xquik-replies.json` for app ingestion. Use `xquik-replies.csv` for CRM import and `xquik-replies.xlsx` for analyst handoff.
 
 </section>
 

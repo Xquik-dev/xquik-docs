@@ -727,7 +727,7 @@ const REQUIRED_RUBY_SDK_WORKFLOW_SNIPPETS = [
   "`xquik-replies.json` for app ingestion",
   "`xquik-replies.csv` for CRM import",
   "`xquik-replies.xlsx` for analyst handoff",
-  "`client.extractions.export_results` supports `:csv`, `:json`, and `:xlsx`",
+  "The export call above takes `:csv`, `:json`, or `:xlsx` as `format_`",
   "The cost is 1 credit per reply extracted or returned.",
   "`client.x.tweets.create`",
   "Use `client.request` to capture the durable write action.",
