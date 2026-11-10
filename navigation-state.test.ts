@@ -27,7 +27,9 @@ const docsConfigSchema = z.looseObject({
 
 type DocsConfig = z.infer<typeof docsConfigSchema>;
 
+const MAIN_SITE_PAGE = /^https:\/\/xquik\.com\/en\/[a-z0-9/-]+$/u;
 const RETIRED_COMPARISON_PAGES = [
+  "chirrapp",
   "antwork",
   "audiense",
   "black-magic",
@@ -59,16 +61,6 @@ const RETIRED_COMPARISON_PAGES = [
   "zapier",
 ] as const;
 
-const API_DROPDOWNS = [
-  "Start & account",
-  "X tweets",
-  "X users",
-  "X communities & data",
-  "X write",
-  "Automation",
-  "Content",
-] as const;
-
 const PRIORITY_API_ROUTES = [
   "/api-reference/account/subscription-checkout",
   "/api-reference/draws/twitter-giveaway-history",
@@ -85,6 +77,16 @@ const PRIORITY_API_ROUTES = [
   "/api-reference/x/retweeters",
 ] as const;
 
+const ACCOUNT_GROUPS = [
+  "API keys",
+  "Account",
+  "Activity",
+  "Credits",
+  "Guest wallets",
+  "Support",
+  "X accounts",
+] as const;
+
 function docsConfig(): DocsConfig {
   return docsConfigSchema.parse(JSON.parse(readFileSync("docs.json", "utf8")));
 }
@@ -97,6 +99,12 @@ function findTab(config: DocsConfig, tabName: string): NavigationNode {
   }
 
   return tab;
+}
+
+function groupNames(tabName: string): string[] {
+  return (findTab(docsConfig(), tabName).groups ?? []).map(
+    (group): string => group.group ?? "(unnamed)",
+  );
 }
 
 describe("navigation default state", (): void => {
@@ -115,18 +123,49 @@ describe("navigation default state", (): void => {
     expect(bannerContent).not.toContain("trademarks of X Corp.");
   });
 
-  it("keeps every API section in its own dropdown with pages", (): void => {
+  it("shows every API page in the sidebar without a dropdown", (): void => {
     expect.assertions(2);
 
-    const dropdowns = findTab(docsConfig(), "API reference").dropdowns ?? [];
-    const emptySections = dropdowns
-      .filter((section): boolean => (section.groups ?? []).length === 0)
-      .map((section): string => section.dropdown ?? "(unnamed)");
+    const apiTab = findTab(docsConfig(), "API reference");
+    const emptyGroups = (apiTab.groups ?? [])
+      .filter((group): boolean => (group.pages ?? []).length === 0)
+      .map((group): string => group.group ?? "(unnamed)");
 
-    expect(dropdowns.map((section): string | undefined => section.dropdown)).toStrictEqual([
-      ...API_DROPDOWNS,
+    expect(apiTab.dropdowns).toBeUndefined();
+    expect(emptyGroups).toStrictEqual([]);
+  });
+
+  it("lists what Xquik reads and writes before account management", (): void => {
+    expect.assertions(3);
+
+    const groups = groupNames("API reference");
+
+    expect(groups.slice(0, 2)).toStrictEqual(["Overview", "Tweets"]);
+    expect(groups.indexOf("X write")).toBeLessThan(groups.indexOf("Monitors"));
+    expect(groups.slice(-ACCOUNT_GROUPS.length).sort()).toStrictEqual([...ACCOUNT_GROUPS]);
+  });
+
+  it("opens the tweets group with search and its filters", (): void => {
+    expect.assertions(1);
+
+    const tweets = (findTab(docsConfig(), "API reference").groups ?? []).find(
+      (group): boolean => group.group === "Tweets",
+    );
+
+    expect((tweets?.pages ?? []).slice(0, 2)).toStrictEqual([
+      "api-reference/x/search-tweets",
+      "api-reference/x/tweet-filters",
     ]);
-    expect(emptySections).toStrictEqual([]);
+  });
+
+  it("opens the guides with getting started, the MCP server and webhooks", (): void => {
+    expect.assertions(1);
+
+    expect(groupNames("Guides").slice(0, 3)).toStrictEqual([
+      "Getting started",
+      "MCP server",
+      "Webhooks",
+    ]);
   });
 
   it("keeps MDX API snippets pointed at the public API origin", (): void => {
@@ -193,7 +232,9 @@ describe("navigation default state", (): void => {
       .filter(({ source }): boolean => /^\/alternatives\/[a-z0-9-]+$/u.test(source))
       .flatMap(({ source, destination }): readonly string[] => [
         ...(existsSync(`${source.slice(1)}.mdx`) ? [`${source} still has a page`] : []),
-        ...(existsSync(`${destination.slice(1)}.mdx`) ? [] : [`${source} lands on a missing page`]),
+        ...(MAIN_SITE_PAGE.test(destination) || existsSync(`${destination.slice(1)}.mdx`)
+          ? []
+          : [`${source} lands on a missing page`]),
         ...(sources.has(destination) ? [`${source} lands on another redirect`] : []),
       ]);
 

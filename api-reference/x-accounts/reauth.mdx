@@ -20,7 +20,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <Warning>
 
-Re-authenticate X accounts at [dashboard.xquik.com/account](https://dashboard.xquik.com/account). This route serves only a signed-in dashboard session. That way, X passwords never pass through an API key. API keys and OAuth tokens get `403 session_required`.
+This takes a dashboard session, or a key with the **Connect X accounts** permission. Turn it on at [dashboard.xquik.com/api-keys](https://dashboard.xquik.com/api-keys). Full access doesn't include it. A key without it gets `403 x_account_connect_permission_required`. OAuth tokens and MCP tools get `403 session_required`. With a key, your backend receives the new X password. Read [your duties](/guides/connect-x-accounts-for-your-users#your-duties) first.
 
 </Warning>
 
@@ -108,11 +108,12 @@ curl -X POST https://dashboard.xquik.com/api/v1/x/accounts/3/reauth \
 
 ## Headers
 
-| Header         | Type     | Required | Description                                                                                                            |
-| -------------- | -------- | -------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `Cookie`       | `string` | Yes      | Your signed-in dashboard session cookie, `__Host-xquik_session`. API keys and OAuth tokens get `403 session_required`. |
-| `Origin`       | `string` | Yes      | Must be `https://dashboard.xquik.com`, sent with `Sec-Fetch-Site` set to `same-origin`. The dashboard sends both.      |
-| `Content-Type` | `string` | Yes      | Must be `application/json`.                                                                                            |
+| Header         | Type     | Required       | Description                                                                                                       |
+| -------------- | -------- | -------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `x-api-key`    | `string` | Or `Cookie`    | An API key holding the Connect X accounts permission.                                                             |
+| `Cookie`       | `string` | Or `x-api-key` | Your signed-in dashboard session cookie, `__Host-xquik_session`.                                                  |
+| `Origin`       | `string` | With `Cookie`  | Must be `https://dashboard.xquik.com`, sent with `Sec-Fetch-Site` set to `same-origin`. The dashboard sends both. |
+| `Content-Type` | `string` | Yes            | Must be `application/json`.                                                                                       |
 
 </section>
 
@@ -120,11 +121,12 @@ curl -X POST https://dashboard.xquik.com/api/v1/x/accounts/3/reauth \
 
 ## Body
 
-| Body parameter | Type     | Required | Description                                                                                                              |
-| -------------- | -------- | -------- | ------------------------------------------------------------------------------------------------------------------------ |
-| `password`     | `string` | Yes      | Current password for the X account.                                                                                      |
-| `totp_secret`  | `string` | No       | Replacement Authenticator App TOTP secret. Omit it to reuse the saved key. Send the base32 secret, not the 6-digit code. |
-| `email`        | `string` | No       | Email for the X account. Updates the stored email during re-authentication.                                              |
+| Body parameter          | Type     | Required | Description                                                                                                              |
+| ----------------------- | -------- | -------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `password`              | `string` | Yes      | Current password for the X account.                                                                                      |
+| `totp_secret`           | `string` | No       | Replacement Authenticator App TOTP secret. Omit it to reuse the saved key. Send the base32 secret, not the 6-digit code. |
+| `email`                 | `string` | No       | Email for the X account. Updates the stored email during re-authentication.                                              |
+| `connection_attempt_id` | `string` | No       | Your own attempt ID, `xatt_` and 32 lowercase hex characters. Read the result with it if the response never arrives.     |
 
 </section>
 
@@ -191,8 +193,8 @@ See [2FA secret key setup](/api-reference/x-accounts/connect#2fa-secret-key-setu
 | Field       | Type     | Description                                                                                                                                                                                                |
 | ----------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `id`        | `string` | Account ID.                                                                                                                                                                                                |
-| `xUsername` | `string` | X username.                                                                                                                                                                                                |
-| `xUserId`   | `string` | X user ID.                                                                                                                                                                                                 |
+| `xUsername` | `string` | X (Twitter) username.                                                                                                                                                                                      |
+| `xUserId`   | `string` | X (Twitter) user ID.                                                                                                                                                                                       |
 | `status`    | `string` | Account status (for example `active`).                                                                                                                                                                     |
 | `health`    | `string` | Derived login and cookie health. One of `healthy`, `locked`, `needsReauth`, `recovering`, `suspended`, `temporaryIssue`. See [Account health](/api-reference/x-accounts/list#account-health) for meanings. |
 | `createdAt` | `string` | ISO 8601 creation timestamp.                                                                                                                                                                               |
@@ -232,9 +234,21 @@ The provided account ID is not a valid format.
 
 Missing or invalid API key.
 
+### 202 Sign-in continues
+
+A key's sign-in past 75 seconds answers `pending` with a `Location` status URL. Wait for `Retry-After`, then call [Get X Account Connection Status](/api-reference/x-accounts/connection-attempt). X may also ask for an email code, which answers `requires_email_code`. Send it to [Submit Email Code](/api-reference/x-accounts/submit-challenge).
+
 ### 404 Not found
 
 No account exists with this ID, or it belongs to a different Xquik account.
+
+### 409 Another X account
+
+`{ "error": "x_account_mismatch", "message": "This sign-in belongs to a different X account. Connect it as a new account instead." }`
+
+{"\n"}
+
+The stored login stays as it was.
 
 ### 429 Login cooldown
 
@@ -246,11 +260,11 @@ A prior login attempt triggered a cooldown (for example, X flagged the session).
 
 ### 429 Rate limited
 
-`{ "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 60 }`
+`{ "error": "rate_limit_exceeded", "message": "Connection safety limit reached. Try again later.", "retryAfter": 900 }`
 
 {"\n"}
 
-Wait for the `Retry-After` value before starting another re-authentication request.
+You sent too many failed logins in 15 minutes. The limit counts this caller or this X account. Wait the `Retry-After` seconds, then try once. Each account a caller connects raises its limit. See the [rate limits guide](/guides/rate-limits) for details.
 
 ### 422 Login failed
 
@@ -289,12 +303,24 @@ The X re-authentication service is temporarily unavailable. Retry after a short 
 
 ## Response examples
 
+### 202 example
+
+```json
+{
+  "object": "x_account_connection_attempt",
+  "id": "xatt_0123456789abcdef0123456789abcdef",
+  "status": "pending",
+  "pollAfterMs": 3000
+}
+```
+
 - **400** `{ "error": "invalid_input", "message": "Invalid input. Check the request body." }`
 - **401** `{ "error": "unauthenticated", "message": "Authentication required. Provide a valid API key or bearer token." }`
-- **403** `{ "error": "session_required", "message": "API keys & OAuth tokens cannot use this route. Sign in at dashboard.xquik.com/account instead." }`
+- **403** `{ "error": "api_key_paused", "message": "This API key is paused. Resume it at dashboard.xquik.com/api-keys to use it again." }`
 - **404** `{ "error": "account_not_found", "message": "X account not found." }`
+- **409** `{ "error": "x_account_mismatch", "message": "This sign-in belongs to a different X account. Connect it as a new account instead." }`
 - **422** `{ "error": "login_failed", "message": "Login failed. Check credentials and try again." }`
-- **429** `{ "error": "login_cooldown", "message": "Login is temporarily paused. Try again when the countdown ends." }`
+- **429** `{ "error": "rate_limit_exceeded", "message": "Too many requests. Retry later." }`
 - **503** `{ "error": "service_unavailable", "message": "Service temporarily unavailable. Try again later." }`
 
 </section>

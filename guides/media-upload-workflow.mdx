@@ -19,13 +19,13 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-This workflow returns a hosted media URL for tweet posts. It also returns an uploaded media ID for direct messages. Use it when a product, support, CRM, or AI agent system needs either. Xquik accepts local files with `multipart/form-data` and HTTPS media URLs with `application/json`.
+This workflow returns an uploaded media ID for tweets, replies, and direct messages. It also returns a hosted media URL for tweet `media` arrays. Use it when a product, support, CRM, or AI agent system needs either. Xquik accepts local files with `multipart/form-data` and HTTPS media URLs with `application/json`.
 
-You may already have public image URLs or a public MP4 video URL. If so, skip `POST /x/media` for a tweet or reply. Pass those URLs in the `media` array on `POST /x/tweets`. Send up to 4 images or exactly 1 MP4 video up to 100 MB. `POST /x/media` hosts local files, validates a generated media URL, or produces a DM `mediaId`. Use it when you need one of those.
+You may already have public image URLs or a public MP4 video URL. If so, skip `POST /x/media` for a tweet or reply. Pass those URLs in the `media` array on `POST /x/tweets`. Send up to 4 images or exactly 1 MP4 video up to 100 MB. Use `POST /x/media` to host local files, check generated URLs, or get a `mediaId`.
 
 <Callout icon="video" color="#2563eb">
 
-**Need to post an MP4 tweet?** If the MP4 is already a public HTTPS URL, skip upload. In that case call [Create Tweet](/api-reference/x-write/create-tweet) with `media: ["https://example.com/video.mp4"]`. Use `POST /x/media` first only to host a local file or validate a generated URL. Then pass the returned `mediaUrl` to `POST /x/tweets`.
+**Need to post an MP4 tweet?** If the MP4 is already a public HTTPS URL, skip upload. In that case call [Create Tweet](/api-reference/x-write/create-tweet) with `media: ["https://example.com/video.mp4"]`. For a local file, call `POST /x/media` first. Then pass the returned `mediaId` in `media_ids` on `POST /x/tweets`.
 
 </Callout>
 
@@ -55,13 +55,13 @@ You may already have public image URLs or a public MP4 video URL. If so, skip `P
 
   <Card title="Post tweets with media uploaded through Xquik" icon="image">
 
-    Pass returned `mediaUrl` in the `media` array on `POST /x/tweets`.
+    Pass returned `mediaId` values in the `media_ids` array on `POST /x/tweets`.
 
   </Card>
 
   <Card title="Post tweet replies with uploaded media" icon="message-square">
 
-    Pass `mediaUrl` plus `reply_to_tweet_id` on `POST /x/tweets`.
+    Pass `media_ids` plus `reply_to_tweet_id` on `POST /x/tweets`.
 
   </Card>
 
@@ -80,9 +80,9 @@ You may already have public image URLs or a public MP4 video URL. If so, skip `P
 
 <CardGroup cols={2}>
 
-  <Card title="DM attachment ID" icon="paperclip">
+  <Card title="Media ID" icon="paperclip">
 
-    `mediaId` is the uploaded media ID for one-item DM `media_ids` arrays. Media IDs are valid for 24 hours after upload.
+    `mediaId` is the uploaded media ID for tweet `media_ids` and one-item DM `media_ids` arrays. Media IDs are valid for 24 hours after upload.
 
   </Card>
 
@@ -112,9 +112,9 @@ You may already have public image URLs or a public MP4 video URL. If so, skip `P
 ## End-to-end media handoff
 
 Use one checkpoint object after upload and the downstream tweet, reply, or DM
-write. Keep the 2 fields separate. Tweets and replies use public
-`mediaUrl` values in `media`. DMs use the uploaded `mediaId` as the only
-`media_ids` item.
+write. Tweets and replies use the uploaded `mediaId` in `media_ids`. They can
+also take public `mediaUrl` values in `media`. DMs use the uploaded `mediaId`
+as the only `media_ids` item.
 
 ```json
 {
@@ -132,7 +132,7 @@ write. Keep the 2 fields separate. Tweets and replies use public
   "tweet_post": {
     "endpoint": "/api/v1/x/tweets",
     "account": "myxhandle",
-    "media": ["https://media.xquik.com/uploads/1893726451023847424.png"],
+    "media_ids": ["1893726451023847424"],
     "tweet_id": "1895432178065391234",
     "success": true,
     "charged_credits": "32"
@@ -154,11 +154,13 @@ write. Keep the 2 fields separate. Tweets and replies use public
     "success": true
   },
   "field_boundary": {
-    "tweet_media_field": "media",
-    "tweet_media_value": "mediaUrl",
+    "tweet_id_field": "media_ids",
+    "tweet_id_value": "mediaId",
+    "tweet_url_field": "media",
+    "tweet_url_value": "mediaUrl",
     "dm_media_field": "media_ids[0]",
     "dm_media_value": "mediaId",
-    "forbidden_tweet_field": "media_ids"
+    "forbidden_tweet_pair": ["media", "media_ids"]
   },
   "audit_row": {
     "record_type": "media_upload_handoff",
@@ -170,7 +172,7 @@ write. Keep the 2 fields separate. Tweets and replies use public
     "message_id": "1893726451029384192",
     "handoff_format": "jsonl"
   },
-  "handoff_state": "store_media_url_for_tweets_and_media_id_for_dms"
+  "handoff_state": "store_media_id_for_tweets_and_dms"
 }
 ```
 
@@ -182,15 +184,15 @@ write. Keep the 2 fields separate. Tweets and replies use public
 
   </Card>
 
-  <Card title="Tweet URL checkpoint" icon="send">
+  <Card title="Tweet media checkpoint" icon="send">
 
-    Store the public `mediaUrl` in `media`, plus returned `tweetId`, `chargedCredits`, and optional `writeActionId`.
+    Store `media_ids` or the public `mediaUrl` in `media`. Also store the returned `tweetId`, `chargedCredits`, and optional `writeActionId`.
 
   </Card>
 
-  <Card title="Reply URL checkpoint" icon="message-square">
+  <Card title="Reply media checkpoint" icon="message-square">
 
-    Store `reply_to_tweet_id`, public `mediaUrl`, returned `tweetId`, and pending confirmation state when present.
+    Store `reply_to_tweet_id`, `media_ids` or public `mediaUrl`, returned `tweetId`, and pending confirmation state when present.
 
   </Card>
 
@@ -202,7 +204,7 @@ write. Keep the 2 fields separate. Tweets and replies use public
 
   <Card title="Field boundary" icon="split">
 
-    Reject tweet handoffs that put uploaded media IDs in `media`. Also reject those that send `media_ids` to `POST /x/tweets`.
+    Reject tweet handoffs that put uploaded media IDs in `media`. Also reject those that send both `media` and `media_ids`.
 
   </Card>
 
@@ -279,7 +281,7 @@ curl -X POST https://xquik.com/api/v1/x/media \
 
 <section>
 
-## Step 2. Post a tweet or reply with mediaUrl
+## Step 2. Post a tweet or reply with mediaUrl or mediaId
 
 `POST /x/tweets` accepts public media URLs in `media`. Send up to 4 images or exactly 1 MP4 video up to 100 MB. Use the `mediaUrl` returned by `POST /x/media`. Text-only tweet or reply writes cost 30 credits. Attached media adds 2 credits per started MB across all files.
 
@@ -319,7 +321,20 @@ Store the action `id`, `request.hash`, `billing`, `result`, original `mediaUrl`,
 
 {"\n"}
 
-Do not send `media_ids` to `POST /x/tweets`. That endpoint rejects `media_ids` and expects the `media` URL array instead.
+To skip the URL, send the returned `mediaId` in `media_ids` instead.
+Send up to 4 image IDs or exactly 1 video ID within 24 hours.
+Never send `media` and `media_ids` together.
+
+```bash
+curl -X POST https://xquik.com/api/v1/x/tweets \
+  -H "x-api-key: xq_YOUR_KEY_HERE" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "account": "myxhandle",
+    "text": "Product update with a new screenshot.",
+    "media_ids": ["1893726451023847424"]
+  }' | jq
+```
 
 </section>
 
@@ -391,7 +406,7 @@ For queues, CRM syncs, warehouse loads, or agent memory, write to `xquik-media-h
 }
 ```
 
-Use `media_url` for tweet and reply `media` arrays. Use `media_id` for the single DM `media_ids` item.
+Use `media_id` for tweet and reply `media_ids`, or `media_url` for their `media` arrays. Use `media_id` for the single DM `media_ids` item.
 
 </section>
 
@@ -452,6 +467,12 @@ Upload media costs 10 credits per upload call. Posting a tweet or reply is a sep
 
   </Card>
 
+  <Card title="Media ID not found" icon="circle-alert">
+
+    Status `400`. Error `media_not_uploaded`. Upload the file again from the posting account, then post within 24 hours.
+
+  </Card>
+
   <Card title="Rate limit or temporary failure" icon="timer-reset">
 
     Status `429` or `503`. Retry with exponential backoff and respect `Retry-After` when present.
@@ -469,13 +490,13 @@ Upload media costs 10 credits per upload call. Posting a tweet or reply is a sep
 
   <Card title="Tweet workflow" icon="send">
 
-    Save `mediaUrl` and pass it to `POST /x/tweets` as `media`.
+    Save `mediaId` and pass it to `POST /x/tweets` in `media_ids`, or pass `mediaUrl` in `media`.
 
   </Card>
 
   <Card title="Reply workflow" icon="message-square">
 
-    Save the parent tweet ID, `mediaUrl`, returned `tweetId`, and any `writeActionId`.
+    Save the parent tweet ID, `mediaId` or `mediaUrl`, returned `tweetId`, and any `writeActionId`.
 
   </Card>
 
