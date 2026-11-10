@@ -184,7 +184,8 @@ const REQUIRED_SDK_OVERVIEW_SNIPPETS = [
   '<Card title="Go" icon="terminal" href="/sdks/go">',
   "Install with `go get github.com/Xquik-dev/x-twitter-scraper-go`.",
   '<Card title="Java" icon="coffee" href="/sdks/java">',
-  "Maven Central publication is pending. Build from source at",
+  "Install `com.xquik.api:x-twitter-scraper-java` from Maven Central.",
+  "Install `com.xquik.api:x-twitter-scraper-kotlin` from Maven Central.",
   '<Card title="Kotlin" icon="blocks" href="/sdks/kotlin">',
   '<Card title="C# / .NET" icon="hash" href="/sdks/csharp-x-api-sdk">',
   "Install with `dotnet add package XTwitterScraper`.",
@@ -234,6 +235,7 @@ const REQUIRED_SDK_OVERVIEW_SNIPPETS = [
 ] as const;
 
 const FORBIDDEN_SDK_OVERVIEW_SNIPPETS = [
+  "Maven Central publication is pending.",
   "| SDK | Install | Source |",
   "| TypeScript | `npm install x-twitter-scraper` |",
   "| Python | `pip install x_twitter_scraper` |",
@@ -633,6 +635,7 @@ const FORBIDDEN_PYTHON_SDK_RAW_SEARCH_SNIPPETS = [
 ] as const;
 
 const REQUIRED_RUBY_SDK_WORKFLOW_SNIPPETS = [
+  'gem "x-twitter-scraper", "~> 0.10.6"',
   "Search tweets and write durable JSON Lines handoff rows.",
   "page = client.x.tweets.search(",
   "page.tweets.each do |tweet|",
@@ -1194,6 +1197,9 @@ const FORBIDDEN_PHP_SDK_WEAK_SEARCH_SNIPPETS = [
 ] as const;
 
 const REQUIRED_JAVA_SDK_WORKFLOW_SNIPPETS = [
+  'implementation("com.xquik.api:x-twitter-scraper-java:0.10.3")',
+  "<groupId>com.xquik.api</groupId>",
+  "<artifactId>x-twitter-scraper-java</artifactId>",
   "Search tweets and write durable JSON Lines handoff rows.",
   "PaginatedTweets page = client.x().tweets().search(params);",
   "for (SearchTweet tweet : page.tweets()) {",
@@ -1342,6 +1348,9 @@ const REQUIRED_JAVA_SDK_WORKFLOW_SNIPPETS = [
 ] as const;
 
 const FORBIDDEN_JAVA_SDK_WEAK_SEARCH_SNIPPETS = [
+  "Maven Central publication is pending.",
+  "publishToMavenLocal",
+  "com/x_twitter_scraper/api/x-twitter-scraper-java",
   "PaginatedTweets tweets = client.x().tweets().search(params);",
   "Write `page.tweets()` as JSON Lines to `xquik-tweet-search.jsonl`",
   'row.put("id", tweet.id());',
@@ -1352,6 +1361,9 @@ const FORBIDDEN_JAVA_SDK_WEAK_SEARCH_SNIPPETS = [
 ] as const;
 
 const REQUIRED_KOTLIN_SDK_WORKFLOW_SNIPPETS = [
+  'implementation("com.xquik.api:x-twitter-scraper-kotlin:0.9.3")',
+  "<groupId>com.xquik.api</groupId>",
+  "<artifactId>x-twitter-scraper-kotlin</artifactId>",
   "Search tweets and write durable JSON Lines handoff rows.",
   "val page: PaginatedTweets = client.x().tweets().search(params)",
   "for (tweet: SearchTweet in page.tweets()) {",
@@ -1500,6 +1512,10 @@ const REQUIRED_KOTLIN_SDK_WORKFLOW_SNIPPETS = [
 ] as const;
 
 const FORBIDDEN_KOTLIN_SDK_WEAK_SEARCH_SNIPPETS = [
+  "Maven Central publication is pending.",
+  "Build locally until Maven Central publication.",
+  "publishToMavenLocal",
+  "com/x_twitter_scraper/api/x-twitter-scraper-kotlin",
   "val tweets: PaginatedTweets = client.x().tweets().search(params)",
   "Write `page.tweets()` as JSON Lines to `xquik-tweet-search.jsonl`",
   '"id" to tweet.id(),',
@@ -1538,7 +1554,7 @@ const FORBIDDEN_TWEET_SEARCH_DATE_WINDOW_SNIPPETS = [
 const REQUIRED_TERRAFORM_PROVIDER_WORKFLOW_SNIPPETS = [
   "Install from the [Terraform Registry](https://registry.terraform.io/providers/Xquik-dev/x-twitter-scraper/latest).",
   'source  = "Xquik-dev/x-twitter-scraper"',
-  'version = "~> 0.7.1"',
+  'version = "~> 0.9.0"',
   "Run `terraform init` before planning or applying resources.",
   "## Tweet monitor workflow to signed webhooks",
   "`x-twitter-scraper_monitor`",
