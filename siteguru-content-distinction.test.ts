@@ -203,6 +203,10 @@ const CONTENT_REQUIREMENTS: readonly ContentRequirement[] = [
     phrases: ["Confirm like removal"],
   },
   {
+    file: "alternatives/postproxy.mdx",
+    phrases: ["Postproxy webhook & quota trial"],
+  },
+  {
     file: "alternatives/hypefury.mdx",
     phrases: ["Hypefury trial evidence"],
   },

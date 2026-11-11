@@ -4566,7 +4566,8 @@ paths:
       description:
         Downloads completed extraction results in the requested format. JSON
         rows also keep each result's nested `enrichmentData`, as `GET
-        /extractions/{id}` returns it.
+        /extractions/{id}` returns it. A count X didn't send stays empty, never
+        0.
       summary: Export extraction results
       tags: [Extractions]
       security: [{ apiKey: [] }, { oauthBearer: [] }]
@@ -6685,17 +6686,17 @@ paths:
             Query, Tweet ID, or URL. Alias query. Optional when fromUser,
             keywords or another field forms the search. Without either, it
             answers 400 missing_query. Hyphens negate terms. Use exactPhrase for
-            literals. `include:nativeretweets` keeps the reposts of the account
-            named in `from:`. X lists a repost only under the account that
-            reposted it, so a mention search finds almost none. `from:` &
-            `-from:` take a handle or a user ID, also in an OR group. Valid
-            bounds apply per page. `since:` & `until:` dates are UTC days,
-            written YYYY-MM-DD. 25/12/2026 & 12/25/2026 also work. 04/01/2026
-            fits both orders & answers 424 with the form to write. `since_time:`
-            & `until_time:` take Unix seconds or an ISO 8601 time. `list:` takes
-            a public List's ID. A private List answers 404 list_not_found. Keep
-            q to 512 characters. A longer one can answer 424 before any read, at
-            no charge.
+            literals. A `from:` search lists the account's reposts, as X search
+            does, and `-filter:nativeretweets` leaves them out. X lists a repost
+            only under the account that reposted it, so a mention search finds
+            almost none. `from:` & `-from:` take a handle or a user ID, also in
+            an OR group. Valid bounds apply per page. `since:` & `until:` dates
+            are UTC days, written YYYY-MM-DD. 25/12/2026 & 12/25/2026 also work.
+            04/01/2026 fits both orders & answers 424 with the form to write.
+            `since_time:` & `until_time:` take Unix seconds or an ISO 8601 time.
+            `list:` takes a public List's ID. A private List answers 404
+            list_not_found. Keep q to 512 characters. A longer one can answer
+            424 before any read, at no charge.
         - name: queryType
           in: query
           required: false
@@ -8184,7 +8185,8 @@ paths:
 
         Saving the same media again is free. Removed media isn't billed, & a
         single-post download with all its media removed returns
-        `media_unavailable`.
+        `media_unavailable`. Bulk media downloads list each post they left out &
+        why.
       summary: Download images and videos from tweets
       tags:
         - Media
@@ -8225,7 +8227,8 @@ paths:
                     Tweet URLs or IDs. An item that names no post gets 400
                     `invalid_tweet_id`, which says which item. Posts Xquik had
                     no time to read come back in `unprocessedTweetIds`, with no
-                    charge. Send them again.
+                    charge. Send them again. The answer also names posts with no
+                    media & posts Xquik couldn't read.
                   example: ['1234567890', '1234567891']
                 imageShows:
                   type: string
@@ -8271,9 +8274,10 @@ paths:
             'Media download result. A single download returns tweetId,
             galleryUrl, cacheHit & the saved files in items. A bulk download
             returns galleryUrl, totalTweets & totalMedia, plus
-            unprocessedTweetIds when time ran out first. With imageShows, the
-            answer adds imageFilter, & when no photo shows it, items is empty or
-            totalTweets is 0 with no galleryUrl.'
+            unprocessedTweetIds when time ran out first, noMediaTweetIds &
+            failedTweetIds. With imageShows, the answer adds imageFilter, & when
+            no photo shows it, items is empty or totalTweets is 0 with no
+            galleryUrl.'
           content:
             application/json:
               schema:
@@ -8424,6 +8428,19 @@ paths:
                     items:
                       type: string
                     example: ['1234567892']
+                  noMediaTweetIds:
+                    type: array
+                    description: Posts with no media to save, at no charge.
+                    items:
+                      type: string
+                    example: ['1234567893']
+                  failedTweetIds:
+                    type: array
+                    description:
+                      Posts Xquik couldn't read, at no charge. Send them again.
+                    items:
+                      type: string
+                    example: ['1234567894']
               example:
                 tweetId: '1234567890'
                 galleryUrl: 'https://xquik.com/gallery/abc123'
@@ -11492,6 +11509,7 @@ paths:
           description:
             Pagination cursor for bookmarks. Also read as next_cursor,
             next_token, pagination_token or continuation_token.
+        - $ref: '#/components/parameters/ResultPageSize'
       responses:
         '200':
           description: List of bookmarked tweets
@@ -11671,6 +11689,7 @@ paths:
             Comma-separated tweet IDs to exclude from results. Xquik ignores
             empty entries. A longer URL fails at the edge before Xquik reads it.
         - $ref: '#/components/parameters/CollectionCursor'
+        - $ref: '#/components/parameters/ResultPageSize'
       responses:
         '200':
           description: List of timeline tweets
@@ -17630,9 +17649,8 @@ components:
         enum: ['admission', 'reads']
     XquikCause:
       description: >
-        Xquik answers 502 with `X-Xquik-Cause` & `Retry-After` when X fails a
-        read on every account. The value x names X as the cause. Xquik's own
-        failures omit it.
+        Xquik answers 502 with `X-Xquik-Cause` & `Retry-After` when X fails the
+        read. The value x names X as the cause. Xquik's own failures omit it.
       schema:
         type: string
         enum: ['x']
@@ -18553,7 +18571,8 @@ components:
     WriteRejected:
       description: >
         X rejected the write or download. Error.code says why. The
-        `x_automation_refused` code needs no wait. The `x_reply_not_allowed` &
+        `x_automation_refused` code needs no wait, except on a DM. Wait 6 hours
+        before that account sends another DM. The `x_reply_not_allowed` &
         `x_reply_target_unavailable` codes repeat X's refusal of a reply, with
         `Retry-After`. They hold for 1 hour, then 4 hours after X refuses it
         again & 24 hours after each later refusal. Media can fail on its URL,
@@ -18745,7 +18764,7 @@ components:
           example:
             results:
               - tweet:
-                  id: '1893456789012345678'
+                  id: '2102882545427714266'
                   text:
                     'The new headphones sound great. The app keeps crashing.'
                   retweetCount: 4
@@ -18860,7 +18879,7 @@ components:
               monitor:
                 statuses: { changed: 1 }
                 changedRows:
-                  - tweetId: '1893456789012345678'
+                  - tweetId: '2102882545427714266'
                     changes:
                       - questionId: 'sentiment'
                         previous: 'positive'
@@ -18869,9 +18888,10 @@ components:
             next_cursor: ''
     RepliesIncomplete:
       description:
-        X did not expose every reply. Xquik bills returned rows as usual. An
-        answer cut by your own limit returns 200 with limit_reached. A post that
-        shows none of the replies it counts returns 200 with hiddenReplies.
+        X did not expose every reply. Xquik bills returned rows as usual. A read
+        that runs out of time names the extraction that reads on. An answer cut
+        by your own limit returns 200 with limit_reached. A post that shows none
+        of the replies it counts returns 200 with hiddenReplies.
       content:
         application/json:
           schema:
@@ -21517,6 +21537,7 @@ components:
             - page_cap
             - partial_view
             - repeated_cursor
+            - reported_held
             - window_covered
             - window_passed
     ReplyCoverageRichness:
@@ -25442,11 +25463,12 @@ components:
             fewer posts than narrow ones over the same dates. For a fuller
             collection, run the same search in shorter windows.
             `pagination_safety_limit` means a paging safety rule ended the read
-            early. The job keeps every result it found. `deadline_reached` means
-            the job ran out of time. `partial_failure` means some reads failed,
-            and the job keeps the results from the rest. `budget_limited` means
-            your credits covered fewer results than the job found. `canceled`
-            and `failed` match the job status.
+            early. A reply job ends this way once it finds no new reply for 15
+            minutes. The job keeps every result it found. `deadline_reached`
+            means the job ran out of time. `partial_failure` means some reads
+            failed, and the job keeps the results from the rest.
+            `budget_limited` means your credits covered fewer results than the
+            job found. `canceled` and `failed` match the job status.
         errorMessage:
           type: string
           description: Safe error code for a failed job.
@@ -25559,7 +25581,9 @@ components:
           description: >
             Nested row details. On a user list, `user` also holds `joinedOn`,
             `followRatio`, `postsPerMonth`, `standing`, `website`, `isProtected`
-            and `isSensitive` when they apply.
+            and `isSensitive` when they apply. `tweet.unknownCounts` and
+            `article.unknownCounts` list the counts X didn't send, never shown
+            as 0.
 
     DrawListItem:
       description: Giveaway draw summary with entry counts and status.
@@ -27968,7 +27992,9 @@ components:
                   type: string
 
     TweetPreviousCounts:
-      description: Engagement counts retained from a prior tweet edit.
+      description:
+        The share of each count that earlier versions of an edited post hold.
+        Each count field already adds it, as x.com does.
       type: object
       properties:
         bookmarkCount:
@@ -33244,11 +33270,11 @@ components:
           minItems: 1
           maxItems: 100
           description: Post IDs or post URLs to analyze, up to 100.
-          example: ['1893456789012345678']
+          example: ['2102882545427714266']
           items:
             type: string
             maxLength: 2048
-            example: '1893456789012345678'
+            example: '2102882545427714266'
         query:
           type: string
           minLength: 1
@@ -33277,14 +33303,14 @@ components:
           minLength: 1
           maxLength: 2048
           description: Analyze the quotes of 1 post. Send its ID or URL.
-          example: '1893456789012345678'
+          example: '2102882545427714266'
         repliesTo:
           type: string
           minLength: 1
           maxLength: 2048
           description:
             Analyze the replies in 1 post's conversation. Send its ID or URL.
-          example: '1893456789012345678'
+          example: '2102882545427714266'
         sinceTime:
           type: [string, integer]
           minLength: 1
@@ -33349,7 +33375,7 @@ components:
             whether the post is new, changed or unchanged. The comparison costs
             nothing extra.
           example:
-            - id: '1893456789012345678'
+            - id: '2102882545427714266'
               answers: { sentiment: 'positive', intensity: 1, sarcasm: 0.04 }
           items:
             type: object
@@ -33361,7 +33387,7 @@ components:
                 maxLength: 19
                 description:
                   Post ID, or text:1 & so on. Otherwise tweet.id counts.
-                example: '1893456789012345678'
+                example: '2102882545427714266'
               tweet:
                 type: object
                 required: [id]
@@ -33371,7 +33397,7 @@ components:
                       type: string,
                       minLength: 1,
                       maxLength: 19,
-                      example: '1893456789012345678',
+                      example: '2102882545427714266',
                     }
               answers:
                 type: object
@@ -33891,7 +33917,7 @@ components:
           type: string
           description:
             Post ID. Your own texts have the IDs text:1, text:2 & so on.
-          example: '1893456789012345678'
+          example: '2102882545427714266'
         status:
           type: string
           enum: [failed, skipped]
@@ -33984,7 +34010,7 @@ components:
                 example:
                   sentiment:
                     negative:
-                      [{ tweetId: '1893456789012345678', engagement: 412 }]
+                      [{ tweetId: '2102882545427714266', engagement: 412 }]
         cashtags:
           type: array
           description:
@@ -34054,7 +34080,7 @@ components:
                 type: object
                 required: [tweetId, changes]
                 properties:
-                  tweetId: { type: string, example: '1893456789012345678' }
+                  tweetId: { type: string, example: '2102882545427714266' }
                   changes:
                     type: array
                     items:
