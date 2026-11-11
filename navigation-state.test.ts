@@ -43,13 +43,9 @@ const RETIRED_COMPARISON_PAGES = [
   "phantombuster",
   "pipedream",
   "post-bridge",
-  "postproxy",
   "postwise",
   "pulsar",
-  "scrapebadger",
-  "snitchfeed",
   "social-fetch",
-  "socialcrawl",
   "sprinklr",
   "talkwalker",
   "taplio",
@@ -57,7 +53,6 @@ const RETIRED_COMPARISON_PAGES = [
   "tweetstream",
   "twexapi",
   "twitterapis",
-  "xanguard",
   "zapier",
 ] as const;
 
