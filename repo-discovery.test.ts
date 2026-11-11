@@ -1591,11 +1591,11 @@ const REQUIRED_TERRAFORM_PROVIDER_WORKFLOW_SNIPPETS = [
   "Generated provider docs may list `media_ids` on `x-twitter-scraper_x_tweet`.",
   "Use `media` with public image or MP4 URLs for tweets.",
   "Uploaded media IDs expire after 24 hours, so keep them out of Terraform state. Send them through REST, MCP tools, or a generated SDK.",
-  "Terraform state for `x-twitter-scraper_x_tweet` does not expose durable write action fields. It does not expose media upload resources or direct-message send resources either.",
+  "Terraform state for `x-twitter-scraper_x_tweet` does not expose durable write action fields. It does not expose media upload resources or resources that send direct messages either.",
   "A worker may need to store lifecycle handoffs or returned DM `message_id`. It may also need to upload local media for one-item DM `media_ids`. In those cases, use the REST API, MCP tools, or a generated SDK",
   "Do not hand off extraction files through Terraform.",
   "Write reply, follower, or tweet search exports as CSV, JSON, XLSX, or JSON Lines. Do it with the REST extraction endpoints, CLI, MCP tools, or generated SDKs.",
-  "Reserve Terraform state for long-lived resources and IDs that need plan and apply review.",
+  "Reserve Terraform state for lasting resources and IDs that need plan and apply review.",
 ] as const;
 
 const FORBIDDEN_TERRAFORM_PROVIDER_WORKFLOW_SNIPPETS = [

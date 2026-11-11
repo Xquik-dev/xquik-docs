@@ -124,7 +124,7 @@ describe("navigation default state", (): void => {
 
     const bannerContent = docsConfig().banner?.content;
 
-    expect(bannerContent).toBe("**Xquik is not affiliated with or endorsed by X Corp.**");
+    expect(bannerContent).toBe("**Xquik is not affiliated with or endorsed by X\u00a0Corp.**");
     expect(bannerContent).not.toContain("trademarks of X Corp.");
   });
 
