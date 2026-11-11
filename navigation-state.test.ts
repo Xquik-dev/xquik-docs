@@ -108,10 +108,15 @@ function groupNames(tabName: string): string[] {
 }
 
 describe("navigation default state", (): void => {
-  it("uses theme fonts without loading an external Google font", (): void => {
-    expect.assertions(1);
+  it("sets Outfit from a font file the docs serve, with no external font request", (): void => {
+    expect.assertions(2);
 
-    expect(Object.hasOwn(docsConfig(), "fonts")).toBe(false);
+    expect(docsConfig().fonts).toStrictEqual({
+      family: "Outfit",
+      source: "/fonts/outfit-latin.woff2",
+      format: "woff2",
+    });
+    expect(existsSync("fonts/outfit-latin.woff2")).toBe(true);
   });
 
   it("keeps the sticky affiliation banner concise", (): void => {
@@ -119,7 +124,7 @@ describe("navigation default state", (): void => {
 
     const bannerContent = docsConfig().banner?.content;
 
-    expect(bannerContent).toBe("**Xquik is not affiliated with or endorsed by X Corp.**");
+    expect(bannerContent).toBe("**Xquik is not affiliated with or endorsed by X\u00a0Corp.**");
     expect(bannerContent).not.toContain("trademarks of X Corp.");
   });
 

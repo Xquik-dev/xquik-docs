@@ -178,25 +178,26 @@ const REQUIRED_SDK_OVERVIEW_SNIPPETS = [
   "lower `resultsLimit` to the affordable count",
   "fail with `insufficient_credits`",
   '<Card title="TypeScript / Node.js" icon="braces" href="/sdks/typescript">',
-  "Install with `npm install x-twitter-scraper`.",
+  "- **TypeScript / Node.js.** Install from npm.",
   '<Card title="Python" icon="bot" href="/sdks/python">',
-  "Install with `pip install x_twitter_scraper`.",
+  "- **Python.** Install from PyPI.",
   '<Card title="Go" icon="terminal" href="/sdks/go">',
-  "Install with `go get github.com/Xquik-dev/x-twitter-scraper-go`.",
+  "- **Go.** Install with Go modules.",
   '<Card title="Java" icon="coffee" href="/sdks/java">',
-  "Maven Central publication is pending. Build from source at",
+  "- **Java.** Install from Maven Central.",
+  "- **Kotlin.** Install from Maven Central.",
   '<Card title="Kotlin" icon="blocks" href="/sdks/kotlin">',
   '<Card title="C# / .NET" icon="hash" href="/sdks/csharp-x-api-sdk">',
-  "Install with `dotnet add package XTwitterScraper`.",
+  "- **C# / .NET.** Install from NuGet.",
   '<Card title="Ruby" icon="gem" href="/sdks/ruby">',
-  "Install with `gem install x-twitter-scraper`.",
+  "- **Ruby.** Install from RubyGems.",
   '<Card title="PHP" icon="file-code" href="/sdks/php">',
-  "Install with `composer require xquik/x-twitter-scraper`.",
+  "- **PHP.** Install from Packagist with Composer.",
   '<Card title="CLI" icon="square-terminal" href="/sdks/cli">',
-  "`go install github.com/Xquik-dev/x-twitter-scraper-cli/cmd/x-twitter-scraper@latest`.",
+  "- **CLI.** Install from npm or with Go.",
   '<Card title="Terraform provider" icon="boxes" href="/sdks/terraform">',
-  "Install `Xquik-dev/x-twitter-scraper` from the Terraform Registry.",
-  "Open the [Terraform guide](/sdks/terraform).",
+  "- **Terraform provider.** Install from the Terraform Registry.",
+  "Open the [Terraform guide](/sdks/terraform) or the [source on GitHub]",
   "**Tweet search exports.**",
   "**Follower export files.**",
   "**Post media tweets or replies.**",
@@ -234,6 +235,9 @@ const REQUIRED_SDK_OVERVIEW_SNIPPETS = [
 ] as const;
 
 const FORBIDDEN_SDK_OVERVIEW_SNIPPETS = [
+  "Maven Central publication is pending.",
+  "Install with `",
+  "Find the source in [Xquik-dev/",
   "| SDK | Install | Source |",
   "| TypeScript | `npm install x-twitter-scraper` |",
   "| Python | `pip install x_twitter_scraper` |",
@@ -633,6 +637,7 @@ const FORBIDDEN_PYTHON_SDK_RAW_SEARCH_SNIPPETS = [
 ] as const;
 
 const REQUIRED_RUBY_SDK_WORKFLOW_SNIPPETS = [
+  'gem "x-twitter-scraper", "~> 0.10.6"',
   "Search tweets and write durable JSON Lines handoff rows.",
   "page = client.x.tweets.search(",
   "page.tweets.each do |tweet|",
@@ -722,7 +727,7 @@ const REQUIRED_RUBY_SDK_WORKFLOW_SNIPPETS = [
   "`xquik-replies.json` for app ingestion",
   "`xquik-replies.csv` for CRM import",
   "`xquik-replies.xlsx` for analyst handoff",
-  "`client.extractions.export_results` supports `:csv`, `:json`, and `:xlsx`",
+  "The export call above takes `:csv`, `:json`, or `:xlsx` as `format_`",
   "The cost is 1 credit per reply extracted or returned.",
   "`client.x.tweets.create`",
   "Use `client.request` to capture the durable write action.",
@@ -1194,6 +1199,9 @@ const FORBIDDEN_PHP_SDK_WEAK_SEARCH_SNIPPETS = [
 ] as const;
 
 const REQUIRED_JAVA_SDK_WORKFLOW_SNIPPETS = [
+  'implementation("com.xquik.api:x-twitter-scraper-java:0.10.3")',
+  "<groupId>com.xquik.api</groupId>",
+  "<artifactId>x-twitter-scraper-java</artifactId>",
   "Search tweets and write durable JSON Lines handoff rows.",
   "PaginatedTweets page = client.x().tweets().search(params);",
   "for (SearchTweet tweet : page.tweets()) {",
@@ -1342,6 +1350,9 @@ const REQUIRED_JAVA_SDK_WORKFLOW_SNIPPETS = [
 ] as const;
 
 const FORBIDDEN_JAVA_SDK_WEAK_SEARCH_SNIPPETS = [
+  "Maven Central publication is pending.",
+  "publishToMavenLocal",
+  "com/x_twitter_scraper/api/x-twitter-scraper-java",
   "PaginatedTweets tweets = client.x().tweets().search(params);",
   "Write `page.tweets()` as JSON Lines to `xquik-tweet-search.jsonl`",
   'row.put("id", tweet.id());',
@@ -1352,6 +1363,9 @@ const FORBIDDEN_JAVA_SDK_WEAK_SEARCH_SNIPPETS = [
 ] as const;
 
 const REQUIRED_KOTLIN_SDK_WORKFLOW_SNIPPETS = [
+  'implementation("com.xquik.api:x-twitter-scraper-kotlin:0.9.3")',
+  "<groupId>com.xquik.api</groupId>",
+  "<artifactId>x-twitter-scraper-kotlin</artifactId>",
   "Search tweets and write durable JSON Lines handoff rows.",
   "val page: PaginatedTweets = client.x().tweets().search(params)",
   "for (tweet: SearchTweet in page.tweets()) {",
@@ -1500,6 +1514,10 @@ const REQUIRED_KOTLIN_SDK_WORKFLOW_SNIPPETS = [
 ] as const;
 
 const FORBIDDEN_KOTLIN_SDK_WEAK_SEARCH_SNIPPETS = [
+  "Maven Central publication is pending.",
+  "Build locally until Maven Central publication.",
+  "publishToMavenLocal",
+  "com/x_twitter_scraper/api/x-twitter-scraper-kotlin",
   "val tweets: PaginatedTweets = client.x().tweets().search(params)",
   "Write `page.tweets()` as JSON Lines to `xquik-tweet-search.jsonl`",
   '"id" to tweet.id(),',
@@ -1538,7 +1556,7 @@ const FORBIDDEN_TWEET_SEARCH_DATE_WINDOW_SNIPPETS = [
 const REQUIRED_TERRAFORM_PROVIDER_WORKFLOW_SNIPPETS = [
   "Install from the [Terraform Registry](https://registry.terraform.io/providers/Xquik-dev/x-twitter-scraper/latest).",
   'source  = "Xquik-dev/x-twitter-scraper"',
-  'version = "~> 0.7.1"',
+  'version = "~> 0.9.0"',
   "Run `terraform init` before planning or applying resources.",
   "## Tweet monitor workflow to signed webhooks",
   "`x-twitter-scraper_monitor`",
@@ -1573,11 +1591,11 @@ const REQUIRED_TERRAFORM_PROVIDER_WORKFLOW_SNIPPETS = [
   "Generated provider docs may list `media_ids` on `x-twitter-scraper_x_tweet`.",
   "Use `media` with public image or MP4 URLs for tweets.",
   "Uploaded media IDs expire after 24 hours, so keep them out of Terraform state. Send them through REST, MCP tools, or a generated SDK.",
-  "Terraform state for `x-twitter-scraper_x_tweet` does not expose durable write action fields. It does not expose media upload resources or direct-message send resources either.",
+  "Terraform state for `x-twitter-scraper_x_tweet` does not expose durable write action fields. It does not expose media upload resources or resources that send direct messages either.",
   "A worker may need to store lifecycle handoffs or returned DM `message_id`. It may also need to upload local media for one-item DM `media_ids`. In those cases, use the REST API, MCP tools, or a generated SDK",
   "Do not hand off extraction files through Terraform.",
   "Write reply, follower, or tweet search exports as CSV, JSON, XLSX, or JSON Lines. Do it with the REST extraction endpoints, CLI, MCP tools, or generated SDKs.",
-  "Reserve Terraform state for long-lived resources and IDs that need plan and apply review.",
+  "Reserve Terraform state for lasting resources and IDs that need plan and apply review.",
 ] as const;
 
 const FORBIDDEN_TERRAFORM_PROVIDER_WORKFLOW_SNIPPETS = [
