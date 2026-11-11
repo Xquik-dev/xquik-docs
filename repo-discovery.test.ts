@@ -197,7 +197,7 @@ const REQUIRED_SDK_OVERVIEW_SNIPPETS = [
   "- **CLI.** Install from npm or with Go.",
   '<Card title="Terraform provider" icon="boxes" href="/sdks/terraform">',
   "- **Terraform provider.** Install from the Terraform Registry.",
-  "Open the [Terraform guide](/sdks/terraform).",
+  "Open the [Terraform guide](/sdks/terraform) or the [source on GitHub]",
   "**Tweet search exports.**",
   "**Follower export files.**",
   "**Post media tweets or replies.**",
