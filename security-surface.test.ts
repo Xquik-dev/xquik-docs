@@ -1,7 +1,8 @@
-import { readFileSync, readdirSync } from "node:fs";
+import { readdirSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
+import { readPageFileSync as readFileSync } from "./scripts/lib/page-source.ts";
 
 const docsConfigSchema = z.looseObject({
   footer: z

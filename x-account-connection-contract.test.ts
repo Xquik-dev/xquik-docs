@@ -1,4 +1,3 @@
-import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { collapseTableSpacing } from "./scripts/lib/documented-fields.ts";
@@ -9,6 +8,7 @@ import {
   openApiSchema,
   type OpenApiSchema,
 } from "./scripts/lib/openapi-schema.ts";
+import { readPageFileSync as readFileSync } from "./scripts/lib/page-source.ts";
 
 const jsonResponse = openApiResponse.extend({
   content: z.looseObject({ "application/json": z.looseObject({ schema: openApiSchema }) }),

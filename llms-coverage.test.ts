@@ -1,8 +1,7 @@
-import { readFileSync } from "node:fs";
-
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import { navigationNode, type NavigationItem } from "./scripts/lib/docs-config-schema.ts";
+import { readPageFileSync as readFileSync } from "./scripts/lib/page-source.ts";
 
 const DOCS_ORIGIN = "https://docs.xquik.com";
 const MARKDOWN_LINK_PATTERN = /\[[^\]]+\]\((?:https:\/\/docs\.xquik\.com)?\/([^\s)]*)\)/gu;

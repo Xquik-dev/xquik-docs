@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync as readRawFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -8,6 +8,7 @@ import { withoutParagraphSeparators } from "./scripts/lib/paragraph-separator.ts
 import { z } from "zod";
 
 import { stripGeneratedResponseExamples } from "./scripts/lib/generated-response-examples";
+import { readPageFileSync as readFileSync } from "./scripts/lib/page-source.ts";
 
 interface DiscoveryFinding {
   readonly file?: string;
@@ -64,7 +65,7 @@ const REQUIRED_CUSTOM_CSS_MOBILE_VIEWPORT_SNIPPETS = [
   "max-inline-size: 100%;",
   "#header .prose > *",
   '#content > span[data-as="p"]',
-  "overflow-wrap: anywhere;",
+  "overflow-wrap: break-word;",
   '#content blockquote a[href$="/llms.txt"]',
   '#content-area blockquote a[href$="/llms.txt"]',
   "word-break: break-word !important;",
@@ -12044,7 +12045,7 @@ function collectReadmeDiscoveryFindings(): readonly DiscoveryFinding[] {
 }
 
 function sha256File(file: string): string {
-  return createHash("sha256").update(readFileSync(file)).digest("hex");
+  return createHash("sha256").update(readRawFileSync(file)).digest("hex");
 }
 
 function collectStaleOperationCountFindings(): readonly DiscoveryFinding[] {

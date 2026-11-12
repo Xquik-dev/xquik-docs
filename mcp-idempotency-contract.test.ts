@@ -1,7 +1,6 @@
-import { readFileSync } from "node:fs";
-
 import { describe, expect, it } from "vitest";
 import { readPageFamily } from "./scripts/lib/page-family.ts";
+import { readPageFileSync as readFileSync } from "./scripts/lib/page-source.ts";
 
 function read(path: string): string {
   return readFileSync(path, "utf8");

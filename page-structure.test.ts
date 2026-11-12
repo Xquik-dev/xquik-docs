@@ -1,9 +1,10 @@
-import { readdirSync, readFileSync } from "node:fs";
+import { readdirSync } from "node:fs";
 import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
 import { PARAGRAPH_SEPARATOR } from "./scripts/lib/paragraph-separator.ts";
+import { readPageFileSync as readFileSync } from "./scripts/lib/page-source.ts";
 
 interface PageStructureFinding {
   readonly file: string;

@@ -1,8 +1,9 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
+import { readPageFileSync as readFileSync } from "./scripts/lib/page-source.ts";
 
 const PROJECT_ROOT = process.cwd();
 const TWEETCLAW_ROOT = process.env["TWEETCLAW_ROOT"] ?? join(PROJECT_ROOT, "..", "tweetclaw");

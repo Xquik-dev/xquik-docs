@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync } from "node:fs";
+import { readdirSync } from "node:fs";
 import { join, relative } from "node:path";
 
 import { describe, expect, it } from "vitest";
@@ -11,6 +11,7 @@ import {
   type OpenApiParameter,
   type OpenApiSchema,
 } from "./scripts/lib/openapi-schema.ts";
+import { readPageFileSync as readFileSync } from "./scripts/lib/page-source.ts";
 
 const PROJECT_ROOT = process.cwd();
 const API_REFERENCE_DIR = join(PROJECT_ROOT, "api-reference");

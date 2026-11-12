@@ -1,9 +1,9 @@
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import { navigationNode, type NavigationItem } from "./scripts/lib/docs-config-schema.ts";
+import { readPageFileSync as readFileSync } from "./scripts/lib/page-source.ts";
 
 const MIN_DESCRIPTION_LENGTH = 150;
 const MAX_DESCRIPTION_LENGTH = 160;

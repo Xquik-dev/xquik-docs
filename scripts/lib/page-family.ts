@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readPageFileSync as readFileSync } from "./page-source.ts";
 
 const SDK_PAGES = [
   ["csharp", "sdks/csharp-x-api-sdk.mdx"],

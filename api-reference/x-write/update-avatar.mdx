@@ -18,7 +18,9 @@ import WriteActionLifecycleResponse from "/snippets/write-action-lifecycle-respo
 
 <LlmsDirective />
 
-`PATCH https://xquik.com/api/v1/x/profile/avatar`
+```text
+PATCH https://xquik.com/api/v1/x/profile/avatar
+```
 
 This route updates one connected account's avatar.
 A request accepts a JPEG or PNG file. It can
@@ -30,7 +32,7 @@ recommends a 400 × 400 pixel profile picture.
 
 ## Update a Twitter profile picture through the API
 
-Call `PATCH /x/profile/avatar` to replace the square profile image. Use
+Call <span className="cn">`PATCH /x/profile/avatar`</span> to replace the square profile image. Use
 [Update Banner](/api-reference/x-write/update-banner) for the header image.
 Use [Update Profile](/api-reference/x-write/update-profile) for names and other
 public text fields. This route never retrieves another user's avatar.
@@ -141,6 +143,38 @@ func main() {
 
 </CodeGroup>
 
+{/* OUTPUT SAMPLE START */}
+
+<div className="xq-sample" role="figure">
+  <div
+    className="xq-sample-table"
+    tabIndex={0}
+    role="region"
+    aria-label={"Rows from PATCH /x/profile/avatar"}
+  >
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">{"status"}</th>
+          <th scope="col">{"object"}</th>
+          <th scope="col">{"id"}</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>{"success"}</td>
+          <td>{"x_write_action"}</td>
+          <td>{"12345"}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p className="xq-sample-caption">
+    Example answer of <code>{"PATCH /x/profile/avatar"}</code>, from its API reference
+  </p>
+</div>
+{/* OUTPUT SAMPLE END */}
+
 <CodeGroup>
 
 ```bash URL Upload
@@ -190,17 +224,17 @@ After a terminal write, use
 `profilePicture` URL. Compare the rendered avatar with the approved source.
 Review the public square crop. Keep the action ID and verification timestamp.
 X may return a profile image URL like
-`https://pbs.twimg.com/profile_images/example.jpg`.
+<span className="cn">`https://pbs.`<wbr />`twimg.com/`<wbr />`profile_`<wbr />`images/`<wbr />`example.jpg`</span>.
 
-| Profile avatar update column | Request or response source | Review rule                         |
-| ---------------------------- | -------------------------- | ----------------------------------- |
-| Acting X account             | Request `account`          | Confirm the intended profile.       |
-| Uploaded file                | Request `file`             | Accept JPEG or PNG up to 95 MiB.    |
-| Image URL                    | Request `url`              | Use one fetchable HTTPS source.     |
-| Source choice                | `file` or `url`            | Send exactly one image source.      |
-| Idempotency key              | Request header             | Change it after editing the image.  |
-| Write action ID              | Response `id`              | Poll the matching lifecycle record. |
-| Profile result               | Later profile lookup       | Confirm the public avatar URL.      |
+| Profile avatar update column | Request or response source | Review rule                                                  |
+| ---------------------------- | -------------------------- | ------------------------------------------------------------ |
+| Acting X account             | Request `account`          | Confirm the intended profile.                                |
+| Uploaded file                | Request `file`             | Accept JPEG or PNG up to <span className="nw">95 MiB</span>. |
+| Image URL                    | Request `url`              | Use one fetchable HTTPS source.                              |
+| Source choice                | `file` or `url`            | Send exactly one image source.                               |
+| Idempotency key              | Request header             | Change it after editing the image.                           |
+| Write action ID              | Response `id`              | Poll the matching lifecycle record.                          |
+| Profile result               | Later profile lookup       | Confirm the public avatar URL.                               |
 
 </section>
 
@@ -262,11 +296,11 @@ retrieve a public `profilePicture` URL.
 
 ## Body
 
-| Body parameter | Type     | Required | Description                                                                                                               |
-| -------------- | -------- | -------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `account`      | `string` | Yes      | X (Twitter) username or account ID of your connected account to act as.                                                   |
-| `file`         | `binary` | No       | Multipart upload file. Required unless you send `url`. Send a JPEG or PNG up to 95 MiB. Xquik shrinks images over 700 KB. |
-| `url`          | `string` | No       | HTTPS image URL. Required unless you send `file`. The URL must use HTTPS and remain directly fetchable.                   |
+| Body parameter | Type     | Required | Description                                                                                                                                                                       |
+| -------------- | -------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `account`      | `string` | Yes      | X (Twitter) username or account ID of your connected account to act as.                                                                                                           |
+| `file`         | `binary` | No       | Multipart upload file. Required unless you send `url`. Send a JPEG or PNG up to <span className="nw">95 MiB</span>. Xquik shrinks images over <span className="nw">700 KB</span>. |
+| `url`          | `string` | No       | HTTPS image URL. Required unless you send `file`. The URL must use HTTPS and remain directly fetchable.                                                                           |
 
 </section>
 
@@ -327,18 +361,18 @@ retrieve a public `profilePicture` URL.
 }
 ```
 
-- **400** `{ "error": "missing_idempotency_key", "message": "Idempotency-Key is required. Generate one unique key for this write.", "charged": false, "chargedCredits": "0", "retryable": false, "safeToRetry": true }`
-- **401** `{ "error": "unauthenticated", "message": "Authentication required. Provide a valid API key or bearer token." }`
-- **402** `{ "error": "insufficient_credits", "message": "Insufficient credits. Top up or subscribe to continue." }`
-- **403** `{ "error": "api_key_paused", "message": "This API key is paused. Resume it at dashboard.xquik.com/api-keys to use it again." }`
-- **404** `{ "error": "account_not_found", "message": "X account not found. Connect it first at /dashboard/x-accounts." }`
-- **409** `{ "error": "idempotency_conflict", "message": "Idempotency-Key was already used with a different request.", "charged": false, "chargedCredits": "0", "retryable": false, "safeToRetry": true }`
-- **413** `{ "error": "media_too_large", "message": "This image stays over X's size limit after shrinking. Send a smaller one." }`
-- **415** `{ "error": "unsupported_media_type", "message": "Xquik couldn't read this image. Send a valid image file." }`
-- **422** `{ "error": "x_rejected", "message": "X rejected this request. Check what you sent & the account on x.com before you try again." }`
-- **429** `{ "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 60 }`
-- **500** `{ "error": "x_write_failed", "message": "Write action failed unexpectedly. Contact support if this persists." }`
-- **503** `{ "error": "write_tracking_unavailable", "message": "Write tracking unavailable. Try again.", "charged": false, "chargedCredits": "0", "retryable": true, "safeToRetry": true }`
+- **400** <span className="cn">`{ "error": "missing_`<wbr />`idempotency_`<wbr />`key", "message": `<wbr /><span className="nw">`"Idempotency-Key `</span><wbr />`is required. Generate one unique key for this write.", "charged": false, "chargedCredits": "0", "retryable": false, "safeToRetry": true }`</span>
+- **401** <span className="cn">`{ "error": "unauthenticated", "message": "Authentication required. Provide a valid API key or bearer token." }`</span>
+- **402** <span className="cn">`{ "error": "insufficient_`<wbr />`credits", "message": "Insufficient credits. Top up or subscribe to continue." }`</span>
+- **403** <span className="cn">`{ "error": "api_key_paused", "message": "This API key is paused. Resume it at dashboard.`<wbr />`xquik.com/`<wbr /><span className="nw">`api-keys `</span><wbr />`to use it again." }`</span>
+- **404** <span className="cn">`{ "error": "account_not_found", "message": "X account not found. Connect it first at /dashboard/`<wbr /><span className="nw">`x-accounts." `</span><wbr />`}`</span>
+- **409** <span className="cn">`{ "error": "idempotency_`<wbr />`conflict", "message": `<wbr /><span className="nw">`"Idempotency-Key `</span><wbr />`was already used with a different request.", "charged": false, "chargedCredits": "0", "retryable": false, "safeToRetry": true }`</span>
+- **413** <span className="cn">`{ "error": "media_too_large", "message": "This image stays over X's size limit after shrinking. Send a smaller one." }`</span>
+- **415** <span className="cn">`{ "error": "unsupported_`<wbr />`media_`<wbr />`type", "message": "Xquik couldn't read this image. Send a valid image file." }`</span>
+- **422** <span className="cn">`{ "error": "x_rejected", "message": "X rejected this request. Check what you sent & the account on x.com before you try again." }`</span>
+- **429** <span className="cn">`{ "error": "rate_`<wbr />`limit_`<wbr />`exceeded", "message": "Too many requests. Try again later.", "retryAfter": `<wbr /><span className="nw">`60 }`</span></span>
+- **500** <span className="cn">`{ "error": "x_write_failed", "message": "Write action failed unexpectedly. Contact support if this persists." }`</span>
+- **503** <span className="cn">`{ "error": "write_`<wbr />`tracking_`<wbr />`unavailable", "message": "Write tracking unavailable. Try again.", "charged": false, "chargedCredits": "0", "retryable": true, "safeToRetry": true }`</span>
 
 </section>
 

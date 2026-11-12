@@ -1,8 +1,7 @@
-import { readFileSync } from "node:fs";
-
 import { describe, expect, it } from "vitest";
 
 import { CODE_MASK, headingText, pageProse, trackedPages } from "./prose.test.helpers.ts";
+import { readPageFileSync as readFileSync } from "./scripts/lib/page-source.ts";
 
 interface PatternRule {
   readonly ignoreCase: boolean;

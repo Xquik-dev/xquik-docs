@@ -1,8 +1,8 @@
-import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 import { readPageFamily } from "./scripts/lib/page-family.ts";
 import { z } from "zod";
+import { readPageFileSync as readFileSync } from "./scripts/lib/page-source.ts";
 
 const REQUIRED_OPERATIONAL_CONTENT = [
   {

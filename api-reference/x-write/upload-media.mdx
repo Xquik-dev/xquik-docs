@@ -23,7 +23,9 @@ import WriteActionLifecycleResponse from "/snippets/write-action-lifecycle-respo
 
 <LlmsDirective />
 
-`POST https://xquik.com/api/v1/x/media`
+```text
+POST https://xquik.com/api/v1/x/media
+```
 
 <Callout icon="coins" color="#5c3327">
 
@@ -78,6 +80,38 @@ const { mediaId, mediaUrl } = await response.json();
 
 </CodeGroup>
 
+{/* OUTPUT SAMPLE START */}
+
+<div className="xq-sample" role="figure">
+  <div
+    className="xq-sample-table"
+    tabIndex={0}
+    role="region"
+    aria-label={"Rows from POST /x/media"}
+  >
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">{"status"}</th>
+          <th scope="col">{"object"}</th>
+          <th scope="col">{"id"}</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>{"success"}</td>
+          <td>{"x_write_action"}</td>
+          <td>{"12345"}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p className="xq-sample-caption">
+    Example answer of <code>{"POST /x/media"}</code>, from its API reference
+  </p>
+</div>
+{/* OUTPUT SAMPLE END */}
+
 ### Upload a hosted media URL
 
 <CodeGroup>
@@ -106,7 +140,7 @@ Match the content type to the file. Use a public URL.
 Xquik rejects private and reserved addresses. The download timeout is 30 seconds.
 The file limit is 15,728,640 bytes.
 Xquik shrinks images over 5 MiB to fit X. GIFs and videos go to X unchanged.
-An unreadable image returns `415 unsupported_media_type`.
+An unreadable image returns <span className="cn"><span className="nw">`415 unsupported_`</span><wbr />`media_type`</span>.
 An image Xquik can't shrink enough returns `413 media_too_large`.
 
 {"\n"}
@@ -128,11 +162,11 @@ Media IDs expire 24 hours after upload. Schedulers that post later store
 
 ## Store the X (Twitter) API media upload receipt
 
-| Output     | Next request               | Rule                                                  |
-| ---------- | -------------------------- | ----------------------------------------------------- |
-| `mediaUrl` | Tweet or reply `media`     | Send up to 4 image URLs or 1 MP4 URL up to 100 MB.    |
-| `mediaId`  | Tweet or reply `media_ids` | Send up to 4 image IDs or 1 video ID within 24 hours. |
-| `mediaId`  | DM `media_ids`             | Send exactly 1 media ID.                              |
+| Output     | Next request               | Rule                                                                                                                                      |
+| ---------- | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `mediaUrl` | Tweet or reply `media`     | Send up to <span className="nw">4 image</span> URLs or <span className="nw">1 MP4</span> URL up to <span className="nw">100 MB</span>.    |
+| `mediaId`  | Tweet or reply `media_ids` | Send up to <span className="nw">4 image</span> IDs or <span className="nw">1 video</span> ID within <span className="nw">24 hours</span>. |
+| `mediaId`  | DM `media_ids`             | Send exactly <span className="nw">1 media</span> ID.                                                                                      |
 
 Store the account, success, source reference, and idempotency key with each
 receipt. For replies, add `reply_to_tweet_id` in Create Tweet.
@@ -149,7 +183,7 @@ DM writes cost 10 credits.
 Fix invalid fields or content types after 400. Replace credentials after 401.
 Add credits after 402. Reconnect the X account after 403. Connect a missing
 account after 404. Keep the original action after 409. Replace unreachable or
-private URLs after `422 media_download_failed`. Replace rejected media after
+private URLs after <span className="cn"><span className="nw">`422 media_`</span><wbr />`download_`<wbr />`failed`</span>. Replace rejected media after
 other 422 errors. Honor `Retry-After` after 429. Check `safeToRetry` after 500
 or 503.
 
@@ -171,12 +205,12 @@ or 503.
 
 ## Body
 
-| Body parameter  | Type      | Required | Description                                                                                                             |
-| --------------- | --------- | -------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `account`       | `string`  | Yes      | A connected X (Twitter) username or account ID. The account performs the upload.                                        |
-| `file`          | `binary`  | No       | Required without `url`. Accepts AVIF, GIF, JPEG, PNG, WebP, or MP4.                                                     |
-| `url`           | `string`  | No       | Required without `file`. Provide a public HTTPS URL. AI agents and MCP clients can send URLs instead of binary uploads. |
-| `is_long_video` | `boolean` | No       | Multipart MP4 uploads only. Set `true` when the video exceeds 140 seconds. Defaults to `false`.                         |
+| Body parameter  | Type      | Required | Description                                                                                                                 |
+| --------------- | --------- | -------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `account`       | `string`  | Yes      | A connected X (Twitter) username or account ID. The account performs the upload.                                            |
+| `file`          | `binary`  | No       | Required without `url`. Accepts AVIF, GIF, JPEG, PNG, WebP, or MP4.                                                         |
+| `url`           | `string`  | No       | Required without `file`. Provide a public HTTPS URL. AI agents and MCP clients can send URLs instead of binary uploads.     |
+| `is_long_video` | `boolean` | No       | Multipart MP4 uploads only. Set `true` when the video exceeds <span className="nw">140 seconds</span>. Defaults to `false`. |
 
 </section>
 
@@ -237,18 +271,18 @@ or 503.
 }
 ```
 
-- **400** `{ "error": "missing_idempotency_key", "message": "Idempotency-Key is required. Generate one unique key for this write.", "charged": false, "chargedCredits": "0", "retryable": false, "safeToRetry": true }`
-- **401** `{ "error": "unauthenticated", "message": "Authentication required. Provide a valid API key or bearer token." }`
-- **402** `{ "error": "insufficient_credits", "message": "Insufficient credits. Top up or subscribe to continue." }`
-- **403** `{ "error": "api_key_paused", "message": "This API key is paused. Resume it at dashboard.xquik.com/api-keys to use it again." }`
-- **404** `{ "error": "account_not_found", "message": "X account not found. Connect it first at /dashboard/x-accounts." }`
-- **409** `{ "error": "idempotency_conflict", "message": "Idempotency-Key was already used with a different request.", "charged": false, "chargedCredits": "0", "retryable": false, "safeToRetry": true }`
-- **413** `{ "error": "media_too_large", "message": "This image stays over X's size limit after shrinking. Send a smaller one." }`
-- **415** `{ "error": "unsupported_media_type", "message": "Xquik couldn't read this image. Send a valid image file." }`
-- **422** `{ "error": "x_rejected", "message": "X rejected this request. Check what you sent & the account on x.com before you try again." }`
-- **429** `{ "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 60 }`
-- **500** `{ "error": "x_write_failed", "message": "Write action failed unexpectedly. Contact support if this persists." }`
-- **503** `{ "error": "write_tracking_unavailable", "message": "Write tracking unavailable. Try again.", "charged": false, "chargedCredits": "0", "retryable": true, "safeToRetry": true }`
+- **400** <span className="cn">`{ "error": "missing_`<wbr />`idempotency_`<wbr />`key", "message": `<wbr /><span className="nw">`"Idempotency-Key `</span><wbr />`is required. Generate one unique key for this write.", "charged": false, "chargedCredits": "0", "retryable": false, "safeToRetry": true }`</span>
+- **401** <span className="cn">`{ "error": "unauthenticated", "message": "Authentication required. Provide a valid API key or bearer token." }`</span>
+- **402** <span className="cn">`{ "error": "insufficient_`<wbr />`credits", "message": "Insufficient credits. Top up or subscribe to continue." }`</span>
+- **403** <span className="cn">`{ "error": "api_key_paused", "message": "This API key is paused. Resume it at dashboard.`<wbr />`xquik.com/`<wbr /><span className="nw">`api-keys `</span><wbr />`to use it again." }`</span>
+- **404** <span className="cn">`{ "error": "account_not_found", "message": "X account not found. Connect it first at /dashboard/`<wbr /><span className="nw">`x-accounts." `</span><wbr />`}`</span>
+- **409** <span className="cn">`{ "error": "idempotency_`<wbr />`conflict", "message": `<wbr /><span className="nw">`"Idempotency-Key `</span><wbr />`was already used with a different request.", "charged": false, "chargedCredits": "0", "retryable": false, "safeToRetry": true }`</span>
+- **413** <span className="cn">`{ "error": "media_too_large", "message": "This image stays over X's size limit after shrinking. Send a smaller one." }`</span>
+- **415** <span className="cn">`{ "error": "unsupported_`<wbr />`media_`<wbr />`type", "message": "Xquik couldn't read this image. Send a valid image file." }`</span>
+- **422** <span className="cn">`{ "error": "x_rejected", "message": "X rejected this request. Check what you sent & the account on x.com before you try again." }`</span>
+- **429** <span className="cn">`{ "error": "rate_`<wbr />`limit_`<wbr />`exceeded", "message": "Too many requests. Try again later.", "retryAfter": `<wbr /><span className="nw">`60 }`</span></span>
+- **500** <span className="cn">`{ "error": "x_write_failed", "message": "Write action failed unexpectedly. Contact support if this persists." }`</span>
+- **503** <span className="cn">`{ "error": "write_`<wbr />`tracking_`<wbr />`unavailable", "message": "Write tracking unavailable. Try again.", "charged": false, "chargedCredits": "0", "retryable": true, "safeToRetry": true }`</span>
 
 </section>
 

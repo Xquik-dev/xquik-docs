@@ -1,4 +1,3 @@
-import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { documentedFields, leafName } from "./scripts/lib/documented-fields.ts";
@@ -9,6 +8,7 @@ import {
   type OpenApiResponse,
   type OpenApiSchema,
 } from "./scripts/lib/openapi-schema.ts";
+import { readPageFileSync as readFileSync } from "./scripts/lib/page-source.ts";
 
 const PROJECT_ROOT = process.cwd();
 const DOCS_OPENAPI_PATH = join(PROJECT_ROOT, "openapi.yaml");

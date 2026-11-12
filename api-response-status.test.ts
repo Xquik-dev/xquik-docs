@@ -1,4 +1,3 @@
-import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -17,6 +16,7 @@ import {
   GENERATED_RESPONSE_EXAMPLES_START,
   stripGeneratedResponseExamples,
 } from "./scripts/lib/generated-response-examples";
+import { readPageFileSync as readFileSync } from "./scripts/lib/page-source.ts";
 
 const PROJECT_ROOT = process.cwd();
 const spec = parseOpenApi(readFileSync(join(PROJECT_ROOT, "openapi.yaml"), "utf8"));

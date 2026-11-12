@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { join } from "node:path";
 
 import { it } from "vitest";
@@ -6,6 +6,7 @@ import { it } from "vitest";
 import { findProductRoot } from "./scripts/lib/product-root.ts";
 import { isList, isRecord } from "./scripts/lib/json-shape.ts";
 import { documentedFields, leafName } from "./scripts/lib/documented-fields.ts";
+import { readPageFileSync as readFileSync } from "./scripts/lib/page-source.ts";
 
 type Spec = Record<string, unknown>;
 

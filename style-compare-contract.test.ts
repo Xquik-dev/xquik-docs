@@ -1,8 +1,7 @@
-import { readFileSync } from "node:fs";
-
 import { describe, expect, it } from "vitest";
 
 import { docsContract, productCheck, productOperation } from "./product-contract.test.helpers.ts";
+import { readPageFileSync as readFileSync } from "./scripts/lib/page-source.ts";
 
 const source = readFileSync(new URL("api-reference/styles/compare.mdx", import.meta.url), "utf8");
 

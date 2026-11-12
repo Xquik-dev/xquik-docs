@@ -1,10 +1,10 @@
-import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { collapseTableSpacing } from "./scripts/lib/documented-fields.ts";
 import { readPageFamily } from "./scripts/lib/page-family.ts";
 import { stripGeneratedResponseExamples } from "./scripts/lib/generated-response-examples";
+import { readPageFileSync as readFileSync } from "./scripts/lib/page-source.ts";
 
 const ROOT = process.cwd();
 

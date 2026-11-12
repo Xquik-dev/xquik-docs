@@ -18,7 +18,9 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-`POST https://xquik.com/api/v1/credits/quick-topup`
+```text
+POST https://xquik.com/api/v1/credits/quick-topup
+```
 
 Add API credits from the Xquik dashboard with a saved payment method.
 
@@ -75,15 +77,47 @@ if (result.outcome === "charged") {
 
 </CodeGroup>
 
-| Credit top-up outcome   | Response fields                | Next action                                               |
-| ----------------------- | ------------------------------ | --------------------------------------------------------- |
-| Immediate charge        | `outcome: "charged"`           | Store `credits` and the updated `balance`.                |
-| Payment authentication  | `outcome: "requires_action"`   | Complete the billing confirmation flow.                   |
-| Missing payment method  | `outcome: "no_payment_method"` | Create a checkout top-up instead.                         |
-| Declined payment method | `outcome: "declined"`          | Ask for another payment method.                           |
-| Added credits           | `credits`                      | Treat the bigint value as a string.                       |
-| Updated balance         | `balance`                      | Check it before the next tweet, follower, or monitor job. |
-| Confirmation secret     | `clientSecret`                 | Send it only to the billing confirmation flow.            |
+{/* OUTPUT SAMPLE START */}
+
+<div className="xq-sample" role="figure">
+  <div
+    className="xq-sample-table"
+    tabIndex={0}
+    role="region"
+    aria-label={"Rows from POST /credits/quick-topup"}
+  >
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">{"outcome"}</th>
+          <th scope="col">{"balance"}</th>
+          <th scope="col">{"credits"}</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>{"charged"}</td>
+          <td>{"466666"}</td>
+          <td>{"166666"}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p className="xq-sample-caption">
+    Example answer of <code>{"POST /credits/quick-topup"}</code>, from its API reference
+  </p>
+</div>
+{/* OUTPUT SAMPLE END */}
+
+| Credit <span className="nw">top-up</span> outcome | Response fields                | Next action                                                   |
+| ------------------------------------------------- | ------------------------------ | ------------------------------------------------------------- |
+| Immediate charge                                  | `outcome: "charged"`           | Store `credits` and the updated `balance`.                    |
+| Payment authentication                            | `outcome: "requires_action"`   | Complete the billing confirmation flow.                       |
+| Missing payment method                            | `outcome: "no_payment_method"` | Create a checkout <span className="nw">top-up</span> instead. |
+| Declined payment method                           | `outcome: "declined"`          | Ask for another payment method.                               |
+| Added credits                                     | `credits`                      | Treat the bigint value as a string.                           |
+| Updated balance                                   | `balance`                      | Check it before the next tweet, follower, or monitor job.     |
+| Confirmation secret                               | `clientSecret`                 | Send it only to the billing confirmation flow.                |
 
 </section>
 
@@ -101,11 +135,11 @@ if (result.outcome === "charged") {
 
 ## Body
 
-| Body parameter      | Type      | Required | Description                                                                                                                                                                                                                                                                                                                                                                                                |
-| ------------------- | --------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `dollars`           | `number`  | Yes      | Top-up amount in US dollars, which sets the credits. Minimum USD 10, maximum USD 500.                                                                                                                                                                                                                                                                                                                      |
-| `currency`          | `string`  | No       | Currency the saved card pays in. Xquik converts the dollar amount at the latest daily ECB rate. The credits always match the dollar amount. Use 1 of `USD`, `EUR`, `GBP`, `TRY`, `JPY`, `CNY`, `KRW`, `CAD`, `AUD` or `MXN`. Lowercase codes work too.<br />With rates over 3 ECB working days old, Xquik charges nothing in other currencies. It answers 409 `price_changed` with the USD charge instead. |
-| `chargedMinorUnits` | `integer` | No       | The charge you showed the payer, in the currency's smallest unit. Send `2231` for EUR 22.31 or `1580` for JPY 1,580. If the charge differs, Xquik charges nothing. It answers 409 `price_changed` with the new charge. Leave it out to pay the current charge.                                                                                                                                             |
+| Body parameter      | Type      | Required | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| ------------------- | --------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `dollars`           | `number`  | Yes      | <span className="nw">Top-up</span> amount in US dollars, which sets the credits. Minimum USD 10, maximum USD 500.                                                                                                                                                                                                                                                                                                                                                                              |
+| `currency`          | `string`  | No       | Currency the saved card pays in. Xquik converts the dollar amount at the latest daily ECB rate. The credits always match the dollar amount. Use <span className="nw">1 of</span> `USD`, `EUR`, `GBP`, `TRY`, `JPY`, `CNY`, `KRW`, `CAD`, `AUD` or `MXN`. Lowercase codes work too.<br />With rates over <span className="nw">3 ECB</span> working days old, Xquik charges nothing in other currencies. It answers <span className="nw">409 `price_changed`</span> with the USD charge instead. |
+| `chargedMinorUnits` | `integer` | No       | The charge you showed the payer, in the currency's smallest unit. Send <span className="nw">`2231` for</span> EUR <span className="nw">22.31 or</span> <span className="nw">`1580` for</span> JPY 1,580. If the charge differs, Xquik charges nothing. It answers <span className="nw">409 `price_changed`</span> with the new charge. Leave it out to pay the current charge.                                                                                                                 |
 
 At USD 0.00015 per credit, a USD 25 quick top-up adds 166,666 credits. Xquik rounds down to whole credits.
 
@@ -124,13 +158,13 @@ Use hosted checkout for `declined` or `no_payment_method`.
 
 The payment succeeded. Xquik added the credits to your balance.
 
-| Field               | Type      | Description                                                                   |
-| ------------------- | --------- | ----------------------------------------------------------------------------- |
-| `outcome`           | `string`  | Always `"charged"`.                                                           |
-| `balance`           | `string`  | Updated credit balance after top-up (Bigint string).                          |
-| `credits`           | `string`  | Number of credits added (Bigint string).                                      |
-| `chargedCurrency`   | `string`  | Currency the saved card paid in, such as `EUR`.                               |
-| `chargedMinorUnits` | `integer` | Amount charged in the currency's smallest unit. JPY and KRW have no decimals. |
+| Field               | Type      | Description                                                                      |
+| ------------------- | --------- | -------------------------------------------------------------------------------- |
+| `outcome`           | `string`  | Always `"charged"`.                                                              |
+| `balance`           | `string`  | Updated credit balance after <span className="nw">top-up</span> (Bigint string). |
+| `credits`           | `string`  | Number of credits added (Bigint string).                                         |
+| `chargedCurrency`   | `string`  | Currency the saved card paid in, such as `EUR`.                                  |
+| `chargedMinorUnits` | `integer` | Amount charged in the currency's smallest unit. JPY and KRW have no decimals.    |
 
 ```json
 {
@@ -188,14 +222,14 @@ The saved method failed. Open hosted checkout so the user can choose another.
 
 ### 400 Invalid input
 
-`{ "error": "invalid_input", "message": "Maximum quick top-up is $500" }`
+<span className="cn">`{ "error": "invalid_input", "message": "Maximum quick `<wbr /><span className="nw">`top-up `</span><wbr />`is $500" }`</span>
 
 {"\n"}
 
 Xquik charges nothing. The `message` names the field to fix.
 
-- `dollars` is missing, below USD 10, above USD 500 or has over 2 decimals.
-- `currency` is not 1 of the 10 codes.
+- `dollars` is missing, below USD 10, above USD <span className="nw">500 or</span> has over <span className="nw">2 decimals</span>.
+- `currency` is not <span className="nw">1 of</span> the <span className="nw">10 codes</span>.
 - `chargedMinorUnits` is not a positive whole number.
 
 ### 401 Unauthenticated
@@ -208,7 +242,7 @@ Xquik charged nothing for this request.
 
 {"\n"}
 
-`{ "error": "price_changed", "message": "The price changed. Resend with this chargedCurrency & chargedMinorUnits to pay.", "chargedCurrency": "USD", "chargedMinorUnits": 2500 }`
+<span className="cn">`{ "error": "price_changed", "message": "The price changed. Resend with this chargedCurrency & chargedMinorUnits to pay.", "chargedCurrency": "USD", "chargedMinorUnits": `<wbr /><span className="nw">`2500 }`</span></span>
 
 {"\n"}
 
@@ -243,11 +277,11 @@ Too many requests. Wait for the `Retry-After` header before retrying.
 
 ## Response examples
 
-- **400** `{ "error": "invalid_input", "message": "Invalid input. Check the request body." }`
-- **401** `{ "error": "unauthenticated", "message": "Authentication required. Provide a valid API key or bearer token." }`
-- **403** `{ "error": "session_required", "message": "API keys & OAuth tokens cannot use this route. Sign in at dashboard.xquik.com/account instead." }`
-- **409** `{ "error": "price_changed", "message": "The price changed. Resend with this chargedCurrency & chargedMinorUnits to pay." }`
-- **429** `{ "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 60 }`
+- **400** <span className="cn">`{ "error": "invalid_input", "message": "Invalid input. Check the request body." }`</span>
+- **401** <span className="cn">`{ "error": "unauthenticated", "message": "Authentication required. Provide a valid API key or bearer token." }`</span>
+- **403** <span className="cn">`{ "error": "session_required", "message": "API keys & OAuth tokens cannot use this route. Sign in at dashboard.`<wbr />`xquik.com/`<wbr />`account instead." }`</span>
+- **409** <span className="cn">`{ "error": "price_changed", "message": "The price changed. Resend with this chargedCurrency & chargedMinorUnits to pay." }`</span>
+- **429** <span className="cn">`{ "error": "rate_`<wbr />`limit_`<wbr />`exceeded", "message": "Too many requests. Try again later.", "retryAfter": `<wbr /><span className="nw">`60 }`</span></span>
 
 </section>
 

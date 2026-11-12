@@ -10,7 +10,9 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-`GET https://xquik.com/api/v1/webhooks/{id}/deliveries`
+```text
+GET https://xquik.com/api/v1/webhooks/{id}/deliveries
+```
 
 <Callout icon="circle-check" color="#16a34a">
 
@@ -194,6 +196,38 @@ func main() {
 
 </CodeGroup>
 
+{/* OUTPUT SAMPLE START */}
+
+<div className="xq-sample" role="figure">
+  <div
+    className="xq-sample-table"
+    tabIndex={0}
+    role="region"
+    aria-label={"Rows from GET /webhooks/{id}/deliveries"}
+  >
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">{"status"}</th>
+          <th scope="col">{"record_type"}</th>
+          <th scope="col">{"webhook_id"}</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>{"failed"}</td>
+          <td>{"webhook_delivery_incident_handoff"}</td>
+          <td>{"15"}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p className="xq-sample-caption">
+    Example answer of <code>{"GET /webhooks/{id}/deliveries"}</code>, from its API reference
+  </p>
+</div>
+{/* OUTPUT SAMPLE END */}
+
 <section>
 
 ## Path parameters
@@ -234,15 +268,15 @@ payload body, raw signature, or full request headers.
 
 Do not depend on a `nextRetryAt` field. The response has none. Triage incidents from `status`, `attempts`, `lastStatusCode`, `lastError`, `createdAt`, and `deliveredAt`.
 
-| Webhook delivery incident column | Response source               | Triage rule                                                       |
-| -------------------------------- | ----------------------------- | ----------------------------------------------------------------- |
-| Delivery ID                      | `deliveries[].id`             | Use this ID for idempotency and support lookup.                   |
-| Monitor event ID                 | `deliveries[].streamEventId`  | Join the delivery to `GET /events/{id}`.                          |
-| Delivery state                   | `deliveries[].status`         | Handle pending, failed, exhausted, and delivered rows separately. |
-| Attempt count                    | `deliveries[].attempts`       | Count tries so far. Retries stop after 7 days.                    |
-| Receiver status                  | `deliveries[].lastStatusCode` | Separate HTTP failures from unreachable receivers.                |
-| Failure reason                   | `deliveries[].lastError`      | Show the latest receiver error to operators.                      |
-| Delivery timing                  | `createdAt` and `deliveredAt` | Measure queue time and recovery time.                             |
+| Webhook delivery incident column | Response source               | Triage rule                                                                |
+| -------------------------------- | ----------------------------- | -------------------------------------------------------------------------- |
+| Delivery ID                      | `deliveries[].id`             | Use this ID for idempotency and support lookup.                            |
+| Monitor event ID                 | `deliveries[].streamEventId`  | Join the delivery to `GET /events/{id}`.                                   |
+| Delivery state                   | `deliveries[].status`         | Handle pending, failed, exhausted, and delivered rows separately.          |
+| Attempt count                    | `deliveries[].attempts`       | Count tries so far. Retries stop after <span className="nw">7 days</span>. |
+| Receiver status                  | `deliveries[].lastStatusCode` | Separate HTTP failures from unreachable receivers.                         |
+| Failure reason                   | `deliveries[].lastError`      | Show the latest receiver error to operators.                               |
+| Delivery timing                  | `createdAt` and `deliveredAt` | Measure queue time and recovery time.                                      |
 
 Store these fields for support and retry triage.
 
@@ -299,7 +333,7 @@ Store these fields for support and retry triage.
 Use one row per delivery when the receiver owner must act. Ignore
 `delivered` rows, wait on `pending`, and act on `failed`. An `exhausted` row
 means 7 days passed without a `2xx`. Read its event with
-`GET /api/v1/events/{id}`.
+<span className="cn">`GET /api/v1/events/{id}`</span>.
 
 ```json
 {
@@ -335,13 +369,13 @@ means 7 days passed without a `2xx`. Read its event with
   </Card>
   <Card title="Event join" icon="link">
 
-    Store `streamEventId` and link `GET /api/v1/events/{id}`. That lets support
+    Store `streamEventId` and link <span className="cn">`GET /api/v1/events/{id}`</span>. That lets support
     inspect the monitor event that triggered the delivery.
 
   </Card>
   <Card title="Receiver proof" icon="shield-check">
 
-    After fixing the endpoint, send `POST /webhooks/{id}/test`. Attach the
+    After fixing the endpoint, send <span className="cn">`POST /webhooks/{id}/test`</span>. Attach the
     signed test result to the incident before waiting for the next event.
 
   </Card>
@@ -349,7 +383,7 @@ means 7 days passed without a `2xx`. Read its event with
 
 Xquik retries failed deliveries for 7 days. While your endpoint fails, Xquik retries 1 waiting delivery at a time. It checks the endpoint at least every 15 minutes. New deliveries wait as `pending`. Return `2xx` for a delivery you will never accept. See the [retry policy](/webhooks/overview#retry-policy).
 
-Fix the receiving endpoint first. Use [`POST /webhooks/{id}/test`](/api-reference/webhooks/test) to confirm it accepts signed requests. Then call [Resume Webhook](/api-reference/webhooks/resume) to start sending waiting and rejected deliveries at once. Without it, a rejected delivery can wait until its 7 days end.
+Fix the receiving endpoint first. Use [<span className="cn">`POST /webhooks/{id}/test`</span>](/api-reference/webhooks/test) to confirm it accepts signed requests. Then call [Resume Webhook](/api-reference/webhooks/resume) to start sending waiting and rejected deliveries at once. Without it, a rejected delivery can wait until its 7 days end.
 
 ### Receiver backfill handoff
 
@@ -371,7 +405,7 @@ work your receiver lost.
 ```
 
 Store `nextCursor` after every event page. Continue
-`GET /api/v1/events?limit=100&cursor={nextCursor}` until `hasMore` is `false`.
+<span className="cn">`GET /api/v1/`<wbr />`events?`<wbr />`limit=100&`<wbr />`cursor=`<wbr />`{nextCursor}`</span> until `hasMore` is `false`.
 Then compare each event `id` with delivery `streamEventId` values before
 replaying your own work. Add `monitorId` when replaying one account
 monitor, or `keywordMonitorId` when replaying one keyword monitor.
@@ -384,7 +418,7 @@ monitor, or `keywordMonitorId` when replaying one keyword monitor.
 
 | Query parameter | Type      | Required | Description                                                                                            |
 | --------------- | --------- | -------- | ------------------------------------------------------------------------------------------------------ |
-| `limit`         | `integer` | No       | Maximum deliveries per page, from 1 to 10,000. Default 100.                                            |
+| `limit`         | `integer` | No       | Maximum deliveries per page, from <span className="nw">1 to</span> 10,000. Default 100.                |
 | `cursor`        | `string`  | No       | `nextCursor` from the previous page. The `after` alias also works. Offset pagination is not supported. |
 
 </section>
@@ -395,19 +429,19 @@ monitor, or `keywordMonitorId` when replaying one keyword monitor.
 
 ### 200 OK
 
-| Field                         | Type      | Description                                                                                                      |
-| ----------------------------- | --------- | ---------------------------------------------------------------------------------------------------------------- |
-| `deliveries`                  | `array`   | List of delivery attempts, most recent first. Returns up to 10,000 deliveries per page.                          |
-| `deliveries[].id`             | `string`  | Unique delivery identifier.                                                                                      |
-| `deliveries[].streamEventId`  | `string`  | ID of the stream event that triggered this delivery.                                                             |
-| `deliveries[].status`         | `string`  | The current delivery status is `pending`, `delivered`, `failed`, or `exhausted`.                                 |
-| `deliveries[].attempts`       | `number`  | Total number of delivery attempts made. Retries stop after 7 days.                                               |
-| `deliveries[].lastStatusCode` | `number`  | HTTP status code returned by your endpoint on the most recent attempt. Omitted if Xquik has made no attempt yet. |
-| `deliveries[].lastError`      | `string`  | Error message from the most recent failed attempt. Omitted on success.                                           |
-| `deliveries[].createdAt`      | `string`  | ISO 8601 timestamp of when Xquik queued the delivery.                                                            |
-| `deliveries[].deliveredAt`    | `string`  | ISO 8601 timestamp of successful delivery. Omitted if not yet delivered.                                         |
-| `hasMore`                     | `boolean` | Whether more rows follow this page.                                                                              |
-| `nextCursor`                  | `string`  | Pass it as `cursor` for the next page. Present when `hasMore` is `true`.                                         |
+| Field                         | Type      | Description                                                                                                         |
+| ----------------------------- | --------- | ------------------------------------------------------------------------------------------------------------------- |
+| `deliveries`                  | `array`   | List of delivery attempts, most recent first. Returns up to <span className="nw">10,000 deliveries</span> per page. |
+| `deliveries[].id`             | `string`  | Unique delivery identifier.                                                                                         |
+| `deliveries[].streamEventId`  | `string`  | ID of the stream event that triggered this delivery.                                                                |
+| `deliveries[].status`         | `string`  | The current delivery status is `pending`, `delivered`, `failed`, or `exhausted`.                                    |
+| `deliveries[].attempts`       | `number`  | Total number of delivery attempts made. Retries stop after <span className="nw">7 days</span>.                      |
+| `deliveries[].lastStatusCode` | `number`  | HTTP status code returned by your endpoint on the most recent attempt. Omitted if Xquik has made no attempt yet.    |
+| `deliveries[].lastError`      | `string`  | Error message from the most recent failed attempt. Omitted on success.                                              |
+| `deliveries[].createdAt`      | `string`  | ISO <span className="nw">8601 timestamp</span> of when Xquik queued the delivery.                                   |
+| `deliveries[].deliveredAt`    | `string`  | ISO <span className="nw">8601 timestamp</span> of successful delivery. Omitted if not yet delivered.                |
+| `hasMore`                     | `boolean` | Whether more rows follow this page.                                                                                 |
+| `nextCursor`                  | `string`  | Pass it as `cursor` for the next page. Present when `hasMore` is `true`.                                            |
 
 ```json
 {
@@ -453,7 +487,7 @@ monitor, or `keywordMonitorId` when replaying one keyword monitor.
 
 ### 400 Invalid cursor
 
-`{ "error": "invalid_input", "message": "Cursor invalid. Use nextCursor from the previous page, or omit it to start over." }`
+<span className="cn">`{ "error": "invalid_input", "message": "Cursor invalid. Use nextCursor from the previous page, or omit it to start over." }`</span>
 
 {"\n"}
 
@@ -465,7 +499,7 @@ Missing or invalid API key. Check the `x-api-key` header value.
 
 ### 400 Invalid ID
 
-`{ "error": "invalid_id" }`
+<span className="cn">`{ "error": "invalid_id" }`</span>
 
 {"\n"}
 
@@ -477,7 +511,7 @@ No webhook exists with this ID, or it belongs to a different account.
 
 ### 429 Rate limited
 
-`{ "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 1 }`
+<span className="cn">`{ "error": "rate_`<wbr />`limit_`<wbr />`exceeded", "message": "Too many requests. Try again later.", "retryAfter": `<wbr /><span className="nw">`1 }`</span></span>
 
 {"\n"}
 
@@ -512,7 +546,7 @@ Too many requests. Wait for the `Retry-After` header before retrying.
   <Card title="exhausted" icon="pause">
 
     7 days passed without a `2xx`. `lastError` says why. Read the event with
-    `GET /api/v1/events/{id}`.
+    <span className="cn">`GET /api/v1/events/{id}`</span>.
 
   </Card>
 </CardGroup>
@@ -533,11 +567,11 @@ Xquik retries deliveries until your endpoint returns `2xx` or 7 days pass. Pausi
 
 ## Response examples
 
-- **400** `{ "error": "invalid_input", "message": "Invalid input. Check the request body." }`
-- **401** `{ "error": "unauthenticated", "message": "Authentication required. Provide a valid API key or bearer token." }`
-- **403** `{ "error": "api_key_paused", "message": "This API key is paused. Resume it at dashboard.xquik.com/api-keys to use it again." }`
-- **404** `{ "error": "not_found", "message": "Resource not found." }`
-- **429** `{ "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 60 }`
+- **400** <span className="cn">`{ "error": "invalid_input", "message": "Invalid input. Check the request body." }`</span>
+- **401** <span className="cn">`{ "error": "unauthenticated", "message": "Authentication required. Provide a valid API key or bearer token." }`</span>
+- **403** <span className="cn">`{ "error": "api_key_paused", "message": "This API key is paused. Resume it at dashboard.`<wbr />`xquik.com/`<wbr /><span className="nw">`api-keys `</span><wbr />`to use it again." }`</span>
+- **404** <span className="cn">`{ "error": "not_found", "message": "Resource not found." }`</span>
+- **429** <span className="cn">`{ "error": "rate_`<wbr />`limit_`<wbr />`exceeded", "message": "Too many requests. Try again later.", "retryAfter": `<wbr /><span className="nw">`60 }`</span></span>
 
 </section>
 

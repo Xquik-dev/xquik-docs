@@ -10,7 +10,9 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 <LlmsDirective />
 
-`GET https://xquik.com/api/v1/guest-wallets/status`
+```text
+GET https://xquik.com/api/v1/guest-wallets/status
+```
 
 Poll this endpoint after the user completes hosted checkout. While the wallet is pending, the guest key can authenticate this status route. It cannot call paid read routes until Xquik verifies payment.
 
@@ -22,6 +24,38 @@ curl https://xquik.com/api/v1/guest-wallets/status \
 ```
 
 </CodeGroup>
+
+{/* OUTPUT SAMPLE START */}
+
+<div className="xq-sample" role="figure">
+  <div
+    className="xq-sample-table"
+    tabIndex={0}
+    role="region"
+    aria-label={"Rows from GET /guest-wallets/status"}
+  >
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">{"status"}</th>
+          <th scope="col">{"balance"}</th>
+          <th scope="col">{"scope"}</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>{"active"}</td>
+          <td>{"66666"}</td>
+          <td>{"paid_reads"}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p className="xq-sample-caption">
+    Example answer of <code>{"GET /guest-wallets/status"}</code>, from its API reference
+  </p>
+</div>
+{/* OUTPUT SAMPLE END */}
 
 Wait at least `poll_after_seconds` before polling again. Continue while it is non-null, then stop. Use `usable` to decide whether paid reads can run. An active wallet can remain usable while a top-up is pending.
 
@@ -39,16 +73,16 @@ Wait at least `poll_after_seconds` before polling again. Continue while it is no
 
 ## Response
 
-| Field                | Type              | Description                                                                                                                                                          |
-| -------------------- | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `balance`            | `string`          | Available guest wallet credits.                                                                                                                                      |
-| `scope`              | `string`          | Always `paid_reads`.                                                                                                                                                 |
-| `status`             | `string`          | Combined wallet and pending-checkout state. It is `active`, `pending`, `expired`, `failed`, `frozen`, or `closed`. A pending top-up can coexist with `usable: true`. |
-| `usable`             | `boolean`         | Whether the key can call eligible paid read routes.                                                                                                                  |
-| `poll_after_seconds` | `integer \| null` | `2` while payment is pending. Otherwise `null`.                                                                                                                      |
-| `latest_purchase`    | `object \| null`  | Latest amount, credits, expiry, purchase ID, checkout URL while pending, and purchase status.                                                                        |
-| `top_up`             | `object \| null`  | Direct REST top-up action when the wallet is usable and has no pending checkout.                                                                                     |
-| `wallet_id`          | `string`          | Guest wallet ID.                                                                                                                                                     |
+| Field                | Type              | Description                                                                                                                                                                                                                  |
+| -------------------- | ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `balance`            | `string`          | Available guest wallet credits.                                                                                                                                                                                              |
+| `scope`              | `string`          | Always `paid_reads`.                                                                                                                                                                                                         |
+| `status`             | `string`          | Combined wallet and <span className="nw">pending-checkout</span> state. It is `active`, `pending`, `expired`, `failed`, `frozen`, or `closed`. A pending <span className="nw">top-up</span> can coexist with `usable: true`. |
+| `usable`             | `boolean`         | Whether the key can call eligible paid read routes.                                                                                                                                                                          |
+| `poll_after_seconds` | `integer \| null` | <span className="nw">`2` while</span> payment is pending. Otherwise `null`.                                                                                                                                                  |
+| `latest_purchase`    | `object \| null`  | Latest amount, credits, expiry, purchase ID, checkout URL while pending, and purchase status.                                                                                                                                |
+| `top_up`             | `object \| null`  | Direct REST <span className="nw">top-up</span> action when the wallet is usable and has no pending checkout.                                                                                                                 |
+| `wallet_id`          | `string`          | Guest wallet ID.                                                                                                                                                                                                             |
 
 </section>
 
@@ -58,15 +92,15 @@ Wait at least `poll_after_seconds` before polling again. Continue while it is no
 
 Use these fields together.
 
-| Condition                                      | Meaning                                                   | Action                                                             |
-| ---------------------------------------------- | --------------------------------------------------------- | ------------------------------------------------------------------ |
-| `usable: true`, `status: active`               | Paid reads can run. No checkout is pending.               | Call eligible reads. Use `top_up` only after confirmation.         |
-| `usable: true`, `status: pending`              | Existing credits remain usable while a top-up is pending. | Continue affordable reads. Poll after the stated delay.            |
-| `usable: false`, `status: pending`             | The initial checkout still awaits verified payment.       | Do not call paid reads. Poll after the stated delay.               |
-| `usable: false`, `status: expired` or `failed` | The initial checkout ended without payment.               | Stop polling. Get new confirmation before creating another wallet. |
-| `usable: false`, `status: frozen` or `closed`  | Wallet access is unavailable.                             | Stop paid reads. Do not retry payment automatically.               |
+| Condition                                      | Meaning                                                                               | Action                                                             |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| `usable: true`, `status: active`               | Paid reads can run. No checkout is pending.                                           | Call eligible reads. Use `top_up` only after confirmation.         |
+| `usable: true`, `status: pending`              | Existing credits remain usable while a <span className="nw">top-up</span> is pending. | Continue affordable reads. Poll after the stated delay.            |
+| `usable: false`, `status: pending`             | The initial checkout still awaits verified payment.                                   | Do not call paid reads. Poll after the stated delay.               |
+| `usable: false`, `status: expired` or `failed` | The initial checkout ended without payment.                                           | Stop polling. Get new confirmation before creating another wallet. |
+| `usable: false`, `status: frozen` or `closed`  | Wallet access is unavailable.                                                         | Stop paid reads. Do not retry payment automatically.               |
 
-`latest_purchase.status` describes only the latest purchase. Use the top-level `usable` field for paid-read access.
+<span className="cn">`latest_`<wbr />`purchase.`<wbr />`status`</span> describes only the latest purchase. Use the top-level `usable` field for paid-read access.
 
 <Tabs>
 
@@ -110,7 +144,7 @@ Use these fields together.
 
 Use `usable` to decide whether the key can call paid reads.
 
-The response sends `Cache-Control: no-store, private` and never returns the guest key.
+The response sends <span className="cn"><span className="nw">`Cache-Control: `</span><wbr /><span className="nw">`no-store, `</span><wbr />`private`</span> and never returns the guest key.
 
 <Note>
 
@@ -153,8 +187,8 @@ The response sends `Cache-Control: no-store, private` and never returns the gues
 }
 ```
 
-- **401** `{ "error": "unauthenticated", "message": "Authentication required. Provide a valid API key or bearer token." }`
-- **429** `{ "error": "rate_limited", "message": "Try again later." }`
+- **401** <span className="cn">`{ "error": "unauthenticated", "message": "Authentication required. Provide a valid API key or bearer token." }`</span>
+- **429** <span className="cn">`{ "error": "rate_limited", "message": "Try again later." }`</span>
 
 </section>
 

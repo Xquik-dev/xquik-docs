@@ -1,6 +1,6 @@
-import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { hasDocumentedField } from "./scripts/lib/documented-fields.ts";
+import { readPageFileSync as readFileSync } from "./scripts/lib/page-source.ts";
 
 const source = readFileSync(
   new URL("api-reference/styles/performance.mdx", import.meta.url),

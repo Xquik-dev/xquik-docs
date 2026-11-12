@@ -1,6 +1,6 @@
-import { readFileSync } from "node:fs";
 import { runInNewContext } from "node:vm";
 import { describe, expect, it } from "vitest";
+import { readPageFileSync as readFileSync } from "./scripts/lib/page-source.ts";
 
 const read = (path: string): string => readFileSync(path, "utf8");
 const OVERVIEW = read("mcp/overview.mdx");

@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
@@ -7,6 +7,7 @@ import {
   navigationNode,
   type NavigationNode,
 } from "./scripts/lib/docs-config-schema.ts";
+import { readPageFileSync as readFileSync } from "./scripts/lib/page-source.ts";
 
 const docsConfigSchema = z.looseObject({
   api: z.looseObject({

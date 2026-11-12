@@ -1,7 +1,8 @@
-import { readdirSync, readFileSync } from "node:fs";
+import { readdirSync } from "node:fs";
 import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
+import { readPageFileSync as readFileSync } from "./scripts/lib/page-source.ts";
 
 interface ApiPageNavigation {
   readonly file: string;

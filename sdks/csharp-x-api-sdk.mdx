@@ -32,11 +32,58 @@ Use typed .NET Standard 2.0+ calls in services, workers, console tools, or ASP.N
 | Export CSV, JSON, or XLSX          | `client.Extractions.ExportResults`       | Record the job ID, format, and file destination. |
 | Create a tweet                     | `client.X.Tweets.WithRawResponse.Create` | Store the write action ID and terminal state.    |
 
+{/* OUTPUT SAMPLE START */}
+
+<div className="xq-sample" role="figure">
+  <div className="xq-sample-card">
+    <a className="xq-sample-author" href={"https://x.com/NASA"}>
+      <img src={"/images/samples/0056d5e6cf2a33de.jpg"} alt="" width="40" height="40" />
+      <span>
+        <span className="xq-sample-strong">{"NASA"}</span>
+        <span>{"@NASA"}</span>
+      </span>
+    </a>
+    <p>
+      {
+        "Welcome to the Artemis Accords, Croatia 🇭🇷\n \nToday, Croatia became the 74th nation that has committed to a peaceful and prosperous exploration of space."
+      }
+    </p>
+    <img
+      className="xq-sample-media"
+      src={"/images/samples/d3012c3e68ba324e.jpg"}
+      alt={
+        'A graphic showing 74 flags of different countries that have joined the Artemis Accords, now including the Republic of Croatia. Text at the top of the image reads "Artemis Accords," and text at the bottom reads "United for Peaceful Exploration of Deep Space."'
+      }
+      width="680"
+      height="383"
+      loading="lazy"
+    />
+    <ul className="xq-sample-metrics">
+      <li>
+        <span className="xq-sample-strong">{"206"}</span> {"Replies"}
+      </li>
+      <li>
+        <span className="xq-sample-strong">{"757"}</span> {"Reposts"}
+      </li>
+      <li>
+        <span className="xq-sample-strong">{"9K"}</span> {"Likes"}
+      </li>
+      <li>
+        <span className="xq-sample-strong">{"1.3M"}</span> {"Views"}
+      </li>
+    </ul>
+  </div>
+  <p className="xq-sample-caption">
+    Live output of <code>{"GET /x/tweets/2102882545427714266"}</code>, read on 11 November 2026
+  </p>
+</div>
+{/* OUTPUT SAMPLE END */}
+
 <section>
 
 ## Install
 
-The NuGet package excludes `GET /support/attachments/{id}`. Use REST
+The NuGet package excludes <span className="cn">`GET /support/`<wbr />`attachments/{id}`</span>. Use REST
 for that binary download.
 
 ```bash
@@ -53,7 +100,7 @@ dotnet add package XTwitterScraper
 export X_TWITTER_SCRAPER_API_KEY="xq_YOUR_KEY_HERE"
 ```
 
-`new XTwitterScraperClient()` reads `X_TWITTER_SCRAPER_API_KEY`, `X_TWITTER_SCRAPER_BEARER_TOKEN`, and `X_TWITTER_SCRAPER_BASE_URL`.
+<span className="cn">`new XTwitterScraperClient()`</span> reads <span className="cn">`X_TWITTER_`<wbr />`SCRAPER_API_KEY`</span>, <span className="cn">`X_TWITTER_`<wbr />`SCRAPER_`<wbr />`BEARER_`<wbr />`TOKEN`</span>, and <span className="cn">`X_TWITTER_`<wbr />`SCRAPER_`<wbr />`BASE_URL`</span>.
 
 </section>
 
@@ -115,7 +162,7 @@ Use this workflow when a .NET worker needs every reply on a public tweet. It wri
 
 {"\n"}
 
-`client.Extractions.EstimateCost` and `client.Extractions.Run` map to the extraction workflow. For tweet replies, use `ExtractionEstimateCostParamsToolType.ReplyExtractor` and `ExtractionRunParamsToolType.ReplyExtractor`. `reply_extractor` requires `TargetTweetID`. `client.Extractions.Retrieve` returns `Results`, `HasMore`, and `NextCursor` for pagination. `client.Extractions.ExportResults` returns an `HttpResponse`. Read CSV and JSON as strings, and copy XLSX from the response stream.
+<span className="cn">`client.`<wbr />`Extractions.`<wbr />`EstimateCost`</span> and <span className="cn">`client.`<wbr />`Extractions.Run`</span> map to the extraction workflow. For tweet replies, set `ToolType` to `ReplyExtractor` in both calls, as the code below does. `reply_extractor` requires `TargetTweetID`. <span className="cn">`client.`<wbr />`Extractions.`<wbr />`Retrieve`</span> returns `Results`, `HasMore`, and `NextCursor` for pagination. <span className="cn">`client.`<wbr />`Extractions.`<wbr />`ExportResults`</span> returns an `HttpResponse`. Read CSV and JSON as strings, and copy XLSX from the response stream.
 
 {"\n"}
 
@@ -157,11 +204,11 @@ using HttpResponse csvResponse = await client.Extractions.ExportResults(
 await File.WriteAllTextAsync("xquik-replies.csv", await csvResponse.ReadAsString());
 ```
 
-Keep the same `estimate.Allowed` credit branch from the follower export workflow before calling `Run`. Store `job.ID` on the queue job, ticket, or warehouse batch before polling. With it, another worker can resume with `client.Extractions.Retrieve`. Keep `page.NextCursor` as the checkpoint when you stream replies to JSON Lines. Pass it back as `Cursor` on the next `ExtractionRetrieveParams` call.
+Keep the same `estimate.Allowed` credit branch from the follower export workflow before calling `Run`. Store `job.ID` on the queue job, ticket, or warehouse batch before polling. With it, another worker can resume with <span className="cn">`client.`<wbr />`Extractions.`<wbr />`Retrieve`</span>. Keep `page.NextCursor` as the checkpoint when you stream replies to JSON Lines. Pass it back as `Cursor` on the next `ExtractionRetrieveParams` call.
 
 {"\n"}
 
-Repeat the export with `new ExtractionExportResultsParams { Format = Format.Json }` and `File.WriteAllTextAsync("xquik-replies.json", await jsonResponse.ReadAsString())`. For XLSX, use `new ExtractionExportResultsParams { Format = Format.Xlsx }`, `File.Create("xquik-replies.xlsx")`, and stream-copy the response body. Use `xquik-replies.jsonl` for queue replay or warehouse loads and `xquik-replies.json` for app ingestion. Use `xquik-replies.csv` for CRM import and `xquik-replies.xlsx` for analyst handoff. The cost is 1 credit per reply extracted or returned.
+Repeat the export with `Format = Format.Json` and write its string to `xquik-replies.json`. For XLSX, pass `Format = Format.Xlsx`, open <span className="cn">`File.`<wbr />`Create(`<wbr /><span className="nw">`"xquik-replies.`</span><wbr />`xlsx")`</span>, and stream-copy the response body. Use `xquik-replies.jsonl` for queue replay or warehouse loads and `xquik-replies.json` for app ingestion. Use `xquik-replies.csv` for CRM import and `xquik-replies.xlsx` for analyst handoff. The cost is 1 credit per reply extracted or returned.
 
 </section>
 
@@ -171,44 +218,15 @@ Repeat the export with `new ExtractionExportResultsParams { Format = Format.Json
 
 The C# SDK throws generated exception types for non-success responses and connection failures.
 
-<CardGroup cols={2}>
-
-  <Card title="400 Bad request" icon="triangle-alert">
-
-    Throws `XTwitterScraperBadRequestException`.
-
-  </Card>
-  <Card title="401 Unauthorized" icon="lock">
-
-    Throws `XTwitterScraperUnauthorizedException`.
-
-  </Card>
-  <Card title="403 Forbidden" icon="shield">
-
-    Throws `XTwitterScraperForbiddenException`.
-
-  </Card>
-  <Card title="404 Not found" icon="circle-x">
-
-    Throws `XTwitterScraperNotFoundException`.
-
-  </Card>
-  <Card title="422 Validation error" icon="triangle-alert">
-
-    Throws `XTwitterScraperUnprocessableEntityException`.
-
-  </Card>
-  <Card title="429 Rate limited" icon="gauge">
-
-    Throws `XTwitterScraperRateLimitException`.
-
-  </Card>
-  <Card title="5xx server error" icon="server">
-
-    Throws `XTwitterScraper5xxException`.
-
-  </Card>
-</CardGroup>
+| Response                                         | Exception                                     |
+| ------------------------------------------------ | --------------------------------------------- |
+| <span className="nw">400 Bad</span> request      | `XTwitterScraperBadRequestException`          |
+| <span className="nw">401 Unauthorized</span>     | `XTwitterScraperUnauthorizedException`        |
+| <span className="nw">403 Forbidden</span>        | `XTwitterScraperForbiddenException`           |
+| <span className="nw">404 Not</span> found        | `XTwitterScraperNotFoundException`            |
+| <span className="nw">422 Validation</span> error | `XTwitterScraperUnprocessableEntityException` |
+| <span className="nw">429 Rate</span> limited     | `XTwitterScraperRateLimitException`           |
+| 5xx server error                                 | `XTwitterScraper5xxException`                 |
 
 Use the [error handling guide](/guides/error-handling) for response body fields and retry recommendations.
 

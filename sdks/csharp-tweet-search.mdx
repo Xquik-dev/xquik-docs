@@ -12,6 +12,53 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 This guide builds on the [C# SDK setup](/sdks/csharp-x-api-sdk), which covers install and authentication.
 
+{/* OUTPUT SAMPLE START */}
+
+<div className="xq-sample" role="figure">
+  <div className="xq-sample-card">
+    <a className="xq-sample-author" href={"https://x.com/NASA"}>
+      <img src={"/images/samples/0056d5e6cf2a33de.jpg"} alt="" width="40" height="40" />
+      <span>
+        <span className="xq-sample-strong">{"NASA"}</span>
+        <span>{"@NASA"}</span>
+      </span>
+    </a>
+    <p>
+      {
+        "Welcome to the Artemis Accords, Croatia 🇭🇷\n \nToday, Croatia became the 74th nation that has committed to a peaceful and prosperous exploration of space."
+      }
+    </p>
+    <img
+      className="xq-sample-media"
+      src={"/images/samples/d3012c3e68ba324e.jpg"}
+      alt={
+        'A graphic showing 74 flags of different countries that have joined the Artemis Accords, now including the Republic of Croatia. Text at the top of the image reads "Artemis Accords," and text at the bottom reads "United for Peaceful Exploration of Deep Space."'
+      }
+      width="680"
+      height="383"
+      loading="lazy"
+    />
+    <ul className="xq-sample-metrics">
+      <li>
+        <span className="xq-sample-strong">{"206"}</span> {"Replies"}
+      </li>
+      <li>
+        <span className="xq-sample-strong">{"757"}</span> {"Reposts"}
+      </li>
+      <li>
+        <span className="xq-sample-strong">{"9K"}</span> {"Likes"}
+      </li>
+      <li>
+        <span className="xq-sample-strong">{"1.3M"}</span> {"Views"}
+      </li>
+    </ul>
+  </div>
+  <p className="xq-sample-caption">
+    Live output of <code>{"GET /x/tweets/2102882545427714266"}</code>, read on 11 November 2026
+  </p>
+</div>
+{/* OUTPUT SAMPLE END */}
+
 <section>
 
 ## Tweet search workflow to JSON Lines, CSV, or XLSX
@@ -20,7 +67,7 @@ This workflow is for a .NET worker, console job, or ASP.NET background service. 
 
 {"\n"}
 
-`client.X.Tweets.Search` calls `GET /x/tweets/search`. Build a `TweetSearchParams` object with the same query parameters the REST API accepts. They are `Q`, `Limit`, `Cursor`, `SinceTime`, `UntilTime`, and `QueryType`.
+<span className="cn">`client.X.`<wbr />`Tweets.`<wbr />`Search`</span> calls `GET /x/tweets/search`. Build a `TweetSearchParams` object with the same query parameters the REST API accepts. They are `Q`, `Limit`, `Cursor`, `SinceTime`, `UntilTime`, and `QueryType`.
 
 ```csharp
 using System.Collections.Generic;
@@ -158,11 +205,11 @@ static async Task WriteCsvRow(StreamWriter writer, IEnumerable<object?> values)
 
 ### Returned data & handoff
 
-`client.X.Tweets.Search` returns `PaginatedTweets`. Use `page.Tweets` for the tweet array. Use `page.HasNextPage` to decide whether another page exists. Use `page.NextCursor` as the checkpoint for the next request. For bounded pulls that return fewer tweets than `Limit`, pass `page.NextCursor` back as `Cursor`. Send the same query, filters, `QueryType`, and `Limit` with that cursor.
+<span className="cn">`client.X.`<wbr />`Tweets.`<wbr />`Search`</span> returns `PaginatedTweets`. Use `page.Tweets` for the tweet array. Use `page.HasNextPage` to decide whether another page exists. Use `page.NextCursor` as the checkpoint for the next request. For bounded pulls that return fewer tweets than `Limit`, pass `page.NextCursor` back as `Cursor`. Send the same query, filters, `QueryType`, and `Limit` with that cursor.
 
 Each `SearchTweet` includes typed properties such as `ID`, `Text`, `Author`, and `CreatedAt`. Others are `LikeCount`, `ReplyCount`, `RetweetCount`, `QuoteCount`, `ViewCount`, and `BookmarkCount`. It also includes `IsNoteTweet` when available. Project `page.Tweets` into JSON Lines and CSV rows with `tweet_id`, `author_username`, and engagement counts. Rows also carry `page_index`, `page_cursor`, `next_cursor`, and `has_next_page`. Workers can then resume. They can also load the same records into XLSX, CRM, warehouse, or agent workflows.
 
-Tweet search costs 1 credit per tweet returned. Remaining credits may not cover a bounded `Limit` request. If so, the API can return fewer tweets. If 0 paid results are affordable, it returns `402 insufficient_credits`. The SDK retries connection errors, 408, 409, 429, and 5xx responses. It does so 2 times by default. For explicit `Limit` pulls, resume with the same query, filters, `QueryType`, and `Limit`. Only `Cursor` changes.
+Tweet search costs 1 credit per tweet returned. Remaining credits may not cover a bounded `Limit` request. If so, the API can return fewer tweets. If 0 paid results are affordable, it returns <span className="cn"><span className="nw">`402 insufficient_`</span><wbr />`credits`</span>. The SDK retries connection errors, 408, 409, 429, and 5xx responses. It does so 2 times by default. For explicit `Limit` pulls, resume with the same query, filters, `QueryType`, and `Limit`. Only `Cursor` changes.
 
 </section>
 

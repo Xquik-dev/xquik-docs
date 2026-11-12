@@ -11,6 +11,40 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 This guide builds on the [C# SDK setup](/sdks/csharp-x-api-sdk), which covers install and authentication.
 
+{/* OUTPUT SAMPLE START */}
+
+<div className="xq-sample" role="figure">
+  <div className="xq-sample-card">
+    <a className="xq-sample-author" href={"https://x.com/NASADepAdmin"}>
+      <img src={"/images/samples/5263511d921d0ecf.jpg"} alt="" width="40" height="40" />
+      <span>
+        <span className="xq-sample-strong">{"Deputy Administrator Matt Anderson"}</span>
+        <span>{"@NASADepAdmin"}</span>
+      </span>
+    </a>
+    <p>
+      {
+        "Serving President Donald J. Trump as the 16th @NASA Deputy Administrator | Working alongside @NASAAdmin to lead the next Golden Age of space discovery 🚀"
+      }
+    </p>
+    <ul className="xq-sample-metrics">
+      <li>
+        <span className="xq-sample-strong">{"5.7K"}</span> {"Followers"}
+      </li>
+      <li>
+        <span className="xq-sample-strong">{"6"}</span> {"Following"}
+      </li>
+      <li>
+        <span className="xq-sample-strong">{"87"}</span> {"Posts"}
+      </li>
+    </ul>
+  </div>
+  <p className="xq-sample-caption">
+    Live output of <code>{"GET /x/users/nasa/following"}</code>, read on 11 November 2026
+  </p>
+</div>
+{/* OUTPUT SAMPLE END */}
+
 <section>
 
 ## Follower export workflow to CSV, JSON, or XLSX
@@ -19,11 +53,11 @@ This workflow is for a .NET worker, console job, or ASP.NET background service. 
 
 {"\n"}
 
-`client.Extractions.EstimateCost` and `client.Extractions.Run` map to the extraction workflow. For follower exports, use `ExtractionEstimateCostParamsToolType.FollowerExplorer` and `ExtractionRunParamsToolType.FollowerExplorer`. `follower_explorer` requires `TargetUsername`. `client.Extractions.Retrieve` returns `Results`, `HasMore`, and `NextCursor` for pagination. `client.Extractions.ExportResults` returns an `HttpResponse`. Read CSV and JSON as strings, and copy XLSX from the response stream.
+<span className="cn">`client.`<wbr />`Extractions.`<wbr />`EstimateCost`</span> and <span className="cn">`client.`<wbr />`Extractions.Run`</span> map to the extraction workflow. For follower exports, set `ToolType` to `FollowerExplorer` in both calls, as the code below does. `follower_explorer` requires `TargetUsername`. <span className="cn">`client.`<wbr />`Extractions.`<wbr />`Retrieve`</span> returns `Results`, `HasMore`, and `NextCursor` for pagination. <span className="cn">`client.`<wbr />`Extractions.`<wbr />`ExportResults`</span> returns an `HttpResponse`. Read CSV and JSON as strings, and copy XLSX from the response stream.
 
 <Info>
 
-`client.Extractions.Run` returns the queued `202 Accepted` receipt from `POST /extractions`. C# exposes REST `id`, `toolType`, and `status: "running"` as `job.ID`, `job.ToolType`, and `job.Status`. Store `job.ID` immediately, then poll `client.Extractions.Retrieve` before reading pages or calling `client.Extractions.ExportResults`. Credit reservation happens after the job starts. Available credits can change after `EstimateCost`. If they did, the run can fetch only the affordable count before export. In that case it can instead mark the job `failed` with `insufficient_credits`.
+<span className="cn">`client.`<wbr />`Extractions.Run`</span> returns the queued `202 Accepted` receipt from `POST /extractions`. C# exposes REST `id`, `toolType`, and `status: "running"` as `job.ID`, `job.ToolType`, and `job.Status`. Store `job.ID` immediately, then poll <span className="cn">`client.`<wbr />`Extractions.`<wbr />`Retrieve`</span> before reading pages or calling <span className="cn">`client.`<wbr />`Extractions.`<wbr />`ExportResults`</span>. Credit reservation happens after the job starts. Available credits can change after `EstimateCost`. If they did, the run can fetch only the affordable count before export. In that case it can instead mark the job `failed` with `insufficient_credits`.
 
 </Info>
 
@@ -123,7 +157,7 @@ using FileStream xlsxFile = File.Create("xquik-followers.xlsx");
 await xlsxStream.CopyToAsync(xlsxFile);
 ```
 
-The cost is 1 credit per follower extracted or returned. Store `job.ID`, `targetUsername`, `estimate.EstimatedResults`, and `estimate.Source` before polling. With them, a queue retry can resume the same follower export. So can a Windows service restart or worker restart. Keep `page.NextCursor` as the checkpoint when you stream followers to JSON Lines. Map exported `User ID` or row `xUserId` as the CRM unique key. Use `xquik-followers.jsonl` for queue replay or warehouse loads and `xquik-followers.json` for app ingestion. Use `xquik-followers.csv` for CRM import and `xquik-followers.xlsx` for analyst handoff. Exports are free after the extraction job exists.
+The cost is 1 credit per follower extracted or returned. Store `job.ID`, `targetUsername`, <span className="cn">`estimate.`<wbr />`EstimatedResults`</span>, and `estimate.Source` before polling. With them, a queue retry can resume the same follower export. So can a Windows service restart or worker restart. Keep `page.NextCursor` as the checkpoint when you stream followers to JSON Lines. Map exported `User ID` or row `xUserId` as the CRM unique key. Use <span className="cn"><span className="nw">`xquik-followers.`</span><wbr />`jsonl`</span> for queue replay or warehouse loads and `xquik-followers.json` for app ingestion. Use `xquik-followers.csv` for CRM import and `xquik-followers.xlsx` for analyst handoff. Exports are free after the extraction job exists.
 
 </section>
 
