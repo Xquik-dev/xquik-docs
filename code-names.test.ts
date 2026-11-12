@@ -69,7 +69,7 @@ describe("breakNames", () => {
         const marked = breakNames(`\`${name}\``);
         for (const part of marked.matchAll(/(<span className="nw">)?`([^`]+)`/gu)) {
           const [, kept, text = ""] = part;
-          if (name.length > SHORT && kept === undefined) expect(text).not.toContain("-");
+          if (marked.startsWith('<span className="cn">') && kept === undefined) expect(text).not.toContain("-");
         }
         const wide = wideNames(marked).length > 0;
         const pieces = [...marked.matchAll(/`([^`]+)`/gu)].map((part) => part[1] ?? "");

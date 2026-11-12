@@ -105,8 +105,13 @@ function markName(code: string): string {
   return `${OPEN}${parts.join(WBR)}${CLOSE}`;
 }
 
-const needsMark = (code: string): boolean =>
-  code.length > SHORT && !/^\s|\s$/u.test(code) && code.trim() !== "";
+const long = (code: string): boolean => code.length > SHORT && !/^\s|\s$/u.test(code) && code.trim() !== "";
+
+function needsMark(code: string): boolean {
+  if (!long(code)) return false;
+  const [first, ...rest] = segmentsOf(code);
+  return rest.length > 0 || (first !== undefined && !first.kept && /\s/u.test(first.text.trim()));
+}
 
 const codesOf = (line: string): string[] =>
   [...line.matchAll(TOKEN)].flatMap((match) => (match[1] === undefined ? [] : [match[1]]));
@@ -148,7 +153,7 @@ function unmark(source: string): string {
 function wideNames(source: string): string[] {
   const wide: string[] = [];
   eachProseLine(unmark(source), (line) => {
-    for (const code of codesOf(line)) if (needsMark(code) && longestPiece(code) > LONGEST_PIECE) wide.push(code);
+    for (const code of codesOf(line)) if (long(code) && longestPiece(code) > LONGEST_PIECE) wide.push(code);
     return line;
   });
   return wide;
