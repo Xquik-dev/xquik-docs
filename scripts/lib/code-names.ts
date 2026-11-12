@@ -33,17 +33,13 @@ function piecesOf(run: string): string[] {
   }
   if (piece !== "") cuts.push(piece);
   const merged: string[] = [];
-  let carry = "";
   for (const cut of cuts) {
-    carry += cut;
-    if (carry.length >= MIN_PIECE) {
-      merged.push(carry);
-      carry = "";
+    const last = merged.at(-1);
+    if (last !== undefined && (cut.length < MIN_PIECE || last.length < MIN_PIECE) && !(cut.includes("-") && !last.includes("-"))) {
+      merged[merged.length - 1] = last + cut;
+    } else {
+      merged.push(cut);
     }
-  }
-  if (carry !== "") {
-    const last = merged.pop();
-    merged.push(last === undefined ? carry : last + carry);
   }
   return merged;
 }

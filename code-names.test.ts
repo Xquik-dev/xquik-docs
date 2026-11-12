@@ -23,7 +23,7 @@ const CASES: readonly (readonly [string, string])[] = [
   ],
   [
     "[`GET /api/v1/x/users/{id}/following`](/api-reference/x/following)",
-    '[<span className="cn">`GET /api/`<wbr />`v1/x/`<wbr />`users/`<wbr />`{id}/`<wbr />`following`</span>](/api-reference/x/following)',
+    '[<span className="cn">`GET /api/v1/x/`<wbr />`users/`<wbr />`{id}/`<wbr />`following`</span>](/api-reference/x/following)',
   ],
   ["| `GET /x/users/{id}/verified-followers` |", "| `GET /x/users/{id}/verified-followers` |"],
   ["```bash\nUse `GET /x/users/{id}/verified-followers`\n```", "```bash\nUse `GET /x/users/{id}/verified-followers`\n```"],
