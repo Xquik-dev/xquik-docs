@@ -162,7 +162,7 @@ Use this workflow when a .NET worker needs every reply on a public tweet. It wri
 
 {"\n"}
 
-<span className="cn">`client.`<wbr />`Extractions.`<wbr />`EstimateCost`</span> and <span className="cn">`client.`<wbr />`Extractions.Run`</span> map to the extraction workflow. For tweet replies, use <span className="cn">`ExtractionEstimateCostParamsToolType.`<wbr />`ReplyExtractor`</span> and <span className="cn">`ExtractionRunParamsToolType.`<wbr />`ReplyExtractor`</span>. `reply_extractor` requires `TargetTweetID`. <span className="cn">`client.`<wbr />`Extractions.`<wbr />`Retrieve`</span> returns `Results`, `HasMore`, and `NextCursor` for pagination. <span className="cn">`client.`<wbr />`Extractions.`<wbr />`ExportResults`</span> returns an `HttpResponse`. Read CSV and JSON as strings, and copy XLSX from the response stream.
+<span className="cn">`client.`<wbr />`Extractions.`<wbr />`EstimateCost`</span> and <span className="cn">`client.`<wbr />`Extractions.Run`</span> map to the extraction workflow. For tweet replies, set `ToolType` to `ReplyExtractor` in both calls, as the code below does. `reply_extractor` requires `TargetTweetID`. <span className="cn">`client.`<wbr />`Extractions.`<wbr />`Retrieve`</span> returns `Results`, `HasMore`, and `NextCursor` for pagination. <span className="cn">`client.`<wbr />`Extractions.`<wbr />`ExportResults`</span> returns an `HttpResponse`. Read CSV and JSON as strings, and copy XLSX from the response stream.
 
 {"\n"}
 
@@ -208,7 +208,7 @@ Keep the same `estimate.Allowed` credit branch from the follower export workflow
 
 {"\n"}
 
-Repeat the export with <span className="cn">`new ExtractionExportResultsParams { Format = Format.Json }`</span> and <span className="cn">`File.`<wbr />`WriteAllTextAsync(`<wbr /><span className="nw">`"xquik-replies.`</span><wbr />`json", await jsonResponse.`<wbr />`ReadAsString())`</span>. For XLSX, use <span className="cn">`new ExtractionExportResultsParams { Format = Format.Xlsx }`</span>, <span className="cn">`File.`<wbr />`Create(`<wbr /><span className="nw">`"xquik-replies.`</span><wbr />`xlsx")`</span>, and stream-copy the response body. Use `xquik-replies.jsonl` for queue replay or warehouse loads and `xquik-replies.json` for app ingestion. Use `xquik-replies.csv` for CRM import and `xquik-replies.xlsx` for analyst handoff. The cost is 1 credit per reply extracted or returned.
+Repeat the export with `Format = Format.Json` and write its string to `xquik-replies.json`. For XLSX, pass `Format = Format.Xlsx`, open <span className="cn">`File.`<wbr />`Create(`<wbr /><span className="nw">`"xquik-replies.`</span><wbr />`xlsx")`</span>, and stream-copy the response body. Use `xquik-replies.jsonl` for queue replay or warehouse loads and `xquik-replies.json` for app ingestion. Use `xquik-replies.csv` for CRM import and `xquik-replies.xlsx` for analyst handoff. The cost is 1 credit per reply extracted or returned.
 
 </section>
 
@@ -218,44 +218,15 @@ Repeat the export with <span className="cn">`new ExtractionExportResultsParams {
 
 The C# SDK throws generated exception types for non-success responses and connection failures.
 
-<CardGroup cols={2}>
-
-  <Card title="400 Bad request" icon="triangle-alert">
-
-    Throws <span className="cn">`XTwitterScraperBadRequestException`</span>.
-
-  </Card>
-  <Card title="401 Unauthorized" icon="lock">
-
-    Throws <span className="cn">`XTwitterScraperUnauthorizedException`</span>.
-
-  </Card>
-  <Card title="403 Forbidden" icon="shield">
-
-    Throws <span className="cn">`XTwitterScraperForbiddenException`</span>.
-
-  </Card>
-  <Card title="404 Not found" icon="circle-x">
-
-    Throws <span className="cn">`XTwitterScraperNotFoundException`</span>.
-
-  </Card>
-  <Card title="422 Validation error" icon="triangle-alert">
-
-    Throws <span className="cn">`XTwitterScraperUnprocessableEntityException`</span>.
-
-  </Card>
-  <Card title="429 Rate limited" icon="gauge">
-
-    Throws <span className="cn">`XTwitterScraperRateLimitException`</span>.
-
-  </Card>
-  <Card title="5xx server error" icon="server">
-
-    Throws <span className="cn">`XTwitterScraper5xxException`</span>.
-
-  </Card>
-</CardGroup>
+| Response                                         | Exception                                     |
+| ------------------------------------------------ | --------------------------------------------- |
+| <span className="nw">400 Bad</span> request      | `XTwitterScraperBadRequestException`          |
+| <span className="nw">401 Unauthorized</span>     | `XTwitterScraperUnauthorizedException`        |
+| <span className="nw">403 Forbidden</span>        | `XTwitterScraperForbiddenException`           |
+| <span className="nw">404 Not</span> found        | `XTwitterScraperNotFoundException`            |
+| <span className="nw">422 Validation</span> error | `XTwitterScraperUnprocessableEntityException` |
+| <span className="nw">429 Rate</span> limited     | `XTwitterScraperRateLimitException`           |
+| 5xx server error                                 | `XTwitterScraper5xxException`                 |
 
 Use the [error handling guide](/guides/error-handling) for response body fields and retry recommendations.
 
