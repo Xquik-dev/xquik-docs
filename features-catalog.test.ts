@@ -1,4 +1,3 @@
-import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
@@ -11,6 +10,7 @@ import {
   FEATURES_PAGE,
   withThemes,
 } from "./scripts/lib/features-page.ts";
+import { readPageFileSync as readFileSync } from "./scripts/lib/page-source.ts";
 
 const BULLET = /^\s*[*+-] /u;
 const FIXTURE: Themes = [

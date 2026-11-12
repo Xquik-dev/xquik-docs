@@ -1,9 +1,8 @@
-import { readFileSync } from "node:fs";
-
 import { describe, expect, it } from "vitest";
 
 import { collapseTableSpacing } from "./scripts/lib/documented-fields.ts";
 import { docsContract, productCheck, productOperation } from "./product-contract.test.helpers.ts";
+import { readPageFileSync as readFileSync } from "./scripts/lib/page-source.ts";
 
 const source = collapseTableSpacing(
   readFileSync(new URL("api-reference/x-accounts/list.mdx", import.meta.url), "utf8"),

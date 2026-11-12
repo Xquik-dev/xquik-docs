@@ -1,6 +1,5 @@
-import { readFileSync } from "node:fs";
-
 import { expect, it } from "vitest";
+import { readPageFileSync as readFileSync } from "./scripts/lib/page-source.ts";
 
 const GUIDE = readFileSync("mcp/coding-agents.mdx", "utf8");
 

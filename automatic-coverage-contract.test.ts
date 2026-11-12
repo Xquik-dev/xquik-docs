@@ -1,7 +1,6 @@
-import { readFileSync } from "node:fs";
-
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
+import { readPageFileSync as readFileSync } from "./scripts/lib/page-source.ts";
 
 const AUTOMATIC_COVERAGE_PAGES = [
   "api-reference/x/search-tweets.mdx",

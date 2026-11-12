@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { GENERATED_RESPONSE_EXAMPLES_START } from "./scripts/lib/generated-response-examples.ts";
 import { replaceBlock, run } from "./scripts/response-examples.ts";
+import { readPageFileSync as readFileSync } from "./scripts/lib/page-source.ts";
 
 const PAGE =
   '---\nendpoint: "GET /fixture"\n---\n\nimport Intro from "/intro.mdx";\n\nOriginal guidance.\n';

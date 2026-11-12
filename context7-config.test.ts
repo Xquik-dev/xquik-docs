@@ -1,7 +1,6 @@
-import { readFileSync } from "node:fs";
-
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
+import { readPageFileSync as readFileSync } from "./scripts/lib/page-source.ts";
 
 const CONTEXT7_LIBRARY_URL = "https://context7.com/xquik-dev/xquik-docs";
 const CONTEXT7_WEBSITE_URL = "https://context7.com/websites/xquik";

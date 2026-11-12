@@ -20,14 +20,14 @@ Xquik signs every X (Twitter) webhook delivery with HMAC-SHA256. It signs a stri
 from a timestamp, nonce, and the raw body. Verify the signature and reject stale
 or replayed requests before processing events.
 
-| Verification checkpoint | Exact source           | Reject when                                                  |
-| ----------------------- | ---------------------- | ------------------------------------------------------------ |
-| Signature               | `X-Xquik-Signature`    | HMAC-SHA256 differs in a timing-safe comparison.             |
-| Timestamp               | `X-Xquik-Timestamp`    | The delivery falls outside the 5-minute tolerance.           |
-| Nonce                   | `X-Xquik-Nonce`        | The webhook already used this nonce within 5 minutes.        |
-| Raw body                | Unparsed request bytes | Middleware parsed or re-serialized JSON before verification. |
-| Delivery                | `deliveryId`           | The receiver already queued this delivery.                   |
-| Monitor event           | `streamEventId`        | The receiver already processed this monitor event.           |
+| Verification checkpoint | Exact source           | Reject when                                                                                              |
+| ----------------------- | ---------------------- | -------------------------------------------------------------------------------------------------------- |
+| Signature               | `X-Xquik-Signature`    | <span className="nw">HMAC-SHA256</span> differs in a <span className="nw">timing-safe</span> comparison. |
+| Timestamp               | `X-Xquik-Timestamp`    | The delivery falls outside the <span className="nw">5-minute</span> tolerance.                           |
+| Nonce                   | `X-Xquik-Nonce`        | The webhook already used this nonce within <span className="nw">5 minutes</span>.                        |
+| Raw body                | Unparsed request bytes | Middleware parsed or <span className="nw">re-serialized</span> JSON before verification.                 |
+| Delivery                | `deliveryId`           | The receiver already queued this delivery.                                                               |
+| Monitor event           | `streamEventId`        | The receiver already processed this monitor event.                                                       |
 
 <section>
 
@@ -81,8 +81,8 @@ handler routing and logs.
 2. Xquik computes `sha256=` + HMAC-SHA256(webhook secret, signing string).
 3. Your server recomputes the signature with the same secret over the raw body.
 4. Reject the request if the signature does not match in constant time.
-5. Reject the request if the timestamp is older than 5 minutes (clock-skew tolerant).
-6. Reject the request if the nonce was already seen in the last 5 minutes. This check is replay protection.
+5. Reject the request if the timestamp is older than <span className="nw">5 minutes</span> (<span className="nw">clock-skew</span> tolerant).
+6. Reject the request if the nonce was already seen in the last <span className="nw">5 minutes</span>. This check is replay protection.
 
 </section>
 
@@ -220,6 +220,38 @@ app.post("/webhook", express.raw({ type: "application/json" }), (req, res) => {
 ```
 
 </CodeGroup>
+
+{/* OUTPUT SAMPLE START */}
+
+<div className="xq-sample" role="figure">
+  <div className="xq-sample-table" tabIndex={0} role="region" aria-label={"Rows from GET /events"}>
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">{"username"}</th>
+          <th scope="col">{"id"}</th>
+          <th scope="col">{"type"}</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>{"elonmusk"}</td>
+          <td>{"9001"}</td>
+          <td>{"tweet.new"}</td>
+        </tr>
+        <tr>
+          <td>{"elonmusk"}</td>
+          <td>{"9002"}</td>
+          <td>{"tweet.reply"}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p className="xq-sample-caption">
+    Example answer of <code>{"GET /events"}</code>, from its API reference
+  </p>
+</div>
+{/* OUTPUT SAMPLE END */}
 
 The same check is ready in [Python webhook verification](/webhooks/verification-python) and [Go webhook verification](/webhooks/verification-go).
 

@@ -1,5 +1,5 @@
-import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { readPageFileSync as readFileSync } from "./scripts/lib/page-source.ts";
 
 const page = readFileSync("api-reference/api-keys/list.mdx", "utf8");
 const normalizedPage = page.replaceAll(/\s+/gu, " ");

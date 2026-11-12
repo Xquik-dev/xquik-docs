@@ -1,10 +1,10 @@
-import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import { docsSecurity } from "./product-contract.test.helpers.ts";
 import { hasDocumentedField } from "./scripts/lib/documented-fields.ts";
+import { readPageFileSync as readFileSync } from "./scripts/lib/page-source.ts";
 
 const PROJECT_ROOT = dirname(fileURLToPath(import.meta.url));
 const page = readFileSync(join(PROJECT_ROOT, "api-reference/drafts/get.mdx"), "utf8");

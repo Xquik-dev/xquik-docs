@@ -11,6 +11,33 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 
 This page lists common issues, error codes, and fixes. If it does not cover your problem, contact [support@xquik.com](mailto:support@xquik.com).
 
+{/* OUTPUT SAMPLE START */}
+
+<div className="xq-sample" role="figure">
+  <div className="xq-sample-table" tabIndex={0} role="region" aria-label={"Rows from GET /account"}>
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">{"plan"}</th>
+          <th scope="col">{"monitorsAllowed"}</th>
+          <th scope="col">{"monitorsUsed"}</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>{"active"}</td>
+          <td>{"9007199254740991"}</td>
+          <td>{"3"}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p className="xq-sample-caption">
+    Example answer of <code>{"GET /account"}</code>, from its API reference
+  </p>
+</div>
+{/* OUTPUT SAMPLE END */}
+
 <section>
 
 ## Error codes
@@ -23,9 +50,9 @@ following items.
 - **API key header.** Send `x-api-key: xq_...` or `Authorization: Bearer xq_...`.
 - **OAuth header.** Send `Authorization: Bearer <access_token>`. OAuth clients normally manage this automatically.
 - **Key format.** Must start with `xq_`. If it doesn't, you're using the wrong value.
-- **Key revoked.** Revoked keys return 401 immediately. Generate a new key from the dashboard.
+- **Key revoked.** Revoked keys return <span className="nw">401 immediately</span>. Generate a new key from the dashboard.
 - **OAuth token expired.** Let the MCP client refresh the token. Reconnect Xquik if refresh fails.
-- **API key management auth.** Listing, creating, pausing, and revoking keys require a same-origin dashboard session. API keys and OAuth bearer tokens cannot manage keys.
+- **API key management auth.** Listing, creating, pausing, and revoking keys require a <span className="nw">same-origin</span> dashboard session. API keys and OAuth bearer tokens cannot manage keys.
 
 ```bash
 # Correct
@@ -62,9 +89,9 @@ Anonymous non-MPP paid reads return `401` with a Bearer challenge and guest wall
 Try these fixes.
 
 - For account keys, check `GET /api/v1/account` and use only the advertised account payment action
-- For guest keys, check [guest wallet status](/api-reference/guest-wallets/status). Then use only the advertised guest top-up action
+- For guest keys, check [guest wallet status](/api-reference/guest-wallets/status). Then use only the advertised guest <span className="nw">top-up</span> action
 - For the direct MPP operations, complete the MPP challenge. You can also ask the user to confirm a guest wallet amount
-- For the other guest-eligible reads, authenticate. You can also ask the user to confirm a guest wallet amount
+- For the other <span className="nw">guest-eligible</span> reads, authenticate. You can also ask the user to confirm a guest wallet amount
 - Use [Estimate Extraction](/api-reference/extractions/twitter-scraping-cost-estimator) to see the credit cost before running extractions
 
 Ask the user to choose an option and amount before creating checkout. Never trigger checkout, top-up, or subscription automatically after `401` or `402`.
@@ -127,10 +154,10 @@ You've exceeded the API rate limit. The API uses fixed windows per tier.
 
 Try these fixes.
 
-- Respect `Retry-After`. Otherwise start at 1 second, add jitter, and stop after 3 retries.
-- Requests sent before the fixed window resets keep returning `429` until `Retry-After` elapses.
-- Check the `Retry-After` header for the server-recommended wait time.
-- Use webhooks instead of polling. They push detected events without repeated event-list calls.
+- Respect `Retry-After`. Otherwise start at <span className="nw">1 second</span>, add jitter, and stop after <span className="nw">3 retries</span>.
+- Requests sent before the fixed window resets keep returning <span className="nw">`429` until</span> `Retry-After` elapses.
+- Check the `Retry-After` header for the <span className="nw">server-recommended</span> wait time.
+- Use webhooks instead of polling. They push detected events without repeated <span className="nw">event-list</span> calls.
 - Batch your logic. Fetch events once per minute instead of once per second.
 
 See the [Rate Limits](/guides/rate-limits) guide for backoff code examples.
@@ -142,9 +169,9 @@ The read service is temporarily unavailable or busy. This is usually transient.
 Try these fixes.
 
 - Respect `Retry-After` when present, then retry the request
-- If no `Retry-After` header is present, retry after 5 to 10 seconds
+- If no `Retry-After` header is present, retry after <span className="nw">5 to</span> <span className="nw">10 seconds</span>
 - Use exponential backoff (see [Error Handling](/guides/error-handling))
-- After 5 minutes of errors, the read service may have an outage
+- After <span className="nw">5 minutes</span> of errors, the read service may have an outage
 
 The same applies to draws. So do tweet, profile, follower, reply, timeline, community and list endpoints under `/api/v1/x/*`.
 
@@ -160,11 +187,11 @@ Webhook delivery can fail without a visible error. Check each item.
 
 1. **Webhook is active.** Verify `isActive: true` and `deliveryStatus: "active"` via `GET /api/v1/webhooks`. Paused webhooks do not receive deliveries.
 2. **HTTPS required.** Xquik rejects HTTP endpoints. Your URL must start with `https://`.
-3. **Response time.** Respond with `2xx` within 10 seconds, even for events you skip. Slower responses and rejections count as failures. A failure can delay new deliveries by up to 15 minutes.
+3. **Response time.** Respond with `2xx` within <span className="nw">10 seconds</span>, even for events you skip. Slower responses and rejections count as failures. A failure can delay new deliveries by up to <span className="nw">15 minutes</span>.
 4. **Check deliveries.** Call `GET /api/v1/webhooks/{id}/deliveries` to see delivery status, attempt count, and error messages.
 5. **Correlate source events.** Call `GET /api/v1/events/{id}` with the stored `streamEventId`.
 6. **Local testing.** If using ngrok or a tunnel, verify it's running and the URL is current. Ngrok URLs change on restart (free plan).
-7. **Needs attention.** `needs_attention` means 200 failed checks in a row. Xquik keeps retrying. Fix the receiver, then call `POST /api/v1/webhooks/{id}/resume`. It starts sending waiting deliveries at once.
+7. **Needs attention.** `needs_attention` means <span className="nw">200 failed</span> checks in a row. Xquik keeps retrying. Fix the receiver, then call `POST /api/v1/webhooks/{id}/resume`. It starts sending waiting deliveries at once.
 8. **Event type mismatch.** Your webhook must subscribe to the event types your monitors produce. A webhook listening for `tweet.new` won't receive `tweet.reply` events.
 
 > **Tip.** See the [Webhook Testing](/guides/twitter-webhook-testing) guide for a step-by-step local setup with ngrok.
@@ -211,9 +238,9 @@ Call `GET /api/v1/account`. The `creditInfo` object shows your balance.
 ```
 
 - `creditInfo.balance` shows the remaining credits available for metered calls
-- At a `balance` of `0`, Xquik rejects metered calls. A credit top-up or an auto top-up ends that
-- Auto top-up stops after 3 declined charges in a row. Update your card in the dashboard to restart it.
-- With exchange rates over 3 ECB working days old, non-USD auto top-ups skip. Nothing is charged.
+- At a `balance` of `0`, Xquik rejects metered calls. A credit <span className="nw">top-up</span> or an auto <span className="nw">top-up</span> ends that
+- Auto <span className="nw">top-up</span> stops after <span className="nw">3 declined</span> charges in a row. Update your card in the dashboard to restart it.
+- With exchange rates over <span className="nw">3 ECB</span> working days old, <span className="nw">non-USD</span> auto <span className="nw">top-ups</span> skip. Nothing is charged.
 
 The dashboard billing page also charts usage.
 
@@ -225,9 +252,9 @@ See [Billing & Usage](/guides/billing) for credit costs and billing.
 
 Yes. Full account metered operations work while enough available credits remain. Choose the access boundary.
 
-- **Guest wallet.** Prepay the eligible paid-read routes through a confirmed USD 10 to 250 hosted checkout.
-- **MPP.** Pay per request on fixed-price GET operations without an account or API key.
-- **Full account.** Use available account credits for writes, monitors, extractions, draws, and connected-account reads. Webhooks and account management are free.
+- **Guest wallet.** Prepay the eligible <span className="nw">paid-read</span> routes through a confirmed USD <span className="nw">10 to</span> <span className="nw">250 hosted</span> checkout.
+- **MPP.** Pay per request on <span className="nw">fixed-price</span> GET operations without an account or API key.
+- **Full account.** Use available account credits for writes, monitors, extractions, draws, and <span className="nw">connected-account</span> reads. Webhooks and account management are free.
 
 Subscribe for monthly credits or top up from the [dashboard billing page](https://dashboard.xquik.com/en/account?tab=subscription). Remaining credits stay usable after a plan ends.
 
@@ -260,7 +287,7 @@ Guest wallet creation, status, and top-up are never executable through MCP.
 These are the current client paths.
 
 - **OAuth 2.1.** Claude.ai, Claude Desktop, Claude Code, ChatGPT, Cursor, VS Code, Windsurf, and OpenCode. Gemini CLI, GitHub Copilot CLI, Cline and Qwen Code also use it. So do Pi, Goose and Codex CLI
-- **API-key only.** Roo Code's archived final release has no MCP OAuth provider
+- **<span className="nw">API-key</span> only.** Roo Code's archived final release has no MCP OAuth provider
 - **Older Pi.** Builds without `pi mcp` require an upgrade or a tested adapter
 
 See [Docs MCP server](/mcp/docs-mcp) for docs search. See [MCP Server overview](/mcp/overview) for account actions. The [MCP Tools](/mcp/tools) reference has the tool details.
@@ -271,7 +298,7 @@ Use this checklist.
 
 1. Enter `https://xquik.com/mcp` as the exact server URL.
 2. Remove any manually entered client ID or client secret unless your client requires preregistration.
-3. Remove and re-add the connector to restart OAuth discovery.
+3. Remove and <span className="nw">re-add</span> the connector to restart OAuth discovery.
 4. Start login from the MCP client. Do not open `/api/auth/google` directly.
 5. Allow the browser to return to the client's exact callback URL.
 
@@ -279,7 +306,7 @@ Xquik publishes all required discovery documents.
 
 - Protected resource metadata is at `https://xquik.com/.well-known/oauth-protected-resource/mcp`
 - Authorization server metadata is at `https://xquik.com/.well-known/oauth-authorization-server`
-- The agent-readable auth guide is at `https://xquik.com/auth.md`
+- The <span className="nw">agent-readable</span> auth guide is at `https://xquik.com/auth.md`
 
 Xquik supports CIMD and DCR. Let the client use its documented registration
 flow. Claude selects CIMD when authorization metadata advertises support and the
@@ -295,7 +322,7 @@ Call `GET /api/v1/extractions/{id}/export?format=csv`. Other formats are `json`,
 
 Exports work like this.
 
-- Exports include every row. A PDF above 10,000 rows comes as a ZIP of PDF parts
+- Exports include every row. A PDF above <span className="nw">10,000 rows</span> comes as a ZIP of PDF parts
 - Available formats are CSV, JSON, Markdown, Markdown Document, PDF, TXT, and XLSX
 
 See [Export Extraction](/api-reference/extractions/export) for column details and code examples.
@@ -308,6 +335,6 @@ See [Export Extraction](/api-reference/extractions/export) for column details an
 
 - [Authentication](/api-reference/authentication) covers API key format, header requirements, and dual auth details.
 - [Error Handling](/guides/error-handling) covers error codes, retry strategies, and graceful degradation.
-- [Billing & Usage](/guides/billing) covers pricing, credits, and per-operation costs.
+- [Billing & Usage](/guides/billing) covers pricing, credits, and <span className="nw">per-operation</span> costs.
 
 </section>

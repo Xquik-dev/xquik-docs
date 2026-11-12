@@ -1,6 +1,5 @@
-import { readFileSync } from "node:fs";
-
 import { expect, it } from "vitest";
+import { readPageFileSync as readFileSync } from "./scripts/lib/page-source.ts";
 
 const AI_CRAWLERS = [
   "OAI-SearchBot",

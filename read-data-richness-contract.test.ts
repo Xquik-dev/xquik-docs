@@ -1,4 +1,3 @@
-import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
@@ -7,6 +6,7 @@ import {
   type OpenApiParameter,
   type OpenApiSchema,
 } from "./scripts/lib/openapi-schema.ts";
+import { readPageFileSync as readFileSync } from "./scripts/lib/page-source.ts";
 
 const PROJECT_ROOT = process.cwd();
 const GUIDE = readFileSync(join(PROJECT_ROOT, "guides/tweet-profile-api-fields.mdx"), "utf8");

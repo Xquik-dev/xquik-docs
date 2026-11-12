@@ -29,7 +29,9 @@ import FieldSelectionParams from "/snippets/field-selection-params.mdx";
 
 <LlmsDirective />
 
-`GET https://xquik.com/api/v1/x/users/{id}/tweets`
+```text
+GET https://xquik.com/api/v1/x/users/{id}/tweets
+```
 
 <RetweetTimestamps />
 
@@ -185,6 +187,53 @@ for page_index in range(3):
 
 </CodeGroup>
 
+{/* OUTPUT SAMPLE START */}
+
+<div className="xq-sample" role="figure">
+  <div className="xq-sample-card">
+    <a className="xq-sample-author" href={"https://x.com/NASA"}>
+      <img src={"/images/samples/0056d5e6cf2a33de.jpg"} alt="" width="40" height="40" />
+      <span>
+        <span className="xq-sample-strong">{"NASA"}</span>
+        <span>{"@NASA"}</span>
+      </span>
+    </a>
+    <p>
+      {
+        "Welcome to the Artemis Accords, Croatia 🇭🇷\n \nToday, Croatia became the 74th nation that has committed to a peaceful and prosperous exploration of space."
+      }
+    </p>
+    <img
+      className="xq-sample-media"
+      src={"/images/samples/d3012c3e68ba324e.jpg"}
+      alt={
+        'A graphic showing 74 flags of different countries that have joined the Artemis Accords, now including the Republic of Croatia. Text at the top of the image reads "Artemis Accords," and text at the bottom reads "United for Peaceful Exploration of Deep Space."'
+      }
+      width="680"
+      height="383"
+      loading="lazy"
+    />
+    <ul className="xq-sample-metrics">
+      <li>
+        <span className="xq-sample-strong">{"206"}</span> {"Replies"}
+      </li>
+      <li>
+        <span className="xq-sample-strong">{"757"}</span> {"Reposts"}
+      </li>
+      <li>
+        <span className="xq-sample-strong">{"9K"}</span> {"Likes"}
+      </li>
+      <li>
+        <span className="xq-sample-strong">{"1.3M"}</span> {"Views"}
+      </li>
+    </ul>
+  </div>
+  <p className="xq-sample-caption">
+    Live output of <code>{"GET /x/tweets/2102882545427714266"}</code>, read on 11 November 2026
+  </p>
+</div>
+{/* OUTPUT SAMPLE END */}
+
 <section>
 
 ## User timeline handoff
@@ -315,30 +364,30 @@ skip it. With replies included, it never opens the page.
 Rows stay in newest-first date order on every page. They include the
 account's reposts. Pass `retweets=exclude` to drop reposts.
 
-| Profile timeline column | Response source                | Archive rule                                                    |
-| ----------------------- | ------------------------------ | --------------------------------------------------------------- |
-| `source_x_user_id`      | Resolved profile ID            | Keep one stable source ID across username changes.              |
-| `source_username`       | Requested or resolved username | Keep the readable profile handle observed during collection.    |
-| `tweet_id`              | `tweets[].id`                  | Use as the stable tweet upsert and deduplication key.           |
-| `tweet_url`             | `tweets[].url`                 | Open the original X post during review.                         |
-| `text`                  | `tweets[].text`                | Keep the complete tweet or note-tweet text returned by the API. |
-| `created_at`            | `tweets[].createdAt`           | Order archived tweets by creation time, not cursor position.    |
-| `is_reply`              | `tweets[].isReply`             | Separate original profile posts from replies.                   |
-| `in_reply_to_id`        | `tweets[].inReplyToId`         | Join a reply to its immediate parent when returned.             |
-| `conversation_id`       | `tweets[].conversationId`      | Group tweets from one conversation thread.                      |
-| `media_urls`            | `tweets[].media[].mediaUrl`    | Keep image, video, or animated GIF URLs.                        |
-| `page_cursor`           | Request `cursor`               | Record which profile timeline page produced the row.            |
-| `collected_at`          | Integration timestamp          | Tell repeated profile timeline snapshots apart.                 |
+| Profile timeline column | Response source                | Archive rule                                                                                |
+| ----------------------- | ------------------------------ | ------------------------------------------------------------------------------------------- |
+| `source_x_user_id`      | Resolved profile ID            | Keep one stable source ID across username changes.                                          |
+| `source_username`       | Requested or resolved username | Keep the readable profile handle observed during collection.                                |
+| `tweet_id`              | `tweets[].id`                  | Use as the stable tweet upsert and deduplication key.                                       |
+| `tweet_url`             | `tweets[].url`                 | Open the original X post during review.                                                     |
+| `text`                  | `tweets[].text`                | Keep the complete tweet or <span className="nw">note-tweet</span> text returned by the API. |
+| `created_at`            | `tweets[].createdAt`           | Order archived tweets by creation time, not cursor position.                                |
+| `is_reply`              | `tweets[].isReply`             | Separate original profile posts from replies.                                               |
+| `in_reply_to_id`        | `tweets[].inReplyToId`         | Join a reply to its immediate parent when returned.                                         |
+| `conversation_id`       | `tweets[].conversationId`      | Group tweets from one conversation thread.                                                  |
+| `media_urls`            | `tweets[].media[].mediaUrl`    | Keep image, video, or animated GIF URLs.                                                    |
+| `page_cursor`           | Request `cursor`               | Record which profile timeline page produced the row.                                        |
+| `collected_at`          | Integration timestamp          | Tell repeated profile timeline snapshots apart.                                             |
 
-| Timeline requirement        | Route and parameters                       | Result shape                                                        |
-| --------------------------- | ------------------------------------------ | ------------------------------------------------------------------- |
-| Original profile posts      | `/x/users/{id}/tweets`                     | Profile tweets without replies by default.                          |
-| Profile posts and replies   | `/x/users/{id}/tweets?includeReplies=true` | Original posts plus reply rows.                                     |
-| Replies with parent context | Add `includeParentTweet=true`              | Reply rows with parent tweet context when available.                |
-| Media-only profile feed     | `/x/users/{id}/media`                      | Tweets containing profile media.                                    |
-| Highlights tab posts        | `/x/users/{id}/highlights`                 | Highlighted posts, in X's order.                                    |
-| Keyword or date search      | `/x/tweets/search`                         | Search results selected by query, operator, date, or media filters. |
-| Connected account home feed | `/x/timeline`                              | Ranked home timeline rows for the authenticated account.            |
+| Timeline requirement                                | Route and parameters                       | Result shape                                                        |
+| --------------------------------------------------- | ------------------------------------------ | ------------------------------------------------------------------- |
+| Original profile posts                              | `/x/users/{id}/tweets`                     | Profile tweets without replies by default.                          |
+| Profile posts and replies                           | `/x/users/{id}/tweets?includeReplies=true` | Original posts plus reply rows.                                     |
+| Replies with parent context                         | Add `includeParentTweet=true`              | Reply rows with parent tweet context when available.                |
+| <span className="nw">Media-only</span> profile feed | `/x/users/{id}/media`                      | Tweets containing profile media.                                    |
+| Highlights tab posts                                | `/x/users/{id}/highlights`                 | Highlighted posts, in X's order.                                    |
+| Keyword or date search                              | `/x/tweets/search`                         | Search results selected by query, operator, date, or media filters. |
+| Connected account home feed                         | `/x/timeline`                              | Ranked home timeline rows for the authenticated account.            |
 
 </section>
 
@@ -346,9 +395,9 @@ account's reposts. Pass `retweets=exclude` to drop reposts.
 
 ## Path parameters
 
-| Path parameter | Type     | Required | Description                                                                                                                                |
-| -------------- | -------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `id`           | `string` | Yes      | User ID, username with or without `@`, or URL-encoded profile URL, such as `x.com/nasa`. See [path IDs](/api-reference/overview#path-ids). |
+| Path parameter | Type     | Required | Description                                                                                                                                                            |
+| -------------- | -------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`           | `string` | Yes      | User ID, username with or without `@`, or <span className="nw">URL-encoded</span> profile URL, such as `x.com/nasa`. See [path IDs](/api-reference/overview#path-ids). |
 
 </section>
 
@@ -356,15 +405,15 @@ account's reposts. Pass `retweets=exclude` to drop reposts.
 
 ## Query parameters
 
-| Query parameter      | Type      | Required | Description                                                                                                                                                                                                             |
-| -------------------- | --------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `cursor`             | `string`  | No       | Pagination cursor for the profile timeline. Omit it for the first page. Then pass the `next_cursor` value from the previous response to fetch the next page.                                                            |
-| `mode`               | `string`  | No       | Omit it for automatic maximum coverage. Use `standard` for legacy pagination. Search filters such as `keywords` apply only without it.                                                                                  |
-| `pageSize`           | `number`  | No       | Automatic pages accept `1` through `300`. Unprefixed legacy cursors accept `1` through `100`. Source availability, filters, or credits can return fewer. Default `20`.                                                  |
-| `sinceTime`          | `string`  | No       | Keep posts created at or after this time. Send ISO 8601, such as `2026-09-25T19:20:41Z`, or Unix seconds. A time without an offset is UTC.                                                                              |
-| `untilTime`          | `string`  | No       | Keep posts created before this time, in the same formats. With `sinceDate` or `untilDate`, the narrower window applies.                                                                                                 |
-| `includeReplies`     | `boolean` | No       | Include reply tweets. Defaults to `false`. Explicit `replies` takes precedence.<br />When you exclude replies, the author's replies to their own posts stay. They continue a thread, and X shows them on the Posts tab. |
-| `includeParentTweet` | `boolean` | No       | Include each reply's parent tweet as `parentTweet` on the reply. Defaults to `false`. A reply whose parent X does not return comes without it. Search filters such as `keywords` do not apply with it.                  |
+| Query parameter      | Type      | Required | Description                                                                                                                                                                                                                    |
+| -------------------- | --------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `cursor`             | `string`  | No       | Pagination cursor for the profile timeline. Omit it for the first page. Then pass the `next_cursor` value from the previous response to fetch the next page.                                                                   |
+| `mode`               | `string`  | No       | Omit it for automatic maximum coverage. Use `standard` for legacy pagination. Search filters such as `keywords` apply only without it.                                                                                         |
+| `pageSize`           | `number`  | No       | Automatic pages accept <span className="nw">`1` through</span> `300`. Unprefixed legacy cursors accept <span className="nw">`1` through</span> `100`. Source availability, filters, or credits can return fewer. Default `20`. |
+| `sinceTime`          | `string`  | No       | Keep posts created at or after this time. Send ISO 8601, such as `2026-09-25T19:20:41Z`, or Unix seconds. A time without an offset is UTC.                                                                                     |
+| `untilTime`          | `string`  | No       | Keep posts created before this time, in the same formats. With `sinceDate` or `untilDate`, the narrower window applies.                                                                                                        |
+| `includeReplies`     | `boolean` | No       | Include reply tweets. Defaults to `false`. Explicit `replies` takes precedence.<br />When you exclude replies, the author's replies to their own posts stay. They continue a thread, and X shows them on the Posts tab.        |
+| `includeParentTweet` | `boolean` | No       | Include each reply's parent tweet as `parentTweet` on the reply. Defaults to `false`. A reply whose parent X does not return comes without it. Search filters such as `keywords` do not apply with it.                         |
 
 ### Tweet result filters
 
@@ -403,53 +452,53 @@ filters can return fewer rows than an unfiltered page.
 
 ### 200 OK
 
-| Field                                    | Type       | Description                                                                                                                                                                                       |
-| ---------------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `tweets`                                 | `object[]` | Array of tweets by the user.                                                                                                                                                                      |
-| `tweets[].id`                            | `string`   | Tweet ID.                                                                                                                                                                                         |
-| `tweets[].text`                          | `string`   | Tweet text content.                                                                                                                                                                               |
-| `tweets[].type`                          | `string`   | Tweet type. Omitted if unavailable.                                                                                                                                                               |
-| `tweets[].createdAt`                     | `string`   | ISO 8601 creation timestamp. Omitted if unavailable.                                                                                                                                              |
-| `tweets[].isNoteTweet`                   | `boolean`  | Whether this is a Note Tweet (long-form post). Omitted if unavailable.                                                                                                                            |
-| `tweets[].isPinned`                      | `boolean`  | Whether the author pinned this post to their profile. Omitted if unavailable.                                                                                                                     |
-| `tweets[].likeCount`                     | `number`   | Like count. Omitted if unavailable.                                                                                                                                                               |
-| `tweets[].retweetCount`                  | `number`   | Retweet count. Omitted if unavailable.                                                                                                                                                            |
-| `tweets[].replyCount`                    | `number`   | Reply count. Omitted if unavailable.                                                                                                                                                              |
-| `tweets[].quoteCount`                    | `number`   | Quote tweet count. Omitted if unavailable.                                                                                                                                                        |
-| `tweets[].viewCount`                     | `number`   | View count. Omitted if unavailable.                                                                                                                                                               |
-| `tweets[].bookmarkCount`                 | `number`   | Bookmark count. Omitted if unavailable.                                                                                                                                                           |
-| `tweets[].url`                           | `string`   | Permalink URL on X. Omitted if unavailable.                                                                                                                                                       |
-| `tweets[].lang`                          | `string`   | Tweet language code. Omitted if unavailable.                                                                                                                                                      |
-| `tweets[].isReply`                       | `boolean`  | Whether the tweet is a reply. Omitted if unavailable.                                                                                                                                             |
-| `tweets[].inReplyToId`                   | `string`   | Tweet ID being replied to. Omitted if not a reply.                                                                                                                                                |
-| `tweets[].inReplyToUserId`               | `string`   | User ID being replied to. Omitted if not a reply.                                                                                                                                                 |
-| `tweets[].inReplyToUsername`             | `string`   | Username being replied to. Omitted if not a reply.                                                                                                                                                |
-| `tweets[].conversationId`                | `string`   | Conversation thread ID. Omitted if unavailable.                                                                                                                                                   |
-| `tweets[].source`                        | `string`   | Client used to post the tweet. X sends it for some posts only.                                                                                                                                    |
-| `tweets[].displayTextRange`              | `number[]` | Start and end offsets for rendered tweet text. Omitted if unavailable.                                                                                                                            |
-| `tweets[].isLimitedReply`                | `boolean`  | Whether replies are limited. Omitted if unavailable.                                                                                                                                              |
-| `tweets[].isQuoteStatus`                 | `boolean`  | Whether this tweet quotes another tweet. Omitted if unavailable.                                                                                                                                  |
-| `tweets[].isRetweet`                     | `boolean`  | Whether this row is a retweet. `text` carries the original post in full.                                                                                                                          |
-| `tweets[].entities`                      | `object`   | Parsed entities (URLs, hashtags, mentions). Omitted if unavailable.                                                                                                                               |
-| `tweets[].contentDisclosure`             | `object`   | Disclosure metadata for paid partnership and AI-generated media labels. Includes `advertising.isPaidPromotion` and `aiGenerated.hasAiGeneratedMedia` when X returns them. Omitted if unavailable. |
-| `tweets[].author`                        | `object`   | Tweet author profile. Omitted if unavailable.                                                                                                                                                     |
-| `tweets[].author.id`                     | `string`   | Author user ID.                                                                                                                                                                                   |
-| `tweets[].author.username`               | `string`   | Author X (Twitter) username.                                                                                                                                                                      |
-| `tweets[].author.name`                   | `string`   | Author display name.                                                                                                                                                                              |
-| `tweets[].author.followers`              | `number`   | Follower count. Omitted if unavailable.                                                                                                                                                           |
-| `tweets[].author.verified`               | `boolean`  | Whether the author is verified. Omitted if unavailable.                                                                                                                                           |
-| `tweets[].author.profilePicture`         | `string`   | Profile picture URL. Omitted if unavailable.                                                                                                                                                      |
-| `tweets[].author.profilePictureOriginal` | `string`   | The same profile picture at full size, to download. Omitted if unavailable.                                                                                                                       |
-| `tweets[].media`                         | `object[]` | Media attachments. Omitted if unavailable.                                                                                                                                                        |
-| `tweets[].media[].mediaUrl`              | `string`   | Direct media URL.                                                                                                                                                                                 |
-| `tweets[].media[].videoVariants`         | `object[]` | Available video renditions with bitrate, content type, and URL. Omitted for images.                                                                                                               |
-| `tweets[].media[].type`                  | `string`   | Media type.                                                                                                                                                                                       |
-| `tweets[].media[].url`                   | `string`   | Shortened URL from the tweet text.                                                                                                                                                                |
-| `tweets[].parentTweet`                   | `object`   | The tweet this reply answers, with `includeParentTweet=true`. Omitted when X does not return it.                                                                                                  |
-| `tweets[].quoted_tweet`                  | `object`   | Embedded quoted tweet. Omitted if not a quote tweet.                                                                                                                                              |
-| `tweets[].retweeted_tweet`               | `object`   | Original retweeted tweet. Omitted if not a retweet.                                                                                                                                               |
-| `has_next_page`                          | `boolean`  | Whether more results are available.                                                                                                                                                               |
-| `next_cursor`                            | `string`   | Opaque cursor for the next page. Empty string when no more results.                                                                                                                               |
+| Field                                    | Type       | Description                                                                                                                                                                                                                   |
+| ---------------------------------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tweets`                                 | `object[]` | Array of tweets by the user.                                                                                                                                                                                                  |
+| `tweets[].id`                            | `string`   | Tweet ID.                                                                                                                                                                                                                     |
+| `tweets[].text`                          | `string`   | Tweet text content.                                                                                                                                                                                                           |
+| `tweets[].type`                          | `string`   | Tweet type. Omitted if unavailable.                                                                                                                                                                                           |
+| `tweets[].createdAt`                     | `string`   | ISO <span className="nw">8601 creation</span> timestamp. Omitted if unavailable.                                                                                                                                              |
+| `tweets[].isNoteTweet`                   | `boolean`  | Whether this is a Note Tweet (<span className="nw">long-form</span> post). Omitted if unavailable.                                                                                                                            |
+| `tweets[].isPinned`                      | `boolean`  | Whether the author pinned this post to their profile. Omitted if unavailable.                                                                                                                                                 |
+| `tweets[].likeCount`                     | `number`   | Like count. Omitted if unavailable.                                                                                                                                                                                           |
+| `tweets[].retweetCount`                  | `number`   | Retweet count. Omitted if unavailable.                                                                                                                                                                                        |
+| `tweets[].replyCount`                    | `number`   | Reply count. Omitted if unavailable.                                                                                                                                                                                          |
+| `tweets[].quoteCount`                    | `number`   | Quote tweet count. Omitted if unavailable.                                                                                                                                                                                    |
+| `tweets[].viewCount`                     | `number`   | View count. Omitted if unavailable.                                                                                                                                                                                           |
+| `tweets[].bookmarkCount`                 | `number`   | Bookmark count. Omitted if unavailable.                                                                                                                                                                                       |
+| `tweets[].url`                           | `string`   | Permalink URL on X. Omitted if unavailable.                                                                                                                                                                                   |
+| `tweets[].lang`                          | `string`   | Tweet language code. Omitted if unavailable.                                                                                                                                                                                  |
+| `tweets[].isReply`                       | `boolean`  | Whether the tweet is a reply. Omitted if unavailable.                                                                                                                                                                         |
+| `tweets[].inReplyToId`                   | `string`   | Tweet ID being replied to. Omitted if not a reply.                                                                                                                                                                            |
+| `tweets[].inReplyToUserId`               | `string`   | User ID being replied to. Omitted if not a reply.                                                                                                                                                                             |
+| `tweets[].inReplyToUsername`             | `string`   | Username being replied to. Omitted if not a reply.                                                                                                                                                                            |
+| `tweets[].conversationId`                | `string`   | Conversation thread ID. Omitted if unavailable.                                                                                                                                                                               |
+| `tweets[].source`                        | `string`   | Client used to post the tweet. X sends it for some posts only.                                                                                                                                                                |
+| `tweets[].displayTextRange`              | `number[]` | Start and end offsets for rendered tweet text. Omitted if unavailable.                                                                                                                                                        |
+| `tweets[].isLimitedReply`                | `boolean`  | Whether replies are limited. Omitted if unavailable.                                                                                                                                                                          |
+| `tweets[].isQuoteStatus`                 | `boolean`  | Whether this tweet quotes another tweet. Omitted if unavailable.                                                                                                                                                              |
+| `tweets[].isRetweet`                     | `boolean`  | Whether this row is a retweet. `text` carries the original post in full.                                                                                                                                                      |
+| `tweets[].entities`                      | `object`   | Parsed entities (URLs, hashtags, mentions). Omitted if unavailable.                                                                                                                                                           |
+| `tweets[].contentDisclosure`             | `object`   | Disclosure metadata for paid partnership and <span className="nw">AI-generated</span> media labels. Includes `advertising.isPaidPromotion` and `aiGenerated.hasAiGeneratedMedia` when X returns them. Omitted if unavailable. |
+| `tweets[].author`                        | `object`   | Tweet author profile. Omitted if unavailable.                                                                                                                                                                                 |
+| `tweets[].author.id`                     | `string`   | Author user ID.                                                                                                                                                                                                               |
+| `tweets[].author.username`               | `string`   | Author X (Twitter) username.                                                                                                                                                                                                  |
+| `tweets[].author.name`                   | `string`   | Author display name.                                                                                                                                                                                                          |
+| `tweets[].author.followers`              | `number`   | Follower count. Omitted if unavailable.                                                                                                                                                                                       |
+| `tweets[].author.verified`               | `boolean`  | Whether the author is verified. Omitted if unavailable.                                                                                                                                                                       |
+| `tweets[].author.profilePicture`         | `string`   | Profile picture URL. Omitted if unavailable.                                                                                                                                                                                  |
+| `tweets[].author.profilePictureOriginal` | `string`   | The same profile picture at full size, to download. Omitted if unavailable.                                                                                                                                                   |
+| `tweets[].media`                         | `object[]` | Media attachments. Omitted if unavailable.                                                                                                                                                                                    |
+| `tweets[].media[].mediaUrl`              | `string`   | Direct media URL.                                                                                                                                                                                                             |
+| `tweets[].media[].videoVariants`         | `object[]` | Available video renditions with bitrate, content type, and URL. Omitted for images.                                                                                                                                           |
+| `tweets[].media[].type`                  | `string`   | Media type.                                                                                                                                                                                                                   |
+| `tweets[].media[].url`                   | `string`   | Shortened URL from the tweet text.                                                                                                                                                                                            |
+| `tweets[].parentTweet`                   | `object`   | The tweet this reply answers, with `includeParentTweet=true`. Omitted when X does not return it.                                                                                                                              |
+| `tweets[].quoted_tweet`                  | `object`   | Embedded quoted tweet. Omitted if not a quote tweet.                                                                                                                                                                          |
+| `tweets[].retweeted_tweet`               | `object`   | Original retweeted tweet. Omitted if not a retweet.                                                                                                                                                                           |
+| `has_next_page`                          | `boolean`  | Whether more results are available.                                                                                                                                                                                           |
+| `next_cursor`                            | `string`   | Opaque cursor for the next page. Empty string when no more results.                                                                                                                                                           |
 
 ```json
 {

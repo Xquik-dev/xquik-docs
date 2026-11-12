@@ -1,9 +1,9 @@
-import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
 import { withoutParagraphSeparators } from "./scripts/lib/paragraph-separator.ts";
+import { readPageFileSync as readFileSync } from "./scripts/lib/page-source.ts";
 
 const PROJECT_ROOT = process.cwd();
 const MINIMUM_ANSWER_WORDS = 75;

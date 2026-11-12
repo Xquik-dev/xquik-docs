@@ -1,9 +1,10 @@
-import { readdirSync, readFileSync } from "node:fs";
+import { readdirSync } from "node:fs";
 import { join, relative } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
 import { readPageFamily } from "./scripts/lib/page-family.ts";
+import { readPageFileSync as readFileSync } from "./scripts/lib/page-source.ts";
 const PROJECT_ROOT = process.cwd();
 const DOC_EXTENSIONS = new Set([".md", ".mdx", ".txt"]);
 const EXCLUDED_DIRS = new Set([".git", "node_modules"]);

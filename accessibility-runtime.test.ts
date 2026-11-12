@@ -1,7 +1,8 @@
-import { readdirSync, readFileSync } from "node:fs";
+import { readdirSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
+import { readPageFileSync as readFileSync } from "./scripts/lib/page-source.ts";
 
 describe("Mintlify accessibility overrides", (): void => {
   it("uses copyable API examples without the interactive playground", (): void => {

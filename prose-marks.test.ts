@@ -1,8 +1,7 @@
-import { readFileSync } from "node:fs";
-
 import { describe, expect, it } from "vitest";
 
 import { headingText, pageProse, trackedPages } from "./prose.test.helpers.ts";
+import { readPageFileSync as readFileSync } from "./scripts/lib/page-source.ts";
 
 const MARK = /:(?=\s|$)|[;：；]/u;
 

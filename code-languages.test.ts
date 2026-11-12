@@ -1,8 +1,9 @@
-import { readdirSync, readFileSync } from "node:fs";
+import { readdirSync } from "node:fs";
 import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
+import { readPageFileSync as readFileSync } from "./scripts/lib/page-source.ts";
 
 const LANGUAGES_DIRECTORY = "languages";
 const REQUIRED_SCOPES = ["comment", "keyword", "string"] as const;

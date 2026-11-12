@@ -1,9 +1,8 @@
-import { readFileSync } from "node:fs";
-
 import { describe, expect, it } from "vitest";
 
 import { readPageFamily } from "./scripts/lib/page-family.ts";
 import { parseOpenApi, type OpenApiDocument } from "./scripts/lib/openapi-schema.ts";
+import { readPageFileSync as readFileSync } from "./scripts/lib/page-source.ts";
 
 function readOpenApi(): OpenApiDocument {
   return parseOpenApi(readFileSync("openapi.yaml", "utf8"));
