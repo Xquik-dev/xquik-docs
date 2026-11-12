@@ -48,19 +48,38 @@ function piecesOf(run: string): string[] {
   return merged;
 }
 
+const NUMBER = /^[$]?\d[\d,.:]*%?$/u;
+
+function runsOf(code: string): string[] {
+  const tokens = code.match(/\s+|\S+/gu) ?? [];
+  const runs: string[] = [];
+  for (let at = 0; at < tokens.length; at += 1) {
+    const token = tokens[at] ?? "";
+    const next = tokens[at + 2];
+    if (NUMBER.test(token) && tokens[at + 1] === " " && next !== undefined) {
+      runs.push(`${token} ${next}`);
+      at += 2;
+    } else {
+      runs.push(token);
+    }
+  }
+  return runs;
+}
+
+const keeps = (text: string): boolean => /[-\s]/u.test(text.trimEnd());
+
 function segmentsOf(code: string): Piece[] {
   const segments: Array<{ kept: boolean; open: boolean; text: string }> = [];
-  for (const token of code.match(/\s+|\S+/gu) ?? []) {
+  for (const run of runsOf(code)) {
     const last = segments.at(-1);
-    if (/^\s/u.test(token)) {
-      if (last === undefined) segments.push({ kept: false, open: true, text: token });
-      else segments[segments.length - 1] = { ...last, text: last.text + token };
+    if (/^\s+$/u.test(run)) {
+      if (last === undefined) segments.push({ kept: false, open: true, text: run });
+      else segments[segments.length - 1] = { ...last, text: last.text + run };
       continue;
     }
-    const controlled = token.includes("-") || token.length > SHORT;
-    const pieces = controlled ? piecesOf(token) : [token];
+    const pieces = keeps(run) || run.length > SHORT ? piecesOf(run) : [run];
     pieces.forEach((text, at) => {
-      const kept = text.includes("-");
+      const kept = keeps(text);
       const tail = segments.at(-1);
       if (at === 0 && !kept && tail !== undefined && tail.open) {
         segments[segments.length - 1] = { ...tail, text: tail.text + text };
@@ -73,7 +92,11 @@ function segmentsOf(code: string): Piece[] {
 }
 
 const longestPiece = (code: string): number =>
-  Math.max(...segmentsOf(code).flatMap(({ text }) => text.split(/\s+/u).map((word) => word.length)));
+  Math.max(
+    ...segmentsOf(code).flatMap(({ kept, text }) =>
+      kept ? [text.trim().length] : text.split(/\s+/u).map((word) => word.length),
+    ),
+  );
 
 function markName(code: string): string {
   const parts = segmentsOf(code).map(({ kept, text }) =>

@@ -81,7 +81,7 @@ describe("breakNames", () => {
   it("marks every long inline code name on every page, and leaves none wider than the narrowest column", () => {
     const loose = pages().filter((file) => {
       const source = readFileSync(`${import.meta.dirname}/${file}`, "utf8");
-      return breakNames(keepTerms(source)) !== source;
+      return breakNames(keepTerms(unmark(source))) !== source;
     });
     const wide = pages().flatMap((file) =>
       wideNames(readFileSync(`${import.meta.dirname}/${file}`, "utf8")).map((name) => `${file}: ${name}`),

@@ -3,7 +3,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 
 import { Glob } from "bun";
 
-import { breakNames, wideNames } from "./lib/code-names.ts";
+import { breakNames, unmark, wideNames } from "./lib/code-names.ts";
 import { GENERATED_LIST, keepTerms } from "./lib/keep-terms.ts";
 
 const check = process.argv.includes("--check");
@@ -12,7 +12,7 @@ const wide: string[] = [];
 for (const file of new Glob("**/*.mdx").scanSync({ cwd: ".", onlyFiles: true })) {
   if (file.startsWith("node_modules/") || file === GENERATED_LIST) continue;
   const source = readFileSync(file, "utf8");
-  const kept = breakNames(keepTerms(source));
+  const kept = breakNames(keepTerms(unmark(source)));
   for (const name of wideNames(kept)) wide.push(`${file}: ${name}`);
   if (kept === source) continue;
   changed.push(file);
