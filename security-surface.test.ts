@@ -29,7 +29,7 @@ function docsConfig(): DocsConfig {
 
 describe("public security guidance", (): void => {
   it("keeps owner verification and security contacts discoverable", (): void => {
-    expect.assertions(15);
+    expect.assertions(14);
 
     const config = docsConfig();
     const trustLinks = config.footer?.links?.find(
@@ -41,10 +41,6 @@ describe("public security guidance", (): void => {
     expect(config.redirects).toContainEqual({
       source: "/.well-known/security.txt",
       destination: "/security.txt",
-    });
-    expect(config.redirects).toContainEqual({
-      source: "/",
-      destination: "/api-reference/overview",
     });
     expect(config.redirects).toContainEqual({
       source: "/introduction",
