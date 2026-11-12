@@ -207,6 +207,15 @@ describe("navigation default state", (): void => {
     expect(selfRedirects).toStrictEqual([]);
   });
 
+  it("serves the root as the cached home page, not an uncached redirect", (): void => {
+    expect.assertions(2);
+
+    expect(
+      docsConfig().redirects.filter(({ source }): boolean => source.replace(/\/+$/, "") === ""),
+    ).toStrictEqual([]);
+    expect(existsSync("index.mdx")).toBe(true);
+  });
+
   it("redirects historical Bing crawl paths to canonical pages", (): void => {
     expect.assertions(2);
 
