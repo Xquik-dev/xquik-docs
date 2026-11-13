@@ -13,7 +13,8 @@ const CARD_PATTERN = /<Card title="(?<title>[^"]+)"[^>]*>(?<body>[\s\S]*?)<\/Car
 const spec = parseOpenApi(readFileSync(join(PROJECT_ROOT, "openapi.yaml"), "utf8"));
 const event = spec.components?.schemas?.["Event"];
 const overview = readFileSync(join(PROJECT_ROOT, "webhooks/overview.mdx"), "utf8");
-const overviewDescription = /^description: "(?<text>[^"]+)"$/mu.exec(overview)?.groups?.["text"] ?? "";
+const overviewDescription =
+  /^description: "(?<text>[^"]+)"$/mu.exec(overview)?.groups?.["text"] ?? "";
 const skill = readFileSync(join(PROJECT_ROOT, "skill.md"), "utf8").toLowerCase();
 const cards = new Map(
   [...overview.matchAll(CARD_PATTERN)].map((match): [string, string] => [
