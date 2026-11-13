@@ -11,9 +11,9 @@ const CLOSE = "</span>";
 const FENCE = /^\s*(?:```|~~~)/u;
 const TABLE_ROW = /^\s*\|/u;
 const SEPARATOR = /[/._&=?,;:>\\(]/u;
-const JSX_PIECE = String.raw`<code>\{"(?:[^"\\\n]|\\.)*"\}<\/code>`;
-const PIECE = String.raw`(?:\x60[^\x60\n]+\x60|${JSX_PIECE})`;
-const MARKED_SOURCE = String.raw`<span className="cn">(?:${PIECE}|<wbr \/>|<span className="nw">${PIECE}<\/span>)+<\/span>`;
+const MARKDOWN_MARKED = String.raw`(?:\x60[^\x60\n]+\x60)?<span className="cn">(?:\x60[^\x60\n]+\x60|<wbr \/>|<span className="nw">\x60[^\x60\n]+\x60<\/span>)+<\/span>`;
+const JSX_MARKED = String.raw`<code className="cn">\{"(?:[^"\\\n]|\\.)*"\}<\/code>`;
+const MARKED_SOURCE = `${MARKDOWN_MARKED}|${JSX_MARKED}`;
 const MARKED = new RegExp(MARKED_SOURCE, "gu");
 const TOKEN = new RegExp(
   String.raw`${MARKED_SOURCE}|\x60\x60+[^\x60\n]*\x60\x60+|\x60([^\x60\n]+)\x60|<code>\{("(?:[^"\\\n]|\\.)*")\}<\/code>|<[^>\n]*>|\{[^}\n]*\}`,
@@ -112,17 +112,46 @@ type Form = "jsx" | "markdown";
 const pieceMarkup = (text: string, form: Form): string =>
   form === "jsx" ? `<code>{${JSON.stringify(text)}}</code>` : `\x60${text}\x60`;
 
+const BREAK = "\u200B";
+const JOIN = "\u2060";
+
+const jsxString = (text: string): string =>
+  JSON.stringify(text)
+    .replaceAll(BREAK, String.raw`\u200b`)
+    .replaceAll(JOIN, String.raw`\u2060`);
+
+function jsxName(code: string): string {
+  const text = segmentsOf(code)
+    .map(({ kept, text: piece }) =>
+      kept ? piece.replaceAll(/([-\s])(?=\S)/gu, `$1${JOIN}`) : piece,
+    )
+    .join(BREAK);
+  return `<code className="cn">{${jsxString(text)}}</code>`;
+}
+
 function markName(code: string, form: Form): string {
-  const parts = segmentsOf(code).map(({ kept, text }) =>
-    kept ? `${NW_OPEN}${pieceMarkup(text, form)}${CLOSE}` : pieceMarkup(text, form),
+  if (form === "jsx") return jsxName(code);
+  const [first, ...rest] = segmentsOf(code);
+  if (first === undefined) return pieceMarkup(code, form);
+  if (rest.length === 0) {
+    const [, lead = "", tail = ""] = /^(\S+\s+)(\S[\s\S]*)$/u.exec(first.text) ?? [];
+    return lead === ""
+      ? pieceMarkup(first.text, form)
+      : `${pieceMarkup(lead, form)}${OPEN}${WBR}${pieceMarkup(tail, form)}${CLOSE}`;
+  }
+  const parts = rest.map(({ kept, text }) =>
+    kept
+      ? `${WBR}${NW_OPEN}${pieceMarkup(text, form)}${CLOSE}`
+      : `${WBR}${pieceMarkup(text, form)}`,
   );
-  return `${OPEN}${parts.join(WBR)}${CLOSE}`;
+  return `${pieceMarkup(first.text, form)}${OPEN}${parts.join("")}${CLOSE}`;
 }
 
 const codeMarkup = (code: string): string =>
   needsMark(code) ? markName(code, "jsx") : pieceMarkup(code, "jsx");
 
-const long = (code: string): boolean => code.length > SHORT && !/^\s|\s$/u.test(code) && code.trim() !== "";
+const long = (code: string): boolean =>
+  code.length > SHORT && !/^\s|\s$/u.test(code) && code.trim() !== "";
 
 function needsMark(code: string): boolean {
   if (!long(code)) return false;
@@ -174,13 +203,12 @@ function breakNames(source: string): string {
 
 function unmark(source: string): string {
   return source.replaceAll(MARKED, (marked) => {
-    if (!marked.includes("<code>{")) {
-      return `\x60${[...marked.matchAll(/\x60([^\x60\n]+)\x60/gu)].map((part) => part[1] ?? "").join("")}\x60`;
+    if (marked.startsWith("<code ")) {
+      const literal = /\{("(?:[^"\\\n]|\\.)*")\}/u.exec(marked)?.[1] ?? '""';
+      const text = JSON_TEXT.parse(JSON.parse(literal)).replaceAll(BREAK, "").replaceAll(JOIN, "");
+      return pieceMarkup(text, "jsx");
     }
-    const pieces = [...marked.matchAll(/<code>\{("(?:[^"\\\n]|\\.)*")\}<\/code>/gu)].map((part) =>
-      JSON_TEXT.parse(JSON.parse(part[1] ?? "\"\"")),
-    );
-    return pieceMarkup(pieces.join(""), "jsx");
+    return `\x60${[...marked.matchAll(/\x60([^\x60\n]+)\x60/gu)].map((part) => part[1] ?? "").join("")}\x60`;
   });
 }
 
@@ -189,7 +217,8 @@ function wideNames(source: string): string[] {
   let cards = 0;
   eachProseLine(unmark(source), (line) => {
     const budget = cards > 0 || line.includes("<Card ") ? LONGEST_PIECE_IN_CARD : LONGEST_PIECE;
-    for (const code of codesOf(line)) if (long(code) && longestPiece(code) > budget) wide.push(code);
+    for (const code of codesOf(line))
+      if (long(code) && longestPiece(code) > budget) wide.push(code);
     cards += (line.match(/<Card[\s>]/gu) ?? []).length - (line.match(/<\/Card>/gu) ?? []).length;
     return line;
   });

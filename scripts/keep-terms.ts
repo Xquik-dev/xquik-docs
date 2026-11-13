@@ -2,6 +2,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
 
 import { Glob } from "bun";
+import { format } from "oxfmt";
 
 import { breakNames, unmark, wideNames } from "./lib/code-names.ts";
 import { GENERATED_LIST, keepTerms } from "./lib/keep-terms.ts";
@@ -12,7 +13,7 @@ const wide: string[] = [];
 for (const file of new Glob("**/*.mdx").scanSync({ cwd: ".", onlyFiles: true })) {
   if (file.startsWith("node_modules/") || file === GENERATED_LIST) continue;
   const source = readFileSync(file, "utf8");
-  const kept = breakNames(keepTerms(unmark(source)));
+  const kept = (await format(file, breakNames(keepTerms(unmark(source))))).code;
   for (const name of wideNames(kept)) wide.push(`${file}: ${name}`);
   if (kept === source) continue;
   changed.push(file);

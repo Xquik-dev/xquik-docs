@@ -41,7 +41,8 @@ This guide builds on the [TypeScript SDK setup](/sdks/typescript), which covers 
     </ul>
   </div>
   <p className="xq-sample-caption">
-    Live output of <span className="cn"><code>{"GET /x/users/"}</code><wbr /><code>{"nasa/"}</code><wbr /><code>{"following"}</code></span>, read on 11 November 2026
+    Live output of <code className="cn">{"GET /x/users/\u200bnasa/\u200bfollowing"}</code>, read on
+    11 November 2026
   </p>
 </div>
 {/* OUTPUT SAMPLE END */}
@@ -50,11 +51,11 @@ This guide builds on the [TypeScript SDK setup](/sdks/typescript), which covers 
 
 ## Follower export workflow to CSV, JSON, or XLSX
 
-Use this workflow when a worker needs an owned follower list. It fits Node.js, Bun, and queue workers. Use the list for CRM import, warehouse loading, account scoring, or analyst CSV. You can also deliver it as an XLSX workbook or a resumable JSON handoff. The workflow calls <span className="cn">`POST /extractions/`<wbr />`estimate`</span> through <span className="cn">`client.`<wbr />`extractions.`<wbr />`estimateCost`</span>. It creates the job with <span className="cn">`client.`<wbr />`extractions.run`</span>. It reads saved rows with <span className="cn">`client.`<wbr />`extractions.`<wbr />`retrieve`</span>. It downloads files with <span className="cn">`client.`<wbr />`extractions.`<wbr />`exportResults`</span>.
+Use this workflow when a worker needs an owned follower list. It fits Node.js, Bun, and queue workers. Use the list for CRM import, warehouse loading, account scoring, or analyst CSV. You can also deliver it as an XLSX workbook or a resumable JSON handoff. The workflow calls `POST /extractions/`<span className="cn"><wbr />`estimate`</span> through `client.`<span className="cn"><wbr />`extractions.`<wbr />`estimateCost`</span>. It creates the job with `client.`<span className="cn"><wbr />`extractions.run`</span>. It reads saved rows with `client.`<span className="cn"><wbr />`extractions.`<wbr />`retrieve`</span>. It downloads files with `client.`<span className="cn"><wbr />`extractions.`<wbr />`exportResults`</span>.
 
 <Info>
 
-<span className="cn">`client.`<wbr />`extractions.run`</span> returns the queued `202 Accepted` receipt from `POST /extractions`. The receipt holds `id`, `toolType`, and `status: "running"`. Store `job.id` immediately, then poll <span className="cn">`client.`<wbr />`extractions.`<wbr />`retrieve`</span> before reading pages or calling <span className="cn">`client.`<wbr />`extractions.`<wbr />`exportResults`</span>. Credit reservation happens after the job starts. If available credits changed since `estimateCost`, the API has 2 options. It can set `resultsLimit` to the affordable count before fetching rows. Or it can mark the job `failed` with `insufficient_credits`.
+`client.`<span className="cn"><wbr />`extractions.run`</span> returns the queued `202 Accepted` receipt from `POST /extractions`. The receipt holds `id`, `toolType`, and `status: "running"`. Store `job.id` immediately, then poll `client.`<span className="cn"><wbr />`extractions.`<wbr />`retrieve`</span> before reading pages or calling `client.`<span className="cn"><wbr />`extractions.`<wbr />`exportResults`</span>. Credit reservation happens after the job starts. If available credits changed since `estimateCost`, the API has 2 options. It can set `resultsLimit` to the affordable count before fetching rows. Or it can mark the job `failed` with `insufficient_credits`.
 
 </Info>
 
@@ -129,7 +130,7 @@ const xlsx = await client.extractions.exportResults(job.id, { format: "xlsx" });
 await writeFile("xquik-followers.xlsx", Buffer.from(await xlsx.arrayBuffer()));
 ```
 
-`follower_explorer` requires `targetUsername`. Store `job.id`, `targetUsername`, <span className="cn">`estimate.`<wbr />`estimatedResults`</span>, and `estimate.source` before polling. With them, a queue retry, worker restart, or agent handoff can resume that export. <span className="cn">`client.`<wbr />`extractions.`<wbr />`retrieve`</span> returns `results`, `hasMore`, and `nextCursor`. Pass `nextCursor` back as `cursor` when you need stored JSON pages before exporting files. Use <span className="cn"><span className="nw">`xquik-followers.`</span><wbr />`jsonl`</span> for queue replay or warehouse loads, and `xquik-followers.json` for app ingestion. Use `xquik-followers.csv` for CRM import and `xquik-followers.xlsx` for analyst handoff. Map exported `User ID` or row `xUserId` as the CRM unique key. The cost is 1 credit per follower extracted or returned. Exports cost no credits after the extraction job exists.
+`follower_explorer` requires `targetUsername`. Store `job.id`, `targetUsername`, `estimate.`<span className="cn"><wbr />`estimatedResults`</span>, and `estimate.source` before polling. With them, a queue retry, worker restart, or agent handoff can resume that export. `client.`<span className="cn"><wbr />`extractions.`<wbr />`retrieve`</span> returns `results`, `hasMore`, and `nextCursor`. Pass `nextCursor` back as `cursor` when you need stored JSON pages before exporting files. Use `xquik-followers.`<span className="cn"><wbr />`jsonl`</span> for queue replay or warehouse loads, and `xquik-followers.json` for app ingestion. Use `xquik-followers.csv` for CRM import and `xquik-followers.xlsx` for analyst handoff. Map exported `User ID` or row `xUserId` as the CRM unique key. The cost is 1 credit per follower extracted or returned. Exports cost no credits after the extraction job exists.
 
 </section>
 

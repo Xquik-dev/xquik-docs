@@ -256,7 +256,7 @@ async function run(root: string, check: boolean): Promise<string> {
     }
     const page = stripGeneratedResponseExamples(source);
     const block = await format("block.mdx", responseBlock(document, operation, page));
-    const next = breakNames(replaceBlock(source, block.code.trimEnd()));
+    const next = (await format(path, breakNames(replaceBlock(source, block.code.trimEnd())))).code;
     const responses = field(operation, "responses");
     pageCount += 1;
     statusCount += Object.keys(isRecord(responses) ? responses : {}).length;
