@@ -55,7 +55,7 @@ when `safeToRetry` is true.
 
 ### API endpoints
 
-- **Monitors and Events.** Create account and keyword monitors, retrieve events, and manage webhooks.
+- **Monitors and Events.** Create account, keyword, and post monitors, retrieve events, and manage webhooks.
 - **Extractions.** 23 tools for bulk data extraction.
 - **Draws.** Run giveaway draws with transparent results.
 - **X Data.** User lookups, tweet search, trends, media downloads, threads, replies, quotes, and relationships.
@@ -79,12 +79,27 @@ when `safeToRetry` is true.
 
 **Other.** `people_search`, `space_explorer`, `tweet_search_extractor`
 
-### Event types
+### Monitor types
 
-- `tweet.new` is an original tweet from a monitored account.
-- `tweet.quote` is a quote tweet from a monitored account.
-- `tweet.reply` is a reply from a monitored account.
-- `tweet.retweet` is a retweet from a monitored account.
+- **Account monitor.** Watches 1 X account. Create it with `POST /api/v1/monitors`.
+- **Keyword monitor.** Watches an X search query. Create it with `POST /api/v1/monitors/keywords`.
+- **Post monitor.** Watches 1 X post. Create it with `POST /api/v1/monitors/posts`.
+
+Each event carries `monitorType` with the value `account`, `keyword`, or `post`. Post monitor events also carry `postId`, `postUrl`, `authorId`, and `authorUsername`.
+
+### Event types (40 total)
+
+**Tweets.** Account and keyword monitors. `tweet.new`, `tweet.reply`, `tweet.quote`, `tweet.retweet`, `tweet.media`, `tweet.link`, `tweet.poll`, `tweet.mention`, `tweet.hashtag`, `tweet.longform`
+
+**Profile changes.** Account monitors. `profile.avatar.changed`, `profile.banner.changed`, `profile.name.changed`, `profile.username.changed`, `profile.bio.changed`, `profile.location.changed`, `profile.url.changed`, `profile.verified.changed`, `profile.protected.changed`, `profile.pinned_tweet.changed`, `profile.unavailable.changed`
+
+**Account activity.** Account monitors. `tweet.deleted`, `broadcast.started`, `space.started`
+
+**Follows.** Account monitors. `following.added`, `following.removed`, `follower.added`, `follower.removed`, `profile.followers.changed`, `profile.following.changed`
+
+**Post activity.** Post monitors. `post.reply.new`, `post.quote.new`, `post.likes.changed`, `post.retweets.changed`, `post.replies.changed`, `post.quotes.changed`, `post.bookmarks.changed`, `post.views.changed`, `post.edited`, `post.deleted`
+
+Read the [webhooks overview](https://docs.xquik.com/webhooks/overview) for each payload field.
 
 ### Pagination
 
