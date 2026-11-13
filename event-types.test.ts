@@ -76,6 +76,7 @@ const REQUIRED_SUBSCRIBABLE_EVENT_DOCS = [
   "api-reference/webhooks/create.mdx",
   "api-reference/webhooks/update.mdx",
   "guides/x-api-typescript-types.mdx",
+  "skill.md",
   "webhooks/overview.mdx",
 ] as const;
 const REQUIRED_KEYWORD_EVENT_DOCS = [
@@ -90,6 +91,7 @@ const REQUIRED_POST_EVENT_DOCS = [
   "api-reference/webhooks/update.mdx",
   "guides/x-api-integration-checklist.mdx",
   "guides/x-api-typescript-types.mdx",
+  "skill.md",
   "webhooks/overview.mdx",
 ] as const;
 

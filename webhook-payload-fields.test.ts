@@ -13,6 +13,8 @@ const CARD_PATTERN = /<Card title="(?<title>[^"]+)"[^>]*>(?<body>[\s\S]*?)<\/Car
 const spec = parseOpenApi(readFileSync(join(PROJECT_ROOT, "openapi.yaml"), "utf8"));
 const event = spec.components?.schemas?.["Event"];
 const overview = readFileSync(join(PROJECT_ROOT, "webhooks/overview.mdx"), "utf8");
+const overviewDescription = /^description: "(?<text>[^"]+)"$/mu.exec(overview)?.groups?.["text"] ?? "";
+const skill = readFileSync(join(PROJECT_ROOT, "skill.md"), "utf8").toLowerCase();
 const cards = new Map(
   [...overview.matchAll(CARD_PATTERN)].map((match): [string, string] => [
     match.groups?.["title"] ?? "",
@@ -40,5 +42,16 @@ describe("webhook payload fields", (): void => {
     expect(
       monitorTypes.filter((type) => !(cards.get("monitorType") ?? "").includes(`\`${type}\``)),
     ).toStrictEqual([]);
+  });
+
+  it("names each monitor type in the webhooks overview description and the Skill", (): void => {
+    expect.assertions(1);
+
+    const monitorTypes = (event?.properties?.["monitorType"]?.enum ?? []).map(String);
+
+    expect({
+      description: monitorTypes.filter((type) => !overviewDescription.includes(type)),
+      skill: monitorTypes.filter((type) => !skill.includes(`${type} monitor`)),
+    }).toStrictEqual({ description: [], skill: [] });
   });
 });
