@@ -37,6 +37,8 @@ describe("webhook payload fields", (): void => {
 
     const monitorTypes = (event?.properties?.["monitorType"]?.enum ?? []).map(String);
 
-    expect(monitorTypes.filter((type) => !(cards.get("monitorType") ?? "").includes(`\`${type}\``))).toStrictEqual([]);
+    expect(
+      monitorTypes.filter((type) => !(cards.get("monitorType") ?? "").includes(`\`${type}\``)),
+    ).toStrictEqual([]);
   });
 });
