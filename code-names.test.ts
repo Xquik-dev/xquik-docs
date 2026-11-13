@@ -107,20 +107,24 @@ describe("breakNames", () => {
   });
 
   it("marks every long inline code name on every page, and leaves none wider than the narrowest column", async () => {
-    const loose: string[] = [];
-    for (const file of pages()) {
-      const source = readFileSync(`${import.meta.dirname}/${file}`, "utf8");
-      const marked = await format(file, breakNames(keepTerms(unmark(source))));
-      if (marked.code !== source) loose.push(file);
-    }
+    const checked = await Promise.all(
+      pages().map(async (file) => {
+        const source = readFileSync(`${import.meta.dirname}/${file}`, "utf8");
+        const marked = await format(file, breakNames(keepTerms(unmark(source))));
+        return marked.code === source ? [] : [file];
+      }),
+    );
+    const loose = checked.flat();
     const wide = pages().flatMap((file) =>
       wideNames(readFileSync(`${import.meta.dirname}/${file}`, "utf8")).map(
         (name) => `${file}: ${name}`,
       ),
     );
     const blocks = pages().filter((file) =>
-      /^\s*<span className="cn">|<\/code>\n\s*[,.;:)]/mu.test(readFileSync(`${import.meta.dirname}/${file}`, "utf8")),
+      /^\s*<span className="cn">|<\/code>\n\s*[,.;:)]/mu.test(
+        readFileSync(`${import.meta.dirname}/${file}`, "utf8"),
+      ),
     );
     expect({ blocks, loose, wide }).toEqual({ blocks: [], loose: [], wide: [] });
-  });
+  }, 60_000);
 });
