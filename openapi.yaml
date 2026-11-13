@@ -1281,6 +1281,15 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '409':
+          description: Another Xquik account already linked this X username
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: 'x_username_taken'
+                message: 'Another Xquik account already linked this X username.'
         '429':
           $ref: '#/components/responses/RateLimitExceeded'
 
@@ -10344,8 +10353,13 @@ paths:
                   example: EUR
                 dollars:
                   type: integer
-                  description: Amount to top up in US dollars. Minimum 10.
+                  description:
+                    Amount to top up in US dollars. Minimum 10. Maximum
+                    2147483647. A `currency` whose charge would pass Stripe
+                    Checkout's 12-digit limit gets a lower maximum, which the
+                    400 response names.
                   minimum: 10
+                  maximum: 2147483647
                   example: 10
                 locale:
                   type: string
@@ -15958,6 +15972,7 @@ paths:
         - $ref: '#/components/parameters/NativeRetweets'
         - $ref: '#/components/parameters/VerifiedOnly'
         - $ref: '#/components/parameters/Replies'
+        - $ref: '#/components/parameters/MentionOwnThreads'
         - $ref: '#/components/parameters/Retweets'
         - $ref: '#/components/parameters/Quotes'
         - $ref: '#/components/parameters/ExactPhrase'
@@ -17397,6 +17412,16 @@ components:
         type: string
         enum: [include, exclude, only]
       description: Reply mode. Exclude keeps own-thread replies.
+    MentionOwnThreads:
+      name: ownThreads
+      in: query
+      schema:
+        type: string
+        enum: [exclude]
+        maxLength: 7
+      description:
+        With replies=exclude, also leaves out replies to the author's own posts,
+        so the search skips every reply.
     SearchReplies:
       name: replies
       in: query
@@ -20922,6 +20947,14 @@ components:
           description:
             Present on a last page whose sources all read past its start time.
           example: true
+        hiddenTimeline:
+          type: boolean
+          const: true
+          description:
+            Present on an empty last page when X shows this account's timeline
+            to nobody. The page is empty because of that, so it doesn't mean the
+            account posted nothing. A retry returns the same page.
+          example: true
         searchedQuery:
           type: string
           description: >-
@@ -23219,6 +23252,7 @@ components:
                 - missing_params
                 - missing_query
                 - monitor_already_exists
+                - x_username_taken
                 - monitor_profile_unavailable
                 - no_media
                 - no_credits
