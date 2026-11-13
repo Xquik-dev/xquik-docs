@@ -970,8 +970,8 @@ const REQUIRED_CSHARP_SDK_WORKFLOW_SNIPPETS = [
   "Credit reservation happens after the job starts.",
   "fetch only the affordable count before export",
   "mark the job `failed` with `insufficient_credits`",
-  "`ExtractionEstimateCostParamsToolType.FollowerExplorer`",
-  "`ExtractionRunParamsToolType.FollowerExplorer`",
+  "ToolType = ExtractionEstimateCostParamsToolType.FollowerExplorer,",
+  "ToolType = ExtractionRunParamsToolType.FollowerExplorer,",
   "`follower_explorer` requires `TargetUsername`.",
   'string targetUsername = "username";',
   "TargetUsername = targetUsername",
@@ -990,8 +990,8 @@ const REQUIRED_CSHARP_SDK_WORKFLOW_SNIPPETS = [
   "`xquik-followers.xlsx` for analyst handoff",
   "The cost is 1 credit per follower extracted or returned.",
   "Exports are free after the extraction job exists.",
-  "`ExtractionEstimateCostParamsToolType.ReplyExtractor`",
-  "`ExtractionRunParamsToolType.ReplyExtractor`",
+  "ToolType = ExtractionEstimateCostParamsToolType.ReplyExtractor,",
+  "ToolType = ExtractionRunParamsToolType.ReplyExtractor,",
   "`reply_extractor` requires `TargetTweetID`.",
   "`client.Extractions.Retrieve` returns `Results`, `HasMore`, and `NextCursor`",
   "`client.Extractions.ExportResults` returns an `HttpResponse`",
@@ -1040,9 +1040,9 @@ const REQUIRED_CSHARP_SDK_WORKFLOW_SNIPPETS = [
   "Leave `ReplyToMessageID` unset because the REST endpoint rejects DM reply threading.",
   "Use public media URLs with `client.X.Tweets.Create`.",
   "Do not pass uploaded `media.MediaID` values to tweet creation.",
-  "Throws `XTwitterScraperBadRequestException`.",
-  "Throws `XTwitterScraperRateLimitException`.",
-  "Throws `XTwitterScraper5xxException`.",
+  "`XTwitterScraperBadRequestException`",
+  "`XTwitterScraperRateLimitException`",
+  "`XTwitterScraper5xxException`",
 ] as const;
 
 const FORBIDDEN_CSHARP_SDK_WEAK_SEARCH_SNIPPETS = [
@@ -1186,9 +1186,9 @@ const REQUIRED_PHP_SDK_WORKFLOW_SNIPPETS = [
   "Leave generated `replyToMessageID` unset even if SDK params expose it. The REST endpoint rejects DM reply threading.",
   "Text-only tweet and reply writes cost 30 credits.",
   "Do not pass uploaded `$media->mediaID` values to `$client->x->tweets->create()`",
-  "Throws `BadRequestException`.",
-  "Throws `RateLimitException`.",
-  "Throws `InternalServerException`.",
+  "`BadRequestException`",
+  "`RateLimitException`",
+  "`InternalServerException`",
 ] as const;
 
 const FORBIDDEN_PHP_SDK_WEAK_SEARCH_SNIPPETS = [

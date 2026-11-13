@@ -37,7 +37,7 @@ const CASES: readonly (readonly [string, string])[] = [
   ],
   [
     'Live output of <code>{"GET /x/users/{id}/verified-followers"}</code>, read on 11',
-    'Live output of <code>{"GET /x/users/"}</code><span className="cn"><wbr /><code>{"{id}/"}</code><wbr /><span className="nw"><code>{"verified-followers"}</code></span></span>, read on 11',
+    'Live output of <code>{"GET /x/users/\u200b{id}/\u200bverified-\u2060followers"}</code>, read on 11',
   ],
   [
     'Live output of <code>{"GET /x/tweets"}</code>',
@@ -119,7 +119,7 @@ describe("breakNames", () => {
       ),
     );
     const blocks = pages().filter((file) =>
-      /^\s*<span className="cn">/mu.test(readFileSync(`${import.meta.dirname}/${file}`, "utf8")),
+      /^\s*<span className="cn">|<\/code>\n\s*[,.;:)]/mu.test(readFileSync(`${import.meta.dirname}/${file}`, "utf8")),
     );
     expect({ blocks, loose, wide }).toEqual({ blocks: [], loose: [], wide: [] });
   });

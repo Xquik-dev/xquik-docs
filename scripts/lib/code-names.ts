@@ -12,7 +12,7 @@ const FENCE = /^\s*(?:```|~~~)/u;
 const TABLE_ROW = /^\s*\|/u;
 const SEPARATOR = /[/._&=?,;:>\\(]/u;
 const MARKDOWN_MARKED = String.raw`(?:\x60[^\x60\n]+\x60)?<span className="cn">(?:\x60[^\x60\n]+\x60|<wbr \/>|<span className="nw">\x60[^\x60\n]+\x60<\/span>)+<\/span>`;
-const JSX_MARKED = String.raw`<code className="cn">\{"(?:[^"\\\n]|\\.)*"\}<\/code>`;
+const JSX_MARKED = String.raw`<code(?: className="cn")?>\s*\{"(?:[^"\\\n]|\\.)*?(?:\u200B|\\u200b)(?:[^"\\\n]|\\.)*"\}\s*<\/code>`;
 const MARKED_SOURCE = `${MARKDOWN_MARKED}|${JSX_MARKED}`;
 const MARKED = new RegExp(MARKED_SOURCE, "gu");
 const TOKEN = new RegExp(
@@ -115,10 +115,7 @@ const pieceMarkup = (text: string, form: Form): string =>
 const BREAK = "\u200B";
 const JOIN = "\u2060";
 
-const jsxString = (text: string): string =>
-  JSON.stringify(text)
-    .replaceAll(BREAK, String.raw`\u200b`)
-    .replaceAll(JOIN, String.raw`\u2060`);
+const jsxString = (text: string): string => JSON.stringify(text);
 
 function jsxName(code: string): string {
   const text = segmentsOf(code)
@@ -126,7 +123,7 @@ function jsxName(code: string): string {
       kept ? piece.replaceAll(/([-\s])(?=\S)/gu, `$1${JOIN}`) : piece,
     )
     .join(BREAK);
-  return `<code className="cn">{${jsxString(text)}}</code>`;
+  return `<code>{${jsxString(text)}}</code>`;
 }
 
 function markName(code: string, form: Form): string {
@@ -203,7 +200,7 @@ function breakNames(source: string): string {
 
 function unmark(source: string): string {
   return source.replaceAll(MARKED, (marked) => {
-    if (marked.startsWith("<code ")) {
+    if (marked.startsWith("<code")) {
       const literal = /\{("(?:[^"\\\n]|\\.)*")\}/u.exec(marked)?.[1] ?? '""';
       const text = JSON_TEXT.parse(JSON.parse(literal)).replaceAll(BREAK, "").replaceAll(JOIN, "");
       return pieceMarkup(text, "jsx");
