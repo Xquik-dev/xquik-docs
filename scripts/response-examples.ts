@@ -9,6 +9,7 @@ import {
   GENERATED_RESPONSE_EXAMPLES_START as START,
   stripGeneratedResponseExamples,
 } from "./lib/generated-response-examples.ts";
+import { breakNames } from "./lib/code-names.ts";
 import { isList, isRecord } from "./lib/json-shape.ts";
 
 type Node = Record<string, unknown>;
@@ -255,7 +256,7 @@ async function run(root: string, check: boolean): Promise<string> {
     }
     const page = stripGeneratedResponseExamples(source);
     const block = await format("block.mdx", responseBlock(document, operation, page));
-    const next = replaceBlock(source, block.code.trimEnd());
+    const next = breakNames(replaceBlock(source, block.code.trimEnd()));
     const responses = field(operation, "responses");
     pageCount += 1;
     statusCount += Object.keys(isRecord(responses) ? responses : {}).length;
