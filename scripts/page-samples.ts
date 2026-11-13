@@ -4,6 +4,8 @@ import { mkdirSync } from "node:fs";
 import { Glob } from "bun";
 import { z } from "zod";
 
+import { codeMarkup } from "./lib/code-names.ts";
+
 const ROOT = new URL("..", import.meta.url).pathname;
 const IMAGES = "images/samples";
 const START = "{/* OUTPUT SAMPLE START */}";
@@ -362,8 +364,8 @@ function cardMarkup(props: SampleProps): string[] {
 function sampleMarkup(props: SampleProps): string {
   const caption =
     props.read === undefined
-      ? `Example answer of <code>${said(props.call)}</code>, from its API reference`
-      : `Live output of <code>${said(props.call)}</code>, read on ${props.read}${
+      ? `Example answer of ${codeMarkup(props.call)}, from its API reference`
+      : `Live output of ${codeMarkup(props.call)}, read on ${props.read}${
           props.answers === undefined ? "" : `. Its answers are ${said(props.answers)}`
         }`;
   return [

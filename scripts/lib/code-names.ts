@@ -1,5 +1,8 @@
+import { z } from "zod";
+
 const SHORT = 20;
-const LONGEST_PIECE = 24;
+const LONGEST_PIECE = 30;
+const LONGEST_PIECE_IN_CARD = 25;
 const MIN_PIECE = 5;
 const WBR = "<wbr />";
 const OPEN = '<span className="cn">';
@@ -8,9 +11,15 @@ const CLOSE = "</span>";
 const FENCE = /^\s*(?:```|~~~)/u;
 const TABLE_ROW = /^\s*\|/u;
 const SEPARATOR = /[/._&=?,;:>\\(]/u;
-const MARKED = /<span className="cn">(?:`[^`\n]+`|<wbr \/>|<span className="nw">`[^`\n]+`<\/span>)+<\/span>/gu;
-const TOKEN =
-  /<span className="cn">(?:`[^`\n]+`|<wbr \/>|<span className="nw">`[^`\n]+`<\/span>)+<\/span>|``+[^`\n]*``+|`([^`\n]+)`|<[^>\n]*>|\{[^}\n]*\}/gu;
+const JSX_PIECE = String.raw`<code>\{"(?:[^"\\\n]|\\.)*"\}<\/code>`;
+const PIECE = String.raw`(?:\x60[^\x60\n]+\x60|${JSX_PIECE})`;
+const MARKED_SOURCE = String.raw`<span className="cn">(?:${PIECE}|<wbr \/>|<span className="nw">${PIECE}<\/span>)+<\/span>`;
+const MARKED = new RegExp(MARKED_SOURCE, "gu");
+const TOKEN = new RegExp(
+  String.raw`${MARKED_SOURCE}|\x60\x60+[^\x60\n]*\x60\x60+|\x60([^\x60\n]+)\x60|<code>\{("(?:[^"\\\n]|\\.)*")\}<\/code>|<[^>\n]*>|\{[^}\n]*\}`,
+  "gu",
+);
+const JSON_TEXT = z.string();
 
 interface Piece {
   readonly kept: boolean;
@@ -35,7 +44,11 @@ function piecesOf(run: string): string[] {
   const merged: string[] = [];
   for (const cut of cuts) {
     const last = merged.at(-1);
-    if (last !== undefined && (cut.length < MIN_PIECE || last.length < MIN_PIECE) && !(cut.includes("-") && !last.includes("-"))) {
+    if (
+      last !== undefined &&
+      (cut.length < MIN_PIECE || last.length < MIN_PIECE) &&
+      cut.includes("-") === last.includes("-")
+    ) {
       merged[merged.length - 1] = last + cut;
     } else {
       merged.push(cut);
@@ -94,12 +107,20 @@ const longestPiece = (code: string): number =>
     ),
   );
 
-function markName(code: string): string {
+type Form = "jsx" | "markdown";
+
+const pieceMarkup = (text: string, form: Form): string =>
+  form === "jsx" ? `<code>{${JSON.stringify(text)}}</code>` : `\x60${text}\x60`;
+
+function markName(code: string, form: Form): string {
   const parts = segmentsOf(code).map(({ kept, text }) =>
-    kept ? `${NW_OPEN}\`${text}\`${CLOSE}` : `\`${text}\``,
+    kept ? `${NW_OPEN}${pieceMarkup(text, form)}${CLOSE}` : pieceMarkup(text, form),
   );
   return `${OPEN}${parts.join(WBR)}${CLOSE}`;
 }
+
+const codeMarkup = (code: string): string =>
+  needsMark(code) ? markName(code, "jsx") : pieceMarkup(code, "jsx");
 
 const long = (code: string): boolean => code.length > SHORT && !/^\s|\s$/u.test(code) && code.trim() !== "";
 
@@ -109,13 +130,24 @@ function needsMark(code: string): boolean {
   return rest.length > 0 || (first !== undefined && !first.kept && /\s/u.test(first.text.trim()));
 }
 
+const codeOf = (match: RegExpMatchArray): string | undefined =>
+  match[1] ?? (match[2] === undefined ? undefined : JSON_TEXT.parse(JSON.parse(match[2])));
+
 const codesOf = (line: string): string[] =>
-  [...line.matchAll(TOKEN)].flatMap((match) => (match[1] === undefined ? [] : [match[1]]));
+  [...line.matchAll(TOKEN)].flatMap((match) => {
+    const code = codeOf(match);
+    return code === undefined ? [] : [code];
+  });
 
 const markLine = (line: string): string =>
-  line.replaceAll(TOKEN, (match, code: string | undefined) =>
-    code !== undefined && needsMark(code) ? markName(code) : match,
-  );
+  line.replaceAll(TOKEN, (...args: unknown[]) => {
+    const match = String(args[0]);
+    const markdown = typeof args[1] === "string" ? args[1] : undefined;
+    const jsx = typeof args[2] === "string" ? JSON_TEXT.parse(JSON.parse(args[2])) : undefined;
+    if (markdown !== undefined && needsMark(markdown)) return markName(markdown, "markdown");
+    if (jsx !== undefined && needsMark(jsx)) return markName(jsx, "jsx");
+    return match;
+  });
 
 function eachProseLine(source: string, change: (line: string) => string): string {
   const lines = source.split("\n");
@@ -141,18 +173,27 @@ function breakNames(source: string): string {
 }
 
 function unmark(source: string): string {
-  return source.replaceAll(MARKED, (marked) =>
-    `\`${[...marked.matchAll(/`([^`\n]+)`/gu)].map((part) => part[1] ?? "").join("")}\``,
-  );
+  return source.replaceAll(MARKED, (marked) => {
+    if (!marked.includes("<code>{")) {
+      return `\x60${[...marked.matchAll(/\x60([^\x60\n]+)\x60/gu)].map((part) => part[1] ?? "").join("")}\x60`;
+    }
+    const pieces = [...marked.matchAll(/<code>\{("(?:[^"\\\n]|\\.)*")\}<\/code>/gu)].map((part) =>
+      JSON_TEXT.parse(JSON.parse(part[1] ?? "\"\"")),
+    );
+    return pieceMarkup(pieces.join(""), "jsx");
+  });
 }
 
 function wideNames(source: string): string[] {
   const wide: string[] = [];
+  let cards = 0;
   eachProseLine(unmark(source), (line) => {
-    for (const code of codesOf(line)) if (long(code) && longestPiece(code) > LONGEST_PIECE) wide.push(code);
+    const budget = cards > 0 || line.includes("<Card ") ? LONGEST_PIECE_IN_CARD : LONGEST_PIECE;
+    for (const code of codesOf(line)) if (long(code) && longestPiece(code) > budget) wide.push(code);
+    cards += (line.match(/<Card[\s>]/gu) ?? []).length - (line.match(/<\/Card>/gu) ?? []).length;
     return line;
   });
   return wide;
 }
 
-export { breakNames, LONGEST_PIECE, SHORT, unmark, wideNames };
+export { breakNames, codeMarkup, LONGEST_PIECE, SHORT, unmark, wideNames };

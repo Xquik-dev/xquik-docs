@@ -28,6 +28,11 @@ const CASES: readonly (readonly [string, string])[] = [
   ["| `GET /x/users/{id}/verified-followers` |", "| `GET /x/users/{id}/verified-followers` |"],
   ["```bash\nUse `GET /x/users/{id}/verified-followers`\n```", "```bash\nUse `GET /x/users/{id}/verified-followers`\n```"],
   ['<Card title="`GET /x/users/{id}/verified-followers`">', '<Card title="`GET /x/users/{id}/verified-followers`">'],
+  [
+    'Live output of <code>{"GET /x/users/{id}/verified-followers"}</code>, read on 11',
+    'Live output of <span className="cn"><code>{"GET /x/users/"}</code><wbr /><code>{"{id}/"}</code><wbr /><span className="nw"><code>{"verified-followers"}</code></span></span>, read on 11',
+  ],
+  ['Live output of <code>{"GET /x/tweets"}</code>', 'Live output of <code>{"GET /x/tweets"}</code>'],
 ];
 
 const NAME = fc.stringMatching(/^[A-Za-z0-9/._&=?{}"-]{1,60}$/u);
