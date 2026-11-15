@@ -9461,11 +9461,12 @@ paths:
                 accountIds:
                   type: array
                   minItems: 1
-                  maxItems: 1000
+                  maxItems: 524288
                   example: ['1', '2']
                   description:
-                    IDs of the X accounts to retry. Accounts that failed for
-                    another reason, or belong to someone else, stay as they are.
+                    IDs of the X accounts to retry, as many as the account
+                    holds. Accounts that failed for another reason, or belong to
+                    someone else, stay as they are.
                   items:
                     oneOf:
                       - type: string
@@ -15618,9 +15619,9 @@ paths:
           in: query
           required: true
           description:
-            1 to 100 links of the form `https://t.co/Xe1nm2pkSX`, separated by
-            commas. Any other link is refused. A link sent twice counts once. A
-            longer URL fails at the edge before Xquik reads it.
+            Links of the form `https://t.co/Xe1nm2pkSX`, separated by commas, as
+            many as the URL holds. Any other link is refused. A link sent twice
+            counts once. A longer URL fails at the edge before Xquik reads it.
           schema:
             type: string
             maxLength: 13078
@@ -16490,10 +16491,10 @@ paths:
       x-mcp-annotations: { readOnlyHint: true }
       summary: Classify posts with your own AI questions
       description:
-        Answers 1 to 8 questions you write in analysis.questions. A choice picks
-        a category, such as a topic. A score picks a level. A probability
-        answers yes or no. Without questions it answers the sentiment questions.
-        Each analyzed post costs 2 credits.
+        Answers the questions you write in analysis.questions. A choice picks a
+        category, such as a topic. A score picks a level. A probability answers
+        yes or no. Without questions it answers the sentiment questions. Each
+        analyzed post costs 2 credits.
       tags: [Analysis]
       security: [{ apiKey: [] }, { oauthBearer: [] }]
       requestBody:
@@ -18974,6 +18975,7 @@ components:
               - id: '1893456789012345679'
                 status: 'skipped'
                 reason: 'post_unavailable'
+            unprocessed_ids: []
             analysisSummary:
               schemaVersion: 1
               rows: { analyzed: 1, failed: 0, skipped: 0 }
@@ -26801,7 +26803,8 @@ components:
         truncated:
           type: boolean
           description: >-
-            True when the cues cover only the start of a very long track.
+            True when X didn't serve every caption file of the track in time, so
+            the cues cover only its start. Retry for the rest.
         cues:
           type: array
           description: Timed captions in order.
@@ -33422,8 +33425,10 @@ components:
         tweetIds:
           type: array
           minItems: 1
-          maxItems: 100
-          description: Post IDs or post URLs to analyze, up to 100.
+          maxItems: 65532
+          description:
+            Post IDs or post URLs to analyze, as many as the body holds. Posts
+            left when the time runs out come back in unprocessed_ids.
           example: ['2102882545427714266']
           items:
             type: string
@@ -33569,11 +33574,11 @@ components:
         limit:
           type: integer
           minimum: 1
-          maximum: 100
           default: 20
           description:
             Maximum posts to analyze from the search or page. A low credit
-            balance can return fewer.
+            balance can return fewer. When the time runs out first, send
+            next_cursor as cursor for the rest.
           example: 20
         cursor:
           type: string
@@ -33586,10 +33591,12 @@ components:
         texts:
           type: array
           minItems: 1
-          maxItems: 100
+          maxItems: 65533
           description:
-            Your own texts to analyze, such as drafts. Reads nothing from X.
-            Each text costs the same as 1 analyzed post.
+            Your own texts to analyze, such as drafts, as many as the body
+            holds. Reads nothing from X. Each text costs the same as 1 analyzed
+            post. Texts left when the time runs out come back in
+            unprocessed_ids.
           example: ['We shipped dark mode today. Tell us what breaks.']
           items:
             type: string
@@ -33625,7 +33632,7 @@ components:
           $ref: '#/components/schemas/TweetAnalysisSettings'
         baseline:
           type: array
-          maxItems: 10000
+          maxItems: 17474
           description:
             Rows of an earlier answer to compare with, such as its results. Each
             needs the post's id, or tweet.id, & its answers. Send monitor too,
@@ -33688,7 +33695,7 @@ components:
         questions:
           type: array
           minItems: 1
-          maxItems: 8
+          maxItems: 53
           description:
             Your own questions, which replace the route's questions. Write
             question IDs & category names in lower case without hyphens.
@@ -33722,7 +33729,7 @@ components:
           example: 'complaints'
         targets:
           type: array
-          maxItems: 100
+          maxItems: 2453
           description:
             Brands, people, assets or topics the questions are about, each with
             its aliases.
@@ -33740,7 +33747,7 @@ components:
                 example: 'Sony'
               aliases:
                 type: array
-                maxItems: 100
+                maxItems: 15939
                 example: ['WH-1000XM6']
                 items:
                   type: string
@@ -33837,7 +33844,7 @@ components:
         levels:
           type: array
           minItems: 2
-          maxItems: 100
+          maxItems: 10
           description: For a score. Each level's description, lowest first.
           example: ['No urgency.', 'Some urgency.', 'Urgent.']
           items:
@@ -33869,7 +33876,12 @@ components:
         answers. Each row in results costs 2 credits.
       type: object
       required:
-        [results, unanalyzed, analysisSummary, has_next_page, next_cursor]
+        - results
+        - unanalyzed
+        - unprocessed_ids
+        - analysisSummary
+        - has_next_page
+        - next_cursor
       properties:
         results:
           type: array
@@ -33887,6 +33899,15 @@ components:
               reason: 'post_unavailable'
           items:
             $ref: '#/components/schemas/UnanalyzedTweet'
+        unprocessed_ids:
+          type: array
+          description:
+            IDs of the posts or texts the time ran out for. Send them again in
+            tweetIds, or those texts in texts. They cost nothing.
+          example: []
+          items:
+            type: string
+            example: '2102882545427714266'
         analysisSummary:
           $ref: '#/components/schemas/TweetAnalysisSummary'
         has_next_page:
