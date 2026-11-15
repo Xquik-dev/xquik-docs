@@ -5832,7 +5832,7 @@ paths:
             Twitter yesterday at this hour, on every run of a schedule. The
             answer is the stored list nearest that time, with its own time in
             capturedAt. History starts 2026-10-13 02:20 UTC. A time over 24
-            hours from every stored list answers 400 at no charge.
+            hours from every stored list answers 404 at no charge.
           example: '2026-10-13T14:00:00Z'
         - $ref: '#/components/parameters/Fields'
         - $ref: '#/components/parameters/Omit'
@@ -5923,9 +5923,7 @@ paths:
                       to. Present only with at.
                     example: '2026-10-13T14:00:00.000Z'
         '400':
-          description:
-            Unknown country or location, a time that does not read, or no stored
-            list within 24 hours of at
+          description: Unknown country or location, or a time that does not read
           content:
             application/json:
               schema:
@@ -5938,25 +5936,33 @@ paths:
                     message:
                       'X lists no trends for that place. List places with GET
                       /x/trends/locations.'
-                beforeHistory:
-                  summary: The time is before the first stored list
-                  value:
-                    error: 'invalid_input'
-                    message:
-                      'Trends history for this place starts 2026-10-13 02:20
-                      UTC. Ask for a later time.'
-                noListNear:
-                  summary: No list is stored within 24 hours of the time
-                  value:
-                    error: 'invalid_input'
-                    message:
-                      'No trends are stored within 24 hours of that time. The
-                      nearest list is from 2026-10-14 10:05 UTC.'
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '402':
           $ref: '#/components/responses/PaymentRequired'
         '403': { $ref: '#/components/responses/ApiKeyPaused' }
+        '404':
+          description: No stored list within 24 hours of at
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                beforeHistory:
+                  summary: The time is before the first stored list
+                  value:
+                    error: 'not_found'
+                    message:
+                      'Xquik stores no trends for this place before 2026-10-13
+                      02:20 UTC. X serves no older lists, so ask for that time
+                      or later.'
+                noListNear:
+                  summary: No list is stored within 24 hours of the time
+                  value:
+                    error: 'not_found'
+                    message:
+                      'No trends are stored within 24 hours of that time. The
+                      nearest list is from 2026-10-14 10:05 UTC.'
         '502':
           $ref: '#/components/responses/XApiError'
         '503':
@@ -6029,7 +6035,8 @@ paths:
             also takes a span back from now, as a number & s, m, h or d, so
             from=7d reads the last 7 days. Defaults to 24 hours before to.
             History starts 2026-10-13 02:20 UTC, and a range that begins earlier
-            returns the stored part. Alias sinceTime.
+            returns the stored part. A range that ends before the first stored
+            list answers 404 at no charge. Alias sinceTime.
           example: '2026-10-13'
         - name: to
           in: query
@@ -6218,9 +6225,8 @@ paths:
                 next_cursor: ''
         '400':
           description:
-            Unknown country or location, a time or step that does not read, a
-            range that ends before the first stored list, or a value past its
-            maxLength
+            Unknown country or location, a time or step that does not read, or a
+            value past its maxLength
           content:
             application/json:
               schema:
@@ -6228,13 +6234,24 @@ paths:
               example:
                 error: 'invalid_input'
                 message:
-                  'Trends history for this place starts 2026-10-13 02:20 UTC.
-                  Ask for a later time.'
+                  'X lists no trends for that place. List places with GET
+                  /x/trends/locations.'
         '401':
           $ref: '#/components/responses/AnonymousGuestAuthenticationRequired'
         '402':
           $ref: '#/components/responses/PaymentRequired'
         '403': { $ref: '#/components/responses/ApiKeyPaused' }
+        '404':
+          description: A range that ends before the first stored list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: 'not_found'
+                message:
+                  'Xquik stores no trends for this place before 2026-10-13 02:20
+                  UTC. X serves no older lists, so ask for that time or later.'
         '502':
           $ref: '#/components/responses/XApiError'
         '503':
