@@ -1556,8 +1556,9 @@ paths:
                   type: boolean
                   default: false
                   description:
-                    Lets this key connect, reconnect, retry & remove X accounts.
-                    Full access doesn't include it. Missing saves false.
+                    Lets this key connect, reconnect, retry & remove X accounts,
+                    by sending X passwords or through hosted connect links. Full
+                    access doesn't include it. Missing saves false.
                   example: false
                 expiresInDays:
                   type: [integer, 'null']
@@ -1905,8 +1906,9 @@ paths:
                   type: boolean
                   description:
                     Turns on or off connecting, reconnecting, retrying &
-                    removing X accounts with this key. Only a dashboard session
-                    can change it. Missing keeps the current value.
+                    removing X accounts with this key, connect links included.
+                    Only a dashboard session can change it. Missing keeps the
+                    current value.
                   example: true
                 allowedIps:
                   type: array
@@ -8997,19 +8999,61 @@ paths:
           $ref: '#/components/responses/ConnectServiceUnavailable'
 
   /x/account-connection-links:
-    post:
-      operationId: createXAccountConnectionLink
+    get:
+      operationId: listXAccountConnectionLinks
       x-mcp-exclusion-reason:
         &x-connect-link-token A connect link works like a password until it's
         used, so it stays out of model context.
+      summary: List X account connect links
+      description: >-
+        Lists your connect links, newest first, with `apiKeyId` naming the API
+        key that made each one, or null for a dashboard session. Use it to find
+        and revoke the links a leaked key made. It never holds a token. Takes a
+        Full access API key holding `connectsXAccounts`, or a dashboard session.
+      tags: [X Accounts]
+      security: [{ apiKey: [] }, { cookieSession: [] }]
+      parameters: *list-limit-after-parameters
+      responses:
+        '200':
+          description: Your connect links, newest first.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [links, hasMore]
+                properties:
+                  links:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/XAccountConnectionLink'
+                    example: []
+                  hasMore: *boolean-example-false
+                  nextCursor: *short-id-example-schema
+              example:
+                links: []
+                hasMore: false
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/ConnectLinkForbidden'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+    post:
+      operationId: createXAccountConnectionLink
+      x-mcp-exclusion-reason: *x-connect-link-token
       summary: Create X account connect link
       description: >-
         Creates a link to a page Xquik hosts, where a person connects an X
         account with no Xquik signup. Your backend never receives their password
         or 2FA secret, and the account belongs to you. Send `accountId` to
         reconnect 1 of your accounts instead. Connecting is free. Takes a Full
-        access API key or a dashboard session. The link works for 30 minutes, &
-        the response is the only place its token appears.
+        access API key holding `connectsXAccounts`, or a dashboard session. The
+        link works for 30 minutes, & the response is the only place its token
+        appears. A link a key made stops while that key is paused or loses
+        `connectsXAccounts`, & for good once it's revoked, rotated, expired or
+        deleted.
       tags: [X Accounts]
       security: [{ apiKey: [] }, { cookieSession: [] }]
       requestBody:
@@ -9079,6 +9123,7 @@ paths:
                 status: 'pending'
                 reference: 'crm-user-7'
                 returnUrl: 'https://app.example.com/connected'
+                apiKeyId: '17'
                 accountId: null
                 xUserId: null
                 xUsername: null
@@ -9093,7 +9138,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '403':
-          $ref: '#/components/responses/ReadKeyForbidden'
+          $ref: '#/components/responses/ConnectLinkForbidden'
         '404':
           $ref: '#/components/responses/ReauthAccountNotFound'
         '429':
@@ -9107,7 +9152,8 @@ paths:
       description: >-
         Reads what happened on a link. `status` reads `connected` once the
         person finishes, with `xUserId`, `xUsername` & `health`. It never holds
-        the token. Takes a Full access API key or a dashboard session.
+        the token. Takes a Full access API key holding `connectsXAccounts`, or a
+        dashboard session.
       tags: [X Accounts]
       security: [{ apiKey: [] }, { cookieSession: [] }]
       parameters:
@@ -9128,7 +9174,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '403':
-          $ref: '#/components/responses/ReadKeyForbidden'
+          $ref: '#/components/responses/ConnectLinkForbidden'
         '404':
           $ref: '#/components/responses/NotFound'
         '429':
@@ -9139,7 +9185,8 @@ paths:
       summary: Revoke X account connect link
       description: >-
         Stops a link working. An account it already connected stays connected.
-        Takes a Full access API key or a dashboard session.
+        Takes a Full access API key holding `connectsXAccounts`, or a dashboard
+        session.
       tags: [X Accounts]
       security: [{ apiKey: [] }, { cookieSession: [] }]
       parameters:
@@ -9152,7 +9199,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '403':
-          $ref: '#/components/responses/ReadKeyForbidden'
+          $ref: '#/components/responses/ConnectLinkForbidden'
         '404':
           $ref: '#/components/responses/NotFound'
         '429':
@@ -18441,6 +18488,39 @@ components:
                   This route needs a Full access key. Turn on Full access at
                   dashboard.xquik.com/api-keys.
                 requiredScope: full
+    ConnectLinkForbidden:
+      description:
+        An API key needs Full access & `connectsXAccounts` for connect links.
+        Turn the permission on in a dashboard session at
+        dashboard.xquik.com/api-keys. An OAuth token or MCP tool gets
+        `session_required`, & a paused API key gets `api_key_paused`.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            apiKeyPaused:
+              summary: A paused API key
+              value: *api-key-paused
+            insufficientScope:
+              summary: The API key isn't Full access
+              value:
+                error: insufficient_scope
+                message:
+                  This route needs a Full access key. Turn on Full access at
+                  dashboard.xquik.com/api-keys.
+                requiredScope: full
+            permissionRequired:
+              summary: The API key lacks the connect permission
+              value:
+                error: x_account_connect_permission_required
+                message:
+                  This API key can't connect X accounts. Turn on Connect X
+                  accounts for it at dashboard.xquik.com/api-keys.
+                requiredPermission: connectsXAccounts
+            sessionRequired:
+              summary: An OAuth token or MCP tool called this route
+              value: *session-required-example
     WriteKeyForbidden:
       description:
         The API key lacks the write scope this route needs. A paused API key
@@ -24396,8 +24476,9 @@ components:
         connectsXAccounts:
           type: boolean
           description:
-            Whether this key can connect, reconnect, retry & remove X accounts.
-            Full access doesn't include it.
+            Whether this key can connect, reconnect, retry & remove X accounts,
+            by sending X passwords or through hosted connect links. Full access
+            doesn't include it.
           example: false
         allowedIps:
           type: array
@@ -33285,6 +33366,7 @@ components:
           status,
           reference,
           returnUrl,
+          apiKeyId,
           accountId,
           xUserId,
           xUsername,
@@ -33319,7 +33401,10 @@ components:
               revoked,
             ]
           description:
-            '`failed` means 5 logins were refused, so make a new link.'
+            '`failed` means 5 logins were refused, so make a new link. `revoked`
+            means you revoked it, or the key that made it is paused, revoked,
+            expired, no longer Full access or without `connectsXAccounts`. A
+            link whose key resumes within its 30 minutes reads `pending` again.'
           example: 'connected'
         reference:
           type: [string, 'null']
@@ -33328,6 +33413,12 @@ components:
           type: [string, 'null']
           format: uri
           example: 'https://app.example.com/connected'
+        apiKeyId:
+          type: [string, 'null']
+          description:
+            The ID of the API key that made the link, or null when a dashboard
+            session made it.
+          example: '17'
         accountId:
           type: [string, 'null']
           example: '42'
