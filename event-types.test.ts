@@ -99,6 +99,15 @@ const REQUIRED_TEST_EVENT_DOCS = [
   "api-reference/webhooks/test.mdx",
   "webhooks/overview.mdx",
 ] as const;
+const CODE_FENCE_PATTERN = /^```[\s\S]*?^```/gmu;
+const PROSE_BLOCK_PATTERN = /\n\s*\n|\n(?=\s*\|)/u;
+const SENTENCE_END_PATTERN = /(?<=[.!?])\s/u;
+const NEGATION_PATTERN = /\b(?:not|never|no|without)\b/iu;
+const FOLLOW_WORD_PATTERN = /\bfollow(?:er|ing)s?\b/iu;
+const EVENT_WORD_PATTERN = /\bevents?\b/iu;
+const OTHER_MONITOR_PATTERN = /\b(?:keyword|post) monitors?\b/iu;
+const ACCOUNT_MONITOR_PATTERN = /\baccount monitors?\b/iu;
+const EVENT_TYPES_PATTERN = /\bevent types\b/iu;
 const isHistorical = (file: string): boolean =>
   file === "changelog.mdx" || file.startsWith("changelog/");
 
@@ -107,6 +116,11 @@ interface Finding {
   readonly file: string;
   readonly issue: string;
   readonly line: number;
+}
+
+interface DocSentence {
+  readonly file: string;
+  readonly sentence: string;
 }
 
 function hasDocExtension(filePath: string): boolean {
@@ -209,6 +223,29 @@ function collectUnsupportedEventTypeFindings(
   return findings;
 }
 
+function proseSentences(source: string): readonly string[] {
+  return source
+    .replaceAll(CODE_FENCE_PATTERN, "")
+    .split(PROSE_BLOCK_PATTERN)
+    .flatMap((block): readonly string[] =>
+      block.replaceAll(/\s+/gu, " ").trim().split(SENTENCE_END_PATTERN),
+    );
+}
+
+function currentDocSentences(): readonly DocSentence[] {
+  return listDocFiles(PROJECT_ROOT)
+    .filter((file): boolean => !isHistorical(file))
+    .flatMap((file): readonly DocSentence[] =>
+      proseSentences(readFileSync(join(PROJECT_ROOT, file), "utf8")).map(
+        (sentence): DocSentence => ({ file, sentence }),
+      ),
+    );
+}
+
+function countsIn(sentence: string): readonly number[] {
+  return Array.from(sentence.matchAll(/\b\d+\b/gu), (match): number => Number(match[0]));
+}
+
 function missingEventTypeMentions(
   file: string,
   requiredEventTypes: readonly string[],
@@ -219,43 +256,41 @@ function missingEventTypeMentions(
 }
 
 describe("documented event types", (): void => {
-  it("keeps account monitor docs within supported event scope", (): void => {
+  it("never denies follow events the public contract lists", (): void => {
     expect.assertions(1);
 
-    const createFile = "api-reference/monitors/create.mdx";
-    const createSource = readFileSync(join(PROJECT_ROOT, createFile), "utf8");
-    const createDescription = /^description:\s*"([^"]+)"$/mu.exec(createSource)?.[1] ?? "";
-    const listFile = "api-reference/monitors/list.mdx";
-    const listSource = readFileSync(join(PROJECT_ROOT, listFile), "utf8");
-    const updateFile = "api-reference/monitors/update.mdx";
-    const updateSource = readFileSync(join(PROJECT_ROOT, updateFile), "utf8");
-    const updateDescription = /^description:\s*"([^"]+)"$/mu.exec(updateSource)?.[1] ?? "";
+    const eventTypes = extractOpenApiEventTypes(
+      readFileSync(join(PROJECT_ROOT, "openapi.yaml"), "utf8"),
+    );
+    const listsFollowEvents = eventTypes.some((eventType): boolean =>
+      /^follow(?:er|ing)\./u.test(eventType),
+    );
+    const denials = currentDocSentences().filter(
+      ({ sentence }): boolean =>
+        NEGATION_PATTERN.test(sentence) &&
+        FOLLOW_WORD_PATTERN.test(sentence) &&
+        EVENT_WORD_PATTERN.test(sentence) &&
+        !OTHER_MONITOR_PATTERN.test(sentence),
+    );
 
-    const findings = [
-      { file: createFile, source: createDescription },
-      { file: listFile, source: listSource },
-      { file: updateFile, source: updateDescription },
-    ].flatMap(({ file, source }): readonly Finding[] => {
-      return Array.from(
-        source.matchAll(/\b(?:followers?|following|relationship (?:changes?|events?))\b/giu),
-        (match): Finding => ({
-          eventType: match[0],
-          file,
-          issue: "Account monitor docs describe an unsupported event scope.",
-          line: lineNumberForIndex(source, match.index ?? 0),
-        }),
-      );
-    });
+    expect(listsFollowEvents ? denials : []).toStrictEqual([]);
+  });
 
-    expect({
-      createDescriptionPresent: createDescription.length > 0,
-      findings,
-      updateDescriptionPresent: updateDescription.length > 0,
-    }).toStrictEqual({
-      createDescriptionPresent: true,
-      findings: [],
-      updateDescriptionPresent: true,
-    });
+  it("counts account monitor event types as the public contract does", (): void => {
+    expect.assertions(1);
+
+    const eventTypeCount = extractOpenApiEventTypes(
+      readFileSync(join(PROJECT_ROOT, "openapi.yaml"), "utf8"),
+    ).length;
+    const miscounts = currentDocSentences().filter(
+      ({ sentence }): boolean =>
+        ACCOUNT_MONITOR_PATTERN.test(sentence) &&
+        EVENT_TYPES_PATTERN.test(sentence) &&
+        countsIn(sentence).length > 0 &&
+        countsIn(sentence).reduce((sum, count): number => sum + count, 0) !== eventTypeCount,
+    );
+
+    expect(miscounts).toStrictEqual([]);
   });
 
   it("keeps the OpenAPI subscribable event enum explicit", (): void => {
