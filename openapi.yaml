@@ -7526,6 +7526,8 @@ paths:
                 processed_count: 2
                 returned_count: 1
                 unavailable_ids: ['1234567890']
+                not_found_ids: ['1234567890']
+                suspended_ids: []
                 failed_ids: []
                 unprocessed_ids: []
         '400':
@@ -7604,6 +7606,9 @@ paths:
                 has_next_page: false
                 next_cursor: ''
                 unavailable_ids: ['1234567890']
+                not_found_ids: ['1234567890']
+                suspended_ids: []
+                protected_ids: []
                 unprocessed_ids: []
         '400':
           $ref: '#/components/responses/InvalidInput'
@@ -22684,6 +22689,8 @@ components:
           processed_count,
           returned_count,
           unavailable_ids,
+          not_found_ids,
+          suspended_ids,
           failed_ids,
           unprocessed_ids,
         ]
@@ -22725,10 +22732,25 @@ components:
           type: array
           description:
             Processed IDs with no profile on X, in first-seen request order.
+            not_found_ids and suspended_ids split them by X's answer.
           items: &batch-user-id
             type: string
             pattern: '^(?:\d+|[A-Za-z0-9_]{1,15})$'
           example: ['1234567890']
+        not_found_ids:
+          type: array
+          description:
+            The unavailable IDs no account holds, as X answers for an account
+            that was deactivated or deleted, in first-seen request order.
+          items: *batch-user-id
+          example: ['1234567890']
+        suspended_ids:
+          type: array
+          description:
+            The unavailable IDs of accounts X suspended, in first-seen request
+            order.
+          items: *batch-user-id
+          example: []
         failed_ids:
           type: array
           description:
@@ -22750,7 +22772,16 @@ components:
         They name a profile link by its username.
       type: object
       required:
-        [tweets, has_next_page, next_cursor, unavailable_ids, unprocessed_ids]
+        [
+          tweets,
+          has_next_page,
+          next_cursor,
+          unavailable_ids,
+          not_found_ids,
+          suspended_ids,
+          protected_ids,
+          unprocessed_ids,
+        ]
       properties:
         tweets:
           type: array
@@ -22770,9 +22801,30 @@ components:
           type: array
           description:
             Users with no account on X or with protected posts, in first-seen
-            request order. They cost nothing.
+            request order. They cost nothing. not_found_ids, suspended_ids and
+            protected_ids split them by X's answer.
           items: *batch-user-id
           example: ['1234567890']
+        not_found_ids:
+          type: array
+          description:
+            The unavailable users no account holds, as X answers for an account
+            that was deactivated or deleted, in first-seen request order.
+          items: *batch-user-id
+          example: ['1234567890']
+        suspended_ids:
+          type: array
+          description:
+            The unavailable users X suspended, in first-seen request order.
+          items: *batch-user-id
+          example: []
+        protected_ids:
+          type: array
+          description:
+            The unavailable users whose posts only approved followers see, in
+            first-seen request order.
+          items: *batch-user-id
+          example: []
         unprocessed_ids:
           type: array
           description:
@@ -25531,10 +25583,19 @@ components:
           enum: [unavailable, unfollowed]
           description: >-
             Why the account left the list, on following.removed &
-            follower.removed. unavailable means X no longer serves the account.
-            unfollowed means the follow ended. It is missing when the cause
-            isn't known.
+            follower.removed. unavailable means X shows no account for it, and
+            unavailableReason says why. unfollowed means the follow ended. It is
+            missing when the cause isn't known.
           example: unfollowed
+        unavailableReason:
+          type: string
+          enum: [not_found, suspended]
+          description: >-
+            Why X shows no account, when reason is unavailable. not_found means
+            the account no longer exists, as X answers for a deactivated or
+            deleted account. suspended means X suspended it. A user lookup of
+            the ID answers user_not_found with the same reason.
+          example: not_found
       additionalProperties: true
 
     MonitorLegacyPost:
