@@ -242,8 +242,9 @@ function currentDocSentences(): readonly DocSentence[] {
     );
 }
 
-function countsIn(sentence: string): readonly number[] {
-  return Array.from(sentence.matchAll(/\b\d+\b/gu), (match): number => Number(match[0]));
+function countTotal(sentence: string): number | undefined {
+  const counts = Array.from(sentence.matchAll(/\b\d+\b/gu), (match): number => Number(match[0]));
+  return counts.length === 0 ? undefined : counts.reduce((sum, count): number => sum + count, 0);
 }
 
 function missingEventTypeMentions(
@@ -282,13 +283,15 @@ describe("documented event types", (): void => {
     const eventTypeCount = extractOpenApiEventTypes(
       readFileSync(join(PROJECT_ROOT, "openapi.yaml"), "utf8"),
     ).length;
-    const miscounts = currentDocSentences().filter(
-      ({ sentence }): boolean =>
+    const miscounts = currentDocSentences().filter(({ sentence }): boolean => {
+      const total = countTotal(sentence);
+      return (
         ACCOUNT_MONITOR_PATTERN.test(sentence) &&
         EVENT_TYPES_PATTERN.test(sentence) &&
-        countsIn(sentence).length > 0 &&
-        countsIn(sentence).reduce((sum, count): number => sum + count, 0) !== eventTypeCount,
-    );
+        total !== undefined &&
+        total !== eventTypeCount
+      );
+    });
 
     expect(miscounts).toStrictEqual([]);
   });
