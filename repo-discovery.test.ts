@@ -2724,7 +2724,7 @@ const REQUIRED_EVENT_TYPES_GUIDE_SNIPPETS = [
 ] as const;
 
 const REQUIRED_EVENT_LIST_API_HANDOFF_SNIPPETS = [
-  'description: "Query stored tweet and profile change events from account and keyword monitors. Filter by monitor or event type and paginate with a cursor. Listing is free."',
+  'description: "Query stored events from account, keyword & post monitors, follower changes included. Filter by monitor or event type & paginate with a cursor. Listing is free."',
   "jq '. as $page | .events[] | {",
   "event_id: .id",
   "monitor_type: .monitorType",
@@ -8874,7 +8874,7 @@ const REQUIRED_TWEET_PROFILE_API_FIELDS_SNIPPETS = [
   "### What is a Twitter conversation ID?",
   "### How do quotes differ from reposts?",
   "### Does the Twitter profile API include follower counts?",
-  "growth tracking. Join snapshots through the profile `id`.",
+  "account monitor's `profile.followers.changed` event reports each count move.",
   "### How do I get tweet media metadata?",
   "### Can I export tweet metadata to CSV?",
 ] as const;
