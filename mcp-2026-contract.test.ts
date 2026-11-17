@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { runInNewContext } from "node:vm";
 import { describe, expect, it } from "vitest";
 
@@ -12,7 +12,9 @@ const INTRODUCTION = read("index.mdx");
 const SKILL = read("skill.md");
 const LLMS = read("llms.txt");
 const CONTEXT7 = read("context7.json");
-const CHANGELOG = read("changelog.mdx");
+const CHANGELOG = ["changelog.mdx", ...readdirSync("changelog").map((file) => `changelog/${file}`)]
+  .map(read)
+  .join("\n");
 const README = read("README.md");
 
 describe("MCP 2026-07-28 documentation contract", (): void => {

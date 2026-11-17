@@ -1,0 +1,40 @@
+---
+title: "Xquik changelog for April 2026 X (Twitter) API"
+sidebarTitle: "April 2026"
+description: "What changed in Xquik in April 2026, across the X (Twitter) REST API, MCP server, SDKs, tweet search, follower exports, monitors, webhooks & extractions."
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+<LlmsDirective />
+
+<Update label="April 2026" description="v1">
+
+**New**
+
+- `POST /x/tweets` - added `media` field (1-4 image URLs). `text` is now optional when media is present
+- `POST /x/accounts/{id}/reauth` - added `email` parameter
+- `POST /x/media` - now accepts `image/webp` and `image/avif`. Allowed types are AVIF, GIF, JPEG, PNG, WebP, and MP4
+- `POST /x/accounts` and `POST /x/accounts/{id}/reauth` responses now include a `health` field. Its values are `healthy`, `locked`, `needsReauth`, `recovering`, `suspended`, and `temporaryIssue`. The same field now appears on `GET /x/accounts` list and detail responses
+- New error code `login_cooldown` (429) for `POST /x/accounts` and `POST /x/accounts/{id}/reauth`. Its body has `reason` and `retryAfterMs`, and it sends a `Retry-After` header
+- All 17 write endpoints now document the standardized error responses. Those endpoints are under `/x/tweets`, `/x/users`, `/x/dm`, `/x/profile`, `/x/media` and `/x/communities`. The responses are `403 account_needs_reauth`, `403 account_restricted`, `422 write_rejected`, `429 rate_limited_by_x`, and `503 transient_error`
+- `GET /radar` items now expose 15 metadata fields per source, up from 8. They are `mrr`, `growthPercent`, `last30Days`, `total` (required), `customers`, `activeSubscriptions` and `onSale`. The optional fields are `askingPrice`, `country`, `growthMrrPercent`, `multiple`, `paymentProvider`, `rank`, `category` and `xHandle`
+- Expanded Machine Payments Protocol (MPP) pay-per-use to 31 endpoints (tweets, communities, lists, user data)
+- New guides cover LangChain, Pydantic AI, CrewAI, Mastra, Google ADK, and Microsoft Agent Framework
+
+**Changed**
+
+- Billing migrated to credits-only model (usage-quota removed)
+- In the `GET /account` response, `creditInfo` replaces `currentPeriod`
+- In the `POST /extractions/estimate` response, `creditsRequired` / `creditsAvailable` replace `usagePercent` / `projectedPercent`
+- Monitor delivery changed. The public API contract did not change.
+- `POST /x/tweets/{id}/like` and `POST /x/tweets/{id}/retweet` are now end-to-end idempotent. Calling either on an already-acted-on tweet returns 200 success. The earlier silent rejection produced a 500 plus an account cooldown.
+
+**Removed**
+
+- Xquik no longer emits event types `follower.gained` and `follower.lost`. Valid event types are `tweet.new`, `tweet.quote`, `tweet.reply`, `tweet.retweet` (plus `webhook.test`).
+- Error code `shadow_account` (422) removed from `POST /monitors`
+- Error code `stream_registration_failed` (502) removed from `POST /monitors` (monitor activation is now asynchronous)
+- Telegram bot endpoints and integrations pipeline endpoints removed
+
+</Update>
