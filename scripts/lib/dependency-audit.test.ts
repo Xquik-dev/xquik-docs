@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
+import { z } from "zod";
 
 import { audit, EXCEPTION_DAYS, EXCEPTIONS, exceptionFor } from "./dependency-audit.ts";
 import type { Exception, Finding } from "./dependency-audit.ts";
@@ -11,7 +12,12 @@ const ROUND = Date.parse("2026-11-17T19:00:00Z");
 const EXPIRY = Date.parse("2026-12-01T18:00:00Z");
 const ROOT = new URL("../../", import.meta.url);
 
-function scan(name: string, version: string, id: string, events: readonly Readonly<Record<string, string>>[]): unknown {
+function scan(
+  name: string,
+  version: string,
+  id: string,
+  events: readonly Readonly<Record<string, string>>[],
+): unknown {
   return {
     results: [
       {
@@ -26,7 +32,10 @@ function scan(name: string, version: string, id: string, events: readonly Readon
   };
 }
 
-const PICOMATCH = scan("picomatch", "4.0.7", "GHSA-fc5q-39xc-vjpf", [{ introduced: "0" }, { last_affected: "4.0.7" }]);
+const PICOMATCH = scan("picomatch", "4.0.7", "GHSA-fc5q-39xc-vjpf", [
+  { introduced: "0" },
+  { last_affected: "4.0.7" },
+]);
 
 describe("audit", () => {
   it("passes GHSA-fc5q-39xc-vjpf on picomatch 4.0.7 while its patch holds & no fixed release exists", (): void => {
@@ -46,8 +55,16 @@ describe("audit", () => {
       scan("picomatch", "4.0.7", "GHSA-fc5q-39xc-vjpf", [{ introduced: "0" }, { fixed: "4.0.8" }]),
       ROUND,
     ],
-    ["on a picomatch version its patch never touched", scan("picomatch", "4.0.6", "GHSA-fc5q-39xc-vjpf", []), ROUND],
-    ["for another advisory on the patched picomatch", scan("picomatch", "4.0.7", "GHSA-other", []), ROUND],
+    [
+      "on a picomatch version its patch never touched",
+      scan("picomatch", "4.0.6", "GHSA-fc5q-39xc-vjpf", []),
+      ROUND,
+    ],
+    [
+      "for another advisory on the patched picomatch",
+      scan("picomatch", "4.0.7", "GHSA-other", []),
+      ROUND,
+    ],
     ["for any other package", scan("vite", "8.3.6", "GHSA-fc5q-39xc-vjpf", []), ROUND],
   ] as const)("fails GHSA findings %s", (_name, report, now): void => {
     expect.assertions(1);
@@ -59,24 +76,35 @@ describe("audit", () => {
     expect(
       audit(
         {
-          results: [{ packages: [{ license_violations: ["GPL-3.0-only"], package: { name: "copyleft", version: "1.0.0" } }] }],
+          results: [
+            {
+              packages: [
+                {
+                  license_violations: ["GPL-3.0-only"],
+                  package: { name: "copyleft", version: "1.0.0" },
+                },
+              ],
+            },
+          ],
         },
         ROUND,
       ),
     ).toStrictEqual({
       failures: 1,
-      lines: ["audit: copyleft 1.0.0 (GPL-3.0-only) in package-lock.json has a license outside the allowlist."],
+      lines: [
+        "audit: copyleft 1.0.0 (GPL-3.0-only) in package-lock.json has a license outside the allowlist.",
+      ],
     });
   });
 
   it("keeps each exception to 14 days, on the version the lockfile installs, with its patch applied at install", (): void => {
     expect.assertions(1);
-    const manifest = JSON.parse(readFileSync(new URL("package.json", ROOT), "utf8")) as {
-      readonly scripts: Readonly<Record<string, string>>;
-    };
-    const lock = JSON.parse(readFileSync(new URL("package-lock.json", ROOT), "utf8")) as {
-      readonly packages: Readonly<Record<string, { readonly version?: string }>>;
-    };
+    const manifest = z
+      .object({ scripts: z.record(z.string(), z.string()) })
+      .parse(JSON.parse(readFileSync(new URL("package.json", ROOT), "utf8")));
+    const lock = z
+      .object({ packages: z.record(z.string(), z.object({ version: z.string().optional() })) })
+      .parse(JSON.parse(readFileSync(new URL("package-lock.json", ROOT), "utf8")));
     expect(
       EXCEPTIONS.map((exception) => [
         Date.parse(exception.expiresAt) - Date.parse(exception.addedAt) <= EXCEPTION_DAYS * DAY_MS,
@@ -105,15 +133,19 @@ describe("audit", () => {
       version: fc.constantFrom("1.0.0", "2.0.0"),
     });
     const run = fc.check(
-      fc.property(finding, fc.integer({ max: 28 * DAY_MS, min: 0 }), (drawn: Readonly<Finding>, now: number) => {
-        const exact =
-          drawn.id === "GHSA-a" &&
-          drawn.name === "left" &&
-          drawn.version === "1.0.0" &&
-          !drawn.fixReleased &&
-          now < 14 * DAY_MS;
-        return (exceptionFor(drawn, now, [exception]) !== undefined) === exact;
-      }),
+      fc.property(
+        finding,
+        fc.integer({ max: 28 * DAY_MS, min: 0 }),
+        (drawn: Readonly<Finding>, now: number) => {
+          const exact =
+            drawn.id === "GHSA-a" &&
+            drawn.name === "left" &&
+            drawn.version === "1.0.0" &&
+            !drawn.fixReleased &&
+            now < 14 * DAY_MS;
+          return (exceptionFor(drawn, now, [exception]) !== undefined) === exact;
+        },
+      ),
       { seed: 20_261_117 },
     );
     expect(run.counterexample).toBeNull();
@@ -131,11 +163,9 @@ process.stdout.write(JSON.stringify(patterns.map((pattern) => {
 })));
 `;
 
-interface Answer {
-  readonly matched: boolean;
-  readonly ms: number;
-  readonly source: string;
-}
+const ANSWERS = z.array(z.object({ matched: z.boolean(), ms: z.number(), source: z.string() }));
+
+type Answer = Readonly<z.infer<typeof ANSWERS>[number]>;
 
 async function probe(patterns: readonly string[], input: string): Promise<readonly Answer[]> {
   const child = Bun.spawn([process.execPath, "-e", PROBE], {
@@ -151,7 +181,7 @@ async function probe(patterns: readonly string[], input: string): Promise<readon
     child.exited,
   ]);
   if (exitCode !== 0) throw new Error(`The picomatch probe exited ${String(exitCode)}: ${stderr}`);
-  return JSON.parse(stdout) as readonly Answer[];
+  return ANSWERS.parse(JSON.parse(stdout));
 }
 
 describe("the installed picomatch", () => {
@@ -159,9 +189,9 @@ describe("the installed picomatch", () => {
     expect.assertions(1);
     const patterns = ["+(*a)", "*(*a)", "+(*)c", "x+(*a)", "+(?*a)"];
     const answers = await probe(patterns, `${"a".repeat(40)}b`);
-    expect(answers.map((answer) => [answer.matched, answer.ms < 100, /\)[*+]/u.test(answer.source)])).toStrictEqual(
-      patterns.map(() => [false, true, false]),
-    );
+    expect(
+      answers.map((answer) => [answer.matched, answer.ms < 100, /\)[*+]/u.test(answer.source)]),
+    ).toStrictEqual(patterns.map(() => [false, true, false]));
   });
 
   it.each([
@@ -171,9 +201,12 @@ describe("the installed picomatch", () => {
     ["+(a*b)", "axbay", false],
     ["*(*.js)", "foo.js", true],
     ["*(*.js)", "foo.ts", false],
-  ] as const)("still matches %s against %s as the glob means", async (pattern, input, matched): Promise<void> => {
-    expect.assertions(1);
-    const answers = await probe([pattern], input);
-    expect(answers.map((answer) => answer.matched)).toStrictEqual([matched]);
-  });
+  ] as const)(
+    "still matches %s against %s as the glob means",
+    async (pattern, input, matched): Promise<void> => {
+      expect.assertions(1);
+      const answers = await probe([pattern], input);
+      expect(answers.map((answer) => answer.matched)).toStrictEqual([matched]);
+    },
+  );
 });

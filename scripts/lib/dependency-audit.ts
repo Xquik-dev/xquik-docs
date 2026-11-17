@@ -101,7 +101,11 @@ export function exceptionFor(
   );
 }
 
-function findingLine(finding: Readonly<Finding>, now: number, exceptions: readonly Exception[]): string {
+function findingLine(
+  finding: Readonly<Finding>,
+  now: number,
+  exceptions: readonly Exception[],
+): string {
   const exception = exceptionFor(finding, now, exceptions);
   const named = `${finding.id} on ${finding.name} ${finding.version} in package-lock.json`;
   return exception === undefined
@@ -109,7 +113,11 @@ function findingLine(finding: Readonly<Finding>, now: number, exceptions: readon
     : `audit: ${named} passes until ${exception.expiresAt} or its first fixed release, since ${exception.patch} applies ${exception.fix}.`;
 }
 
-export function audit(report: unknown, now: number, exceptions: readonly Exception[] = EXCEPTIONS): Audit {
+export function audit(
+  report: unknown,
+  now: number,
+  exceptions: readonly Exception[] = EXCEPTIONS,
+): Audit {
   const packages = REPORT.parse(report).results.flatMap((result) => result.packages);
   const findings = packages.flatMap((entry) => findingsOf(entry));
   const violations = packages.flatMap((entry) =>
@@ -119,7 +127,9 @@ export function audit(report: unknown, now: number, exceptions: readonly Excepti
           `audit: ${entry.package.name} ${entry.package.version} (${entry.license_violations.join(", ")}) in package-lock.json has a license outside the allowlist.`,
         ],
   );
-  const failing = findings.filter((finding) => exceptionFor(finding, now, exceptions) === undefined);
+  const failing = findings.filter(
+    (finding) => exceptionFor(finding, now, exceptions) === undefined,
+  );
   return {
     failures: violations.length + failing.length,
     lines: [...violations, ...findings.map((finding) => findingLine(finding, now, exceptions))],

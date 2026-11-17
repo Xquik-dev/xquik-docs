@@ -6,12 +6,22 @@ const LICENSES =
 const SCANNED_EXIT_CODES = new Set([0, 1]);
 
 const scanner = Bun.spawn(
-  ["osv-scanner", "scan", "source", `--licenses=${LICENSES}`, "--format=json", "-L", "package-lock.json"],
+  [
+    "osv-scanner",
+    "scan",
+    "source",
+    `--licenses=${LICENSES}`,
+    "--format=json",
+    "-L",
+    "package-lock.json",
+  ],
   { stderr: "inherit", stdin: "ignore", stdout: "pipe" },
 );
 const [report, exitCode] = await Promise.all([new Response(scanner.stdout).text(), scanner.exited]);
 if (!SCANNED_EXIT_CODES.has(exitCode)) {
-  process.stderr.write(`osv-scanner exited ${String(exitCode)}. Read its error above, then rerun.\n`);
+  process.stderr.write(
+    `osv-scanner exited ${String(exitCode)}. Read its error above, then rerun.\n`,
+  );
   process.exit(exitCode);
 }
 const result = audit(JSON.parse(report), Date.now());
