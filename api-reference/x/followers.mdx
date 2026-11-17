@@ -21,7 +21,6 @@ keywords:
 ---
 
 import LlmsDirective from "/snippets/llms-directive.mdx";
-import AudienceCommunityApiLinks from "/snippets/x-audience-community-api-links.mdx";
 import AutomaticCoveragePagination from "/snippets/automatic-coverage-pagination.mdx";
 import UserResultFilterParams from "/snippets/user-result-filter-params.mdx";
 import FieldSelectionParams from "/snippets/field-selection-params.mdx";
@@ -194,66 +193,6 @@ the caller can store `next_cursor` and process `users[]` immediately. Use
 `follower_explorer` for a cost estimate, reusable extraction ID, stored result pages, or
 files. Its files are CSV, JSON, or XLSX, ready after completion.
 
-<CardGroup cols={2}>
-
-  <Card title="Live page" icon="zap">
-
-    Call `GET /x/users/{id}/followers` with `pageSize` and `cursor` for
-    low-latency imports, enrichment, queues, or agent handoffs.
-
-  </Card>
-  <Card title="Saved export" icon="archive">
-
-    Run `follower_explorer` when operators need estimates, job status,
-    paginated saved rows, or file downloads.
-
-  </Card>
-</CardGroup>
-
-<CardGroup cols={2}>
-
-  <Card title="Follower rows" icon="rows-3">
-
-    Store `users[]` as the follower profile rows returned on this page.
-
-  </Card>
-  <Card title="Stable upserts" icon="key-round">
-
-    Store `users[].id` as `x_user_id` for CRM, warehouse, audience, and agent deduplication.
-
-  </Card>
-  <Card title="Readable labels" icon="badge">
-
-    Store `users[].username` and `users[].name` for handles, labels, enrichment, and deduplication.
-
-  </Card>
-  <Card title="Profile enrichment" icon="file-text">
-
-    Store `users[].description`, `location`, and `url` when returned. The API omits empty profile fields.
-
-  </Card>
-  <Card title="Segmentation inputs" icon="sliders-horizontal">
-
-    Store `users[].followers`, `users[].following`, `verified`, and `verifiedType` for filters and scoring.
-
-  </Card>
-  <Card title="Profile media" icon="image">
-
-    Store `users[].profilePicture` and `coverPicture` for enrichment, review queues, or profile previews.
-
-  </Card>
-  <Card title="Next page" icon="arrow-right">
-
-    Store `has_next_page` and `next_cursor`. Then pass `next_cursor` back as `cursor` only when `has_next_page` is true.
-
-  </Card>
-  <Card title="Credit-limited pages" icon="coins">
-
-    Use `users.length`, not the requested `pageSize`, for row counts and budget checks. Low balances can return fewer rows.
-
-  </Card>
-</CardGroup>
-
 Automatic `pageSize` accepts 20 to 10,000. Standard mode accepts 20 to 200.
 Paid calls can return fewer rows. `users.length` is the billable row count.
 Zero affordable results return
@@ -267,46 +206,25 @@ For high-volume follower pulls, deduplicate profiles by `id`. Continue through e
 
 ## Build a Twitter follower tracker
 
-Store complete follower snapshots with the source profile and collection time.
-Compare snapshots by numeric user ID.
+An [account monitor](/api-reference/monitors/create) tracks followers for you,
+with no snapshot diff. Select `follower.added` and `follower.removed`. Each
+event holds the follower's profile and usually arrives within a minute.
 
 {"\n"}
 
-Classify IDs that appear only in the latest snapshot as newly observed
-followers. Classify IDs missing from the latest complete snapshot as removed
-followers. Do not compare partial exports.
+- `follower.added` holds `followedAt`, X's time of the follow when X gives one.
+- `follower.removed` holds `reason`. `unfollowed` means the follow ended.
+  `unavailable` means X suspended or removed the account.
+- `followKind` marks a returning follower as `refollow` or `return`.
+- `profile.followers.changed` reports each move in the follower count.
 
 {"\n"}
 
-Keep username, profile name, verification state, follower counts, and profile
-image beside each ID. Reviewers read those fields. Compare on the numeric ID,
-because usernames can change.
-
-{"\n"}
-
-Save every cursor page before marking a snapshot complete. Record the final
-row count and completion time. A failed or credit-limited run should remain
-partial.
-
-| Follower tracker column | Source                                | Comparison rule                                               |
-| ----------------------- | ------------------------------------- | ------------------------------------------------------------- |
-| `source_x_user_id`      | Resolve the requested account once    | Keep the source account stable across snapshots.              |
-| `snapshot_id`           | Generate for each complete collection | Compare rows only inside the intended snapshot pair.          |
-| `collected_at`          | Set when you store each cursor page   | Keep collection order and snapshot recency.                   |
-| `x_user_id`             | `users[].id`                          | Use as the stable follower identity.                          |
-| `x_username`            | `users[].username`                    | Display the current handle, but never use it as the join key. |
-| `follower_count`        | `users[].followers`                   | Keep the observed audience size for segmentation.             |
-| `verified`              | `users[].verified`                    | Keep the observed verification state for filtering.           |
-| `profile_picture_url`   | `users[].profilePicture`              | Use in review queues and CRM profile previews.                |
-| `snapshot_complete`     | Set after the final cursor page       | Compare removals only when both snapshots are complete.       |
-| `row_count`             | Sum the stored `users.length` values  | Reconcile stored followers with the completed export.         |
-
-| Snapshot result         | ID condition                                  | Tracker action                                                |
-| ----------------------- | --------------------------------------------- | ------------------------------------------------------------- |
-| Newly observed follower | Present only in the latest complete snapshot  | Add the first-seen time and latest follower profile fields.   |
-| Continuing follower     | Present in both complete snapshots            | Update the username, profile, count, and verification fields. |
-| Removed follower        | Present only in the earlier complete snapshot | Add the last-seen time. Do not delete the historical row.     |
-| Unknown change          | Either snapshot is partial                    | Keep both snapshots and defer follower-change classification. |
+Monitors name lost followers for accounts with up to 100,000 followers. An
+active monitor costs 30 credits per hour. Use this endpoint once for the
+starting list, and key rows by `users[].id`, since usernames change. To track
+without code, open the
+[Twitter unfollowers tracker](https://xquik.com/en/twitter-unfollowers-tracker).
 
 </section>
 
@@ -318,6 +236,7 @@ partial.
 - Use [`follower_explorer`](/guides/follower-export-crm) when you need a saved job, CSV, JSON, or XLSX export.
 - Use `GET /api/v1/x/users/{id}/following` for accounts the user follows.
 - Use `GET /api/v1/x/users/{id}/verified-followers` when you only need verified followers.
+- Use an [account monitor](/api-reference/monitors/create) for each new or lost follower.
 
 </section>
 
@@ -473,8 +392,6 @@ The normalized v1 response contract can return 424 when the read service is unav
 **Related.** [Follower Export CRM Workflow](/guides/follower-export-crm) for imports or upserts. It gives saved CSV, JSON, or XLSX files. See also [Following](/api-reference/x/following), [Verified Followers](/api-reference/x/verified-followers), and [Followers You Know](/api-reference/x/followers-you-know).
 
 </Note>
-
-<AudienceCommunityApiLinks />
 
 </section>
 

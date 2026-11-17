@@ -1,7 +1,7 @@
 ---
 title: "Create an account monitor, X (Twitter) API docs"
 sidebarTitle: Create account monitor
-description: "Monitor one X account every second. Track tweets, replies, quotes, reposts, mentions, media, links, and profile changes. Deliver signed webhook alerts."
+description: "Monitor one X account every second. Track tweets, replies, mentions, profile changes, follows, and new or lost followers. Deliver signed webhook alerts."
 endpoint: "POST /monitors"
 keywords:
   [
@@ -24,7 +24,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 `POST https://xquik.com/api/v1/monitors`
 
 Create a Twitter account monitor for one known profile. Select tweet, profile,
-or availability events. Store the monitor ID. Then connect signed webhooks.
+follow, or follower events. Store the monitor ID. Then connect signed webhooks.
 
 <Callout icon="coins" color="#5c3327">
 
@@ -63,7 +63,7 @@ Choose one option for the required alert scope.
 
 | Monitoring need                           | Xquik option                                                     | Result                                                |
 | ----------------------------------------- | ---------------------------------------------------------------- | ----------------------------------------------------- |
-| Continuous changes from one known account | `POST /monitors`                                                 | Selected tweet and profile events from that username. |
+| Continuous changes from one known account | `POST /monitors`                                                 | Selected post, profile, and follow events from that username. |
 | Specific keywords across many accounts    | [Create Keyword Monitor](/api-reference/monitors/create-keyword) | Matching tweet events for one stored query.           |
 | Historical or on-demand tweet results     | [Search Tweets](/api-reference/x/search-tweets)                  | One paginated result set without continuous alerts.   |
 
@@ -147,6 +147,9 @@ Some follow times are exact. Others are the earliest time the follow can have.
 `followedAtExact` is true for an exact time and false for an earliest time.
 `followedAt` is missing when no follow time is known.
 The event's `occurredAt` stays the time Xquik saw the change.
+An added event holds `followKind` when the monitor reported that account removed.
+That covers removals from the last 30 days.
+`refollow` means it followed again. `return` means the old follow never ended.
 
 {"\n"}
 
@@ -155,6 +158,7 @@ The event's `occurredAt` stays the time Xquik saw the change.
 `unfollowed` means X confirms the follow ended.
 A removal event never fires for a follow that still stands.
 `reason` is missing when the cause is unknown.
+With `unavailable`, `unavailableReason` is `not_found` or `suspended`.
 
 {"\n"}
 
@@ -250,15 +254,14 @@ Review `nextBillingAt` before keeping large monitor sets active.
 
 ## What does an account monitor not track?
 
-Account monitors do not emit follower-gained or follower-lost events.
-They also exclude likes, bookmarks, and direct-message activity.
-They do not return a complete historical timeline.
+Account monitors exclude likes, bookmarks, and direct-message activity.
+They do not return a complete historical timeline or follower list.
 They do not search specific keywords across every account.
 
 {"\n"}
 
-Use [Followers](/api-reference/x/followers) for paginated follower snapshots.
-Use [Following](/api-reference/x/following) for paginated following snapshots.
+Use [Followers](/api-reference/x/followers) for the follower list as it stands now.
+Use [Following](/api-reference/x/following) for the current following list.
 Use [User Tweets](/api-reference/x/user-tweets) for timeline retrieval.
 Use [Create Keyword Monitor](/api-reference/monitors/create-keyword) for matching queries.
 
@@ -446,8 +449,7 @@ func main() {
 ## Account monitor handoff
 
 Use `POST /monitors` for one X account. Send alerts to a queue, CRM,
-warehouse, Slack, or an agent. It checks selected tweets and profile changes
-every second.
+warehouse, Slack, or an agent. It checks the selected events every second.
 Create the monitor first. Then create a signed webhook with
 [`POST /webhooks`](/api-reference/webhooks/create). Call
 [`POST /webhooks/{id}/test`](/api-reference/webhooks/test) before enabling

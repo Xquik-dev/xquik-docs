@@ -8,6 +8,7 @@ import { htmlToMarkdown } from "afdocs/helpers";
 
 const MINT = "mint@4.3.5";
 const PUBLISHED_ONLY_CHROME = 792;
+const HEADROOM = 5000;
 
 function exportSite(directory: string): string {
   const archive = join(directory, "site.zip");
@@ -41,7 +42,12 @@ function report(sizes: ReadonlyMap<string, number>): string {
       `${String(over.length)} pages reach ${String(DEFAULT_THRESHOLDS.pass)} characters after HTML conversion. Shorten them.\n${over.map(([page, size]) => `${page} ${String(size)}`).join("\n")}`,
     );
   const [largest] = ranked;
-  return `All ${String(sizes.size)} pages stay under ${String(DEFAULT_THRESHOLDS.pass)} characters. The largest is ${largest?.[0] ?? "none"} at ${String(largest?.[1] ?? 0)}.\n`;
+  const near = ranked.filter(([, size]) => DEFAULT_THRESHOLDS.pass - size < HEADROOM);
+  const headroom =
+    near.length === 0
+      ? ""
+      : `${String(near.length)} pages have less than ${String(HEADROOM)} characters of headroom. Tighten one before you add to it.\n${near.map(([page, size]) => `${page} ${String(size)}`).join("\n")}\n`;
+  return `All ${String(sizes.size)} pages stay under ${String(DEFAULT_THRESHOLDS.pass)} characters. The largest is ${largest?.[0] ?? "none"} at ${String(largest?.[1] ?? 0)}.\n${headroom}`;
 }
 
 if (import.meta.main) {
