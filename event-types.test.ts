@@ -99,7 +99,8 @@ const REQUIRED_TEST_EVENT_DOCS = [
   "api-reference/webhooks/test.mdx",
   "webhooks/overview.mdx",
 ] as const;
-const HISTORICAL_EVENT_TYPE_FILES = new Set(["changelog.mdx"]);
+const isHistorical = (file: string): boolean =>
+  file === "changelog.mdx" || file.startsWith("changelog/");
 
 interface Finding {
   readonly eventType: string;
@@ -187,7 +188,7 @@ function collectUnsupportedEventTypeFindings(
   const findings: Finding[] = [];
 
   for (const file of listDocFiles(PROJECT_ROOT)) {
-    if (HISTORICAL_EVENT_TYPE_FILES.has(file)) {
+    if (isHistorical(file)) {
       continue;
     }
 

@@ -22,7 +22,6 @@ keywords:
 import LlmsDirective from "/snippets/llms-directive.mdx";
 import RetweetTimestamps from "/snippets/retweet-timestamps.mdx";
 import AutomaticCoveragePagination from "/snippets/automatic-coverage-pagination.mdx";
-import TweetReadApiLinks from "/snippets/x-tweet-read-api-links.mdx";
 import TweetResultFilterParams from "/snippets/tweet-result-filter-params.mdx";
 import TweetRowFilterParams from "/snippets/tweet-row-filter-params.mdx";
 import TweetWithinTimeParam from "/snippets/tweet-within-time-param.mdx";
@@ -64,14 +63,6 @@ See [reply coverage and optional fields](/guides/tweet-profile-api-fields).
 
 ## X (Twitter) API reply questions
 
-### How does the X (Twitter) API get replies to a tweet?
-
-Pass the original tweet's numeric ID in the path. Automatic `pageSize` accepts
-`1` through `300`. Standard pages accept `1` through `100`.
-Responses include replies, author profiles & engagement counts.
-Save each page & `next_cursor`. Continue while `has_next_page` is `true`. A page can be empty & still report more.
-A post X does not have returns `404 tweet_not_found` & costs no credits.
-
 ### How complete is a tweet reply collection?
 
 Protected accounts' replies count toward coverage but aren't returned.
@@ -87,31 +78,7 @@ It does not prove that Xquik returned every nested reply.
 Requested limits & deadlines still apply.
 Check `strategiesAttempted` for early stops.
 
-### How can a team analyze or moderate replies?
-
-Store reply IDs, text, authors, timestamps, engagement counts & media.
-Create one moderation row per reply. Xquik does not infer sentiment.
-
-### How can support teams receive new reply alerts?
-
-Create an [account monitor](/api-reference/monitors/create) for the relevant
-profile. Select `tweet.reply` events on the monitor and webhook. Verify every
-webhook signature. Store each event ID before updating a support ticket. Replay
-missed events through the events API. Poll this endpoint for conversation
-backfills.
-
-### Which reply fields should applications keep?
-
-Keep author IDs separate from usernames, which can change. Save `conversationId`
-and `inReplyToId` for thread joins. Store media URLs, engagement counts, time
-filters, page size & cursors for audits & retries.
-
 ### How can applications control reply API costs?
-
-Each returned reply costs 1 credit. Direct replies use the default paid page size
-unless you set `pageSize`. Bound support periods with `sinceTime` and
-`untilTime`, in Unix seconds. Use `reply_extractor` for fixed `resultsLimit`
-exports.
 
 <CodeGroup>
 
@@ -249,27 +216,14 @@ each conversation branch.
 
 | Reply column       | Response source             | Review use                                                |
 | ------------------ | --------------------------- | --------------------------------------------------------- |
-| `parent_tweet_id`  | Requested path ID           | Join every reply to the source tweet.                     |
-| `reply_id`         | `tweets[].id`               | Deduplicate replies and reference one reply.              |
-| `text`             | `tweets[].text`             | Search, label, and display the reply body.                |
-| `author_id`        | `tweets[].author.id`        | Keep a stable author key when usernames change.           |
-| `author_username`  | `tweets[].author.username`  | Show the current reply author handle.                     |
 | `author_followers` | `tweets[].author.followers` | Add audience context without using it as an identity key. |
 | `author_verified`  | `tweets[].author.verified`  | Keep the observed verification state.                     |
 | `created_at`       | `tweets[].createdAt`        | Sort replies inside the campaign or moderation window.    |
-| `in_reply_to_id`   | `tweets[].inReplyToId`      | Join nested replies to their immediate parent.            |
-| `conversation_id`  | `tweets[].conversationId`   | Group replies that belong to the same X conversation.     |
 | `like_count`       | `tweets[].likeCount`        | Prioritize replies with more visible engagement.          |
-| `media_urls`       | `tweets[].media[].mediaUrl` | Keep image or video evidence attached to the reply.       |
 
 | Collection checkpoint        | Stored value                               | Recovery rule                                                  |
 | ---------------------------- | ------------------------------------------ | -------------------------------------------------------------- |
-| Page identity                | `page_index` and `page_cursor`             | Save both before writing the next reply page.                  |
-| Resume cursor                | `next_cursor`                              | Send it as `cursor` only when `has_next_page` is `true`.       |
-| Time window                  | `sinceTime` and `untilTime`                | Keep both time values unchanged when retrying.                 |
-| Completion state             | `has_next_page` plus the terminal cursor   | Mark the export complete only after the final page.            |
 | Incomplete complete-mode run | `424 replies_incomplete` plus `diagnostic` | Keep rows, inspect evidence, and follow `recommendedFallback`. |
-| Post that shows no replies   | `200` with `hiddenReplies`                 | Stop reading. A retry returns the same replies.                |
 
 </section>
 
@@ -449,14 +403,6 @@ with `limit_reached: true`.
 ### 503 Complete reply extraction busy
 
 Wait for the `Retry-After` duration before repeating complete mode.
-
-<Note>
-
-**Related.** [Tweet Replies Export Workflow](/guides/tweet-replies-export) for saved CSV, JSON, or XLSX files. See also [Tweet Quotes](/api-reference/x/tweet-quotes), [Tweet Thread](/api-reference/x/tweet-thread), [Retweeters](/api-reference/x/retweeters), and [Favoriters](/api-reference/x/favoriters).
-
-</Note>
-
-<TweetReadApiLinks />
 
 </section>
 

@@ -90,7 +90,7 @@ describe("Context7 configuration", (): void => {
     expect(config.public_key?.startsWith(PUBLIC_KEY_PREFIX)).toBe(true);
   });
 
-  it("indexes the doc folders the navigation shows, apart from alternatives", (): void => {
+  it("indexes the doc folders the navigation shows, apart from alternatives and the changelog", (): void => {
     expect.assertions(2);
 
     const config = readContext7Config("context7.json");
@@ -102,6 +102,7 @@ describe("Context7 configuration", (): void => {
         .map((page): string => page.split("/")[0] ?? ""),
     );
     shown.delete("alternatives");
+    shown.delete("changelog");
 
     expect(config.folders).toStrictEqual(DOC_FOLDERS);
     expect([...shown].filter((folder): boolean => !indexed.has(folder))).toStrictEqual([]);
