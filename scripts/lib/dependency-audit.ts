@@ -25,19 +25,7 @@ export interface Audit {
 
 export const EXCEPTION_DAYS = 14;
 
-export const EXCEPTIONS: readonly Exception[] = [
-  {
-    addedAt: "2026-11-17T18:00:00Z",
-    expiresAt: "2026-12-01T18:00:00Z",
-    exposure:
-      "picomatch is a dev dependency of vitest, vite, tinyglobby, fdir & afdocs, which compile only this repository's own test & config globs. No path hands it outside input.",
-    fix: "micromatch/picomatch#237",
-    id: "GHSA-fc5q-39xc-vjpf",
-    name: "picomatch",
-    patch: "patches/picomatch@4.0.7.patch",
-    version: "4.0.7",
-  },
-];
+export const EXCEPTIONS: readonly Exception[] = [];
 
 const REPORT = z.object({
   results: z

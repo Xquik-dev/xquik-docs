@@ -9,7 +9,6 @@ import type { Exception, Finding } from "./dependency-audit.ts";
 
 const DAY_MS = 86_400_000;
 const ROUND = Date.parse("2026-11-17T19:00:00Z");
-const EXPIRY = Date.parse("2026-12-01T18:00:00Z");
 const ROOT = new URL("../../", import.meta.url);
 
 function scan(
@@ -38,37 +37,9 @@ const PICOMATCH = scan("picomatch", "4.0.7", "GHSA-fc5q-39xc-vjpf", [
 ]);
 
 describe("audit", () => {
-  it("passes GHSA-fc5q-39xc-vjpf on picomatch 4.0.7 while its patch holds & no fixed release exists", (): void => {
+  it("fails GHSA-fc5q-39xc-vjpf on picomatch 4.0.7, since no exception lists it", (): void => {
     expect.assertions(1);
-    expect(audit(PICOMATCH, ROUND)).toStrictEqual({
-      failures: 0,
-      lines: [
-        "audit: GHSA-fc5q-39xc-vjpf on picomatch 4.0.7 in package-lock.json passes until 2026-12-01T18:00:00Z or its first fixed release, since patches/picomatch@4.0.7.patch applies micromatch/picomatch#237.",
-      ],
-    });
-  });
-
-  it.each([
-    ["once its exception expires", PICOMATCH, EXPIRY],
-    [
-      "once a fixed release exists",
-      scan("picomatch", "4.0.7", "GHSA-fc5q-39xc-vjpf", [{ introduced: "0" }, { fixed: "4.0.8" }]),
-      ROUND,
-    ],
-    [
-      "on a picomatch version its patch never touched",
-      scan("picomatch", "4.0.6", "GHSA-fc5q-39xc-vjpf", []),
-      ROUND,
-    ],
-    [
-      "for another advisory on the patched picomatch",
-      scan("picomatch", "4.0.7", "GHSA-other", []),
-      ROUND,
-    ],
-    ["for any other package", scan("vite", "8.3.6", "GHSA-fc5q-39xc-vjpf", []), ROUND],
-  ] as const)("fails GHSA findings %s", (_name, report, now): void => {
-    expect.assertions(1);
-    expect(audit(report, now).failures).toBe(1);
+    expect(audit(PICOMATCH, ROUND).failures).toBe(1);
   });
 
   it("fails a license outside the allowlist", (): void => {
