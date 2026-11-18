@@ -2514,7 +2514,6 @@ const REQUIRED_X_API_GLOSSARY_SNIPPETS = [
   "## Twitter scraper API & export terms",
   "pass `next_cursor` back as `cursor`. Events, draws, and extractions use",
   "## Monitor, event & webhook terms",
-  "Account monitors do not emit follower-gained or follower-lost events.",
   "`X-Xquik-Signature` and `X-Xquik-Timestamp`",
   '<Accordion title="Stream event ID">',
   "## X write & authentication terms",
@@ -2725,7 +2724,7 @@ const REQUIRED_EVENT_TYPES_GUIDE_SNIPPETS = [
 ] as const;
 
 const REQUIRED_EVENT_LIST_API_HANDOFF_SNIPPETS = [
-  'description: "Query stored tweet and profile change events from account and keyword monitors. Filter by monitor or event type and paginate with a cursor. Listing is free."',
+  'description: "Query stored events from account, keyword & post monitors, follower changes included. Filter by monitor or event type & paginate with a cursor. Listing is free."',
   "jq '. as $page | .events[] | {",
   "event_id: .id",
   "monitor_type: .monitorType",
@@ -5013,27 +5012,18 @@ const REQUIRED_FOLLOWERS_API_HANDOFF_SNIPPETS = [
   '--data-urlencode "cursor=DAACCgACGE..."',
   "## Direct follower handoff",
   "## Which follower endpoint?",
-  "<CardGroup cols={2}>",
-  '<Card title="Follower rows"',
-  '<Card title="Next page"',
-  '<Card title="Credit-limited pages"',
   "`GET /api/v1/x/users/{id}/followers`",
   "agent workflow needs follower rows",
   "`follower_explorer`",
-  "[Follower Export CRM Workflow](/guides/follower-export-crm)",
-  "saved CSV, JSON, or XLSX files",
+  "[`follower_explorer`](/guides/follower-export-crm)",
   "imports or upserts",
   "## Choose live API or saved export",
   "Use this endpoint for current JSON pages",
   "`next_cursor` and process `users[]` immediately",
   "cost estimate, reusable extraction ID, stored result pages",
-  '<Card title="Live page" icon="zap">',
-  '<Card title="Saved export" icon="archive">',
   "`users[]`",
   "`users[].id`",
   "`x_user_id`",
-  "`users[].username` and `users[].name`",
-  "`has_next_page` and `next_cursor`",
   'const userIdOrUsername = "username";',
   'let pageCursor = "";',
   'const params = new URLSearchParams({ pageSize: "200" });',
@@ -5058,7 +5048,6 @@ const REQUIRED_FOLLOWERS_API_HANDOFF_SNIPPETS = [
   "Pass `next_cursor` back unchanged.",
   "Existing unprefixed cursors keep legacy behavior.",
   "User ID, username with or without `@`, or URL-encoded profile URL, such as",
-  "Use `users.length`, not the requested `pageSize`, for row counts and budget checks.",
   "`users.length` is the billable row count.",
   "Use `GET /api/v1/x/users/{id}/following` for accounts the user follows.",
   "Use `GET /api/v1/x/users/{id}/verified-followers` when you only need verified followers.",
@@ -7900,7 +7889,6 @@ const REQUIRED_WEBHOOK_OVERVIEW_SNIPPETS = [
 
 const REQUIRED_WEBHOOK_ARCHITECTURE_SNIPPETS = [
   '<Card title="Event types" icon="radio">',
-  "Account monitors emit 10 tweet and 11 profile event types.",
   '<Card title="Signed delivery" icon="shield-check">',
   "Verify `X-Xquik-Signature`, `X-Xquik-Timestamp`, and",
   '<Card title="Retry schedule" icon="rotate-ccw">',
@@ -8886,7 +8874,7 @@ const REQUIRED_TWEET_PROFILE_API_FIELDS_SNIPPETS = [
   "### What is a Twitter conversation ID?",
   "### How do quotes differ from reposts?",
   "### Does the Twitter profile API include follower counts?",
-  "growth tracking. Join snapshots through the profile `id`.",
+  "an account monitor's `profile.followers.changed` event.",
   "### How do I get tweet media metadata?",
   "### Can I export tweet metadata to CSV?",
 ] as const;
@@ -9561,9 +9549,6 @@ const REQUIRED_ACCOUNT_MONITOR_GET_API_HANDOFF_SNIPPETS = [
   "Do not use `x_event_id` as",
   "[List Events](/api-reference/events/list) to audit stored events",
   "## What does Twitter account activity tracker status prove?",
-  "Followers and following are not monitor event types.",
-  "Account relationship",
-  "changes are not monitor events either.",
   "## How do I check whether Twitter account activity alerts are active?",
   "A working account alert",
   "needs 4 checks to pass.",
@@ -9600,12 +9585,6 @@ const FORBIDDEN_ACCOUNT_MONITOR_GET_RAW_OUTPUT_SNIPPETS = [
   "const data = await response.json();",
   "data = response.json()",
   "fmt.Println(data)",
-] as const;
-
-const FORBIDDEN_ACCOUNT_MONITOR_GET_EVENT_TYPE_CLAIMS = [
-  "follower event types",
-  "following event types",
-  "relationship event types",
 ] as const;
 
 const REQUIRED_ACCOUNT_MONITOR_LIST_API_HANDOFF_SNIPPETS = [
@@ -9850,7 +9829,7 @@ const REQUIRED_ACCOUNT_MONITOR_DELETE_API_HANDOFF_SNIPPETS = [
   "## Select the exact Twitter account monitor",
   "Delete account monitors and keyword monitors through their matching routes.",
   "[Delete Keyword Monitor](/api-reference/monitors/delete-keyword)",
-  "## Keep tweet and profile events",
+  "## Keep stored events",
   "Follow every cursor until `hasMore` becomes `false`.",
   "[List Events](/api-reference/events/list)",
   "[Get Event](/api-reference/events/get)",
@@ -14609,16 +14588,6 @@ describe("repository discovery", (): void => {
             ? [
                 {
                   issue: `Get account monitor API page should map state snapshots instead of raw response output "${snippet}".`,
-                },
-              ]
-            : [],
-      ),
-      ...FORBIDDEN_ACCOUNT_MONITOR_GET_EVENT_TYPE_CLAIMS.flatMap(
-        (snippet): readonly DiscoveryFinding[] =>
-          source.includes(snippet)
-            ? [
-                {
-                  issue: `Get account monitor API page must not claim unsupported ${snippet}.`,
                 },
               ]
             : [],

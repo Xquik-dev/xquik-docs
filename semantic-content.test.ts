@@ -23,8 +23,8 @@ const REQUIRED_OPERATIONAL_CONTENT = [
   {
     file: "api-reference/x/followers.mdx",
     snippets: [
-      "| Follower tracker column | Source | Comparison rule |",
-      "| Removed follower | Present only in the earlier complete snapshot |",
+      "## Build a Twitter follower tracker",
+      "- `profile.followers.changed` reports follower count moves, at most once a minute.",
     ],
   },
   {
@@ -259,7 +259,6 @@ const REQUIRED_OPERATIONAL_CONTENT = [
       "How do Twitter analytics tools differ from monitor status?",
       "What should a Twitter account activity audit store?",
       "Those values are engagement metrics.",
-      "Followers and following are not monitor event types.",
     ],
   },
   {
