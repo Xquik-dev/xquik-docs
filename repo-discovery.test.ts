@@ -637,7 +637,7 @@ const FORBIDDEN_PYTHON_SDK_RAW_SEARCH_SNIPPETS = [
 ] as const;
 
 const REQUIRED_RUBY_SDK_WORKFLOW_SNIPPETS = [
-  'gem "x-twitter-scraper", "~> 0.10.6"',
+  'gem "x-twitter-scraper", "~> 0.12"',
   "Search tweets and write durable JSON Lines handoff rows.",
   "page = client.x.tweets.search(",
   "page.tweets.each do |tweet|",
