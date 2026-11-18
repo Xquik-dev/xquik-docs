@@ -102,9 +102,9 @@ const REQUIRED_TEST_EVENT_DOCS = [
 const CODE_FENCE_PATTERN = /^```[\s\S]*?^```/gmu;
 const PROSE_BLOCK_PATTERN = /\n\s*\n|\n(?=\s*\|)/u;
 const SENTENCE_END_PATTERN = /(?<=[.!?])\s/u;
-const NEGATION_PATTERN = /\b(?:not|never|no|without|cannot)\b|n't\b/iu;
+const NEGATION_PATTERN = /\b(?:not|never|cannot)\b|n't\b/iu;
 const FOLLOW_WORD_PATTERN = /\bfollow(?:er|ing)s?\b/iu;
-const EVENT_WORD_PATTERN = /\bevents?\b/iu;
+const EVENT_WORD_PATTERN = /\b(?:events?|tracks?|reports?|emits?|alerts?)\b/iu;
 const OTHER_MONITOR_PATTERN = /\b(?:keyword|post) monitors?\b/iu;
 const ACCOUNT_MONITOR_PATTERN = /\baccount monitors?\b/iu;
 const EVENT_TYPES_PATTERN = /\bevent types\b/iu;
@@ -243,7 +243,13 @@ function currentDocSentences(): readonly DocSentence[] {
 }
 
 function countTotal(sentence: string): number | undefined {
-  const counts = Array.from(sentence.matchAll(/\b\d+\b/gu), (match): number => Number(match[0]));
+  const end = sentence.search(EVENT_TYPES_PATTERN);
+  const counts =
+    end < 0
+      ? []
+      : Array.from(sentence.slice(0, end).matchAll(/\b\d+\b/gu), (match): number =>
+          Number(match[0]),
+        );
   return counts.length === 0 ? undefined : counts.reduce((sum, count): number => sum + count, 0);
 }
 
@@ -284,13 +290,8 @@ describe("documented event types", (): void => {
       readFileSync(join(PROJECT_ROOT, "openapi.yaml"), "utf8"),
     ).length;
     const miscounts = currentDocSentences().filter(({ sentence }): boolean => {
-      const total = countTotal(sentence);
-      return (
-        ACCOUNT_MONITOR_PATTERN.test(sentence) &&
-        EVENT_TYPES_PATTERN.test(sentence) &&
-        total !== undefined &&
-        total !== eventTypeCount
-      );
+      const total = ACCOUNT_MONITOR_PATTERN.test(sentence) ? countTotal(sentence) : undefined;
+      return total !== undefined && total !== eventTypeCount;
     });
 
     expect(miscounts).toStrictEqual([]);
