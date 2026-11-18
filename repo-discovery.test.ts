@@ -8874,7 +8874,7 @@ const REQUIRED_TWEET_PROFILE_API_FIELDS_SNIPPETS = [
   "### What is a Twitter conversation ID?",
   "### How do quotes differ from reposts?",
   "### Does the Twitter profile API include follower counts?",
-  "account monitor's `profile.followers.changed` event reports each count move.",
+  "an account monitor's `profile.followers.changed` event.",
   "### How do I get tweet media metadata?",
   "### Can I export tweet metadata to CSV?",
 ] as const;

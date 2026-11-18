@@ -102,7 +102,7 @@ const REQUIRED_TEST_EVENT_DOCS = [
 const CODE_FENCE_PATTERN = /^```[\s\S]*?^```/gmu;
 const PROSE_BLOCK_PATTERN = /\n\s*\n|\n(?=\s*\|)/u;
 const SENTENCE_END_PATTERN = /(?<=[.!?])\s/u;
-const NEGATION_PATTERN = /\b(?:not|never|no|without)\b/iu;
+const NEGATION_PATTERN = /\b(?:not|never|no|without|cannot)\b|n't\b/iu;
 const FOLLOW_WORD_PATTERN = /\bfollow(?:er|ing)s?\b/iu;
 const EVENT_WORD_PATTERN = /\bevents?\b/iu;
 const OTHER_MONITOR_PATTERN = /\b(?:keyword|post) monitors?\b/iu;

@@ -24,7 +24,7 @@ const REQUIRED_OPERATIONAL_CONTENT = [
     file: "api-reference/x/followers.mdx",
     snippets: [
       "## Build a Twitter follower tracker",
-      "- `profile.followers.changed` reports each move in the follower count.",
+      "- `profile.followers.changed` reports follower count moves, at most once a minute.",
     ],
   },
   {
