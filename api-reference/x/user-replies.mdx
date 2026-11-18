@@ -19,8 +19,6 @@ keywords:
 import PostFilterParams from "/snippets/post-filter-params.mdx";
 import LlmsDirective from "/snippets/llms-directive.mdx";
 import AutomaticCoveragePagination from "/snippets/automatic-coverage-pagination.mdx";
-import TweetReadApiLinks from "/snippets/x-tweet-read-api-links.mdx";
-import ConnectedAccountApiLinks from "/snippets/x-connected-account-api-links.mdx";
 import TweetAdvancedFilterParams from "/snippets/tweet-advanced-filter-params.mdx";
 import TweetResultFilterParams from "/snippets/tweet-result-filter-params.mdx";
 import TweetSearchOnlyFilterParams from "/snippets/tweet-search-only-filter-params.mdx";
@@ -198,91 +196,6 @@ for page_index in range(3):
 
 <section>
 
-## User replies handoff
-
-`GET /x/users/{id}/replies` returns a profile's With Replies timeline. Use it
-when a support queue, community workflow, research job, or agent needs one. This
-endpoint accepts a username or numeric user ID. It includes replies by default
-and returns one JSON page at a time.
-
-{"\n"}
-
-Store `source_user_id_or_username`, `tweet_id`, `text`, author fields,
-`created_at`, reply context, and `conversation_id`. Also store engagement
-counts, `media_urls`, `page_cursor`, `has_next_page`, and `next_cursor`. Treat
-`next_cursor` as opaque. Pass it back as `cursor` only when `has_next_page` is
-true.
-
-</section>
-
-<section>
-
-## Build a with replies sync
-
-Use these checkpoints in a timeline sync. Use them when it needs reply rows,
-parent context, and a cursor to resume.
-
-<CardGroup cols={2}>
-
-  <Card title="Dedicated replies route" icon="message-square-reply">
-
-    Call `GET /x/users/{id}/replies` when every page should include replies by
-    default.
-
-  </Card>
-  <Card title="Parent context" icon="message-circle-more">
-
-    Set `includeParentTweet=true` when reply rows need parent tweets for triage,
-    moderation, or conversation joins.
-
-  </Card>
-  <Card title="Route chooser" icon="git-branch">
-
-    Use [`Get user timeline`](/api-reference/x/user-tweets) when replies are
-    optional. Use this route when replies are required.
-
-  </Card>
-  <Card title="Cursor checkpoint" icon="database">
-
-    Store `page_cursor`, `next_cursor`, and `has_next_page` before requesting
-    another page.
-
-  </Card>
-</CardGroup>
-
-```json
-{
-  "timeline_job_id": "profile-replies-q2",
-  "timeline_route": "GET /api/v1/x/users/{id}/replies",
-  "user_id_or_username": "elonmusk",
-  "include_parent_tweet": true,
-  "cursor_param": "cursor",
-  "page_cursor": "",
-  "next_cursor": "DAADDAABCgABF...",
-  "has_next_page": true,
-  "fallback_route": "GET /api/v1/x/users/{id}/tweets?includeReplies=true"
-}
-```
-
-</section>
-
-<section>
-
-## Which timeline endpoint?
-
-- Use `GET /api/v1/x/users/{id}/replies` for one user's With Replies timeline.
-  It includes replies by default.
-- Use `GET /api/v1/x/users/{id}/tweets` for one user's profile timeline with
-  replies optional or excluded by default.
-- Add `includeParentTweet=true` when reply rows need parent tweet context.
-- Use `GET /api/v1/x/users/{id}/media` when every returned row should contain
-  profile media.
-- Use `GET /api/v1/x/tweets/{id}/replies` for replies under one specific tweet.
-
-</section>
-
-<section>
-
 ## Build a profile reply archive
 
 Use this route to collect replies authored by one profile. Keep the source
@@ -290,14 +203,6 @@ profile ID with every reply. Also keep the replied-to tweet ID when
 available.
 
 {"\n"}
-
-These reply columns are useful.
-
-- Reply tweet ID, text, and creation time.
-- Author username and numeric user ID.
-- Parent or conversation identifiers.
-- Like, reply, repost, quote, and view counts.
-- Media URLs, cursor, and collection time.
 
 Use reply rows for support review, conversation research, or approved
 archiving. Do not merge them into original posts without a clear reply flag.
@@ -308,9 +213,6 @@ Deduplicate by reply tweet ID. Save every page before advancing its cursor.
 New replies can shift the first page between runs.
 
 {"\n"}
-
-Use tweet replies to inspect replies under one specific tweet. Use user tweets
-for a profile timeline. Each route starts from a different target.
 
 | Profile reply column | Response source             | Archive rule                                                |
 | -------------------- | --------------------------- | ----------------------------------------------------------- |
@@ -515,9 +417,6 @@ The normalized v1 response contract can return 424 when the read service is unav
 **Related.** [Get user timeline](/api-reference/x/user-tweets) · [Tweet replies](/api-reference/x/tweet-replies) · [User media](/api-reference/x/user-media)
 
 </Note>
-
-<TweetReadApiLinks />
-<ConnectedAccountApiLinks />
 
 </section>
 

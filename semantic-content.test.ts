@@ -45,10 +45,7 @@ const REQUIRED_OPERATIONAL_CONTENT = [
   },
   {
     file: "api-reference/x/user-tweets.mdx",
-    snippets: [
-      "| Profile timeline column | Response source | Archive rule |",
-      "| Profile posts and replies | `/x/users/{id}/tweets?includeReplies=true` |",
-    ],
+    snippets: ["| Profile posts and replies | `/x/users/{id}/tweets?includeReplies=true` |"],
   },
   {
     file: "api-reference/x/user-replies.mdx",
