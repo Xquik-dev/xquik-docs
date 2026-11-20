@@ -251,9 +251,11 @@ describe("navigation default state", (): void => {
   });
 
   it("preserves precise SEO routes and their historical redirects", (): void => {
-    expect.assertions(4);
+    expect.assertions(5);
 
-    expect(readFileSync("index.mdx", "utf8")).toMatch(/^noindex: true$/m);
+    const home = readFileSync("index.mdx", "utf8");
+    expect(home).toMatch(/^canonical: "https:\/\/docs\.xquik\.com\/api-reference\/overview"$/mu);
+    expect(home).not.toMatch(/^noindex:/mu);
     expect(docsConfig().redirects).toContainEqual({
       source: "/alternatives",
       destination: "/twitter-api-alternatives",
