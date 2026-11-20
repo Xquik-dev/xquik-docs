@@ -1,0 +1,161 @@
+---
+title: "X (Twitter) Telegram bot to get tweets in a chat"
+sidebarTitle: "Telegram alerts"
+description: "Get each new tweet from an X (Twitter) account or search in Telegram. Pick posts, replies or every event, then press Start in @XquikBot. See the steps."
+keywords:
+  [
+    "Twitter Telegram bot",
+    "Twitter bot Telegram",
+    "X Telegram bot",
+    "Twitter to Telegram",
+    "tweets to Telegram",
+    "Telegram Twitter alerts",
+  ]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+<LlmsDirective />
+
+@XquikBot sends each new X (Twitter) post from your monitors to a Telegram chat. You run no server and write no code. This guide sets it up from the dashboard or the API.
+
+{"\n"}
+
+New to Xquik? [Create an account](https://dashboard.xquik.com/signup?ref=docs-telegram-bot) before the steps below.
+
+<section>
+
+## What arrives in Telegram
+
+An account monitor checks 1 X account every second. A keyword monitor does the same for a search, a hashtag or a mention. Each match arrives as a message from @XquikBot.
+
+- The message shows the account and the event in bold.
+- It shows the post's text or the profile change, and a link.
+- With `tweet.media` on, a post with media arrives as 1 alert.
+- Alerts that wait together come as 1 digest.
+- A busy chat gets 5 quick messages, then 1 every 30 seconds.
+- Only the first message of a minute rings. The rest arrive silently.
+
+{"\n"}
+
+@XquikBot works in private chats. It answers in English, Spanish, Turkish, Japanese, Korean or Chinese, by your Telegram language. Other languages get English.
+
+</section>
+
+<section>
+
+## Set it up in the dashboard
+
+<Steps>
+
+  <Step title="Add a monitor">
+
+    Open [account monitors](https://dashboard.xquik.com/en/monitors/accounts) and press Add Account Monitor. Enter the X username. For a search or hashtag, use [keyword monitors](https://dashboard.xquik.com/en/monitors/keywords) instead.
+
+  </Step>
+  <Step title="Connect Telegram">
+
+    Open [webhooks](https://dashboard.xquik.com/en/monitors/webhooks) and press Connect Telegram. Pick what the chat gets, from "New posts" to "Everything".
+
+  </Step>
+  <Step title="Press Start">
+
+    Press Open Telegram, then Start in @XquikBot. The bot answers "Connected." and alerts start.
+
+  </Step>
+</Steps>
+
+{"\n"}
+
+A link works once, within 15 minutes. Make a new one if it expires. Connect again anytime to change what the chat gets.
+
+</section>
+
+<section>
+
+## Set it up with the API
+
+Create the monitor first.
+
+```bash
+curl -X POST https://xquik.com/api/v1/monitors \
+  -H "x-api-key: xq_YOUR_KEY_HERE" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "NASA",
+    "eventTypes": ["tweet.new", "tweet.reply"]
+  }' | jq
+```
+
+Then ask for a Telegram link and open it.
+
+```bash
+curl -X POST https://xquik.com/api/v1/webhooks/telegram \
+  -H "x-api-key: xq_YOUR_KEY_HERE" \
+  -H "Content-Type: application/json" \
+  -d '{"eventTypes": ["tweet.new", "tweet.reply"]}' \
+  | jq -r '.url'
+```
+
+The link looks like `https://t.me/XquikBot?start=...`. Omit `eventTypes` to get new posts only. [Connect Telegram](/api-reference/webhooks/telegram) lists every field.
+
+</section>
+
+<section>
+
+## Control alerts from the chat
+
+| Command   | What it does                 |
+| --------- | ---------------------------- |
+| `/stop`   | Pauses alerts to this chat.  |
+| `/status` | Shows whether alerts are on. |
+
+{"\n"}
+
+A new link turns alerts on again. The chat shows in your webhook list as `telegram:<chat ID>`. Deliveries, retries, resume and test deliveries work as for any webhook.
+
+</section>
+
+<section>
+
+## Price
+
+Connecting a chat and its messages cost no credits. Each active monitor costs 30 credits per hour, or 720 credits per day. The USD 20 plan includes 140,000 credits a month. That keeps 6 monitors on all month.
+
+{"\n"}
+
+Pause a monitor to stop its hourly credits. Creating or resuming one needs at least 30 credits.
+
+</section>
+
+<section>
+
+## Send the same alerts to Discord or Slack
+
+A Discord channel webhook or a Slack incoming webhook URL gets the same alerts. Add it on the webhooks page.
+
+<CardGroup cols={2}>
+
+  <Card title="Discord alerts" icon="message-square" href="/guides/twitter-discord-bot">
+
+    Post each new tweet in a Discord channel.
+
+  </Card>
+  <Card title="Connect Telegram API" icon="send" href="/api-reference/webhooks/telegram">
+
+    Ask for a Telegram link from code.
+
+  </Card>
+  <Card title="Keyword monitors" icon="search" href="/api-reference/monitors/create-keyword">
+
+    Watch a search, a hashtag or a mention.
+
+  </Card>
+  <Card title="Monitor billing" icon="coins" href="/guides/billing">
+
+    Plan credits for each active monitor.
+
+  </Card>
+</CardGroup>
+
+</section>
