@@ -33,6 +33,14 @@ const INVALID_ICON_REPLACEMENTS: ReadonlyMap<string, string> = new Map([
   ["user-shield", "shield-user"],
 ]);
 
+const AI_MARK_ICONS: ReadonlySet<string> = new Set([
+  "sparkle",
+  "sparkles",
+  "stars",
+  "wand",
+  "wand-sparkles",
+]);
+
 const SKIPPED_DIRECTORIES = new Set<string>([".git", ".github", "node_modules"] as const);
 
 function listMarkdownFiles(directory = "."): readonly string[] {
@@ -60,6 +68,14 @@ function inspectIcon(file: string, icon: string | undefined, findings: IconFindi
     if (!existsSync(`.${icon}`)) {
       findings.push({ file, issue: `Local icon ${icon} does not exist.` });
     }
+    return;
+  }
+
+  if (AI_MARK_ICONS.has(icon)) {
+    findings.push({
+      file,
+      issue: `Icon ${icon} is a stock AI mark. Use an icon that shows what the card offers.`,
+    });
     return;
   }
 
@@ -102,6 +118,23 @@ describe("icon assets", (): void => {
     inspectIcon("page.mdx", undefined, findings);
     expect(findings).toStrictEqual([
       { file: "page.mdx", issue: "Icon value missing. Set an icon." },
+    ]);
+  });
+  it("reports sparkle and wand icons as stock AI marks", (): void => {
+    expect.assertions(1);
+    const findings: IconFinding[] = [];
+    inspectIcon("page.mdx", "sparkles", findings);
+    inspectIcon("page.mdx", "wand-sparkles", findings);
+    inspectIcon("page.mdx", "star", findings);
+    expect(findings).toStrictEqual([
+      {
+        file: "page.mdx",
+        issue: "Icon sparkles is a stock AI mark. Use an icon that shows what the card offers.",
+      },
+      {
+        file: "page.mdx",
+        issue: "Icon wand-sparkles is a stock AI mark. Use an icon that shows what the card offers.",
+      },
     ]);
   });
   it("keeps local and Lucide icon references loadable", (): void => {

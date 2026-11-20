@@ -7981,7 +7981,7 @@ const REQUIRED_ARCHITECTURE_USAGE_SNIPPETS = [
   '<Card title="Free management paths" icon="list-check">',
   "List, read, update, delete, export, test, and delivery-history paths cost no credits.",
   "This holds for draws, extractions, monitors, events, and webhooks.",
-  '<Card title="Free utilities" icon="sparkles">',
+  '<Card title="Free utilities" icon="wrench">',
   "Compose, cached styles, drafts, radar, account, and API keys endpoints cost no credits.",
   "X accounts, support, credit balance, and credit top-up endpoints also cost no credits.",
 ] as const;
