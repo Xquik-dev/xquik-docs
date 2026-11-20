@@ -249,6 +249,7 @@ const HEADING_NAMES: readonly string[] = [
   "TweetDeck/X Pro",
   "Tweet Hunter",
   "Tweet Scraper V2",
+  "TweetShift",
   "Twitter",
   "Twitter API Pro",
   "twscrape",
