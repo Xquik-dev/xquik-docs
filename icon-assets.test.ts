@@ -133,7 +133,8 @@ describe("icon assets", (): void => {
       },
       {
         file: "page.mdx",
-        issue: "Icon wand-sparkles is a stock AI mark. Use an icon that shows what the card offers.",
+        issue:
+          "Icon wand-sparkles is a stock AI mark. Use an icon that shows what the card offers.",
       },
     ]);
   });
