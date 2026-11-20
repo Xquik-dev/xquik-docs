@@ -211,6 +211,7 @@ const HEADING_NAMES: readonly string[] = [
   "Meltwater",
   "Microsoft Agent Framework",
   "n8n",
+  "Nitter",
   "Node.js",
   "Outstand",
   "Pipedream",
