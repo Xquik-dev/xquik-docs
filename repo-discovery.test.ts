@@ -5000,8 +5000,8 @@ const FORBIDDEN_COMMUNITY_SEARCH_API_RAW_OUTPUT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_FOLLOWERS_API_HANDOFF_SNIPPETS = [
-  'title: "Export a user\'s followers, X (Twitter) API docs"',
-  "Get an X account's followers by username or user ID",
+  'title: "X (Twitter) followers API, export by username"',
+  "Export an account's followers by username or user ID",
   "Follower Export API",
   "X followers API",
   "Twitter followers API",
@@ -5823,7 +5823,7 @@ const REQUIRED_TWEET_SEARCH_EXPORT_SNIPPETS = [
 ] as const;
 
 const REQUIRED_SEARCH_TWEETS_API_HANDOFF_SNIPPETS = [
-  "Search tweets by keyword, ID, or URL. Return text, authors, replies, metrics, media, and cursors for CRM, agents, or exports.",
+  "Search tweets by keyword, ID, or URL, then export text, authors, replies, metrics, media, and cursors.",
   "Search Tweets accepts keywords, hashtags,",
   "operators, dates, authors, media, and engagement filters.",
   "send a Tweet ID or X status URL",
@@ -6111,7 +6111,7 @@ const FORBIDDEN_TIMELINE_API_RAW_SNIPPETS = [
 ] as const;
 
 const REQUIRED_USER_TWEETS_API_HANDOFF_SNIPPETS = [
-  'title: "A user\'s tweet timeline, X (Twitter) API docs"',
+  'title: "X (Twitter) timeline of a user\'s tweets, API docs"',
   "This route returns the public profile timeline for one Twitter or X",
   "account. The route is",
   "Protected accounts return HTTP 403 with `x_account_protected`.",

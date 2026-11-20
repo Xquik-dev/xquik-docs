@@ -171,6 +171,7 @@ const HEADING_NAMES: readonly string[] = [
   "Brandwatch",
   "Bright Data",
   "Buffer",
+  "Circleboom",
   "Claude",
   "Claude Code",
   "Cline",
