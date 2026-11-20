@@ -1,0 +1,190 @@
+---
+title: "X (Twitter) Discord bot to post tweets in a channel"
+sidebarTitle: "Discord alerts"
+description: "Post each new tweet from an X (Twitter) account or search in Discord. Xquik uses a channel webhook, so no bot joins your server. Compare it with TweetShift."
+keywords:
+  [
+    "Twitter Discord bot",
+    "Twitter bot Discord",
+    "Discord Twitter bot",
+    "X Discord bot",
+    "Twitter to Discord bot",
+    "TweetShift alternative",
+    "Discord tweet feed",
+  ]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+<LlmsDirective />
+
+Xquik posts each new X (Twitter) post in a Discord channel. It sends them through a channel webhook, so no bot joins your server. This guide sets it up and compares it with TweetShift.
+
+New to Xquik? [Create an account](https://dashboard.xquik.com/signup?ref=docs-discord-bot) before the steps below.
+
+<section>
+
+## What arrives in Discord
+
+An account monitor checks 1 X account every second. A keyword monitor does the same for a search, a hashtag or a mention. Each match arrives in your channel as a Discord message.
+
+- The message names the account and the event, such as "New post".
+- It shows the post's text and links to the post on X.
+- Mentions in a post ping no one in your server.
+- Alerts that wait together come as 1 message.
+- A busy channel gets 5 quick messages, then 1 every 30 seconds.
+
+{"\n"}
+
+Each event keeps its own delivery. Discord can ask Xquik to slow down. The retry then waits as long as Discord asks.
+
+</section>
+
+<section>
+
+## Set it up in the dashboard
+
+<Steps>
+
+  <Step title="Copy a Discord channel webhook">
+
+    In your server's settings, open Integrations, then Webhooks. Make a new webhook, pick the channel and press Copy Webhook URL. Discord asks for the Manage Webhooks permission.
+
+  </Step>
+  <Step title="Add a monitor">
+
+    Open [account monitors](https://dashboard.xquik.com/en/monitors/accounts) and press Add Account Monitor. Enter the X username. For a search or hashtag, use [keyword monitors](https://dashboard.xquik.com/en/monitors/keywords) instead.
+
+  </Step>
+  <Step title="Add the webhook">
+
+    Open [webhooks](https://dashboard.xquik.com/en/monitors/webhooks) and press Add Webhook. Paste the Discord URL, then pick event types such as new posts.
+
+  </Step>
+  <Step title="Send a test">
+
+    Send a test delivery from the webhook list. A test message then shows in the channel.
+
+  </Step>
+</Steps>
+
+{"\n"}
+
+Each webhook gets the event types you pick from every monitor on your account. Add a second webhook to send them to another channel too.
+
+</section>
+
+<section>
+
+## Set it up with the API
+
+Create the monitor first. Store the `id` it returns.
+
+```bash
+curl -X POST https://xquik.com/api/v1/monitors \
+  -H "x-api-key: xq_YOUR_KEY_HERE" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "NASA",
+    "eventTypes": ["tweet.new", "tweet.reply"]
+  }' | jq
+```
+
+Then register the Discord channel webhook URL as a webhook.
+
+```bash
+curl -X POST https://xquik.com/api/v1/webhooks \
+  -H "x-api-key: xq_YOUR_KEY_HERE" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://discord.com/api/webhooks/YOUR_WEBHOOK_ID/YOUR_WEBHOOK_TOKEN",
+    "eventTypes": ["tweet.new", "tweet.reply"]
+  }' | jq
+```
+
+[Create monitor](/api-reference/monitors/create) and [Create webhook](/api-reference/webhooks/create) list every field and event type.
+
+</section>
+
+<section>
+
+## Pick which posts arrive
+
+| Event type             | What reaches the channel               |
+| ---------------------- | -------------------------------------- |
+| `tweet.new`            | Each new original post.                |
+| `tweet.reply`          | Each reply the account posts.          |
+| `tweet.quote`          | Each quote post.                       |
+| `tweet.retweet`        | Each repost.                           |
+| `tweet.media`          | Each post with media, such as a photo. |
+| `profile.name.changed` | A new display name.                    |
+| `profile.bio.changed`  | A new bio.                             |
+
+{"\n"}
+
+Keyword monitors send tweet events only. Account monitors send tweet and profile events.
+
+</section>
+
+<section>
+
+## Price
+
+Each active monitor costs 30 credits per hour, or 720 credits per day. Webhook and Discord deliveries are included. The USD 20 plan includes 140,000 credits a month. That keeps 6 monitors on all month.
+
+{"\n"}
+
+Pause a monitor to stop its hourly credits. Creating or resuming one needs at least 30 credits.
+
+</section>
+
+<section>
+
+## TweetShift vs Xquik
+
+TweetShift is a Discord bot for X (Twitter) feeds. Its home page, read on 2026-11-20, says it posts tweets in channels or threads. It also lists keyword filters and a dashboard.
+
+{"\n"}
+
+| Area           | TweetShift                            | Xquik                                                    |
+| -------------- | ------------------------------------- | -------------------------------------------------------- |
+| In your server | A bot you invite with an invite link. | A channel webhook. No bot joins the server.              |
+| What it posts  | An account's tweets.                  | Posts, replies, quotes, reposts and profile changes.     |
+| Searches       | Keyword filters on an account's feed. | Keyword monitors for any search, hashtag or mention.     |
+| Other places   | Discord channels and threads.         | Discord, Telegram, Slack and signed webhooks.            |
+| Setup          | 1 bot command, then its dashboard.    | The dashboard, or REST API, SDKs and MCP with 1 API key. |
+| Price          | Its home page calls the service free. | 30 credits per active monitor hour.                      |
+
+</section>
+
+<section>
+
+## Send the same alerts to Telegram or Slack
+
+A Slack incoming webhook URL works the same way as a Discord URL. For Telegram, press Connect Telegram on the webhooks page. Then press Start in @XquikBot.
+
+<CardGroup cols={2}>
+
+  <Card title="Webhooks overview" icon="webhook" href="/webhooks/overview">
+
+    See every event type, retry and delivery field.
+
+  </Card>
+  <Card title="Account monitors" icon="radio" href="/api-reference/monitors/create">
+
+    Create a monitor for 1 X account from code.
+
+  </Card>
+  <Card title="Keyword monitors" icon="search" href="/api-reference/monitors/create-keyword">
+
+    Watch a search, a hashtag or a mention.
+
+  </Card>
+  <Card title="Monitor billing" icon="coins" href="/guides/billing">
+
+    Plan credits for each active monitor.
+
+  </Card>
+</CardGroup>
+
+</section>
