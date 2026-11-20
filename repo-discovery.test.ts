@@ -5001,7 +5001,7 @@ const FORBIDDEN_COMMUNITY_SEARCH_API_RAW_OUTPUT_SNIPPETS = [
 
 const REQUIRED_FOLLOWERS_API_HANDOFF_SNIPPETS = [
   'title: "X (Twitter) followers API, export by username"',
-  "Get an X account's followers by username or user ID",
+  "Export an account's followers by username or user ID",
   "Follower Export API",
   "X followers API",
   "Twitter followers API",
