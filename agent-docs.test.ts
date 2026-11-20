@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+
 import { getChecksSorted, runChecks } from "afdocs";
 import { loadConfig } from "afdocs/helpers";
 import type { AgentDocsConfig, CheckResult, RunnerOptions } from "afdocs";
@@ -211,4 +213,43 @@ describe("Agent-Friendly Documentation", (): void => {
       expect(acceptsResult(check.id, result, accepted), message).toBe(true);
     });
   }
+});
+
+const DOCS_ORIGIN = "https://docs.xquik.com";
+
+function navigationPages(node: unknown): readonly string[] {
+  if (isList(node)) return node.flatMap(navigationPages);
+  if (!isRecord(node)) return [];
+  return Object.entries(node).flatMap(([key, value]): readonly string[] => {
+    if (key === "pages" && isList(value))
+      return value.flatMap((item): readonly string[] =>
+        typeof item === "string" ? [item] : navigationPages(item),
+      );
+    return navigationPages(value);
+  });
+}
+
+function pageUrl(page: string): string {
+  const path = page.replace(/(?:^|\/)index$/u, "");
+  return path === "" ? DOCS_ORIGIN : `${DOCS_ORIGIN}/${path}`;
+}
+
+describe("Built sitemap", (): void => {
+  it("lists every page in the docs.json navigation", async (): Promise<void> => {
+    expect.assertions(1);
+
+    const response = await fetch(`${DOCS_ORIGIN}/sitemap.xml`);
+    const sitemap = await response.text();
+    const listed = new Set(
+      [...sitemap.matchAll(/<loc>(?<url>[^<]+)<\/loc>/gu)].map((match): string =>
+        (match.groups?.["url"] ?? "").replace(/\/$/u, ""),
+      ),
+    );
+    const docs: unknown = JSON.parse(readFileSync("docs.json", "utf8"));
+    const missing = [...new Set(navigationPages(isRecord(docs) ? docs["navigation"] : undefined))]
+      .map(pageUrl)
+      .filter((url): boolean => !listed.has(url));
+
+    expect({ status: response.status, missing }).toStrictEqual({ status: 200, missing: [] });
+  });
 });
