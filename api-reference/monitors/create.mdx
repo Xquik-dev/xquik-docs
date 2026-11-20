@@ -1,7 +1,7 @@
 ---
 title: "Create an account monitor, X (Twitter) API docs"
 sidebarTitle: Create account monitor
-description: "Monitor one X account every second. Track tweets, replies, quotes, reposts, mentions, media, links, and profile changes. Deliver signed webhook alerts."
+description: "Monitor one X account every second. Track tweets, replies, mentions, profile changes, follows, and new or lost followers. Deliver signed webhook alerts."
 endpoint: "POST /monitors"
 keywords:
   [
@@ -24,7 +24,7 @@ import LlmsDirective from "/snippets/llms-directive.mdx";
 `POST https://xquik.com/api/v1/monitors`
 
 Create a Twitter account monitor for one known profile. Select tweet, profile,
-or availability events. Store the monitor ID. Then connect signed webhooks.
+follow, or follower events. Store the monitor ID. Then connect signed webhooks.
 
 <Callout icon="coins" color="#5c3327">
 
@@ -61,11 +61,11 @@ changes. It does not search posts from every public account.
 
 Choose one option for the required alert scope.
 
-| Monitoring need                           | Xquik option                                                     | Result                                                |
-| ----------------------------------------- | ---------------------------------------------------------------- | ----------------------------------------------------- |
-| Continuous changes from one known account | `POST /monitors`                                                 | Selected tweet and profile events from that username. |
-| Specific keywords across many accounts    | [Create Keyword Monitor](/api-reference/monitors/create-keyword) | Matching tweet events for one stored query.           |
-| Historical or on-demand tweet results     | [Search Tweets](/api-reference/x/search-tweets)                  | One paginated result set without continuous alerts.   |
+| Monitoring need                           | Xquik option                                                     | Result                                                        |
+| ----------------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------- |
+| Continuous changes from one known account | `POST /monitors`                                                 | Selected post, profile, and follow events from that username. |
+| Specific keywords across many accounts    | [Create Keyword Monitor](/api-reference/monitors/create-keyword) | Matching tweet events for one stored query.                   |
+| Historical or on-demand tweet results     | [Search Tweets](/api-reference/x/search-tweets)                  | One paginated result set without continuous alerts.           |
 
 Do not replace one option with another after collection starts.
 Store the chosen monitor type with every alert.
@@ -124,7 +124,7 @@ A scheduled Space fires once it starts.
 {"\n"}
 
 Following events show whom the account follows and unfollows.
-Follow events usually arrive within a minute.
+New follows usually arrive within a minute, and unfollows within about 15 minutes.
 `following.added` holds the followed account's profile.
 `following.removed` fires when the account unfollows someone.
 For an account that follows over 5,000, older unfollows take up to 2 hours.
@@ -132,7 +132,7 @@ For an account that follows over 5,000, older unfollows take up to 2 hours.
 {"\n"}
 
 Follower events show who follows the account and who leaves its followers.
-Follower events usually arrive within a minute.
+New followers usually arrive within a minute, and losses within about 15 minutes.
 `follower.added` holds the new follower's profile.
 `follower.removed` fires when a follower leaves.
 It also fires when X suspends or removes the follower's account.
@@ -147,6 +147,9 @@ Some follow times are exact. Others are the earliest time the follow can have.
 `followedAtExact` is true for an exact time and false for an earliest time.
 `followedAt` is missing when no follow time is known.
 The event's `occurredAt` stays the time Xquik saw the change.
+An added event holds `followKind` when the monitor reported that account removed.
+That covers removals from the last 30 days.
+`refollow` means it followed again. `return` means the old follow never ended.
 
 {"\n"}
 
@@ -155,6 +158,7 @@ The event's `occurredAt` stays the time Xquik saw the change.
 `unfollowed` means X confirms the follow ended.
 A removal event never fires for a follow that still stands.
 `reason` is missing when the cause is unknown.
+With `unavailable`, `unavailableReason` is `not_found` or `suspended`.
 
 {"\n"}
 
@@ -250,15 +254,14 @@ Review `nextBillingAt` before keeping large monitor sets active.
 
 ## What does an account monitor not track?
 
-Account monitors do not emit follower-gained or follower-lost events.
-They also exclude likes, bookmarks, and direct-message activity.
-They do not return a complete historical timeline.
+Account monitors exclude likes, bookmarks, and direct-message activity.
+They do not return a complete historical timeline or follower list.
 They do not search specific keywords across every account.
 
 {"\n"}
 
-Use [Followers](/api-reference/x/followers) for paginated follower snapshots.
-Use [Following](/api-reference/x/following) for paginated following snapshots.
+Use [Followers](/api-reference/x/followers) for the follower list as it stands now.
+Use [Following](/api-reference/x/following) for the current following list.
 Use [User Tweets](/api-reference/x/user-tweets) for timeline retrieval.
 Use [Create Keyword Monitor](/api-reference/monitors/create-keyword) for matching queries.
 
@@ -276,15 +279,6 @@ Choose the endpoint that returns the required tweets, profiles, or relationships
 List account monitors before repeating an uncertain create request.
 Reuse the stored monitor when the first request succeeded.
 Retry the same username and event types only when no monitor exists.
-
-{"\n"}
-
-Correct invalid usernames or event arrays after a `400` response.
-Replace missing credentials after `401` authentication errors.
-Add credits before retrying a `402 insufficient_credits` response.
-Check the username after a `404 user_not_found` response.
-Reuse the existing monitor after a `409` duplicate response.
-Respect `Retry-After` before repeating a `429` request.
 
 {"\n"}
 
@@ -309,14 +303,7 @@ curl --fail-with-body -X POST https://xquik.com/api/v1/monitors \
     event_types: .eventTypes,
     is_active: .isActive,
     created_at: .createdAt,
-    next_billing_at: .nextBillingAt,
-    verify_endpoint: "/api/v1/monitors/\(.id)",
-    update_endpoint: "/api/v1/monitors/\(.id)",
-    delete_endpoint: "/api/v1/monitors/\(.id)",
-    events_endpoint: "/api/v1/events?monitorId=\(.id)",
-    event_detail_endpoint_pattern: "/api/v1/events/{event_id}",
-    webhooks_endpoint: "/api/v1/webhooks",
-    deliveries_endpoint_pattern: "/api/v1/webhooks/{webhook_id}/deliveries"
+    next_billing_at: .nextBillingAt
   }'
 ```
 
@@ -344,13 +331,6 @@ const monitorState = {
   is_active: monitor.isActive,
   created_at: monitor.createdAt,
   next_billing_at: monitor.nextBillingAt,
-  verify_endpoint: `/api/v1/monitors/${monitor.id}`,
-  update_endpoint: `/api/v1/monitors/${monitor.id}`,
-  delete_endpoint: `/api/v1/monitors/${monitor.id}`,
-  events_endpoint: `/api/v1/events?monitorId=${monitor.id}`,
-  event_detail_endpoint_pattern: "/api/v1/events/{event_id}",
-  webhooks_endpoint: "/api/v1/webhooks",
-  deliveries_endpoint_pattern: "/api/v1/webhooks/{webhook_id}/deliveries",
 };
 process.stdout.write(`${JSON.stringify(monitorState)}\n`);
 ```
@@ -378,13 +358,6 @@ monitor_state = {
     "is_active": monitor["isActive"],
     "created_at": monitor["createdAt"],
     "next_billing_at": monitor["nextBillingAt"],
-    "verify_endpoint": f"/api/v1/monitors/{monitor['id']}",
-    "update_endpoint": f"/api/v1/monitors/{monitor['id']}",
-    "delete_endpoint": f"/api/v1/monitors/{monitor['id']}",
-    "events_endpoint": f"/api/v1/events?monitorId={monitor['id']}",
-    "event_detail_endpoint_pattern": "/api/v1/events/{event_id}",
-    "webhooks_endpoint": "/api/v1/webhooks",
-    "deliveries_endpoint_pattern": "/api/v1/webhooks/{webhook_id}/deliveries",
 }
 print(json.dumps(monitor_state))
 ```
@@ -412,20 +385,13 @@ type Monitor struct {
 }
 
 type MonitorState struct {
-    CreatedAt                  string   `json:"created_at"`
-    DeleteEndpoint             string   `json:"delete_endpoint"`
-    DeliveriesEndpointPattern  string   `json:"deliveries_endpoint_pattern"`
-    EventDetailEndpointPattern string   `json:"event_detail_endpoint_pattern"`
-    EventsEndpoint             string   `json:"events_endpoint"`
-    EventTypes                 []string `json:"event_types"`
-    IsActive                   bool     `json:"is_active"`
-    MonitorID                  string   `json:"monitor_id"`
-    NextBillingAt              string   `json:"next_billing_at"`
-    UpdateEndpoint             string   `json:"update_endpoint"`
-    Username                   string   `json:"username"`
-    VerifyEndpoint             string   `json:"verify_endpoint"`
-    WebhooksEndpoint           string   `json:"webhooks_endpoint"`
-    XUserID                    string   `json:"x_user_id"`
+    CreatedAt     string   `json:"created_at"`
+    EventTypes    []string `json:"event_types"`
+    IsActive      bool     `json:"is_active"`
+    MonitorID     string   `json:"monitor_id"`
+    NextBillingAt string   `json:"next_billing_at"`
+    Username      string   `json:"username"`
+    XUserID       string   `json:"x_user_id"`
 }
 
 func main() {
@@ -460,20 +426,13 @@ func main() {
         log.Fatal(err)
     }
     state := MonitorState{
-        CreatedAt:                  monitor.CreatedAt,
-        DeleteEndpoint:             "/api/v1/monitors/" + monitor.ID,
-        DeliveriesEndpointPattern:  "/api/v1/webhooks/{webhook_id}/deliveries",
-        EventDetailEndpointPattern: "/api/v1/events/{event_id}",
-        EventsEndpoint:             "/api/v1/events?monitorId=" + monitor.ID,
-        EventTypes:                 monitor.EventTypes,
-        IsActive:                   monitor.IsActive,
-        MonitorID:                  monitor.ID,
-        NextBillingAt:              monitor.NextBillingAt,
-        UpdateEndpoint:             "/api/v1/monitors/" + monitor.ID,
-        Username:                   monitor.Username,
-        VerifyEndpoint:             "/api/v1/monitors/" + monitor.ID,
-        WebhooksEndpoint:           "/api/v1/webhooks",
-        XUserID:                    monitor.XUserID,
+        CreatedAt:     monitor.CreatedAt,
+        EventTypes:    monitor.EventTypes,
+        IsActive:      monitor.IsActive,
+        MonitorID:     monitor.ID,
+        NextBillingAt: monitor.NextBillingAt,
+        Username:      monitor.Username,
+        XUserID:       monitor.XUserID,
     }
     if err := json.NewEncoder(os.Stdout).Encode(state); err != nil {
         log.Fatal(err)
@@ -483,10 +442,6 @@ func main() {
 
 </CodeGroup>
 
-Each code example maps the response to one monitor row. Save the account IDs,
-event filter, active state, next charge time, and monitor routes. The routes
-cover updates, events, webhooks, and delivery checks.
-
 </section>
 
 <section>
@@ -494,8 +449,7 @@ cover updates, events, webhooks, and delivery checks.
 ## Account monitor handoff
 
 Use `POST /monitors` for one X account. Send alerts to a queue, CRM,
-warehouse, Slack, or an agent. It checks selected tweets and profile changes
-every second.
+warehouse, Slack, or an agent. It checks the selected events every second.
 Create the monitor first. Then create a signed webhook with
 [`POST /webhooks`](/api-reference/webhooks/create). Call
 [`POST /webhooks/{id}/test`](/api-reference/webhooks/test) before enabling
@@ -511,58 +465,14 @@ production alerts.
 | Creation time          | `createdAt`     | Store this timestamp with each monitor audit.       |
 | Billing checkpoint     | `nextBillingAt` | Review available credits before this time.          |
 
-<CardGroup cols={2}>
-
-  <Card title="Monitor ID" icon="fingerprint">
-
-    Store `id` as `monitor_id`. Verify state with
-    [Get Monitor](/api-reference/monitors/twitter-account-monitor-status).
-    Pause or resume with [Update Monitor](/api-reference/monitors/update). Call
-    [Delete Monitor](/api-reference/monitors/delete-twitter-account-monitor)
-    only when tracking should stop permanently.
-
-  </Card>
-  <Card title="Stored account" icon="user">
-
-    Store `username` after trimming the `@` prefix. Store `xUserId` for stable
-    joins, deduplication, and account mapping.
-
-  </Card>
-  <Card title="Event filter" icon="funnel">
-
-    Store `eventTypes`. Keep [List Webhooks](/api-reference/webhooks/list)
-    subscriptions aligned so expected account activity delivers.
-
-  </Card>
-  <Card title="Active state" icon="clock">
-
-    Read `isActive` and `nextBillingAt` before enabling alerts or estimating
-    hourly monitor cost.
-
-  </Card>
-  <Card title="Stored event join" icon="link">
-
-    Read `monitorType: "account"`, `monitorId`, and `username` from
-    [List Events](/api-reference/events/list). Use them to join stored events
-    to the account. Use [Get Event](/api-reference/events/get) for one event.
-
-  </Card>
-  <Card title="Webhook delivery join" icon="webhook">
-
-    Use `deliveryId` for receiver idempotency and
-    [List Deliveries](/api-reference/webhooks/deliveries) for delivery attempts.
-    Join `streamEventId` to event IDs. For delivery joins, do not use `x_event_id`
-    as the key. Store `eventType`, `occurredAt`, and `data` with the job.
-
-  </Card>
-</CardGroup>
-
 ### What should a webhook receiver save?
 
 Save the monitor ID, username, user ID, event type, event time, and delivery ID.
 Use the monitor ID to group alerts for one account. Use the delivery ID to stop
 the same job twice. Keep the event ID for later checks. These fields support
 replay, audits, retries, and alert routing.
+
+{"\n"}
 
 Active account monitors check every 1 second. Each active hour costs 30 credits.
 You need 30 available credits to create or restore a monitor. They pay for the first active hour. The username lookup is free. Pause the monitor through
@@ -612,45 +522,9 @@ Choose only the exact event types in the goal map below.
 | Profile state changes         | `profile.verified.changed`, `profile.protected.changed`, `profile.pinned_tweet.changed`, `profile.unavailable.changed`       | Verification, visibility, pinned post, or availability changes. |
 | Deleted posts                 | `tweet.deleted`                                                                                                              | The deleted post as the monitor last saw it.                    |
 | Live videos and Spaces        | `broadcast.started`, `space.started`                                                                                         | The post that shares the running live video or Space.           |
-| Follows and unfollows         | `following.added`, `following.removed`                                                                                       | The profile of the account followed or unfollowed.              |
-| New and lost followers        | `follower.added`, `follower.removed`                                                                                         | The profile of the account that followed or left.               |
+| Follows and unfollows         | `following.added`, `following.removed`                                                                                       | The followed or unfollowed account's profile, or its ID alone.  |
+| New and lost followers        | `follower.added`, `follower.removed`                                                                                         | The new or lost follower's profile, or its ID alone.            |
 | Follower and following counts | `profile.followers.changed`, `profile.following.changed`                                                                     | The previous and current count and their difference.            |
-
-<Warning>
-
-Account monitors do not emit follower-gained or follower-lost events. Use
-[Followers](/api-reference/x/followers) and
-[Following](/api-reference/x/following) for paginated relationship snapshots.
-
-</Warning>
-
-<CardGroup cols={2}>
-
-  <Card title="tweet.new" icon="bell">
-
-    Original tweet from the monitored account. Xquik uses it when no reply,
-    quote, or retweet signal is present.
-
-  </Card>
-  <Card title="tweet.quote" icon="quote">
-
-    Quote tweet from the monitored account. Include this when quote activity
-    should create stored events and webhook deliveries.
-
-  </Card>
-  <Card title="tweet.reply" icon="message-circle">
-
-    Reply from the monitored account. Include this when support routing,
-    conversation tracking, or alerting needs replies.
-
-  </Card>
-  <Card title="tweet.retweet" icon="repeat-2">
-
-    Retweet from the monitored account. Include this when repost activity should
-    create stored events and webhook deliveries.
-
-  </Card>
-</CardGroup>
 
 </section>
 

@@ -68,7 +68,6 @@ const CONTENT_REQUIREMENTS: readonly ContentRequirement[] = [
       "Check one Twitter account activity tracker",
       "A working account alert",
       "needs 4 checks to pass.",
-      "Followers and following are not monitor event types.",
       "How do Twitter analytics tools differ from monitor status?",
       "What should a Twitter account activity audit store?",
       "Approve one account monitor change",

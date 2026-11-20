@@ -155,27 +155,7 @@ async function parityWarningIsMdxOnly(result: CheckResult): Promise<boolean> {
   return pages.length > 0 && checks.every(Boolean);
 }
 
-function htmlSizeWarningIsChromeOnly(
-  html: CheckResult,
-  markdown: CheckResult | undefined,
-): boolean {
-  const small = new Set(
-    asRecordArray(asRecord(markdown?.details)?.pageResults)
-      .filter((page) => page.status === "pass")
-      .map((page) => asString(page.url)),
-  );
-  const large = asRecordArray(asRecord(html.details)?.pageResults).filter(
-    (page) => page.status !== "pass",
-  );
-  return (
-    html.status === "warn" &&
-    large.length > 0 &&
-    large.every((page) => page.status === "warn" && small.has(asString(page.url)))
-  );
-}
-
 interface Accepted {
-  readonly chromeOnlySizeWarning: boolean;
   readonly mdxOnlyParityWarning: boolean;
 }
 
@@ -185,9 +165,6 @@ function acceptsResult(checkId: string, result: CheckResult, accepted: Accepted)
   }
   if (checkId === "markdown-content-parity") {
     return result.status === "warn" && accepted.mdxOnlyParityWarning;
-  }
-  if (checkId === "page-size-html") {
-    return accepted.chromeOnlySizeWarning;
   }
   if (checkId === "auth-alternative-access") {
     return result.status === "skip";
@@ -201,7 +178,7 @@ function acceptsResult(checkId: string, result: CheckResult, accepted: Accepted)
 describe("Agent-Friendly Documentation", (): void => {
   let configuredCheckIds = new Set<string>();
   let resultsByCheck: Map<string, CheckResult> | undefined;
-  let accepted: Accepted = { chromeOnlySizeWarning: false, mdxOnlyParityWarning: false };
+  let accepted: Accepted = { mdxOnlyParityWarning: false };
 
   beforeAll(async (): Promise<void> => {
     const config = await loadConfig();
@@ -213,11 +190,7 @@ describe("Agent-Friendly Documentation", (): void => {
       report.results.map((result): [string, CheckResult] => [result.id, result]),
     );
     const parity = resultsByCheck.get("markdown-content-parity");
-    const htmlSize = resultsByCheck.get("page-size-html");
     accepted = {
-      chromeOnlySizeWarning:
-        htmlSize !== undefined &&
-        htmlSizeWarningIsChromeOnly(htmlSize, resultsByCheck.get("page-size-markdown")),
       mdxOnlyParityWarning:
         parity?.status === "warn" ? await parityWarningIsMdxOnly(parity) : false,
     };

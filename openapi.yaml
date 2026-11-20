@@ -287,7 +287,7 @@ paths:
         Search public Xquik docs with NLWeb 0.55. This read-only route accepts
         flat and structured requests. Never send secrets or private data.
       tags: [Agent Discovery]
-      security: [{}]
+      security: []
       requestBody:
         description: Flat or structured NLWeb request.
         required: true
@@ -388,7 +388,7 @@ paths:
       summary: Search Xquik documentation with query parameters
       description: Send a flat NLWeb 0.55 request through query parameters.
       tags: [Agent Discovery]
-      security: [{}]
+      security: []
       parameters:
         - name: query
           in: query
@@ -434,7 +434,7 @@ paths:
         PKCE. The user signs in & approves access. Xquik then sends a code to
         your redirect_uri.
       tags: [Agent Discovery]
-      security: [{}]
+      security: []
       parameters:
         - name: response_type
           in: query
@@ -539,7 +539,7 @@ paths:
         Exchange an authorization code, a refresh token, an agent claim token or
         an identity assertion for an access token.
       tags: [Agent Discovery]
-      security: [{}]
+      security: []
       requestBody:
         description: Form fields of the grant. The body is at most 16 KiB.
         required: true
@@ -671,7 +671,7 @@ paths:
         Revoke an access token, a refresh token or a claimed agent's identity
         assertion. An unknown or already revoked token still returns 200.
       tags: [Agent Discovery]
-      security: [{}]
+      security: []
       requestBody:
         description: Form fields of the revocation. The body is at most 16 KiB.
         required: true
@@ -726,7 +726,7 @@ paths:
         Register an OAuth client by Dynamic Client Registration. Clients with a
         client metadata document can skip this step.
       tags: [Agent Discovery]
-      security: [{}]
+      security: []
       requestBody:
         description: Client metadata as JSON. The body is at most 16 KiB.
         required: true
@@ -800,7 +800,7 @@ paths:
         claim.verification_uri with claim.user_code. Poll the token endpoint
         with claim_token until then. Keep every token secret.
       tags: [Agent Discovery]
-      security: [{}]
+      security: []
       requestBody:
         description:
           The service_auth request as JSON. The body is at most 4 KiB.
@@ -890,7 +890,7 @@ paths:
         Get a new user code for a pending agent registration, such as after the
         last one expired. The claim token must still be valid.
       tags: [Agent Discovery]
-      security: [{}]
+      security: []
       requestBody:
         description: The claim token & the user's email as JSON.
         required: true
@@ -1556,8 +1556,9 @@ paths:
                   type: boolean
                   default: false
                   description:
-                    Lets this key connect, reconnect, retry & remove X accounts.
-                    Full access doesn't include it. Missing saves false.
+                    Lets this key connect, reconnect, retry & remove X accounts,
+                    by sending X passwords or through hosted connect links. Full
+                    access doesn't include it. Missing saves false.
                   example: false
                 expiresInDays:
                   type: [integer, 'null']
@@ -1905,8 +1906,9 @@ paths:
                   type: boolean
                   description:
                     Turns on or off connecting, reconnecting, retrying &
-                    removing X accounts with this key. Only a dashboard session
-                    can change it. Missing keeps the current value.
+                    removing X accounts with this key, connect links included.
+                    Only a dashboard session can change it. Missing keeps the
+                    current value.
                   example: true
                 allowedIps:
                   type: array
@@ -5832,7 +5834,7 @@ paths:
             Twitter yesterday at this hour, on every run of a schedule. The
             answer is the stored list nearest that time, with its own time in
             capturedAt. History starts 2026-10-13 02:20 UTC. A time over 24
-            hours from every stored list answers 400 at no charge.
+            hours from every stored list answers 404 at no charge.
           example: '2026-10-13T14:00:00Z'
         - $ref: '#/components/parameters/Fields'
         - $ref: '#/components/parameters/Omit'
@@ -5923,9 +5925,7 @@ paths:
                       to. Present only with at.
                     example: '2026-10-13T14:00:00.000Z'
         '400':
-          description:
-            Unknown country or location, a time that does not read, or no stored
-            list within 24 hours of at
+          description: Unknown country or location, or a time that does not read
           content:
             application/json:
               schema:
@@ -5938,25 +5938,33 @@ paths:
                     message:
                       'X lists no trends for that place. List places with GET
                       /x/trends/locations.'
-                beforeHistory:
-                  summary: The time is before the first stored list
-                  value:
-                    error: 'invalid_input'
-                    message:
-                      'Trends history for this place starts 2026-10-13 02:20
-                      UTC. Ask for a later time.'
-                noListNear:
-                  summary: No list is stored within 24 hours of the time
-                  value:
-                    error: 'invalid_input'
-                    message:
-                      'No trends are stored within 24 hours of that time. The
-                      nearest list is from 2026-10-14 10:05 UTC.'
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '402':
           $ref: '#/components/responses/PaymentRequired'
         '403': { $ref: '#/components/responses/ApiKeyPaused' }
+        '404':
+          description: No stored list within 24 hours of at
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                beforeHistory:
+                  summary: The time is before the first stored list
+                  value:
+                    error: 'not_found'
+                    message:
+                      'Xquik stores no trends for this place before 2026-10-13
+                      02:20 UTC. X serves no older lists, so ask for that time
+                      or later.'
+                noListNear:
+                  summary: No list is stored within 24 hours of the time
+                  value:
+                    error: 'not_found'
+                    message:
+                      'No trends are stored within 24 hours of that time. The
+                      nearest list is from 2026-10-14 10:05 UTC.'
         '502':
           $ref: '#/components/responses/XApiError'
         '503':
@@ -6029,7 +6037,8 @@ paths:
             also takes a span back from now, as a number & s, m, h or d, so
             from=7d reads the last 7 days. Defaults to 24 hours before to.
             History starts 2026-10-13 02:20 UTC, and a range that begins earlier
-            returns the stored part. Alias sinceTime.
+            returns the stored part. A range that ends before the first stored
+            list answers 404 at no charge. Alias sinceTime.
           example: '2026-10-13'
         - name: to
           in: query
@@ -6218,9 +6227,8 @@ paths:
                 next_cursor: ''
         '400':
           description:
-            Unknown country or location, a time or step that does not read, a
-            range that ends before the first stored list, or a value past its
-            maxLength
+            Unknown country or location, a time or step that does not read, or a
+            value past its maxLength
           content:
             application/json:
               schema:
@@ -6228,13 +6236,24 @@ paths:
               example:
                 error: 'invalid_input'
                 message:
-                  'Trends history for this place starts 2026-10-13 02:20 UTC.
-                  Ask for a later time.'
+                  'X lists no trends for that place. List places with GET
+                  /x/trends/locations.'
         '401':
           $ref: '#/components/responses/AnonymousGuestAuthenticationRequired'
         '402':
           $ref: '#/components/responses/PaymentRequired'
         '403': { $ref: '#/components/responses/ApiKeyPaused' }
+        '404':
+          description: A range that ends before the first stored list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: 'not_found'
+                message:
+                  'Xquik stores no trends for this place before 2026-10-13 02:20
+                  UTC. X serves no older lists, so ask for that time or later.'
         '502':
           $ref: '#/components/responses/XApiError'
         '503':
@@ -6705,8 +6724,11 @@ paths:
             04/01/2026 fits both orders & answers 424 with the form to write.
             `since_time:` & `until_time:` take Unix seconds or an ISO 8601 time.
             `list:` takes a public List's ID. A private List answers 404
-            list_not_found. Keep q to 512 characters. A longer one can answer
-            424 before any read, at no charge.
+            list_not_found. X searches up to 512 characters, & the time window
+            takes 44 of them. A longer search runs as up to 23 searches that
+            each fit, split along its OR groups. Otherwise it runs as 1 search
+            without the window when it fits in 512, or answers 424 before any
+            read, at no charge.
         - name: queryType
           in: query
           required: false
@@ -7504,6 +7526,8 @@ paths:
                 processed_count: 2
                 returned_count: 1
                 unavailable_ids: ['1234567890']
+                not_found_ids: ['1234567890']
+                suspended_ids: []
                 failed_ids: []
                 unprocessed_ids: []
         '400':
@@ -7582,6 +7606,9 @@ paths:
                 has_next_page: false
                 next_cursor: ''
                 unavailable_ids: ['1234567890']
+                not_found_ids: ['1234567890']
+                suspended_ids: []
+                protected_ids: []
                 unprocessed_ids: []
         '400':
           $ref: '#/components/responses/InvalidInput'
@@ -8035,7 +8062,8 @@ paths:
           $ref: '#/components/responses/Unauthenticated'
         '402':
           $ref: '#/components/responses/PaymentRequired'
-        '403': { $ref: '#/components/responses/ApiKeyPaused' }
+        '403':
+          $ref: '#/components/responses/ProtectedFollowCheck'
         '502':
           $ref: '#/components/responses/XApiError'
         '503':
@@ -8980,19 +9008,61 @@ paths:
           $ref: '#/components/responses/ConnectServiceUnavailable'
 
   /x/account-connection-links:
-    post:
-      operationId: createXAccountConnectionLink
+    get:
+      operationId: listXAccountConnectionLinks
       x-mcp-exclusion-reason:
         &x-connect-link-token A connect link works like a password until it's
         used, so it stays out of model context.
+      summary: List X account connect links
+      description: >-
+        Lists your connect links, newest first, with `apiKeyId` naming the API
+        key that made each one, or null for a dashboard session. Use it to find
+        and revoke the links a leaked key made. It never holds a token. Takes a
+        Full access API key holding `connectsXAccounts`, or a dashboard session.
+      tags: [X Accounts]
+      security: [{ apiKey: [] }, { cookieSession: [] }]
+      parameters: *list-limit-after-parameters
+      responses:
+        '200':
+          description: Your connect links, newest first.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [links, hasMore]
+                properties:
+                  links:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/XAccountConnectionLink'
+                    example: []
+                  hasMore: *boolean-example-false
+                  nextCursor: *short-id-example-schema
+              example:
+                links: []
+                hasMore: false
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/ConnectLinkForbidden'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+    post:
+      operationId: createXAccountConnectionLink
+      x-mcp-exclusion-reason: *x-connect-link-token
       summary: Create X account connect link
       description: >-
         Creates a link to a page Xquik hosts, where a person connects an X
         account with no Xquik signup. Your backend never receives their password
         or 2FA secret, and the account belongs to you. Send `accountId` to
         reconnect 1 of your accounts instead. Connecting is free. Takes a Full
-        access API key or a dashboard session. The link works for 30 minutes, &
-        the response is the only place its token appears.
+        access API key holding `connectsXAccounts`, or a dashboard session. The
+        link works for 30 minutes, & the response is the only place its token
+        appears. A link a key made stops while that key is paused or loses
+        `connectsXAccounts`, & for good once it's revoked, rotated, expired or
+        deleted.
       tags: [X Accounts]
       security: [{ apiKey: [] }, { cookieSession: [] }]
       requestBody:
@@ -9062,6 +9132,7 @@ paths:
                 status: 'pending'
                 reference: 'crm-user-7'
                 returnUrl: 'https://app.example.com/connected'
+                apiKeyId: '17'
                 accountId: null
                 xUserId: null
                 xUsername: null
@@ -9076,7 +9147,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '403':
-          $ref: '#/components/responses/ReadKeyForbidden'
+          $ref: '#/components/responses/ConnectLinkForbidden'
         '404':
           $ref: '#/components/responses/ReauthAccountNotFound'
         '429':
@@ -9090,7 +9161,8 @@ paths:
       description: >-
         Reads what happened on a link. `status` reads `connected` once the
         person finishes, with `xUserId`, `xUsername` & `health`. It never holds
-        the token. Takes a Full access API key or a dashboard session.
+        the token. Takes a Full access API key holding `connectsXAccounts`, or a
+        dashboard session.
       tags: [X Accounts]
       security: [{ apiKey: [] }, { cookieSession: [] }]
       parameters:
@@ -9111,7 +9183,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '403':
-          $ref: '#/components/responses/ReadKeyForbidden'
+          $ref: '#/components/responses/ConnectLinkForbidden'
         '404':
           $ref: '#/components/responses/NotFound'
         '429':
@@ -9122,7 +9194,8 @@ paths:
       summary: Revoke X account connect link
       description: >-
         Stops a link working. An account it already connected stays connected.
-        Takes a Full access API key or a dashboard session.
+        Takes a Full access API key holding `connectsXAccounts`, or a dashboard
+        session.
       tags: [X Accounts]
       security: [{ apiKey: [] }, { cookieSession: [] }]
       parameters:
@@ -9135,7 +9208,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '403':
-          $ref: '#/components/responses/ReadKeyForbidden'
+          $ref: '#/components/responses/ConnectLinkForbidden'
         '404':
           $ref: '#/components/responses/NotFound'
         '429':
@@ -10014,7 +10087,7 @@ paths:
         Xquik account. Idempotent replays return the same key. Stripe creates a
         paid invoice for each paid checkout.
       tags: [Guest Wallets]
-      security: [{}]
+      security: []
       parameters: &guest-idempotency-parameters
         - $ref: '#/components/parameters/GuestIdempotencyKey'
       requestBody:
@@ -18424,6 +18497,39 @@ components:
                   This route needs a Full access key. Turn on Full access at
                   dashboard.xquik.com/api-keys.
                 requiredScope: full
+    ConnectLinkForbidden:
+      description:
+        An API key needs Full access & `connectsXAccounts` for connect links.
+        Turn the permission on in a dashboard session at
+        dashboard.xquik.com/api-keys. An OAuth token or MCP tool gets
+        `session_required`, & a paused API key gets `api_key_paused`.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            apiKeyPaused:
+              summary: A paused API key
+              value: *api-key-paused
+            insufficientScope:
+              summary: The API key isn't Full access
+              value:
+                error: insufficient_scope
+                message:
+                  This route needs a Full access key. Turn on Full access at
+                  dashboard.xquik.com/api-keys.
+                requiredScope: full
+            permissionRequired:
+              summary: The API key lacks the connect permission
+              value:
+                error: x_account_connect_permission_required
+                message:
+                  This API key can't connect X accounts. Turn on Connect X
+                  accounts for it at dashboard.xquik.com/api-keys.
+                requiredPermission: connectsXAccounts
+            sessionRequired:
+              summary: An OAuth token or MCP tool called this route
+              value: *session-required-example
     WriteKeyForbidden:
       description:
         The API key lacks the write scope this route needs. A paused API key
@@ -18600,6 +18706,27 @@ components:
                 message:
                   This account's following list is private. Try a public
                   account.
+    ProtectedFollowCheck:
+      description:
+        X keeps a follow relationship private when both accounts are protected.
+        Xquik charges nothing. A paused API key gets `api_key_paused`, so resume
+        it on the dashboard.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            apiKeyPaused:
+              summary: A paused API key
+              value: *api-key-paused
+            protectedPair:
+              summary: Both accounts are protected
+              value:
+                error: x_account_protected
+                message:
+                  The source and target accounts are both protected, so X keeps
+                  their follow relationship private. Check a pair with at least
+                  1 public account.
     ProtectedVerifiedFollowerList:
       description:
         X keeps a protected account's verified follower list private. Xquik
@@ -18852,7 +18979,8 @@ components:
     MaximumCoverageBusy:
       description:
         Retry x_api_unavailable after Retry-After. After pagination_stalled,
-        retry once, 30 s or more later.
+        retry once, 30 s or more later. A second stall ends the list on a page
+        with endReason stalled.
       headers: &busy-headers
         Retry-After:
           $ref: '#/components/headers/BusyRetryAfter'
@@ -21038,6 +21166,8 @@ components:
         has_next_page: *boolean-example-true
         next_cursor:
           $ref: '#/components/schemas/NextCursor'
+        endReason:
+          $ref: '#/components/schemas/CoverageEndReason'
         readBackTo:
           type: string
           format: date-time
@@ -21090,6 +21220,14 @@ components:
                     Whether X charts the ticker with open, high, low & close
                     prices.
                   example: false
+    CoverageEndReason:
+      description: >-
+        Present on a last page that X cut short. `stalled` means X returned no
+        new results 2 times in a row, 30 s apart. The list may hold more. Read
+        it again later without cursor.
+      type: string
+      enum: [stalled]
+      example: stalled
     CoverageStopReason:
       description: >-
         Why the read stopped.
@@ -21599,10 +21737,11 @@ components:
               type: integer
               minimum: 1
               description:
-                Present on the last automatic page, and on a complete-mode
-                answer without rows. X counts this many more replies but shows
-                them to nobody. They may be hidden, protected or deleted. A
-                retry returns the same replies.
+                Present on the last automatic page, on a standard first page
+                that ends the thread, and on a complete-mode answer without
+                rows. X counts this many more replies but shows them to nobody.
+                They may be hidden, protected or deleted. A retry returns the
+                same replies.
               example: 1
             partialBefore:
               type: string
@@ -22024,6 +22163,8 @@ components:
         has_next_page: *boolean-example-true
         next_cursor:
           $ref: '#/components/schemas/NextCursor'
+        endReason:
+          $ref: '#/components/schemas/CoverageEndReason'
     SearchSuggestions:
       description: >
         What X suggests for a partial search query. Each list keeps X's order. A
@@ -22571,6 +22712,8 @@ components:
           processed_count,
           returned_count,
           unavailable_ids,
+          not_found_ids,
+          suspended_ids,
           failed_ids,
           unprocessed_ids,
         ]
@@ -22612,10 +22755,25 @@ components:
           type: array
           description:
             Processed IDs with no profile on X, in first-seen request order.
+            not_found_ids and suspended_ids split them by X's answer.
           items: &batch-user-id
             type: string
             pattern: '^(?:\d+|[A-Za-z0-9_]{1,15})$'
           example: ['1234567890']
+        not_found_ids:
+          type: array
+          description:
+            The unavailable IDs no account holds, as X answers for an account
+            that was deactivated or deleted, in first-seen request order.
+          items: *batch-user-id
+          example: ['1234567890']
+        suspended_ids:
+          type: array
+          description:
+            The unavailable IDs of accounts X suspended, in first-seen request
+            order.
+          items: *batch-user-id
+          example: []
         failed_ids:
           type: array
           description:
@@ -22637,7 +22795,16 @@ components:
         They name a profile link by its username.
       type: object
       required:
-        [tweets, has_next_page, next_cursor, unavailable_ids, unprocessed_ids]
+        [
+          tweets,
+          has_next_page,
+          next_cursor,
+          unavailable_ids,
+          not_found_ids,
+          suspended_ids,
+          protected_ids,
+          unprocessed_ids,
+        ]
       properties:
         tweets:
           type: array
@@ -22657,9 +22824,30 @@ components:
           type: array
           description:
             Users with no account on X or with protected posts, in first-seen
-            request order. They cost nothing.
+            request order. They cost nothing. not_found_ids, suspended_ids and
+            protected_ids split them by X's answer.
           items: *batch-user-id
           example: ['1234567890']
+        not_found_ids:
+          type: array
+          description:
+            The unavailable users no account holds, as X answers for an account
+            that was deactivated or deleted, in first-seen request order.
+          items: *batch-user-id
+          example: ['1234567890']
+        suspended_ids:
+          type: array
+          description:
+            The unavailable users X suspended, in first-seen request order.
+          items: *batch-user-id
+          example: []
+        protected_ids:
+          type: array
+          description:
+            The unavailable users whose posts only approved followers see, in
+            first-seen request order.
+          items: *batch-user-id
+          example: []
         unprocessed_ids:
           type: array
           description:
@@ -24366,8 +24554,9 @@ components:
         connectsXAccounts:
           type: boolean
           description:
-            Whether this key can connect, reconnect, retry & remove X accounts.
-            Full access doesn't include it.
+            Whether this key can connect, reconnect, retry & remove X accounts,
+            by sending X passwords or through hosted connect links. Full access
+            doesn't include it.
           example: false
         allowedIps:
           type: array
@@ -25417,10 +25606,19 @@ components:
           enum: [unavailable, unfollowed]
           description: >-
             Why the account left the list, on following.removed &
-            follower.removed. unavailable means X no longer serves the account.
-            unfollowed means the follow ended. It is missing when the cause
-            isn't known.
+            follower.removed. unavailable means X shows no account for it, and
+            unavailableReason says why. unfollowed means the follow ended. It is
+            missing when the cause isn't known.
           example: unfollowed
+        unavailableReason:
+          type: string
+          enum: [not_found, suspended]
+          description: >-
+            Why X shows no account, when reason is unavailable. not_found means
+            the account no longer exists, as X answers for a deactivated or
+            deleted account. suspended means X suspended it. A user lookup of
+            the ID answers user_not_found with the same reason.
+          example: not_found
       additionalProperties: true
 
     MonitorLegacyPost:
@@ -31982,6 +32180,7 @@ components:
           teamIds,
           periods,
           odds,
+          rankings,
         ]
       example:
         id: '2055084502741811200'
@@ -32001,6 +32200,7 @@ components:
         periods:
           - type: Quarter
         odds: null
+        rankings: []
       properties:
         id:
           type: string
@@ -32063,6 +32263,32 @@ components:
               $ref: '#/components/schemas/FootballOdds'
             away:
               $ref: '#/components/schemas/FootballOdds'
+        rankings:
+          type: array
+          description:
+            Each team X ranks in its college football poll, with its rank. Empty
+            when X ranks neither team, & for the NFL.
+          example: []
+          items:
+            $ref: '#/components/schemas/FootballPollRanking'
+    FootballPollRanking:
+      description: A team's rank in X's college football poll.
+      type: object
+      required: [teamId, rank]
+      example:
+        teamId: '689566294702555136'
+        rank: 5
+      properties:
+        teamId:
+          type: [string, 'null']
+          description: The ranked team, a key of teams.
+          example: '689566294702555136'
+        rank:
+          type: [integer, 'null']
+          minimum: 1
+          maximum: 9007199254740991
+          description: The team's rank, where 1 is the top.
+          example: 5
     FootballSchedule:
       description: A league's games in a time window.
       type: object
@@ -32087,6 +32313,7 @@ components:
             periods:
               - type: Quarter
             odds: null
+            rankings: []
         teams: {}
       properties:
         league:
@@ -33255,6 +33482,7 @@ components:
           status,
           reference,
           returnUrl,
+          apiKeyId,
           accountId,
           xUserId,
           xUsername,
@@ -33289,7 +33517,10 @@ components:
               revoked,
             ]
           description:
-            '`failed` means 5 logins were refused, so make a new link.'
+            '`failed` means 5 logins were refused, so make a new link. `revoked`
+            means you revoked it, or the key that made it is paused, revoked,
+            expired, no longer Full access or without `connectsXAccounts`. A
+            link whose key resumes within its 30 minutes reads `pending` again.'
           example: 'connected'
         reference:
           type: [string, 'null']
@@ -33298,6 +33529,12 @@ components:
           type: [string, 'null']
           format: uri
           example: 'https://app.example.com/connected'
+        apiKeyId:
+          type: [string, 'null']
+          description:
+            The ID of the API key that made the link, or null when a dashboard
+            session made it.
+          example: '17'
         accountId:
           type: [string, 'null']
           example: '42'

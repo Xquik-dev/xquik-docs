@@ -1,0 +1,279 @@
+---
+title: "Xquik changelog for October 2026 X (Twitter) API"
+sidebarTitle: "October 2026"
+description: "What changed in Xquik in October 2026, across the X (Twitter) REST API, MCP server, SDKs, tweet search, follower exports, monitors, webhooks & extractions."
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+<LlmsDirective />
+
+<Update label="October 2026" description="v1">
+
+**New**
+
+- Pick what an API key can call on the [API keys page](https://dashboard.xquik.com/en/api-keys). Add write, monitors, exports or billing to a read key
+- Calls outside a key's scopes get `403 insufficient_scope`, REST & MCP alike. `requiredScope` names the scope to add
+- `POST /api-keys` & `PATCH /api-keys/{id}` take `scopes`, & every key carries it. Full access keys work as before
+- Lock an API key to your IPs on the [API keys page](https://dashboard.xquik.com/en/api-keys). It takes up to 20 IPs or CIDR ranges. An empty list allows any IP
+- Calls from other IPs get `403 ip_not_allowed`, REST & MCP alike. The message names the calling IP
+- `POST /api-keys` & `PATCH /api-keys/{id}` take `allowedIps`, & every key carries it. Keys without a list work as before
+- Pause an API key on the [API keys page](https://dashboard.xquik.com/en/api-keys) & resume it later. Select several keys to pause or resume them together
+- A paused key gets `403 api_key_paused` on every API route & the MCP server. Pausing keeps the key & its settings
+- `PATCH /api-keys/{id}` takes `paused`, & a paused key carries `pausedAt`. Keys you never pause work as before
+- `PATCH /api-keys` pauses or resumes up to 100 keys in 1 request
+- API keys take an optional monthly credit budget, `monthlyBudgetCredits`, on create & update
+- Each key shows `monthlySpentCredits`, its spend this UTC calendar month. The owner gets 1 email at 80%
+- At its budget, new REST, MCP & Actor calls with the key get `403 api_key_budget_reached`
+- The key works again next UTC month, or once the owner raises its budget
+- `GET /x/sports/{league}/games/{id}/roster` returns both teams' players with jersey, position, headshot & X account
+- `GET /x/sports/{league}/games/{id}/player-props` returns the prop lines & American odds X shows for an NFL game
+- Each costs 1 credit, & `ncaafb` gets a free `unsupported_league`. MCP adds them as `getFootballRoster` & `getFootballPlayerProps`, and guest keys can call them
+- A football player's `xUser` now carries `protected`, `superFollowEligible` & `labelType`, which rosters fill
+- `GET /x/sports/{league}/games/{id}/posts` lists a game's top or latest posts. It also gives the X (Twitter) search that finds them
+- It costs 1 credit per post, & a game X does not know is free. MCP adds it as `getSportsGamePosts`, and guest keys can call it
+- `GET /x/sports/{league}/games/{id}/audience` returns a game's live viewers, fan picks per team, chat state & teams. It costs 1 credit, & a game X does not know is free. MCP adds it as `getSportsGameAudience`
+- `GET /x/sports/{league}/games` lists NFL or college football games in a time window. Each game carries its game & team IDs
+- `GET /x/sports/{league}/games/{id}` returns a game's scoreboard. Its `/plays` route returns every drive & play. Its `/box-score` route returns team totals & player stats
+- Each costs 1 credit, & a game X does not know is free. MCP adds them as `listFootballGames`, `getFootballScoreboard`, `getFootballPlays` & `getFootballBoxScore`, and guest keys can call them
+- OpenAPI declares the `Deprecation`, `Link` & `Sunset` headers on each answer that sends them
+- The [versioning & deprecation policy](/guides/versioning) lists today's deprecated items, their dates & the 90-day notice
+- Profiles carry `redirectsToUsername`, the handle x.com redirects the profile to. A renamed account's new handle is one example
+- `GET /x/news/{id}/versions` returns every version X wrote of a news story from Explore, oldest first
+- Each version has its time, headline & text. It costs 1 credit per request, & a story X does not know is free. MCP adds it as `getXNewsStoryVersions`, and guest keys can call it
+- `GET /x/spaces/search` takes `queryType=Live` & `queryType=Upcoming`, which list Spaces on air now or scheduled. Both match words in Space titles
+- Each row is the full Space `GET /x/spaces/{id}` returns, for 1 credit
+- `GET /x/community-notes/contributors/{alias}` answers a Community Notes contributor's note counts by rating & rating counts
+- Its `/notes` route lists every note they wrote with its post. That includes the notes x.com hides. Its `/deleted-notes` route lists the notes they deleted
+- The lookup costs 1 credit & each note costs 1 credit. An unknown alias is free. MCP adds them as `getCommunityNotesContributor`, `listCommunityNotesContributorNotes` & `listCommunityNotesContributorDeletedNotes`, and guest keys can call them
+- `GET /x/trends/history` reads Xquik's Twitter trends archive. The archive holds the lists X showed for a place over a time range
+- It returns 1 stored list per step, each with its own `capturedAt`. Stored lists start at 2026-10-13 02:20 UTC. Each list costs 1 credit, up to 100 per request
+- `GET /x/trends` takes `at` & answers with the stored list nearest that time, for 1 credit. MCP adds the range as `getXTrendsHistory`, and guest keys can call it
+- `at`, `from` & `to` also take a span back from now, like `24h` or `7d`. With a span, a schedule reads yesterday's trends on every run
+- A range answer names the times it read in `fromTime` & `toTime`. Its `next_cursor` keeps every page on the first request's time
+- `POST /webhooks/telegram` gives a t.me link to @XquikBot. The link connects a Telegram chat to your monitors
+- Press Start & each event arrives as a message. Retries, deliveries & resume work as for webhooks. It's free
+- `GET /events/stream` sends your monitor events live over 1 connection, as server-sent events
+- Reconnect with `Last-Event-ID` to replay what you missed from the last 30 days. Streaming is free
+- `GET /x/users/{id}/insights` answers a profile's engagement rate, averages per post, posting rate & top post
+- `GET /x/tweets/{id}/insights` answers a tweet's engagements per hour, per view & per follower of its author
+- Each report costs 1 credit, & a profile or tweet X doesn't know is free. MCP adds them as `getUserInsights` & `getTweetInsights`, and guest keys can call them
+- `GET /x/tweets/top` lists the tweets X ranks highest. X ranks them by likes, replies, quotes, bookmarks, shares or views
+- Pick a day, week or month, & all of X, a country or a language. Each tweet costs 1 credit, up to 100 per list. MCP adds it as `getTopTweets`, and guest keys can call it
+- `GET /x/users/{id}/live` says whether a user is broadcasting live on X now. It also returns their latest broadcast
+- It costs 1 credit per check, & a user X does not know is free. MCP adds it as `getUserLiveStatus`, and guest keys can call it
+- `GET /x/tweets/{id}/replies` with `mode=complete` takes `includeHidden=true` and adds the replies the post's author hid
+- Each has `hiddenByAuthor: true` and costs 1 credit like any reply. A post without hidden replies costs nothing extra
+- `GET /x/users/{id}/translation` returns X's own translation of a profile's bio into the language you pick
+- It costs 1 credit per translation, & a profile without a bio is free. MCP adds it as `translateUserBio`, and guest keys can call it
+- `GET /x/tweets/{id}/replies` no longer answers 503 when X counts replies it shows nobody. It ends the list instead
+- The last page names them in `hiddenReplies`, & it costs nothing extra
+- `GET /x/tweets/{id}/retweeter-ids` returns the user IDs of a post's reposters. It keeps the order & pages of `GET /x/tweets/{id}/retweeters`
+- Each ID costs 1 credit, & a post nobody reposted is free. MCP adds it as `getTweetRetweeterIds`, and guest keys can call it
+- `GET /x/communities/{id}/members/search` finds a Community's members by name or username, each with its role
+- It costs 1 credit per member, & an answer without members is free. MCP adds it as `searchCommunityMembers`, and guest keys can call it
+- Posts in a Community add `communityName` beside `communityId` when X sends the name. It costs nothing extra
+- The 6 analysis endpoints take `baseline`, the rows of an earlier answer. Each result's `monitor` says whether the post is new, changed or unchanged. The comparison costs nothing extra
+- Score answers, such as `intensity` or `conviction`, can have decimals between levels
+- 6 AI analysis endpoints read X posts, searches or your own texts. Each analyzed post costs 2 credits
+- `POST /x/analysis/sentiment` answers each post's attitude, its intensity & its sarcasm probability
+- `POST /x/analysis/brand` answers each post's relevance, attitude & customer relationship for your brand
+- `POST /x/analysis/news` answers each post's format, source attribution & relevance to your topic
+- `POST /x/analysis/market-signals` answers each post's stance on an asset & counts bullish & bearish posts per cashtag
+- `POST /x/analysis/viral-score` rates how viral a post or draft reads, from 0 to 100. Each score comes with a verdict
+- `POST /x/analysis/classify` answers up to 8 questions you write, as categories, scores or yes/no
+- A search can name an account in `username` or a List in `listId`. Or it can name a post in `quotesOf` or `repliesTo`. It reads posts between `sinceTime` & `untilTime`
+- A post without an analysis costs nothing. MCP lists all 6, and guest keys can call them
+- `GET /x/articles/{tweetId}` adds `bodyMarkdown`, the Article body as Markdown
+- It keeps headings, lists, bold, italic, links & images, without HTML. It costs nothing extra
+- Search rows add `textHighlights`, which mark where the row's `text` matches the search
+- Each range has `startIndex` & `endIndex`, counted in code points of `text`. It costs nothing extra
+- `GET /x/users/batch/tweets` returns the newest posts of up to 20 users in 1 call
+- Name the users by `ids` or `usernames`. It costs 1 credit per post
+- A user it could not read is named in `unprocessed_ids` & costs nothing
+- MCP adds it as `getBatchUserTweets`, and guest keys can call it
+- `GET /x/communities/find` finds X Communities by keyword. It costs 1 credit per Community
+- `GET /x/communities/popular` lists the most popular Communities of a topic or subtopic
+- Send the topic by `topicId` or by name as `topic`. It costs 1 credit per Community
+- `GET /x/communities/topics` lists every Community topic & subtopic, 1 credit per topic
+- `GET /x/communities/suggested` lists the Communities X (Twitter) suggests to join, 1 credit each
+- `GET /x/communities/{id}/media` returns a Community's Media tab, 1 credit per post
+- `GET /x/communities/{id}/tweets` takes `queryType=Top` for the Community's Top posts
+- Community responses add `banner`, with its size, main colors & focus area
+- MCP adds `findCommunities`, `getPopularCommunities`, `getCommunityTopics`, `getSuggestedCommunities` & `getCommunityMedia`, and guest keys can call them
+- Community find & popular answer a free 400 `invalid_cursor` when X refuses a cursor
+- `GET /x/tweets/{id}/retweeters/check` says whether 1 account reposted a post
+- It reads the account's newest posts. Each check costs 1 credit
+- MCP adds it as `getTweetRepostCheck`, and guest keys can call it
+- `GET /x/users/{id}/affiliates` returns the accounts an organization lists as its affiliates, in X's order
+- Each row is a full profile. It costs 1 credit per result
+- MCP adds it as `getUserAffiliates`, and guest keys can call it
+- `GET /x/users/{id}/subscriptions` returns the creators a user subscribes to, in X's order
+- Each row is a full profile. It costs 1 credit per result
+- MCP adds it as `getUserSubscriptions`, and guest keys can call it
+- `GET /x/users/{id}/follower-ids` and `GET /x/users/{id}/following-ids` return user IDs only
+- A page holds up to 5,000 IDs, newest first. Each ID costs 1 credit
+- MCP adds them as `getUserFollowerIds` and `getUserFollowingIds`, and guest keys can call them
+- `GET /x/tweets/{id}/hidden-replies` returns the replies a post's author hid, oldest first
+- It lists replies to hidden replies too. It costs 1 credit per reply
+- MCP adds it as `getTweetHiddenReplies`, and guest keys can call it
+- `GET /x/tweets/{id}/translation` returns X's own translation of a tweet into the language you pick
+- It returns the detected source language and the links of the translated text. It costs 1 credit per call
+- MCP adds it as `translateTweet`. Guest keys and direct MPP can call it
+- `GET /x/tweets/{id}/embed` returns the HTML that embeds a tweet on a website. It comes in a light or dark theme
+- It can hide media and the thread, and leave the widget script out. It costs 1 credit per call
+- MCP adds it as `getTweetEmbed`. Guest keys and direct MPP can call it
+- `GET /x/links/resolve` returns where up to 100 t.co links lead, in the order sent
+- It costs 1 credit per resolved link. A link X does not answer for comes back in `unprocessedUrls`, free
+- MCP adds it as `resolveLinks`, and guest keys can call it
+- `GET /x/tweets` takes tweet URLs beside tweet IDs in `ids`. It reads a tweet named twice once
+- `GET /x/followers/check` takes user IDs beside usernames, and returns `sourceId` & `targetId`
+- `GET /x/tweets/{id}/subtitles` returns the caption tracks of a tweet's videos. Each track has timed cues & the full text
+- It costs 1 credit when a track comes back. A tweet without captions costs nothing
+- MCP adds it as `getTweetSubtitles`, and guest keys can call it
+- `GET /x/users/{id}/similar` lists the accounts X (Twitter) shows as similar, in X's order
+- It costs 1 credit per account. MCP adds it as `getSimilarUsers`, and guest keys can call it
+- Results can differ between calls. Xquik now returns a fuller, steadier list
+- `GET /x/users/{id}/articles` lists the X Articles a profile published, newest first
+- Each row is the Article's post with its title, preview & cover. It costs 1 credit per post
+- MCP adds it as `getUserArticles`, and guest keys can call it
+- `GET /x/users/{id}/highlights` returns the posts on a profile's Highlights tab
+- Rows keep X's order. It costs 1 credit per post returned
+- MCP adds it as `getUserHighlights`, and guest keys can call it
+- `GET /x/trends/locations` lists the places X offers trends for
+- Each location has its `woeid`, country, country code & place type
+- `country`, `placeType`, `q` & `limit` filter the list. It costs 1 credit per location
+- MCP adds it as `getXTrendLocations`
+- `GET /x/search/autocomplete` returns the accounts, topics, hashtags & cashtags X suggests for a query
+- `types` keeps only the kinds you choose. `limit` caps the suggestions
+- Cashtags carry price, market cap & 24-hour change. It costs 1 credit per suggestion
+- MCP adds it as `autocompleteSearch`
+
+- `GET /x/lists/search` finds public Lists by keyword, at 1 credit per List
+- Each List has its counts, banner & owner profile. Private Lists stay out
+- MCP adds it as `searchLists`, and the SDKs as `lists.retrieve_search`
+- `GET /x/users/{id}/lists` returns the public Lists an account created, in X's order
+- `GET /x/users/{id}/list-memberships` returns the public Lists that include an account
+- Each List costs 1 credit. MCP adds them as `getUserLists` & `getUserListMemberships`
+- `GET /x/spaces/search` finds public Spaces by keyword, host or topic, at 1 credit per Space
+- It returns live, scheduled & ended Spaces, each once per page. MCP adds it as `searchSpaces`
+- Space search takes `pageSize`, the most Spaces a page returns. It runs from 1 to 100 and defaults to 20
+- `GET /x/spaces/{id}` returns 1 Space with its state, times, listener counts, hosts & speakers
+- It takes a Space ID or URL & costs 1 credit per call. MCP adds it as `getSpace`
+- `GET /x/spaces/{id}/replay` returns an ended Space's recording as an HLS playback URL
+- A live or scheduled Space answers 409. It costs 1 credit per call. MCP adds it as `getSpaceReplay`
+- A Space & each Space search row add `sharings`, the posts shared in the Space
+- Each sharing has the post, the account that shared it & when
+- A Space cancelled before it started answers 404 `space_canceled` on its replay
+- `GET /x/broadcasts/{id}` returns 1 X live video with its title, state, times & watch counts
+- It takes a broadcast ID or URL & costs 1 credit per call. MCP adds it as `getBroadcast`
+- Guest keys & direct MPP can call it. Reading a broadcast adds no view to it
+- A broadcast adds `tweetId` & `tweet`, the post that announces it
+- A Space & each Space search row add `tweet` beside `tweetId`
+- Job search answers a free 400 `invalid_cursor` when X refuses a cursor
+- `GET /x/tweets/{id}/retweeters` answers the same free 400 `invalid_cursor`
+
+- `GET /x/jobs/search` searches public X job listings by keyword
+- Filter by location, work type, seniority, employment type & company
+- Each job returned costs 1 credit. A closed job is left out & free
+- `GET /x/jobs/{id}` returns 1 job with its description as text & Markdown
+- `GET /x/jobs/locations` finds places & the location ID job search takes
+- MCP adds `searchJobs`, `getJob` & `getJobLocations`, and guest keys can call them
+
+- `GET /x/places/search` finds X places by name, at 1 credit per place
+- Each place has the `id` that tweet search takes as `place`
+- `GET /x/hashflags` lists the custom emoji X shows after hashtags, at 1 credit each
+- `q` & `activeOnly` filter the hashflags. Each has its image & the time it runs
+- MCP adds them as `searchXPlaces` & `getXHashflags`, and guest keys can call both
+
+**Changed**
+
+- Each webhook delivery gets 7 days. One still failing after that ends `exhausted`
+- `lastError` says why. A delivery that never got a try shows `Webhook paused`, `Monitor paused` or `Endpoint failing`
+- A paused webhook or monitor holds its deliveries for those 7 days. Resume before a delivery's 7 days end to receive it
+- An `exhausted` delivery's event stays 30 days after it ends. Read it with `GET /events/{id}`
+- X can refuse a reply to a post deleted or hidden from your account. That call returns `422 x_reply_target_unavailable` instead of `x_target_not_found`
+- Xquik charges nothing. That account's later replies to the post get the same error. `Retry-After` says when to try again
+- An MCP answer over 24,000 characters returns its first page, not a `response_too_large` error. It carries `characters`, `next_offset`, `next` & `text`, plus `result_id` when the answer is saved
+- An MCP answer too large to keep also returns no error. It returns its size, its saved reads & the next step
+- Connecting, re-authenticating, retrying & disconnecting X accounts now needs a signed-in dashboard session. API keys & OAuth tokens get `403 session_required`, so a leaked key never reaches X passwords
+- The 6 routes are `POST /x/accounts`, `GET /x/account-connection-attempts/{id}`, `POST /x/account-connection-challenges/{id}/submit`, `POST /x/accounts/{id}/reauth`, `POST /x/accounts/bulk-retry` & `DELETE /x/accounts/{id}`. MCP no longer lists them
+- `GET /x/accounts` & `GET /x/accounts/{id}` still take an API key
+- For an account with a plan, `POST /subscribe` gives the dashboard billing page. The user signs in there to manage billing. It used to give a billing portal session
+- API key management & saved-card top-ups answer an API key with `403 session_required`. The answer names the dashboard. This replaces a same-origin error
+- `POST /webhooks/telegram` without `eventTypes` now connects new posts only. Connected chats keep their event types
+- Telegram alerts in a burst arrive as 1 digest every few seconds. Only the first message of a minute rings
+- A busy Telegram chat now gets 5 quick messages, then 1 every 30 s. That keeps it inside Telegram's limits. A quiet chat still gets each alert at once
+- Discord & Slack channels get the events of 1 post as 1 alert. Alerts that wait together come as 1 message. Their pace matches a Telegram chat's
+- Telegram, Discord & Slack alerts name events as the dashboard does, such as "New post". A profile change reads as a sentence
+- A resumed monitor starts from the moment it resumes. Posts made during the pause send no event & stay readable with tweet search
+- A new keyword monitor no longer sends an older post as its first event
+- `mode=complete` on `GET /x/tweets/{id}/replies` answers 200 when X shows none of a post's counted replies
+- The answer names them in `hiddenReplies` instead of `424 replies_incomplete`, & it costs nothing
+- Active monitors cost 30 credits per hour, up from 21. Creating one needs 30 available credits & charges no lookup credit
+- Top tweet search skips posts that can't match your query
+- Skipped posts count in `filtered_count` & cost nothing
+- `GET /x/tweets/{id}/replies` pages can be empty & still report more
+- Such a list used to end there, without the replies its next pages hold. Follow `next_cursor` while `has_next_page` is `true`
+- Tweet search extractions answer 424 `search_unavailable` for a filter X (Twitter) search dropped. They charge nothing
+- The filters are `source`, `geocode`, `within` & `news: true`
+- In a query they are `source:`, `geocode:`, `within:`, `retweets_of:`, `filter:vine`, `filter:consumer_video`, `filter:pro_video` & `filter:news`
+- `POST /extractions`, its dry run & `POST /extractions/estimate` answer before any job starts. The message names the filter to remove
+- Such an extraction used to end without rows
+- `excludeSource`, `-source:` & `-within:` keep working until 2027-01-15. X ignores them, so the extraction returns unfiltered rows
+- Until then those answers carry `Deprecation` & `Sunset` headers. From 2027-01-15 they answer 424 too
+- `GET /x/followers/check` costs 1 credit per check, down from 5. Direct MPP charges USD 0.00015 per call. A draw's `mustFollowUsername` check costs 1 credit
+- `descriptionMarkdown` on `GET /x/jobs/{id}` numbers ordered lists 1, 2, 3 and keeps line breaks
+- It escapes characters that would read as Markdown or HTML. These include `[`, `*` & `<`
+- `GET /x/communities/{id}/tweets` opens its first page with the pinned post, flagged `isPinned`
+- An empty `GET /x/communities/suggested` answer means X suggests none right now. It stays free
+- `GET /x/trends` takes a `country` or a `location` name, such as `location=Istanbul`
+- The response returns the place it read as `location`. `woeid` still wins
+
+- A write's `402` adds `top_up_url` & `dashboard`, which say where to add credits
+- `404 user_not_found` adds `reason`, which is `not_found` or `suspended`
+- A suspended account answers "X (Twitter) suspended this account. Choose another account."
+- Account responses add `connectedAt`, when the account last connected or reconnected
+- `X-Xquik-Busy-Reason` is now `admission` or `reads`
+
+- `GET /x/users/batch` takes `usernames` in place of `ids`, with or without `@`
+- Send up to 100 usernames. The ID lists then name the usernames as sent
+- `usernames` also takes profile links, such as `x.com/nasa`. A link is named by its username
+- The text `undefined` or `null` in `usernames` now answers 400 & costs nothing
+- A filtered `Latest` Tweet search adds `readBackTo`, how far back it has read
+
+- 7 account lists now page with a cursor. They no longer stop at 100 or 200 rows
+- They are monitors, keyword monitors, webhooks, webhook deliveries, API keys, styles & support tickets
+- Each takes `limit` & `cursor`, and answers `hasMore` & `nextCursor`
+- A 1st page keeps its size & order, so existing clients see the same rows
+
+- Xquik keeps queued events until all deliveries finish
+- Events expire 30 days after Xquik creates them
+
+- `GET /credits` adds `auto_topup_stopped` & `GET /account` adds `creditInfo.autoTopupStopped`
+- `true` means 3 declined charges in a row on one card stopped automatic top-up
+
+- An event keeps the monitor label from when Xquik created it
+- Renaming a monitor no longer changes past events or their retries
+- Each retry of a webhook delivery sends its first attempt's exact body
+
+- Tweet & DM `text` now reads as x.com shows it
+- X's `&amp;`, `&lt;` & `&gt;` arrive as `&`, `<` & `>`
+- `displayTextRange` & entity `indices` count the decoded text
+
+- A repost row now shows its original post's counts
+- That covers likes, replies, reposts, quotes, bookmarks & views
+
+- Tweet search reads `since:`, `until:`, `sinceDate` & `untilDate` as UTC days
+- x.com uses your time zone, so its day edges can differ
+- `untilDate` is inclusive, so `untilDate=2026-03-01` returns that day's posts too
+- Followers come newest first
+
+- A reply request with `sinceTime` & `scope=direct` ends once it covers your window
+- Such a request ends sooner
+
+- A write retried with the same `Idempotency-Key` returns the first answer again
+- It keeps the first status, body & `Retry-After`, with `idempotent: true` added
+- A rejected post's retry now answers `422` like the first answer, not `200`
+
+</Update>

@@ -141,7 +141,7 @@ that field for some trends.
 | `country`       | `string`  | No       | Country to read trends for, by name or 2-letter code. Examples are `Turkey` and `TR`. Case insensitive.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | `location`      | `string`  | No       | Town or country to read trends for, by name, such as `Istanbul`. Case insensitive. Add `country` when 2 towns share a name. [List trend locations](/api-reference/x/trend-locations) returns every name.                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | `count`         | `integer` | No       | Number of trends to return. Default `30`, max `50`. Invalid or below-minimum values fall back to `30`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| `at`            | `string`  | No       | A past time, to read what was trending on Twitter then. Takes an ISO 8601 time, a date such as `2026-10-13`, or Unix seconds. A time without a zone reads as UTC. It also takes a span back from now. A span is a number and `s`, `m`, `h`, or `d`. So `at=24h` reads what was trending on Twitter yesterday at this hour. That holds on every run of a schedule. The answer is the stored list nearest that time. Its own time is in `capturedAt`. History starts 2026-10-13 02:20 UTC. A time over 24 hours from every stored list returns 400 and costs nothing. [Get trends history](/api-reference/x/trends-history) reads a range. |
+| `at`            | `string`  | No       | A past time, to read what was trending on Twitter then. Takes an ISO 8601 time, a date such as `2026-10-13`, or Unix seconds. A time without a zone reads as UTC. It also takes a span back from now. A span is a number and `s`, `m`, `h`, or `d`. So `at=24h` reads what was trending on Twitter yesterday at this hour. That holds on every run of a schedule. The answer is the stored list nearest that time. Its own time is in `capturedAt`. History starts 2026-10-13 02:20 UTC. A time over 24 hours from every stored list returns 404 and costs nothing. [Get trends history](/api-reference/x/trends-history) reads a range. |
 
 ### Choose fields
 
@@ -220,17 +220,9 @@ A request with `location=Istanbul` also names the place it read.
 }
 ```
 
-### 400 Unknown place
+### 400 Invalid input
 
-X lists no trends for that `country` or `location`. The request costs nothing.
-
-{"\n"}
-
-With `at`, a time before the place's first stored list returns 400. The error names that first time.
-
-{"\n"}
-
-`{ "error": "invalid_input", "message": "Trends history for this place starts 2026-10-13 02:20 UTC. Ask for a later time." }`
+X lists no trends for that `country` or `location`. With `at`, so does a `woeid` X lists no trends for. An `at` that Xquik cannot read also returns 400. So does a value past its length limit. The request costs nothing.
 
 ### 401 Unauthenticated
 
@@ -242,6 +234,14 @@ Account keys receive account payment options.
 Guest keys receive only the guest top-up action.
 Anonymous calls receive `WWW-Authenticate: Payment` plus a guest wallet action.
 Failed requests never create checkout. Confirm a payment option first.
+
+### 404 No stored list
+
+With `at`, Xquik holds no list within 24 hours of that time. Before the place's first stored list, the message names when its archive starts. X serves no older lists. Without `at`, a `woeid` X lists no trends for also returns 404. The request costs nothing.
+
+{"\n"}
+
+`{ "error": "not_found", "message": "Xquik stores no trends for this place before 2026-10-13 02:20 UTC. X serves no older lists, so ask for that time or later." }`
 
 ### 502 X API unavailable
 
@@ -328,6 +328,7 @@ This endpoint returns trends directly from X. For broader Radar topic discovery,
 - **401** `{ "error": "unauthenticated", "message": "Authentication required. Provide a valid API key or bearer token." }`
 - **402** `{ "error": "insufficient_credits", "message": "Insufficient credits. Top up or subscribe to continue." }`
 - **403** `{ "error": "api_key_paused", "message": "This API key is paused. Resume it at dashboard.xquik.com/api-keys to use it again." }`
+- **404** `{ "error": "not_found", "message": "Xquik stores no trends for this place before 2026-10-13 02:20 UTC. X serves no older lists, so ask for that time or later." }`
 - **424** `{ "error": "x_api_unavailable", "message": "X data source temporarily unavailable. Try again later." }`
 - **429** `{ "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 60 }`
 - **502** `{ "error": "x_api_unavailable", "message": "X data source temporarily unavailable. Try again later." }`
