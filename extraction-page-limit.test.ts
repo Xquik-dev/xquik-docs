@@ -56,9 +56,7 @@ describe("extraction result page limit", (): void => {
   it("reads each phrase that states the page limit", (): void => {
     expect.assertions(2);
     expect(
-      pageLimitClaims(
-        "Use `limit` up to `1000`.\nFetch results in pages of up to 1,000 records.",
-      ),
+      pageLimitClaims("Use `limit` up to `1000`.\nFetch results in pages of up to 1,000 records."),
     ).toStrictEqual([
       { line: 1, rows: 1000 },
       { line: 2, rows: 1000 },
