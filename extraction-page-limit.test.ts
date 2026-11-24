@@ -14,6 +14,7 @@ const PAGE_LIMIT_CLAIMS: readonly RegExp[] = [
   /results per page \(1-(?<rows>\d[\d,]*)/giu,
   /returns status and up to (?<rows>\d[\d,]*) results/giu,
   /per page, up to `(?<rows>\d[\d,]*)`/giu,
+  /\b1 to (?<rows>\d[\d,]*) stored rows/giu,
 ];
 
 interface PageLimitClaim {
