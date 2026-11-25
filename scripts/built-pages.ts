@@ -9,6 +9,13 @@ import { htmlToMarkdown } from "afdocs/helpers";
 const MINT = "mint@4.3.5";
 const PUBLISHED_ONLY_CHROME = 792;
 const HEADROOM = 5000;
+const JSON_ANCHOR = /<a\s[^>]*href="[^"]*\.json(?:[?#][^"]*)?"[^>]*>/gu;
+const JSON_LINK_ATTRIBUTES = [
+  'type="application/json"',
+  'class="link"',
+  'target="_blank"',
+  'rel="noreferrer"',
+] as const;
 
 function exportSite(directory: string): string {
   const archive = join(directory, "site.zip");
@@ -23,14 +30,33 @@ function exportSite(directory: string): string {
   return site;
 }
 
-function publishedSizes(site: string): ReadonlyMap<string, number> {
+function builtPages(site: string): ReadonlyMap<string, string> {
   return new Map(
     readdirSync(site, { encoding: "utf8", recursive: true })
       .filter((file) => file === "index.html" || file.endsWith("/index.html"))
-      .map((file): [string, number] => [
+      .map((file): [string, string] => [
         `/${file.replace(/\/?index\.html$/u, "")}`,
-        htmlToMarkdown(readFileSync(join(site, file), "utf8")).length + PUBLISHED_ONLY_CHROME,
+        readFileSync(join(site, file), "utf8"),
       ]),
+  );
+}
+
+function publishedSizes(pages: ReadonlyMap<string, string>): ReadonlyMap<string, number> {
+  return new Map(
+    [...pages].map(([page, html]): [string, number] => [
+      page,
+      htmlToMarkdown(html).length + PUBLISHED_ONLY_CHROME,
+    ]),
+  );
+}
+
+function jsonLinkFaults(pages: ReadonlyMap<string, string>): string[] {
+  return [...pages].flatMap(([page, html]) =>
+    [...html.matchAll(JSON_ANCHOR)].flatMap(([anchor]) =>
+      JSON_LINK_ATTRIBUTES.every((attribute) => anchor.includes(attribute))
+        ? []
+        : [`${page} ${anchor}`],
+    ),
   );
 }
 
@@ -51,9 +77,15 @@ function report(sizes: ReadonlyMap<string, number>): string {
 }
 
 if (import.meta.main) {
-  const directory = mkdtempSync(join(tmpdir(), "xquik-docs-page-size-"));
+  const directory = mkdtempSync(join(tmpdir(), "xquik-docs-built-pages-"));
   try {
-    process.stdout.write(report(publishedSizes(exportSite(directory))));
+    const pages = builtPages(exportSite(directory));
+    const faults = jsonLinkFaults(pages);
+    if (faults.length > 0)
+      throw new Error(
+        `${String(faults.length)} links to a JSON file lack the type or the attributes Mintlify gives a Markdown link, ${JSON_LINK_ATTRIBUTES.join(" ")}.\n${faults.join("\n")}`,
+      );
+    process.stdout.write(report(publishedSizes(pages)));
   } catch (error) {
     process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);
     process.exitCode = 1;
@@ -61,3 +93,5 @@ if (import.meta.main) {
     rmSync(directory, { force: true, recursive: true });
   }
 }
+
+export { jsonLinkFaults };
