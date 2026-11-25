@@ -153,6 +153,23 @@ info:
     again. A write names its charge in its body's `billing`.
 
 
+    ## Answer deadline
+
+
+    Send `X-Xquik-Page-Budget-Ms` with the milliseconds your client waits for an
+    answer. A read plans its answer for that time less 2 s, or for its usual
+    limit if that comes first. Search answers by then with the posts it holds,
+    plus `next_cursor` when X has more. Set it from your client's timeout, so a
+    slow read still sends its rows before your client gives up. The Xquik SDKs
+    send their timeout in seconds, in `X-Stainless-Timeout` or
+    `X-Stainless-Read-Timeout`, and the earliest of these deadlines counts. A
+    budget under 3000 leaves no time for a full read, so the read answers at
+    once, busy with `Retry-After` when it holds no rows yet. One over 82000
+    counts as 82000. A value that isn't a plain number of 0 or more is ignored,
+    and `X-Xquik-Page-Budget-Refused` names each such header with `not_a_number`
+    or `negative`.
+
+
     ## Deprecation
 
 
@@ -6946,9 +6963,13 @@ paths:
         - $ref: '#/components/parameters/StandardPageSize'
         - $ref: '#/components/parameters/Fields'
         - $ref: '#/components/parameters/Omit'
+        - $ref: '#/components/parameters/PageBudgetMs'
       responses:
         '200':
           description: Top tweets
+          headers:
+            X-Xquik-Page-Budget-Refused:
+              $ref: '#/components/headers/PageBudgetRefused'
           content: &paginated-tweets-content
             application/json:
               schema:
@@ -16662,6 +16683,20 @@ components:
       description: Secure Xquik browser session cookie.
 
   parameters:
+    PageBudgetMs:
+      name: X-Xquik-Page-Budget-Ms
+      in: header
+      required: false
+      description: >
+        Milliseconds your client waits for this answer. The read plans its
+        answer for that time less 2 s, or for its usual limit if that comes
+        first, and answers with the posts it holds plus `next_cursor` when X has
+        more. Under 3000 answers at once, busy when it holds no rows yet, and
+        over 82000 counts as 82000.
+      schema:
+        type: integer
+        minimum: 0
+      example: 9000
     CollectionCursor:
       name: cursor
       in: query
@@ -17792,6 +17827,14 @@ components:
         states the cutoff & counts.
 
   headers:
+    PageBudgetRefused:
+      description: >
+        Each answer-deadline header this read ignored, as `header=reason`, comma
+        separated. The reason is `not_a_number` or `negative`. The read used the
+        other deadline headers, or its usual limit.
+      schema:
+        type: string
+      example: x-xquik-page-budget-ms=not_a_number
     SignInRetryAfter:
       description: Seconds to wait before you retry.
       schema: { type: integer, minimum: 1, maximum: 60, example: 60 }
