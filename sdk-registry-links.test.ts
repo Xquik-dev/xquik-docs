@@ -5,8 +5,13 @@ import { describe, expect, it } from "vitest";
 const MAVEN_FOLDER = "https://repo1.maven.org/maven2/com/xquik/api/";
 const PAGES = execFileSync("git", ["ls-files", "--", "*.mdx"], { encoding: "utf8" }).split("\n");
 
+const LINKS = /https?:\/\/[^\s"'()<>[\]]+/gu;
+
 function linksSonatype(page: string): boolean {
-  return page !== "" && readFileSync(page, "utf8").includes("central.sonatype.com");
+  if (page === "") return false;
+  return Array.from(readFileSync(page, "utf8").matchAll(LINKS), ([link]) => link).some(
+    (link) => URL.canParse(link) && new URL(link).hostname === "central.sonatype.com",
+  );
 }
 
 describe("SDK registry links", (): void => {
