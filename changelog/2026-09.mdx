@@ -1,0 +1,216 @@
+---
+title: "Xquik changelog for September 2026 X (Twitter) API"
+sidebarTitle: "September 2026"
+description: "What changed in Xquik in September 2026, across the X (Twitter) REST API, MCP server, SDKs, tweet search, follower exports, monitors, webhooks & extractions."
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+<LlmsDirective />
+
+<Update label="September 2026" description="v1">
+
+**New**
+
+- `DELETE /x/dm/{userId}/messages/{messageId}` deletes a DM from your account's side
+- The other person keeps it. It costs 10 credits, only when X deletes it
+- MCP adds it as `deleteDm`, and the SDKs as `dm.delete_message`
+
+- Profiles add `accountBasedInUnavailable: true` when `accountBasedIn` is not available yet
+- Those profiles omit `accountBasedIn`. Treat the label as unknown & retry later
+- `accountBasedIn: null` still means X shows no label
+
+**Changed**
+
+- Native MCP adds `readSavedResult`, which reads a saved oversized answer in free pages
+- Oversized answers up to the 2 MiB MCP response limit now save. The old limit was 256 KB
+- An oversized answer's `retry` names only tools your MCP catalog lists
+
+- A search X refuses returns `424 search_unavailable`, never an empty page
+
+- User Tweets, user replies, quotes & List Tweets list `keywords`, `place`, `placeCountry`, `pointRadius`, `boundingBox` & `advancedQuery`
+- User Tweets, user replies & quotes also list `listId`, and Tweet search lists `keywords`
+- With a search filter such as `keywords`, a user timeline filters every Tweet. It no longer filters only older ones
+- `max_results` sets the page size wherever `limit` & `count` do
+- `maxItems`, `max_items` & `per_page` set it too
+- Tweet search `queryType` takes any case & the aliases `type`, `search_type`, `product`, `category` & `section`
+- `Photos`, `Videos` & `Media` return posts with that media type. `People` & `Lists` answer 400 with the route to use
+
+- Direct replies stop listing 8 search filters they never applied
+- Those are `cardName`, `source`, `excludeSource`, `geocode`, `near`, `within`, `safe` & `news`
+- List Tweets & direct replies take the legacy `after` cursor alias on every page
+- Community search applies `withinTime`
+- Events prefer `monitorId` to `monitor_id`. A monitor filter without a usable ID lists no events
+- A cursor ignores parameters its route doesn't read, so dropping one keeps it
+
+- A post X never published fails as `x_post_not_sent`. You pay nothing & can post again
+- Writes X never confirms end `expired` & charge nothing. Check your X account before you retry
+
+- X's 500, 504 & 408 after the send keep a write `pending_confirmation` as `x_write_ambiguous`
+- Pending answers say `retryable: false`
+- Before the send, those give `x_transient_error` & are safe to retry, not `x_write_failed`
+
+- X refusals that state a reason return `422 x_rejected`. They used to return `500 x_write_failed`
+- X's refusal of an image's size returns `422 x_image_invalid`
+- Avatar & banner uploads take images up to 15 MiB. Xquik fits them to X's limits
+- Post images over 5 MiB shrink to fit. GIFs & videos go to X unchanged
+- An unreadable image returns `415 unsupported_media_type`
+- An image Xquik can't shrink enough returns `413 media_too_large`
+- OpenAPI lists 413 & 415 on media writes, plus 3 media error codes
+
+- Post & user path params take URLs & handles. See [path IDs](/api-reference/overview#path-ids)
+- Post params take a post ID or an x.com or twitter.com post URL
+- User params take a user ID or a username with or without `@`. They also take a profile URL
+- Writes look up a username first. An unknown username returns `422 x_target_not_found`
+- Other input returns `400 invalid_tweet_id` or `400 invalid_user_id`
+- `GET /x/users/{id}` returns `invalid_user_id` where it returned `invalid_username`
+
+- Writes X refuses outright return `422 x_rejected` & charge nothing
+- `POST /x/communities` returns `422 x_account_feature_required` when the account can't create communities
+- Both used to look like unconfirmed writes
+
+- MCP `execute` takes paths with or without `/api/v1`, such as `/x/users/nasa/follow`
+
+- `GET /x/users/{id}/tweets` & `GET /x/users/{id}/replies` now list `sinceTime`, `untilTime` & `mode`
+- Both routes already applied them. `sinceTime` keeps its exact second & `untilTime` drops it
+- A time without an offset reads as UTC. That holds on every route that takes these bounds
+- An offset whose `+` arrived unencoded, such as `21:20:41 02:00`, reads as `+02:00`
+
+- Community Tweets, List Tweets, thread & batch users now list every filter they applied
+- Quotes list `includeReplies`, and bookmark folders list `cursor`
+- Likes, media & mentions drop search operators such as `cardName`. They never applied them
+
+- Replies to a post that is unavailable on X return `422 x_reply_target_unavailable`
+- Some used to return `500 x_write_failed`
+- Xquik sends nothing & charges nothing. Check the post on x.com or reply to another post
+
+- `GET /draws`, `GET /drafts` & `GET /events` return `400 invalid_input` for an unknown cursor
+- Before, they returned the first page again
+- Send the last `nextCursor` you received, or omit the cursor to start over
+- An empty cursor still returns the first page
+
+- Replies, quotes, retweeters & thread of a post X does not have return `404 tweet_not_found`
+- They used to return 200 with an empty page. `GET /x/tweets/{id}` already returned this 404
+- An empty first page tells you whether the post exists. A post without engagement still returns 200
+- A 404 costs no credits
+
+- Each account now gets 500 reads a second, up from 300
+- Writes still allow 120 a minute & deletes 60 a minute
+
+- `429 x_rate_limited` messages now name the wait from `Retry-After`, such as about 15 minutes
+- Without a known wait, the message says to try again later
+
+- Writes X refuses as possibly automated return `422 x_automation_refused`
+- They used to return `429 x_rate_limited`
+- Waiting does not change X's answer. Send the next request now with a new `Idempotency-Key`
+- If X keeps refusing, check the account on x.com. Vary your text or pace
+- These refusals cost nothing
+- `429 x_rate_limited` now covers only X's rate limits. Wait for `Retry-After` when present
+
+- `GET /x/tweets/{id}/replies` with `sort=latest` or `sort=oldest` can set `orderPartial: true`
+- Rows stay sorted by date & keep the same status. Replies may be missing between them
+- Nothing marked such answers before. Retry later for a gap-free order
+
+- `GET /x/tweets/{id}/replies` applies `sort` on automatic pages too
+- Those pages used to list the newest replies first, whatever the `sort`
+- Without `sort`, automatic pages still list the newest first. Standard pages ignore `sort`
+
+- `POST /draws` enters every direct reply & retweeter X shows
+- Draws used to include fewer entries
+- Entries are direct replies to the post. Replies to other replies no longer enter
+- A draw on a busy post takes about 1 minute. Keep the request open for 100 seconds
+- `GET /x/tweets/{id}/retweeters` returns more complete lists
+
+- `POST /draws` returns `424` when it can't collect every entry
+- It used to draw from the entries collected so far
+- Retry after `replies_incomplete` or `retweeters_incomplete`
+- `draw_too_large` means the post has more entries than 1 draw can hold. Contact support
+- Xquik saves & charges nothing for these draws
+
+- Bookmark folder reads on accounts without X Premium return `424 bookmark_folders_unavailable`
+- This covers `GET /x/bookmarks/folders` & `GET /x/bookmarks?folderId=...`
+- They used to return an empty list. The message says to upgrade on X or read all bookmarks
+- These answers cost nothing
+
+- Search Tweets returns `424 search_unavailable` at once for `filter:vine`, `filter:consumer_video`, `filter:pro_video`, `filter:news` & `retweets_of:`
+- X no longer searches these. `news=true` gets the same answer
+- The message says what to change, such as the term to remove
+- A query X refuses as a whole also gets `424 search_unavailable`. One example is a query over 512 characters
+- These answers cost nothing
+
+- Follower, following, verified follower, retweeter & user search pages take `enrichProfiles=true`
+- Each row then carries the full profile, with fields such as `accountBasedIn`
+- The `x-xquik-profile-enrichment` header counts the rows that carry it
+- Extractions of these rows take `enrichProfiles` & add the profile at `enrichmentData.profile`
+- The price per row stays the same
+
+- Complete-mode replies return 200 after covering a whole `sinceTime` or `untilTime` window
+- Replies outside the window no longer turn that answer into `424 replies_incomplete`
+- Complete-mode replies add `diagnostic.sourcesEnded`
+- `true` means the list is final. X hides the other replies
+- A `424 replies_incomplete` with `sourcesEnded: true` returns the same rows on retry
+- Its message says X hides the other replies instead of asking for a retry
+- `withinTime` now filters user Tweets, replies, media, likes & mentions
+- It also filters Tweet replies & quotes
+- Posts outside the window no longer come back or cost credits
+- Use a whole number & `s`, `m`, `h` or `d`, such as `90m` or `7d`
+- On these routes, other values return `400 invalid_input`
+
+- `GET /x/users/batch` returns the profiles it read when some IDs fail
+- IDs that failed to load come back in `failed_ids`. Retry them
+- Failed IDs cost nothing
+
+- Draws charge follow checks only for authors who pass your other filters
+
+- `POST /draws` accepts an optional `Idempotency-Key` header
+- An exact retry returns the original draw with `Idempotency-Replayed: true` & charges nothing
+- A retry while the first request runs returns `409 idempotency_in_progress`
+- Another body with the same key returns `409 idempotency_conflict`
+- A draw that fails its save or final charge stores nothing & charges nothing
+- The dashboard sends 1 key per draw, so a resubmit returns the saved draw
+
+- Webhook retries have no attempt limit. They continue until your endpoint returns `2xx`
+- `410 Gone` retries like any other failure
+- A failing endpoint gets 1 waiting delivery at a time. It gets one at least every 15 minutes
+- When that delivery succeeds, Xquik starts sending `pending` deliveries
+- Resume Webhook & `isActive: true` start sending waiting deliveries at once
+- Without them, a rejected delivery can wait up to 7 days after a fix
+- Only a paused or deleted webhook marks deliveries `exhausted`
+- Resume within 30 days of an event to receive its held delivery
+- Return `2xx` for deliveries you skip. A rejected one can delay new ones up to 15 minutes
+
+- Private reads use only your connected X account
+- They cover bookmarks, bookmark folders, notifications, home timeline, likes, likers & mutual followers
+- Without one, these routes return `424 account_required`
+- They return `503` while your connected X accounts are busy
+- `favoriters` & `user_likes` extraction jobs need a connected X account
+- Without one, the job fails with `errorMessage` set to `errorXAccountRequired`
+- Guest keys no longer cover likes, likers & mutual followers
+- Guest keys get `403 forbidden` on these 3 routes
+- Guest wallets now prepay 30 GET routes
+
+- Small conversation searches return more complete results by default
+
+- Reply Scraper 1.2.65 reports completion more accurately
+- Reply reads return more replies within your requested limit
+- Reply Scraper 1.2.64 recovers replies after a stall & keeps collected rows
+
+- Dated author searches return more complete results
+
+- Searches requiring protected authors return an access error before collecting results
+
+- Tweet Scraper 1.12.99 returns more Latest search results
+
+- Multi-author Tweet searches return more complete results
+- Pagination docs now explain cursor retries & first-page limits
+- Tweet search keeps exact ID boundaries across pages
+- `sinceId` excludes its ID. `maxId` includes its ID
+
+- MCP reports missing response-field reads without changing returned values
+- MCP search keeps response descriptions and date-only string types
+- Profile, list, and quote reads keep explicit reply filters
+- Image previews resize AVIF sources again
+- MCP search keeps shared response schemas in `spec.components.schemas`, reducing repeated contract data
+- Extractions from mixed tweet, reply, quote, thread, and profile-media sources retain attached public media
+
+</Update>

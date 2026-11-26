@@ -21,6 +21,9 @@ const docsConfigSchema = z.looseObject({
       .optional(),
   }),
   banner: z.looseObject({ content: z.string().optional() }).optional(),
+  navbar: z
+    .looseObject({ primary: z.looseObject({ href: z.string().optional() }).optional() })
+    .optional(),
   navigation: navigationNode,
   redirects: z.array(docsRedirect),
 });
@@ -112,6 +115,14 @@ describe("navigation default state", (): void => {
       format: "woff2",
     });
     expect(existsSync("fonts/outfit-latin.woff2")).toBe(true);
+  });
+
+  it("tags the navbar sign-up button with the docs ref, so docs sign-ups are counted", (): void => {
+    expect.assertions(1);
+
+    expect(docsConfig().navbar?.primary?.href).toBe(
+      "https://dashboard.xquik.com/en/signup?ref=docs-navbar",
+    );
   });
 
   it("keeps the sticky affiliation banner concise", (): void => {
@@ -251,9 +262,11 @@ describe("navigation default state", (): void => {
   });
 
   it("preserves precise SEO routes and their historical redirects", (): void => {
-    expect.assertions(4);
+    expect.assertions(5);
 
-    expect(readFileSync("index.mdx", "utf8")).toMatch(/^noindex: true$/m);
+    const home = readFileSync("index.mdx", "utf8");
+    expect(home).toMatch(/^canonical: "https:\/\/docs\.xquik\.com\/api-reference\/overview"$/mu);
+    expect(home).not.toMatch(/^noindex:/mu);
     expect(docsConfig().redirects).toContainEqual({
       source: "/alternatives",
       destination: "/twitter-api-alternatives",

@@ -1,7 +1,7 @@
 ---
-title: "A user's tweet timeline, X (Twitter) API docs"
+title: "X (Twitter) timeline of a user's tweets, API docs"
 sidebarTitle: "Get user timeline"
-description: "Read one Twitter or X profile's tweets with full text, replies, reposts, likes, quotes, views, attached media, and cursor pagination. 1 credit per tweet."
+description: "Read a user's X (Twitter) timeline by API with full text, replies, reposts, likes, quotes, views, attached media, and cursor pagination. 1 credit per tweet."
 endpoint: "GET /x/users/{id}/tweets"
 keywords:
   [
@@ -20,8 +20,6 @@ import PostFilterParams from "/snippets/post-filter-params.mdx";
 import LlmsDirective from "/snippets/llms-directive.mdx";
 import RetweetTimestamps from "/snippets/retweet-timestamps.mdx";
 import AutomaticCoveragePagination from "/snippets/automatic-coverage-pagination.mdx";
-import TweetReadApiLinks from "/snippets/x-tweet-read-api-links.mdx";
-import ConnectedAccountApiLinks from "/snippets/x-connected-account-api-links.mdx";
 import TweetAdvancedFilterParams from "/snippets/tweet-advanced-filter-params.mdx";
 import TweetResultFilterParams from "/snippets/tweet-result-filter-params.mdx";
 import TweetSearchOnlyFilterParams from "/snippets/tweet-search-only-filter-params.mdx";
@@ -37,7 +35,7 @@ Requested result counts are upper bounds for paid authenticated calls. Remaining
 
 <Callout icon="coins" color="#5c3327">
 
-**1 credit per tweet returned** · [All plans](https://xquik.com) from $0.00012/credit
+**1 credit per tweet returned** · [All plans](https://xquik.com/en) from $0.00012/credit
 
 </Callout>
 
@@ -187,104 +185,10 @@ for page_index in range(3):
 
 <section>
 
-## User timeline handoff
-
-`GET /x/users/{id}/tweets` returns one user's profile timeline. Use it when a
-CRM, queue worker, or warehouse job needs that timeline. This endpoint accepts a
-username or numeric user ID. It returns recent public posts from that profile.
-The examples above write JSON Lines rows. Rows hold the source profile, tweet
-ID, text, author ID, username, and display name. They also hold the follower
-count, verified state, profile image URL, and reply context. They also hold
-engagement counts, media URLs, and cursor fields. A worker can then resume from
-the last saved `next_cursor`.
-
-{"\n"}
-
-For high-volume timeline pulls, deduplicate tweets by `id`. Continue through empty pages while the cursor advances, filtered or not. Stop with a partial-result status when `next_cursor` is missing or repeats.
-
-</section>
-
-<section>
-
-## Build a profile timeline job
-
-Choose profile posts, reply context, media filters, or saved cursors.
-
-<CardGroup cols={2}>
-
-  <Card title="Original posts" icon="list">
-
-    Set `replies=exclude` to fetch the profile timeline without replies. Own-thread replies stay.
-
-  </Card>
-  <Card title="Replies with context" icon="message-square">
-
-    Set `includeReplies=true` and `includeParentTweet=true` when support,
-    community, or research rows need parent tweet context.
-
-  </Card>
-  <Card title="Media timeline" icon="image">
-
-    Use a `mediaType` filter for filtered timeline rows. Or switch to
-    [`User media`](/api-reference/x/user-media) when every row should contain
-    media.
-
-  </Card>
-  <Card title="Cursor checkpoint" icon="database">
-
-    Store `page_cursor`, `next_cursor`, and `has_next_page` before requesting
-    another page.
-
-  </Card>
-</CardGroup>
-
-```json
-{
-  "timeline_job_id": "profile-timeline-q2",
-  "timeline_route": "GET /api/v1/x/users/{id}/tweets",
-  "user_id_or_username": "elonmusk",
-  "include_replies": true,
-  "include_parent_tweet": true,
-  "cursor_param": "cursor",
-  "page_cursor": "",
-  "next_cursor": "DAADDAABCgABF...",
-  "has_next_page": true,
-  "media_handoff_route": "GET /api/v1/x/users/{id}/media"
-}
-```
-
-</section>
-
-<section>
-
-## Which timeline endpoint?
-
-- Use `GET /api/v1/x/users/{id}/tweets` for one user's profile timeline. It
-  returns original profile posts by default.
-- Add `includeReplies=true` when the sync needs replies. Add
-  `includeParentTweet=true` when reply rows need parent context.
-- Use `GET /api/v1/x/users/{id}/replies` when every page should include replies
-  by default.
-- Use `GET /api/v1/x/users/{id}/media` when every returned row should contain
-  profile media.
-- Use `GET /api/v1/x/users/{id}/highlights` for the posts on the Highlights tab.
-- Use `GET /api/v1/x/tweets/search` for keyword, operator, or advanced search.
-- Use `GET /api/v1/x/timeline` for the authenticated account's home timeline.
-
-</section>
-
-<section>
-
 ## Archive tweets from one profile
 
 Use this user-tweets route when the source profile is already known. It fits
 profile timeline exports, account research, and approved historical backfills.
-
-{"\n"}
-
-Keep the source username or user ID beside every tweet. Export tweet ID, text,
-creation time, author fields, engagement counts, and media URLs. Save the
-cursor and collection time for each page.
 
 {"\n"}
 
@@ -295,12 +199,6 @@ Follow these steps for a repeatable profile timeline.
 - Save each page before its next cursor.
 - Deduplicate resumed rows by tweet ID.
 - Stop when no next page remains.
-
-Use tweet search when the workflow starts with keywords, dates, or operators.
-Use user replies when replies need their own feed. Use user media when only
-photo, video, or animated GIF tweets matter.
-
-{"\n"}
 
 Row order does not identify a tweet. New tweets can change the first
 page. Use tweet IDs for updates and deduplication.
@@ -314,21 +212,6 @@ skip it. With replies included, it never opens the page.
 
 Rows stay in newest-first date order on every page. They include the
 account's reposts. Pass `retweets=exclude` to drop reposts.
-
-| Profile timeline column | Response source                | Archive rule                                                    |
-| ----------------------- | ------------------------------ | --------------------------------------------------------------- |
-| `source_x_user_id`      | Resolved profile ID            | Keep one stable source ID across username changes.              |
-| `source_username`       | Requested or resolved username | Keep the readable profile handle observed during collection.    |
-| `tweet_id`              | `tweets[].id`                  | Use as the stable tweet upsert and deduplication key.           |
-| `tweet_url`             | `tweets[].url`                 | Open the original X post during review.                         |
-| `text`                  | `tweets[].text`                | Keep the complete tweet or note-tweet text returned by the API. |
-| `created_at`            | `tweets[].createdAt`           | Order archived tweets by creation time, not cursor position.    |
-| `is_reply`              | `tweets[].isReply`             | Separate original profile posts from replies.                   |
-| `in_reply_to_id`        | `tweets[].inReplyToId`         | Join a reply to its immediate parent when returned.             |
-| `conversation_id`       | `tweets[].conversationId`      | Group tweets from one conversation thread.                      |
-| `media_urls`            | `tweets[].media[].mediaUrl`    | Keep image, video, or animated GIF URLs.                        |
-| `page_cursor`           | Request `cursor`               | Record which profile timeline page produced the row.            |
-| `collected_at`          | Integration timestamp          | Tell repeated profile timeline snapshots apart.                 |
 
 | Timeline requirement        | Route and parameters                       | Result shape                                                        |
 | --------------------------- | ------------------------------------------ | ------------------------------------------------------------------- |
@@ -529,9 +412,6 @@ The normalized v1 response contract can return 424 when the read service is unav
 **Related.** [User replies timeline](/api-reference/x/user-replies) · [User media](/api-reference/x/user-media) · [User highlights](/api-reference/x/user-highlights) · [User likes](/api-reference/x/user-likes) · [User mentions timeline](/api-reference/x/user-mentions)
 
 </Note>
-
-<TweetReadApiLinks />
-<ConnectedAccountApiLinks />
 
 </section>
 
