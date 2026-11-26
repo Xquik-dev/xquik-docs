@@ -6,6 +6,8 @@ import { join } from "node:path";
 import { DEFAULT_THRESHOLDS } from "afdocs";
 import { htmlToMarkdown } from "afdocs/helpers";
 
+import { downloadsFromAnotherSite } from "./lib/json-links.ts";
+
 const MINT = "mint@4.3.5";
 const PUBLISHED_ONLY_CHROME = 792;
 const HEADROOM = 5000;
@@ -53,7 +55,8 @@ function publishedSizes(pages: ReadonlyMap<string, string>): ReadonlyMap<string,
 function jsonLinkFaults(pages: ReadonlyMap<string, string>): string[] {
   return [...pages].flatMap(([page, html]) =>
     [...html.matchAll(JSON_ANCHOR)].flatMap(([anchor]) =>
-      JSON_LINK_ATTRIBUTES.every((attribute) => anchor.includes(attribute))
+      JSON_LINK_ATTRIBUTES.every((attribute) => anchor.includes(attribute)) &&
+      !downloadsFromAnotherSite(anchor)
         ? []
         : [`${page} ${anchor}`],
     ),
@@ -83,7 +86,7 @@ if (import.meta.main) {
     const faults = jsonLinkFaults(pages);
     if (faults.length > 0)
       throw new Error(
-        `${String(faults.length)} links to a JSON file lack the type or the attributes Mintlify gives a Markdown link, ${JSON_LINK_ATTRIBUTES.join(" ")}.\n${faults.join("\n")}`,
+        `${String(faults.length)} links to a JSON file lack the type or the attributes Mintlify gives a Markdown link, ${JSON_LINK_ATTRIBUTES.join(" ")}, or ask to download a file from another site, which browsers ignore.\n${faults.join("\n")}`,
       );
     process.stdout.write(report(publishedSizes(pages)));
   } catch (error) {

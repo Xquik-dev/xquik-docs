@@ -1,7 +1,7 @@
 const DAY_COUNT =
   /\b(\d+|one|two|three|four|five|six|seven|ten|fourteen|thirty)[ -](day|week)s?\b/giu;
 const DELIVERY_WORD = /\bdeliver(?:y|ies)\b|\bretr(?:y|ies|ied)\b|\bexhausted\b/iu;
-const OPENING_TAG = /^<[A-Z]\w*\b[^>]*>$/u;
+const ENDS_IN_OPENING_TAG = /(?:^|\n)\s*<[A-Z]\w*\b[^>]*>$/u;
 const EVENT_LIFETIME = /\bevents?\b[^.]*\b(?:stays?|expires?)\b/iu;
 const SENTENCE_END = /(?<=[.!?])\s+/u;
 const WORDS: Readonly<Record<string, number>> = {
@@ -42,7 +42,7 @@ function blocksOf(source: string, format: "mdx" | "yaml"): readonly string[] {
   });
   return blocks.reduce<string[]>((joined, block, index) => {
     const previous = blocks[index - 1]?.trim() ?? "";
-    if (OPENING_TAG.test(previous)) joined.push(`${joined.pop() ?? ""} ${block}`);
+    if (ENDS_IN_OPENING_TAG.test(previous)) joined.push(`${joined.pop() ?? ""} ${block}`);
     else joined.push(block);
     return joined;
   }, []);
