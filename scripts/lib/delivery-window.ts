@@ -23,9 +23,13 @@ interface WindowClaim {
   readonly sentence: string;
 }
 
+function isList(value: unknown): value is readonly unknown[] {
+  return Array.isArray(value);
+}
+
 function textsOf(node: unknown): readonly string[] {
   if (typeof node === "string") return [node];
-  if (Array.isArray(node)) return node.flatMap((item: unknown) => textsOf(item));
+  if (isList(node)) return node.flatMap((item) => textsOf(item));
   if (node !== null && typeof node === "object") return Object.values(node).flatMap(textsOf);
   return [];
 }
