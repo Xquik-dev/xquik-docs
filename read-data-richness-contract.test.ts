@@ -41,6 +41,7 @@ const TWEET_FIELDS = [
   "contentDisclosure",
   "communityId",
   "communityName",
+  "communityUnavailable",
   "conversationControl",
   "coordinates",
   "geo",
