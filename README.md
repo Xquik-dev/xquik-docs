@@ -14,13 +14,13 @@ Xquik is independent and not affiliated with X Corp.
 
 <!-- trust:win:start -->
 
-The Xquik REST API read 45 tweets per second on 2026-10-15. That cost $0.15 per 1,000. The fastest of 4 rival Actors read 12.5 per second. The cheapest cost $0.173 per 1,000. [Compare each run](https://xquik.com/benchmarks#benchmark-x-tweet-scraper). Most rival Actors charge before they filter or dedup. Xquik charges only for delivered, unique, filter-matching results.
+The Xquik REST API read 45 tweets per second on 2026-10-15. That cost $0.15 per 1,000. The fastest of 4 rival Actors read 12.5 per second. The cheapest cost $0.173 per 1,000. [Compare each run](https://xquik.com/en/benchmarks#benchmark-x-tweet-scraper). Most rival Actors charge before they filter or dedup. Xquik charges only for delivered, unique, filter-matching results.
 
 <!-- trust:win:end -->
 
 ## X (Twitter) API documentation quickstart
 
-Create an API key in the [Xquik dashboard](https://dashboard.xquik.com/en/account?tab=api-keys).
+Create an API key in the [Xquik dashboard](https://dashboard.xquik.com/en/api-keys).
 Then search tweets & posts with 1 request.
 
 ```bash
@@ -54,15 +54,15 @@ Next, read the [Quickstart](https://docs.xquik.com/x-api-quickstart), the [Webho
 
 ## Benchmarks & usage
 
-[![X (Twitter) API p99 server read time](https://img.shields.io/endpoint?url=https%3A%2F%2Fxquik.com%2Fbadges%2Frest-p99.json)](https://xquik.com/benchmarks#speed)
-[![Xquik X (Twitter) API accounts](https://img.shields.io/endpoint?url=https%3A%2F%2Fxquik.com%2Fbadges%2Faccounts.json)](https://xquik.com/benchmarks#accounts)
-[![X (Twitter) API package downloads](https://img.shields.io/endpoint?url=https%3A%2F%2Fxquik.com%2Fbadges%2Fdownloads.json)](https://xquik.com/benchmarks#downloads)
+[![X (Twitter) API p99 server read time](https://img.shields.io/endpoint?url=https%3A%2F%2Fxquik.com%2Fbadges%2Frest-p99.json)](https://xquik.com/en/benchmarks#speed)
+[![Xquik X (Twitter) API accounts](https://img.shields.io/endpoint?url=https%3A%2F%2Fxquik.com%2Fbadges%2Faccounts.json)](https://xquik.com/en/benchmarks#accounts)
+[![X (Twitter) API package downloads](https://img.shields.io/endpoint?url=https%3A%2F%2Fxquik.com%2Fbadges%2Fdownloads.json)](https://xquik.com/en/benchmarks#downloads)
 
-- 18.7 s p99 REST server read time over 7 days, failures included ([source](https://xquik.com/benchmarks#speed)) <!-- trust:rest-p99 18658 -->
-- 4,400+ accounts on xquik.com ([source](https://xquik.com/benchmarks#accounts)) <!-- trust:accounts 4450 -->
-- 67,000+ downloads of Xquik's X (Twitter) API packages across 6 registries ([source](https://xquik.com/benchmarks#downloads)) <!-- trust:downloads 67784 -->
+- 25.3 s p99 REST server read time over 7 days, failures included ([source](https://xquik.com/en/benchmarks#speed)) <!-- trust:rest-p99 25268 -->
+- 4,500+ accounts on xquik.com ([source](https://xquik.com/en/benchmarks#accounts)) <!-- trust:accounts 4560 -->
+- 70,000+ downloads of Xquik's X (Twitter) API packages across 6 registries ([source](https://xquik.com/en/benchmarks#downloads)) <!-- trust:downloads 70956 -->
 
-Checked on 2026-11-16. See each number with its date & source on [xquik.com/benchmarks](https://xquik.com/benchmarks) or as [JSON](https://xquik.com/trust.json).
+Checked on 2026-11-23. See each number with its date & source on [xquik.com/benchmarks](https://xquik.com/en/benchmarks) or as [JSON](https://xquik.com/trust.json).
 
 <!-- trust:end -->
 
@@ -82,7 +82,7 @@ SDK clients and X (Twitter) automation guides sit beside them.
 ## Start here
 
 - [Quickstart](https://docs.xquik.com/x-api-quickstart). Make the first authenticated API call.
-- [API reference](https://docs.xquik.com/api-reference). Browse every OpenAPI-backed operation.
+- [API reference](https://docs.xquik.com/api-reference/overview). Browse every OpenAPI-backed operation.
 - [Guest wallets](https://docs.xquik.com/guides/guest-wallets). Fund accountless paid reads through a confirmed hosted checkout.
 - [Direct MPP](https://docs.xquik.com/mpp/machine-payments-protocol). Pay per request on fixed-price GET operations.
 - [SDKs](https://docs.xquik.com/sdks). Install a typed client, the CLI or the Terraform provider.
@@ -202,7 +202,7 @@ These docs cover that API, not the official X API.
 - [Twitter CLI & X CLI](https://github.com/Xquik-dev/x-twitter-scraper-cli) for terminal workflows.
 - Twitter agent plugins for [OpenClaw](https://github.com/Xquik-dev/tweetclaw) & [Hermes Agent](https://github.com/Xquik-dev/hermes-tweet).
 - [Twitter advanced search operators](https://github.com/Xquik-dev/x-twitter-advanced-search) with tested examples.
-- [Xquik X API & Twitter scraper](https://xquik.com) and its [main dashboard](https://dashboard.xquik.com).
+- [Xquik X API & Twitter scraper](https://xquik.com/en) and its [main dashboard](https://dashboard.xquik.com/en).
 
 ## License
 
