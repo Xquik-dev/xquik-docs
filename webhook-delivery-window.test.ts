@@ -8,7 +8,10 @@ import { z } from "zod";
 
 import { productRootTest } from "./product-contract.test.helpers.ts";
 import type { WindowClaim } from "./scripts/lib/delivery-window.ts";
-import { deliveryWindowClaims, extendedEventRetentionClaims } from "./scripts/lib/delivery-window.ts";
+import {
+  deliveryWindowClaims,
+  extendedEventRetentionClaims,
+} from "./scripts/lib/delivery-window.ts";
 
 const DELIVERY_STATUS = "lib/webhooks/delivery-status.ts";
 const SPEC = "openapi.yaml";
