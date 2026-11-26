@@ -20,7 +20,7 @@ The Xquik REST API read 45 tweets per second on 2026-10-15. That cost $0.15 per 
 
 ## X (Twitter) API documentation quickstart
 
-Create an API key in the [Xquik dashboard](https://dashboard.xquik.com/en/account?tab=api-keys).
+Create an API key in the [Xquik dashboard](https://dashboard.xquik.com/en/api-keys).
 Then search tweets & posts with 1 request.
 
 ```bash
@@ -82,7 +82,7 @@ SDK clients and X (Twitter) automation guides sit beside them.
 ## Start here
 
 - [Quickstart](https://docs.xquik.com/x-api-quickstart). Make the first authenticated API call.
-- [API reference](https://docs.xquik.com/api-reference). Browse every OpenAPI-backed operation.
+- [API reference](https://docs.xquik.com/api-reference/overview). Browse every OpenAPI-backed operation.
 - [Guest wallets](https://docs.xquik.com/guides/guest-wallets). Fund accountless paid reads through a confirmed hosted checkout.
 - [Direct MPP](https://docs.xquik.com/mpp/machine-payments-protocol). Pay per request on fixed-price GET operations.
 - [SDKs](https://docs.xquik.com/sdks). Install a typed client, the CLI or the Terraform provider.
@@ -202,7 +202,7 @@ These docs cover that API, not the official X API.
 - [Twitter CLI & X CLI](https://github.com/Xquik-dev/x-twitter-scraper-cli) for terminal workflows.
 - Twitter agent plugins for [OpenClaw](https://github.com/Xquik-dev/tweetclaw) & [Hermes Agent](https://github.com/Xquik-dev/hermes-tweet).
 - [Twitter advanced search operators](https://github.com/Xquik-dev/x-twitter-advanced-search) with tested examples.
-- [Xquik X API & Twitter scraper](https://xquik.com/en) and its [main dashboard](https://dashboard.xquik.com).
+- [Xquik X API & Twitter scraper](https://xquik.com/en) and its [main dashboard](https://dashboard.xquik.com/en).
 
 ## License
 

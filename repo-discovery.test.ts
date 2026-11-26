@@ -84,7 +84,7 @@ const REQUIRED_README_SNIPPETS = [
   "SDK clients",
   "X (Twitter) automation",
   "[Quickstart](https://docs.xquik.com/x-api-quickstart)",
-  "[API reference](https://docs.xquik.com/api-reference)",
+  "[API reference](https://docs.xquik.com/api-reference/overview)",
   "Browse every OpenAPI-backed operation",
   "**REST API.** Operations span",
   "[SDKs](https://docs.xquik.com/sdks)",
@@ -158,7 +158,7 @@ const REQUIRED_QUICKSTART_SNIPPETS = [
   "Save the `secret` from the response in a secret manager.",
   "Do not print it in shared logs.",
   "https://dashboard.xquik.com/en/account?tab=subscription",
-  "https://dashboard.xquik.com/en/account?tab=api-keys",
+  "https://dashboard.xquik.com/en/api-keys",
 ] as const;
 
 const FORBIDDEN_QUICKSTART_SECRET_LOG_SNIPPETS = [
@@ -1793,7 +1793,7 @@ const REQUIRED_MCP_CONTRACT_SNIPPETS = [
   "They are not MCP Registry or experimental MCP Server Card fields.",
   "can also read `GET /.well-known/oauth-protected-resource/.well-known/mcp.json`",
   "`Authorization: Bearer {XQUIK_API_KEY}`",
-  "`https://dashboard.xquik.com/en/account?tab=api-keys`",
+  "`https://dashboard.xquik.com/en/api-keys`",
   "direct client examples",
   "only when the client documents secure request headers",
   "is an Xquik-specific fallback, not an OAuth token.",
@@ -2485,7 +2485,7 @@ const REQUIRED_GLOSSARY_CREDIT_CARRYOVER_SNIPPETS = [
 const REQUIRED_GLOSSARY_API_KEY_SNIPPETS = [
   '<Accordion title="API key">',
   "Authentication credential passed via the `x-api-key` header.",
-  "[API Keys dashboard](https://dashboard.xquik.com/en/account?tab=api-keys)",
+  "[API Keys dashboard](https://dashboard.xquik.com/en/api-keys)",
   "[API keys endpoint](/api-reference/api-keys/create)",
 ] as const;
 
