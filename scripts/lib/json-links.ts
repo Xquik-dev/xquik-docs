@@ -8,6 +8,7 @@ const JSON_MARKDOWN_LINK = new RegExp(
   "gmu",
 );
 const ANCHOR = /^<a\s/u;
+const TAG = /<[A-Za-z][\w.]*\s[^>]*>/gu;
 const SOURCE_ATTRIBUTES = [
   'type="application/json"',
   'className="link"',
@@ -28,11 +29,15 @@ function sourceJsonLinkFaults(source: string): readonly string[] {
       .map(([tag]) => tag)
       .filter(
         (tag) =>
-          !ANCHOR.test(tag) ||
-          !SOURCE_ATTRIBUTES.every((attribute) => tag.includes(attribute)) ||
-          downloadsFromAnotherSite(tag),
+          !ANCHOR.test(tag) || !SOURCE_ATTRIBUTES.every((attribute) => tag.includes(attribute)),
       ),
   ];
 }
 
-export { downloadsFromAnotherSite, sourceJsonLinkFaults };
+function sourceDownloadFaults(source: string): readonly string[] {
+  return [...source.matchAll(TAG)]
+    .map(([tag]) => tag)
+    .filter((tag) => downloadsFromAnotherSite(tag));
+}
+
+export { downloadsFromAnotherSite, sourceDownloadFaults, sourceJsonLinkFaults };
