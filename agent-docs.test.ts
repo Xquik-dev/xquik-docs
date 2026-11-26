@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+
 import { getChecksSorted, runChecks } from "afdocs";
 import { loadConfig } from "afdocs/helpers";
 import type { AgentDocsConfig, CheckResult, RunnerOptions } from "afdocs";
@@ -155,27 +157,7 @@ async function parityWarningIsMdxOnly(result: CheckResult): Promise<boolean> {
   return pages.length > 0 && checks.every(Boolean);
 }
 
-function htmlSizeWarningIsChromeOnly(
-  html: CheckResult,
-  markdown: CheckResult | undefined,
-): boolean {
-  const small = new Set(
-    asRecordArray(asRecord(markdown?.details)?.pageResults)
-      .filter((page) => page.status === "pass")
-      .map((page) => asString(page.url)),
-  );
-  const large = asRecordArray(asRecord(html.details)?.pageResults).filter(
-    (page) => page.status !== "pass",
-  );
-  return (
-    html.status === "warn" &&
-    large.length > 0 &&
-    large.every((page) => page.status === "warn" && small.has(asString(page.url)))
-  );
-}
-
 interface Accepted {
-  readonly chromeOnlySizeWarning: boolean;
   readonly mdxOnlyParityWarning: boolean;
 }
 
@@ -185,9 +167,6 @@ function acceptsResult(checkId: string, result: CheckResult, accepted: Accepted)
   }
   if (checkId === "markdown-content-parity") {
     return result.status === "warn" && accepted.mdxOnlyParityWarning;
-  }
-  if (checkId === "page-size-html") {
-    return accepted.chromeOnlySizeWarning;
   }
   if (checkId === "auth-alternative-access") {
     return result.status === "skip";
@@ -201,7 +180,7 @@ function acceptsResult(checkId: string, result: CheckResult, accepted: Accepted)
 describe("Agent-Friendly Documentation", (): void => {
   let configuredCheckIds = new Set<string>();
   let resultsByCheck: Map<string, CheckResult> | undefined;
-  let accepted: Accepted = { chromeOnlySizeWarning: false, mdxOnlyParityWarning: false };
+  let accepted: Accepted = { mdxOnlyParityWarning: false };
 
   beforeAll(async (): Promise<void> => {
     const config = await loadConfig();
@@ -213,11 +192,7 @@ describe("Agent-Friendly Documentation", (): void => {
       report.results.map((result): [string, CheckResult] => [result.id, result]),
     );
     const parity = resultsByCheck.get("markdown-content-parity");
-    const htmlSize = resultsByCheck.get("page-size-html");
     accepted = {
-      chromeOnlySizeWarning:
-        htmlSize !== undefined &&
-        htmlSizeWarningIsChromeOnly(htmlSize, resultsByCheck.get("page-size-markdown")),
       mdxOnlyParityWarning:
         parity?.status === "warn" ? await parityWarningIsMdxOnly(parity) : false,
     };
@@ -238,4 +213,43 @@ describe("Agent-Friendly Documentation", (): void => {
       expect(acceptsResult(check.id, result, accepted), message).toBe(true);
     });
   }
+});
+
+const DOCS_ORIGIN = "https://docs.xquik.com";
+
+function navigationPages(node: unknown): readonly string[] {
+  if (isList(node)) return node.flatMap(navigationPages);
+  if (!isRecord(node)) return [];
+  return Object.entries(node).flatMap(([key, value]): readonly string[] => {
+    if (key === "pages" && isList(value))
+      return value.flatMap((item): readonly string[] =>
+        typeof item === "string" ? [item] : navigationPages(item),
+      );
+    return navigationPages(value);
+  });
+}
+
+function pageUrl(page: string): string {
+  const path = page.replace(/(?:^|\/)index$/u, "");
+  return path === "" ? DOCS_ORIGIN : `${DOCS_ORIGIN}/${path}`;
+}
+
+describe("Built sitemap", (): void => {
+  it("lists every page in the docs.json navigation", async (): Promise<void> => {
+    expect.assertions(1);
+
+    const response = await fetch(`${DOCS_ORIGIN}/sitemap.xml`);
+    const sitemap = await response.text();
+    const listed = new Set(
+      [...sitemap.matchAll(/<loc>(?<url>[^<]+)<\/loc>/gu)].map((match): string =>
+        (match.groups?.["url"] ?? "").replace(/\/$/u, ""),
+      ),
+    );
+    const docs: unknown = JSON.parse(readFileSync("docs.json", "utf8"));
+    const missing = [...new Set(navigationPages(isRecord(docs) ? docs["navigation"] : undefined))]
+      .map(pageUrl)
+      .filter((url): boolean => !listed.has(url));
+
+    expect({ status: response.status, missing }).toStrictEqual({ status: 200, missing: [] });
+  });
 });

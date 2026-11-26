@@ -255,7 +255,7 @@ describe("SEO metadata", (): void => {
     ["sdks/php.mdx", "PHP X (Twitter) API SDK"],
     ["sdks/cli.mdx", "Twitter CLI & X CLI"],
     ["mcp/overview.mdx", "Twitter MCP server & X MCP server"],
-    ["guides/billing.mdx", "Twitter API pricing"],
+    ["guides/billing.mdx", "X (Twitter) API pricing"],
     ["x-api-quickstart.mdx", "Twitter API quickstart"],
   ])("opens the title of %s with the searched phrase", (file, phrase): void => {
     expect.assertions(1);

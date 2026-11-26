@@ -1,0 +1,127 @@
+---
+title: "List X account connect links, X (Twitter) API docs"
+sidebarTitle: List connect links
+description: "List your X (Twitter) connect links, newest first, with the API key that made each one. Find and revoke the links a leaked API key made. Free to read."
+endpoint: "GET /x/account-connection-links"
+keywords: ["x accounts", "connect link", "list connect links", "revoke connect links"]
+---
+
+import LlmsDirective from "/snippets/llms-directive.mdx";
+
+<LlmsDirective />
+
+`GET https://xquik.com/api/v1/x/account-connection-links`
+
+<Callout icon="circle-check" color="#16a34a">
+
+**Free.** This endpoint does not consume credits.
+
+</Callout>
+
+Lists your connect links, newest first. `apiKeyId` names the API key that made each one.
+It reads null when a dashboard session made the link.
+If a key leaks, revoke it first. Then list your links and [revoke](/api-reference/x-accounts/revoke-connection-link) any you didn't send.
+A link stops while its key is paused. It ends once that key is revoked, rotated, expired or deleted.
+
+<CodeGroup>
+
+```bash cURL
+curl "https://xquik.com/api/v1/x/account-connection-links?limit=50" \
+  -H "x-api-key: $XQUIK_API_KEY" | jq
+```
+
+</CodeGroup>
+
+<section>
+
+## Headers
+
+| Header      | Type     | Required       | Description                                                      |
+| ----------- | -------- | -------------- | ---------------------------------------------------------------- |
+| `x-api-key` | `string` | Or `Cookie`    | A Full access API key holding Connect X accounts.                |
+| `Cookie`    | `string` | Or `x-api-key` | Your signed-in dashboard session cookie, `__Host-xquik_session`. |
+
+</section>
+
+<section>
+
+## Query
+
+| Query parameter | Type      | Required | Description                                                     |
+| --------------- | --------- | -------- | --------------------------------------------------------------- |
+| `limit`         | `integer` | No       | Links per page, from 1 to 10,000. Default 200.                  |
+| `cursor`        | `string`  | No       | The previous page's `nextCursor`. The `after` alias also works. |
+
+</section>
+
+<section>
+
+## Response
+
+### 200 OK
+
+| Field        | Type      | Description                                                                                            |
+| ------------ | --------- | ------------------------------------------------------------------------------------------------------ |
+| `links`      | `array`   | Your links, each shaped like [Get connect link status](/api-reference/x-accounts/get-connection-link). |
+| `hasMore`    | `boolean` | Whether another page follows.                                                                          |
+| `nextCursor` | `string`  | Pass it as `cursor` for the next page. Present only when `hasMore` is true.                            |
+
+No link in the list holds its token, because Xquik stores only its hash.
+
+```json
+{
+  "links": [
+    {
+      "object": "x_account_connection_link",
+      "id": "xlink_AAAAAAAAAAAAAAAA",
+      "purpose": "connect",
+      "status": "revoked",
+      "reference": "crm-user-7",
+      "returnUrl": "https://app.example.com/connected",
+      "apiKeyId": "17",
+      "accountId": null,
+      "xUserId": null,
+      "xUsername": null,
+      "health": null,
+      "failure": null,
+      "createdAt": "2026-11-08T12:00:00.000Z",
+      "expiresAt": "2026-11-08T12:30:00.000Z",
+      "completedAt": null
+    }
+  ],
+  "hasMore": false
+}
+```
+
+### 400 Invalid input
+
+`cursor` isn't a `nextCursor` this endpoint gave you. Leave it out to start over.
+
+### 401 Unauthenticated
+
+`{ "error": "unauthenticated", "message": "Missing or invalid API key" }`
+
+### 403 Forbidden
+
+The key isn't Full access, or lacks Connect X accounts and gets `x_account_connect_permission_required`. OAuth tokens and MCP tools get `403 session_required`, since a link works like a password.
+
+### 429 Rate limited
+
+`{ "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 1 }`
+
+</section>
+
+{/* GENERATED RESPONSE EXAMPLES START */}
+
+<section>
+
+## Response examples
+
+- **400** `{ "error": "invalid_input", "message": "Invalid input. Check the request body." }`
+- **401** `{ "error": "unauthenticated", "message": "Authentication required. Provide a valid API key or bearer token." }`
+- **403** `{ "error": "api_key_paused", "message": "This API key is paused. Resume it at dashboard.xquik.com/api-keys to use it again." }`
+- **429** `{ "error": "rate_limit_exceeded", "message": "Too many requests. Try again later.", "retryAfter": 60 }`
+
+</section>
+
+{/* GENERATED RESPONSE EXAMPLES END */}

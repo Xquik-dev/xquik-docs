@@ -55,7 +55,7 @@ describe("automatic maximum coverage contract", (): void => {
     expect(source).toContain(
       "A cursor sent again within 10 minutes returns the same page at no charge.",
     );
-    expect(replies).toContain("Automatic pages accept `1` through `300`.");
+    expect(replies).toContain("Automatic pages accept `1` through `10000`.");
     expect(followers).toContain("Automatic pages accept `20` through `10000`.");
     expect(search).toContain("every returned page");
     expect(search).toContain("The start is inclusive. The end is exclusive.");

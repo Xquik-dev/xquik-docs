@@ -1,9 +1,224 @@
+diff --git a/Cargo.lock b/Cargo.lock
+index 2b4d91e..f8e76e1 100644
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -67,12 +67,6 @@ version = "1.0.104"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "330a5ed07fa54e4702c9d6c4174f74427fc0ef6e214bbd677ae50a5099946470"
+ 
+-[[package]]
+-name = "autocfg"
+-version = "1.5.1"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "f2032f911046de80f0a198e0901378627c33f59ea0ac00e363d481118bd70a53"
+-
+ [[package]]
+ name = "bitflags"
+ version = "2.13.1"
+@@ -104,15 +98,6 @@ version = "1.0.4"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "9330f8b2ff13f34540b44e946ef35111825727b38d33286ef986142615121801"
+ 
+-[[package]]
+-name = "chrono"
+-version = "0.4.45"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "1aa79e62e7697b8e29b513a68abacf485adcd1fe8284a4316c5ae868e6633327"
+-dependencies = [
+- "num-traits",
+-]
+-
+ [[package]]
+ name = "clap"
+ version = "4.6.5"
+@@ -164,7 +149,6 @@ name = "comply"
+ version = "0.1.1"
+ dependencies = [
+  "anyhow",
+- "chrono",
+  "clap",
+  "ignore",
+  "regex",
+@@ -366,15 +350,6 @@ version = "2.8.3"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "cf8baf1c55e62ffcace7a9f06f4bd9cd3f0c4beb022d3b367256b91b87513d98"
+ 
+-[[package]]
+-name = "num-traits"
+-version = "0.2.19"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "071dfc062690e90b734c0b2273ce72ad0ffa95f0c74596bc250dcfd960262841"
+-dependencies = [
+- "autocfg",
+-]
+-
+ [[package]]
+ name = "once_cell"
+ version = "1.21.4"
+@@ -442,9 +417,9 @@ checksum = "d6f6ff9a378485b298a5286656da665ba74413d36db0979633275d2e708145d4"
+ 
+ [[package]]
+ name = "rustix"
+-version = "1.1.4"
++version = "1.1.6"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "b6fe4565b9518b83ef4f91bb47ce29620ca828bd32cb7e408f0062e9930ba190"
++checksum = "e5e76742e5294153d4dde1207dbec5bdd81eef6fabdc0d2118babadabfd858aa"
+ dependencies = [
+  "bitflags",
+  "errno",
+diff --git a/Cargo.toml b/Cargo.toml
+index 9bf5d57..84ab3ac 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -39,13 +39,9 @@ categories = [
+ license = "MIT OR Apache-2.0"
+ repository = "https://github.com/elioseverojunior/comply"
+ 
+-[package.metadata.cargo-machete]
+-ignored = ["chrono"]
+-
+ [features]
+ cli = [
+     "dep:anyhow",
+-    "dep:chrono",
+     "dep:clap",
+ ]
+ default = ["cli"]
+@@ -64,15 +60,6 @@ required-features = ["cli"]
+ version = ">=1.0,<2.0.0"
+ optional = true
+ 
+-[dependencies.chrono]
+-version = ">=0.4,<1.0.0"
+-features = [
+-    "now",
+-    "std",
+-]
+-optional = true
+-default-features = false
+-
+ [dependencies.clap]
+ version = ">=4.6,<5.0.0"
+ features = ["derive"]
+@@ -110,14 +97,6 @@ version = ">=1.1,<2.0.0"
+ version = ">=3.27,<4.0.0"
+ features = []
+ 
+-[build-dependencies.chrono]
+-version = ">=0.4,<1.0.0"
+-features = [
+-    "now",
+-    "std",
+-]
+-default-features = false
+-
+ [lints.clippy]
+ cargo_common_metadata = "allow"
+ collapsible_if = "allow"
+diff --git a/build.rs b/build.rs
+index 51bc5f8..9d0e302 100644
+--- a/build.rs
++++ b/build.rs
+@@ -16,6 +16,10 @@
+ 
+ use std::process::Command;
+ 
++#[allow(dead_code, unreachable_pub)]
++#[path = "src/utc.rs"]
++mod utc;
++
+ fn main() {
+     println!("cargo:rustc-env=RUSTC_VERSION={}", rustc_version());
+     println!("cargo:rustc-env=BUILD_TIMESTAMP={}", build_timestamp());
+@@ -61,17 +65,11 @@ fn build_timestamp() -> String {
+         .and_then(|raw| raw.trim().parse::<i64>().ok());
+ 
+     epoch.map_or_else(
+-        || fmt(chrono::Utc::now()),
+-        |seconds| {
+-            chrono::DateTime::from_timestamp(seconds, 0).map_or_else(|| "unknown".to_owned(), fmt)
+-        },
++        || utc::UtcTime::now().stamp(),
++        |seconds| utc::UtcTime::from_unix(seconds).stamp(),
+     )
+ }
+ 
+-fn fmt(at: chrono::DateTime<chrono::Utc>) -> String {
+-    at.format("%Y-%m-%d %H:%M:%S UTC").to_string()
+-}
+-
+ /// The short commit hash, suffixed `-dirty` when the tree has local changes.
+ ///
+ /// Absent git, or in a source tarball with no repository, this yields `unknown`
+diff --git a/src/cli/commands/annotate.rs b/src/cli/commands/annotate.rs
+index 2cb0e5c..922bf77 100644
+--- a/src/cli/commands/annotate.rs
++++ b/src/cli/commands/annotate.rs
+@@ -5,7 +5,6 @@
+ use std::fs;
+ 
+ use anyhow::{Context, Result};
+-use chrono::Datelike;
+ use comply::file::{self, FileType};
+ use comply::header;
+ 
+@@ -73,7 +72,7 @@ pub(crate) fn run(cmd: &crate::Command) -> Result<()> {
+ 
+     let prefix: header::CopyrightPrefix = copyright_prefix.parse()?;
+ 
+-    let current_year = format!("{}", chrono::Utc::now().year());
++    let current_year = format!("{}", comply::utc::UtcTime::now().year);
+     let year = year.as_deref().unwrap_or(&current_year);
+ 
+     // Pre-compute final license/copyright for REUSE.toml update
+@@ -419,7 +418,7 @@ mod tests {
+     }
+ 
+     fn current_year() -> String {
+-        format!("{}", chrono::Utc::now().year())
++        format!("{}", comply::utc::UtcTime::now().year)
+     }
+ 
+     #[test]
+diff --git a/src/cli/commands/init.rs b/src/cli/commands/init.rs
+index ed50510..f3b85bb 100644
+--- a/src/cli/commands/init.rs
++++ b/src/cli/commands/init.rs
+@@ -3,7 +3,6 @@
+ // SPDX-License-Identifier: MIT OR Apache-2.0
+ 
+ use anyhow::{Context, Result};
+-use chrono::Datelike;
+ use std::fs;
+ use std::path::Path;
+ 
+@@ -40,7 +39,7 @@ pub(crate) fn run(cmd: &crate::Command) -> Result<()> {
+         ));
+     }
+ 
+-    let current_year = chrono::Utc::now().year().to_string();
++    let current_year = comply::utc::UtcTime::now().year.to_string();
+ 
+     // Build copyright from holders or default
+     let copyright = if holders.is_empty() {
+@@ -227,7 +226,7 @@ mod tests {
+         .unwrap();
+ 
+         let content = fs::read_to_string(tmp.path().join("REUSE.toml")).unwrap();
+-        let year = chrono::Utc::now().year();
++        let year = comply::utc::UtcTime::now().year;
+         assert!(
+             content.contains(&format!("{year} Ada Lovelace, {year} Grace Hopper")),
+             "each --holder should be year-prefixed and comma-joined, got:\n{content}"
+diff --git a/src/cli/commands/lint.rs b/src/cli/commands/lint.rs
+index f3311b7..29365a3 100644
 --- a/src/cli/commands/lint.rs
 +++ b/src/cli/commands/lint.rs
-@@ -16,27 +16,23 @@
+@@ -16,27 +16,23 @@ use comply::{header, license, spdx};
  use crate::cli::output::{self, Format};
  use crate::cli::shared::{load_config, resolve_root};
-
+ 
 -/// Decide one source file's status and the licensing that applies to it.
 +/// Decide one file's status and the licensing that applies to it.
  ///
@@ -18,7 +233,7 @@
      } else {
          fs::read_to_string(&entry.path)
      };
-
+ 
 -    let content = match content {
 -        Ok(content) => content,
 -        // `InvalidData` means the bytes are simply not text -- a binary the
@@ -34,12 +249,12 @@
 +        Err(e) if e.kind() == std::io::ErrorKind::InvalidData => (String::new(), true),
 +        Err(_) => return (Status::ReadError, Licensing::default()),
      };
-
+ 
      // A REUSE.toml annotation is an equally valid way to declare licensing,
-@@ -64,7 +60,14 @@
+@@ -64,7 +60,14 @@ fn lint_source(entry: &file::FileEntry, rel_path: &str, config: &Config) -> (Sta
          return (Status::InvalidExpression(expression), resolved);
      }
-
+ 
 -    let status = classify_licensing(&resolved);
 +    let status = match classify_licensing(&resolved) {
 +        Status::MissingCopyright | Status::MissingLicense
@@ -51,8 +266,8 @@
 +    };
      (status, resolved)
  }
-
-@@ -80,32 +83,8 @@
+ 
+@@ -80,32 +83,8 @@ pub(crate) fn lint_entry(
  ) -> ReportBuilder {
      match entry.file_type {
          FileType::Ignored => builder.add_skipped(rel_path),
@@ -87,21 +302,19 @@
              collect_identifiers(resolved.license.as_deref(), used_licenses);
              builder.add_result(rel_path, status, resolved.copyrights, resolved.license)
          }
-@@ -395,7 +374,7 @@
+@@ -395,7 +374,7 @@ mod tests {
              has_license_file: false,
          };
-
+ 
 -        let (status, licensing) = lint_source(&entry, "src/gone.rs", &Config::builder().build());
 +        let (status, licensing) = lint_licensing(&entry, "src/gone.rs", &Config::builder().build());
-
+ 
          assert_eq!(status, Status::ReadError);
          assert_eq!(licensing, Licensing::default());
-@@ -476,6 +455,39 @@
-             run(&lint_cmd(&root, false)).unwrap(),
-             "adding the .license companion makes it compliant"
+@@ -478,6 +457,39 @@ mod tests {
          );
-+    }
-+
+     }
+ 
 +    #[test]
 +    fn invalid_companion_expressions_fail_for_source_and_binary_files() {
 +        for name in ["src/a.rs", "src/a.png"] {
@@ -133,26 +346,204 @@
 +            license_files(&root, &["MIT.txt"]);
 +            assert!(run(&lint_cmd(&root, false)).unwrap());
 +        }
-     }
-
++    }
++
      #[test]
-@@ -773,7 +785,7 @@
+     fn json_output_reports_the_same_verdict() {
+         let (_tmp, root) = project();
+@@ -773,7 +785,7 @@ mod tests {
      }
-
+ 
      #[test]
 -    fn unreadable_content_falls_back_to_whether_a_companion_exists() {
 +    fn unreadable_companions_do_not_declare_licensing() {
          let (_tmp, root) = project();
          // Source extension, but bytes that are not valid UTF-8.
          fs::write(root.join("src/withcompanion.rs"), [0xff, 0xfe, 0x00]).unwrap();
-@@ -784,8 +796,8 @@
+@@ -784,8 +796,8 @@ mod tests {
          .unwrap();
-
+ 
          assert!(
 -            run(&lint_cmd(&root, false)).unwrap(),
 -            "a companion is taken as the declaration even when it cannot be parsed"
 +            !run(&lint_cmd(&root, false)).unwrap(),
 +            "an unreadable companion cannot declare copyright or licensing"
          );
-
+ 
          fs::write(root.join("src/bare.rs"), [0xff, 0xfe, 0x00]).unwrap();
+diff --git a/src/cli/commands/spdx.rs b/src/cli/commands/spdx.rs
+index 1167ed7..524fe68 100644
+--- a/src/cli/commands/spdx.rs
++++ b/src/cli/commands/spdx.rs
+@@ -18,7 +18,6 @@ use std::fs;
+ use std::path::Path;
+ 
+ use anyhow::{Context, Result};
+-use chrono::Utc;
+ use comply::config::Config;
+ use comply::hash;
+ use comply::report::{Report, Status};
+@@ -43,7 +42,7 @@ pub(crate) fn run(
+ 
+     // SPDX requires exactly `YYYY-MM-DDThh:mm:ssZ`; `to_rfc3339` would add
+     // fractional seconds and spell the zone `+00:00`, which validators reject.
+-    let created = Utc::now().format("%Y-%m-%dT%H:%M:%SZ").to_string();
++    let created = comply::utc::UtcTime::now().spdx();
+     let document = render(&report, &root, &config, creators, &created)?;
+ 
+     match output {
+@@ -251,7 +250,7 @@ mod tests {
+         let config = load_config(&root).unwrap();
+         let report = lint_project(&root, &config).unwrap();
+ 
+-        let created = Utc::now().format("%Y-%m-%dT%H:%M:%SZ").to_string();
++        let created = comply::utc::UtcTime::now().spdx();
+         let doc = render(
+             &report,
+             &root,
+diff --git a/src/lib.rs b/src/lib.rs
+index 2d5f9f8..8bd63e8 100644
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -19,4 +19,5 @@ pub mod report;
+ pub mod reuse_toml;
+ pub mod scope;
+ pub mod spdx;
++pub mod utc;
+ pub mod version;
+diff --git a/src/utc.rs b/src/utc.rs
+new file mode 100644
+index 0000000..62bf61d
+--- /dev/null
++++ b/src/utc.rs
+@@ -0,0 +1,130 @@
++// SPDX-FileCopyrightText: COMPLY contributors
++//
++// SPDX-License-Identifier: MIT OR Apache-2.0
++
++//! UTC calendar fields from Unix seconds, so comply needs no date crate.
++
++use std::time::{SystemTime, UNIX_EPOCH};
++
++const SECONDS_PER_DAY: i64 = 86_400;
++const SECONDS_PER_HOUR: i64 = 3_600;
++const SECONDS_PER_MINUTE: i64 = 60;
++const DAYS_PER_ERA: i64 = 146_097;
++const DAYS_FROM_YEAR_ZERO_MARCH: i64 = 719_468;
++
++/// A UTC instant split into proleptic Gregorian calendar fields.
++#[derive(Clone, Copy, Debug, PartialEq, Eq)]
++pub struct UtcTime {
++    /// The year, such as 2026.
++    pub year: i64,
++    /// The month, from 1 to 12.
++    pub month: i64,
++    /// The day of the month, from 1 to 31.
++    pub day: i64,
++    /// The hour, from 0 to 23.
++    pub hour: i64,
++    /// The minute, from 0 to 59.
++    pub minute: i64,
++    /// The second, from 0 to 59.
++    pub second: i64,
++}
++
++impl UtcTime {
++    /// The current time. A clock set before 1970 reads as the Unix epoch.
++    #[must_use]
++    pub fn now() -> Self {
++        let seconds = SystemTime::now()
++            .duration_since(UNIX_EPOCH)
++            .map_or(0, |elapsed| {
++                i64::try_from(elapsed.as_secs()).unwrap_or(i64::MAX)
++            });
++        Self::from_unix(seconds)
++    }
++
++    /// Splits Unix seconds into UTC fields with Howard Hinnant's
++    /// `civil_from_days`, which holds across the proleptic Gregorian calendar.
++    #[must_use]
++    pub fn from_unix(seconds: i64) -> Self {
++        let days = seconds.div_euclid(SECONDS_PER_DAY);
++        let of_day = seconds.rem_euclid(SECONDS_PER_DAY);
++        let shifted = days.saturating_add(DAYS_FROM_YEAR_ZERO_MARCH);
++        let era = shifted.div_euclid(DAYS_PER_ERA);
++        let day_of_era = shifted.rem_euclid(DAYS_PER_ERA);
++        let year_of_era =
++            (day_of_era - day_of_era / 1_460 + day_of_era / 36_524 - day_of_era / 146_096) / 365;
++        let day_of_year = day_of_era - (365 * year_of_era + year_of_era / 4 - year_of_era / 100);
++        let month_index = (5 * day_of_year + 2) / 153;
++        let month = if month_index < 10 {
++            month_index + 3
++        } else {
++            month_index - 9
++        };
++        Self {
++            year: year_of_era + era * 400 + i64::from(month <= 2),
++            month,
++            day: day_of_year - (153 * month_index + 2) / 5 + 1,
++            hour: of_day / SECONDS_PER_HOUR,
++            minute: of_day % SECONDS_PER_HOUR / SECONDS_PER_MINUTE,
++            second: of_day % SECONDS_PER_MINUTE,
++        }
++    }
++
++    /// `YYYY-MM-DDThh:mm:ssZ`, the only form SPDX accepts for `created`.
++    #[must_use]
++    pub fn spdx(self) -> String {
++        format!(
++            "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}Z",
++            self.year, self.month, self.day, self.hour, self.minute, self.second
++        )
++    }
++
++    /// `YYYY-MM-DD hh:mm:ss UTC`, the build provenance stamp.
++    #[must_use]
++    pub fn stamp(self) -> String {
++        format!(
++            "{:04}-{:02}-{:02} {:02}:{:02}:{:02} UTC",
++            self.year, self.month, self.day, self.hour, self.minute, self.second
++        )
++    }
++}
++
++#[cfg(test)]
++mod tests {
++    use super::UtcTime;
++
++    #[test]
++    fn splits_known_instants() {
++        for (seconds, spdx) in [
++            (0, "1970-01-01T00:00:00Z"),
++            (951_782_400, "2000-02-29T00:00:00Z"),
++            (951_868_799, "2000-02-29T23:59:59Z"),
++            (1_709_164_800, "2024-02-29T00:00:00Z"),
++            (1_785_866_486, "2026-08-04T18:01:26Z"),
++            (4_102_444_800, "2100-01-01T00:00:00Z"),
++            (-1, "1969-12-31T23:59:59Z"),
++            (-62_135_596_800, "0001-01-01T00:00:00Z"),
++        ] {
++            assert_eq!(UtcTime::from_unix(seconds).spdx(), spdx, "{seconds}");
++        }
++    }
++
++    #[test]
++    fn stamps_the_build_form() {
++        assert_eq!(UtcTime::from_unix(1_785_866_486).stamp(), "2026-08-04 18:01:26 UTC");
++    }
++
++    #[test]
++    fn walks_every_day_of_four_centuries_in_order() {
++        let mut previous = UtcTime::from_unix(-SECONDS_PER_DAY_TEST);
++        for day in 0..146_097_i64 {
++            let next = UtcTime::from_unix(day * SECONDS_PER_DAY_TEST);
++            let advanced = (next.year, next.month, next.day) > (previous.year, previous.month, previous.day);
++            assert!(advanced, "day {day} did not advance from {previous:?} to {next:?}");
++            let rolled_month = next.day == 1;
++            assert!(rolled_month || next.day == previous.day + 1, "day {day} skipped a date");
++            previous = next;
++        }
++    }
++
++    const SECONDS_PER_DAY_TEST: i64 = 86_400;
++}

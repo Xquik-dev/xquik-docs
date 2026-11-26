@@ -21,6 +21,9 @@ const docsConfigSchema = z.looseObject({
       .optional(),
   }),
   banner: z.looseObject({ content: z.string().optional() }).optional(),
+  navbar: z
+    .looseObject({ primary: z.looseObject({ href: z.string().optional() }).optional() })
+    .optional(),
   navigation: navigationNode,
   redirects: z.array(docsRedirect),
 });
@@ -43,13 +46,9 @@ const RETIRED_COMPARISON_PAGES = [
   "phantombuster",
   "pipedream",
   "post-bridge",
-  "postproxy",
   "postwise",
   "pulsar",
-  "scrapebadger",
-  "snitchfeed",
   "social-fetch",
-  "socialcrawl",
   "sprinklr",
   "talkwalker",
   "taplio",
@@ -57,7 +56,6 @@ const RETIRED_COMPARISON_PAGES = [
   "tweetstream",
   "twexapi",
   "twitterapis",
-  "xanguard",
   "zapier",
 ] as const;
 
@@ -77,6 +75,16 @@ const PRIORITY_API_ROUTES = [
   "/api-reference/x/retweeters",
 ] as const;
 
+const ACCOUNT_GROUPS = [
+  "API keys",
+  "Account",
+  "Activity",
+  "Credits",
+  "Guest wallets",
+  "Support",
+  "X accounts",
+] as const;
+
 function docsConfig(): DocsConfig {
   return docsConfigSchema.parse(JSON.parse(readFileSync("docs.json", "utf8")));
 }
@@ -91,11 +99,30 @@ function findTab(config: DocsConfig, tabName: string): NavigationNode {
   return tab;
 }
 
+function groupNames(tabName: string): string[] {
+  return (findTab(docsConfig(), tabName).groups ?? []).map(
+    (group): string => group.group ?? "(unnamed)",
+  );
+}
+
 describe("navigation default state", (): void => {
-  it("uses theme fonts without loading an external Google font", (): void => {
+  it("sets Outfit from a font file the docs serve, with no external font request", (): void => {
+    expect.assertions(2);
+
+    expect(docsConfig().fonts).toStrictEqual({
+      family: "Outfit",
+      source: "/fonts/outfit-latin.woff2",
+      format: "woff2",
+    });
+    expect(existsSync("fonts/outfit-latin.woff2")).toBe(true);
+  });
+
+  it("tags the navbar sign-up button with the docs ref, so docs sign-ups are counted", (): void => {
     expect.assertions(1);
 
-    expect(Object.hasOwn(docsConfig(), "fonts")).toBe(false);
+    expect(docsConfig().navbar?.primary?.href).toBe(
+      "https://dashboard.xquik.com/en/signup?ref=docs-navbar",
+    );
   });
 
   it("keeps the sticky affiliation banner concise", (): void => {
@@ -103,7 +130,7 @@ describe("navigation default state", (): void => {
 
     const bannerContent = docsConfig().banner?.content;
 
-    expect(bannerContent).toBe("**Xquik is not affiliated with or endorsed by X Corp.**");
+    expect(bannerContent).toBe("**Xquik is not affiliated with or endorsed by X\u00a0Corp.**");
     expect(bannerContent).not.toContain("trademarks of X Corp.");
   });
 
@@ -117,6 +144,39 @@ describe("navigation default state", (): void => {
 
     expect(apiTab.dropdowns).toBeUndefined();
     expect(emptyGroups).toStrictEqual([]);
+  });
+
+  it("lists what Xquik reads and writes before account management", (): void => {
+    expect.assertions(3);
+
+    const groups = groupNames("API reference");
+
+    expect(groups.slice(0, 2)).toStrictEqual(["Overview", "Tweets"]);
+    expect(groups.indexOf("X write")).toBeLessThan(groups.indexOf("Monitors"));
+    expect(groups.slice(-ACCOUNT_GROUPS.length).sort()).toStrictEqual([...ACCOUNT_GROUPS]);
+  });
+
+  it("opens the tweets group with search and its filters", (): void => {
+    expect.assertions(1);
+
+    const tweets = (findTab(docsConfig(), "API reference").groups ?? []).find(
+      (group): boolean => group.group === "Tweets",
+    );
+
+    expect((tweets?.pages ?? []).slice(0, 2)).toStrictEqual([
+      "api-reference/x/search-tweets",
+      "api-reference/x/tweet-filters",
+    ]);
+  });
+
+  it("opens the guides with getting started, the MCP server and webhooks", (): void => {
+    expect.assertions(1);
+
+    expect(groupNames("Guides").slice(0, 3)).toStrictEqual([
+      "Getting started",
+      "MCP server",
+      "Webhooks",
+    ]);
   });
 
   it("keeps MDX API snippets pointed at the public API origin", (): void => {
@@ -158,6 +218,15 @@ describe("navigation default state", (): void => {
     expect(selfRedirects).toStrictEqual([]);
   });
 
+  it("serves the root as the cached home page, not an uncached redirect", (): void => {
+    expect.assertions(2);
+
+    expect(
+      docsConfig().redirects.filter(({ source }): boolean => source.replace(/\/+$/, "") === ""),
+    ).toStrictEqual([]);
+    expect(existsSync("index.mdx")).toBe(true);
+  });
+
   it("redirects historical Bing crawl paths to canonical pages", (): void => {
     expect.assertions(2);
 
@@ -193,9 +262,11 @@ describe("navigation default state", (): void => {
   });
 
   it("preserves precise SEO routes and their historical redirects", (): void => {
-    expect.assertions(4);
+    expect.assertions(5);
 
-    expect(readFileSync("index.mdx", "utf8")).toMatch(/^noindex: true$/m);
+    const home = readFileSync("index.mdx", "utf8");
+    expect(home).toMatch(/^canonical: "https:\/\/docs\.xquik\.com\/api-reference\/overview"$/mu);
+    expect(home).not.toMatch(/^noindex:/mu);
     expect(docsConfig().redirects).toContainEqual({
       source: "/alternatives",
       destination: "/twitter-api-alternatives",

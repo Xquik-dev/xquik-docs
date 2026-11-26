@@ -153,6 +153,23 @@ info:
     again. A write names its charge in its body's `billing`.
 
 
+    ## Answer deadline
+
+
+    Send `X-Xquik-Page-Budget-Ms` with the milliseconds your client waits for an
+    answer. A read plans its answer for that time less 2 s, or for its usual
+    limit if that comes first. Search answers by then with the posts it holds,
+    plus `next_cursor` when X has more. Set it from your client's timeout, so a
+    slow read still sends its rows before your client gives up. The Xquik SDKs
+    send their timeout in seconds, in `X-Stainless-Timeout` or
+    `X-Stainless-Read-Timeout`, and the earliest of these deadlines counts. A
+    budget under 3000 leaves no time for a full read, so the read answers at
+    once, busy with `Retry-After` when it holds no rows yet. One over 82000
+    counts as 82000. A value that isn't a plain number of 0 or more is ignored,
+    and `X-Xquik-Page-Budget-Refused` names each such header with `not_a_number`
+    or `negative`.
+
+
     ## Deprecation
 
 
@@ -287,7 +304,7 @@ paths:
         Search public Xquik docs with NLWeb 0.55. This read-only route accepts
         flat and structured requests. Never send secrets or private data.
       tags: [Agent Discovery]
-      security: [{}]
+      security: []
       requestBody:
         description: Flat or structured NLWeb request.
         required: true
@@ -388,7 +405,7 @@ paths:
       summary: Search Xquik documentation with query parameters
       description: Send a flat NLWeb 0.55 request through query parameters.
       tags: [Agent Discovery]
-      security: [{}]
+      security: []
       parameters:
         - name: query
           in: query
@@ -434,7 +451,7 @@ paths:
         PKCE. The user signs in & approves access. Xquik then sends a code to
         your redirect_uri.
       tags: [Agent Discovery]
-      security: [{}]
+      security: []
       parameters:
         - name: response_type
           in: query
@@ -539,7 +556,7 @@ paths:
         Exchange an authorization code, a refresh token, an agent claim token or
         an identity assertion for an access token.
       tags: [Agent Discovery]
-      security: [{}]
+      security: []
       requestBody:
         description: Form fields of the grant. The body is at most 16 KiB.
         required: true
@@ -671,7 +688,7 @@ paths:
         Revoke an access token, a refresh token or a claimed agent's identity
         assertion. An unknown or already revoked token still returns 200.
       tags: [Agent Discovery]
-      security: [{}]
+      security: []
       requestBody:
         description: Form fields of the revocation. The body is at most 16 KiB.
         required: true
@@ -726,7 +743,7 @@ paths:
         Register an OAuth client by Dynamic Client Registration. Clients with a
         client metadata document can skip this step.
       tags: [Agent Discovery]
-      security: [{}]
+      security: []
       requestBody:
         description: Client metadata as JSON. The body is at most 16 KiB.
         required: true
@@ -800,7 +817,7 @@ paths:
         claim.verification_uri with claim.user_code. Poll the token endpoint
         with claim_token until then. Keep every token secret.
       tags: [Agent Discovery]
-      security: [{}]
+      security: []
       requestBody:
         description:
           The service_auth request as JSON. The body is at most 4 KiB.
@@ -890,7 +907,7 @@ paths:
         Get a new user code for a pending agent registration, such as after the
         last one expired. The claim token must still be valid.
       tags: [Agent Discovery]
-      security: [{}]
+      security: []
       requestBody:
         description: The claim token & the user's email as JSON.
         required: true
@@ -1281,6 +1298,15 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '403': { $ref: '#/components/responses/ReadKeyForbidden' }
+        '409':
+          description: Another Xquik account already linked this X username
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: 'x_username_taken'
+                message: 'Another Xquik account already linked this X username.'
         '429':
           $ref: '#/components/responses/RateLimitExceeded'
 
@@ -1547,9 +1573,9 @@ paths:
                   type: boolean
                   default: false
                   description:
-                    Lets this key connect, reconnect, retry & remove X accounts.
-                    Those calls carry X passwords. Full access doesn't include
-                    it. Missing saves false.
+                    Lets this key connect, reconnect, retry & remove X accounts,
+                    by sending X passwords or through hosted connect links. Full
+                    access doesn't include it. Missing saves false.
                   example: false
                 expiresInDays:
                   type: [integer, 'null']
@@ -1897,8 +1923,9 @@ paths:
                   type: boolean
                   description:
                     Turns on or off connecting, reconnecting, retrying &
-                    removing X accounts with this key. Only a dashboard session
-                    can change it. Missing keeps the current value.
+                    removing X accounts with this key, connect links included.
+                    Only a dashboard session can change it. Missing keeps the
+                    current value.
                   example: true
                 allowedIps:
                   type: array
@@ -3374,7 +3401,8 @@ paths:
         '409':
           description:
             X still hides the post, so the monitor stays paused & costs nothing.
-            `reason` is deleted, protected or author_suspended when X names it.
+            `reason` is deleted, protected, author_deactivated, author_suspended
+            or unavailable when X names it.
           content:
             application/json:
               schema:
@@ -4470,7 +4498,7 @@ paths:
     get:
       operationId: getExtraction
       description:
-        Returns status and up to 1,000 results. Follow nextCursor when hasMore
+        Returns status and up to 10,000 results. Follow nextCursor when hasMore
         is true.
       summary: Get extraction results
       tags: [Extractions]
@@ -4479,11 +4507,11 @@ paths:
         - $ref: '#/components/parameters/ExtractionId'
         - name: limit
           in: query
-          description: Maximum results per page (1-1000, default 100).
+          description: Maximum results per page (1-10000, default 100).
           schema:
             type: integer
             minimum: 1
-            maximum: 1000
+            maximum: 10000
             default: 100
         - $ref: '#/components/parameters/After'
         - name: wait
@@ -4567,7 +4595,8 @@ paths:
       description:
         Downloads completed extraction results in the requested format. JSON
         rows also keep each result's nested `enrichmentData`, as `GET
-        /extractions/{id}` returns it.
+        /extractions/{id}` returns it. A count X didn't send stays empty, never
+        0.
       summary: Export extraction results
       tags: [Extractions]
       security: [{ apiKey: [] }, { oauthBearer: [] }]
@@ -5588,7 +5617,8 @@ paths:
         - $ref: '#/components/parameters/WritePrefer'
       requestBody:
         required: true
-        description: Account and tweet content. Requires text, media, or both.
+        description:
+          Account and tweet content. Requires text, `media` or `media_ids`.
         content:
           application/json:
             schema:
@@ -5603,7 +5633,7 @@ paths:
                 text:
                   type: string
                   maxLength: 100000
-                  description: Tweet text (optional when media is provided)
+                  description: Tweet text. Optional with `media` or `media_ids`.
                   example: 'Just launched our new feature!'
                 reply_to_tweet_id:
                   type: string
@@ -5635,6 +5665,20 @@ paths:
                     video up to 100 MB. Media adds 2 credits per started MB
                     across all files.
                   example: ['https://example.com/video.mp4']
+                media_ids:
+                  type: array
+                  items:
+                    type: string
+                    maxLength: 19
+                    pattern: '^[0-9]{1,19}$'
+                  minItems: 1
+                  maxItems: 4
+                  description: >-
+                    Media IDs from `POST /x/media`, uploaded with this account.
+                    IDs last 24 hours. Send up to 4 image IDs or exactly 1 video
+                    ID. Send `media` or `media_ids`, not both. Media adds 2
+                    credits per started MB across all files.
+                  example: ['2104371968258560001']
             examples:
               post:
                 summary: 'A post with a video'
@@ -5643,6 +5687,13 @@ paths:
                   text: 'Just launched our new feature!'
                   media:
                     - 'https://example.com/video.mp4'
+              uploaded:
+                summary: 'A post with an uploaded video'
+                value:
+                  account: '@elonmusk'
+                  text: 'Just launched our new feature!'
+                  media_ids:
+                    - '2104371968258560001'
               reply:
                 summary: 'A reply'
                 value:
@@ -5748,6 +5799,9 @@ paths:
             currency: &tempo-usd '0x20c000000000000000000000b9537d11c60e8b50'
             intent: charge
             method: tempo
+        price: { amount: '0.000150', currency: USD, mode: fixed }
+        protocols:
+          - mpp: { currency: *tempo-usd, intent: charge, method: tempo }
       parameters:
         - name: woeid
           in: query
@@ -5797,7 +5851,7 @@ paths:
             Twitter yesterday at this hour, on every run of a schedule. The
             answer is the stored list nearest that time, with its own time in
             capturedAt. History starts 2026-10-13 02:20 UTC. A time over 24
-            hours from every stored list answers 400 at no charge.
+            hours from every stored list answers 404 at no charge.
           example: '2026-10-13T14:00:00Z'
         - $ref: '#/components/parameters/Fields'
         - $ref: '#/components/parameters/Omit'
@@ -5888,9 +5942,7 @@ paths:
                       to. Present only with at.
                     example: '2026-10-13T14:00:00.000Z'
         '400':
-          description:
-            Unknown country or location, a time that does not read, or no stored
-            list within 24 hours of at
+          description: Unknown country or location, or a time that does not read
           content:
             application/json:
               schema:
@@ -5903,25 +5955,33 @@ paths:
                     message:
                       'X lists no trends for that place. List places with GET
                       /x/trends/locations.'
-                beforeHistory:
-                  summary: The time is before the first stored list
-                  value:
-                    error: 'invalid_input'
-                    message:
-                      'Trends history for this place starts 2026-10-13 02:20
-                      UTC. Ask for a later time.'
-                noListNear:
-                  summary: No list is stored within 24 hours of the time
-                  value:
-                    error: 'invalid_input'
-                    message:
-                      'No trends are stored within 24 hours of that time. The
-                      nearest list is from 2026-10-14 10:05 UTC.'
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '402':
           $ref: '#/components/responses/PaymentRequired'
         '403': { $ref: '#/components/responses/ApiKeyPaused' }
+        '404':
+          description: No stored list within 24 hours of at
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                beforeHistory:
+                  summary: The time is before the first stored list
+                  value:
+                    error: 'not_found'
+                    message:
+                      'Xquik stores no trends for this place before 2026-10-13
+                      02:20 UTC. X serves no older lists, so ask for that time
+                      or later.'
+                noListNear:
+                  summary: No list is stored within 24 hours of the time
+                  value:
+                    error: 'not_found'
+                    message:
+                      'No trends are stored within 24 hours of that time. The
+                      nearest list is from 2026-10-14 10:05 UTC.'
         '502':
           $ref: '#/components/responses/XApiError'
         '503':
@@ -5994,7 +6054,8 @@ paths:
             also takes a span back from now, as a number & s, m, h or d, so
             from=7d reads the last 7 days. Defaults to 24 hours before to.
             History starts 2026-10-13 02:20 UTC, and a range that begins earlier
-            returns the stored part. Alias sinceTime.
+            returns the stored part. A range that ends before the first stored
+            list answers 404 at no charge. Alias sinceTime.
           example: '2026-10-13'
         - name: to
           in: query
@@ -6183,9 +6244,8 @@ paths:
                 next_cursor: ''
         '400':
           description:
-            Unknown country or location, a time or step that does not read, a
-            range that ends before the first stored list, or a value past its
-            maxLength
+            Unknown country or location, a time or step that does not read, or a
+            value past its maxLength
           content:
             application/json:
               schema:
@@ -6193,13 +6253,24 @@ paths:
               example:
                 error: 'invalid_input'
                 message:
-                  'Trends history for this place starts 2026-10-13 02:20 UTC.
-                  Ask for a later time.'
+                  'X lists no trends for that place. List places with GET
+                  /x/trends/locations.'
         '401':
           $ref: '#/components/responses/AnonymousGuestAuthenticationRequired'
         '402':
           $ref: '#/components/responses/PaymentRequired'
         '403': { $ref: '#/components/responses/ApiKeyPaused' }
+        '404':
+          description: A range that ends before the first stored list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: 'not_found'
+                message:
+                  'Xquik stores no trends for this place before 2026-10-13 02:20
+                  UTC. X serves no older lists, so ask for that time or later.'
         '502':
           $ref: '#/components/responses/XApiError'
         '503':
@@ -6661,17 +6732,26 @@ paths:
             Query, Tweet ID, or URL. Alias query. Optional when fromUser,
             keywords or another field forms the search. Without either, it
             answers 400 missing_query. Hyphens negate terms. Use exactPhrase for
-            literals. `include:nativeretweets` keeps the reposts of the account
-            named in `from:`. X lists a repost only under the account that
-            reposted it, so a mention search finds almost none. `from:` &
-            `-from:` take a handle or a user ID, also in an OR group. Valid
-            bounds apply per page. `since:` & `until:` dates are UTC days,
-            written YYYY-MM-DD. 25/12/2026 & 12/25/2026 also work. 04/01/2026
-            fits both orders & answers 424 with the form to write. `since_time:`
-            & `until_time:` take Unix seconds or an ISO 8601 time. `list:` takes
-            a public List's ID. A private List answers 404 list_not_found. Keep
-            q to 512 characters. A longer one can answer 424 before any read, at
-            no charge.
+            literals. A `from:` search lists the account's reposts, as X search
+            does, and `-filter:nativeretweets` leaves them out. X lists a repost
+            only under the account that reposted it, so a mention search finds
+            almost none. `from:` & `-from:` take a handle or a user ID, also in
+            an OR group. Valid bounds apply per page. `since:` & `until:` dates
+            are UTC days, written YYYY-MM-DD, & `until:` excludes its own day,
+            so `until:2026-11-21` ends at 2026-11-21T00:00Z. 25/12/2026 &
+            12/25/2026 also work. 04/01/2026 fits both orders & answers 424 with
+            the form to write. On x.com, date search may show a different
+            window, depending on your location. `since_time:` & `until_time:`
+            take Unix seconds or an ISO 8601 time & give an exact window. On
+            x.com they take only Unix seconds & give the same window. `list:`
+            takes a public List's ID. A private List answers 404 list_not_found.
+            `within:`, `geocode:` & `source:` aren't supported & answer 424
+            before any read, at no charge. Use `near:` alone in place of
+            `within:`. X searches up to 512 characters, & the time window takes
+            44 of them. A longer search runs as up to 23 searches that each fit,
+            split along its OR groups. Otherwise it runs as 1 search without the
+            window when it fits in 512, or answers 424 before any read, at no
+            charge.
         - name: queryType
           in: query
           required: false
@@ -6693,13 +6773,13 @@ paths:
         - name: limit
           in: query
           required: false
-          schema: &bounded-result-limit
+          schema:
             type: integer
             minimum: 1
-            maximum: 10000
           description: >
             Most unique matches to return after filtering. Default 20. Explicit
-            coverage defaults to 2000. At the deadline it returns kept rows &
+            coverage defaults to 2000. A response holds up to 10,000 rows, so
+            follow next_cursor for more. At the deadline it returns kept rows &
             diagnostics. Xquik bills only returned rows. A low credit balance
             can cut results. A balance that covers 0 rows returns 402. Its
             aliases are pageSize, count, max_results, maxItems, max_items &
@@ -6880,12 +6960,16 @@ paths:
             maxLength: 16
             example: en
         - $ref: '#/components/parameters/CollectionCursor'
-        - $ref: '#/components/parameters/ResultPageSize'
+        - $ref: '#/components/parameters/StandardPageSize'
         - $ref: '#/components/parameters/Fields'
         - $ref: '#/components/parameters/Omit'
+        - $ref: '#/components/parameters/PageBudgetMs'
       responses:
         '200':
           description: Top tweets
+          headers:
+            X-Xquik-Page-Budget-Refused:
+              $ref: '#/components/headers/PageBudgetRefused'
           content: &paginated-tweets-content
             application/json:
               schema:
@@ -6923,6 +7007,9 @@ paths:
             currency: *tempo-usd
             intent: charge
             method: tempo
+        price: { amount: '0.000750', currency: USD, mode: fixed }
+        protocols:
+          - mpp: { currency: *tempo-usd, intent: charge, method: tempo }
       parameters:
         - name: tweetId
           in: path
@@ -7218,6 +7305,9 @@ paths:
             currency: *tempo-usd
             intent: charge
             method: tempo
+        price: { amount: '0.000150', currency: USD, mode: fixed }
+        protocols:
+          - mpp: { currency: *tempo-usd, intent: charge, method: tempo }
       parameters:
         - $ref: '#/components/parameters/TweetPathId'
         - $ref: '#/components/parameters/Fields'
@@ -7463,6 +7553,8 @@ paths:
                 processed_count: 2
                 returned_count: 1
                 unavailable_ids: ['1234567890']
+                not_found_ids: ['1234567890']
+                suspended_ids: []
                 failed_ids: []
                 unprocessed_ids: []
         '400':
@@ -7541,6 +7633,9 @@ paths:
                 has_next_page: false
                 next_cursor: ''
                 unavailable_ids: ['1234567890']
+                not_found_ids: ['1234567890']
+                suspended_ids: []
+                protected_ids: []
                 unprocessed_ids: []
         '400':
           $ref: '#/components/responses/InvalidInput'
@@ -7575,7 +7670,7 @@ paths:
             maxLength: 4096
           description: User search query. Xquik's cap is 4,096 characters.
         - $ref: '#/components/parameters/CollectionCursor'
-        - $ref: '#/components/parameters/ResultPageSize'
+        - $ref: '#/components/parameters/StandardPageSize'
         - $ref: '#/components/parameters/UserMinFollowers'
         - $ref: '#/components/parameters/UserMaxFollowers'
         - $ref: '#/components/parameters/UserMinFollowing'
@@ -7666,13 +7761,13 @@ paths:
           schema:
             type: integer
             minimum: 1
-            maximum: 100
             default: 20
           description: >
-            Most suggestions to return, from 1 to 100. Default 20. Accounts fill
-            it first, then topics, hashtags & cashtags. A low credit balance can
-            return fewer. Its aliases are pageSize, count, max_results,
-            maxItems, max_items & per_page.
+            Most suggestions to return. Default 20. X answers with every
+            suggestion it has in 1 read. Accounts fill it first, then topics,
+            hashtags & cashtags. A low credit balance can return fewer. Its
+            aliases are pageSize, count, max_results, maxItems, max_items &
+            per_page.
         - $ref: '#/components/parameters/Fields'
         - $ref: '#/components/parameters/Omit'
       responses:
@@ -7735,6 +7830,9 @@ paths:
             currency: *tempo-usd
             intent: charge
             method: tempo
+        price: { amount: '0.000150', currency: USD, mode: fixed }
+        protocols:
+          - mpp: { currency: *tempo-usd, intent: charge, method: tempo }
       parameters:
         - $ref: '#/components/parameters/UserPathId'
         - $ref: '#/components/parameters/Fields'
@@ -7921,6 +8019,9 @@ paths:
             currency: *tempo-usd
             intent: charge
             method: tempo
+        price: { amount: '0.000150', currency: USD, mode: fixed }
+        protocols:
+          - mpp: { currency: *tempo-usd, intent: charge, method: tempo }
       parameters:
         - name: source
           in: query
@@ -7988,7 +8089,8 @@ paths:
           $ref: '#/components/responses/Unauthenticated'
         '402':
           $ref: '#/components/responses/PaymentRequired'
-        '403': { $ref: '#/components/responses/ApiKeyPaused' }
+        '403':
+          $ref: '#/components/responses/ProtectedFollowCheck'
         '502':
           $ref: '#/components/responses/XApiError'
         '503':
@@ -8148,7 +8250,8 @@ paths:
 
         Saving the same media again is free. Removed media isn't billed, & a
         single-post download with all its media removed returns
-        `media_unavailable`.
+        `media_unavailable`. Bulk media downloads list each post they left out &
+        why.
       summary: Download images and videos from tweets
       tags:
         - Media
@@ -8189,7 +8292,8 @@ paths:
                     Tweet URLs or IDs. An item that names no post gets 400
                     `invalid_tweet_id`, which says which item. Posts Xquik had
                     no time to read come back in `unprocessedTweetIds`, with no
-                    charge. Send them again.
+                    charge. Send them again. The answer also names posts with no
+                    media & posts Xquik couldn't read.
                   example: ['1234567890', '1234567891']
                 imageShows:
                   type: string
@@ -8235,9 +8339,10 @@ paths:
             'Media download result. A single download returns tweetId,
             galleryUrl, cacheHit & the saved files in items. A bulk download
             returns galleryUrl, totalTweets & totalMedia, plus
-            unprocessedTweetIds when time ran out first. With imageShows, the
-            answer adds imageFilter, & when no photo shows it, items is empty or
-            totalTweets is 0 with no galleryUrl.'
+            unprocessedTweetIds when time ran out first, noMediaTweetIds &
+            failedTweetIds. With imageShows, the answer adds imageFilter, & when
+            no photo shows it, items is empty or totalTweets is 0 with no
+            galleryUrl.'
           content:
             application/json:
               schema:
@@ -8388,6 +8493,19 @@ paths:
                     items:
                       type: string
                     example: ['1234567892']
+                  noMediaTweetIds:
+                    type: array
+                    description: Posts with no media to save, at no charge.
+                    items:
+                      type: string
+                    example: ['1234567893']
+                  failedTweetIds:
+                    type: array
+                    description:
+                      Posts Xquik couldn't read, at no charge. Send them again.
+                    items:
+                      type: string
+                    example: ['1234567894']
               example:
                 tweetId: '1234567890'
                 galleryUrl: 'https://xquik.com/gallery/abc123'
@@ -8917,19 +9035,61 @@ paths:
           $ref: '#/components/responses/ConnectServiceUnavailable'
 
   /x/account-connection-links:
-    post:
-      operationId: createXAccountConnectionLink
+    get:
+      operationId: listXAccountConnectionLinks
       x-mcp-exclusion-reason:
         &x-connect-link-token A connect link works like a password until it's
         used, so it stays out of model context.
+      summary: List X account connect links
+      description: >-
+        Lists your connect links, newest first, with `apiKeyId` naming the API
+        key that made each one, or null for a dashboard session. Use it to find
+        and revoke the links a leaked key made. It never holds a token. Takes a
+        Full access API key holding `connectsXAccounts`, or a dashboard session.
+      tags: [X Accounts]
+      security: [{ apiKey: [] }, { cookieSession: [] }]
+      parameters: *list-limit-after-parameters
+      responses:
+        '200':
+          description: Your connect links, newest first.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [links, hasMore]
+                properties:
+                  links:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/XAccountConnectionLink'
+                    example: []
+                  hasMore: *boolean-example-false
+                  nextCursor: *short-id-example-schema
+              example:
+                links: []
+                hasMore: false
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/ConnectLinkForbidden'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+    post:
+      operationId: createXAccountConnectionLink
+      x-mcp-exclusion-reason: *x-connect-link-token
       summary: Create X account connect link
       description: >-
         Creates a link to a page Xquik hosts, where a person connects an X
         account with no Xquik signup. Your backend never receives their password
         or 2FA secret, and the account belongs to you. Send `accountId` to
         reconnect 1 of your accounts instead. Connecting is free. Takes a Full
-        access API key or a dashboard session. The link works for 30 minutes, &
-        the response is the only place its token appears.
+        access API key holding `connectsXAccounts`, or a dashboard session. The
+        link works for 30 minutes, & the response is the only place its token
+        appears. A link a key made stops while that key is paused or loses
+        `connectsXAccounts`, & for good once it's revoked, rotated, expired or
+        deleted.
       tags: [X Accounts]
       security: [{ apiKey: [] }, { cookieSession: [] }]
       requestBody:
@@ -8999,6 +9159,7 @@ paths:
                 status: 'pending'
                 reference: 'crm-user-7'
                 returnUrl: 'https://app.example.com/connected'
+                apiKeyId: '17'
                 accountId: null
                 xUserId: null
                 xUsername: null
@@ -9013,7 +9174,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '403':
-          $ref: '#/components/responses/ReadKeyForbidden'
+          $ref: '#/components/responses/ConnectLinkForbidden'
         '404':
           $ref: '#/components/responses/ReauthAccountNotFound'
         '429':
@@ -9027,7 +9188,8 @@ paths:
       description: >-
         Reads what happened on a link. `status` reads `connected` once the
         person finishes, with `xUserId`, `xUsername` & `health`. It never holds
-        the token. Takes a Full access API key or a dashboard session.
+        the token. Takes a Full access API key holding `connectsXAccounts`, or a
+        dashboard session.
       tags: [X Accounts]
       security: [{ apiKey: [] }, { cookieSession: [] }]
       parameters:
@@ -9048,7 +9210,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '403':
-          $ref: '#/components/responses/ReadKeyForbidden'
+          $ref: '#/components/responses/ConnectLinkForbidden'
         '404':
           $ref: '#/components/responses/NotFound'
         '429':
@@ -9059,7 +9221,8 @@ paths:
       summary: Revoke X account connect link
       description: >-
         Stops a link working. An account it already connected stays connected.
-        Takes a Full access API key or a dashboard session.
+        Takes a Full access API key holding `connectsXAccounts`, or a dashboard
+        session.
       tags: [X Accounts]
       security: [{ apiKey: [] }, { cookieSession: [] }]
       parameters:
@@ -9072,7 +9235,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '403':
-          $ref: '#/components/responses/ReadKeyForbidden'
+          $ref: '#/components/responses/ConnectLinkForbidden'
         '404':
           $ref: '#/components/responses/NotFound'
         '429':
@@ -9398,11 +9561,12 @@ paths:
                 accountIds:
                   type: array
                   minItems: 1
-                  maxItems: 1000
+                  maxItems: 524288
                   example: ['1', '2']
                   description:
-                    IDs of the X accounts to retry. Accounts that failed for
-                    another reason, or belong to someone else, stay as they are.
+                    IDs of the X accounts to retry, as many as the account
+                    holds. Accounts that failed for another reason, or belong to
+                    someone else, stay as they are.
                   items:
                     oneOf:
                       - type: string
@@ -9456,6 +9620,9 @@ paths:
             currency: *tempo-usd
             intent: charge
             method: tempo
+        price: { amount: '0.000150', currency: USD, mode: fixed }
+        protocols:
+          - mpp: { currency: *tempo-usd, intent: charge, method: tempo }
       parameters:
         - name: woeid
           in: query
@@ -9947,7 +10114,7 @@ paths:
         Xquik account. Idempotent replays return the same key. Stripe creates a
         paid invoice for each paid checkout.
       tags: [Guest Wallets]
-      security: [{}]
+      security: []
       parameters: &guest-idempotency-parameters
         - $ref: '#/components/parameters/GuestIdempotencyKey'
       requestBody:
@@ -10288,8 +10455,13 @@ paths:
                   example: EUR
                 dollars:
                   type: integer
-                  description: Amount to top up in US dollars. Minimum 10.
+                  description:
+                    Amount to top up in US dollars. Minimum 10. Maximum
+                    2147483647. A `currency` whose charge would pass Stripe
+                    Checkout's 12-digit limit gets a lower maximum, which the
+                    400 response names.
                   minimum: 10
+                  maximum: 2147483647
                   example: 10
                 locale:
                   type: string
@@ -10994,7 +11166,7 @@ paths:
       security: [{ apiKey: [] }, { oauthBearer: [] }]
       parameters: &tweet-row-page-parameters
         - $ref: '#/components/parameters/CollectionCursor'
-        - $ref: '#/components/parameters/ResultPageSize'
+        - $ref: '#/components/parameters/StandardPageSize'
         - $ref: '#/components/parameters/FromUser'
         - $ref: '#/components/parameters/ToUser'
         - $ref: '#/components/parameters/Mentioning'
@@ -11067,7 +11239,7 @@ paths:
       security: [{ apiKey: [] }, { oauthBearer: [] }, {}]
       parameters:
         - $ref: '#/components/parameters/CollectionCursor'
-        - $ref: '#/components/parameters/ResultPageSize'
+        - $ref: '#/components/parameters/StandardPageSize'
         - $ref: '#/components/parameters/FromUser'
         - $ref: '#/components/parameters/ToUser'
         - $ref: '#/components/parameters/Mentioning'
@@ -11216,7 +11388,7 @@ paths:
       security: [{ apiKey: [] }, { oauthBearer: [] }, {}]
       parameters: &user-lists-parameters
         - $ref: '#/components/parameters/CollectionCursor'
-        - $ref: '#/components/parameters/ResultPageSize'
+        - $ref: '#/components/parameters/StandardPageSize'
         - $ref: '#/components/parameters/Fields'
         - $ref: '#/components/parameters/Omit'
       responses:
@@ -11453,6 +11625,7 @@ paths:
           description:
             Pagination cursor for bookmarks. Also read as next_cursor,
             next_token, pagination_token or continuation_token.
+        - $ref: '#/components/parameters/StandardPageSize'
       responses:
         '200':
           description: List of bookmarked tweets
@@ -11632,6 +11805,7 @@ paths:
             Comma-separated tweet IDs to exclude from results. Xquik ignores
             empty entries. A longer URL fails at the edge before Xquik reads it.
         - $ref: '#/components/parameters/CollectionCursor'
+        - $ref: '#/components/parameters/StandardPageSize'
       responses:
         '200':
           description: List of timeline tweets
@@ -11849,6 +12023,9 @@ paths:
             currency: *tempo-usd
             intent: charge
             method: tempo
+        price: { amount: '0.000150', currency: USD, mode: fixed }
+        protocols:
+          - mpp: { currency: *tempo-usd, intent: charge, method: tempo }
       parameters:
         - $ref: '#/components/parameters/CommunityPathId'
         - $ref: '#/components/parameters/Fields'
@@ -11910,6 +12087,9 @@ paths:
             currency: *tempo-usd
             intent: charge
             method: tempo
+        price: { amount: '0.000150', currency: USD, mode: fixed }
+        protocols:
+          - mpp: { currency: *tempo-usd, intent: charge, method: tempo }
       parameters:
         - $ref: '#/components/parameters/CommunityPathId'
         - $ref: '#/components/parameters/Fields'
@@ -11969,7 +12149,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/CommunityPathId'
         - $ref: '#/components/parameters/CollectionCursor'
-        - $ref: '#/components/parameters/LegacyUserPageSize'
+        - $ref: '#/components/parameters/StandardUserPageSize'
         - $ref: '#/components/parameters/UserMinFollowers'
         - $ref: '#/components/parameters/UserMaxFollowers'
         - $ref: '#/components/parameters/UserMinFollowing'
@@ -12148,7 +12328,7 @@ paths:
       security: [{ apiKey: [] }, { oauthBearer: [] }, {}]
       parameters:
         - $ref: '#/components/parameters/CollectionCursor'
-        - $ref: '#/components/parameters/ResultPageSize'
+        - $ref: '#/components/parameters/StandardPageSize'
         - $ref: '#/components/parameters/CommunityPostOrder'
         - $ref: '#/components/parameters/FromUser'
         - $ref: '#/components/parameters/ToUser'
@@ -12259,7 +12439,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/CommunityFindQuery'
         - $ref: '#/components/parameters/CollectionCursor'
-        - $ref: '#/components/parameters/ResultPageSize'
+        - $ref: '#/components/parameters/StandardPageSize'
         - $ref: '#/components/parameters/Fields'
         - $ref: '#/components/parameters/Omit'
       responses:
@@ -12314,7 +12494,7 @@ paths:
         - $ref: '#/components/parameters/CommunityTopicId'
         - $ref: '#/components/parameters/CommunityTopicName'
         - $ref: '#/components/parameters/CollectionCursor'
-        - $ref: '#/components/parameters/ResultPageSize'
+        - $ref: '#/components/parameters/StandardPageSize'
         - $ref: '#/components/parameters/Fields'
         - $ref: '#/components/parameters/Omit'
       responses:
@@ -12503,7 +12683,7 @@ paths:
         - $ref: '#/components/parameters/CommunityQuery'
         - $ref: '#/components/parameters/CommunityQueryType'
         - $ref: '#/components/parameters/CommunityCursor'
-        - $ref: '#/components/parameters/ResultPageSize'
+        - $ref: '#/components/parameters/StandardPageSize'
         - $ref: '#/components/parameters/Language'
         - $ref: '#/components/parameters/FromUser'
         - $ref: '#/components/parameters/ToUser'
@@ -12639,7 +12819,7 @@ paths:
           description: Company name to match. Xquik's cap is 4,096 characters.
           example: SpaceX
         - $ref: '#/components/parameters/CollectionCursor'
-        - $ref: '#/components/parameters/ResultPageSize'
+        - $ref: '#/components/parameters/StandardPageSize'
         - $ref: '#/components/parameters/Fields'
         - $ref: '#/components/parameters/Omit'
       responses:
@@ -12875,7 +13055,7 @@ paths:
             Keywords to find Lists by, such as a topic. Alias query. Xquik's cap
             is 4,096 characters.
         - $ref: '#/components/parameters/CollectionCursor'
-        - $ref: '#/components/parameters/ResultPageSize'
+        - $ref: '#/components/parameters/StandardPageSize'
         - $ref: '#/components/parameters/Fields'
         - $ref: '#/components/parameters/Omit'
       responses:
@@ -12927,6 +13107,9 @@ paths:
             currency: *tempo-usd
             intent: charge
             method: tempo
+        price: { amount: '0.000150', currency: USD, mode: fixed }
+        protocols:
+          - mpp: { currency: *tempo-usd, intent: charge, method: tempo }
       parameters:
         - $ref: '#/components/parameters/ListPathId'
         - $ref: '#/components/parameters/Fields'
@@ -13199,6 +13382,9 @@ paths:
             currency: *tempo-usd
             intent: charge
             method: tempo
+        price: { amount: '0.000150', currency: USD, mode: fixed }
+        protocols:
+          - mpp: { currency: *tempo-usd, intent: charge, method: tempo }
       parameters:
         - $ref: '#/components/parameters/BroadcastPathId'
         - $ref: '#/components/parameters/Fields'
@@ -13540,14 +13726,13 @@ paths:
         - name: pageSize
           in: query
           description: >
-            For Latest & Top, the page size (1-100, default 20). A page can
-            return fewer Spaces. Send 100 to read a search fastest. For Live &
-            Upcoming, the most Spaces a page returns. Its aliases are limit,
-            count, max_results, maxItems, max_items & per_page.
+            Spaces per page. A page holds up to 10,000, so a larger pageSize
+            gets the largest page. Default 20. A page can return fewer Spaces.
+            Follow next_cursor for more pages. Its aliases are limit, count,
+            max_results, maxItems, max_items & per_page.
           schema:
             type: integer
             minimum: 1
-            maximum: 100
             default: 20
         - $ref: '#/components/parameters/Fields'
         - $ref: '#/components/parameters/Omit'
@@ -13628,6 +13813,9 @@ paths:
             currency: *tempo-usd
             intent: charge
             method: tempo
+        price: { amount: '0.000150', currency: USD, mode: fixed }
+        protocols:
+          - mpp: { currency: *tempo-usd, intent: charge, method: tempo }
       parameters:
         - $ref: '#/components/parameters/SpacePathId'
         - $ref: '#/components/parameters/Fields'
@@ -13698,6 +13886,9 @@ paths:
             currency: *tempo-usd
             intent: charge
             method: tempo
+        price: { amount: '0.000150', currency: USD, mode: fixed }
+        protocols:
+          - mpp: { currency: *tempo-usd, intent: charge, method: tempo }
       parameters:
         - $ref: '#/components/parameters/SpacePathId'
         - $ref: '#/components/parameters/Fields'
@@ -13803,6 +13994,9 @@ paths:
             currency: *tempo-usd
             intent: charge
             method: tempo
+        price: { amount: '0.000150', currency: USD, mode: fixed }
+        protocols:
+          - mpp: { currency: *tempo-usd, intent: charge, method: tempo }
       parameters:
         - $ref: '#/components/parameters/SportsLeague'
         - name: from
@@ -13876,6 +14070,9 @@ paths:
             currency: *tempo-usd
             intent: charge
             method: tempo
+        price: { amount: '0.000150', currency: USD, mode: fixed }
+        protocols:
+          - mpp: { currency: *tempo-usd, intent: charge, method: tempo }
       parameters:
         - $ref: '#/components/parameters/SportsLeague'
         - $ref: '#/components/parameters/SportsGameId'
@@ -13922,6 +14119,9 @@ paths:
             currency: *tempo-usd
             intent: charge
             method: tempo
+        price: { amount: '0.000150', currency: USD, mode: fixed }
+        protocols:
+          - mpp: { currency: *tempo-usd, intent: charge, method: tempo }
       parameters:
         - $ref: '#/components/parameters/SportsLeague'
         - $ref: '#/components/parameters/SportsGameId'
@@ -13969,6 +14169,9 @@ paths:
             currency: *tempo-usd
             intent: charge
             method: tempo
+        price: { amount: '0.000150', currency: USD, mode: fixed }
+        protocols:
+          - mpp: { currency: *tempo-usd, intent: charge, method: tempo }
       parameters:
         - $ref: '#/components/parameters/SportsLeague'
         - $ref: '#/components/parameters/SportsGameId'
@@ -14016,6 +14219,9 @@ paths:
             currency: *tempo-usd
             intent: charge
             method: tempo
+        price: { amount: '0.000150', currency: USD, mode: fixed }
+        protocols:
+          - mpp: { currency: *tempo-usd, intent: charge, method: tempo }
       parameters:
         - $ref: '#/components/parameters/SportsLeague'
         - $ref: '#/components/parameters/SportsGameId'
@@ -14062,6 +14268,9 @@ paths:
             currency: *tempo-usd
             intent: charge
             method: tempo
+        price: { amount: '0.000150', currency: USD, mode: fixed }
+        protocols:
+          - mpp: { currency: *tempo-usd, intent: charge, method: tempo }
       parameters:
         - $ref: '#/components/parameters/NflLeague'
         - $ref: '#/components/parameters/SportsGameId'
@@ -14109,6 +14318,9 @@ paths:
             currency: *tempo-usd
             intent: charge
             method: tempo
+        price: { amount: '0.000150', currency: USD, mode: fixed }
+        protocols:
+          - mpp: { currency: *tempo-usd, intent: charge, method: tempo }
       parameters:
         - $ref: '#/components/parameters/NflLeague'
         - $ref: '#/components/parameters/SportsGameId'
@@ -14159,7 +14371,7 @@ paths:
             case works, & so do Relevance & Recency. Alias order or sort. Send
             the same value with each cursor.
         - $ref: '#/components/parameters/CollectionCursor'
-        - $ref: '#/components/parameters/ResultPageSize'
+        - $ref: '#/components/parameters/StandardPageSize'
         - $ref: '#/components/parameters/Fields'
         - $ref: '#/components/parameters/Omit'
       responses:
@@ -14345,8 +14557,8 @@ paths:
             minimum: 1
           description: >
             Complete mode defaults to 25,000 combined direct & nested replies.
-            Set another total with limit. Automatic pages accept 1-300, standard
-            pages 1-100.
+            Set another total with limit. Automatic pages accept 1-10,000,
+            standard pages 1-100.
         - $ref: '#/components/parameters/AutomaticTweetPageSize'
         - name: scope
           in: query
@@ -14799,6 +15011,9 @@ paths:
             currency: *tempo-usd
             intent: charge
             method: tempo
+        price: { amount: '0.000150', currency: USD, mode: fixed }
+        protocols:
+          - mpp: { currency: *tempo-usd, intent: charge, method: tempo }
       parameters:
         - $ref: '#/components/parameters/TweetPathId'
         - name: language
@@ -15418,6 +15633,9 @@ paths:
             currency: *tempo-usd
             intent: charge
             method: tempo
+        price: { amount: '0.000150', currency: USD, mode: fixed }
+        protocols:
+          - mpp: { currency: *tempo-usd, intent: charge, method: tempo }
       parameters:
         - $ref: '#/components/parameters/TweetPathId'
         - name: theme
@@ -15500,9 +15718,9 @@ paths:
           in: query
           required: true
           description:
-            1 to 100 links of the form `https://t.co/Xe1nm2pkSX`, separated by
-            commas. Any other link is refused. A link sent twice counts once. A
-            longer URL fails at the edge before Xquik reads it.
+            Links of the form `https://t.co/Xe1nm2pkSX`, separated by commas, as
+            many as the URL holds. Any other link is refused. A link sent twice
+            counts once. A longer URL fails at the edge before Xquik reads it.
           schema:
             type: string
             maxLength: 13078
@@ -15828,7 +16046,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/UserPathId'
         - $ref: '#/components/parameters/CollectionCursor'
-        - $ref: '#/components/parameters/ResultPageSize'
+        - $ref: '#/components/parameters/StandardPageSize'
         - $ref: '#/components/parameters/TweetSinceTime'
         - $ref: '#/components/parameters/TweetUntilTime'
         - $ref: '#/components/parameters/FromUser'
@@ -15855,6 +16073,7 @@ paths:
         - $ref: '#/components/parameters/NativeRetweets'
         - $ref: '#/components/parameters/VerifiedOnly'
         - $ref: '#/components/parameters/Replies'
+        - $ref: '#/components/parameters/MentionOwnThreads'
         - $ref: '#/components/parameters/Retweets'
         - $ref: '#/components/parameters/Quotes'
         - $ref: '#/components/parameters/ExactPhrase'
@@ -15948,8 +16167,9 @@ paths:
       requestBody:
         required: true
         description:
-          Posts whose sentiment to analyze, as tweetIds, texts or a search such
-          as query or username, with optional analysis settings.
+          Posts whose sentiment to analyze, with optional analysis settings.
+          Send tweetIds, texts, a page such as threadOf, or a search such as
+          query.
         content:
           application/json:
             schema:
@@ -15989,6 +16209,41 @@ paths:
                 value:
                   repliesTo: '2102882545427714266'
                   limit: 20
+              accounts: &analysis-accounts-example
+                summary: "Several accounts' posts in 1 search"
+                value:
+                  usernames: ['@NASA', '@ESA']
+                  limit: 20
+              lists: &analysis-lists-example
+                summary: "Several Lists' posts in 1 search"
+                value:
+                  listIds: ['4143408', '1970899750481260878']
+                  limit: 20
+              searches: &analysis-searches-example
+                summary: 'Several searches as 1'
+                value:
+                  queries: ['Artemis lang:en', '#moon']
+                  limit: 20
+              thread: &analysis-thread-example
+                summary: "A post's thread"
+                value:
+                  threadOf: '2102882545427714266'
+                  limit: 20
+              repliesTab: &analysis-repliesTab-example
+                summary: "An account's posts & replies"
+                value:
+                  repliesBy: '@NASA'
+                  limit: 20
+              media: &analysis-media-example
+                summary: "An account's posts with media"
+                value:
+                  mediaBy: '@NASA'
+                  limit: 20
+              likes: &analysis-likes-example
+                summary: 'The posts an account liked'
+                value:
+                  likedBy: '@NASA'
+                  limit: 20
               posts: &analysis-posts-example
                 summary: 'Posts by ID or URL'
                 value:
@@ -16012,6 +16267,18 @@ paths:
                       answers:
                         sentiment: 'positive'
                         intensity: 1
+              topic: &analysis-topic-example
+                summary: 'Only the posts about a topic'
+                value:
+                  query: 'Artemis lang:en'
+                  topic: 'the Artemis moon program'
+                  limit: 20
+              imageShows: &analysis-imageShows-example
+                summary: 'Only the posts whose photos show something'
+                value:
+                  query: 'Artemis lang:en'
+                  imageShows: 'a rocket'
+                  limit: 20
               own:
                 summary: 'Your own context'
                 value:
@@ -16053,8 +16320,9 @@ paths:
       requestBody:
         required: true
         description:
-          Posts to check for brand mentions, as tweetIds, texts or a search such
-          as query or username, with the brand in analysis.targets.
+          Posts to check for brand mentions, with the brand in analysis.targets.
+          Send tweetIds, texts, a page such as threadOf, or a search such as
+          query.
         content:
           application/json:
             schema:
@@ -16066,9 +16334,18 @@ paths:
               list: *analysis-list-example
               quotes: *analysis-quotes-example
               replies: *analysis-replies-example
+              accounts: *analysis-accounts-example
+              lists: *analysis-lists-example
+              searches: *analysis-searches-example
+              thread: *analysis-thread-example
+              repliesTab: *analysis-repliesTab-example
+              media: *analysis-media-example
+              likes: *analysis-likes-example
               posts: *analysis-posts-example
               texts: *analysis-texts-example
               baseline: *analysis-baseline-example
+              topic: *analysis-topic-example
+              imageShows: *analysis-imageShows-example
               own:
                 summary: 'Your brand & its aliases'
                 value:
@@ -16113,8 +16390,8 @@ paths:
       requestBody:
         required: true
         description:
-          Posts to classify as news, as tweetIds, texts or a search such as
-          query or username, with the topic in analysis.targets.
+          Posts to classify as news, with the topic in analysis.targets. Send
+          tweetIds, texts, a page such as threadOf, or a search such as query.
         content:
           application/json:
             schema:
@@ -16126,9 +16403,18 @@ paths:
               list: *analysis-list-example
               quotes: *analysis-quotes-example
               replies: *analysis-replies-example
+              accounts: *analysis-accounts-example
+              lists: *analysis-lists-example
+              searches: *analysis-searches-example
+              thread: *analysis-thread-example
+              repliesTab: *analysis-repliesTab-example
+              media: *analysis-media-example
+              likes: *analysis-likes-example
               posts: *analysis-posts-example
               texts: *analysis-texts-example
               baseline: *analysis-baseline-example
+              topic: *analysis-topic-example
+              imageShows: *analysis-imageShows-example
               own:
                 summary: 'The story you follow'
                 value:
@@ -16171,8 +16457,9 @@ paths:
       requestBody:
         required: true
         description:
-          Posts to read market signals from, as tweetIds, texts or a search such
-          as query or username, with the asset in analysis.targets.
+          Posts to read market signals from, with the asset in analysis.targets.
+          Send tweetIds, texts, a page such as threadOf, or a search such as
+          query.
         content:
           application/json:
             schema:
@@ -16184,9 +16471,18 @@ paths:
               list: *analysis-list-example
               quotes: *analysis-quotes-example
               replies: *analysis-replies-example
+              accounts: *analysis-accounts-example
+              lists: *analysis-lists-example
+              searches: *analysis-searches-example
+              thread: *analysis-thread-example
+              repliesTab: *analysis-repliesTab-example
+              media: *analysis-media-example
+              likes: *analysis-likes-example
               posts: *analysis-posts-example
               texts: *analysis-texts-example
               baseline: *analysis-baseline-example
+              topic: *analysis-topic-example
+              imageShows: *analysis-imageShows-example
               own:
                 summary: 'The asset you follow'
                 value:
@@ -16236,8 +16532,8 @@ paths:
       requestBody:
         required: true
         description:
-          Posts or drafts to score, as tweetIds, texts or a search such as query
-          or username, with optional analysis settings.
+          Posts or drafts to score, with optional analysis settings. Send
+          tweetIds, texts, a page such as threadOf, or a search such as query.
         content:
           application/json:
             schema:
@@ -16249,9 +16545,18 @@ paths:
               list: *analysis-list-example
               quotes: *analysis-quotes-example
               replies: *analysis-replies-example
+              accounts: *analysis-accounts-example
+              lists: *analysis-lists-example
+              searches: *analysis-searches-example
+              thread: *analysis-thread-example
+              repliesTab: *analysis-repliesTab-example
+              media: *analysis-media-example
+              likes: *analysis-likes-example
               posts: *analysis-posts-example
               texts: *analysis-texts-example
               baseline: *analysis-baseline-example
+              topic: *analysis-topic-example
+              imageShows: *analysis-imageShows-example
               own:
                 summary: 'Your own context'
                 value:
@@ -16285,17 +16590,17 @@ paths:
       x-mcp-annotations: { readOnlyHint: true }
       summary: Classify posts with your own AI questions
       description:
-        Answers 1 to 8 questions you write in analysis.questions. A choice picks
-        a category, such as a topic. A score picks a level. A probability
-        answers yes or no. Without questions it answers the sentiment questions.
-        Each analyzed post costs 2 credits.
+        Answers the questions you write in analysis.questions. A choice picks a
+        category, such as a topic. A score picks a level. A probability answers
+        yes or no. Without questions it answers the sentiment questions. Each
+        analyzed post costs 2 credits.
       tags: [Analysis]
       security: [{ apiKey: [] }, { oauthBearer: [] }]
       requestBody:
         required: true
         description:
-          Posts to classify, as tweetIds, texts or a search such as query or
-          username, with your questions in analysis.questions.
+          Posts to classify, with your questions in analysis.questions. Send
+          tweetIds, texts, a page such as threadOf, or a search such as query.
         content:
           application/json:
             schema:
@@ -16307,9 +16612,18 @@ paths:
               list: *analysis-list-example
               quotes: *analysis-quotes-example
               replies: *analysis-replies-example
+              accounts: *analysis-accounts-example
+              lists: *analysis-lists-example
+              searches: *analysis-searches-example
+              thread: *analysis-thread-example
+              repliesTab: *analysis-repliesTab-example
+              media: *analysis-media-example
+              likes: *analysis-likes-example
               posts: *analysis-posts-example
               texts: *analysis-texts-example
               baseline: *analysis-baseline-example
+              topic: *analysis-topic-example
+              imageShows: *analysis-imageShows-example
               own:
                 summary: 'Your own questions'
                 value:
@@ -16369,6 +16683,20 @@ components:
       description: Secure Xquik browser session cookie.
 
   parameters:
+    PageBudgetMs:
+      name: X-Xquik-Page-Budget-Ms
+      in: header
+      required: false
+      description: >
+        Milliseconds your client waits for this answer. The read plans its
+        answer for that time less 2 s, or for its usual limit if that comes
+        first, and answers with the posts it holds plus `next_cursor` when X has
+        more. Under 3000 answers at once, busy when it holds no rows yet, and
+        over 82000 counts as 82000.
+      schema:
+        type: integer
+        minimum: 0
+      example: 9000
     CollectionCursor:
       name: cursor
       in: query
@@ -16763,17 +17091,17 @@ components:
         minimum: 1
         maximum: 10000
         default: 100
-    ResultPageSize:
+    StandardPageSize:
       name: pageSize
       in: query
       description: >
-        Items per page (1-100, default 20). Source, filters or credits can
-        return fewer. Follow next_cursor for more pages. Its aliases are limit,
-        count, max_results, maxItems, max_items & per_page.
+        Items per page. A page holds up to 10,000, so a larger pageSize gets the
+        largest page. Default 20. Source, filters or credits can return fewer.
+        Follow next_cursor for more pages. Its aliases are limit, count,
+        max_results, maxItems, max_items & per_page.
       schema:
         type: integer
         minimum: 1
-        maximum: 100
         default: 20
     AutomaticCoverageCursor:
       name: cursor
@@ -16799,14 +17127,14 @@ components:
       name: pageSize
       in: query
       description: >
-        Automatic pages accept 1-300 Tweets, standard pages 1-100. Default 20.
-        Follow next_cursor for more pages. Its aliases are limit, count,
+        Automatic pages accept 1-10,000 Tweets, standard pages 1-100. Default
+        20. Follow next_cursor for more pages. Its aliases are limit, count,
         max_results, maxItems, max_items & per_page. Every page size returns the
         same complete results.
       schema:
         type: integer
         minimum: 1
-        maximum: 300
+        maximum: 10000
         default: 20
     TweetSinceTime:
       name: sinceTime
@@ -16857,13 +17185,13 @@ components:
       name: pageSize
       in: query
       description: >
-        Profiles to request from this page (1-200, default 200). Source, filters
-        or credits can return fewer. Follow next_cursor for more pages. Its
-        aliases are limit, count, max_results, maxItems, max_items & per_page.
+        Profiles to request from this page. A page holds up to 10,000, so a
+        larger pageSize gets the largest page. Default 200. Source, filters or
+        credits can return fewer. Follow next_cursor for more pages. Its aliases
+        are limit, count, max_results, maxItems, max_items & per_page.
       schema:
         type: integer
         minimum: 1
-        maximum: 200
         default: 200
     UserIdPageSize:
       name: pageSize
@@ -16877,19 +17205,23 @@ components:
         minimum: 1
         maximum: 5000
         default: 5000
-    LegacyUserPageSize:
+    StandardUserPageSize:
       name: pageSize
       in: query
-      description: Maximum user profiles per page (1-200, default 20).
+      description: >
+        User profiles per page. A page holds up to 10,000, so a larger pageSize
+        gets the largest page. Default 20. Follow next_cursor for more pages.
       schema:
         type: integer
         minimum: 1
-        maximum: 200
         default: 20
     LegacyFollowerLimit:
       name: limit
       in: query
-      schema: *bounded-result-limit
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 10000
       description: >
         Legacy page-size alias outside coverage mode. Coverage accepts 1-10000.
         Prefer pageSize.
@@ -17279,6 +17611,16 @@ components:
         type: string
         enum: [include, exclude, only]
       description: Reply mode. Exclude keeps own-thread replies.
+    MentionOwnThreads:
+      name: ownThreads
+      in: query
+      schema:
+        type: string
+        enum: [exclude]
+        maxLength: 7
+      description:
+        With replies=exclude, also leaves out replies to the author's own posts,
+        so the search skips every reply.
     SearchReplies:
       name: replies
       in: query
@@ -17485,6 +17827,14 @@ components:
         states the cutoff & counts.
 
   headers:
+    PageBudgetRefused:
+      description: >
+        Each answer-deadline header this read ignored, as `header=reason`, comma
+        separated. The reason is `not_a_number` or `negative`. The read used the
+        other deadline headers, or its usual limit.
+      schema:
+        type: string
+      example: x-xquik-page-budget-ms=not_a_number
     SignInRetryAfter:
       description: Seconds to wait before you retry.
       schema: { type: integer, minimum: 1, maximum: 60, example: 60 }
@@ -17516,7 +17866,9 @@ components:
         pattern: '^"[a-z-]+";q=\d+;w=\d+$'
         example: '"read";q=500;w=1'
     BusyRetryAfter:
-      description: Seconds before a retry.
+      description: >-
+        Seconds before a retry, 1 or more. It can be shorter after Xquik held
+        the call.
       schema: *positive-integer
     XquikBusy:
       description:
@@ -17531,9 +17883,8 @@ components:
         enum: ['admission', 'reads']
     XquikCause:
       description: >
-        Xquik answers 502 with `X-Xquik-Cause` & `Retry-After` when X fails a
-        read on every account. The value x names X as the cause. Xquik's own
-        failures omit it.
+        Xquik answers 502 with `X-Xquik-Cause` & `Retry-After` when X fails the
+        read. The value x names X as the cause. Xquik's own failures omit it.
       schema:
         type: string
         enum: ['x']
@@ -18026,10 +18377,13 @@ components:
       description: >
         X shows no post with this ID. `reason` says why when X's answer named
         it. It is `deleted` with the message "The author deleted this post.",
-        `author_suspended` with "X suspended this post's author.", or
-        `protected` with "This post's author limits who can see it." Without
-        `reason`, X named no cause, and the message is "Tweet not found. Check
-        the tweet ID." A post is called missing only when it's gone.
+        `author_deactivated` with "This post's author deactivated their X
+        account.", `author_suspended` with "X suspended this post's author.",
+        `protected` with "This post's author limits who can see it.", or
+        `unavailable` with "X shows this post as unavailable without saying
+        why." Without `reason`, X named no cause, and the message is "Tweet not
+        found. Check the tweet ID." A post is called missing only when it's
+        gone.
       content:
         application/json:
           schema:
@@ -18182,6 +18536,39 @@ components:
                   This route needs a Full access key. Turn on Full access at
                   dashboard.xquik.com/api-keys.
                 requiredScope: full
+    ConnectLinkForbidden:
+      description:
+        An API key needs Full access & `connectsXAccounts` for connect links.
+        Turn the permission on in a dashboard session at
+        dashboard.xquik.com/api-keys. An OAuth token or MCP tool gets
+        `session_required`, & a paused API key gets `api_key_paused`.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            apiKeyPaused:
+              summary: A paused API key
+              value: *api-key-paused
+            insufficientScope:
+              summary: The API key isn't Full access
+              value:
+                error: insufficient_scope
+                message:
+                  This route needs a Full access key. Turn on Full access at
+                  dashboard.xquik.com/api-keys.
+                requiredScope: full
+            permissionRequired:
+              summary: The API key lacks the connect permission
+              value:
+                error: x_account_connect_permission_required
+                message:
+                  This API key can't connect X accounts. Turn on Connect X
+                  accounts for it at dashboard.xquik.com/api-keys.
+                requiredPermission: connectsXAccounts
+            sessionRequired:
+              summary: An OAuth token or MCP tool called this route
+              value: *session-required-example
     WriteKeyForbidden:
       description:
         The API key lacks the write scope this route needs. A paused API key
@@ -18358,6 +18745,27 @@ components:
                 message:
                   This account's following list is private. Try a public
                   account.
+    ProtectedFollowCheck:
+      description:
+        X keeps a follow relationship private when both accounts are protected.
+        Xquik charges nothing. A paused API key gets `api_key_paused`, so resume
+        it on the dashboard.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            apiKeyPaused:
+              summary: A paused API key
+              value: *api-key-paused
+            protectedPair:
+              summary: Both accounts are protected
+              value:
+                error: x_account_protected
+                message:
+                  The source and target accounts are both protected, so X keeps
+                  their follow relationship private. Check a pair with at least
+                  1 public account.
     ProtectedVerifiedFollowerList:
       description:
         X keeps a protected account's verified follower list private. Xquik
@@ -18454,7 +18862,8 @@ components:
     WriteRejected:
       description: >
         X rejected the write or download. Error.code says why. The
-        `x_automation_refused` code needs no wait. The `x_reply_not_allowed` &
+        `x_automation_refused` code needs no wait, except on a DM. Wait 6 hours
+        before that account sends another DM. The `x_reply_not_allowed` &
         `x_reply_target_unavailable` codes repeat X's refusal of a reply, with
         `Retry-After`. They hold for 1 hour, then 4 hours after X refuses it
         again & 24 hours after each later refusal. Media can fail on its URL,
@@ -18544,11 +18953,12 @@ components:
         Dependency unavailable, unauthorized, or limited. Default v1 uses 502.
         Best-practice responses use 424 for transparent dependency failures.
         Search answers 424 `search_unavailable` when X fails the query itself,
-        or when a filtered search goes far back without a match. The message
-        says how far back the search looked. "X can't run this search" appears
-        only when it's true. Searches X can't run fail at once, with the fix.
-        When X fails a read, Xquik answers 502 `x_api_unavailable` with
-        `X-Xquik-Cause` & `Retry-After`. Retry after that many seconds.
+        or when a filtered search with no start time goes far back without a
+        match. The message says how far back the search looked. "X can't run
+        this search" appears only when it's true. Searches X can't run fail at
+        once, with the fix. When X fails a read, Xquik answers 502
+        `x_api_unavailable` with `X-Xquik-Cause` & `Retry-After`. Retry after
+        that many seconds.
       headers:
         X-Xquik-Cause:
           $ref: '#/components/headers/XquikCause'
@@ -18594,9 +19004,11 @@ components:
             message: 'Cursor busy. Retry after the indicated delay.'
     CursorGone:
       description:
-        Restart without the `coverage_cursor_gone` cursor. A cursor sent again
-        within 10 minutes of its page returns the same page at no charge. Only
-        an older, expired or replaced cursor answers 410.
+        Restart without the `coverage_cursor_gone` cursor. A cursor stays valid
+        for 7 days after its last use. One sent again within 10 minutes of its
+        page returns the same page at no charge. A finished, expired or replaced
+        cursor answers 410, as does one sent with another caller, route or
+        filters.
       content:
         application/json:
           schema:
@@ -18607,9 +19019,15 @@ components:
               'Cursor finished, expired, or superseded. Restart pagination
               without cursor.'
     MaximumCoverageBusy:
-      description:
-        Retry x_api_unavailable after Retry-After. After pagination_stalled,
-        retry once, 30 s or more later.
+      description: >-
+        Retry x_api_unavailable after Retry-After. A tweet search that omits
+        mode can get it when Xquik read nothing from X. It charges nothing and
+        sends X-Xquik-Busy-Reason reads, or admission if the search found no
+        free place to start. Retry it unchanged, with any cursor you sent. A
+        first page retried within 60 s can resume where it stopped. Some
+        marketplace and partner requests get an empty page with a cursor
+        instead. After pagination_stalled, retry once, 30 s or more later. A
+        second stall ends the list on a page with endReason stalled.
       headers: &busy-headers
         Retry-After:
           $ref: '#/components/headers/BusyRetryAfter'
@@ -18646,7 +19064,7 @@ components:
           example:
             results:
               - tweet:
-                  id: '1893456789012345678'
+                  id: '2102882545427714266'
                   text:
                     'The new headphones sound great. The app keeps crashing.'
                   retweetCount: 4
@@ -18732,6 +19150,7 @@ components:
               - id: '1893456789012345679'
                 status: 'skipped'
                 reason: 'post_unavailable'
+            unprocessed_ids: []
             analysisSummary:
               schemaVersion: 1
               rows: { analyzed: 1, failed: 0, skipped: 0 }
@@ -18761,7 +19180,7 @@ components:
               monitor:
                 statuses: { changed: 1 }
                 changedRows:
-                  - tweetId: '1893456789012345678'
+                  - tweetId: '2102882545427714266'
                     changes:
                       - questionId: 'sentiment'
                         previous: 'positive'
@@ -18770,9 +19189,12 @@ components:
             next_cursor: ''
     RepliesIncomplete:
       description:
-        X did not expose every reply. Xquik bills returned rows as usual. An
-        answer cut by your own limit returns 200 with limit_reached. A post that
-        shows none of the replies it counts returns 200 with hiddenReplies.
+        X did not expose every reply. Xquik bills returned rows, except rows
+        your account paid for in an incomplete answer on this post within 24
+        hours, so a retry pays only for new rows. A read that runs out of time
+        names the extraction that reads on. An answer cut by your own limit
+        returns 200 with limit_reached. A post that shows none of the replies it
+        counts returns 200 with hiddenReplies.
       content:
         application/json:
           schema:
@@ -20791,6 +21213,8 @@ components:
         has_next_page: *boolean-example-true
         next_cursor:
           $ref: '#/components/schemas/NextCursor'
+        endReason:
+          $ref: '#/components/schemas/CoverageEndReason'
         readBackTo:
           type: string
           format: date-time
@@ -20802,6 +21226,14 @@ components:
           const: true
           description:
             Present on a last page whose sources all read past its start time.
+          example: true
+        hiddenTimeline:
+          type: boolean
+          const: true
+          description:
+            Present on an empty last page when X shows this account's timeline
+            to nobody. The page is empty because of that, so it doesn't mean the
+            account posted nothing. A retry returns the same page.
           example: true
         searchedQuery:
           type: string
@@ -20835,6 +21267,14 @@ components:
                     Whether X charts the ticker with open, high, low & close
                     prices.
                   example: false
+    CoverageEndReason:
+      description: >-
+        Present on a last page that X cut short. `stalled` means X returned no
+        new results 2 times in a row, 30 s apart. The list may hold more. Read
+        it again later without cursor.
+      type: string
+      enum: [stalled]
+      example: stalled
     CoverageStopReason:
       description: >-
         Why the read stopped.
@@ -21001,6 +21441,13 @@ components:
       description: What the topic filter asked & how many posts it kept.
       type: object
       required: [topic, question, cutoff, checked, kept, unchecked]
+      example:
+        topic: the Rust programming language
+        question: Is this post about the Rust programming language?
+        cutoff: 0.5
+        checked: 20
+        kept: 7
+        unchecked: []
       properties:
         topic:
           type: string
@@ -21337,10 +21784,11 @@ components:
               type: integer
               minimum: 1
               description:
-                Present on the last automatic page, and on a complete-mode
-                answer without rows. X counts this many more replies but shows
-                them to nobody. They may be hidden, protected or deleted. A
-                retry returns the same replies.
+                Present on the last automatic page, on a standard first page
+                that ends the thread, and on a complete-mode answer without
+                rows. X counts this many more replies but shows them to nobody.
+                They may be hidden, protected or deleted. A retry returns the
+                same replies.
               example: 1
             partialBefore:
               type: string
@@ -21418,6 +21866,7 @@ components:
             - page_cap
             - partial_view
             - repeated_cursor
+            - reported_held
             - window_covered
             - window_passed
     ReplyCoverageRichness:
@@ -21761,6 +22210,8 @@ components:
         has_next_page: *boolean-example-true
         next_cursor:
           $ref: '#/components/schemas/NextCursor'
+        endReason:
+          $ref: '#/components/schemas/CoverageEndReason'
     SearchSuggestions:
       description: >
         What X suggests for a partial search query. Each list keeps X's order. A
@@ -22280,6 +22731,13 @@ components:
           properties:
             scanLimit:
               $ref: '#/components/schemas/UserListScanLimit'
+            windowComplete:
+              type: boolean
+              const: true
+              description:
+                Present on the last page of an empty list whose profile counts 0
+                accounts in it.
+              example: true
     UserListResult:
       description: A standard or terminal maximum-coverage relationship page.
       example: { users: [], has_next_page: false, next_cursor: '' }
@@ -22301,6 +22759,8 @@ components:
           processed_count,
           returned_count,
           unavailable_ids,
+          not_found_ids,
+          suspended_ids,
           failed_ids,
           unprocessed_ids,
         ]
@@ -22342,10 +22802,25 @@ components:
           type: array
           description:
             Processed IDs with no profile on X, in first-seen request order.
+            not_found_ids and suspended_ids split them by X's answer.
           items: &batch-user-id
             type: string
             pattern: '^(?:\d+|[A-Za-z0-9_]{1,15})$'
           example: ['1234567890']
+        not_found_ids:
+          type: array
+          description:
+            The unavailable IDs no account holds, as X answers for an account
+            that was deactivated or deleted, in first-seen request order.
+          items: *batch-user-id
+          example: ['1234567890']
+        suspended_ids:
+          type: array
+          description:
+            The unavailable IDs of accounts X suspended, in first-seen request
+            order.
+          items: *batch-user-id
+          example: []
         failed_ids:
           type: array
           description:
@@ -22367,7 +22842,16 @@ components:
         They name a profile link by its username.
       type: object
       required:
-        [tweets, has_next_page, next_cursor, unavailable_ids, unprocessed_ids]
+        [
+          tweets,
+          has_next_page,
+          next_cursor,
+          unavailable_ids,
+          not_found_ids,
+          suspended_ids,
+          protected_ids,
+          unprocessed_ids,
+        ]
       properties:
         tweets:
           type: array
@@ -22387,9 +22871,30 @@ components:
           type: array
           description:
             Users with no account on X or with protected posts, in first-seen
-            request order. They cost nothing.
+            request order. They cost nothing. not_found_ids, suspended_ids and
+            protected_ids split them by X's answer.
           items: *batch-user-id
           example: ['1234567890']
+        not_found_ids:
+          type: array
+          description:
+            The unavailable users no account holds, as X answers for an account
+            that was deactivated or deleted, in first-seen request order.
+          items: *batch-user-id
+          example: ['1234567890']
+        suspended_ids:
+          type: array
+          description:
+            The unavailable users X suspended, in first-seen request order.
+          items: *batch-user-id
+          example: []
+        protected_ids:
+          type: array
+          description:
+            The unavailable users whose posts only approved followers see, in
+            first-seen request order.
+          items: *batch-user-id
+          example: []
         unprocessed_ids:
           type: array
           description:
@@ -23086,11 +23591,13 @@ components:
                 - login_cooldown
                 - login_failed
                 - media_download_failed
+                - media_not_uploaded
                 - media_too_large
                 - media_unavailable
                 - missing_params
                 - missing_query
                 - monitor_already_exists
+                - x_username_taken
                 - monitor_profile_unavailable
                 - no_media
                 - no_credits
@@ -23251,8 +23758,8 @@ components:
             Machine-readable reason. A login failure names its cause, such as
             temporary_issue. A user_not_found answer names why X shows no
             profile, as not_found or suspended. A tweet_not_found answer names
-            why X shows no post, when X said, as deleted, author_suspended or
-            protected.
+            why X shows no post, as deleted, author_deactivated,
+            author_suspended, protected or unavailable.
           example: temporary_issue
         requiredScope:
           type: string
@@ -23447,7 +23954,7 @@ components:
             list_post_extractor.
         targetSpaceId:
           type: string
-          maxLength: 13
+          maxLength: 16
           description: >-
             Required for space_explorer. Rows carry each host's & speaker's full
             profile, & profile filters such as minFollowers check it.
@@ -23531,7 +24038,6 @@ components:
         maxPagesPerTarget:
           type: integer
           minimum: 1
-          maximum: 1000
           description: Reply pages collected for each target.
         startCursor:
           type: string
@@ -24095,8 +24601,9 @@ components:
         connectsXAccounts:
           type: boolean
           description:
-            Whether this key can connect, reconnect, retry & remove X accounts.
-            Those calls carry X passwords. Full access doesn't include it.
+            Whether this key can connect, reconnect, retry & remove X accounts,
+            by sending X passwords or through hosted connect links. Full access
+            doesn't include it.
           example: false
         allowedIps:
           type: array
@@ -25146,10 +25653,19 @@ components:
           enum: [unavailable, unfollowed]
           description: >-
             Why the account left the list, on following.removed &
-            follower.removed. unavailable means X no longer serves the account.
-            unfollowed means the follow ended. It is missing when the cause
-            isn't known.
+            follower.removed. unavailable means X shows no account for it, and
+            unavailableReason says why. unfollowed means the follow ended. It is
+            missing when the cause isn't known.
           example: unfollowed
+        unavailableReason:
+          type: string
+          enum: [not_found, suspended]
+          description: >-
+            Why X shows no account, when reason is unavailable. not_found means
+            the account no longer exists, as X answers for a deactivated or
+            deleted account. suspended means X suspended it. A user lookup of
+            the ID answers user_not_found with the same reason.
+          example: not_found
       additionalProperties: true
 
     MonitorLegacyPost:
@@ -25342,11 +25858,12 @@ components:
             fewer posts than narrow ones over the same dates. For a fuller
             collection, run the same search in shorter windows.
             `pagination_safety_limit` means a paging safety rule ended the read
-            early. The job keeps every result it found. `deadline_reached` means
-            the job ran out of time. `partial_failure` means some reads failed,
-            and the job keeps the results from the rest. `budget_limited` means
-            your credits covered fewer results than the job found. `canceled`
-            and `failed` match the job status.
+            early. A reply job ends this way once it finds no new reply for 15
+            minutes. The job keeps every result it found. `deadline_reached`
+            means the job ran out of time. `partial_failure` means some reads
+            failed, and the job keeps the results from the rest.
+            `budget_limited` means your credits covered fewer results than the
+            job found. `canceled` and `failed` match the job status.
         errorMessage:
           type: string
           description: Safe error code for a failed job.
@@ -25459,7 +25976,9 @@ components:
           description: >
             Nested row details. On a user list, `user` also holds `joinedOn`,
             `followRatio`, `postsPerMonth`, `standing`, `website`, `isProtected`
-            and `isSensitive` when they apply.
+            and `isSensitive` when they apply. `tweet.unknownCounts` and
+            `article.unknownCounts` list the counts X didn't send, never shown
+            as 0.
 
     DrawListItem:
       description: Giveaway draw summary with entry counts and status.
@@ -25557,7 +26076,7 @@ components:
           description:
             Endpoint delivery state. paused means the user paused delivery.
             needs_attention marks repeated failures. Xquik keeps each event for
-            7 days and sends it once the endpoint answers.
+            30 days and sends it once the endpoint answers.
           example: active
         failureHardCap:
           type: integer
@@ -25581,9 +26100,9 @@ components:
           type: string
           enum: [pending, delivered, failed, exhausted]
           description:
-            A `pending` or `failed` delivery waits up to 7 days. `delivered`
+            A `pending` or `failed` delivery waits up to 30 days. `delivered`
             means your endpoint accepted it. `exhausted` means it wasn't
-            delivered within 7 days.
+            delivered within 30 days.
         attempts:
           $ref: '#/components/schemas/WholeNumber'
         createdAt: *date-time-string
@@ -26529,7 +27048,8 @@ components:
         truncated:
           type: boolean
           description: >-
-            True when the cues cover only the start of a very long track.
+            True when X didn't serve every caption file of the track in time, so
+            the cues cover only its start. Retry for the rest.
         cues:
           type: array
           description: Timed captions in order.
@@ -27868,7 +28388,9 @@ components:
                   type: string
 
     TweetPreviousCounts:
-      description: Engagement counts retained from a prior tweet edit.
+      description:
+        The share of each count that earlier versions of an edited post hold.
+        Each count field already adds it, as x.com does.
       type: object
       properties:
         bookmarkCount:
@@ -28477,6 +28999,16 @@ components:
           type: string
           description: Community name. Present when X sends it with the post.
           example: Build in Public
+        communityUnavailable:
+          type: object
+          description:
+            Why X shows no Community for the post. Omitted when X names no
+            reason.
+          required: [reason]
+          properties:
+            reason:
+              type: string
+              description: X's reason, as X writes it.
         communityNote:
           $ref: '#/components/schemas/TweetCommunityNote'
         hasCommunityNotes:
@@ -31705,6 +32237,7 @@ components:
           teamIds,
           periods,
           odds,
+          rankings,
         ]
       example:
         id: '2055084502741811200'
@@ -31724,6 +32257,7 @@ components:
         periods:
           - type: Quarter
         odds: null
+        rankings: []
       properties:
         id:
           type: string
@@ -31786,6 +32320,32 @@ components:
               $ref: '#/components/schemas/FootballOdds'
             away:
               $ref: '#/components/schemas/FootballOdds'
+        rankings:
+          type: array
+          description:
+            Each team X ranks in its college football poll, with its rank. Empty
+            when X ranks neither team, & for the NFL.
+          example: []
+          items:
+            $ref: '#/components/schemas/FootballPollRanking'
+    FootballPollRanking:
+      description: A team's rank in X's college football poll.
+      type: object
+      required: [teamId, rank]
+      example:
+        teamId: '689566294702555136'
+        rank: 5
+      properties:
+        teamId:
+          type: [string, 'null']
+          description: The ranked team, a key of teams.
+          example: '689566294702555136'
+        rank:
+          type: [integer, 'null']
+          minimum: 1
+          maximum: 9007199254740991
+          description: The team's rank, where 1 is the top.
+          example: 5
     FootballSchedule:
       description: A league's games in a time window.
       type: object
@@ -31810,6 +32370,7 @@ components:
             periods:
               - type: Quarter
             odds: null
+            rankings: []
         teams: {}
       properties:
         league:
@@ -32096,7 +32657,10 @@ components:
             The creator's public profile, or the ID, username and badge alone
             when X sends no profile
           anyOf:
-            - $ref: '#/components/schemas/UserProfile'
+            - allOf:
+                - $ref: '#/components/schemas/UserProfile'
+                - type: object
+                  required: [verified]
             - type: object
               required: [id, username, verified]
               properties:
@@ -32975,6 +33539,7 @@ components:
           status,
           reference,
           returnUrl,
+          apiKeyId,
           accountId,
           xUserId,
           xUsername,
@@ -33009,7 +33574,10 @@ components:
               revoked,
             ]
           description:
-            '`failed` means 5 logins were refused, so make a new link.'
+            '`failed` means 5 logins were refused, so make a new link. `revoked`
+            means you revoked it, or the key that made it is paused, revoked,
+            expired, no longer Full access or without `connectsXAccounts`. A
+            link whose key resumes within its 30 minutes reads `pending` again.'
           example: 'connected'
         reference:
           type: [string, 'null']
@@ -33018,6 +33586,12 @@ components:
           type: [string, 'null']
           format: uri
           example: 'https://app.example.com/connected'
+        apiKeyId:
+          type: [string, 'null']
+          description:
+            The ID of the API key that made the link, or null when a dashboard
+            session made it.
+          example: '17'
         accountId:
           type: [string, 'null']
           example: '42'
@@ -33127,10 +33701,13 @@ components:
 
     TweetAnalysisRequest:
       description:
-        Posts to analyze & optional analysis settings. Send tweetIds, texts, or
-        a search, never more than 1. A search is query, username, listId,
-        quotesOf or repliesTo, alone or together, & sinceTime & untilTime narrow
-        it.
+        Posts to analyze & optional analysis settings. Send tweetIds, texts, a
+        page or a search, never more than 1. A page is threadOf, repliesBy,
+        mediaBy or likedBy. Each names 1 post or account. A search is any of
+        query, queries, username, usernames, listId, listIds, quotesOf &
+        repliesTo. sinceTime, untilTime & queryType narrow a search. Entries of
+        1 kind join as alternatives, such as (from:nasa OR from:esa). Different
+        kinds narrow each other. It stays 1 search with 1 cursor.
       type: object
       additionalProperties: false
       example:
@@ -33142,13 +33719,15 @@ components:
         tweetIds:
           type: array
           minItems: 1
-          maxItems: 100
-          description: Post IDs or post URLs to analyze, up to 100.
-          example: ['1893456789012345678']
+          maxItems: 65532
+          description:
+            Post IDs or post URLs to analyze, as many as the body holds. Posts
+            left when the time runs out come back in unprocessed_ids.
+          example: ['2102882545427714266']
           items:
             type: string
             maxLength: 2048
-            example: '1893456789012345678'
+            example: '2102882545427714266'
         query:
           type: string
           minLength: 1
@@ -33158,6 +33737,21 @@ components:
             from:nasa or lang:en. X searches up to 512 characters, counted with
             the other search fields, as /x/tweets/search counts q.
           example: 'Sony WH-1000XM6 lang:en'
+        queries:
+          type: array
+          minItems: 1
+          maxItems: 100
+          description:
+            X searches to analyze as 1 search. A post matching any of them
+            counts. Each takes the operators of query. query, when sent, joins
+            them. X searches up to 512 characters, counted with the other search
+            fields.
+          example: ['Artemis lang:en', '#moon']
+          items:
+            type: string
+            minLength: 1
+            maxLength: 4096
+            example: 'Artemis lang:en'
         username:
           type: string
           minLength: 1
@@ -33166,25 +33760,88 @@ components:
             Analyze 1 account's posts. Send a handle, with or without @, or a
             profile URL.
           example: '@NASA'
+        usernames:
+          type: array
+          minItems: 1
+          maxItems: 100
+          description:
+            Analyze the posts of several accounts in 1 search. Send handles,
+            with or without @, or profile URLs. username, when sent, joins them.
+          example: ['@NASA', '@ESA']
+          items:
+            type: string
+            minLength: 1
+            maxLength: 2048
+            example: '@NASA'
         listId:
           type: string
           minLength: 1
           maxLength: 2048
           description: Analyze a public List's posts. Send its ID or URL.
-          example: '1234567890'
+          example: '4143408'
+        listIds:
+          type: array
+          minItems: 1
+          maxItems: 100
+          description:
+            Analyze the posts of several public Lists in 1 search. Send their
+            IDs or URLs. listId, when sent, joins them.
+          example: ['4143408', '1970899750481260878']
+          items:
+            type: string
+            minLength: 1
+            maxLength: 2048
+            example: '4143408'
         quotesOf:
           type: string
           minLength: 1
           maxLength: 2048
           description: Analyze the quotes of 1 post. Send its ID or URL.
-          example: '1893456789012345678'
+          example: '2102882545427714266'
         repliesTo:
           type: string
           minLength: 1
           maxLength: 2048
           description:
             Analyze the replies in 1 post's conversation. Send its ID or URL.
-          example: '1893456789012345678'
+          example: '2102882545427714266'
+        threadOf:
+          type: string
+          minLength: 1
+          maxLength: 2048
+          description:
+            Analyze 1 post's thread, as /x/tweets/{id}/thread reads it. Send the
+            post's ID or URL. Send no other posts or search with it.
+          example: '2102882545427714266'
+        repliesBy:
+          type: string
+          minLength: 1
+          maxLength: 2048
+          description:
+            Analyze 1 account's posts & replies, as its Replies tab shows them.
+            /x/users/{id}/replies reads the same posts. Send a handle, with or
+            without @, a user ID or a profile URL. Send no other posts or search
+            with it.
+          example: '@NASA'
+        mediaBy:
+          type: string
+          minLength: 1
+          maxLength: 2048
+          description:
+            Analyze 1 account's posts with photos or videos, as its Media tab
+            shows them. /x/users/{id}/media reads the same posts. Send a handle,
+            with or without @, a user ID or a profile URL. Send no other posts
+            or search with it.
+          example: '@NASA'
+        likedBy:
+          type: string
+          minLength: 1
+          maxLength: 2048
+          description:
+            Analyze the posts 1 account liked, as /x/users/{id}/likes reads
+            them. Send a handle, with or without @, a user ID or a profile URL.
+            Send no other posts or search with it.
+          example: '@NASA'
         sinceTime:
           type: [string, integer]
           minLength: 1
@@ -33211,37 +33868,65 @@ components:
         limit:
           type: integer
           minimum: 1
-          maximum: 100
           default: 20
           description:
-            Maximum posts to analyze from the search. A low credit balance can
-            return fewer.
+            Maximum posts to analyze from the search or page. A low credit
+            balance can return fewer. When the time runs out first, send
+            next_cursor as cursor for the rest.
           example: 20
         cursor:
           type: string
           minLength: 1
           maxLength: 4096
           description:
-            The next_cursor of the page before. Send the same search with it.
+            The next_cursor of the page before. Send the same search or page
+            with it.
           example: 'DAACCgACGRElMJcAAA'
         texts:
           type: array
           minItems: 1
-          maxItems: 100
+          maxItems: 65533
           description:
-            Your own texts to analyze, such as drafts. Reads nothing from X.
-            Each text costs the same as 1 analyzed post.
+            Your own texts to analyze, such as drafts, as many as the body
+            holds. Reads nothing from X. Each text costs the same as 1 analyzed
+            post. Texts left when the time runs out come back in
+            unprocessed_ids.
           example: ['We shipped dark mode today. Tell us what breaks.']
           items:
             type: string
             minLength: 1
             maxLength: 64000
             example: 'We shipped dark mode today. Tell us what breaks.'
+        topic:
+          type: string
+          minLength: 1
+          maxLength: 200
+          example: 'the Rust programming language'
+          description:
+            Keep only posts about this topic, the same as the Actors' topic
+            input. AI-powered analysis asks "Is this post about <topic>?" of
+            each post & keeps scores of 0.5 or more. Only kept posts are
+            analyzed & cost 2 credits each, & a post the filter drops costs
+            nothing. topicFilter states the cutoff & counts. Send topic or
+            imageShows, not both.
+        imageShows:
+          type: string
+          minLength: 1
+          maxLength: 200
+          example: 'charts'
+          description:
+            Keep only posts whose photos show this, the same as the Actors'
+            imageShows input. Send charts, screenshots, product_photos, memes or
+            people, or describe it in words, such as a rocket. AI-powered
+            analysis checks posts with photos X doesn't mark sensitive & keeps
+            scores of 0.5 or more. Only kept posts are analyzed & cost 2 credits
+            each. imageFilter states the cutoff & counts. Send topic or
+            imageShows, not both.
         analysis:
           $ref: '#/components/schemas/TweetAnalysisSettings'
         baseline:
           type: array
-          maxItems: 10000
+          maxItems: 17474
           description:
             Rows of an earlier answer to compare with, such as its results. Each
             needs the post's id, or tweet.id, & its answers. Send monitor too,
@@ -33249,7 +33934,7 @@ components:
             whether the post is new, changed or unchanged. The comparison costs
             nothing extra.
           example:
-            - id: '1893456789012345678'
+            - id: '2102882545427714266'
               answers: { sentiment: 'positive', intensity: 1, sarcasm: 0.04 }
           items:
             type: object
@@ -33261,7 +33946,7 @@ components:
                 maxLength: 19
                 description:
                   Post ID, or text:1 & so on. Otherwise tweet.id counts.
-                example: '1893456789012345678'
+                example: '2102882545427714266'
               tweet:
                 type: object
                 required: [id]
@@ -33271,7 +33956,7 @@ components:
                       type: string,
                       minLength: 1,
                       maxLength: 19,
-                      example: '1893456789012345678',
+                      example: '2102882545427714266',
                     }
               answers:
                 type: object
@@ -33304,7 +33989,7 @@ components:
         questions:
           type: array
           minItems: 1
-          maxItems: 8
+          maxItems: 53
           description:
             Your own questions, which replace the route's questions. Write
             question IDs & category names in lower case without hyphens.
@@ -33338,7 +34023,7 @@ components:
           example: 'complaints'
         targets:
           type: array
-          maxItems: 100
+          maxItems: 2453
           description:
             Brands, people, assets or topics the questions are about, each with
             its aliases.
@@ -33356,7 +34041,7 @@ components:
                 example: 'Sony'
               aliases:
                 type: array
-                maxItems: 100
+                maxItems: 15939
                 example: ['WH-1000XM6']
                 items:
                   type: string
@@ -33453,7 +34138,7 @@ components:
         levels:
           type: array
           minItems: 2
-          maxItems: 100
+          maxItems: 10
           description: For a score. Each level's description, lowest first.
           example: ['No urgency.', 'Some urgency.', 'Urgent.']
           items:
@@ -33485,7 +34170,12 @@ components:
         answers. Each row in results costs 2 credits.
       type: object
       required:
-        [results, unanalyzed, analysisSummary, has_next_page, next_cursor]
+        - results
+        - unanalyzed
+        - unprocessed_ids
+        - analysisSummary
+        - has_next_page
+        - next_cursor
       properties:
         results:
           type: array
@@ -33503,6 +34193,15 @@ components:
               reason: 'post_unavailable'
           items:
             $ref: '#/components/schemas/UnanalyzedTweet'
+        unprocessed_ids:
+          type: array
+          description:
+            IDs of the posts or texts the time ran out for. Send them again in
+            tweetIds, or those texts in texts. They cost nothing.
+          example: []
+          items:
+            type: string
+            example: '2102882545427714266'
         analysisSummary:
           $ref: '#/components/schemas/TweetAnalysisSummary'
         has_next_page:
@@ -33514,6 +34213,10 @@ components:
           type: string
           description: Cursor of the search's next page, else empty.
           example: ''
+        topicFilter:
+          $ref: '#/components/schemas/TopicFilterSummary'
+        imageFilter:
+          $ref: '#/components/schemas/ImageFilterSummary'
 
     TweetAnalysisResult:
       description: 1 analyzed post with its answers.
@@ -33791,7 +34494,7 @@ components:
           type: string
           description:
             Post ID. Your own texts have the IDs text:1, text:2 & so on.
-          example: '1893456789012345678'
+          example: '2102882545427714266'
         status:
           type: string
           enum: [failed, skipped]
@@ -33884,7 +34587,7 @@ components:
                 example:
                   sentiment:
                     negative:
-                      [{ tweetId: '1893456789012345678', engagement: 412 }]
+                      [{ tweetId: '2102882545427714266', engagement: 412 }]
         cashtags:
           type: array
           description:
@@ -33954,7 +34657,7 @@ components:
                 type: object
                 required: [tweetId, changes]
                 properties:
-                  tweetId: { type: string, example: '1893456789012345678' }
+                  tweetId: { type: string, example: '2102882545427714266' }
                   changes:
                     type: array
                     items:

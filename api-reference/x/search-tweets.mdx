@@ -1,7 +1,7 @@
 ---
-title: "Advanced tweet search & export, X (Twitter) API docs"
+title: "Tweet search & export, X (Twitter) API docs"
 sidebarTitle: Search tweets
-description: "Search tweets by keyword, ID, or URL. Return text, authors, replies, metrics, media, and cursors for CRM, agents, or exports. Costs 1 credit per tweet."
+description: "Tweet search API for X (Twitter). Search tweets by keyword, ID, or URL, then export text, authors, replies, metrics, media, and cursors. 1 credit per tweet."
 endpoint: "GET /x/tweets/search"
 keywords:
   [
@@ -34,16 +34,6 @@ import FieldSelectionParams from "/snippets/field-selection-params.mdx";
 
 <RetweetTimestamps />
 
-<Note>
-
-Requested counts are upper bounds for paid calls. When credits can't cover the
-full page or ID list, Xquik returns fewer results. While `has_next_page` is
-`true`, send `next_cursor` as `cursor`. Keep the same query, filters,
-`queryType` & `limit`. With 0 affordable results, it returns
-`402 insufficient_credits`.
-
-</Note>
-
 Search Tweets accepts keywords, hashtags,
 operators, dates, authors, media, and engagement filters. For exact lookup,
 send a Tweet ID or X status URL in `q`. Send it with no time params. To
@@ -55,9 +45,11 @@ Cursor requests return an empty final page for exact IDs.
 
 <Callout icon="coins" color="#5c3327">
 
-**1 credit per tweet returned** · [All plans](https://xquik.com) from $0.00012/credit
+**1 credit per tweet returned** · [All plans](https://xquik.com/en) from $0.00012/credit
 
 </Callout>
+
+With 0 affordable results, it returns `402 insufficient_credits`.
 
 <AutomaticCoveragePagination />
 
@@ -110,12 +102,7 @@ for (let pageIndex = 0; pageIndex < 3; pageIndex += 1) {
     author_profile_picture: tweet.author?.profilePicture ?? null,
     created_at: tweet.createdAt ?? null,
     like_count: tweet.likeCount ?? null,
-    reply_count: tweet.replyCount ?? null,
-    retweet_count: tweet.retweetCount ?? null,
-    quote_count: tweet.quoteCount ?? null,
-    view_count: tweet.viewCount ?? null,
     media_urls: (tweet.media ?? []).map((item) => item.mediaUrl).filter(Boolean),
-    query: params.get("q"),
     page_index: pageIndex,
     page_cursor: pageCursor,
     next_cursor: page.next_cursor,
@@ -154,7 +141,6 @@ saved pages, or downloadable CSV, JSON, and XLSX files.
 
 `limit` bounds unique matching tweets after filtering. Keep `q`, filters,
 `queryType`, and `limit` unchanged when resuming with `cursor=next_cursor`.
-Continue while `has_next_page` is true. Deduplicate IDs and reject repeated cursors.
 Explicit `mode=coverage` returns retained rows when its request window expires.
 Check `diagnostic.deadlineReached` and `diagnostic.complete`. Partial coverage does not mean the source ran out of tweets.
 
@@ -201,56 +187,6 @@ several authors are unaffected.
 | Search tweets with media    | `q=launch&mediaType=media`                           |
 | Search verified authors     | `q=launch&verifiedOnly=true`                         |
 
-<CardGroup cols={2}>
-
-  <Card title="Tweet rows" icon="rows-3">
-
-    Store `tweets[]` as the matching tweet rows for app ingestion, analyst export, or retrieval.
-
-  </Card>
-  <Card title="Tweet keys" icon="key-round">
-
-    Store `tweets[].id` as the stable tweet key. Use it for deduplication, CRM notes, queues, and follow-up lookups.
-
-  </Card>
-  <Card title="Search context" icon="message-square-text">
-
-    Store `tweets[].text` and `tweets[].createdAt` for search hit context and time ordering.
-
-  </Card>
-  <Card title="Author joins" icon="user-round">
-
-    Store `tweets[].author.id`, `tweets[].author.username`, `tweets[].author.name`,
-    `tweets[].author.followers`, `tweets[].author.verified`, and
-    `tweets[].author.profilePicture` for author joins and enrichment.
-
-  </Card>
-  <Card title="Scoring fields" icon="chart-no-axes-combined">
-
-    Store engagement counts for scoring, routing, and prioritization.
-
-  </Card>
-  <Card title="Relationship context" icon="git-branch">
-
-    Store `tweets[].media`, `quoted_tweet` & `retweeted_tweet` for media & relationship context.
-
-  </Card>
-  <Card title="Next page" icon="arrow-right">
-
-    Store `has_next_page` and `next_cursor` as the cursor handoff. For bounded
-    `limit` batches, keep the same query, filters, `queryType`, and `limit`
-    when resuming.
-
-  </Card>
-  <Card title="File exports" icon="file-spreadsheet">
-
-    Use `tweet_search_extractor` when the output must be saved CSV, JSON, or XLSX.
-
-  </Card>
-</CardGroup>
-
-Tweet search costs 1 credit per tweet returned. With `topic`, each kept post costs 2 credits. A dropped post costs nothing. Retry `429` with the `Retry-After` header. Retry `502` after a short backoff. Change the query after `424 search_unavailable`.
-
 ## Keep only posts about a topic
 
 A word like rust or jaguar matches many meanings. Send `topic` to name the one you want.
@@ -288,9 +224,6 @@ curl -G "https://xquik.com/api/v1/x/tweets/search" \
 }
 ```
 
-- Each kept post costs 2 credits, the AI analysis price, instead of 1. A post the filter drops costs nothing.
-- `limit` counts checked posts. Only kept posts come back.
-- `unchecked` lists posts the check couldn't answer. They cost nothing & stay out.
 - Follow `next_cursor` with the same `topic` to check the next posts.
 
 </section>
@@ -303,10 +236,7 @@ Each row says where its `text` matches the search, in `textHighlights`. Use the
 ranges to bold the matched words or cut a snippet around them.
 
 - `startIndex` is the first code point of a match. `endIndex` is the first one after it.
-- Offsets count code points of the row's `text`, as `displayTextRange` does.
 - JavaScript counts some characters, such as most emoji, as 2 units. Split the text by code point first.
-- The list is empty when X marks nothing. One case is a `from:` search without words.
-- X marks matches only in a post's first 280 characters. Later matches in a long post get no range.
 
 ```javascript
 const characters = [...tweet.text];
@@ -323,7 +253,7 @@ const matches = tweet.textHighlights.map(({ startIndex, endIndex }) =>
 
 | Query parameter | Type      | Required | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | --------------- | --------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `q`             | `string`  | Yes      | Send the caller's query, Tweet ID, or status URL. `query` is an alias. Quotes match phrases. Hyphens negate terms. Use `exactPhrase` for literals. X searches up to 512 characters. A longer query can answer 424.                                                                                                                                                                                                                                                                                                                              |
+| `q`             | `string`  | Yes      | Send the caller's query, Tweet ID, or status URL. `query` is an alias. Quotes match phrases. Hyphens negate terms. Use `exactPhrase` for literals. X (Twitter) searches up to 512 characters. A longer query can answer 424.                                                                                                                                                                                                                                                                                                                    |
 | `queryType`     | `string`  | No       | `Latest` lists posts newest first. `Top` ranks posts by engagement within each page. A later page can hold a higher ranked post. Use `Latest` for posts in time order. Any case works. `result_type` and `sort_order` are accepted aliases, as are `type`, `search_type`, `product`, `category` & `section`. `recency` maps to `Latest`. `relevancy` maps to `Top`. `Photos`, `Videos` & `Media` return posts with that media type, unless you set `mediaType`. `People` & `Lists` answer 400 & point to `/x/users/search` & `/x/lists/search`. |
 | `mode`          | `string`  | No       | Optional compatibility override. Omit it to get the fullest results. `standard` keeps the legacy pagination. Use `coverage` for a one-shot diagnostic response without cursor pagination.                                                                                                                                                                                                                                                                                                                                                       |
 | `cursor`        | `string`  | No       | Pass `next_cursor` back unchanged. New Xquik cursors resume automatic coverage. Existing unprefixed cursors keep legacy behavior.                                                                                                                                                                                                                                                                                                                                                                                                               |
@@ -333,9 +263,6 @@ const matches = tweet.textHighlights.map(({ startIndex, endIndex }) =>
 
 ### Structured filters
 
-Structured filters are part of the public Search Tweets API. Use X search
-operators. Keep the same filters on every cursor request.
-
 <TweetResultFilterParams />
 <TweetAdvancedFilterParams />
 
@@ -343,7 +270,7 @@ operators. Keep the same filters on every cursor request.
 
 These query parameters apply only to `GET /x/tweets/search`. That is because
 they map to search operators before the request runs. Use `advancedQuery` only
-when you have trusted raw X search operator syntax to append.
+when you have trusted raw X (Twitter) search operators to append.
 
 <TweetSearchOnlyFilterParams />
 
@@ -410,7 +337,7 @@ when you have trusted raw X search operator syntax to append.
 | `tweets[].contentDisclosure`             | `object`   | Disclosure labels.                                                                                                                                                                                         |
 | `tweets[].author`                        | `object`   | Tweet author profile.                                                                                                                                                                                      |
 | `tweets[].author.id`                     | `string`   | Author user ID.                                                                                                                                                                                            |
-| `tweets[].author.username`               | `string`   | Author X username.                                                                                                                                                                                         |
+| `tweets[].author.username`               | `string`   | Author X (Twitter) username.                                                                                                                                                                               |
 | `tweets[].author.name`                   | `string`   | Author display name.                                                                                                                                                                                       |
 | `tweets[].author.followers`              | `number`   | Follower count.                                                                                                                                                                                            |
 | `tweets[].author.following`              | `number`   | Following count.                                                                                                                                                                                           |
@@ -431,6 +358,7 @@ when you have trusted raw X search operator syntax to append.
 | `tweets[].retweeted_tweet`               | `object`   | Original retweeted tweet (same shape as tweet object). Omitted if not a retweet.                                                                                                                           |
 | `has_next_page`                          | `boolean`  | Whether more results are available. Pass `next_cursor` to fetch the next page.                                                                                                                             |
 | `next_cursor`                            | `string`   | Opaque cursor for the next page. Empty string when no more results.                                                                                                                                        |
+| `hiddenTimeline`                         | `boolean`  | Present on an empty last page when X shows this account's timeline to nobody. A retry returns the same page.                                                                                               |
 | `searchedQuery`                          | `string`   | The normalized form of `q`. Present only when it differs from `q`.                                                                                                                                         |
 | `readBackTo`                             | `string`   | How far back a filtered `Latest` search has read, in UTC. Every newer post was checked, so an empty page still moves this time back.                                                                       |
 

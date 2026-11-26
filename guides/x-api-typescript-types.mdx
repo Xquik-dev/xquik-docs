@@ -85,7 +85,7 @@ API keys have 2 shapes. Only `POST /api/v1/api-keys` returns `ApiKeyCreated`, wh
 
 ### Monitors
 
-Account monitor endpoints return `Monitor`. The `xUserId` is the X (Twitter) user ID resolved from the `username`. That resolution happens at creation time. Keyword monitor endpoints return `KeywordMonitor` with the normalized X search `query`. Both monitor types include `eventTypes`, `isActive`, `createdAt`, and `nextBillingAt` for active monitor billing. Post monitor endpoints return `PostMonitor` with the tracked post & its 6 metrics.
+Account monitor endpoints return `Monitor`. The `xUserId` is the X (Twitter) user ID resolved from the `username`. That resolution happens at creation time. Keyword monitor endpoints return `KeywordMonitor` with the normalized X (Twitter) search `query`. Both monitor types include `eventTypes`, `isActive`, `createdAt`, and `nextBillingAt` for active monitor billing. Post monitor endpoints return `PostMonitor` with the tracked post & its 6 metrics.
 
 ### Events
 
@@ -103,11 +103,11 @@ Like API keys, webhooks have 2 shapes. `WebhookCreated` includes the `secret` fi
 
 ### Deliveries
 
-Each `Delivery` tracks 1 event sent to 1 webhook endpoint. Status starts as `pending` and becomes `delivered` on success. A failed attempt sets `failed`. Xquik retries until your endpoint returns `2xx` or 7 days pass. Then the delivery shows `exhausted`. `lastStatusCode` and `lastError` help diagnose delivery failures.
+Each `Delivery` tracks 1 event sent to 1 webhook endpoint. Status starts as `pending` and becomes `delivered` on success. A failed attempt sets `failed`. Xquik retries until your endpoint returns `2xx` or 30 days pass. Then the delivery shows `exhausted`. `lastStatusCode` and `lastError` help diagnose delivery failures.
 
 ### Webhook payload
 
-The `WebhookPayload` type describes the JSON body your endpoint receives on each delivery. Normal monitor events include `schemaVersion`, `deliveryId`, `streamEventId`, `occurredAt`, `eventType`, and `data`. Account monitor events include `username`. Keyword monitor events include `query`. Verify authenticity with the `X-Xquik-Signature` header and your webhook secret. See [Webhook Verification](/webhooks/verification) for implementation details.
+The `WebhookPayload` type describes the JSON body your endpoint receives on each delivery. Normal monitor events include `schemaVersion`, `deliveryId`, `streamEventId`, `occurredAt`, `eventType`, `monitorId`, `monitorType`, and `data`. `monitorName` comes when the monitor has a name. Account monitor events include `username`. Keyword monitor events include `query`. Account monitor events also carry `xUserId`. Post monitor events carry `postId`, `postUrl`, `authorId`, and `authorUsername`. Verify authenticity with the `X-Xquik-Signature` header and your webhook secret. See [Webhook Verification](/webhooks/verification) for implementation details.
 
 <Note>
 
@@ -153,7 +153,7 @@ The analyze style (`POST /api/v1/styles`) and get style (`GET /api/v1/styles/{id
 
 ### Drafts
 
-`Draft` represents a saved tweet draft. List, create, and get responses include `id`, `text`, `createdAt`, and `updatedAt`. The API omits optional `topic` and `goal` fields when unset. They are never `null`. `DraftList` wraps paginated responses. Use `nextCursor` with the `afterCursor` query parameter to fetch subsequent pages. Maximum 50 drafts per page.
+`Draft` represents a saved tweet draft. List, create, and get responses include `id`, `text`, `createdAt`, and `updatedAt`. The API omits optional `topic` and `goal` fields when unset. They are never `null`. `DraftList` wraps paginated responses. Use `nextCursor` with the `afterCursor` query parameter to fetch subsequent pages. A page holds as many drafts as `limit` asks.
 
 ### X accounts
 

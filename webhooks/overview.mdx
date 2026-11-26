@@ -1,7 +1,7 @@
 ---
 title: "X (Twitter) webhook API overview for monitor alerts"
 sidebarTitle: "Webhooks overview"
-description: "Deliver account and keyword monitor events to HTTPS endpoints with signed payloads, event filters, retry schedules, and HMAC verification. See event fields."
+description: "Deliver account, keyword & post monitor events to HTTPS endpoints with signed payloads, event filters, retry schedules & HMAC verification. See event fields."
 keywords:
   [
     "webhook Twitter",
@@ -40,8 +40,8 @@ one-time signing secret. It also returns signed JSON
 deliveries. Webhook operations are free. Active monitors cost 30 credits/hour
 and include stored events plus webhook delivery.
 
-An added type fires for a follow on top of the account's X list. An old follow
-X lists again fires only after the monitor reported its removal. Its data then
+An added type fires for a follow on top of the account's X list. A follow
+X (Twitter) lists again fires only after the monitor reported its removal. Its data then
 carries `followKind`. `refollow` means the account followed again. `return`
 means the follow never ended.
 
@@ -137,6 +137,7 @@ It shows the post's text or the profile change. A link to the post comes with it
 Mentions in a post ping no one in your server.
 Test deliveries reach Discord the same way.
 Discord can ask Xquik to slow down. The retry then waits as long as Discord asks.
+The [Discord guide](/guides/twitter-discord-bot) sets it up step by step.
 
 </section>
 
@@ -152,6 +153,7 @@ A burst arrives as 1 digest every few seconds. Only the first message rings.
 The chat shows in your webhook list as `telegram:<chat ID>`.
 Deliveries, retries, resume and test deliveries work as for any webhook.
 Send `/stop` in the chat to pause alerts, and `/status` to check them.
+The [Telegram guide](/guides/twitter-telegram-bot) sets it up step by step.
 
 </section>
 
@@ -357,7 +359,7 @@ instead of one batched payload.
 
   <Card title="monitorId" icon="hash">
 
-    Type `string`. ID of the monitor that produced the event. Account monitors and keyword monitors number separately, so read it together with `monitorType`. Use both to route events when many monitors share 1 webhook URL.
+    Type `string`. ID of the monitor that produced the event. Account, keyword & post monitors number separately, so read it together with `monitorType`. Use both to route events when many monitors share 1 webhook URL.
 
   </Card>
 
@@ -369,25 +371,49 @@ instead of one batched payload.
 
   <Card title="monitorType" icon="layers">
 
-    Type `string`. `account` or `keyword`. Matches `monitorType` on the events API.
+    Type `string`. `account`, `keyword` or `post`. Matches `monitorType` on the events API.
 
   </Card>
 
   <Card title="username" icon="user">
 
-    Type `string`. Current X username for account monitor events. It follows a username change. Omitted for keyword-only monitor events and `webhook.test`.
+    Type `string`. Current X (Twitter) username for account monitor events. It follows a username change. Omitted for keyword-only monitor events and `webhook.test`.
 
   </Card>
 
   <Card title="xUserId" icon="fingerprint">
 
-    Type `string`. Permanent X user ID of the monitored account, on account monitor events. It stays equal when the account changes its username. Use it to match events from before and after a change.
+    Type `string`. Permanent X (Twitter) user ID of the monitored account, on account monitor events. It stays equal when the account changes its username. Use it to match events from before and after a change.
 
   </Card>
 
   <Card title="query" icon="search">
 
     Type `string`. Keyword query that matched the event. Present for keyword monitor events.
+
+  </Card>
+
+  <Card title="postId" icon="hash">
+
+    Type `string`. ID of the monitored post. Present for post monitor events.
+
+  </Card>
+
+  <Card title="postUrl" icon="link">
+
+    Type `string`. Link to the monitored post. Present for post monitor events.
+
+  </Card>
+
+  <Card title="authorId" icon="fingerprint">
+
+    Type `string`. Permanent X (Twitter) user ID of the monitored post's author. Present for post monitor events.
+
+  </Card>
+
+  <Card title="authorUsername" icon="user">
+
+    Type `string`. Username of the monitored post's author. Present for post monitor events.
 
   </Card>
 
@@ -650,8 +676,8 @@ normal failure.
 {"\n"}
 
 Xquik retries a failed delivery until your endpoint returns `2xx`. Each
-delivery gets 7 days from the time Xquik queues it. A delivery still failing
-after 7 days ends as `exhausted`. Xquik never pauses or turns off your webhook.
+delivery gets 30 days from the time Xquik queues it. A delivery still failing
+after 30 days ends as `exhausted`. Xquik never pauses or turns off your webhook.
 
 <CardGroup cols={2}>
 
@@ -667,7 +693,7 @@ after 7 days ends as `exhausted`. Xquik never pauses or turns off your webhook.
   <Card title="Recovery" icon="rotate-ccw">
 
     When a check succeeds, Xquik starts sending `pending` deliveries at once.
-    A delivery your endpoint rejected can wait until its 7 days end.
+    A delivery your endpoint rejected can wait until its 30 days end.
     [Resume Webhook](/api-reference/webhooks/resume) sends it at once.
 
   </Card>
@@ -706,14 +732,14 @@ rejected delivery waits longer.
 | 15              | About 4.5 hours  |
 | 19              | About 3 days     |
 
-No retry comes later than 7 days after Xquik queued the delivery. Retries can
+No retry comes later than 30 days after Xquik queued the delivery. Retries can
 arrive a little later than listed.
 
 ### Pause or delete a webhook
 
 Pause the webhook with [Update Webhook](/api-reference/webhooks/update), or
 delete it. Xquik holds the deliveries that were waiting. Each one shows
-`exhausted` once its 7 days end. A paused monitor holds its deliveries the same
+`exhausted` once its 30 days end. A paused monitor holds its deliveries the same
 way.
 
 Events expire 30 days after Xquik creates them. An event whose delivery ended
@@ -728,7 +754,7 @@ Deleting a monitor removes its waiting deliveries.
 
 [List Deliveries](/api-reference/webhooks/deliveries) shows each delivery's
 `status`, which is `pending`, `delivered`, `failed`, or `exhausted`.
-`exhausted` means 7 days passed without a `2xx`, and `lastError` says why.
+`exhausted` means 30 days passed without a `2xx`, and `lastError` says why.
 `attempts` counts the tries so far. A retry reuses the same `deliveryId`, so store it and skip
 repeats.
 
@@ -744,7 +770,7 @@ takes about 2 days. Xquik keeps retrying.
 3. When the test passes, Xquik starts sending waiting and rejected deliveries at
    once.
 
-Without Resume, a rejected delivery can wait until its 7 days end.
+Without Resume, a rejected delivery can wait until its 30 days end.
 
 </section>
 
@@ -846,7 +872,7 @@ Use this handoff when a receiver fails a signed test or keeps failing deliveries
     Check [List Deliveries](/api-reference/webhooks/deliveries) for `status`,
     `attempts`, `lastStatusCode`, `lastError`, `createdAt`, and
     `deliveredAt`. Act on `failed`, wait on `pending`, and ignore
-    `delivered`. `exhausted` means 7 days passed without a `2xx`.
+    `delivered`. `exhausted` means 30 days passed without a `2xx`.
 
   </Card>
 

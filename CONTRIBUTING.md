@@ -20,6 +20,7 @@ bun run check:all
 
 The license checker uses a checksum-verified Comply release with a reviewed patch.
 The patch rejects malformed license declarations and preserves REUSE annotation precedence.
+It also moves the lockfile to rustix 1.1.6, which fixes RUSTSEC-2026-0486.
 Installation builds the checker separately. Validation never downloads or builds it.
 Installation also installs pinned cargo-audit. Each license check audits the Rust lockfile.
 `package.json` pins Rust and the license tools.

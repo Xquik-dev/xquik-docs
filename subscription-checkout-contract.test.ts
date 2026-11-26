@@ -19,7 +19,7 @@ describe("subscription checkout documentation", (): void => {
         "| Past-due or incomplete subscription | `payment_issue` | Dashboard billing page, to fix the payment |",
       ].every((row) => normalizedPage.includes(row)),
       pricingBoundaryDocumented: page.includes(
-        "does not quote current Twitter API pricing or X API pricing.",
+        "does not quote current X (Twitter) API pricing or X API pricing.",
       ),
       payAsYouGoPreserved:
         /funded pay-as-you-go account can\s+continue eligible work while `plan` is `inactive`\./u.test(
