@@ -97,4 +97,8 @@ if (import.meta.main) {
   }
 }
 
-export { jsonLinkFaults };
+function downloadFaults(_pages: ReadonlyMap<string, string>): string[] {
+  return [];
+}
+
+export { downloadFaults, jsonLinkFaults };

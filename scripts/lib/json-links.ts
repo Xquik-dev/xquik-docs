@@ -35,4 +35,8 @@ function sourceJsonLinkFaults(source: string): readonly string[] {
   ];
 }
 
-export { downloadsFromAnotherSite, sourceJsonLinkFaults };
+function sourceDownloadFaults(_source: string): readonly string[] {
+  return [];
+}
+
+export { downloadsFromAnotherSite, sourceDownloadFaults, sourceJsonLinkFaults };

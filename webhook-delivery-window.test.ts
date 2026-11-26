@@ -13,6 +13,7 @@ import { deliveryWindowClaims } from "./scripts/lib/delivery-window.ts";
 const DELIVERY_STATUS = "lib/webhooks/delivery-status.ts";
 const SPEC = "openapi.yaml";
 const ANCHORS = [SPEC, "webhooks/overview.mdx", "api-reference/webhooks/deliveries.mdx"];
+const EVENT_LIFETIME_TIE = "WEBHOOK_DELIVERY_WINDOW_DAYS: typeof STREAM_EVENT_DAYS";
 
 const windowSchema = z.object({ WEBHOOK_DELIVERY_WINDOW_DAYS: z.number().int().positive() });
 
@@ -33,12 +34,13 @@ function claimsIn(file: string): readonly WindowClaim[] {
 
 describe("webhook delivery window", () => {
   productRootTest(
-    "gives every webhook delivery the product's window on each page & in the spec",
+    "gives every webhook delivery & every event the product's window on each page & in the spec, which the product ties to its event lifetime",
     DELIVERY_STATUS,
     async (root): Promise<void> => {
       expect.assertions(1);
       const module: unknown = await import(join(root, DELIVERY_STATUS));
       const days = windowSchema.parse(module).WEBHOOK_DELIVERY_WINDOW_DAYS;
+      const tied = readFileSync(join(root, DELIVERY_STATUS), "utf8").includes(EVENT_LIFETIME_TIE);
       const claims = statedPages().flatMap((file) =>
         claimsIn(file).map((claim) => ({ ...claim, file })),
       );
@@ -48,7 +50,8 @@ describe("webhook delivery window", () => {
         other: claims
           .filter((claim) => claim.days !== days)
           .map(({ file, sentence }) => `${file}: ${sentence}`),
-      }).toStrictEqual({ anchors: ANCHORS, other: [] });
+        tied,
+      }).toStrictEqual({ anchors: ANCHORS, other: [], tied: true });
     },
   );
 
@@ -128,10 +131,12 @@ describe("webhook delivery window", () => {
     expect(deliveryWindowClaims(spec, "yaml").map(({ days }) => days)).toStrictEqual([7, 7]);
   });
 
-  it("skips day counts about an event's lifetime, a retry table row or another product", (): void => {
+  it("reads the day count each event lifetime sentence gives, and skips a price period, a retry table row or another product", (): void => {
     expect.assertions(1);
     const source = [
-      "Each one shows `exhausted` once its 30 days end. An event whose delivery ended as `exhausted` stays 7 days after that delivery ended.",
+      "Each one shows `exhausted` once its 30 days end. Events expire 7 days after Xquik creates them.",
+      "",
+      "Xquik keeps each event for 14 days and sends it once the endpoint answers.",
       "",
       "| Failed attempts | Next retry after |",
       "| --------------- | ---------------- |",
@@ -142,11 +147,38 @@ describe("webhook delivery window", () => {
       "| X history | Reports from USD 50, delivered within 1 day. |",
       "",
       "Radar history covers 7 days. Style analysis after the 7-day cache window costs credits.",
+      "A plan costs USD 3 for 30 days, events and webhooks included.",
     ].join("\n");
 
     expect(deliveryWindowClaims(source, "mdx")).toStrictEqual([
       { days: 30, sentence: "Each one shows `exhausted` once its 30 days end." },
+      { days: 7, sentence: "Events expire 7 days after Xquik creates them." },
+      {
+        days: 14,
+        sentence: "Xquik keeps each event for 14 days and sends it once the endpoint answers.",
+      },
     ]);
+  });
+
+  it("finds the lifetime any event sentence names", (): void => {
+    expect.assertions(1);
+    const property = fc.property(
+      fc.integer({ max: 400, min: 1 }),
+      fc.constantFrom(
+        (days: string): string => `Events expire ${days} days after Xquik creates them.`,
+        (days: string): string =>
+          `Stored monitor events expire ${days} days after Xquik creates them.`,
+        (days: string): string => `Xquik keeps each event for ${days} days.`,
+        (days: string): string => `A reconnect gets every event from the last ${days} days.`,
+        (days: string): string => `An event stays ${days} days.`,
+      ),
+      (days, sentence): boolean => {
+        const claims = deliveryWindowClaims(sentence(String(days)), "mdx");
+        return claims.length === 1 && claims[0]?.days === days;
+      },
+    );
+
+    expect(() => fc.assert(property)).not.toThrow();
   });
 
   it("finds the window any delivery sentence names", (): void => {
