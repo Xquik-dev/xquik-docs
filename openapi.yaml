@@ -153,6 +153,23 @@ info:
     again. A write names its charge in its body's `billing`.
 
 
+    ## Answer deadline
+
+
+    Send `X-Xquik-Page-Budget-Ms` with the milliseconds your client waits for an
+    answer. A read plans its answer for that time less 2 s, or for its usual
+    limit if that comes first. Search answers by then with the posts it holds,
+    plus `next_cursor` when X has more. Set it from your client's timeout, so a
+    slow read still sends its rows before your client gives up. The Xquik SDKs
+    send their timeout in seconds, in `X-Stainless-Timeout` or
+    `X-Stainless-Read-Timeout`, and the earliest of these deadlines counts. A
+    budget under 3000 leaves no time for a full read, so the read answers at
+    once, busy with `Retry-After` when it holds no rows yet. One over 82000
+    counts as 82000. A value that isn't a plain number of 0 or more is ignored,
+    and `X-Xquik-Page-Budget-Refused` names each such header with `not_a_number`
+    or `negative`.
+
+
     ## Deprecation
 
 
@@ -6943,12 +6960,16 @@ paths:
             maxLength: 16
             example: en
         - $ref: '#/components/parameters/CollectionCursor'
-        - $ref: '#/components/parameters/ResultPageSize'
+        - $ref: '#/components/parameters/StandardPageSize'
         - $ref: '#/components/parameters/Fields'
         - $ref: '#/components/parameters/Omit'
+        - $ref: '#/components/parameters/PageBudgetMs'
       responses:
         '200':
           description: Top tweets
+          headers:
+            X-Xquik-Page-Budget-Refused:
+              $ref: '#/components/headers/PageBudgetRefused'
           content: &paginated-tweets-content
             application/json:
               schema:
@@ -7740,13 +7761,13 @@ paths:
           schema:
             type: integer
             minimum: 1
-            maximum: 100
             default: 20
           description: >
-            Most suggestions to return, from 1 to 100. Default 20. Accounts fill
-            it first, then topics, hashtags & cashtags. A low credit balance can
-            return fewer. Its aliases are pageSize, count, max_results,
-            maxItems, max_items & per_page.
+            Most suggestions to return. Default 20. X answers with every
+            suggestion it has in 1 read. Accounts fill it first, then topics,
+            hashtags & cashtags. A low credit balance can return fewer. Its
+            aliases are pageSize, count, max_results, maxItems, max_items &
+            per_page.
         - $ref: '#/components/parameters/Fields'
         - $ref: '#/components/parameters/Omit'
       responses:
@@ -11218,7 +11239,7 @@ paths:
       security: [{ apiKey: [] }, { oauthBearer: [] }, {}]
       parameters:
         - $ref: '#/components/parameters/CollectionCursor'
-        - $ref: '#/components/parameters/ResultPageSize'
+        - $ref: '#/components/parameters/StandardPageSize'
         - $ref: '#/components/parameters/FromUser'
         - $ref: '#/components/parameters/ToUser'
         - $ref: '#/components/parameters/Mentioning'
@@ -11604,7 +11625,7 @@ paths:
           description:
             Pagination cursor for bookmarks. Also read as next_cursor,
             next_token, pagination_token or continuation_token.
-        - $ref: '#/components/parameters/ResultPageSize'
+        - $ref: '#/components/parameters/StandardPageSize'
       responses:
         '200':
           description: List of bookmarked tweets
@@ -11784,7 +11805,7 @@ paths:
             Comma-separated tweet IDs to exclude from results. Xquik ignores
             empty entries. A longer URL fails at the edge before Xquik reads it.
         - $ref: '#/components/parameters/CollectionCursor'
-        - $ref: '#/components/parameters/ResultPageSize'
+        - $ref: '#/components/parameters/StandardPageSize'
       responses:
         '200':
           description: List of timeline tweets
@@ -12128,7 +12149,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/CommunityPathId'
         - $ref: '#/components/parameters/CollectionCursor'
-        - $ref: '#/components/parameters/LegacyUserPageSize'
+        - $ref: '#/components/parameters/StandardUserPageSize'
         - $ref: '#/components/parameters/UserMinFollowers'
         - $ref: '#/components/parameters/UserMaxFollowers'
         - $ref: '#/components/parameters/UserMinFollowing'
@@ -12418,7 +12439,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/CommunityFindQuery'
         - $ref: '#/components/parameters/CollectionCursor'
-        - $ref: '#/components/parameters/ResultPageSize'
+        - $ref: '#/components/parameters/StandardPageSize'
         - $ref: '#/components/parameters/Fields'
         - $ref: '#/components/parameters/Omit'
       responses:
@@ -12473,7 +12494,7 @@ paths:
         - $ref: '#/components/parameters/CommunityTopicId'
         - $ref: '#/components/parameters/CommunityTopicName'
         - $ref: '#/components/parameters/CollectionCursor'
-        - $ref: '#/components/parameters/ResultPageSize'
+        - $ref: '#/components/parameters/StandardPageSize'
         - $ref: '#/components/parameters/Fields'
         - $ref: '#/components/parameters/Omit'
       responses:
@@ -12662,7 +12683,7 @@ paths:
         - $ref: '#/components/parameters/CommunityQuery'
         - $ref: '#/components/parameters/CommunityQueryType'
         - $ref: '#/components/parameters/CommunityCursor'
-        - $ref: '#/components/parameters/ResultPageSize'
+        - $ref: '#/components/parameters/StandardPageSize'
         - $ref: '#/components/parameters/Language'
         - $ref: '#/components/parameters/FromUser'
         - $ref: '#/components/parameters/ToUser'
@@ -12798,7 +12819,7 @@ paths:
           description: Company name to match. Xquik's cap is 4,096 characters.
           example: SpaceX
         - $ref: '#/components/parameters/CollectionCursor'
-        - $ref: '#/components/parameters/ResultPageSize'
+        - $ref: '#/components/parameters/StandardPageSize'
         - $ref: '#/components/parameters/Fields'
         - $ref: '#/components/parameters/Omit'
       responses:
@@ -13034,7 +13055,7 @@ paths:
             Keywords to find Lists by, such as a topic. Alias query. Xquik's cap
             is 4,096 characters.
         - $ref: '#/components/parameters/CollectionCursor'
-        - $ref: '#/components/parameters/ResultPageSize'
+        - $ref: '#/components/parameters/StandardPageSize'
         - $ref: '#/components/parameters/Fields'
         - $ref: '#/components/parameters/Omit'
       responses:
@@ -13705,14 +13726,13 @@ paths:
         - name: pageSize
           in: query
           description: >
-            For Latest & Top, the page size (1-100, default 20). A page can
-            return fewer Spaces. Send 100 to read a search fastest. For Live &
-            Upcoming, the most Spaces a page returns. Its aliases are limit,
-            count, max_results, maxItems, max_items & per_page.
+            Spaces per page. A page holds up to 10,000, so a larger pageSize
+            gets the largest page. Default 20. A page can return fewer Spaces.
+            Follow next_cursor for more pages. Its aliases are limit, count,
+            max_results, maxItems, max_items & per_page.
           schema:
             type: integer
             minimum: 1
-            maximum: 100
             default: 20
         - $ref: '#/components/parameters/Fields'
         - $ref: '#/components/parameters/Omit'
@@ -16663,6 +16683,20 @@ components:
       description: Secure Xquik browser session cookie.
 
   parameters:
+    PageBudgetMs:
+      name: X-Xquik-Page-Budget-Ms
+      in: header
+      required: false
+      description: >
+        Milliseconds your client waits for this answer. The read plans its
+        answer for that time less 2 s, or for its usual limit if that comes
+        first, and answers with the posts it holds plus `next_cursor` when X has
+        more. Under 3000 answers at once, busy when it holds no rows yet, and
+        over 82000 counts as 82000.
+      schema:
+        type: integer
+        minimum: 0
+      example: 9000
     CollectionCursor:
       name: cursor
       in: query
@@ -17069,18 +17103,6 @@ components:
         type: integer
         minimum: 1
         default: 20
-    ResultPageSize:
-      name: pageSize
-      in: query
-      description: >
-        Items per page (1-100, default 20). Source, filters or credits can
-        return fewer. Follow next_cursor for more pages. Its aliases are limit,
-        count, max_results, maxItems, max_items & per_page.
-      schema:
-        type: integer
-        minimum: 1
-        maximum: 100
-        default: 20
     AutomaticCoverageCursor:
       name: cursor
       in: query
@@ -17183,14 +17205,15 @@ components:
         minimum: 1
         maximum: 5000
         default: 5000
-    LegacyUserPageSize:
+    StandardUserPageSize:
       name: pageSize
       in: query
-      description: Maximum user profiles per page (1-200, default 20).
+      description: >
+        User profiles per page. A page holds up to 10,000, so a larger pageSize
+        gets the largest page. Default 20. Follow next_cursor for more pages.
       schema:
         type: integer
         minimum: 1
-        maximum: 200
         default: 20
     LegacyFollowerLimit:
       name: limit
@@ -17804,6 +17827,14 @@ components:
         states the cutoff & counts.
 
   headers:
+    PageBudgetRefused:
+      description: >
+        Each answer-deadline header this read ignored, as `header=reason`, comma
+        separated. The reason is `not_a_number` or `negative`. The read used the
+        other deadline headers, or its usual limit.
+      schema:
+        type: string
+      example: x-xquik-page-budget-ms=not_a_number
     SignInRetryAfter:
       description: Seconds to wait before you retry.
       schema: { type: integer, minimum: 1, maximum: 60, example: 60 }
@@ -26045,7 +26076,7 @@ components:
           description:
             Endpoint delivery state. paused means the user paused delivery.
             needs_attention marks repeated failures. Xquik keeps each event for
-            7 days and sends it once the endpoint answers.
+            30 days and sends it once the endpoint answers.
           example: active
         failureHardCap:
           type: integer
@@ -26069,9 +26100,9 @@ components:
           type: string
           enum: [pending, delivered, failed, exhausted]
           description:
-            A `pending` or `failed` delivery waits up to 7 days. `delivered`
+            A `pending` or `failed` delivery waits up to 30 days. `delivered`
             means your endpoint accepted it. `exhausted` means it wasn't
-            delivered within 7 days.
+            delivered within 30 days.
         attempts:
           $ref: '#/components/schemas/WholeNumber'
         createdAt: *date-time-string
