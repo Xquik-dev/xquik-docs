@@ -8,7 +8,7 @@ import { z } from "zod";
 
 import { productRootTest } from "./product-contract.test.helpers.ts";
 import type { WindowClaim } from "./scripts/lib/delivery-window.ts";
-import { deliveryWindowClaims } from "./scripts/lib/delivery-window.ts";
+import { deliveryWindowClaims, extendedEventRetentionClaims } from "./scripts/lib/delivery-window.ts";
 
 const DELIVERY_STATUS = "lib/webhooks/delivery-status.ts";
 const SPEC = "openapi.yaml";
@@ -32,6 +32,11 @@ function claimsIn(file: string): readonly WindowClaim[] {
   return deliveryWindowClaims(source, file.endsWith(".yaml") ? "yaml" : "mdx");
 }
 
+function extendedRetentionIn(file: string): readonly string[] {
+  const source = readFileSync(join(import.meta.dirname, file), "utf8");
+  return extendedEventRetentionClaims(source, file.endsWith(".yaml") ? "yaml" : "mdx");
+}
+
 describe("webhook delivery window", () => {
   productRootTest(
     "gives every webhook delivery & every event the product's window on each page & in the spec, which the product ties to its event lifetime",
@@ -41,17 +46,20 @@ describe("webhook delivery window", () => {
       const module: unknown = await import(join(root, DELIVERY_STATUS));
       const days = windowSchema.parse(module).WEBHOOK_DELIVERY_WINDOW_DAYS;
       const tied = readFileSync(join(root, DELIVERY_STATUS), "utf8").includes(EVENT_LIFETIME_TIE);
-      const claims = statedPages().flatMap((file) =>
-        claimsIn(file).map((claim) => ({ ...claim, file })),
+      const pages = statedPages();
+      const claims = pages.flatMap((file) => claimsIn(file).map((claim) => ({ ...claim, file })));
+      const extended = pages.flatMap((file) =>
+        extendedRetentionIn(file).map((sentence) => `${file}: ${sentence}`),
       );
 
       expect({
         anchors: ANCHORS.filter((file) => claims.some((claim) => claim.file === file)),
+        extended,
         other: claims
           .filter((claim) => claim.days !== days)
           .map(({ file, sentence }) => `${file}: ${sentence}`),
         tied,
-      }).toStrictEqual({ anchors: ANCHORS, other: [], tied: true });
+      }).toStrictEqual({ anchors: ANCHORS, extended: [], other: [], tied: true });
     },
   );
 
@@ -179,6 +187,21 @@ describe("webhook delivery window", () => {
     );
 
     expect(() => fc.assert(property)).not.toThrow();
+  });
+
+  it("finds any sentence claiming events outlive their 30-day creation cutoff", (): void => {
+    expect.assertions(1);
+    const source = [
+      "Events expire 30 days after Xquik creates them.",
+      "An event whose delivery ended as `exhausted` stays 30 days after that delivery ended.",
+      "Xquik keeps queued events until all deliveries finish.",
+      "Xquik keeps each event for 30 days and sends it once the endpoint answers.",
+    ].join(" ");
+
+    expect(extendedEventRetentionClaims(source, "mdx")).toStrictEqual([
+      "An event whose delivery ended as `exhausted` stays 30 days after that delivery ended.",
+      "Xquik keeps queued events until all deliveries finish.",
+    ]);
   });
 
   it("finds the window any delivery sentence names", (): void => {
