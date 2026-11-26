@@ -11,6 +11,7 @@ import { downloadsFromAnotherSite } from "./lib/json-links.ts";
 const MINT = "mint@4.3.5";
 const PUBLISHED_ONLY_CHROME = 792;
 const HEADROOM = 5000;
+const ANCHOR_TAG = /<a\s[^>]*>/gu;
 const JSON_ANCHOR = /<a\s[^>]*href="[^"]*\.json(?:[?#][^"]*)?"[^>]*>/gu;
 const JSON_LINK_ATTRIBUTES = [
   'type="application/json"',
@@ -55,8 +56,7 @@ function publishedSizes(pages: ReadonlyMap<string, string>): ReadonlyMap<string,
 function jsonLinkFaults(pages: ReadonlyMap<string, string>): string[] {
   return [...pages].flatMap(([page, html]) =>
     [...html.matchAll(JSON_ANCHOR)].flatMap(([anchor]) =>
-      JSON_LINK_ATTRIBUTES.every((attribute) => anchor.includes(attribute)) &&
-      !downloadsFromAnotherSite(anchor)
+      JSON_LINK_ATTRIBUTES.every((attribute) => anchor.includes(attribute))
         ? []
         : [`${page} ${anchor}`],
     ),
@@ -83,11 +83,17 @@ if (import.meta.main) {
   const directory = mkdtempSync(join(tmpdir(), "xquik-docs-built-pages-"));
   try {
     const pages = builtPages(exportSite(directory));
-    const faults = jsonLinkFaults(pages);
-    if (faults.length > 0)
-      throw new Error(
-        `${String(faults.length)} links to a JSON file lack the type or the attributes Mintlify gives a Markdown link, ${JSON_LINK_ATTRIBUTES.join(" ")}, or ask to download a file from another site, which browsers ignore.\n${faults.join("\n")}`,
-      );
+    const json = jsonLinkFaults(pages);
+    const downloads = downloadFaults(pages);
+    const faults = [
+      json.length === 0
+        ? ""
+        : `${String(json.length)} links to a JSON file lack the type or the attributes Mintlify gives a Markdown link, ${JSON_LINK_ATTRIBUTES.join(" ")}.\n${json.join("\n")}`,
+      downloads.length === 0
+        ? ""
+        : `${String(downloads.length)} links ask to download a file from another site, which browsers ignore.\n${downloads.join("\n")}`,
+    ].filter((fault) => fault !== "");
+    if (faults.length > 0) throw new Error(faults.join("\n"));
     process.stdout.write(report(publishedSizes(pages)));
   } catch (error) {
     process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);
@@ -97,8 +103,12 @@ if (import.meta.main) {
   }
 }
 
-function downloadFaults(_pages: ReadonlyMap<string, string>): string[] {
-  return [];
+function downloadFaults(pages: ReadonlyMap<string, string>): string[] {
+  return [...pages].flatMap(([page, html]) =>
+    [...html.matchAll(ANCHOR_TAG)].flatMap(([anchor]) =>
+      downloadsFromAnotherSite(anchor) ? [`${page} ${anchor}`] : [],
+    ),
+  );
 }
 
 export { downloadFaults, jsonLinkFaults };

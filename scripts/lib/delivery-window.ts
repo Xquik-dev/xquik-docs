@@ -2,7 +2,8 @@ const DAY_COUNT =
   /\b(\d+|one|two|three|four|five|six|seven|ten|fourteen|thirty)[ -](day|week)s?\b/giu;
 const DELIVERY_WORD = /\bdeliver(?:y|ies)\b|\bretr(?:y|ies|ied)\b|\bexhausted\b/iu;
 const ENDS_IN_OPENING_TAG = /(?:^|\n)\s*<[A-Z]\w*\b[^>]*>$/u;
-const EVENT_LIFETIME = /\bevents?\b[^.]*\b(?:stays?|expires?)\b/iu;
+const EVENT_LIFETIME =
+  /\bevents?\b[^.]*\b(?:stays?|expires?|keeps?|last)\b|\b(?:keeps?|stores?)\b[^.]*\bevents?\b/iu;
 const SENTENCE_END = /(?<=[.!?])\s+/u;
 const WORDS: Readonly<Record<string, number>> = {
   five: 5,
@@ -56,7 +57,7 @@ function countOf(amount: string, unit: string): number {
 function deliveryWindowClaims(source: string, format: "mdx" | "yaml"): readonly WindowClaim[] {
   return blocksOf(source, format)
     .flatMap((block) => block.replaceAll(/\s+/gu, " ").trim().split(SENTENCE_END))
-    .filter((sentence) => DELIVERY_WORD.test(sentence) && !EVENT_LIFETIME.test(sentence))
+    .filter((sentence) => DELIVERY_WORD.test(sentence) || EVENT_LIFETIME.test(sentence))
     .flatMap((sentence) =>
       [...sentence.matchAll(DAY_COUNT)].map(([, amount = "", unit = ""]): WindowClaim => ({
         days: countOf(amount, unit),

@@ -7843,7 +7843,6 @@ const REQUIRED_WEBHOOK_OVERVIEW_SNIPPETS = [
   "No retry comes later than 30 days after Xquik queued the delivery. Retries can arrive a little later than listed.",
   "It retries 1 waiting delivery at a time to check the endpoint. This is a real delivery, not a `webhook.test`. Checks start 2 seconds apart and slow to 1 every 15 minutes.",
   "`needs_attention` means 200 failed checks in a row.",
-  "An event whose delivery ended as `exhausted` stays 30 days after that delivery ended.",
   "Events expire 30 days after Xquik creates them.",
   "## Backfill after a receiver outage",
   '"record_type": "webhook_receiver_backfill"',
