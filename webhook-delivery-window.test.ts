@@ -68,6 +68,52 @@ describe("webhook delivery window", () => {
     ]);
   });
 
+  it("reads the title and body of a card that opens on the line after another card closes, as the 30-day window and exhausted cards do", (): void => {
+    expect.assertions(1);
+    const exhausted = [
+      "  </Card>",
+      '  <Card title="exhausted" icon="pause">',
+      "",
+      "    7 days passed without a `2xx`. `lastError` says why. Read the event with",
+      "    `GET /api/v1/events/{id}`.",
+      "",
+      "  </Card>",
+      "</CardGroup>",
+    ];
+    const deliveries = [
+      "  </Card>",
+      '  <Card title="7-day window" icon="rotate-ccw">',
+      "",
+      "    Xquik retries every `failed` delivery until 30 days pass. No delivery ends",
+      "    earlier, even after `410 Gone`.",
+      "",
+      ...exhausted,
+    ];
+
+    expect(
+      [exhausted, deliveries].map((page) =>
+        deliveryWindowClaims(page.join("\n"), "mdx").map(({ days }) => days),
+      ),
+    ).toStrictEqual([[7], [7, 30, 7]]);
+  });
+
+  it("finds the window a card body names, whatever line opens the card's block", (): void => {
+    expect.assertions(1);
+    const property = fc.property(
+      fc.integer({ max: 400, min: 1 }),
+      fc.constantFrom("", "  </Card>\n", "<CardGroup cols={2}>\n", "Read each state.\n"),
+      (days, before): boolean => {
+        const claims = deliveryWindowClaims(
+          `${before}  <Card title="exhausted" icon="pause">\n\n    ${String(days)} days passed without a \`2xx\`.`,
+          "mdx",
+        );
+        return claims.length === 1 && claims[0]?.days === days;
+      },
+    );
+
+    expect(() => fc.assert(property)).not.toThrow();
+  });
+
   it("reads the delivery sentences in every spec string", (): void => {
     expect.assertions(1);
     const spec = [
