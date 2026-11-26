@@ -121,7 +121,7 @@ describe("navigation default state", (): void => {
     expect.assertions(1);
 
     expect(docsConfig().navbar?.primary?.href).toBe(
-      "https://dashboard.xquik.com/signup?ref=docs-navbar",
+      "https://dashboard.xquik.com/en/signup?ref=docs-navbar",
     );
   });
 
