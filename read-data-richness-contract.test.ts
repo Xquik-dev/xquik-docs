@@ -170,6 +170,7 @@ const PROFILE_FIELDS = [
   "businessProfileState",
   "subscribersCount",
   "verificationReason",
+  "workExperience",
 ] as const;
 
 const MEDIA_FIELDS = [
